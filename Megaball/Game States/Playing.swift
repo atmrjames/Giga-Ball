@@ -21,6 +21,7 @@ class Playing: GKState {
         scene.gameStateLabel.text = "Playing"
         scene.ball.isHidden = false
         scene.paddle.isHidden = false
+        scene.ballIsOnPaddle = true
         levelBuild()
     }
     // This function runs when this state is entered.

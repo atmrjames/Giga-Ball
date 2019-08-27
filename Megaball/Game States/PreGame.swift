@@ -36,14 +36,19 @@ class PreGame: GKState {
         scene.highScoreLabel.text = String(scene.highscore)
         scene.paddle.position.x = 0
         scene.ball.position.x = 0
-        scene.paddle.isHidden = true
-        scene.ball.isHidden = true
+        scene.ball.position.y = scene.ballStartingPositionY
         scene.enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
             node.removeFromParent()
         }
         scene.blocksLeft = 0
         scene.blocksLeftLabel.text = String(scene.blocksLeft)
         // Remove all remaining blocks
+        
+        /* TODO
+        > Which level to load up next
+
+         */
+        
     }
 
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {

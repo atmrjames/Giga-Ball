@@ -89,21 +89,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         BallOnPaddle(scene: self),
         GameOver(scene: self)])
     // Sets up the game states
-    
-    var gameWon : Bool = false {
-        didSet {
-//            let gameOver = childNode(withName: GameMessageName) as! SKSpriteNode
-//            let textureName = gameWon ? "YouWon" : "GameOver"
-//            let texture = SKTexture(imageNamed: textureName)
-//            let actionSequence = SKAction.sequence([SKAction.setTexture(texture),
-//                                                    SKAction.scale(to: 1.0, duration: 0.25)])
-//
-//            gameOver.run(actionSequence)
-//
-//            run(gameWon ? gameWonSound : gameOverSound)
-//            // Plays game over sound
-        }
-    }
+
     // This property observes if the gameWon has changed to true. If so, it returns the correct message if the game was won or lost
     
     override func didMove(to view: SKView) {
@@ -146,8 +132,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         highScoreLabel.position.x = scoreLabel.position.x
         // Object position definition
         
-        numberOfBlockRows = 6
-        numberOfBlockColumns = 8
+        numberOfBlockRows = 1
+        numberOfBlockColumns = 1
         totalBlocksWidth = blockWidth * CGFloat(numberOfBlockColumns)
         xBlockOffset = totalBlocksWidth/2
         // Define blocks
@@ -292,27 +278,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
         
-        if ball.position.y <= paddle.position.y - ballLostHeight {
-            ballLost()
-        }
-        
-        let maxSpeed: CGFloat = 750.0
-        let xSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx)
-        let ySpeed = sqrt(ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
-        let speed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
-        
-        if ballIsOnPaddle == false {
-            if xSpeed <= 10.0 {
-                ball.physicsBody!.applyImpulse(CGVector(dx: randomDirection(), dy: 0.0))
-            }
-            if ySpeed <= 10.0 {
-                ball.physicsBody!.applyImpulse(CGVector(dx: 0.0, dy: randomDirection()))
+        if gameState.currentState is Playing {
+            if ball.position.y <= paddle.position.y - ballLostHeight {
+                ballLost()
             }
             
-            if speed > maxSpeed {
-                ball.physicsBody!.linearDamping = 0.4
-            } else {
-                ball.physicsBody!.linearDamping = 0.0
+            let maxSpeed: CGFloat = 750.0
+            let xSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx)
+            let ySpeed = sqrt(ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
+            let speed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
+            
+            if ballIsOnPaddle == false {
+                if xSpeed <= 10.0 {
+                    ball.physicsBody!.applyImpulse(CGVector(dx: randomDirection(), dy: 0.0))
+                }
+                if ySpeed <= 10.0 {
+                    ball.physicsBody!.applyImpulse(CGVector(dx: 0.0, dy: randomDirection()))
+                }
+                
+                if speed > maxSpeed {
+                    ball.physicsBody!.linearDamping = 0.4
+                } else {
+                    ball.physicsBody!.linearDamping = 0.0
+                }
             }
         }
         
@@ -339,10 +327,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == BlockCategory {
                 hitBlock(node: secondBody.node!, sprite: secondBody.node! as! SKSpriteNode)
                 
-                if isGameWon() {
-                    gameState.enter(GameOver.self)
-                }
-                // If there are no bricks left, the game state is changed to game over
+//                if isGameWon() {
+//                    gameState.enter(GameOver.self)
+//                }
+//                // If there are no bricks left, the game state is changed to game over
             }
             
             if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == PaddleCategory {
@@ -389,6 +377,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         blocksLeft -= 1
         blocksLeftLabel.text = String(blocksLeft)
         score = score + blockDestroyScore
+        
+        if blocksLeft == 0 {
+            gameState.enter(GameOver.self)
+        }
+        // Ends the game if all blocks have been removed
     }
     
     func paddleHit() {
@@ -445,11 +438,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // Generates a random number from some passed in floats to add some randomness to the ball's initial velocity
     
-    func isGameWon() -> Bool {
-        return blocksLeft == 0
-    }
-    // Checks to see if there are any bricks left on the screen. If not, the player has won
-    
 /* To Do:
      > add gradiant mask on top of ball under paddle to make ball fade away as it drops below the paddle
      > extra life is 1000+ points is achieved on a level
@@ -468,12 +456,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      Today
      > Static blocks
      > Haptics
-     > Game over sort out
-     > Git
      > Slower ball start, increase linear dampening
      > Pause button
      > Persistent high score
-     
  */
     
 }
