@@ -15,6 +15,10 @@
 		1A5A94902309E4F30076D635 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A948E2309E4F30076D635 /* Main.storyboard */; };
 		1A5A94922309E4F40076D635 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94912309E4F40076D635 /* Assets.xcassets */; };
 		1A5A94952309E4F40076D635 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */; };
+		1A5A949D230F08770076D635 /* PreGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A949C230F08770076D635 /* PreGame.swift */; };
+		1A5A949F230F08840076D635 /* Playing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A949E230F08840076D635 /* Playing.swift */; };
+		1A5A94A1230F088F0076D635 /* GameOver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A0230F088F0076D635 /* GameOver.swift */; };
+		1A5A94A4230F0D830076D635 /* BallOnPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +32,10 @@
 		1A5A94912309E4F40076D635 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A5A94942309E4F40076D635 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		1A5A94962309E4F40076D635 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1A5A949C230F08770076D635 /* PreGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreGame.swift; sourceTree = "<group>"; };
+		1A5A949E230F08840076D635 /* Playing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playing.swift; sourceTree = "<group>"; };
+		1A5A94A0230F088F0076D635 /* GameOver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOver.swift; sourceTree = "<group>"; };
+		1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallOnPaddle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,12 +73,24 @@
 				1A5A94882309E4F30076D635 /* Actions.sks */,
 				1A5A948A2309E4F30076D635 /* GameScene.swift */,
 				1A5A948C2309E4F30076D635 /* GameViewController.swift */,
+				1A5A94A2230F089A0076D635 /* Game States */,
 				1A5A948E2309E4F30076D635 /* Main.storyboard */,
 				1A5A94912309E4F40076D635 /* Assets.xcassets */,
 				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
 				1A5A94962309E4F40076D635 /* Info.plist */,
 			);
 			path = Megaball;
+			sourceTree = "<group>";
+		};
+		1A5A94A2230F089A0076D635 /* Game States */ = {
+			isa = PBXGroup;
+			children = (
+				1A5A949C230F08770076D635 /* PreGame.swift */,
+				1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */,
+				1A5A949E230F08840076D635 /* Playing.swift */,
+				1A5A94A0230F088F0076D635 /* GameOver.swift */,
+			);
+			path = "Game States";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -148,7 +168,11 @@
 			files = (
 				1A5A948B2309E4F30076D635 /* GameScene.swift in Sources */,
 				1A5A948D2309E4F30076D635 /* GameViewController.swift in Sources */,
+				1A5A94A4230F0D830076D635 /* BallOnPaddle.swift in Sources */,
+				1A5A94A1230F088F0076D635 /* GameOver.swift in Sources */,
+				1A5A949D230F08770076D635 /* PreGame.swift in Sources */,
 				1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */,
+				1A5A949F230F08840076D635 /* Playing.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,6 +321,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.3;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -315,6 +340,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.3;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
