@@ -41,7 +41,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var paddleGap: CGFloat = 0
     var ballSize: CGFloat = 0
     var ballStartingPositionY: CGFloat = 0
-    var ballLaunchSpeed: Double = 600
+    var ballLaunchSpeed: Double = 8
     var ballLaunchAngleRad: Double = 0
     var ballLostHeight: CGFloat = 0
     var blockHeight: CGFloat = 0
@@ -61,8 +61,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var collisionLocation: Double = 0
     var minAngleDeg: Double = 20
     var maxAngleDeg: Double = 160
-    var angleAdjustmentK: Double = 30
+    var angleAdjustmentK: Double = 50
+    // Effect of paddle position hit on ball angle. Larger number means more effect
     var blocksLeft: Int = 0
+    var ballLinearDampening: CGFloat = -0.005
+    var ballMaxSpeed: CGFloat = 1000
     // Setup game metrics
     
     var score: Int = 0
@@ -89,8 +92,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         BallOnPaddle(scene: self),
         GameOver(scene: self)])
     // Sets up the game states
-
-    // This property observes if the gameWon has changed to true. If so, it returns the correct message if the game was won or lost
+    
+    let dataStore = UserDefaults.standard
+    // Setup NSUserDefaults data store
+    
+    var scoreArray: [Int] = [0]
+    // Setup array to store all scores
+        // Change to saving to 10 scores?
     
     override func didMove(to view: SKView) {
         ball = self.childNode(withName: "ball") as! SKSpriteNode
@@ -132,8 +140,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         highScoreLabel.position.x = scoreLabel.position.x
         // Object position definition
         
-        numberOfBlockRows = 1
-        numberOfBlockColumns = 1
+        numberOfBlockRows = 6
+        numberOfBlockColumns = 8
         totalBlocksWidth = blockWidth * CGFloat(numberOfBlockColumns)
         xBlockOffset = totalBlocksWidth/2
         // Define blocks
@@ -154,13 +162,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.isDynamic = true
         ball.name = BallCategoryName
         ball.physicsBody!.categoryBitMask = BallCategory
-        ball.physicsBody?.linearDamping = -0.01
+        ball.physicsBody?.linearDamping = ballLinearDampening
         ball.physicsBody?.angularDamping = 0
         ball.zPosition = 1
         // Define ball properties
-        
-        gameState.enter(PreGame.self)
-        // Tell the state machine to enter the waiting for tap state
         
         physicsWorld.contactDelegate = self
         // Sets the GameScene as the delegate in the physicsWorld
@@ -171,6 +176,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         ball.physicsBody!.contactTestBitMask = PaddleCategory | BlockCategory
         // Sets up the contactTestBitMask for the blocks, ball and paddle
+        
+        ball.isHidden = true
+        paddle.isHidden = true
+        // Hide ball and paddle
         
         let xRangePaddle = SKRange(lowerLimit:-self.frame.width/2 + paddleWidth/2,upperLimit:self.frame.width/2 - paddleWidth/2)
         paddle.constraints = [SKConstraint.positionX(xRangePaddle)]
@@ -186,6 +195,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.physicsBody = boarder
         // Sets up the boarder to interact with the objects
         
+        if let scoreStore = dataStore.array(forKey: "ScoreStore") as? [Int] {
+            scoreArray = scoreStore
+        }
+        
+        gameState.enter(PreGame.self)
+        // Tell the state machine to enter the waiting for tap state
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -225,7 +240,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if speedBall == 0 && ballIsOnPaddle {
                 
                 ballLaunchAngleRad = Double.random(in: 30...150) * Double.pi / 180
-                ballLaunchSpeed = 10
                 
                 let dxLaunch = cos(ballLaunchAngleRad) * ballLaunchSpeed
                 let dyLaunch = sin(ballLaunchAngleRad) * ballLaunchSpeed
@@ -245,12 +259,47 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    override func update(_ currentTime: TimeInterval) {
+        // Called before each frame is rendered
+        
+        if gameState.currentState is Playing {
+            if ball.position.y <= paddle.position.y - ballSize*2 {
+                ballLostAnimation()
+            }
+            
+            if ball.position.y <= paddle.position.y - ballLostHeight {
+                ballLost()
+            }
+        }
+        
+        if gameState.currentState is Playing && ballIsOnPaddle == false {
+            let xSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx)
+            let ySpeed = sqrt(ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
+            let speed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
+            
+            let randomKick = Double.random(in: (-2)...2)
+            
+            if xSpeed <= 15.0 {
+                ball.physicsBody!.applyImpulse(CGVector(dx: randomKick, dy: 0.0))
+            }
+            if ySpeed <= 15.0 {
+                ball.physicsBody!.applyImpulse(CGVector(dx: 0.0, dy: randomKick))
+            }
+            
+            if speed > ballMaxSpeed {
+                ball.physicsBody!.linearDamping = 0.1
+            } else {
+                ball.physicsBody!.linearDamping = ballLinearDampening
+            }
+            
+        }
+    }
+    
     func ballLost() {
-
+        self.ball.isHidden = true
         ball.position.x = paddle.position.x
         ball.position.y = ballStartingPositionY
         ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-        ball.isHidden = true
         ballIsOnPaddle = true
         // Reset ball position
         
@@ -265,45 +314,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if numberOfLives > 0 {
             numberOfLives -= 1
             livesLabel.text = String(numberOfLives)
+            // Update number of lives
+            
+            let fadeOut = SKAction.fadeIn(withDuration: 0)
+            let scaleDown = SKAction.scale(to: 0, duration: 0)
+            let waitTime = SKAction.wait(forDuration: 0.5)
+            let fadeIn = SKAction.fadeIn(withDuration: 0.1)
+            let scaleUp = SKAction.scale(to: 1, duration: 0.1)
+            let resetGroup = SKAction.group([fadeOut, scaleDown, waitTime])
+            let ballGroup = SKAction.group([fadeIn, scaleUp])
+            ball.run(resetGroup, completion: {
+                self.ball.isHidden = false
+                self.ball.run(ballGroup)
+            })
+            // Animate ball back onto paddle
         }
-        // Update number of lives
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.ball.isHidden = false
-        }
-        // Show the ball again after a slight delay
-        
     }
     
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
-        
-        if gameState.currentState is Playing {
-            if ball.position.y <= paddle.position.y - ballLostHeight {
-                ballLost()
-            }
-            
-            let maxSpeed: CGFloat = 750.0
-            let xSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx)
-            let ySpeed = sqrt(ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
-            let speed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
-            
-            if ballIsOnPaddle == false {
-                if xSpeed <= 10.0 {
-                    ball.physicsBody!.applyImpulse(CGVector(dx: randomDirection(), dy: 0.0))
-                }
-                if ySpeed <= 10.0 {
-                    ball.physicsBody!.applyImpulse(CGVector(dx: 0.0, dy: randomDirection()))
-                }
-                
-                if speed > maxSpeed {
-                    ball.physicsBody!.linearDamping = 0.4
-                } else {
-                    ball.physicsBody!.linearDamping = 0.0
-                }
-            }
-        }
-        
+    func ballLostAnimation() {
+        let scaleDown = SKAction.scale(to: 0, duration: 0.2)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
+        let ballLostGroup = SKAction.group([scaleDown, fadeOut])
+        ball.run(ballLostGroup)
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -341,6 +373,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func hitBlock(node: SKNode, sprite: SKSpriteNode) {
         
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        // Haptic feedback
+        
         switch sprite.texture {
         case blockTexture:
             removeBlock(node: node)
@@ -369,16 +405,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         scoreLabel.text = String(score)
         // Update score
+        
     }
     // This method takes an SKNode. First, it creates an instance of SKEmitterNode from the BrokenPlatform.sks file, then sets it's position to the same position as the node. The emitter node's zPosition is set to 3, so that the particles appear above the remaining blocks. After the particles are added to the scene, the node (bamboo block) is removed.
     
     func removeBlock(node: SKNode) {
-        node.removeFromParent()
+        
+        let scaleDown = SKAction.scale(to: 0, duration: 0.1)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.1)
+        let blockGroup = SKAction.group([scaleDown, fadeOut])
+        node.run(blockGroup, completion: {
+            node.removeFromParent()
+        })
+        // Animate and remove block
+        
         blocksLeft -= 1
         blocksLeftLabel.text = String(blocksLeft)
         score = score + blockDestroyScore
         
         if blocksLeft == 0 {
+            let generator = UIImpactFeedbackGenerator(style: .heavy)
+            generator.impactOccurred()
+            // Haptic feedback
             gameState.enter(GameOver.self)
         }
         // Ends the game if all blocks have been removed
@@ -386,57 +434,53 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func paddleHit() {
         
-        if ball.position.y < paddle.position.y {
-            return
-        }
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+        // Haptic feedback
         
         let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
         // Define collision position between the ball and paddle
         
-        var dx = Double(ball.physicsBody!.velocity.dx)
-        var dy = Double(ball.physicsBody!.velocity.dy)
-        let speed = sqrt(dx*dx + dy*dy)
-        var angleRad = atan2(dy, dx)
-        // Variables to hold the angle and speed of the ball
-        
-        angleRad = angleRad - ((angleAdjustmentK * Double.pi / 180) * collisionPercentage)
-        
-        if angleRad < (minAngleDeg * Double.pi / 180) {
-            angleRad = (minAngleDeg * Double.pi / 180)
+        if collisionPercentage < 1 && collisionPercentage > -1 && ball.position.y > paddle.position.y {
+        // Do not effect angle of ball if it hits near edge of paddle or is below the paddle
+            
+            var dx = Double(ball.physicsBody!.velocity.dx)
+            var dy = Double(ball.physicsBody!.velocity.dy)
+            let speed = sqrt(dx*dx + dy*dy)
+            var angleRad = atan2(dy, dx)
+            // Variables to hold the angle and speed of the ball
+            
+            angleRad = angleRad - ((angleAdjustmentK * Double.pi / 180) * collisionPercentage)
+            // Angle adjustment formula
+            
+            if angleRad > 0 {
+                angleRad = angleRad + Double.random(in: (-angleRad/10)...angleRad/10)
+            } else {
+                angleRad = angleRad + Double.random(in: angleRad/10...(-angleRad/10))
+            }
+            // Adds a small element of randomness into the ball's angle
+            
+            if angleRad < (minAngleDeg * Double.pi / 180) {
+                angleRad = (minAngleDeg * Double.pi / 180)
+            }
+            if angleRad > (maxAngleDeg * Double.pi / 180) {
+                angleRad = (maxAngleDeg * Double.pi / 180)
+            }
+            if angleRad >= (90 * Double.pi / 180) && angleRad <= (91 * Double.pi / 180) {
+                angleRad = (91 * Double.pi / 180)
+            }
+            if angleRad < (90 * Double.pi / 180) && angleRad >= (89 * Double.pi / 180) {
+                angleRad = (89 * Double.pi / 180)
+            }
+            // Changes the angle of the ball based on where it hits the paddle
+            
+            dx = cos(angleRad) * speed
+            dy = sin(angleRad) * speed
+            ball.physicsBody!.velocity.dx = CGFloat(dx)
+            ball.physicsBody!.velocity.dy = CGFloat(dy)
+            // Set the new speed and angle of the ball
         }
-        if angleRad > (maxAngleDeg * Double.pi / 180) {
-            angleRad = (maxAngleDeg * Double.pi / 180)
-        }
-        if angleRad >= (90 * Double.pi / 180) && angleRad <= (91 * Double.pi / 180) {
-            angleRad = (91 * Double.pi / 180)
-        }
-        if angleRad < (90 * Double.pi / 180) && angleRad >= (89 * Double.pi / 180) {
-            angleRad = (89 * Double.pi / 180)
-        }
-        // Changes the angle of the ball based on where it hits the paddle
-        
-        dx = cos(angleRad) * speed
-        dy = sin(angleRad) * speed
-        ball.physicsBody!.velocity.dx = CGFloat(dx)
-        ball.physicsBody!.velocity.dy = CGFloat(dy)
-        // Set the new speed and angle of the ball
     }
-    
-    func randomDirection() -> CGFloat {
-        let speedFactor: CGFloat = 3.0
-        if randomFloat(from: 0.0, to: 100.0) >= 50 {
-            return -speedFactor
-        } else {
-            return speedFactor
-        }
-    }
-    // This code returns a random positive or negative number to decide the direction of the ball
-    
-    func randomFloat(from: CGFloat, to: CGFloat) -> CGFloat {
-        let rand: CGFloat = CGFloat(Float(arc4random()) / 0xFFFFFFFF)
-        return (rand) * (to - from) + from
-    }
-    // Generates a random number from some passed in floats to add some randomness to the ball's initial velocity
     
 /* To Do:
      > add gradiant mask on top of ball under paddle to make ball fade away as it drops below the paddle
@@ -451,14 +495,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      > Set ball density
      > stagger brick build in brick by brick
      > First game high score doesn't exist or show up -
+     > Size labels based on screen size
+     > Setting to turn off haptics
      
-     
-     Today
+     Today:
      > Static blocks
-     > Haptics
-     > Slower ball start, increase linear dampening
      > Pause button
      > Persistent high score
+        > New high score message
+     > End animation action if ball on paddle is released
+     > Invisible bricks fade in when hit
  */
     
 }

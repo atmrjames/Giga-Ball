@@ -19,6 +19,7 @@
 		1A5A949F230F08840076D635 /* Playing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A949E230F08840076D635 /* Playing.swift */; };
 		1A5A94A1230F088F0076D635 /* GameOver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A0230F088F0076D635 /* GameOver.swift */; };
 		1A5A94A4230F0D830076D635 /* BallOnPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */; };
+		1A5A94A7231720FE0076D635 /* Megaball.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A5231720FE0076D635 /* Megaball.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		1A5A949E230F08840076D635 /* Playing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playing.swift; sourceTree = "<group>"; };
 		1A5A94A0230F088F0076D635 /* GameOver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOver.swift; sourceTree = "<group>"; };
 		1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallOnPaddle.swift; sourceTree = "<group>"; };
+		1A5A94A6231720FE0076D635 /* MegaballCoreDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MegaballCoreDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +79,7 @@
 				1A5A948E2309E4F30076D635 /* Main.storyboard */,
 				1A5A94912309E4F40076D635 /* Assets.xcassets */,
 				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
+				1A5A94A5231720FE0076D635 /* Megaball.xcdatamodeld */,
 				1A5A94962309E4F40076D635 /* Info.plist */,
 			);
 			path = Megaball;
@@ -173,6 +176,7 @@
 				1A5A949D230F08770076D635 /* PreGame.swift in Sources */,
 				1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */,
 				1A5A949F230F08840076D635 /* Playing.swift in Sources */,
+				1A5A94A7231720FE0076D635 /* Megaball.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -374,6 +378,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		1A5A94A5231720FE0076D635 /* Megaball.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				1A5A94A6231720FE0076D635 /* MegaballCoreDataModel.xcdatamodel */,
+			);
+			currentVersion = 1A5A94A6231720FE0076D635 /* MegaballCoreDataModel.xcdatamodel */;
+			path = Megaball.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 1A5A94792309E4F30076D635 /* Project object */;
 }
