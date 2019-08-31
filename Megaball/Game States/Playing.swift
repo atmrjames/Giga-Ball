@@ -62,18 +62,34 @@ class Playing: GKState {
         for i in 0..<scene.numberOfBlockRows {
             for j in 0..<scene.numberOfBlockColumns {
                 let block = SKSpriteNode(imageNamed: "Block")
-                if i == 0 || i == 3 {
+                if i == 0 || i == 8 {
                     // Normal blocks
                     block.texture = scene.blockTexture
                 }
-                if i == 1 || i == 4 {
-                    // Double blocks
-                    block.texture = scene.blockDouble1Texture
-                }
-                if i == 2 || i == 5 {
+                if i == 1 || i == 7 {
                     // Invisible blocks
                     block.texture = scene.blockInvisibleTexture
                     block.isHidden = true
+                }
+                if i == 2 || i == 6 {
+                    // Double blocks
+                    block.texture = scene.blockDouble1Texture
+                }
+                if i == 3 || i == 5 {
+                    // Null blocks
+                    block.texture = scene.blockNullTexture
+                    block.isHidden = true
+                }
+                if i == 4 {
+                    if j == 0 || j == 2 || j == 4 || j == 6 {
+                        // Indestructible blocks
+                        block.texture = scene.blockIndestructibleTexture
+                    } else {
+                        // Null blocks
+                        block.texture = scene.blockNullTexture
+                        block.isHidden = true
+                    }
+                    
                 }
                 block.size.width = scene.blockWidth
                 block.size.height = scene.blockHeight
@@ -93,14 +109,19 @@ class Playing: GKState {
         // Define block properties
         
         for block in blockArray {
+            let blockCurrent = block as! SKSpriteNode
             block.run(startingGroup)
             block.run(blockGroup)
+            if blockCurrent.texture == scene.blockNullTexture || blockCurrent.texture == scene.blockIndestructibleTexture {
+                if blockCurrent.texture == scene.blockNullTexture {
+                    blockCurrent.removeFromParent()
+                }
+            } else {
+                scene.blocksLeft += 1
+            }
         }
         // Run animation for each block
         
-        scene.enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
-            self.scene.blocksLeft += 1
-        }
         scene.blocksLeftLabel.text = String(scene.blocksLeft)
     
     }

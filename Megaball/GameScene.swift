@@ -84,7 +84,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let blockDouble3Texture: SKTexture = SKTexture(imageNamed: "BlockDouble3")
     let blockInvisibleTexture: SKTexture = SKTexture(imageNamed: "BlockInvisible")
     let blockNullTexture: SKTexture = SKTexture(imageNamed: "BlockNull")
+    let blockIndestructibleTexture: SKTexture = SKTexture(imageNamed: "BlockIndestructible")
     // Block textures
+    
+    var touchBeganWhilstPlaying: Bool = false
+    var paddleMoved: Bool = false
+    var paddleMovedDistance: CGFloat = 0
     
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
         PreGame(scene: self),
@@ -140,8 +145,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         highScoreLabel.position.x = scoreLabel.position.x
         // Object position definition
         
-        numberOfBlockRows = 6
-        numberOfBlockColumns = 8
+        numberOfBlockRows = 9
+        numberOfBlockColumns = 7
         totalBlocksWidth = blockWidth * CGFloat(numberOfBlockColumns)
         xBlockOffset = totalBlocksWidth/2
         // Define blocks
@@ -199,6 +204,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             scoreArray = scoreStore
         }
         
+        print(NSHomeDirectory())
+        // Prints the location of the NSUserDefaults plist (Library>Preferences)
+        
         gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
     }
@@ -217,46 +225,76 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             var paddleX = CGFloat(0)
             // Define the property to store the x position of the paddle
             
-            paddleX = paddle.position.x + (touchLocation.x - previousLocation.x)
+            paddleMovedDistance = touchLocation.x - previousLocation.x
+            
+            paddleX = paddle.position.x + paddleMovedDistance
             paddle.position = CGPoint(x: paddleX, y: paddle.position.y)
             // Sets the paddle to match the touch's x position
             
             if ballIsOnPaddle {
+                if paddleMovedDistance != 0 {
+                    paddleMoved = true
+                }
+                // Checks if the paddle has moved
                 ball.position = CGPoint(x: paddleX, y: ballStartingPositionY)
+                // Sets the ball to follow the paddle's position
             }
         }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
         switch gameState.currentState {
         case is PreGame:
             gameState.enter(Playing.self)
         case is Playing:
-            dxBall = Double(ball.physicsBody!.velocity.dx)
-            dyBall = Double(ball.physicsBody!.velocity.dy)
-            speedBall = sqrt(dxBall*dxBall + dyBall*dyBall)
-            
-            if speedBall == 0 && ballIsOnPaddle {
-                
-                ballLaunchAngleRad = Double.random(in: 30...150) * Double.pi / 180
-                
-                let dxLaunch = cos(ballLaunchAngleRad) * ballLaunchSpeed
-                let dyLaunch = sin(ballLaunchAngleRad) * ballLaunchSpeed
-                
-                ball.physicsBody?.applyImpulse(CGVector(dx: dxLaunch, dy: dyLaunch))
-                ballIsOnPaddle = false
-                
-            }
-            // If the ball is on the paddle, start the ball going with a tap
-            
-        case is BallOnPaddle:
-            gameState.enter(Playing.self)
+            touchBeganWhilstPlaying = true
+            paddleMoved = false
         case is GameOver:
             gameState.enter(PreGame.self)
         default:
             break
         }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if speedBall == 0 && ballIsOnPaddle && touchBeganWhilstPlaying && paddleMoved == false && gameState.currentState is Playing {
+            releaseBall()
+        }
+        touchBeganWhilstPlaying = false
+        // Release the ball from the paddle only if the paddle has not been moved
+    }
+    
+    func releaseBall() {
+        
+        if ball.hasActions() {
+            ball.removeAllActions()
+            // Stop animation actions on ball
+            let fadeIn = SKAction.fadeIn(withDuration: 0)
+            let scaleUp = SKAction.scale(to: 1, duration: 0)
+            let resetGroup = SKAction.group([fadeIn, scaleUp])
+            ball.run(resetGroup, completion: {
+                self.ball.isHidden = false
+            })
+            // Reset ball on paddle immediately
+        }
+        
+        dxBall = Double(ball.physicsBody!.velocity.dx)
+        dyBall = Double(ball.physicsBody!.velocity.dy)
+        speedBall = sqrt(dxBall*dxBall + dyBall*dyBall)
+        ballLaunchAngleRad = Double.random(in: 30...150) * Double.pi / 180
+        let dxLaunch = cos(ballLaunchAngleRad) * ballLaunchSpeed
+        let dyLaunch = sin(ballLaunchAngleRad) * ballLaunchSpeed
+        // Defines ball release metrics
+        
+        ball.physicsBody?.applyImpulse(CGVector(dx: dxLaunch, dy: dyLaunch))
+        // Launches ball
+        
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        // Haptic feedback
+        
+        ballIsOnPaddle = false
+        // Resets ball on paddle status
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -279,10 +317,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             let randomKick = Double.random(in: (-2)...2)
             
-            if xSpeed <= 15.0 {
+            if xSpeed <= 25.0 {
                 ball.physicsBody!.applyImpulse(CGVector(dx: randomKick, dy: 0.0))
             }
-            if ySpeed <= 15.0 {
+            if ySpeed <= 25.0 {
                 ball.physicsBody!.applyImpulse(CGVector(dx: 0.0, dy: randomKick))
             }
             
@@ -291,7 +329,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             } else {
                 ball.physicsBody!.linearDamping = ballLinearDampening
             }
-            
+            if speed < CGFloat(ballLaunchSpeed) {
+                ball.physicsBody!.linearDamping = -0.1
+            } else {
+                ball.physicsBody!.linearDamping = ballLinearDampening
+            }
         }
     }
     
@@ -301,6 +343,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.position.y = ballStartingPositionY
         ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
         ballIsOnPaddle = true
+        paddleMoved = true
         // Reset ball position
         
         score = score + lifeLostScore
@@ -410,21 +453,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // This method takes an SKNode. First, it creates an instance of SKEmitterNode from the BrokenPlatform.sks file, then sets it's position to the same position as the node. The emitter node's zPosition is set to 3, so that the particles appear above the remaining blocks. After the particles are added to the scene, the node (bamboo block) is removed.
     
     func removeBlock(node: SKNode) {
-        
         let scaleDown = SKAction.scale(to: 0, duration: 0.1)
         let fadeOut = SKAction.fadeOut(withDuration: 0.1)
         let blockGroup = SKAction.group([scaleDown, fadeOut])
         node.run(blockGroup, completion: {
             node.removeFromParent()
         })
+            //With the remove from node running after the animation completes it is possible if the next block is hit vert quickly after the first block will never run the remove node code.
         // Animate and remove block
         
         blocksLeft -= 1
         blocksLeftLabel.text = String(blocksLeft)
         score = score + blockDestroyScore
+        // Update number of blocks left and current score
         
         if blocksLeft == 0 {
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
             generator.impactOccurred()
             // Haptic feedback
             gameState.enter(GameOver.self)
@@ -433,8 +478,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func paddleHit() {
-        
-        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         // Haptic feedback
         
@@ -497,12 +541,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      > First game high score doesn't exist or show up -
      > Size labels based on screen size
      > Setting to turn off haptics
+     > App icon
+     > Launchscreen
+     > Increase minimum angle
+     > Track top 10 highscores for each level/board
      
      Today:
      > Static blocks
      > Pause button
-     > Persistent high score
-        > New high score message
+     > New high score message
+     > Reset high score to zero
      > End animation action if ball on paddle is released
      > Invisible bricks fade in when hit
  */
