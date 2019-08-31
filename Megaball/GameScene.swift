@@ -36,6 +36,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var highScoreLabel = SKLabelNode()
     // Define labels
     
+    var pausedButton = SKSpriteNode()
+    // Define buttons
+    
+    var pauseButtonSize: CGFloat = 0
+    
     var paddleWidth: CGFloat = 0
     var paddleHeight: CGFloat = 0
     var paddleGap: CGFloat = 0
@@ -95,13 +100,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         PreGame(scene: self),
         Playing(scene: self),
         BallOnPaddle(scene: self),
-        GameOver(scene: self)])
+        GameOver(scene: self),
+        Paused(scene: self)])
     // Sets up the game states
     
     let dataStore = UserDefaults.standard
     // Setup NSUserDefaults data store
     
     var scoreArray: [Int] = [1]
+    // Creates an array to store the highscore array from NSUserDefauls
     
     override func didMove(to view: SKView) {
         ball = self.childNode(withName: "ball") as! SKSpriteNode
@@ -111,6 +118,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         gameStateLabel = self.childNode(withName: "gameStateLabel") as! SKLabelNode
         blocksLeftLabel = self.childNode(withName: "blocksLeftLabel") as! SKLabelNode
         highScoreLabel = self.childNode(withName: "highScoreLabel") as! SKLabelNode
+        pausedButton = self.childNode(withName: "pauseButton") as! SKSpriteNode
         // Links objects to sprites
         
         paddleWidth = (self.frame.width/4)
@@ -125,6 +133,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         blockHeight = paddleHeight
         blockWidth = blockHeight*3
         // Object layout property initialisation and setting
+        
+        pauseButtonSize = blockWidth/2
+        pausedButton.size.width = pauseButtonSize
+        pausedButton.size.height = pauseButtonSize
         
         paddle.position.x = 0
         paddle.position.y = (-self.frame.height/2 + paddleGap)
@@ -141,6 +153,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         blocksLeftLabel.position.x = livesLabel.position.x
         highScoreLabel.position.y = scoreLabel.position.y - 40
         highScoreLabel.position.x = scoreLabel.position.x
+        pausedButton.position.y = gameStateLabel.position.y - 40
+        pausedButton.position.x = 0
+        pausedButton.isUserInteractionEnabled = false
         // Object position definition
         
         numberOfBlockRows = 9
@@ -207,6 +222,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.notificationReceived(_:)), name: Notification.Name.myNotificationKey, object: nil)
+        // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
+        
         gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
     }
@@ -243,6 +261,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        if gameState.currentState is Playing || gameState.currentState is Paused {
+            let touch = touches.first
+            let positionInScene = touch!.location(in: self)
+            let touchedNode = self.atPoint(positionInScene)
+            
+            if let name = touchedNode.name
+            {
+                if name == "pauseButton"
+                {
+                    pauseGame()
+                }
+            }
+        }
+        // Pause the game if the pause button is pressed
+        
         switch gameState.currentState {
         case is PreGame:
             gameState.enter(Playing.self)
@@ -536,6 +570,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Set the new speed and angle of the ball
         }
     }
+
+    func pauseGame() {
+        if gameState.currentState is Playing {
+            ball.isPaused = true
+            paddle.isPaused = true
+            physicsWorld.speed = 0
+            gameState.enter(Paused.self)
+        } else if gameState.currentState is Paused {
+            ball.isPaused = false
+            paddle.isPaused = false
+            physicsWorld.speed = 1
+            gameState.enter(Playing.self)
+        }
+    }
+    
+    @objc func notificationReceived(_ notification: Notification) {
+        pauseGame()
+    }
+    // Pause the game if a notifcation from AppDelegate is received that the game will quit
     
 /* To Do:
      > add gradiant mask on top of ball under paddle to make ball fade away as it drops below the paddle
@@ -559,9 +612,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      > Highscore per level and overall highscore
      
      Today:
-     > Pause button
      > New high score message
-     > Reset high score to zero
  */
     
 }
+
+extension Notification.Name {
+    public static let myNotificationKey = Notification.Name(rawValue: "myNotificationKey")
+}
+// Setup for notifcation from AppDelegate

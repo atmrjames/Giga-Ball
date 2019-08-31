@@ -18,24 +18,28 @@ class Playing: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
+        
         scene.gameStateLabel.text = "Playing"
-        levelBuild()
         
-        scene.ball.isHidden = false
-        scene.paddle.isHidden = false
-        scene.ballIsOnPaddle = true
-        
-        scene.paddle.position.x = 0
-        scene.paddle.position.y = (-self.scene.frame.height/2 + scene.paddleGap)
-        
-        let startingScale = SKAction.scale(to: 0, duration: 0)
-        let startingFade = SKAction.fadeIn(withDuration: 0)
-        let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-        let ballSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
-        let paddleSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
-        scene.ball.run(ballSequence)
-        scene.paddle.run(paddleSequence)
-        // Animate paddle and ball in
+        if previousState is PreGame {
+            levelBuild()
+            
+            scene.ball.isHidden = false
+            scene.paddle.isHidden = false
+            scene.ballIsOnPaddle = true
+            
+            scene.paddle.position.x = 0
+            scene.paddle.position.y = (-self.scene.frame.height/2 + scene.paddleGap)
+            
+            let startingScale = SKAction.scale(to: 0, duration: 0)
+            let startingFade = SKAction.fadeIn(withDuration: 0)
+            let scaleUp = SKAction.scale(to: 1, duration: 0.5)
+            let ballSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
+            let paddleSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
+            scene.ball.run(ballSequence)
+            scene.paddle.run(paddleSequence)
+            // Animate paddle and ball in
+        }
         
     }
     // This function runs when this state is entered.
@@ -127,8 +131,17 @@ class Playing: GKState {
     }
     
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
-//        return stateClass is BallOnPaddle.Type
-        return stateClass is GameOver.Type
+        switch stateClass {
+        case is GameOver.Type:
+            return true
+        case is BallOnPaddle.Type:
+            return true
+        case is Paused.Type:
+            return true
+            
+        default:
+            return false
+        }
     }
 }
 
