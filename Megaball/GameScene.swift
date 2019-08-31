@@ -101,9 +101,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let dataStore = UserDefaults.standard
     // Setup NSUserDefaults data store
     
-    var scoreArray: [Int] = [0]
-    // Setup array to store all scores
-        // Change to saving to 10 scores?
+    var scoreArray: [Int] = [1]
     
     override func didMove(to view: SKView) {
         ball = self.childNode(withName: "ball") as! SKSpriteNode
@@ -202,6 +200,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if let scoreStore = dataStore.array(forKey: "ScoreStore") as? [Int] {
             scoreArray = scoreStore
+            // Setup array to store all scores
+            // Change to saving to 10 scores
         }
         
         print(NSHomeDirectory())
@@ -437,7 +437,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         case blockInvisibleTexture:
             if sprite.isHidden {
-                sprite.isHidden = false
+                
+                let scaleDown = SKAction.scale(to: 0, duration: 0)
+                let fadeOut = SKAction.fadeOut(withDuration: 0)
+                let resetGroup = SKAction.group([scaleDown, fadeOut])
+                let scaleUp = SKAction.scale(to: 1, duration: 0.1)
+                let fadeIn = SKAction.fadeIn(withDuration: 0.1)
+                let blockHitGroup = SKAction.group([scaleUp, fadeIn])
+                sprite.run(resetGroup, completion: {
+                    sprite.isHidden = false
+                    sprite.run(blockHitGroup)
+                })
+                // Animate block in
+
                 score = score + blockHitScore
                 break
             }
@@ -448,7 +460,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         scoreLabel.text = String(score)
         // Update score
-        
     }
     // This method takes an SKNode. First, it creates an instance of SKEmitterNode from the BrokenPlatform.sks file, then sets it's position to the same position as the node. The emitter node's zPosition is set to 3, so that the particles appear above the remaining blocks. After the particles are added to the scene, the node (bamboo block) is removed.
     
@@ -545,14 +556,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      > Launchscreen
      > Increase minimum angle
      > Track top 10 highscores for each level/board
+     > Highscore per level and overall highscore
      
      Today:
-     > Static blocks
      > Pause button
      > New high score message
      > Reset high score to zero
-     > End animation action if ball on paddle is released
-     > Invisible bricks fade in when hit
  */
     
 }

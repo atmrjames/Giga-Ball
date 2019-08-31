@@ -55,8 +55,12 @@ class PreGame: GKState {
         scene.score = 0
         scene.livesLabel.text = String(scene.numberOfLives)
         scene.scoreLabel.text = String(scene.score)
-        scene.highscore = scene.scoreArray.max() ?? 0
-        scene.highScoreLabel.text = String(scene.highscore)
+        if scene.scoreArray.max() != 1 {
+            scene.highscore = scene.scoreArray.max()!
+            scene.highScoreLabel.text = String(scene.highscore)
+        } else {
+            scene.highScoreLabel.text = ""
+        }
         scene.ball.position.x = 0
         scene.ball.position.y = scene.ballStartingPositionY
         scene.blocksLeft = 0

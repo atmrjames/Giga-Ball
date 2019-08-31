@@ -47,21 +47,23 @@ class GameOver: GKState {
         }
         scene.gameStateLabel.text = "Game Over"
         
-        self.scene.scoreArray.append(scene.score)
+        if scene.scoreArray[0] == 1 {
+            scene.scoreArray[0] = scene.score
+        } else {
+            self.scene.scoreArray.append(scene.score)
+        }
+        
+        scene.scoreArray.sort(by: >)
+        
+        if scene.scoreArray.count > 10 {
+            scene.scoreArray.removeLast()
+        }
 
         scene.dataStore.set(scene.scoreArray, forKey: "ScoreStore")
         
-        if scene.scoreArray.max() != scene.highscore {
-            if scene.scoreArray.max() == 0 {
-                scene.highscore = scene.score
-                print("new highscore below 0")
-            } else if scene.score > scene.highscore {
-                scene.highscore = scene.score
-                print("new negative highscore")
-            } else {
-                scene.highscore = scene.scoreArray.max()!
-                print("new highscore")
-            }
+        if scene.scoreArray.max()! > scene.highscore {
+            scene.highscore = scene.score
+            print("new highscore")
         }
     }
     // This function runs when this state is entered.
