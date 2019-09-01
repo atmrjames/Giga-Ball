@@ -18,7 +18,6 @@ class Paused: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("Paused game state")
         scene.gameStateLabel.text = "Paused"
     }
     // This function runs when this state is entered.

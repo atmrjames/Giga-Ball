@@ -27,6 +27,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var blockDouble = SKSpriteNode()
     var blockInvisible = SKSpriteNode()
     var blockNull = SKSpriteNode()
+    var life = SKSpriteNode()
     // Define objects
     
     var livesLabel = SKLabelNode()
@@ -34,13 +35,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var gameStateLabel = SKLabelNode()
     var blocksLeftLabel = SKLabelNode()
     var highScoreLabel = SKLabelNode()
+    var timerLabel = SKLabelNode()
+    var bestTimeLabel = SKLabelNode()
     // Define labels
     
     var pausedButton = SKSpriteNode()
-    // Define buttons
-    
     var pauseButtonSize: CGFloat = 0
-    
+    // Define buttons
+
     var paddleWidth: CGFloat = 0
     var paddleHeight: CGFloat = 0
     var paddleGap: CGFloat = 0
@@ -79,6 +81,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var blockHitScore: Int = 5
     var blockDestroyScore: Int = 10
     var levelCompleteScore: Int = 100
+    var bestTime: Double = 0
     // Score for completing the level quickly
     // Score for power-ups
     // Setup score properties
@@ -92,9 +95,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let blockIndestructibleTexture: SKTexture = SKTexture(imageNamed: "BlockIndestructible")
     // Block textures
     
+    let playTexture: SKTexture = SKTexture(imageNamed: "PlayButton")
+    let pauseTexture: SKTexture = SKTexture(imageNamed: "PauseButton")
+    // Play/pause button textures
+    
     var touchBeganWhilstPlaying: Bool = false
     var paddleMoved: Bool = false
     var paddleMovedDistance: CGFloat = 0
+    // Game trackers
+    
+    var fontSize: CGFloat = 0
+    var labelSpacing: CGFloat = 0
+    // Label metrics
+    
+    var timerValue: Double = 0
     
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
         PreGame(scene: self),
@@ -108,7 +122,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup NSUserDefaults data store
     
     var scoreArray: [Int] = [1]
-    // Creates an array to store the highscore array from NSUserDefauls
+    var timerArray: [Double] = [1]
+    // Creates arrays to store highscores and times from NSUserDefauls
     
     override func didMove(to view: SKView) {
         ball = self.childNode(withName: "ball") as! SKSpriteNode
@@ -119,6 +134,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         blocksLeftLabel = self.childNode(withName: "blocksLeftLabel") as! SKLabelNode
         highScoreLabel = self.childNode(withName: "highScoreLabel") as! SKLabelNode
         pausedButton = self.childNode(withName: "pauseButton") as! SKSpriteNode
+        timerLabel = self.childNode(withName: "timerLabel") as! SKLabelNode
+        bestTimeLabel = self.childNode(withName: "bestTimeLabel") as! SKLabelNode
+        life = self.childNode(withName: "life") as! SKSpriteNode
         // Links objects to sprites
         
         paddleWidth = (self.frame.width/4)
@@ -132,30 +150,51 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ballLostHeight = paddleHeight*8
         blockHeight = paddleHeight
         blockWidth = blockHeight*3
+        life.size.width = ballSize
+        life.size.height = ballSize
         // Object layout property initialisation and setting
         
-        pauseButtonSize = blockWidth/2
+        pauseButtonSize = blockWidth*0.75
         pausedButton.size.width = pauseButtonSize
         pausedButton.size.height = pauseButtonSize
+        pausedButton.texture = pauseTexture
+        
+        fontSize = 18
+        labelSpacing = fontSize/1.5
         
         paddle.position.x = 0
         paddle.position.y = (-self.frame.height/2 + paddleGap)
         ball.position.x = 0
         ballStartingPositionY = paddle.position.y + paddleHeight/2 + ballSize/2
         ball.position.y = ballStartingPositionY
-        livesLabel.position.y = self.frame.height/2 - 20
-        livesLabel.position.x = self.frame.width/2 - 20
-        scoreLabel.position.y = self.frame.height/2 - 20
-        scoreLabel.position.x = -self.frame.width/2 + 20
-        gameStateLabel.position.y = self.frame.height/2 - 20
-        gameStateLabel.position.x = 0
-        blocksLeftLabel.position.y = livesLabel.position.y - 40
+        life.position.y = -self.frame.height/2 + labelSpacing + life.size.height/2
+        life.position.x = -self.frame.width/2 + labelSpacing  + life.size.width/2
+        livesLabel.position.y = life.position.y
+        livesLabel.position.x = life.position.x + labelSpacing
+        livesLabel.fontSize = fontSize
+        scoreLabel.position.y = self.frame.height/2 - labelSpacing
+        scoreLabel.position.x = -self.frame.width/2 + labelSpacing
+        scoreLabel.fontSize = fontSize
+        gameStateLabel.position.y = self.frame.height/2 - labelSpacing
+        gameStateLabel.position.x = -labelSpacing
+        gameStateLabel.fontSize = fontSize
+        gameStateLabel.isHidden = true
+        blocksLeftLabel.position.y = livesLabel.position.y - labelSpacing*2
         blocksLeftLabel.position.x = livesLabel.position.x
-        highScoreLabel.position.y = scoreLabel.position.y - 40
+        blocksLeftLabel.fontSize = fontSize
+        blocksLeftLabel.isHidden = true
+        highScoreLabel.position.y = scoreLabel.position.y - labelSpacing*2
         highScoreLabel.position.x = scoreLabel.position.x
-        pausedButton.position.y = gameStateLabel.position.y - 40
+        highScoreLabel.fontSize = fontSize
+        pausedButton.position.y = self.frame.height/2 - labelSpacing - pauseButtonSize/2
         pausedButton.position.x = 0
         pausedButton.isUserInteractionEnabled = false
+        timerLabel.position.y = self.frame.height/2 - labelSpacing
+        timerLabel.position.x = self.frame.width/2 - labelSpacing
+        timerLabel.fontSize = fontSize
+        bestTimeLabel.position.y = timerLabel.position.y - labelSpacing*2
+        bestTimeLabel.position.x = timerLabel.position.x
+        bestTimeLabel.fontSize = fontSize
         // Object position definition
         
         numberOfBlockRows = 9
@@ -215,9 +254,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if let scoreStore = dataStore.array(forKey: "ScoreStore") as? [Int] {
             scoreArray = scoreStore
-            // Setup array to store all scores
-            // Change to saving to 10 scores
         }
+        // Setup array to store all scores
+        if let timerStore = dataStore.array(forKey: "TimerStore") as? [Double] {
+            timerArray = timerStore
+        }
+        // Setup array to store all completed level timers
         
         print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
@@ -227,6 +269,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
+        
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -262,6 +305,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
+        switch gameState.currentState {
+        case is PreGame:
+            gameState.enter(Playing.self)
+        case is Playing:
+            touchBeganWhilstPlaying = true
+            paddleMoved = false
+        case is GameOver:
+            gameState.enter(PreGame.self)
+        default:
+            break
+        }
+        
         if gameState.currentState is Playing || gameState.currentState is Paused {
             let touch = touches.first
             let positionInScene = touch!.location(in: self)
@@ -276,18 +331,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         // Pause the game if the pause button is pressed
-        
-        switch gameState.currentState {
-        case is PreGame:
-            gameState.enter(Playing.self)
-        case is Playing:
-            touchBeganWhilstPlaying = true
-            paddleMoved = false
-        case is GameOver:
-            gameState.enter(PreGame.self)
-        default:
-            break
-        }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -327,8 +370,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         generator.impactOccurred()
         // Haptic feedback
         
+        startTimer()
+        
         ballIsOnPaddle = false
         // Resets ball on paddle status
+    }
+    
+    func startTimer() {
+        let wait = SKAction.wait(forDuration: 0.01) //change countdown speed here
+        let block = SKAction.run({
+            self.timerValue += 0.01
+            self.timerLabel.text = String(format: "%.2f", self.timerValue)
+        })
+        let timerSequence = SKAction.sequence([wait,block])
+        self.run(SKAction.repeatForever(timerSequence), withKey: "levelTimer")
+        pausedButton.texture = pauseTexture
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -384,13 +440,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.text = String(score)
         // Update score
         
+        self.removeAction(forKey: "levelTimer")
+        // Stop timer
+        
         if numberOfLives == 0 {
             gameState.enter(GameOver.self)
             return
         }
         if numberOfLives > 0 {
             numberOfLives -= 1
-            livesLabel.text = String(numberOfLives)
+            livesLabel.text = "x\(numberOfLives)"
             // Update number of lives
             
             let fadeOut = SKAction.fadeIn(withDuration: 0)
@@ -471,7 +530,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         case blockInvisibleTexture:
             if sprite.isHidden {
-                
                 let scaleDown = SKAction.scale(to: 0, duration: 0)
                 let fadeOut = SKAction.fadeOut(withDuration: 0)
                 let resetGroup = SKAction.group([scaleDown, fadeOut])
@@ -514,7 +572,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if blocksLeft == 0 {
             let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
             generator.impactOccurred()
             // Haptic feedback
             gameState.enter(GameOver.self)
@@ -572,15 +629,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func pauseGame() {
+        if pausedButton.texture == playTexture {
+            pausedButton.texture = pauseTexture
+        }
         if gameState.currentState is Playing {
             ball.isPaused = true
             paddle.isPaused = true
             physicsWorld.speed = 0
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            // Haptic feedback
+            removeAction(forKey: "levelTimer")
+            pausedButton.texture = playTexture
+            // Stop timer
             gameState.enter(Paused.self)
         } else if gameState.currentState is Paused {
             ball.isPaused = false
             paddle.isPaused = false
             physicsWorld.speed = 1
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            // Haptic feedback
+            if ballIsOnPaddle == false {
+                startTimer()
+            }
+            // Restart timer if ball was paused whilst in play
             gameState.enter(Playing.self)
         }
     }
@@ -591,28 +664,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
     
 /* To Do:
-     > add gradiant mask on top of ball under paddle to make ball fade away as it drops below the paddle
      > extra life is 1000+ points is achieved on a level
-     > control angle after hitting blocks - vertical and horziontal limits
-     > prevent ball hitting underside of paddle
      > High score leaderboard with initials
-     > Random ball starting direction
      > Random power-up drop
      > Lasers!
      > Lives represented by balls in top right
      > Set ball density
      > stagger brick build in brick by brick
-     > First game high score doesn't exist or show up -
      > Size labels based on screen size
      > Setting to turn off haptics
      > App icon
      > Launchscreen
-     > Increase minimum angle
      > Track top 10 highscores for each level/board
-     > Highscore per level and overall highscore
+     > Time per level
      
      Today:
      > New high score message
+     > New best time message
  */
     
 }
