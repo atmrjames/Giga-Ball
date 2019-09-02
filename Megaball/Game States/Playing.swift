@@ -104,8 +104,8 @@ class Playing: GKState {
                 block.physicsBody!.affectedByGravity = false
                 block.physicsBody!.isDynamic = false
                 block.name = BlockCategoryName
-                block.physicsBody!.categoryBitMask = BlockCategory
-                block.zPosition = 2
+                block.physicsBody!.categoryBitMask = CollisionTypes.blockCategory.rawValue
+                block.zPosition = 0
                 scene.addChild(block)
                 blockArray.append(block)
             }

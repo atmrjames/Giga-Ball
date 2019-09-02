@@ -12,12 +12,29 @@ import GameplayKit
 let PaddleCategoryName = "paddle"
 let BallCategoryName = "ball"
 let BlockCategoryName = "block"
+let PowerupCategoryName = "powerup"
 // Set up for categoryNames
 
-let BallCategory   : UInt32 = 0x1 << 0
-let BlockCategory  : UInt32 = 0x1 << 2
-let PaddleCategory : UInt32 = 0x1 << 3
+enum CollisionTypes: UInt32 {
+    case ballCategory = 1
+    case blockCategory = 2
+    case paddleCategory = 4
+    case powerupCategory = 8
+}
+
+//let BallCategory   : UInt32 = 0x1 << 0
+//let BlockCategory  : UInt32 = 0x1 << 2
+//let PaddleCategory : UInt32 = 0x1 << 3
+//let PowerupCategory : UInt32 = 0x1 << 0
 // Set up for categoryBitMask
+
+//The categoryBitMask property is a number defining the type of object this is for considering collisions.
+//The collisionBitMask property is a number defining what categories of object this node should collide with.
+//The contactTestBitMask property is a number defining which collisions we want to be notified about.
+
+//If you give a node a collision bitmask but not a contact test bitmask, it means they will bounce off each other but you won't be notified.
+//If you give a node contact test but not collision bitmask it means they won't bounce off each other but you will be told when they overlap.
+
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
@@ -58,6 +75,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var totalBlocksWidth: CGFloat = 0
     var yBlockOffset: CGFloat = 0
     var xBlockOffset: CGFloat = 0
+    var powerupSize: CGFloat = 0
     // Object layout property defintion
     
     var dxBall: Double = 0
@@ -82,6 +100,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var blockDestroyScore: Int = 10
     var levelCompleteScore: Int = 100
     var bestTime: Double = 0
+    var powerupScore: Int = 50
     // Score for completing the level quickly
     // Score for power-ups
     // Setup score properties
@@ -94,6 +113,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let blockNullTexture: SKTexture = SKTexture(imageNamed: "BlockNull")
     let blockIndestructibleTexture: SKTexture = SKTexture(imageNamed: "BlockIndestructible")
     // Block textures
+    
+    let powerup1Texture: SKTexture = SKTexture(imageNamed: "Powerup1")
+    let powerup2Texture: SKTexture = SKTexture(imageNamed: "Powerup2")
+    let powerup3Texture: SKTexture = SKTexture(imageNamed: "Powerup3")
+    let powerup4Texture: SKTexture = SKTexture(imageNamed: "Powerup4")
+    let powerup5Texture: SKTexture = SKTexture(imageNamed: "Powerup5")
+    let powerup6Texture: SKTexture = SKTexture(imageNamed: "Powerup6")
+    // Powerup textures
     
     let playTexture: SKTexture = SKTexture(imageNamed: "PlayButton")
     let pauseTexture: SKTexture = SKTexture(imageNamed: "PauseButton")
@@ -126,6 +153,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Creates arrays to store highscores and times from NSUserDefauls
     
     override func didMove(to view: SKView) {
+        physicsWorld.contactDelegate = self
+        // Sets the GameScene as the delegate in the physicsWorld
+        
         ball = self.childNode(withName: "ball") as! SKSpriteNode
         paddle = self.childNode(withName: "paddle") as! SKSpriteNode
         livesLabel = self.childNode(withName: "livesLabel") as! SKLabelNode
@@ -207,10 +237,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.physicsBody!.allowsRotation = false
         paddle.physicsBody!.friction = 0.0
         paddle.physicsBody!.affectedByGravity = false
-        paddle.physicsBody!.isDynamic = false
+        paddle.physicsBody!.isDynamic = true
         paddle.name = PaddleCategoryName
-        paddle.physicsBody!.categoryBitMask = PaddleCategory
-        paddle.zPosition = 0
+        paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
+        paddle.physicsBody!.collisionBitMask = CollisionTypes.powerupCategory.rawValue
+        paddle.zPosition = 2
+        paddle.physicsBody!.contactTestBitMask = CollisionTypes.powerupCategory.rawValue
         // Define paddle properties
         
         ball.physicsBody!.allowsRotation = false
@@ -218,21 +250,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.affectedByGravity = false
         ball.physicsBody!.isDynamic = true
         ball.name = BallCategoryName
-        ball.physicsBody!.categoryBitMask = BallCategory
+        ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
+        ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
         ball.physicsBody?.linearDamping = ballLinearDampening
         ball.physicsBody?.angularDamping = 0
-        ball.zPosition = 1
+        ball.zPosition = 2
+        ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
         // Define ball properties
-        
-        physicsWorld.contactDelegate = self
-        // Sets the GameScene as the delegate in the physicsWorld
-        
-        ball.physicsBody!.categoryBitMask = BallCategory
-        paddle.physicsBody!.categoryBitMask = PaddleCategory
-        // Assigns the constants to the corresponding physics body’s categoryBitMask
-        
-        ball.physicsBody!.contactTestBitMask = PaddleCategory | BlockCategory
-        // Sets up the contactTestBitMask for the blocks, ball and paddle
         
         ball.isHidden = true
         paddle.isHidden = true
@@ -448,22 +472,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
         if numberOfLives > 0 {
-            numberOfLives -= 1
-            livesLabel.text = "x\(numberOfLives)"
+            
+            let fadeOutLife = SKAction.fadeOut(withDuration: 0.25)
+            let scaleDownLife = SKAction.scale(to: 0, duration: 0.25)
+            let waitTimeLife = SKAction.wait(forDuration: 0.25)
+            let fadeInLife = SKAction.fadeIn(withDuration: 0.25)
+            let scaleUpLife = SKAction.scale(to: 1, duration: 0)
+            let lifeLostGroup = SKAction.group([fadeOutLife, scaleDownLife, waitTimeLife])
+            let wait = SKAction.sequence([waitTimeLife])
+            let resetLifeGroup = SKAction.sequence([waitTimeLife, scaleUpLife, fadeInLife])
+            // Setup life lost animation
+            
+            let fadeOutBall = SKAction.fadeOut(withDuration: 0)
+            let scaleDownBall = SKAction.scale(to: 0, duration: 0)
+            let waitTimeBall = SKAction.wait(forDuration: 0.25)
+            let fadeInBall = SKAction.fadeIn(withDuration: 0.25)
+            let scaleUpBall = SKAction.scale(to: 1, duration: 0.25)
+            let resetBallGroup = SKAction.group([fadeOutBall, scaleDownBall, waitTimeBall])
+            let ballGroup = SKAction.group([fadeInBall, scaleUpBall])
+            // Setup ball animation
+            
+            self.life.run(wait, completion: {
+                self.life.run(lifeLostGroup, completion: {
+                    self.life.run(resetLifeGroup)
+                    self.numberOfLives -= 1
+                    self.livesLabel.text = "x\(self.numberOfLives)"
+                })
+            })
             // Update number of lives
             
-            let fadeOut = SKAction.fadeIn(withDuration: 0)
-            let scaleDown = SKAction.scale(to: 0, duration: 0)
-            let waitTime = SKAction.wait(forDuration: 0.5)
-            let fadeIn = SKAction.fadeIn(withDuration: 0.1)
-            let scaleUp = SKAction.scale(to: 1, duration: 0.1)
-            let resetGroup = SKAction.group([fadeOut, scaleDown, waitTime])
-            let ballGroup = SKAction.group([fadeIn, scaleUp])
-            ball.run(resetGroup, completion: {
+            ball.run(resetBallGroup, completion: {
                 self.ball.isHidden = false
                 self.ball.run(ballGroup)
             })
-            // Animate ball back onto paddle
+            // Animate ball back onto paddle and loss of a life
         }
     }
     
@@ -492,18 +534,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             // Check the two bodies that collided to see which has the lower categoryBitmask. You then store them into the local variables, so that the body with the lower category is always stored in firstBody. This will save you quite some effort when reacting to contacts between specific categories.
             
-            if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == BlockCategory {
+            if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.blockCategory.rawValue {
                 hitBlock(node: secondBody.node!, sprite: secondBody.node! as! SKSpriteNode)
-                
-//                if isGameWon() {
-//                    gameState.enter(GameOver.self)
-//                }
-//                // If there are no bricks left, the game state is changed to game over
             }
-            
-            if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == PaddleCategory {
+            // Hit block if it makes contact with ball
+            if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue {
                 paddleHit()
             }
+            // Hit ball if it makes contact with paddle
+            if secondBody.categoryBitMask == CollisionTypes.powerupCategory.rawValue {
+                applyPowerup(sprite: secondBody.node! as! SKSpriteNode)
+                secondBody.node!.removeAllActions()
+                secondBody.node!.removeFromParent()
+                paddle.position.y = (-self.frame.height/2 + paddleGap)
+            }
+            // Collect powerup if it makes contact with paddle
         }
     }
     
@@ -512,6 +557,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         // Haptic feedback
+        
+        let powerupProb = Int.random(in: 1...12)
+        
+        if powerupProb == 1 {
+            powerupGenerator(sprite: sprite)
+        }
         
         switch sprite.texture {
         case blockTexture:
@@ -556,8 +607,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // This method takes an SKNode. First, it creates an instance of SKEmitterNode from the BrokenPlatform.sks file, then sets it's position to the same position as the node. The emitter node's zPosition is set to 3, so that the particles appear above the remaining blocks. After the particles are added to the scene, the node (bamboo block) is removed.
     
     func removeBlock(node: SKNode) {
-        let scaleDown = SKAction.scale(to: 0, duration: 0.1)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.1)
+        let scaleDown = SKAction.scale(to: 0, duration: 0.05)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.05)
         let blockGroup = SKAction.group([scaleDown, fadeOut])
         node.run(blockGroup, completion: {
             node.removeFromParent()
@@ -663,6 +714,83 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
     
+    func powerupGenerator (sprite: SKSpriteNode) {
+        
+        let powerup = SKSpriteNode(imageNamed: "Powerup1")
+        
+        powerup.size.width = blockWidth
+        powerup.size.height = powerup.size.width
+        powerup.position = CGPoint(x: sprite.position.x, y: sprite.position.y)
+        
+        powerup.physicsBody = SKPhysicsBody(rectangleOf: powerup.frame.size)
+        powerup.physicsBody!.allowsRotation = false
+        powerup.physicsBody!.friction = 0.0
+        powerup.physicsBody!.affectedByGravity = false
+        powerup.physicsBody!.isDynamic = false
+        powerup.name = PowerupCategoryName
+        powerup.physicsBody!.categoryBitMask = CollisionTypes.powerupCategory.rawValue
+        powerup.zPosition = 1
+        addChild(powerup)
+        
+        let powerupProb = Int.random(in: 1...6)
+        switch powerupProb {
+        case 1:
+            powerup.texture = powerup1Texture
+        case 2:
+            powerup.texture = powerup2Texture
+        case 3:
+            powerup.texture = powerup3Texture
+        case 4:
+            powerup.texture = powerup4Texture
+        case 5:
+            powerup.texture = powerup5Texture
+        case 6:
+            powerup.texture = powerup6Texture
+        default:
+            powerup.texture = powerup1Texture
+        }
+        
+        let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 5)
+        powerup.run(move, completion: {
+            powerup.removeFromParent()
+        })
+    }
+    
+    func applyPowerup (sprite: SKSpriteNode) {
+        
+        score = score + powerupScore
+        scoreLabel.text = String(score)
+        // Update score
+        
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        // Haptic feedback
+        
+        print("apply powerup")
+        print(sprite.texture)
+        
+//        if paddle.size.width < paddleWidth * 2 {
+//            paddle.size.width = paddle.size.width*1.5
+//            paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
+//            paddle.physicsBody!.allowsRotation = false
+//            paddle.physicsBody!.friction = 0.0
+//            paddle.physicsBody!.affectedByGravity = false
+//            paddle.physicsBody!.isDynamic = true
+//            paddle.name = PaddleCategoryName
+//            paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
+//            paddle.physicsBody!.collisionBitMask = CollisionTypes.powerupCategory.rawValue
+//            paddle.zPosition = 2
+//            paddle.physicsBody!.contactTestBitMask = CollisionTypes.powerupCategory.rawValue
+//            //Redefine paddle properties
+//        }
+    
+//        switch sprite.texture {
+//        case blockTexture:
+//            removeBlock(node: node)
+//            break
+        // Apply powerup based on which one was collected
+    }
+    
 /* To Do:
      > extra life is 1000+ points is achieved on a level
      > High score leaderboard with initials
@@ -681,6 +809,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      Today:
      > New high score message
      > New best time message
+     > Superball powerup - turn off ball collision bit mask with blocks
+     > No powerups if static block hit - only if block destroyed
+     > If ball is lost current falling powerups disappear
+     > powerups pause
  */
     
 }
