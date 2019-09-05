@@ -18,10 +18,11 @@ class GameOver: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        scene.gameStateLabel.text = "Game Over"
-        
         self.scene.removeAction(forKey: "levelTimer")
         // Stop timer
+        
+        scene.levelNumber = 0
+        // Reset level number
         
         var timeBonusPoints: Int = 200
         let scaleUp = SKAction.scale(to: 1.5, duration: 0.1)

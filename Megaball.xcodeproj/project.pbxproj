@@ -18,9 +18,9 @@
 		1A5A949D230F08770076D635 /* PreGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A949C230F08770076D635 /* PreGame.swift */; };
 		1A5A949F230F08840076D635 /* Playing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A949E230F08840076D635 /* Playing.swift */; };
 		1A5A94A1230F088F0076D635 /* GameOver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A0230F088F0076D635 /* GameOver.swift */; };
-		1A5A94A4230F0D830076D635 /* BallOnPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */; };
 		1A5A94A7231720FE0076D635 /* Megaball.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A5231720FE0076D635 /* Megaball.xcdatamodeld */; };
 		1A7D6529231B0E980091CA58 /* Paused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7D6528231B0E980091CA58 /* Paused.swift */; };
+		1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE9573A2321A74700E5618A /* InbewteenLevels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,9 +37,9 @@
 		1A5A949C230F08770076D635 /* PreGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreGame.swift; sourceTree = "<group>"; };
 		1A5A949E230F08840076D635 /* Playing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playing.swift; sourceTree = "<group>"; };
 		1A5A94A0230F088F0076D635 /* GameOver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOver.swift; sourceTree = "<group>"; };
-		1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallOnPaddle.swift; sourceTree = "<group>"; };
 		1A5A94A6231720FE0076D635 /* MegaballCoreDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MegaballCoreDataModel.xcdatamodel; sourceTree = "<group>"; };
 		1A7D6528231B0E980091CA58 /* Paused.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paused.swift; sourceTree = "<group>"; };
+		1AE9573A2321A74700E5618A /* InbewteenLevels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbewteenLevels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,10 +91,10 @@
 			isa = PBXGroup;
 			children = (
 				1A5A949C230F08770076D635 /* PreGame.swift */,
-				1A5A94A3230F0D830076D635 /* BallOnPaddle.swift */,
 				1A5A949E230F08840076D635 /* Playing.swift */,
 				1A7D6528231B0E980091CA58 /* Paused.swift */,
 				1A5A94A0230F088F0076D635 /* GameOver.swift */,
+				1AE9573A2321A74700E5618A /* InbewteenLevels.swift */,
 			);
 			path = "Game States";
 			sourceTree = "<group>";
@@ -174,7 +174,7 @@
 			files = (
 				1A5A948B2309E4F30076D635 /* GameScene.swift in Sources */,
 				1A5A948D2309E4F30076D635 /* GameViewController.swift in Sources */,
-				1A5A94A4230F0D830076D635 /* BallOnPaddle.swift in Sources */,
+				1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */,
 				1A5A94A1230F088F0076D635 /* GameOver.swift in Sources */,
 				1A5A949D230F08770076D635 /* PreGame.swift in Sources */,
 				1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */,
