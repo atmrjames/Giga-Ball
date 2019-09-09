@@ -21,12 +21,7 @@ enum CollisionTypes: UInt32 {
     case paddleCategory = 4
     case powerupCategory = 8
 }
-
-//let BallCategory   : UInt32 = 0x1 << 0
-//let BlockCategory  : UInt32 = 0x1 << 2
-//let PaddleCategory : UInt32 = 0x1 << 3
-//let PowerupCategory : UInt32 = 0x1 << 0
-// Set up for categoryBitMask
+// Setup for collisionBitMask
 
 //The categoryBitMask property is a number defining the type of object this is for considering collisions.
 //The collisionBitMask property is a number defining what categories of object this node should collide with.
@@ -35,6 +30,11 @@ enum CollisionTypes: UInt32 {
 //If you give a node a collision bitmask but not a contact test bitmask, it means they will bounce off each other but you won't be notified.
 //If you give a node contact test but not collision bitmask it means they won't bounce off each other but you will be told when they overlap.
 
+protocol GameViewControllerDelegate: class {
+    func moveToMainMenu()
+    func showEndLevelStats(levelNumber: Int, levelScore: Int, levelTime: Double, cumulativeScore: Int, cumulativeTime: Double, levelHighscore: Int, levelBestTime: Double, bestScoreToLevel: Int, bestTimeToLevel: Double, cumulativeHighscore: Int, gameoverStatus: Bool)
+}
+// Setup the protocol to return to the main menu from GameViewController
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
@@ -66,7 +66,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var paddleGap: CGFloat = 0
     var ballSize: CGFloat = 0
     var ballStartingPositionY: CGFloat = 0
-    var ballLaunchSpeed: Double = 8
+    var ballLaunchSpeed: Double = 0
     var ballLaunchAngleRad: Double = 0
     var ballLostHeight: CGFloat = 0
     var blockHeight: CGFloat = 0
@@ -94,18 +94,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var ballMaxSpeed: CGFloat = 1000
     // Setup game metrics
     
-    var score: Int = 0
+//    var score: Int = 0
     var highscore: Int = 0
     var lifeLostScore: Int = -100
     var blockHitScore: Int = 5
     var blockDestroyScore: Int = 10
     var levelCompleteScore: Int = 100
-    var bestTime: Double = 0
+    var bestCumulativeTime: Double = 0
     var powerupScore: Int = 50
     var levelNumber: Int = 0
-    // Score for completing the level quickly
-    // Score for power-ups
     // Setup score properties
+    
+    var timeBonusPoints: Int = 0
+    var level1TimeBonus: Int = 0
+    var level2TimeBonus: Int = 0
+    // Level time bonuses
+    
+    var cumulativeScore: Int = 0
+    var levelScore: Int = 0
+    // Level score properties
     
     let blockTexture: SKTexture = SKTexture(imageNamed: "Block")
     let blockDouble1Texture: SKTexture = SKTexture(imageNamed: "BlockDouble1")
@@ -131,14 +138,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var touchBeganWhilstPlaying: Bool = false
     var paddleMoved: Bool = false
     var paddleMovedDistance: CGFloat = 0
-    var nextLevelReady: Bool = false
+    var gameoverStatus: Bool = false
+    var endLevelNumber: Int = 0
     // Game trackers
     
     var fontSize: CGFloat = 0
     var labelSpacing: CGFloat = 0
     // Label metrics
     
-    var timerValue: Double = 0
+    var cumulativeTimerValue: Double = 0
+    var levelTime: Double = 0
     
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
         PreGame(scene: self),
@@ -147,6 +156,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         GameOver(scene: self),
         Paused(scene: self)])
     // Sets up the game states
+    
+    weak var gameViewControllerDelegate:GameViewControllerDelegate?
+    // Create the delegate property for the GameViewController
     
     let dataStore = UserDefaults.standard
     // Setup NSUserDefaults data store
@@ -184,8 +196,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.size.width = ballSize
         ball.size.height = ballSize
         ballLostHeight = paddleHeight*8
-        blockHeight = paddleHeight
-        blockWidth = blockHeight*3
+        blockHeight = paddleHeight*1.2
+        blockWidth = paddleHeight*3
         life.size.width = ballSize
         life.size.height = ballSize
         // Object layout property initialisation and setting
@@ -195,13 +207,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pausedButton.size.height = pauseButtonSize
         pausedButton.texture = pauseTexture
         
-        fontSize = 18
+        fontSize = 16
         labelSpacing = fontSize/1.5
         
         paddle.position.x = 0
         paddle.position.y = (-self.frame.height/2 + paddleGap)
         ball.position.x = 0
-        ballStartingPositionY = paddle.position.y + paddleHeight/2 + ballSize/2
+        ballStartingPositionY = paddle.position.y + paddleHeight/2 //+ ballSize/2
         ball.position.y = ballStartingPositionY
         pausedButton.position.y = self.frame.height/2 - labelSpacing - pauseButtonSize/2
         pausedButton.position.x = 0
@@ -238,8 +250,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         levelNumberLabel.fontSize = fontSize
         // Label position definition
         
-        numberOfBlockRows = 9
-        numberOfBlockColumns = 3
+        numberOfBlockRows = 1 // 9
+        numberOfBlockColumns = 1 // 7
         totalBlocksWidth = blockWidth * CGFloat(numberOfBlockColumns)
         xBlockOffset = totalBlocksWidth/2
         // Define blocks
@@ -268,6 +280,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.zPosition = 2
         ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
         // Define ball properties
+        
+        ballLaunchSpeed = 8
+        
+        level1TimeBonus = 200
+        level2TimeBonus = 2000
+        // Definition of level time bonus points
+        
+        endLevelNumber = 2
         
         ball.isHidden = true
         paddle.isHidden = true
@@ -341,16 +361,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         switch gameState.currentState {
-        case is PreGame:
-            gameState.enter(Playing.self)
         case is Playing:
             touchBeganWhilstPlaying = true
             paddleMoved = false
-        case is InbetweenLevels:
-            loadNextLevel()
-            gameState.enter(Playing.self)
-        case is GameOver:
-            gameState.enter(PreGame.self)
         default:
             break
         }
@@ -360,11 +373,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let positionInScene = touch!.location(in: self)
             let touchedNode = self.atPoint(positionInScene)
             
-            if let name = touchedNode.name
-            {
-                if name == "pauseButton"
-                {
+            if let name = touchedNode.name {
+                if name == "pauseButton" && gameState.currentState is Playing {
                     pauseGame()
+                } else if name == "pauseButton" && gameState.currentState is Paused {
+                    unpauseGame()
                 }
             }
         }
@@ -417,8 +430,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func startTimer() {
         let wait = SKAction.wait(forDuration: 0.01) //change countdown speed here
         let block = SKAction.run({
-            self.timerValue += 0.01
-            self.timerLabel.text = String(format: "%.2f", self.timerValue)
+            self.levelTime += 0.01
+            self.timerLabel.text = String(format: "%.2f", self.levelTime)
         })
         let timerSequence = SKAction.sequence([wait,block])
         self.run(SKAction.repeatForever(timerSequence), withKey: "levelTimer")
@@ -474,15 +487,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddleMoved = true
         // Reset ball position
         
-        score = score + lifeLostScore
-        scoreLabel.text = String(score)
+        levelScore = levelScore + lifeLostScore
+        scoreLabel.text = String(levelScore)
         // Update score
         
         self.removeAction(forKey: "levelTimer")
         // Stop timer
         
         if numberOfLives == 0 {
-            gameState.enter(GameOver.self)
+            gameoverStatus = true
+            gameState.enter(InbetweenLevels.self)
             return
         }
         if numberOfLives > 0 {
@@ -572,26 +586,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         generator.impactOccurred()
         // Haptic feedback
         
-        let powerupProb = Int.random(in: 1...12)
-        
-        if powerupProb == 1 {
-            powerupGenerator(sprite: sprite)
-        }
-        
         switch sprite.texture {
         case blockTexture:
-            removeBlock(node: node)
+            removeBlock(node: node, sprite: sprite)
             break
         case blockDouble1Texture:
             sprite.texture = blockDouble2Texture
-            score = score + blockHitScore
+            levelScore = levelScore + blockHitScore
             break
         case blockDouble2Texture:
             sprite.texture = blockDouble3Texture
-            score = score + blockHitScore
+            levelScore = levelScore + blockHitScore
             break
         case blockDouble3Texture:
-            removeBlock(node: node)
+            removeBlock(node: node, sprite: sprite)
             break
         case blockInvisibleTexture:
             if sprite.isHidden {
@@ -607,37 +615,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 })
                 // Animate block in
 
-                score = score + blockHitScore
+                levelScore = levelScore + blockHitScore
                 break
             }
-            removeBlock(node: node)
+            removeBlock(node: node, sprite: sprite)
             break
         default:
             break
         }
-        scoreLabel.text = String(score)
+        scoreLabel.text = String(levelScore)
         // Update score
     }
     // This method takes an SKNode. First, it creates an instance of SKEmitterNode from the BrokenPlatform.sks file, then sets it's position to the same position as the node. The emitter node's zPosition is set to 3, so that the particles appear above the remaining blocks. After the particles are added to the scene, the node (bamboo block) is removed.
     
-    func removeBlock(node: SKNode) {
-        let scaleDown = SKAction.scale(to: 0, duration: 0.05)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.05)
-        let blockGroup = SKAction.group([scaleDown, fadeOut])
-        node.run(blockGroup, completion: {
-            node.removeFromParent()
-        })
-            //With the remove from node running after the animation completes it is possible if the next block is hit vert quickly after the first block will never run the remove node code.
-        // Animate and remove block
+    func removeBlock(node: SKNode, sprite: SKSpriteNode) {
+        
+        node.removeFromParent()
+        // Remove block
+        
+        let powerupProb = Int.random(in: 1...10)
+        if powerupProb == 1 {
+            powerupGenerator(sprite: sprite)
+        }
+        // 1 in 10 probability of getting a powerup if block is removed
         
         blocksLeft -= 1
         blocksLeftLabel.text = String(blocksLeft)
-        score = score + blockDestroyScore
+        levelScore = levelScore + blockDestroyScore
+        scoreLabel.text = String(levelScore)
         // Update number of blocks left and current score
         
-        if blocksLeft == 0 && levelNumber == 2 {
-            gameState.enter(GameOver.self)
-        } else if blocksLeft == 0 {
+        if blocksLeft == 0 {
+            if levelNumber == endLevelNumber {
+                gameoverStatus = true
+            }
             gameState.enter(InbetweenLevels.self)
         }
         // Loads the next level or ends the game if all blocks have been removed
@@ -693,10 +704,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func pauseGame() {
-        if pausedButton.texture == playTexture {
-            pausedButton.texture = pauseTexture
-        }
         if gameState.currentState is Playing {
+            pausedButton.texture = playTexture
             ball.isPaused = true
             paddle.isPaused = true
             physicsWorld.speed = 0
@@ -707,7 +716,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             pausedButton.texture = playTexture
             // Stop timer
             gameState.enter(Paused.self)
-        } else if gameState.currentState is Paused {
+        }
+    }
+    
+    func unpauseGame() {
+        if gameState.currentState is Paused {
+            pausedButton.texture = pauseTexture
             ball.isPaused = false
             paddle.isPaused = false
             physicsWorld.speed = 1
@@ -771,240 +785,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func applyPowerup (sprite: SKSpriteNode) {
         
-        score = score + powerupScore
-        scoreLabel.text = String(score)
-        // Update score
-        
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         // Haptic feedback
         
-//        if paddle.size.width < paddleWidth * 2 {
-//            paddle.size.width = paddle.size.width*1.5
-//            paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
-//            paddle.physicsBody!.allowsRotation = false
-//            paddle.physicsBody!.friction = 0.0
-//            paddle.physicsBody!.affectedByGravity = false
-//            paddle.physicsBody!.isDynamic = true
-//            paddle.name = PaddleCategoryName
-//            paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
-//            paddle.physicsBody!.collisionBitMask = CollisionTypes.powerupCategory.rawValue
-//            paddle.zPosition = 2
-//            paddle.physicsBody!.contactTestBitMask = CollisionTypes.powerupCategory.rawValue
-//            //Redefine paddle properties
-//        }
-    
-//        switch sprite.texture {
-//        case blockTexture:
-//            removeBlock(node: node)
-//            break
-        // Apply powerup based on which one was collected
-    }
-    
+        levelScore = levelScore + powerupScore
+        scoreLabel.text = String(levelScore)
+        // Update score
 
-    
-    func loadNextLevel() {
-        levelNumber += 1
-        print(levelNumber)
-        levelNumberLabel.text = "Level \(levelNumber)"
-        // Increment level number & update label
-        
-        livesLabel.text = "x\(self.numberOfLives)"
-        
-        ball.removeAllActions()
-        paddle.removeAllActions()
-        ball.isHidden = false
-        paddle.isHidden = false
-        ballIsOnPaddle = true
-        paddle.position.x = 0
-        paddle.position.y = (-self.frame.height/2 + paddleGap)
-        ball.position.x = 0
-        ball.position.y = ballStartingPositionY
-        // Reset ball and paddle
-        
-        let startingScale = SKAction.scale(to: 0, duration: 0)
-        let startingFade = SKAction.fadeIn(withDuration: 0)
-        let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-        let ballSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
-        let paddleSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
-        ball.run(ballSequence)
-        paddle.run(paddleSequence)
-        // Animate paddle and ball in
-        
-        // load new best time for board
-        // load new highscore for board
-            // reset number of lives
-        
-        // load new board
-        switch levelNumber {
-        case 1:
-            loadLevel1()
-        case 2:
-            loadLevel2()
-        default:
-            break
-        }
-        
-        nextLevelReady = false
-    }
-    
-    func loadLevel1() {
-        let startingScale = SKAction.scale(to: 0, duration: 0)
-        let startingFade = SKAction.fadeOut(withDuration: 0)
-        let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
-        let startingGroup = SKAction.group([startingScale, startingFade])
-        let blockGroup = SKAction.group([scaleUp, fadeIn])
-        // Setup block animation
-        
-        var blockArray: [SKNode] = []
-        // Array to store all blocks
-        
-        for i in 0..<numberOfBlockRows {
-            for j in 0..<numberOfBlockColumns {
-                let block = SKSpriteNode(imageNamed: "Block")
-                if i == 0 || i == 8 {
-                    // Normal blocks
-                    block.texture = blockTexture
-                }
-                if i == 1 || i == 7 {
-                    // Invisible blocks
-                    block.texture = blockInvisibleTexture
-                    block.isHidden = true
-                }
-                if i == 2 || i == 6 {
-                    // Double blocks
-                    block.texture = blockDouble1Texture
-                }
-                if i == 3 || i == 5 {
-                    // Null blocks
-                    block.texture = blockNullTexture
-                    block.isHidden = true
-                }
-                if i == 4 {
-                    if j == 0 || j == 2 || j == 4 || j == 6 {
-                        // Indestructible blocks
-                        block.texture = blockIndestructibleTexture
-                    } else {
-                        // Null blocks
-                        block.texture = blockNullTexture
-                        block.isHidden = true
-                    }
-                }
-                block.size.width = blockWidth
-                block.size.height = blockHeight
-                block.position = CGPoint(x: -xBlockOffset + CGFloat(CGFloat(j) + 0.5) * blockWidth, y: (frame.height/2 * 0.6)-blockHeight*CGFloat(i))
-                block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
-                block.physicsBody!.allowsRotation = false
-                block.physicsBody!.friction = 0.0
-                block.physicsBody!.affectedByGravity = false
-                block.physicsBody!.isDynamic = false
-                block.name = BlockCategoryName
-                block.physicsBody!.categoryBitMask = CollisionTypes.blockCategory.rawValue
-                block.zPosition = 0
-                addChild(block)
-                blockArray.append(block)
-            }
-        }
-        // Define block properties
-        
-        for block in blockArray {
-            let blockCurrent = block as! SKSpriteNode
-            block.run(startingGroup)
-            block.run(blockGroup)
-            // Run animation for each block
-            
-            if blockCurrent.texture == blockNullTexture || blockCurrent.texture == blockIndestructibleTexture {
-                if blockCurrent.texture == blockNullTexture {
-                    blockCurrent.removeFromParent()
-                }
-            } else {
-                blocksLeft += 1
-            }
-            // Remove null blocks & discount indestructible blocks
-        }
-        
-        /* Level specific setup
-         timer bonus
-         power up probability
-         ball launch speed
-         ball linear dampening
-         
- 
- 
- */
-    }
-    
-    func loadLevel2() {
-        let startingScale = SKAction.scale(to: 0, duration: 0)
-        let startingFade = SKAction.fadeOut(withDuration: 0)
-        let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
-        let startingGroup = SKAction.group([startingScale, startingFade])
-        let blockGroup = SKAction.group([scaleUp, fadeIn])
-        // Setup block animation
-        
-        var blockArray: [SKNode] = []
-        // Array to store all blocks
-        
-        for i in 0..<numberOfBlockRows {
-            for j in 0..<numberOfBlockColumns {
-                let block = SKSpriteNode(imageNamed: "Block")
-                if j == 0 || j == 4 {
-                    // Normal blocks
-                    block.texture = blockTexture
-                }
-                if j == 1 || j == 5 {
-                    // Invisible blocks
-                    block.texture = blockInvisibleTexture
-                    block.isHidden = true
-                }
-                if j == 2 || j == 6 {
-                    // Double blocks
-                    block.texture = blockDouble1Texture
-                }
-                if j == 3 {
-                    if i == 0 || i == 2 || i == 4 || i == 6 || i == 8 {
-                        // Indestructible blocks
-                        block.texture = blockIndestructibleTexture
-                    } else {
-                        // Null blocks
-                        block.texture = blockNullTexture
-                        block.isHidden = true
-                    }
-                }
-                block.size.width = blockWidth
-                block.size.height = blockHeight
-                block.position = CGPoint(x: -xBlockOffset + CGFloat(CGFloat(j) + 0.5) * blockWidth, y: (frame.height/2 * 0.6)-blockHeight*CGFloat(i))
-                block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
-                block.physicsBody!.allowsRotation = false
-                block.physicsBody!.friction = 0.0
-                block.physicsBody!.affectedByGravity = false
-                block.physicsBody!.isDynamic = false
-                block.name = BlockCategoryName
-                block.physicsBody!.categoryBitMask = CollisionTypes.blockCategory.rawValue
-                block.zPosition = 0
-                addChild(block)
-                blockArray.append(block)
-            }
-        }
-        // Define block properties
-        
-        for block in blockArray {
-            let blockCurrent = block as! SKSpriteNode
-            block.run(startingGroup)
-            block.run(blockGroup)
-            // Run animation for each block
-            
-            if blockCurrent.texture == blockNullTexture || blockCurrent.texture == blockIndestructibleTexture {
-                if blockCurrent.texture == blockNullTexture {
-                    blockCurrent.removeFromParent()
-                }
-            } else {
-                blocksLeft += 1
-            }
-            // Remove null blocks & discount indestructible blocks
-        }
     }
     
 /* To Do:
@@ -1021,6 +809,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      > Launchscreen
      > Track top 10 highscores for each level/board
      > Time per level
+     > When ball is on paddle, launch depending on position on paddle, if in middle do a random launch
+     > Replace the word level with board
      
      Today:
      > New high score message
@@ -1031,9 +821,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
      > powerups pause
  */
     
+    func moveToMainMenu() {
+        gameViewControllerDelegate?.moveToMainMenu()
+    }
+    // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
+    
+    func showEndLevelStats() {
+        gameViewControllerDelegate?.showEndLevelStats(levelNumber: levelNumber, levelScore: levelScore, levelTime: levelTime, cumulativeScore: cumulativeScore, cumulativeTime: cumulativeTimerValue, levelHighscore: 5, levelBestTime: 6.0, bestScoreToLevel: 7, bestTimeToLevel: 8.0, cumulativeHighscore: 9, gameoverStatus: gameoverStatus)
+    }
 }
 
 extension Notification.Name {
     public static let myNotificationKey = Notification.Name(rawValue: "myNotificationKey")
 }
 // Setup for notifcation from AppDelegate
+
+//MARK: - Pragma mark
+/***************************************************************/
+
+

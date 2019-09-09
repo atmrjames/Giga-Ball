@@ -18,6 +18,7 @@ class Paused: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
+print("State: Paused")
     }
     // This function runs when this state is entered.
     

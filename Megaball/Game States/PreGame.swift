@@ -18,7 +18,12 @@ class PreGame: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
+print("State: PreGame")
         resetGame()
+        let waitScene = SKAction.wait(forDuration: 0.25)
+        self.scene.run(waitScene, completion: {
+            self.scene.gameState.enter(Playing.self)
+        })
     }
     // This function runs when this state is entered.
     
@@ -28,10 +33,19 @@ class PreGame: GKState {
     // This function runs when this state is exited.
     
     func resetGame() {
+        scene.levelNumberLabel.isHidden = true
+        scene.scoreLabel.isHidden = true
+        scene.highScoreLabel.isHidden = true
+        scene.pausedButton.isHidden = true
+        scene.timerLabel.isHidden = true
+        scene.bestTimeLabel.isHidden = true
+        scene.livesLabel.isHidden = true
+        scene.life.isHidden = true
+        // Hide labels
+        
+        scene.levelNumber = 0
         scene.numberOfLives = 3
-        scene.score = 0
-        scene.livesLabel.text = "x\(scene.numberOfLives)"
-        scene.life.isHidden = false
+        scene.gameoverStatus = false
         
         if scene.scoreArray.max() != 1 {
             scene.highscore = scene.scoreArray.max()!
@@ -42,8 +56,8 @@ class PreGame: GKState {
         // Add highscore to highscore label
         
         if scene.timerArray.min() != 1 {
-            scene.bestTime = scene.timerArray.min()!
-            scene.bestTimeLabel.text = String(format: "%.2f", scene.bestTime)
+            scene.bestCumulativeTime = scene.timerArray.min()!
+            scene.bestTimeLabel.text = String(format: "%.2f", scene.bestCumulativeTime)
         } else {
             scene.bestTimeLabel.text = ""
         }
