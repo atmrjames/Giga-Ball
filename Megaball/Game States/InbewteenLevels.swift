@@ -65,7 +65,7 @@ print("State: Inbetween Levels")
         scene.blocksLeft = 0
         // Remove any remaining blocks
         
-        scene.enumerateChildNodes(withName: PowerupCategoryName) { (node, _) in
+        scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
             node.run(resetGroup, completion: {
                 node.removeFromParent()
             })

@@ -54,6 +54,8 @@ print("State: Playing")
         
         scene.livesLabel.text = "x\(self.scene.numberOfLives)"
         
+        scene.contactCount = 0
+        
         scene.ball.removeAllActions()
         scene.paddle.removeAllActions()
         scene.ball.isHidden = false
@@ -80,6 +82,8 @@ print("State: Playing")
         // load new best time for board
         // load new highscore for board
         // reset number of lives
+        
+        scene.powerUpsReset()
         
         // load new board
         switch scene.levelNumber {
