@@ -63,9 +63,12 @@ print("State: Playing")
         scene.ballIsOnPaddle = true
         scene.paddle.position.x = 0
         scene.paddle.position.y = (-self.scene.frame.height/2 + scene.paddleGap)
+        scene.paddle.size.width = scene.paddleWidth
         scene.ball.position.x = 0
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
+        
+        scene.powerUpsReset()
         
         let startingScale = SKAction.scale(to: 0, duration: 0)
         let startingFade = SKAction.fadeIn(withDuration: 0)
@@ -82,8 +85,6 @@ print("State: Playing")
         // load new best time for board
         // load new highscore for board
         // reset number of lives
-        
-        scene.powerUpsReset()
         
         // load new board
         switch scene.levelNumber {

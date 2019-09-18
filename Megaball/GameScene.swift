@@ -13,6 +13,7 @@ let PaddleCategoryName = "paddle"
 let BallCategoryName = "ball"
 let BlockCategoryName = "block"
 let PowerUpCategoryName = "powerUp"
+let LaserCategoryName = "laser"
 // Set up for categoryNames
 
 enum CollisionTypes: UInt32 {
@@ -20,6 +21,7 @@ enum CollisionTypes: UInt32 {
     case blockCategory = 2
     case paddleCategory = 4
     case powerUpCategory = 8
+    case laserCategory = 16
 }
 // Setup for collisionBitMask
 
@@ -151,7 +153,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let powerUp99Texture: SKTexture = SKTexture(imageNamed: "PowerUp99")
     // Power up textures
     
+    let ballTexture: SKTexture = SKTexture(imageNamed: "Ball")
+    let superballTexture: SKTexture = SKTexture(imageNamed: "Superball")
+    let undestructiballTexture: SKTexture = SKTexture(imageNamed: "Undestructiball")
+    // Ball textures
+    
+    let laserTexture: SKTexture = SKTexture(imageNamed: "Laser")
+    let superLaserTexture: SKTexture = SKTexture(imageNamed: "SuperLaser")
+    // Laser textures
+    
     var stickyPaddleCatches: Int = 0
+    var laserPowerUpIsOn: Bool = false
+    var laserTimer: Timer?
+    var laserSideLeft: Bool = true
     // Power up properties
     
     var contactCount: Int = 0
@@ -174,6 +188,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var cumulativeTimerValue: Double = 0
     var levelTime: Double = 0
+    
+    let lightHaptic = UIImpactFeedbackGenerator(style: .light)
+    let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    let heavyHaptic = UIImpactFeedbackGenerator(style: .heavy)
     
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
         PreGame(scene: self),
@@ -222,8 +240,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.size.width = ballSize
         ball.size.height = ballSize
         ballLostHeight = paddleHeight*8
-        blockHeight = paddleHeight*1.2
-        blockWidth = paddleHeight*3
+        blockHeight = ballSize*1.33
+        blockWidth = self.frame.width/9
         life.size.width = ballSize
         life.size.height = ballSize
         // Object layout property initialisation and setting
@@ -432,6 +450,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if stickyPaddleCatches != 0 {
             stickyPaddleCatches-=1
+            if stickyPaddleCatches == 0 {
+                paddle.color = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+            }
         }
         
         let straightLaunchAngleRad = 90 * Double.pi / 180
@@ -598,7 +619,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             contactCount+=1
             
             let ySpeedMin: CGFloat = 100
-            let xSpeedMin: CGFloat = 1
+            let xSpeedMin: CGFloat = 5
             var xDirectionMultiplier: Int = 1
             var yDirectionMultiplier: Int = 1
             
@@ -649,7 +670,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Check the two bodies that collided to see which has the lower categoryBitmask. You then store them into the local variables, so that the body with the lower category is always stored in firstBody. This will save you quite some effort when reacting to contacts between specific categories.
             
             if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.blockCategory.rawValue {
-                hitBlock(node: secondBody.node!, sprite: secondBody.node! as! SKSpriteNode)
+                if let secondBodyNode = secondBody.node {
+                    hitBlock(node: secondBodyNode, sprite: secondBodyNode as! SKSpriteNode)
+                }
             }
             // Hit block if it makes contact with ball
             
@@ -657,6 +680,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 paddleHit()
             }
             // Hit ball if it makes contact with paddle
+            
+            if firstBody.categoryBitMask == CollisionTypes.blockCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
+                if let firstBodyNode = firstBody.node {
+                    hitBlock(node: firstBodyNode, sprite: firstBodyNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: secondBody.node as! SKSpriteNode)
+                }
+            }
+            // Hit later if it makes contact with block
             
             if secondBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue {
                 applyPowerUp(sprite: secondBody.node! as! SKSpriteNode)
@@ -668,11 +698,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    func hitBlock(node: SKNode, sprite: SKSpriteNode) {
+    func hitBlock(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
         
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         // Haptic feedback
+        
+        if laserSprite?.texture == laserTexture {
+            laserNode?.removeFromParent()
+        }
+        // Remove laser if superball power up isn't activated
         
         switch sprite.texture {
         case blockTexture:
@@ -721,7 +756,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         node.removeFromParent()
         // Remove block
         
-        let powerUpProb = Int.random(in: 1...2)
+        let powerUpProb = Int.random(in: 1...3)
         if powerUpProb == 1 {
             powerUpGenerator(sprite: sprite)
         }
@@ -808,6 +843,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             pausedButton.texture = playTexture
             ball.isPaused = true
             paddle.isPaused = true
+            self.isPaused = true
             enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
                 node.isPaused = true
             }
@@ -827,6 +863,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             pausedButton.texture = pauseTexture
             ball.isPaused = false
             paddle.isPaused = false
+            self.isPaused = false
             enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
                 node.isPaused = false
             }
@@ -865,7 +902,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 1
         addChild(powerUp)
         
-        let powerUpProb = Int.random(in: 9...9)
+        let powerUpProb = Int.random(in: 0...10)
         switch powerUpProb {
         case 0:
             powerUp.texture = powerUp00Texture
@@ -880,33 +917,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 5:
             powerUp.texture = powerUp05Texture
         case 6:
-            powerUp.texture = powerUp90Texture
+            powerUp.texture = powerUp06Texture
         case 7:
-            powerUp.texture = powerUp91Texture
+            powerUp.texture = powerUp07Texture
         case 8:
-            powerUp.texture = powerUp92Texture
+            powerUp.texture = powerUp91Texture
         case 9:
+            powerUp.texture = powerUp92Texture
+        case 10:
             powerUp.texture = powerUp93Texture
-//        case 10:
-//            powerUp.texture = powerUp90Texture
-//        case 11:
-//            powerUp.texture = powerUp91Texture
-//        case 12:
-//            powerUp.texture = powerUp92Texture
-//        case 13:
-//            powerUp.texture = powerUp93Texture
-//        case 14:
-//            powerUp.texture = powerUp94Texture
-//        case 15:
-//            powerUp.texture = powerUp95Texture
-//        case 16:
-//            powerUp.texture = powerUp96Texture
-//        case 17:
-//            powerUp.texture = powerUp97Texture
-//        case 18:
-//            powerUp.texture = powerUp98Texture
-//        case 19:
-//            powerUp.texture = powerUp99Texture
         default:
             break
         }
@@ -934,7 +953,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case powerUp90Texture:
         // Lose a life
             ballLostAnimation()
-            self.run(SKAction.wait(forDuration: 0.2),completion: {
+            self.run(SKAction.wait(forDuration: 0.2), completion: {
                 self.ballLost()
             })
             powerUpScore = 0
@@ -942,61 +961,72 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case powerUp01Texture:
         // Reduce ball speed
             if currentSpeed < ballMaxSpeed {
-                ball.physicsBody!.velocity.dx = (ball.physicsBody?.velocity.dx)!*0.75
-                ball.physicsBody!.velocity.dy = (ball.physicsBody?.velocity.dy)!*0.75
-                self.removeAction(forKey: "powerUpWait")
-                startPowerUpTimer(duration: 10)
+                ball.physicsBody!.velocity.dx = (ball.physicsBody?.velocity.dx)!*0.67
+                ball.physicsBody!.velocity.dy = (ball.physicsBody?.velocity.dy)!*0.67
             } else {
                 break
             }
             powerUpScore = 50
-            // Power up set
-// Power up reverted
+            // Power up set, ball will remain at lower speed
             
         case powerUp91Texture:
         // Increase ball speed
             if currentSpeed > ballMinSpeed {
-                ball.physicsBody!.velocity.dx = (ball.physicsBody?.velocity.dx)!*1.25
-                ball.physicsBody!.velocity.dy = (ball.physicsBody?.velocity.dy)!*1.25
-                self.removeAction(forKey: "powerUpWait")
-                startPowerUpTimer(duration: 10)
+                ball.physicsBody!.velocity.dx = (ball.physicsBody?.velocity.dx)!*1.5
+                ball.physicsBody!.velocity.dy = (ball.physicsBody?.velocity.dy)!*1.5
             } else {
                 break
             }
             powerUpScore = 50
-            // Power up set
-// Power up reverted
+            // Power up set, ball will remain at higher speed
             
         case powerUp02Texture:
         // Superball
+            self.removeAction(forKey: "powerUp02")
+            // Remove any current superball power up timer
+            self.removeAction(forKey: "powerUp92")
+            ball.texture = superballTexture
             ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
-            // Reset no block destruction power up
+            // Reset undestructiball power up
             ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
             powerUpScore = 100
             // Power up set
             let powerUp02Timer: Double = 10
-            self.run(SKAction.wait(forDuration: powerUp02Timer), completion: {
+            let powerUp02Wait = SKAction.wait(forDuration: powerUp02Timer)
+            let completionBlock02 = SKAction.run {
                 self.ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
-            })
+                self.ball.texture = self.ballTexture
+            }
+            let powerUp02Sequence = SKAction.sequence([powerUp02Wait, completionBlock02])
+            self.run(powerUp02Sequence, withKey: "powerUp02")
             // Power up reverted
             
         case powerUp92Texture:
-        // No block destruction
+        // Undestructiball
+            self.removeAction(forKey: "powerUp92")
+            // Remove any current undestructiball power up timer
+            self.removeAction(forKey: "powerUp02")
+            ball.texture = undestructiballTexture
             ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
             // Reset superball power up
             ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue
             powerUpScore = -100
             // Power up set
             let powerUp92Timer: Double = 10
-            self.run(SKAction.wait(forDuration: powerUp92Timer), completion: {
+            let powerUp92Wait = SKAction.wait(forDuration: powerUp92Timer)
+            let completionBlock92 = SKAction.run {
                 self.ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
-            })
+                self.ball.texture = self.ballTexture
+            }
+            let powerUp92Sequence = SKAction.sequence([powerUp92Wait, completionBlock92])
+            self.run(powerUp92Sequence, withKey: "powerUp92")
             // Power up reverted
 
         case powerUp03Texture:
         // Sticky paddle
             stickyPaddleCatches = stickyPaddleCatches + 5
             powerUpScore = 100
+            paddle.color = #colorLiteral(red: 0.8078431487, green: 0.02745098062, blue: 0.3333333433, alpha: 1)
             // Power up set and limit number of catches per power up
             
         case powerUp04Texture:
@@ -1006,42 +1036,82 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 gameoverStatus = true
             }
             gameState.enter(InbetweenLevels.self)
-        // Power up set and limit number of catches per power up
             
         case powerUp05Texture:
         // Increase paddle size
-            powerUpScore = 50
+            self.removeAction(forKey: "powerUp05")
+            self.removeAction(forKey: "powerUp93")
+            // Remove any current timer for paddle size power ups
             if paddle.size.width <= frame.size.width/2 {
-                paddle.size.width = paddle.size.width * 1.5
-// Animate paddle increasing in size
-                definePaddleProperties()
-                // Power up set
-                let powerUp05Timer: Double = 10
-                self.run(SKAction.wait(forDuration: powerUp05Timer), completion: {
-                    self.paddle.size.width = self.paddle.size.width * 0.67
-// Animate paddle decreasing in size
+                lightHaptic.impactOccurred()
+                paddle.run(SKAction.scaleX(by: 1.5, y: 1, duration: 0.2), completion: {
                     self.definePaddleProperties()
                 })
-                // Power up reverted
             }
+            powerUpScore = 50
+            // Power up set
+            let powerUp05Timer: Double = 10
+            let powerUp05Wait = SKAction.wait(forDuration: powerUp05Timer)
+            let completionBlock05 = SKAction.run {
+                self.lightHaptic.impactOccurred()
+                self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+                    self.paddle.size.width = self.paddleWidth
+                    self.definePaddleProperties()
+                })
+                if self.ballIsOnPaddle {
+                    self.releaseBall()
+                }
+            }
+            let powerUp05Sequence = SKAction.sequence([powerUp05Wait, completionBlock05])
+            self.run(powerUp05Sequence, withKey: "powerUp05")
+            // Power up reverted
+            
         case powerUp93Texture:
-            // Increase paddle size
-            powerUpScore = -50
+        // Decrease paddle size
+            self.removeAction(forKey: "powerUp93")
+            self.removeAction(forKey: "powerUp05")
+            // Remove any current timer for paddle size power ups
             if paddle.size.width >= frame.size.width/8 {
-                paddle.size.width = paddle.size.width * 0.67
-// Animate paddle decreasing in size
-                definePaddleProperties()
-                // Power up set
-                let powerUp93Timer: Double = 10
-                self.run(SKAction.wait(forDuration: powerUp93Timer), completion: {
-                    self.paddle.size.width = self.paddle.size.width * 1.5
-// Animate paddle increasing in size
+                lightHaptic.impactOccurred()
+                paddle.run(SKAction.scaleX(by: 0.67, y: 1, duration: 0.2), completion: {
                     self.definePaddleProperties()
                 })
-                // Power up reverted
+                if ballIsOnPaddle {
+                    releaseBall()
+                }
             }
+            powerUpScore = -50
+            // Power up set
+            let powerUp93Timer: Double = 10
+            let powerUp93Wait = SKAction.wait(forDuration: powerUp93Timer)
+            let completionBlock93 = SKAction.run {
+                self.lightHaptic.impactOccurred()
+                self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+                    self.paddle.size.width = self.paddleWidth
+                    self.definePaddleProperties()
+                })
+            }
+            let powerUp93Sequence = SKAction.sequence([powerUp93Wait, completionBlock93])
+            self.run(powerUp93Sequence, withKey: "powerUp93")
+            // Power up reverted
             
-            
+        case powerUp07Texture:
+        // Lasers
+            self.removeAction(forKey: "powerUp07")
+            laserTimer?.invalidate()
+            // Remove any current timer for lasers
+            laserPowerUpIsOn = true
+            laserTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
+            // Power up set - lasers will fire every 0.1 s
+            let powerUp07Timer: Double = 10
+            let powerUp07Wait = SKAction.wait(forDuration: powerUp07Timer)
+            let completionBlock07 = SKAction.run {
+                self.laserTimer?.invalidate()
+                print("lasers off")
+            }
+            let powerUp07Sequence = SKAction.sequence([powerUp07Wait, completionBlock07])
+            self.run(powerUp07Sequence, withKey: "powerUp07")
+            // Power up reverted - lasers will fire for 10 s
         default:
             break
         }
@@ -1052,23 +1122,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Update score
     }
     
-    func startPowerUpTimer(duration: Double) {
-        let powerUpWait = SKAction.wait(forDuration: duration)
-        self.run(powerUpWait, completion: {
-            self.powerUpsReset()
-        })
-    }
-    
-    
     func powerUpsReset() {
         self.removeAllActions()
         // Stop all timers
+        paddle.size.width = paddleWidth
         ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
         ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.blockCategory.rawValue
         stickyPaddleCatches = 0
-        paddle.size.width = paddleWidth
+        paddle.color = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        ball.texture = ballTexture
+        let xRangePaddle = SKRange(lowerLimit:-self.frame.width/2 + paddle.size.width/2,upperLimit:self.frame.width/2 - paddle.size.width/2)
+        paddle.constraints = [SKConstraint.positionX(xRangePaddle)]
         definePaddleProperties()
-        // reset ball speed
+        laserPowerUpIsOn = false
+        laserTimer?.invalidate()
     }
     
 /* To Do:
@@ -1103,6 +1170,55 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.zPosition = 2
         paddle.physicsBody!.contactTestBitMask = CollisionTypes.powerUpCategory.rawValue
         // Define paddle properties
+        let xRangePaddle = SKRange(lowerLimit:-self.frame.width/2 + paddle.size.width/2,upperLimit:self.frame.width/2 - paddle.size.width/2)
+        paddle.constraints = [SKConstraint.positionX(xRangePaddle)]
+        // Stops the paddle leaving the screen
+    }
+    
+    @objc func laserGenerator() {
+        
+        let laser = SKSpriteNode(imageNamed: "Laser")
+        
+        laser.size.height = blockHeight/2
+        laser.size.width = laser.size.height * 0.67
+        
+        if laserSideLeft {
+            laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2, y: paddle.position.y + paddle.size.height/2)
+            laserSideLeft = false
+            // Left position
+        } else {
+            laser.position = CGPoint(x: paddle.position.x + paddle.size.width/2, y: paddle.position.y + paddle.size.height/2)
+            laserSideLeft = true
+            // Right position
+        }
+        // Alternate position of laser on paddle
+        
+        laser.texture = laserTexture
+        laser.physicsBody = SKPhysicsBody(rectangleOf: laser.frame.size)
+        laser.physicsBody!.allowsRotation = false
+        laser.physicsBody!.friction = 0.0
+        laser.physicsBody!.affectedByGravity = false
+        laser.physicsBody!.isDynamic = true
+        laser.name = LaserCategoryName
+        laser.physicsBody!.categoryBitMask = CollisionTypes.laserCategory.rawValue
+        laser.zPosition = 2
+        laser.physicsBody!.collisionBitMask = CollisionTypes.blockCategory.rawValue
+        laser.physicsBody!.contactTestBitMask = CollisionTypes.blockCategory.rawValue
+        // Define laser properties
+        
+        if ball.texture == superballTexture {
+            laser.physicsBody!.collisionBitMask = 0
+            laser.texture = superLaserTexture
+        }
+        // if superball power up is activated, allow laser to pass through blocks
+        
+        addChild(laser)
+        
+        let move = SKAction.moveBy(x: 0, y: self.frame.height, duration: 2)
+        laser.run(move, completion: {
+            laser.removeFromParent()
+        })
+        // Define laser movement
     }
     
 }

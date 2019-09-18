@@ -32,7 +32,11 @@ print("State: Inbetween Levels")
     
     func inbetweenLevels() {
         self.scene.removeAction(forKey: "levelTimer")
-        // Stop timer
+        self.scene.removeAllActions()
+        // Stop timer and all actions
+        
+        scene.powerUpsReset()
+        // Reset any power ups
         
         let scaleUp = SKAction.scale(to: 1.5, duration: 0.1)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
@@ -40,6 +44,9 @@ print("State: Inbetween Levels")
         let wait = SKAction.wait(forDuration: 0.1)
         let ballSequence = SKAction.sequence([scaleUp, scaleDown, fadeOut])
         let paddleSequence = SKAction.sequence([wait, scaleDown, fadeOut])
+        let scaleReset = SKAction.scale(to: 1, duration: 0)
+        let fadeReset = SKAction.fadeIn(withDuration: 0)
+        let resetGroup = SKAction.group([scaleReset, fadeReset])
         // Setup ball and paddle animations
         
         scene.ball.physicsBody!.velocity.dx = 0
@@ -48,17 +55,19 @@ print("State: Inbetween Levels")
         
         scene.ball.run(ballSequence, completion: {
             self.scene.ball.isHidden = true
+            self.scene.ball.run(resetGroup)
         })
         scene.paddle.run(paddleSequence, completion: {
             self.scene.paddle.isHidden = true
+            self.scene.paddle.run(resetGroup)
         })
         // Animate paddle and ball out after level is won
         
         let scaleDown2 = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut2 = SKAction.fadeOut(withDuration: 0.2)
-        let resetGroup = SKAction.group([scaleDown2, fadeOut2])
+        let removeBlockGroup = SKAction.group([scaleDown2, fadeOut2])
         scene.enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
-            node.run(resetGroup, completion: {
+            node.run(removeBlockGroup, completion: {
                 node.removeFromParent()
             })
         }
@@ -66,11 +75,18 @@ print("State: Inbetween Levels")
         // Remove any remaining blocks
         
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
-            node.run(resetGroup, completion: {
+            node.run(removeBlockGroup, completion: {
                 node.removeFromParent()
             })
         }
         // Remove any remaining powerups
+        
+        scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
+            node.run(removeBlockGroup, completion: {
+                node.removeFromParent()
+            })
+        }
+        // Remove any remaining lasers
         
         scene.cumulativeTimerValue = scene.cumulativeTimerValue + scene.levelTime
         scene.timeBonusPoints = scene.timeBonusPoints - Int(scene.levelTime)
