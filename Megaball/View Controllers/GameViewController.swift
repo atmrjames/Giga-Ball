@@ -34,6 +34,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
             view.showsFPS = true
             view.showsNodeCount = true
         }
+        
     }
     
     func moveToMainMenu() {

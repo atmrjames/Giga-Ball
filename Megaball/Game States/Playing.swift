@@ -49,8 +49,7 @@ print("State: Playing")
     
     func loadNextLevel() {
         scene.levelNumber += 1
-//        scene.levelNumberLabel.text = "Level \(scene.levelNumber)"
-        // Increment level number & update label
+        // Increment level number
         
         scene.livesLabel.text = "x\(self.scene.numberOfLives)"
         
@@ -92,6 +91,8 @@ print("State: Playing")
             scene.loadLevel1()
         case 2:
             scene.loadLevel2()
+        case 3:
+            scene.loadLevel3()
         default:
             break
         }

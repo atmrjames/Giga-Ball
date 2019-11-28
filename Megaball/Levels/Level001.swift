@@ -25,37 +25,12 @@ extension GameScene {
         for i in 0..<numberOfBlockRows {
             for j in 0..<numberOfBlockColumns {
                 let block = SKSpriteNode(imageNamed: "Block")
-                if i == 0 || i == 8 {
-                    // Normal blocks
-                    block.texture = blockTexture
-                }
-                if i == 1 || i == 7 {
-                    // Invisible blocks
-                    block.texture = blockInvisibleTexture
-                    block.isHidden = true
-                }
-                if i == 2 || i == 6 {
-                    // Double blocks
-                    block.texture = blockDouble1Texture
-                }
-                if i == 3 || i == 5 {
-                    // Null blocks
-                    block.texture = blockNullTexture
-                    block.isHidden = true
-                }
-                if i == 4 {
-                    if j == 0 || j == 2 || j == 4 || j == 6 {
-                        // Indestructible blocks
-                        block.texture = blockIndestructibleTexture
-                    } else {
-                        // Null blocks
-                        block.texture = blockNullTexture
-                        block.isHidden = true
-                    }
-                }
+                block.texture = blockTexture
                 block.size.width = blockWidth
                 block.size.height = blockHeight
-                block.position = CGPoint(x: -xBlockOffset + CGFloat(CGFloat(j) + 0.5) * blockWidth, y: (frame.height/2 * 0.6)-blockHeight*CGFloat(i))
+                block.anchorPoint.x = 0.5
+                block.anchorPoint.y = 0.5
+                block.position = CGPoint(x: -xBlockOffset + blockWidth*CGFloat(j), y: yBlockOffset - blockHeight*CGFloat(i))                
                 block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
                 block.physicsBody!.allowsRotation = false
                 block.physicsBody!.friction = 0.0
@@ -89,11 +64,5 @@ extension GameScene {
         }
 
         timeBonusPoints = level1TimeBonus
-
-        /* Level specific setup
-         power up probability
-         ball launch speed
-         ball linear dampening
-         */
     }
 }

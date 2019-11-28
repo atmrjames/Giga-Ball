@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1A04BEFA238FE42700EB6150 /* Level003.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A04BEF9238FE42700EB6150 /* Level003.swift */; };
 		1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94842309E4F30076D635 /* AppDelegate.swift */; };
 		1A5A94872309E4F30076D635 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94862309E4F30076D635 /* GameScene.sks */; };
 		1A5A94892309E4F30076D635 /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94882309E4F30076D635 /* Actions.sks */; };
@@ -29,6 +30,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1A04BEF9238FE42700EB6150 /* Level003.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level003.swift; sourceTree = "<group>"; };
 		1A5A94812309E4F30076D635 /* Megaball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Megaball.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A5A94842309E4F30076D635 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A5A94862309E4F30076D635 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
@@ -115,6 +117,7 @@
 			children = (
 				1AE957452324EC2A00E5618A /* Level001.swift */,
 				1AE957472324ECF200E5618A /* Level002.swift */,
+				1A04BEF9238FE42700EB6150 /* Level003.swift */,
 			);
 			path = Levels;
 			sourceTree = "<group>";
@@ -204,6 +207,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A5A948B2309E4F30076D635 /* GameScene.swift in Sources */,
+				1A04BEFA238FE42700EB6150 /* Level003.swift in Sources */,
 				1AE957442324523800E5618A /* MenuViewController.swift in Sources */,
 				1A5A948D2309E4F30076D635 /* GameViewController.swift in Sources */,
 				1AE9574B23257BB600E5618A /* InbewteenLevelsViewController.swift in Sources */,
@@ -365,7 +369,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -373,7 +377,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -384,7 +388,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -392,7 +396,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
