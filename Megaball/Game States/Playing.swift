@@ -29,7 +29,7 @@ print("State: Playing")
     // This function runs when this state is entered.
     
     func reloadUI() {
-        scene.levelNumberLabel.isHidden = false
+//        scene.levelNumberLabel.isHidden = false
         scene.scoreLabel.isHidden = false
         scene.highScoreLabel.isHidden = false
         scene.pausedButton.isHidden = false
@@ -49,7 +49,7 @@ print("State: Playing")
     
     func loadNextLevel() {
         scene.levelNumber += 1
-        scene.levelNumberLabel.text = "Level \(scene.levelNumber)"
+//        scene.levelNumberLabel.text = "Level \(scene.levelNumber)"
         // Increment level number & update label
         
         scene.livesLabel.text = "x\(self.scene.numberOfLives)"

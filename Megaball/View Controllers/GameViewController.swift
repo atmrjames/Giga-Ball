@@ -62,6 +62,18 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         popoverVC.didMove(toParent: self)
     }
     // Show InbetweenLevelsViewController as popup
+    
+    func showPauseMenu(levelNumber: Int) {
+        let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
+        popoverVC.levelNumber = levelNumber
+        // Update pause menu view controller properties with function input values
+
+        self.addChild(popoverVC)
+        popoverVC.view.frame = self.view.frame
+        self.view.addSubview(popoverVC.view)
+        popoverVC.didMove(toParent: self)
+    }
+    // Show PauseMenuViewController as popup
 
     override var shouldAutorotate: Bool {
         return true

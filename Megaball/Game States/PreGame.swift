@@ -33,7 +33,7 @@ print("State: PreGame")
     // This function runs when this state is exited.
     
     func resetGame() {
-        scene.levelNumberLabel.isHidden = true
+//        scene.levelNumberLabel.isHidden = true
         scene.scoreLabel.isHidden = true
         scene.highScoreLabel.isHidden = true
         scene.pausedButton.isHidden = true

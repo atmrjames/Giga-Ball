@@ -63,6 +63,8 @@ extension GameScene {
                 block.physicsBody!.isDynamic = false
                 block.name = BlockCategoryName
                 block.physicsBody!.categoryBitMask = CollisionTypes.blockCategory.rawValue
+                block.physicsBody!.collisionBitMask = CollisionTypes.laserCategory.rawValue
+                block.physicsBody!.contactTestBitMask = CollisionTypes.laserCategory.rawValue
                 block.zPosition = 0
                 addChild(block)
                 blockArray.append(block)

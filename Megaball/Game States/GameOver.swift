@@ -22,7 +22,7 @@ class GameOver: GKState {
         print("State: Gameover")
         
 //TODO: show game over label
-        scene.levelNumberLabel.text = "Game Over"
+//        scene.levelNumberLabel.text = "Game Over"
         
 // Move to inbetween levels
         if scene.timerArray[0] == 1 {
