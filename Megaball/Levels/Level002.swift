@@ -16,78 +16,78 @@ extension GameScene {
         let scaleUp = SKAction.scale(to: 1, duration: 0.5)
         let fadeIn = SKAction.fadeIn(withDuration: 0.5)
         let startingGroup = SKAction.group([startingScale, startingFade])
-        let blockGroup = SKAction.group([scaleUp, fadeIn])
-        // Setup block animation
+        let brickGroup = SKAction.group([scaleUp, fadeIn])
+        // Setup brick animation
         
-        var blockArray: [SKNode] = []
-        // Array to store all blocks
+        var brickArray: [SKNode] = []
+        // Array to store all bricks
         
-        for i in 0..<numberOfBlockRows {
-            for j in 0..<numberOfBlockColumns {
-                let block = SKSpriteNode(imageNamed: "Block")
+        for i in 0..<numberOfBrickRows {
+            for j in 0..<numberOfBrickColumns {
+                let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 if j == 0 || j == 9 {
-                    // Normal blocks
-                    block.texture = blockTexture
+                    // Normal bricks
+                    brick.texture = brickNormalTexture
                 }
                 if j == 1 || j == 8 {
-                    // Invisible blocks
-                    block.texture = blockInvisibleTexture
-                    block.isHidden = true
+                    // Invisible bricks
+                    brick.texture = brickInvisibleTexture
+                    brick.isHidden = true
                 }
                 if j == 2 || j == 7 {
-                    // Double blocks
-                    block.texture = blockDouble1Texture
+                    // Double bricks
+                    brick.texture = brickMultiHit1Texture
                 }
                 if j == 3 || j == 6 {
                     if i == 0 || i == 3 || i == 6 || i == 9 || i == 12 || i == 15 || i == 18 {
-                        // Indestructible blocks
-                        block.texture = blockIndestructibleTexture
+                        // Indestructible bricks
+                        brick.texture = brickIndestructibleTexture
                     } else {
-                        // Null blocks
-                        block.texture = blockNullTexture
-                        block.isHidden = true
+                        // Null bricks
+                        brick.texture = brickNullTexture
+                        brick.isHidden = true
                     }
                 }
                 if j == 4 || j == 5 {
-                    // Null blocks
-                    block.texture = blockNullTexture
-                    block.isHidden = true
+                    // Null bricks
+                    brick.texture = brickNullTexture
+                    brick.isHidden = true
                 }
-                block.size.width = blockWidth
-                block.size.height = blockHeight
-                block.anchorPoint.x = 0.5
-                block.anchorPoint.y = 0.5
-                block.position = CGPoint(x: -xBlockOffset + blockWidth*CGFloat(j), y: yBlockOffset - blockHeight*CGFloat(i))
-                block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
-                block.physicsBody!.allowsRotation = false
-                block.physicsBody!.friction = 0.0
-                block.physicsBody!.affectedByGravity = false
-                block.physicsBody!.isDynamic = false
-                block.name = BlockCategoryName
-                block.physicsBody!.categoryBitMask = CollisionTypes.blockCategory.rawValue
-                block.physicsBody!.collisionBitMask = CollisionTypes.laserCategory.rawValue
-                block.physicsBody!.contactTestBitMask = CollisionTypes.laserCategory.rawValue
-                block.zPosition = 0
-                addChild(block)
-                blockArray.append(block)
+                brick.size.width = brickWidth
+                brick.size.height = brickHeight
+                brick.anchorPoint.x = 0.5
+                brick.anchorPoint.y = 0.5
+                brick.position = CGPoint(x: -xBrickOffset + (brickWidth+brickSpacing)*CGFloat(j), y: yBrickOffset - (brickHeight+brickSpacing)*CGFloat(i))   
+                brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
+                brick.physicsBody!.allowsRotation = false
+                brick.physicsBody!.friction = 0.0
+                brick.physicsBody!.affectedByGravity = false
+                brick.physicsBody!.isDynamic = false
+                brick.name = BrickCategoryName
+                brick.physicsBody!.categoryBitMask = CollisionTypes.brickCategory.rawValue
+                brick.physicsBody!.collisionBitMask = CollisionTypes.laserCategory.rawValue
+                brick.physicsBody!.contactTestBitMask = CollisionTypes.laserCategory.rawValue
+                brick.zPosition = 0
+                addChild(brick)
+                brickArray.append(brick)
             }
         }
-        // Define block properties
+        // Define brick properties
         
-        for block in blockArray {
-            let blockCurrent = block as! SKSpriteNode
-            block.run(startingGroup)
-            block.run(blockGroup)
-            // Run animation for each block
+        for brick in brickArray {
+            let brickCurrent = brick as! SKSpriteNode
+            brick.run(startingGroup)
+            brick.run(brickGroup)
+            // Run animation for each brick
             
-            if blockCurrent.texture == blockNullTexture || blockCurrent.texture == blockIndestructibleTexture {
-                if blockCurrent.texture == blockNullTexture {
-                    blockCurrent.removeFromParent()
+            if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructibleTexture {
+                if brickCurrent.texture == brickNullTexture {
+                    brickCurrent.removeFromParent()
                 }
             } else {
-                blocksLeft += 1
+                bricksLeft += 1
             }
-            // Remove null blocks & discount indestructible blocks
+            // Remove null bricks & discount indestructible bricks
         }
         
         timeBonusPoints = level2TimeBonus

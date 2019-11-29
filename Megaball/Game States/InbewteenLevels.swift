@@ -65,24 +65,24 @@ print("State: Inbetween Levels")
         
         let scaleDown2 = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut2 = SKAction.fadeOut(withDuration: 0.2)
-        let removeBlockGroup = SKAction.group([scaleDown2, fadeOut2])
-        scene.enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
-            node.run(removeBlockGroup, completion: {
+        let removeBrickGroup = SKAction.group([scaleDown2, fadeOut2])
+        scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+            node.run(removeBrickGroup, completion: {
                 node.removeFromParent()
             })
         }
-        scene.blocksLeft = 0
-        // Remove any remaining blocks
+        scene.bricksLeft = 0
+        // Remove any remaining bricks
         
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
-            node.run(removeBlockGroup, completion: {
+            node.run(removeBrickGroup, completion: {
                 node.removeFromParent()
             })
         }
         // Remove any remaining powerups
         
         scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
-            node.run(removeBlockGroup, completion: {
+            node.run(removeBrickGroup, completion: {
                 node.removeFromParent()
             })
         }

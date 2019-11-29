@@ -11,7 +11,7 @@ import GameplayKit
 
 let PaddleCategoryName = "paddle"
 let BallCategoryName = "ball"
-let BlockCategoryName = "block"
+let BrickCategoryName = "brick"
 let PowerUpCategoryName = "powerUp"
 let LaserCategoryName = "laser"
 let ScreenBlockCategoryName = "screenBlock"
@@ -19,7 +19,7 @@ let ScreenBlockCategoryName = "screenBlock"
 
 enum CollisionTypes: UInt32 {
     case ballCategory = 1
-    case blockCategory = 2
+    case brickCategory = 2
     case paddleCategory = 4
 	case screenBlockCategory = 8
     case powerUpCategory = 16
@@ -45,10 +45,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var paddle = SKSpriteNode()
     var ball = SKSpriteNode()
-    var block = SKSpriteNode()
-    var blockDouble = SKSpriteNode()
-    var blockInvisible = SKSpriteNode()
-    var blockNull = SKSpriteNode()
+    var brick = SKSpriteNode()
+    var brickMultiHit = SKSpriteNode()
+    var brickInvisible = SKSpriteNode()
+    var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
 	var bottomScreenBlock = SKSpriteNode()
@@ -76,14 +76,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var ballLaunchAngleRad: Double = 0
     var ballLostHeight: CGFloat = 0
 	var ballLostAnimationHeight: CGFloat = 0
-    var blockHeight: CGFloat = 0
-    var blockWidth: CGFloat = 0
-    var numberOfBlockRows: Int = 0
-    var numberOfBlockColumns: Int = 0
-    var totalBlocksWidth: CGFloat = 0
-	var totalBlocksHeight: CGFloat = 0
-    var yBlockOffset: CGFloat = 0
-    var xBlockOffset: CGFloat = 0
+	var brickSpacing:CGFloat = 0
+	var brickHeight: CGFloat = 0
+    var brickWidth: CGFloat = 0
+    var numberOfBrickRows: Int = 0
+    var numberOfBrickColumns: Int = 0
+    var totalBricksWidth: CGFloat = 0
+	var totalBricksHeight: CGFloat = 0
+    var yBrickOffset: CGFloat = 0
+    var xBrickOffset: CGFloat = 0
     var powerUpSize: CGFloat = 0
 	var topScreenBlockHeight: CGFloat = 0
 	var bottomScreenBlockHeight: CGFloat = 0
@@ -97,18 +98,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var dyBall: Double = 0
     var speedBall: Double = 0
     var ballIsOnPaddle: Bool = true
-    var numberOfLives: Int = 3
+    var numberOfLives: Int = 0
     var collisionLocation: Double = 0
     var minAngleDeg: Double = 20
     var maxAngleDeg: Double = 160
     var angleAdjustmentK: Double = 50
         // Effect of paddle position hit on ball angle. Larger number means more effect
-    var blocksLeft: Int = 0
+    var bricksLeft: Int = 0
     var ballLinearDampening: CGFloat = 0
-	let ballMaxSet: CGFloat = 550
-	let ballMinSet: CGFloat = 450
+	let ballMaxSet: CGFloat = 400
+	let ballMinSet: CGFloat = 300
 	let ballMaxLimit: CGFloat = 750
-    let ballMinLimit: CGFloat = 250
+    let ballMinLimit: CGFloat = 150
     var ballMaxSpeed: CGFloat = 0
     var ballMinSpeed: CGFloat = 0
 	
@@ -122,8 +123,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
     
     var lifeLostScore: Int = 0
-    var blockHitScore: Int = 0
-    var blockDestroyScore: Int = 0
+    var brickHitScore: Int = 0
+    var brickDestroyScore: Int = 0
     var powerUpScore: Int = 0
 	var levelCompleteScore: Int = 0
     
@@ -140,59 +141,53 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var level3TimeBonus: Int = 0
     // Level time bonuses
     
-    let blockTexture: SKTexture = SKTexture(imageNamed: "Block")
-    let blockDouble1Texture: SKTexture = SKTexture(imageNamed: "BlockDouble1")
-    let blockDouble2Texture: SKTexture = SKTexture(imageNamed: "BlockDouble2")
-    let blockDouble3Texture: SKTexture = SKTexture(imageNamed: "BlockDouble3")
-    let blockInvisibleTexture: SKTexture = SKTexture(imageNamed: "BlockInvisible")
-    let blockNullTexture: SKTexture = SKTexture(imageNamed: "BlockNull")
-    let blockIndestructibleTexture: SKTexture = SKTexture(imageNamed: "BlockIndestructible")
-    // Block textures
+    let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
+	let brickInvisibleTexture: SKTexture = SKTexture(imageNamed: "BrickInvisible")
+    let brickMultiHit1Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit1")
+    let brickMultiHit2Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit2")
+    let brickMultiHit3Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit3")
+    let brickIndestructibleTexture: SKTexture = SKTexture(imageNamed: "BrickIndestructible")
+	let brickNullTexture: SKTexture = SKTexture(imageNamed: "BrickNull")
+    // Brick textures
     
-    let powerUp00Texture: SKTexture = SKTexture(imageNamed: "PowerUp00")
-    let powerUp01Texture: SKTexture = SKTexture(imageNamed: "PowerUp01")
-    let powerUp02Texture: SKTexture = SKTexture(imageNamed: "PowerUp02")
-    let powerUp03Texture: SKTexture = SKTexture(imageNamed: "PowerUp03")
-    let powerUp04Texture: SKTexture = SKTexture(imageNamed: "PowerUp04")
-    let powerUp05Texture: SKTexture = SKTexture(imageNamed: "PowerUp05")
-    let powerUp06Texture: SKTexture = SKTexture(imageNamed: "PowerUp06")
-    let powerUp07Texture: SKTexture = SKTexture(imageNamed: "PowerUp07")
-    let powerUp08Texture: SKTexture = SKTexture(imageNamed: "PowerUp08")
-    let powerUp09Texture: SKTexture = SKTexture(imageNamed: "PowerUp09")
-	let powerUp10Texture: SKTexture = SKTexture(imageNamed: "PowerUp10")
-    let powerUp11Texture: SKTexture = SKTexture(imageNamed: "PowerUp11")
-    let powerUp12Texture: SKTexture = SKTexture(imageNamed: "PowerUp12")
-    let powerUp13Texture: SKTexture = SKTexture(imageNamed: "PowerUp13")
-    let powerUp90Texture: SKTexture = SKTexture(imageNamed: "PowerUp90")
-    let powerUp91Texture: SKTexture = SKTexture(imageNamed: "PowerUp91")
-    let powerUp92Texture: SKTexture = SKTexture(imageNamed: "PowerUp92")
-    let powerUp93Texture: SKTexture = SKTexture(imageNamed: "PowerUp93")
-    let powerUp94Texture: SKTexture = SKTexture(imageNamed: "PowerUp94")
-    let powerUp95Texture: SKTexture = SKTexture(imageNamed: "PowerUp95")
-    let powerUp96Texture: SKTexture = SKTexture(imageNamed: "PowerUp96")
-    let powerUp97Texture: SKTexture = SKTexture(imageNamed: "PowerUp97")
-    let powerUp98Texture: SKTexture = SKTexture(imageNamed: "PowerUp98")
-    let powerUp99Texture: SKTexture = SKTexture(imageNamed: "PowerUp99")
+    let powerUpGetALife: SKTexture = SKTexture(imageNamed: "PowerUpGetALife")
+    let powerUpReduceBallSpeed: SKTexture = SKTexture(imageNamed: "PowerUpReduceBallSpeed")
+    let powerUpSuperBall: SKTexture = SKTexture(imageNamed: "PowerUpSuperBall")
+    let powerUpStickyPaddle: SKTexture = SKTexture(imageNamed: "PowerUpStickyPaddle")
+    let powerUpNextLevel: SKTexture = SKTexture(imageNamed: "PowerUpNextLevel")
+    let powerUpIncreasePaddleSize: SKTexture = SKTexture(imageNamed: "PowerUpIncreasePaddleSize")
+    let powerUpShowInvisibleBricks: SKTexture = SKTexture(imageNamed: "PowerUpShowInvisibleBricks")
+    let powerUpLasers: SKTexture = SKTexture(imageNamed: "PowerUpLasers")
+    let powerUpIndestructibleToMultiHitBricks: SKTexture = SKTexture(imageNamed: "PowerUpIndestructibleToMultiHitBricks")
+    let powerUpMultiHitToNormalBricks: SKTexture = SKTexture(imageNamed: "PowerUpMultiHitToNormalBricks")
+	let powerUpMystery: SKTexture = SKTexture(imageNamed: "PowerUpMystery")
+    let powerUpLoseALife: SKTexture = SKTexture(imageNamed: "PowerUpLoseALife")
+    let powerUpIncreaseBallSpeed: SKTexture = SKTexture(imageNamed: "PowerUpIncreaseBallSpeed")
+    let powerUpUndestructiBall: SKTexture = SKTexture(imageNamed: "PowerUpUndestructiBall")
+    let powerUpDecreasePaddleSize: SKTexture = SKTexture(imageNamed: "PowerUpDecreasePaddleSize")
+    let powerUpMultiplier: SKTexture = SKTexture(imageNamed: "PowerUpMultiplier")
+    let powerUpPointsBonus: SKTexture = SKTexture(imageNamed: "PowerUpPointsBonus")
+    let powerUpPointsPenalty: SKTexture = SKTexture(imageNamed: "PowerUpPointsPenalty")
+    let powerUpNormalToInvisibleBricks: SKTexture = SKTexture(imageNamed: "PowerUpNormalToInvisibleBricks")
+    let powerUpNormalToMultiHitBricks: SKTexture = SKTexture(imageNamed: "PowerUpNormalToMultiHitBricks")
+    let powerUpGravityBall: SKTexture = SKTexture(imageNamed: "PowerUpGravityBall")
     // Power up textures
-    
-	let concaveTexture: SKTexture = SKTexture(imageNamed: "Concave Paddle")
-	let convexTexture: SKTexture = SKTexture(imageNamed: "Convex Paddle")
-	// Paddle textures
 	
     let ballTexture: SKTexture = SKTexture(imageNamed: "Ball")
-    let superballTexture: SKTexture = SKTexture(imageNamed: "Superball")
-    let undestructiballTexture: SKTexture = SKTexture(imageNamed: "Undestructiball")
+    let superballTexture: SKTexture = SKTexture(imageNamed: "BallSuper")
+    let undestructiballTexture: SKTexture = SKTexture(imageNamed: "BallUndestructi")
     // Ball textures
     
-    let laserTexture: SKTexture = SKTexture(imageNamed: "Laser")
-    let superLaserTexture: SKTexture = SKTexture(imageNamed: "SuperLaser")
+    let laserLeftTexture: SKTexture = SKTexture(imageNamed: "LaserLeft")
+	let laserRightTexture: SKTexture = SKTexture(imageNamed: "LaserRight")
+    let superLaserTexture: SKTexture = SKTexture(imageNamed: "LaserSuper")
     // Laser textures
     
     var stickyPaddleCatches: Int = 0
     var laserPowerUpIsOn: Bool = false
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
-	let ballSpeedChange: CGFloat = 100
+	let ballSpeedChange: CGFloat = 150
     // Power up properties
     
     var contactCount: Int = 0
@@ -264,9 +259,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		bottomScreenBlock = self.childNode(withName: "bottomScreenBlock") as! SKSpriteNode
         // Links objects to nodes
 	
-		layoutUnit = self.frame.width/20
-		blockWidth = layoutUnit*2
-		blockHeight = layoutUnit*1
+		layoutUnit = (self.frame.width-1)/20
+		
+		brickWidth = layoutUnit*2 - 1
+		brickHeight = layoutUnit*1 - 1
+		brickSpacing = 1
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
         ball.size.height = ballSize
@@ -288,14 +285,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
-		numberOfBlockRows = 20
-        numberOfBlockColumns = 10
-        totalBlocksWidth = blockWidth * CGFloat(numberOfBlockColumns)
-		totalBlocksHeight = blockHeight * CGFloat(numberOfBlockRows)
-        xBlockOffset = totalBlocksWidth/2 - blockWidth/2
-		yBlockOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - blockHeight/2
+		numberOfBrickRows = 20
+        numberOfBrickColumns = 10
+        totalBricksWidth = (brickWidth + brickSpacing) * CGFloat(numberOfBrickColumns) + brickSpacing
+		totalBricksHeight = (brickHeight + brickSpacing) * CGFloat(numberOfBrickRows) + brickSpacing
+        xBrickOffset = totalBricksWidth/2 - brickWidth/2 - brickSpacing
+		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2 - brickSpacing
 		paddle.position.x = 0
-		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBlocksHeight - paddleGap - paddle.size.height/2
+		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
 		paddle.position.y = paddlePositionY
 		ball.position.x = 0
 		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ballSize/2 + ballSize/4
@@ -311,8 +308,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.isDynamic = true
         ball.name = BallCategoryName
         ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
-        ball.physicsBody!.collisionBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
-		ball.physicsBody!.contactTestBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue
+        ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue
 		ball.physicsBody!.usesPreciseCollisionDetection = true
         ball.zPosition = 2
         ball.physicsBody?.linearDamping = ballLinearDampening
@@ -393,7 +390,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		countdownLabel.position.y = 0
         // Label size & position definition
 		
-		pauseButtonSize = blockWidth*0.75
+		pauseButtonSize = brickWidth*0.75
         pausedButton.size.width = pauseButtonSize
         pausedButton.size.height = pauseButtonSize
         pausedButton.texture = pauseTexture
@@ -407,12 +404,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         ballMaxSpeed = ballMaxSet
         ballMinSpeed = ballMinSet
-        ballLinearDampening = -0.005
-		ballLaunchSpeed = 2
+        ballLinearDampening = -0.01
+		ballLaunchSpeed = 1.5
 		// Ball speed parameters
 		
-		blockHitScore = 1
-		blockDestroyScore = 5
+		brickHitScore = 1
+		brickDestroyScore = 5
 		powerUpScore = 25
 		lifeLostScore = -100
 		levelCompleteScore = 100
@@ -754,24 +751,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             // Stores the 2 bodies, with the body with the lower category being first
 
-            if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.blockCategory.rawValue {
-                if let blockNode = secondBody.node {
-                    hitBlock(node: blockNode, sprite: blockNode as! SKSpriteNode)
+            if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.brickCategory.rawValue {
+                if let brickNode = secondBody.node {
+                    hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode)
                 }
             }
-            // Hit block if it makes contact with ball
+            // Hit brick if it makes contact with ball
             
             if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue {
                 paddleHit()
             }
             // Hit ball if it makes contact with paddle
             
-            if firstBody.categoryBitMask == CollisionTypes.blockCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
-                if let blockNode = firstBody.node {
-					hitBlock(node: blockNode, sprite: blockNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode))
+            if firstBody.categoryBitMask == CollisionTypes.brickCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
+                if let brickNode = firstBody.node {
+					hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode))
                 }
             }
-            // Hit laser if it makes contact with block
+            // Hit laser if it makes contact with brick
 			
 			if firstBody.categoryBitMask == CollisionTypes.screenBlockCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
 				if let laserNode = secondBody.node {
@@ -795,50 +792,50 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    func hitBlock(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
+    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
         
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         // Haptic feedback
         
-        if laserSprite?.texture == laserTexture {
+        if laserSprite?.texture == laserLeftTexture || laserSprite?.texture == laserRightTexture {
             laserNode?.removeFromParent()
         }
-        // Remove laser if superball power up isn't activated
+        // Remove laser if super-ball power up isn't activated
         
         switch sprite.texture {
-        case blockTexture:
-            removeBlock(node: node, sprite: sprite)
+        case brickNormalTexture:
+            removeBrick(node: node, sprite: sprite)
             break
-        case blockDouble1Texture:
-            sprite.texture = blockDouble2Texture
-            levelScore = levelScore + blockHitScore*scoreFactor
+        case brickMultiHit1Texture:
+            sprite.texture = brickMultiHit2Texture
+            levelScore = levelScore + brickHitScore*scoreFactor
             break
-        case blockDouble2Texture:
-            sprite.texture = blockDouble3Texture
-            levelScore = levelScore + blockHitScore*scoreFactor
+        case brickMultiHit2Texture:
+            sprite.texture = brickMultiHit3Texture
+            levelScore = levelScore + brickHitScore*scoreFactor
             break
-        case blockDouble3Texture:
-            removeBlock(node: node, sprite: sprite)
+        case brickMultiHit3Texture:
+            removeBrick(node: node, sprite: sprite)
             break
-        case blockInvisibleTexture:
+        case brickInvisibleTexture:
             if sprite.isHidden {
                 let scaleDown = SKAction.scale(to: 0, duration: 0)
                 let fadeOut = SKAction.fadeOut(withDuration: 0)
                 let resetGroup = SKAction.group([scaleDown, fadeOut])
                 let scaleUp = SKAction.scale(to: 1, duration: 0.1)
                 let fadeIn = SKAction.fadeIn(withDuration: 0.1)
-                let blockHitGroup = SKAction.group([scaleUp, fadeIn])
+                let brickHitGroup = SKAction.group([scaleUp, fadeIn])
                 sprite.run(resetGroup, completion: {
                     sprite.isHidden = false
-                    sprite.run(blockHitGroup)
+                    sprite.run(brickHitGroup)
                 })
-                // Animate block in
+                // Animate bricks in
 
-                levelScore = levelScore + blockHitScore*scoreFactor
+                levelScore = levelScore + brickHitScore*scoreFactor
                 break
             }
-            removeBlock(node: node, sprite: sprite)
+            removeBrick(node: node, sprite: sprite)
             break
         default:
             break
@@ -846,31 +843,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.text = String(levelScore)
         // Update score
     }
-    // This method takes an SKNode. First, it creates an instance of SKEmitterNode from the BrokenPlatform.sks file, then sets it's position to the same position as the node. The emitter node's zPosition is set to 3, so that the particles appear above the remaining blocks. After the particles are added to the scene, the node (bamboo block) is removed.
     
-    func removeBlock(node: SKNode, sprite: SKSpriteNode) {
+    func removeBrick(node: SKNode, sprite: SKSpriteNode) {
         
         node.removeFromParent()
-        // Remove block
+        // Remove brick
         
         let powerUpProb = Int.random(in: 1...10)
-        if powerUpProb == 1 && blocksLeft != 1 {
+        if powerUpProb == 1 && bricksLeft != 1 {
             powerUpGenerator(sprite: sprite)
         }
-        // 1 in 10 probability of getting a power up if block is removed
+        // 1 in 10 probability of getting a power up if brick is removed
         
-        blocksLeft -= 1
-        levelScore = levelScore + blockDestroyScore*scoreFactor
+        bricksLeft -= 1
+        levelScore = levelScore + brickDestroyScore*scoreFactor
         scoreLabel.text = String(levelScore)
-        // Update number of blocks left and current score
+        // Update number of bricks left and current score
         
-        if blocksLeft == 0 {
+        if bricksLeft == 0 {
             if levelNumber == endLevelNumber {
                 gameoverStatus = true
             }
             gameState.enter(InbetweenLevels.self)
         }
-        // Loads the next level or ends the game if all blocks have been removed
+        // Loads the next level or ends the game if all bricks have been removed
     }
     
     func paddleHit() {
@@ -975,7 +971,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let powerUp = SKSpriteNode(imageNamed: "PowerUp00")
         
-        powerUp.size.width = blockWidth
+        powerUp.size.width = brickWidth
         powerUp.size.height = powerUp.size.width
         powerUp.position = CGPoint(x: sprite.position.x, y: sprite.position.y)
         powerUp.physicsBody = SKPhysicsBody(rectangleOf: powerUp.frame.size)
@@ -994,73 +990,73 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let powerUpProb = Int.random(in: 0...20)
         switch powerUpProb {
         case 0:
-            powerUp.texture = powerUp00Texture
+            powerUp.texture = powerUpGetALife
 			// Get a life
         case 1:
-            powerUp.texture = powerUp01Texture
+            powerUp.texture = powerUpReduceBallSpeed
 			// Reduce ball speed
         case 2:
-            powerUp.texture = powerUp02Texture
-			// Superball
+            powerUp.texture = powerUpSuperBall
+			// Super-ball
         case 3:
-            powerUp.texture = powerUp03Texture
+            powerUp.texture = powerUpStickyPaddle
 			// Sticky paddle
         case 4:
-            powerUp.texture = powerUp04Texture
+            powerUp.texture = powerUpNextLevel
 			// Next level
         case 5:
-            powerUp.texture = powerUp05Texture
+            powerUp.texture = powerUpIncreasePaddleSize
 			// Increase paddle size
         case 6:
-            powerUp.texture = powerUp06Texture
-			// Invisible blocks become visible
+            powerUp.texture = powerUpShowInvisibleBricks
+			// Invisible bricks become visible
         case 7:
-            powerUp.texture = powerUp07Texture
+            powerUp.texture = powerUpLasers
 			// Lasers
 		case 8:
-            powerUp.texture = powerUp08Texture
-			// Indestructible blocks become multi-hit blocks
+            powerUp.texture = powerUpIndestructibleToMultiHitBricks
+			// Indestructible bricks become multi-hit bricks
 		case 9:
-			powerUp.texture = powerUp09Texture
-			// Multi-hit blocks become normal blocks
+			powerUp.texture = powerUpMultiHitToNormalBricks
+			// Multi-hit bricks become normal bricks
         case 10:
-            powerUp.texture = powerUp90Texture
+            powerUp.texture = powerUpLoseALife
 			// Lose a life
         case 11:
-            powerUp.texture = powerUp91Texture
+            powerUp.texture = powerUpIncreaseBallSpeed
 			// Increase ball speed
         case 12:
-            powerUp.texture = powerUp92Texture
-			// Undestructiball
+            powerUp.texture = powerUpUndestructiBall
+			// Undestructi-ball
 		case 13:
-			powerUp.texture = powerUp93Texture
+			powerUp.texture = powerUpDecreasePaddleSize
 			// Decrease paddle size
 		case 14:
-			powerUp.texture = powerUp94Texture
-			// Double points
+			powerUp.texture = powerUpMultiplier
+			// Multiplier
 		case 15:
-			powerUp.texture = powerUp95Texture
-			// 1000 points
+			powerUp.texture = powerUpPointsBonus
+			// Bonus points
 		case 16:
-			powerUp.texture = powerUp96Texture
-			// -1000 points
+			powerUp.texture = powerUpPointsPenalty
+			// Penalty points
 		case 17:
-			powerUp.texture = powerUp97Texture
-			// Normal blocks become invisble blocks
+			powerUp.texture = powerUpNormalToInvisibleBricks
+			// Normal bricks become invisble bricks
 		case 18:
-			powerUp.texture = powerUp98Texture
-			// Normal blocks become multi-hit blocks
+			powerUp.texture = powerUpNormalToMultiHitBricks
+			// Normal bricks become multi-hit bricks
 		case 19:
-			powerUp.texture = powerUp99Texture
+			powerUp.texture = powerUpGravityBall
 			// Gravity ball
 		case 20:
-			powerUp.texture = powerUp10Texture
+			powerUp.texture = powerUpMystery
 			// Mystery power-up
         default:
             break
         }
         
-        let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 5)
+        let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 10)
         powerUp.run(move, completion: {
             powerUp.removeFromParent()
         })
@@ -1074,24 +1070,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         switch sprite.texture {
             
-        case powerUp00Texture:
+        case powerUpGetALife:
         // Get a life
             numberOfLives+=1
             livesLabel.text = "x\(numberOfLives)"
             powerUpScore = 25
             
-        case powerUp90Texture:
+        case powerUpLoseALife:
         // Lose a life
+			ball.physicsBody?.linearDamping = 2
             ballLostAnimation()
             self.run(SKAction.wait(forDuration: 0.2), completion: {
                 self.ballLost()
             })
             powerUpScore = 0
             
-        case powerUp01Texture:
+        case powerUpReduceBallSpeed:
         // Reduce ball speed
-			self.removeAction(forKey: "powerUp01")
-			self.removeAction(forKey: "powerUp91")
+			self.removeAction(forKey: "powerUpReduceBallSpeed")
+			self.removeAction(forKey: "powerUpIncreaseBallSpeed")
 			// Remove any current ball speed power up timers
 			if ballMinSpeed >= ballMinLimit + ballSpeedChange {
 				ballMaxSpeed = ballMaxSpeed - ballSpeedChange
@@ -1099,20 +1096,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
             powerUpScore = 25
 			// Power up set
-            let powerUp01Timer: Double = 10
-            let powerUp01Wait = SKAction.wait(forDuration: powerUp01Timer)
-			let completionBlock01 = SKAction.run {
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+			let completionBlock = SKAction.run {
 				self.ballMaxSpeed = self.ballMaxSet
 				self.ballMinSpeed = self.ballMinSet
             }
-            let powerUp01Sequence = SKAction.sequence([powerUp01Wait, completionBlock01])
-            self.run(powerUp01Sequence, withKey: "powerUp01")
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(sequence, withKey: "powerUpReduceBallSpeed")
             // Power up reverted
             
-        case powerUp91Texture:
+        case powerUpIncreaseBallSpeed:
         // Increase ball speed
-			self.removeAction(forKey: "powerUp01")
-			self.removeAction(forKey: "powerUp91")
+			self.removeAction(forKey: "powerUpReduceBallSpeed")
+			self.removeAction(forKey: "powerUpIncreaseBallSpeed")
 			// Remove any current ball speed power up timers
 			if ballMaxSpeed <= ballMaxLimit - ballSpeedChange {
 				ballMaxSpeed = ballMaxSpeed + ballSpeedChange
@@ -1120,66 +1117,66 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
             powerUpScore = -25
             // Power up set
-            let powerUp91Timer: Double = 10
-            let powerUp91Wait = SKAction.wait(forDuration: powerUp91Timer)
-			let completionBlock91 = SKAction.run {
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+			let completionBlock = SKAction.run {
 				self.ballMaxSpeed = self.ballMaxSet
 				self.ballMinSpeed = self.ballMinSet
             }
-            let powerUp91Sequence = SKAction.sequence([powerUp91Wait, completionBlock91])
-            self.run(powerUp91Sequence, withKey: "powerUp91")
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(sequence, withKey: "powerUpIncreaseBallSpeed")
             // Power up reverted
             
-        case powerUp02Texture:
-        // Superball
-            self.removeAction(forKey: "powerUp02")
-            // Remove any current superball power up timer
-            self.removeAction(forKey: "powerUp92")
+        case powerUpSuperBall:
+        // Super-ball
+            self.removeAction(forKey: "powerUpSuperBall")
+            // Remove any current super-ball power up timer
+            self.removeAction(forKey: "powerUpUndestructiBall")
             ball.texture = superballTexture
-            ball.physicsBody!.contactTestBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue
-            // Reset undestructiball power up
+            ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue
+            // Reset undestructi-ball power up
             ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
             powerUpScore = 25
             // Power up set
-            let powerUp02Timer: Double = 10
-            let powerUp02Wait = SKAction.wait(forDuration: powerUp02Timer)
-            let completionBlock02 = SKAction.run {
-				self.ball.physicsBody!.collisionBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+            let completionBlock = SKAction.run {
+				self.ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
                 self.ball.texture = self.ballTexture
             }
-            let powerUp02Sequence = SKAction.sequence([powerUp02Wait, completionBlock02])
-            self.run(powerUp02Sequence, withKey: "powerUp02")
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(sequence, withKey: "powerUpSuperBall")
             // Power up reverted
             
-        case powerUp92Texture:
-        // Undestructiball
-            self.removeAction(forKey: "powerUp92")
-            // Remove any current undestructiball power up timer
-            self.removeAction(forKey: "powerUp02")
+        case powerUpUndestructiBall:
+        // Undestructi-ball
+            self.removeAction(forKey: "powerUpUndestructiBall")
+            // Remove any current undestructi-ball power up timer
+            self.removeAction(forKey: "powerUpSuperBall")
             ball.texture = undestructiballTexture
-            ball.physicsBody!.collisionBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
-            // Reset superball power up
+            ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+            // Reset super-ball power up
             ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue
             powerUpScore = -25
             // Power up set
-            let powerUp92Timer: Double = 10
-            let powerUp92Wait = SKAction.wait(forDuration: powerUp92Timer)
-            let completionBlock92 = SKAction.run {
-                self.ball.physicsBody!.contactTestBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+            let completionBlock = SKAction.run {
+                self.ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue
                 self.ball.texture = self.ballTexture
             }
-            let powerUp92Sequence = SKAction.sequence([powerUp92Wait, completionBlock92])
-            self.run(powerUp92Sequence, withKey: "powerUp92")
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(sequence, withKey: "powerUpUndestructiBall")
             // Power up reverted
 
-        case powerUp03Texture:
+        case powerUpStickyPaddle:
         // Sticky paddle
             stickyPaddleCatches = 5
             powerUpScore = 25
             paddle.color = #colorLiteral(red: 0.8078431487, green: 0.02745098062, blue: 0.3333333433, alpha: 1)
             // Power up set and limit number of catches per power up
             
-        case powerUp04Texture:
+        case powerUpNextLevel:
         // Next level
             powerUpScore = 25
             if levelNumber == endLevelNumber {
@@ -1187,10 +1184,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             gameState.enter(InbetweenLevels.self)
             
-        case powerUp05Texture:
+        case powerUpIncreasePaddleSize:
         // Increase paddle size
-            self.removeAction(forKey: "powerUp05")
-            self.removeAction(forKey: "powerUp93")
+            self.removeAction(forKey: "powerUpIncreasePaddleSize")
+            self.removeAction(forKey: "powerUpDecreasePaddleSize")
             // Remove any current timer for paddle size power ups
             if paddle.size.width <= frame.size.width/2 {
                 lightHaptic.impactOccurred()
@@ -1200,9 +1197,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             powerUpScore = 25
             // Power up set
-            let powerUp05Timer: Double = 10
-            let powerUp05Wait = SKAction.wait(forDuration: powerUp05Timer)
-            let completionBlock05 = SKAction.run {
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+            let completionBlock = SKAction.run {
                 self.lightHaptic.impactOccurred()
                 self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
                     self.paddle.size.width = self.paddleWidth
@@ -1212,14 +1209,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     self.releaseBall()
                 }
             }
-            let powerUp05Sequence = SKAction.sequence([powerUp05Wait, completionBlock05])
-            self.run(powerUp05Sequence, withKey: "powerUp05")
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(sequence, withKey: "powerUpIncreasePaddleSize")
             // Power up reverted
             
-        case powerUp93Texture:
+        case powerUpDecreasePaddleSize:
         // Decrease paddle size
-            self.removeAction(forKey: "powerUp93")
-            self.removeAction(forKey: "powerUp05")
+            self.removeAction(forKey: "powerUpDecreasePaddleSize")
+            self.removeAction(forKey: "powerUpIncreasePaddleSize")
             // Remove any current timer for paddle size power ups
             if paddle.size.width >= frame.size.width/8 {
                 lightHaptic.impactOccurred()
@@ -1232,146 +1229,146 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             powerUpScore = -25
             // Power up set
-            let powerUp93Timer: Double = 10
-            let powerUp93Wait = SKAction.wait(forDuration: powerUp93Timer)
-            let completionBlock93 = SKAction.run {
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+            let completionBlock = SKAction.run {
                 self.lightHaptic.impactOccurred()
                 self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
                     self.paddle.size.width = self.paddleWidth
                     self.definePaddleProperties()
                 })
             }
-            let powerUp93Sequence = SKAction.sequence([powerUp93Wait, completionBlock93])
-            self.run(powerUp93Sequence, withKey: "powerUp93")
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(sequence, withKey: "powerUpDecreasePaddleSize")
             // Power up reverted
             
-        case powerUp07Texture:
+        case powerUpLasers:
         // Lasers
-            self.removeAction(forKey: "powerUp07")
+            self.removeAction(forKey: "powerUpLasers")
             laserTimer?.invalidate()
             // Remove any current timer for lasers
             laserPowerUpIsOn = true
             laserTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpScore = 25
             // Power up set - lasers will fire every 0.1s
-            let powerUp07Timer: Double = 10
-            let powerUp07Wait = SKAction.wait(forDuration: powerUp07Timer)
-            let completionBlock07 = SKAction.run {
+            let timer: Double = 10
+            let waitDuration = SKAction.wait(forDuration: timer)
+            let completionBlock = SKAction.run {
                 self.laserTimer?.invalidate()
             }
-            let powerUp07Sequence = SKAction.sequence([powerUp07Wait, completionBlock07])
-            self.run(powerUp07Sequence, withKey: "powerUp07")
+            let powerUp07Sequence = SKAction.sequence([waitDuration, completionBlock])
+            self.run(powerUp07Sequence, withKey: "powerUpLasers")
             // Power up reverted - lasers will fire for 10s
 			
-		case powerUp06Texture:
-		// Invisible blocks become visible
-			enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
+		case powerUpShowInvisibleBricks:
+		// Invisible bricks become visible
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				if node.isHidden == true {
 					let startingScale = SKAction.scale(to: 0, duration: 0)
 					let startingFade = SKAction.fadeOut(withDuration: 0)
 					let scaleUp = SKAction.scale(to: 1, duration: 0.5)
 					let fadeIn = SKAction.fadeIn(withDuration: 0.5)
 					let startingGroup = SKAction.group([startingFade, startingScale])
-					let blockGroup = SKAction.group([scaleUp, fadeIn])
+					let brickGroup = SKAction.group([scaleUp, fadeIn])
 					node.run(startingGroup, completion: {
 						node.isHidden = false
-						node.run(blockGroup)
+						node.run(brickGroup)
 					})
 				}
 			}
 			powerUpScore = 25
 			// Power up set
 			
-		case powerUp08Texture:
-		// Indestructible blocks become multi-hit blocks
-			enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
+		case powerUpIndestructibleToMultiHitBricks:
+		// Indestructible bricks become multi-hit bricks
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.blockIndestructibleTexture {
-					sprite.texture = self.blockDouble1Texture
-					self.blocksLeft += 1
+				if sprite.texture == self.brickIndestructibleTexture {
+					sprite.texture = self.brickMultiHit1Texture
+					self.bricksLeft += 1
 				}
 			}
 			powerUpScore = 25
 			// Power up set
 			
-		case powerUp09Texture:
-		// Multi-hit blocks become normal blocks
-			enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
+		case powerUpMultiHitToNormalBricks:
+		// Multi-hit bricks become normal bricks
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.blockDouble1Texture || sprite.texture == self.blockDouble2Texture || sprite.texture == self.blockDouble3Texture {
-					sprite.texture = self.blockTexture
+				if sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture {
+					sprite.texture = self.brickMultiHit3Texture
 				}
 			}
 			powerUpScore = 25
 			// Power up set
 		
-		case powerUp94Texture:
-		// Double points
-			self.removeAction(forKey: "powerUp94")
+		case powerUpMultiplier:
+		// Multiplier
+			self.removeAction(forKey: "powerUpMultiplier")
 			// Remove any current double points timers
 			scoreFactor = scoreFactor*2
 			powerUpScore = 25
 			// Power up set
-			let powerUp94Timer: Double = 10
-			let powerUp94Wait = SKAction.wait(forDuration: powerUp94Timer)
-			let completionBlock94 = SKAction.run {
+			let timer: Double = 20
+			let waitDuration = SKAction.wait(forDuration: timer)
+			let completionBlock = SKAction.run {
 				self.scoreFactor = 1
 			}
-			let powerUp94Sequence = SKAction.sequence([powerUp94Wait, completionBlock94])
-			self.run(powerUp94Sequence, withKey: "powerUp94")
+			let sequence = SKAction.sequence([waitDuration, completionBlock])
+			self.run(sequence, withKey: "powerUpMultiplier")
 			// Power up reverted
 			
-		case powerUp95Texture:
-		// 1000 points
-			powerUpScore = 1000
+		case powerUpPointsBonus:
+		// 100 points
+			powerUpScore = 100
 			// Power up set
 			
-		case powerUp96Texture:
-		// -1000 points
-			powerUpScore = -1000
+		case powerUpPointsPenalty:
+		// -100 points
+			powerUpScore = -100
 			// Power up set
 			
-		case powerUp97Texture:
-		// Normal blocks become invisble blocks
-			enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
+		case powerUpNormalToInvisibleBricks:
+		// Normal bricks become invisble bricks
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.blockTexture {
-					sprite.texture = self.blockInvisibleTexture
+				if sprite.texture == self.brickNormalTexture {
+					sprite.texture = self.brickInvisibleTexture
 					sprite.isHidden = true
 				}
 			}
 			powerUpScore = -25
 			// Power up set
 			
-		case powerUp98Texture:
-		// Normal blocks become multi-hit blocks
-			enumerateChildNodes(withName: BlockCategoryName) { (node, _) in
+		case powerUpNormalToMultiHitBricks:
+		// Normal bricks become multi-hit bricks
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.blockTexture {
-					sprite.texture = self.blockDouble1Texture
+				if sprite.texture == self.brickNormalTexture {
+					sprite.texture = self.brickMultiHit1Texture
 				}
 			}
 			powerUpScore = -25
 			// Power up set
 			
-		case powerUp99Texture:
+		case powerUpGravityBall:
 		// Gravity ball
-			self.removeAction(forKey: "powerUp99")
+			self.removeAction(forKey: "powerUpGravityBall")
 			// Remove any current gravity timers
 			physicsWorld.gravity = CGVector(dx: 0, dy: -1.62)
 			ball.physicsBody!.affectedByGravity = true
 			powerUpScore = -25
 			// Power up set
-			let powerUp99Timer: Double = 10
-			let powerUp99Wait = SKAction.wait(forDuration: powerUp99Timer)
-			let completionBlock99 = SKAction.run {
+			let timer: Double = 10
+			let waitDuration = SKAction.wait(forDuration: timer)
+			let completionBlock = SKAction.run {
 				self.ball.physicsBody!.affectedByGravity = false
 			}
-			let powerUp99Sequence = SKAction.sequence([powerUp99Wait, completionBlock99])
-			self.run(powerUp99Sequence, withKey: "powerUp99")
+			let sequence = SKAction.sequence([waitDuration, completionBlock])
+			self.run(sequence, withKey: "powerUpGravityBall")
 			// Power up reverted
 			
-		case powerUp10Texture:
+		case powerUpMystery:
 		// Mystery power-up
 			powerUpScore = 0
 			
@@ -1393,8 +1390,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.removeAllActions()
         // Stop all timers
         paddle.size.width = paddleWidth
-        ball.physicsBody!.collisionBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
-        ball.physicsBody!.contactTestBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.paddleCategory.rawValue
+        ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+        ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue
         stickyPaddleCatches = 0
         paddle.color = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         ball.texture = ballTexture
@@ -1406,6 +1403,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		scoreFactor = 1
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
 		ball.physicsBody!.affectedByGravity = false
+		ball.physicsBody?.linearDamping = ballLinearDampening
     }
     
     func moveToMainMenu() {
@@ -1441,21 +1439,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let laser = SKSpriteNode(imageNamed: "Laser")
         
-        laser.size.height = blockHeight/2
-        laser.size.width = laser.size.height * 0.67
+        laser.size.width = layoutUnit/2
+		laser.size.height = laser.size.width*4.5
         
         if laserSideLeft {
             laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2, y: paddle.position.y + paddle.size.height/2)
+			laser.texture = laserLeftTexture
             laserSideLeft = false
             // Left position
         } else {
             laser.position = CGPoint(x: paddle.position.x + paddle.size.width/2, y: paddle.position.y + paddle.size.height/2)
+			laser.texture = laserRightTexture
             laserSideLeft = true
             // Right position
         }
         // Alternate position of laser on paddle
         
-        laser.texture = laserTexture
         laser.physicsBody = SKPhysicsBody(rectangleOf: laser.frame.size)
         laser.physicsBody!.allowsRotation = false
         laser.physicsBody!.friction = 0.0
@@ -1463,8 +1462,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         laser.physicsBody!.isDynamic = true
         laser.name = LaserCategoryName
         laser.physicsBody!.categoryBitMask = CollisionTypes.laserCategory.rawValue
-		laser.physicsBody!.collisionBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
-		laser.physicsBody!.contactTestBitMask = CollisionTypes.blockCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+		laser.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+		laser.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
 		laser.physicsBody!.usesPreciseCollisionDetection = true
         laser.zPosition = 1
         // Define laser properties
@@ -1473,7 +1472,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             laser.physicsBody!.collisionBitMask = 0
             laser.texture = superLaserTexture
         }
-        // if superball power up is activated, allow laser to pass through blocks
+        // if super-ball power up is activated, allow laser to pass through bricks
         
         addChild(laser)
         
