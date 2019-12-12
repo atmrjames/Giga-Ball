@@ -25,26 +25,26 @@ extension GameScene {
         for i in 0..<numberOfBrickRows {
             for j in 0..<numberOfBrickColumns {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
-                if i == 0 || i == 1 || i == 18 || i == 19 {
+                if i == 0 || i == 1 || i == 16 || i == 17 {
                     // Normal bricks
                     brick.texture = brickNormalTexture
                 }
-                if i == 2 || i == 4 || i == 15 || i == 17 {
+                if i == 2 || i == 4 || i == 15 || i == 13 {
                     // Invisible bricks
                     brick.texture = brickInvisibleTexture
                     brick.isHidden = true
                 }
-                if i == 3 || i == 6 || i == 13 || i == 16 {
+                if i == 3 || i == 6 || i == 11 || i == 14 {
                     // Double bricks
                     brick.texture = brickMultiHit1Texture
                 }
-                if i == 5 || i == 7 || i == 9 || i == 10 || i == 12 || i == 14 {
+                if i == 5 || i == 7 || i == 10 || i == 12 {
                     // Null bricks
                     brick.texture = brickNullTexture
                     brick.isHidden = true
                 }
-                if i == 8 || i == 11 {
-                    if j == 0 || j == 1 || j == 3 || j == 6 || j == 8 || j == 9 {
+                if i == 8 || i == 9 {
+                    if j == 0 || j == 2 || j == 4 || j == 6 || j == 8 {
                         // Indestructible bricks
                         brick.texture = brickIndestructibleTexture
                     } else {
@@ -89,8 +89,6 @@ extension GameScene {
             }
             // Remove null bricks & discount indestructible bricks
         }
-
-        timeBonusPoints = level3TimeBonus
     }
 }
 

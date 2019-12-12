@@ -42,18 +42,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     }
     // Segue to MenuViewController
     
-    func showEndLevelStats(levelNumber: Int, levelScore: Int, levelTime: Double, cumulativeScore: Int, cumulativeTime: Double, levelHighscore: Int, levelBestTime: Double, bestScoreToLevel: Int, bestTimeToLevel: Double, cumulativeHighscore: Int, gameoverStatus: Bool) {
+    func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool) {
         let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! InbewteenLevelsViewController
         popoverVC.levelNumber = levelNumber
         popoverVC.levelScore = levelScore
-        popoverVC.levelTime = levelTime
-        popoverVC.cumulativeScore = cumulativeScore
-        popoverVC.cumulativeTime = cumulativeTime
         popoverVC.levelHighscore = levelHighscore
-        popoverVC.levelBestTime = levelBestTime
-        popoverVC.bestScoreToLevel = bestScoreToLevel
-        popoverVC.bestTimeToLevel = bestTimeToLevel
-        popoverVC.cumulativeHighscore = cumulativeHighscore
+        popoverVC.totalScore = totalScore
+        popoverVC.totalHighscore = totalHighscore
         popoverVC.gameoverStatus = gameoverStatus
         // Update popup view controller properties with function input values
 

@@ -18,12 +18,11 @@ class Paused: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-print("State: Paused")
 
         scene.showPauseMenu()
         scene.pauseGame()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToUnpause(_:)), name: .unpause, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.unpauseNotificationKeyReceived), name: .unpause, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu
         
 // TODO:
@@ -36,7 +35,7 @@ print("State: Paused")
     }
     // This function runs when this state is entered.
     
-    @objc func notificationToUnpause(_ notification: Notification) {
+    @objc func unpauseNotificationKeyReceived(_ notification: Notification) {
         scene.unpauseGame()
     }
     // Call the function to unpause the game if a notification from the pause menu popup is received

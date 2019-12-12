@@ -18,7 +18,6 @@ class Playing: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-print("State: Playing")
         if scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber {
             scene.gameState.enter(GameOver.self)
         } else if previousState is PreGame || previousState is InbetweenLevels {
@@ -32,26 +31,55 @@ print("State: Playing")
 //        scene.levelNumberLabel.isHidden = false
         scene.scoreLabel.isHidden = false
         scene.highScoreLabel.isHidden = false
-        scene.pausedButton.isHidden = false
-        scene.timerLabel.isHidden = false
-        scene.bestTimeLabel.isHidden = false
+        scene.multiplierLabel.isHidden = false
+        scene.pauseButton.isHidden = false
         scene.livesLabel.isHidden = false
         scene.life.isHidden = false
         // Show game labels
         
         scene.livesLabel.text = "x\(scene.numberOfLives)"
-        scene.scoreLabel.text = String(scene.cumulativeScore)
-        scene.highScoreLabel.text = String(scene.highscore)
-        scene.timerLabel.text = String(format: "%.2f", scene.cumulativeTimerValue)
-        scene.bestTimeLabel.text = String(format: "%.2f", scene.bestCumulativeTime)
         // Reset labels
     }
     
     func loadNextLevel() {
+        
         scene.levelNumber += 1
         // Increment level number
         
+        scene.brickRemovalCounter = 0
+        
+        scene.newLevelHighScore = false
+        scene.newTotalHighScore = false
+        // Reset level and total highscore booleans
+        
+        if scene.levelScoreArray.count < scene.levelNumber {
+            scene.levelScoreArray.append(1)
+        }
+        // Check the level score item exists in the array for the new level, if not create a placeholder
+        
+        if scene.totalScoreArray.count < scene.levelNumber {
+            scene.totalScoreArray.append(1)
+        }
+        // Check the total score item exists in the array for the new level, if not create a placeholder (value = 1)
+        
+        if scene.levelScoreArray[scene.levelNumber-1] != 1 {
+            scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
+            scene.highScoreLabel.text = String(scene.levelHighscore)
+        } else {
+            scene.highScoreLabel.text = ""
+        }
+        // Add level highscore to level highscore label, if no highscore exists (value = 1) show nothing
+        
+        scene.levelScore = 0
+        scene.multiplier = 1
+        scene.scoreLabel.text = String(scene.levelScore)
+        scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
+        scene.multiplierLabel.text = "x\(scene.scoreFactorString)"
+        // Update score
+        // Reset level scores and label
+        
         scene.livesLabel.text = "x\(self.scene.numberOfLives)"
+        // Update number of lives label
         
         scene.contactCount = 0
         
@@ -67,8 +95,6 @@ print("State: Playing")
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
         
-        scene.powerUpsReset()
-        
         let startingScale = SKAction.scale(to: 0, duration: 0)
         let startingFade = SKAction.fadeIn(withDuration: 0)
         let scaleUp = SKAction.scale(to: 1, duration: 0.5)
@@ -81,11 +107,6 @@ print("State: Playing")
         scene.paddle.run(paddleSequence)
         // Animate paddle and ball in
         
-        // load new best time for board
-        // load new highscore for board
-        // reset number of lives
-        
-        // load new board
         switch scene.levelNumber {
         case 1:
             scene.loadLevel1()
@@ -96,6 +117,8 @@ print("State: Playing")
         default:
             break
         }
+        // Load level in
+        
     }
     
     override func willExit(to nextState: GKState) {

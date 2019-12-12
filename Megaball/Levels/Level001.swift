@@ -62,7 +62,5 @@ extension GameScene {
             }
             // Remove null bricks & discount indestructible bricks
         }
-
-        timeBonusPoints = level1TimeBonus
     }
 }

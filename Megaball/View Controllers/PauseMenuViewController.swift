@@ -60,7 +60,7 @@ class PauseMenuViewController: UIViewController {
     }
     
     func showAnimate() {
-        self.view.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
         self.view.alpha = 0.0;
         UIView.animate(withDuration: 0.25, animations: {
             self.view.alpha = 1.0
@@ -76,7 +76,7 @@ class PauseMenuViewController: UIViewController {
     
     func removeAnimate(nextAction: Notification.Name) {
         UIView.animate(withDuration: 0.25, animations: {
-            self.view.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+            self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.view.alpha = 0.0})
         { (finished: Bool) in
             if (finished) {

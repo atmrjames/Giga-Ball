@@ -10,33 +10,29 @@ import UIKit
 
 class InbewteenLevelsViewController: UIViewController {
     
-    var levelScore: Int = 0
-    var levelTime: Double = 0.0
-    var cumulativeScore: Int = 0
-    var cumulativeTime: Double = 0.0
-    var levelHighscore: Int = 0
-    var levelBestTime: Double = 0.0
-    var bestScoreToLevel: Int = 0
-    var bestTimeToLevel: Double = 0.0
-    var cumulativeHighscore: Int = 0
-    var levelNumber: Int = 0
+    var levelNumber: Int = 4
+    var levelScore: Int = 4
+    var levelHighscore: Int = 4
+    var totalScore: Int = 4
+    var totalHighscore: Int = 4
     var gameoverStatus: Bool = false
     // Properties to store passed over data
 
-    @IBOutlet weak var boardCompleteTitleLabel: UILabel!
-    @IBOutlet weak var previousBoardScoreLabel: UILabel!
-    @IBOutlet weak var previousBoardTimeScore: UILabel!
-    @IBOutlet weak var cumulativeScoreLabel: UILabel!
-    @IBOutlet weak var cumulativeTimeLabel: UILabel!
-    @IBOutlet weak var previousBoardHighscoreLabel: UILabel!
-    @IBOutlet weak var previousBoardBestTime: UILabel!
-    @IBOutlet weak var previousBestScoreToThisPointLabel: UILabel!
-    @IBOutlet weak var previousBestTimeToThisPointLabel: UILabel!
-    @IBOutlet weak var cumulativeHighscoreLabel: UILabel!
-    @IBOutlet weak var startNextBoardButton: UIButton!
-    @IBOutlet weak var restartButton: UIButton!
+    @IBOutlet weak var popupView: UIView!
+    @IBOutlet weak var levelCompleteLabel: UILabel!
+    @IBOutlet weak var levelScoreLabel: UILabel!
+    @IBOutlet weak var levelHighscoreLabel: UILabel!
+    @IBOutlet weak var totalScoreLabel: UILabel!
+    @IBOutlet weak var totalHighscoreLabel: UILabel!
+
+    @IBOutlet weak var filledStar1: UIImageView!
+    @IBOutlet weak var filledStar2: UIImageView!
+    @IBOutlet weak var filledStar3: UIImageView!
     
-    @IBAction func startNextBoardButton(_ sender: UIButton) {
+    @IBOutlet weak var nextLevelButtonLabel: UIButton!
+    @IBOutlet weak var restartButtonLabel: UIButton!
+    
+    @IBAction func nextLevelButton(_ sender: UIButton) {
         removeAnimate(nextAction: .continueToNextLevel)
         // move game scene to playing
     }
@@ -45,15 +41,15 @@ class InbewteenLevelsViewController: UIViewController {
         restart()
     }
     
-    
     override func viewDidLoad() {
         super.viewDidLoad()
+
         showAnimate()
         updateLabels()
     }
-    
+
     func showAnimate() {
-        self.view.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
+        self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
         self.view.alpha = 0.0;
         UIView.animate(withDuration: 0.25, animations: {
             self.view.alpha = 1.0
@@ -63,7 +59,7 @@ class InbewteenLevelsViewController: UIViewController {
     
     func removeAnimate(nextAction: Notification.Name) {
         UIView.animate(withDuration: 0.25, animations: {
-            self.view.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
+            self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.view.alpha = 0.0
         }) { (finished: Bool) in
             if (finished) {
@@ -77,24 +73,18 @@ class InbewteenLevelsViewController: UIViewController {
     func updateLabels() {
         
         if gameoverStatus {
-            boardCompleteTitleLabel.text = "GAME OVER"
-            startNextBoardButton.setTitle("MAIN MENU", for: .normal)
-            restartButton.isHidden = false
-// Add replay button
+            levelCompleteLabel.text = "G A M E  O V E R"
+            nextLevelButtonLabel.setTitle("MAIN MENU", for: .normal)
+            restartButtonLabel.isHidden = false
         } else {
-            boardCompleteTitleLabel.text = "LEVEL \(levelNumber) COMPLETE"
-            previousBoardScoreLabel.text = String(levelScore)
-            previousBoardTimeScore.text = String(format: "%.2f", levelTime)
-            cumulativeScoreLabel.text = String(cumulativeScore)
-            cumulativeTimeLabel.text = String(format: "%.2f", cumulativeTime)
-            previousBoardHighscoreLabel.text = String(levelHighscore)
-            previousBoardBestTime.text = String(format: "%.2f", levelBestTime)
-            previousBestScoreToThisPointLabel.text = String(bestScoreToLevel)
-            previousBestTimeToThisPointLabel.text = String(format: "%.2f", bestTimeToLevel)
-            cumulativeHighscoreLabel.text = String(cumulativeHighscore)
-            startNextBoardButton.setTitle("NEXT LEVEL", for: .normal)
-            restartButton.isHidden = true
+            levelCompleteLabel.text = "L E V E L  \(levelNumber)"
+            nextLevelButtonLabel.setTitle("NEXT LEVEL", for: .normal)
+            restartButtonLabel.isHidden = true
         }
+        levelScoreLabel.text = String(levelScore)
+        levelHighscoreLabel.text = "Highscore: \(levelHighscore)"
+        totalScoreLabel.text = String(totalScore)
+        totalHighscoreLabel.text = "Highscore: \(totalHighscore)"
     }
     
     func restart() {

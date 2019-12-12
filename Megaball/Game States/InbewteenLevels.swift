@@ -18,7 +18,6 @@ class InbetweenLevels: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-print("State: Inbetween Levels")
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToContinueReceived(_:)), name: .continueToNextLevel, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
@@ -31,9 +30,8 @@ print("State: Inbetween Levels")
     // This function runs when this state is entered.
     
     func inbetweenLevels() {
-        self.scene.removeAction(forKey: "levelTimer")
         self.scene.removeAllActions()
-        // Stop timer and all actions
+        // Stop all actions
         
         scene.powerUpsReset()
         // Reset any power ups
@@ -65,9 +63,10 @@ print("State: Inbetween Levels")
         
         let scaleDown2 = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut2 = SKAction.fadeOut(withDuration: 0.2)
-        let removeBrickGroup = SKAction.group([scaleDown2, fadeOut2])
+        let removeItemGroup = SKAction.group([scaleDown2, fadeOut2])
         scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-            node.run(removeBrickGroup, completion: {
+            node.removeAllActions()
+            node.run(removeItemGroup, completion: {
                 node.removeFromParent()
             })
         }
@@ -75,39 +74,47 @@ print("State: Inbetween Levels")
         // Remove any remaining bricks
         
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
-            node.run(removeBrickGroup, completion: {
+            node.removeAllActions()
+            node.run(removeItemGroup, completion: {
                 node.removeFromParent()
             })
         }
-        // Remove any remaining powerups
+        // Remove any remaining power-ups
         
         scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
-            node.run(removeBrickGroup, completion: {
+            node.removeAllActions()
+            node.run(removeItemGroup, completion: {
                 node.removeFromParent()
             })
         }
         // Remove any remaining lasers
         
-        scene.cumulativeTimerValue = scene.cumulativeTimerValue + scene.levelTime
-        scene.timeBonusPoints = scene.timeBonusPoints - Int(scene.levelTime)
-        scene.levelScore = scene.levelScore + scene.levelCompleteScore + scene.timeBonusPoints
-        scene.cumulativeScore = scene.cumulativeScore + scene.levelScore
-        // Update score with time and level complete bonus
+// TODO: Hide all gamescene labels and buttons - remember to show again in Playing
         
-// TODO: update highscore and best time tables
-// TODO: show stats table
-
-
-        // Reset current level timer and score
+        scene.totalScore = scene.totalScore + scene.levelScore
+        // Update level and total scores with level complete bonus
         
-        // Load up stats for previous board and so far
+        if scene.levelScore > scene.levelScoreArray[scene.levelNumber-1] {
+            scene.levelScoreArray[scene.levelNumber-1] = scene.levelScore
+            scene.dataStore.set(scene.levelScoreArray, forKey: "LevelScoreStore")
+            scene.newLevelHighScore = true
+        }
+        scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
+        // Save level score if its the highscore and update NSUserDefaults
     
-// Show game stats popup
+        if scene.totalScore > scene.totalScoreArray[scene.levelNumber-1] {
+            scene.totalScoreArray[scene.levelNumber-1] = scene.totalScore
+            scene.dataStore.set(scene.totalScoreArray, forKey: "TotalScoreStore")
+            scene.newTotalHighScore = true
+        }
+        scene.totalHighscore = scene.totalScoreArray[scene.levelNumber-1]
+        // Save total score if its the highscore and update NSUserDefaults
+        
         let waitScene = SKAction.wait(forDuration: 1)
         self.scene.run(waitScene, completion: {
             self.scene.showEndLevelStats()
-// Pause game during wait and popup show
         })
+        // Show game stats popup
         
     }
     
@@ -126,8 +133,6 @@ print("State: Inbetween Levels")
     }
     
     override func willExit(to nextState: GKState) {
-        scene.levelTime = 0
-        scene.levelScore = 0
     }
     // This function runs when this state is exited.
     
