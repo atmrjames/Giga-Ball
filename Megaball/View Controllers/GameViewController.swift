@@ -34,7 +34,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
             view.showsFPS = true
             view.showsNodeCount = true
         }
-        
     }
     
     func moveToMainMenu() {
@@ -86,4 +85,20 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     override var prefersStatusBarHidden: Bool {
         return true
     }
+    
+//    override func viewDidLayoutSubviews() {
+//        setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
+//    }
+//    // Setup controlling home bar status on other view controllers
+    
+    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
+        return [.bottom]
+    }
+    // Disable home bar on 1st swipe
+    
+//    override var childForScreenEdgesDeferringSystemGestures: UIViewController? {
+//        return children.first { type(of: $0) == PauseMenuViewController.self }
+//    }
+//    // Allow re-enabling of home bar on 1st swipe in child view controllers
+    
 }

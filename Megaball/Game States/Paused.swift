@@ -19,8 +19,13 @@ class Paused: GKState {
     
     override func didEnter(from previousState: GKState?) {
 
+        scene.pauseButton.texture = scene.playTexture
+        self.scene.isPaused = true
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        // Haptic feedback
+
         scene.showPauseMenu()
-        scene.pauseGame()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.unpauseNotificationKeyReceived), name: .unpause, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu
@@ -36,7 +41,7 @@ class Paused: GKState {
     // This function runs when this state is entered.
     
     @objc func unpauseNotificationKeyReceived(_ notification: Notification) {
-        scene.unpauseGame()
+        scene.gameState.enter(Playing.self)
     }
     // Call the function to unpause the game if a notification from the pause menu popup is received
     

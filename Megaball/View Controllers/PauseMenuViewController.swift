@@ -34,7 +34,6 @@ class PauseMenuViewController: UIViewController {
         setBlur()
         showAnimate()
         updateLabels()
-
     }
     
     func setBlur() {
@@ -57,6 +56,9 @@ class PauseMenuViewController: UIViewController {
         blurView.bottomAnchor.constraint(equalTo: popupView.bottomAnchor)
         ])
         // Keep the frame of the blurView consistent with that of the associated view.
+        
+        addParallaxToView(vw: popupView, ve: blurView)
+        
     }
     
     func showAnimate() {
@@ -86,4 +88,29 @@ class PauseMenuViewController: UIViewController {
             }
         }
     }
+    
+    
+    
+    func addParallaxToView(vw: UIView, ve: UIVisualEffectView) {
+        let amount = 20
+
+        let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
+        horizontal.minimumRelativeValue = -amount
+        horizontal.maximumRelativeValue = amount
+
+        let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
+        vertical.minimumRelativeValue = -amount
+        vertical.maximumRelativeValue = amount
+
+        let group = UIMotionEffectGroup()
+        group.motionEffects = [horizontal, vertical]
+        vw.addMotionEffect(group)
+        ve.addMotionEffect(group)
+
+    }
+    
+    //    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
+    //        return []
+    //    }
+    //    // Re-enable home bar on 1st swipe
 }

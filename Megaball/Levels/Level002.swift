@@ -57,7 +57,7 @@ extension GameScene {
                 brick.size.height = brickHeight
                 brick.anchorPoint.x = 0.5
                 brick.anchorPoint.y = 0.5
-                brick.position = CGPoint(x: -xBrickOffset + (brickWidth+brickSpacing)*CGFloat(j), y: yBrickOffset - (brickHeight+brickSpacing)*CGFloat(i))   
+                brick.position = CGPoint(x: -xBrickOffset + (brickWidth+objectSpacing)*CGFloat(j), y: yBrickOffset - (brickHeight+objectSpacing)*CGFloat(i))   
                 brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
                 brick.physicsBody!.allowsRotation = false
                 brick.physicsBody!.friction = 0.0
@@ -68,6 +68,7 @@ extension GameScene {
                 brick.physicsBody!.collisionBitMask = CollisionTypes.laserCategory.rawValue
                 brick.physicsBody!.contactTestBitMask = CollisionTypes.laserCategory.rawValue
                 brick.zPosition = 0
+                brick.physicsBody?.usesPreciseCollisionDetection = true
                 addChild(brick)
                 brickArray.append(brick)
             }

@@ -46,6 +46,7 @@ class InbewteenLevelsViewController: UIViewController {
 
         showAnimate()
         updateLabels()
+        addParallaxToView(vw: popupView)
     }
 
     func showAnimate() {
@@ -90,6 +91,22 @@ class InbewteenLevelsViewController: UIViewController {
     func restart() {
         removeAnimate(nextAction: .restart)
         // move game scene to pregame
+    }
+    
+    func addParallaxToView(vw: UIView) {
+        let amount = 20
+
+        let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
+        horizontal.minimumRelativeValue = -amount
+        horizontal.maximumRelativeValue = amount
+
+        let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
+        vertical.minimumRelativeValue = -amount
+        vertical.maximumRelativeValue = amount
+
+        let group = UIMotionEffectGroup()
+        group.motionEffects = [horizontal, vertical]
+        vw.addMotionEffect(group)
     }
 }
 

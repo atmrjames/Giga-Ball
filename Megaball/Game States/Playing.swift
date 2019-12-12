@@ -23,9 +23,16 @@ class Playing: GKState {
         } else if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
             loadNextLevel()
+        } else if previousState is Paused {
+            scene.pauseButton.texture = scene.pauseTexture
+            self.scene.isPaused = false
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            // Haptic feedback
         }
     }
     // This function runs when this state is entered.
+
     
     func reloadUI() {
 //        scene.levelNumberLabel.isHidden = false

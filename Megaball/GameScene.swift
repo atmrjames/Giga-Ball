@@ -63,7 +63,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var pauseButton = SKSpriteNode()
 	var pauseButtonSize: CGFloat = 0
 	var pauseButtonTouch = SKSpriteNode()
-	var pauseButtonTouchSize: CGFloat = 0
     // Define buttons
 
 	var layoutUnit: CGFloat = 0
@@ -75,7 +74,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var ballLaunchAngleRad: Double = 0
     var ballLostHeight: CGFloat = 0
 	var ballLostAnimationHeight: CGFloat = 0
-	var brickSpacing:CGFloat = 0
+	var objectSpacing:CGFloat = 0
 	var brickHeight: CGFloat = 0
     var brickWidth: CGFloat = 0
     var numberOfBrickRows: Int = 0
@@ -263,7 +262,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		brickWidth = layoutUnit*2 - 1
 		brickHeight = layoutUnit*1 - 1
-		brickSpacing = 1
+		objectSpacing = 1
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
         ball.size.height = ballSize
@@ -285,15 +284,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
 		numberOfBrickRows = 18
         numberOfBrickColumns = 9
-        totalBricksWidth = (brickWidth + brickSpacing) * CGFloat(numberOfBrickColumns) + brickSpacing
-		totalBricksHeight = (brickHeight + brickSpacing) * CGFloat(numberOfBrickRows) + brickSpacing
-        xBrickOffset = totalBricksWidth/2 - brickWidth/2 - brickSpacing
-		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2 - brickSpacing
+        totalBricksWidth = (brickWidth + objectSpacing) * CGFloat(numberOfBrickColumns) + objectSpacing
+		totalBricksHeight = (brickHeight + objectSpacing) * CGFloat(numberOfBrickRows) + objectSpacing
+        xBrickOffset = totalBricksWidth/2 - brickWidth/2 - objectSpacing
+		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2 - objectSpacing
 		paddle.position.x = 0
 		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
 		paddle.position.y = paddlePositionY
 		ball.position.x = 0
-		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ballSize/2 + ballSize/4
+		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ballSize/2 + objectSpacing
 		ball.position.y = ballStartingPositionY
 		// Object positioning definition
 		
@@ -307,9 +306,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
         ball.zPosition = 2
+		ball.physicsBody?.usesPreciseCollisionDetection = true
         ball.physicsBody?.linearDamping = ballLinearDampening
         ball.physicsBody?.angularDamping = 0
 		ball.physicsBody?.restitution = 1
+		
         // Define ball properties
 		let xRangeBall = SKRange(lowerLimit:-self.frame.width/2 + ballSize/2,upperLimit:self.frame.width/2 - ballSize/2)
         ball.constraints = [SKConstraint.positionX(xRangeBall)]
@@ -370,8 +371,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButton.zPosition = 1
         pauseButton.isUserInteractionEnabled = false
 		
-		pauseButtonTouch.size.width = pauseButtonSize*2
-		pauseButtonTouch.size.height = pauseButtonSize*2
+		pauseButtonTouch.size.width = pauseButtonSize*3
+		pauseButtonTouch.size.height = pauseButtonSize*3
 		pauseButtonTouch.position.y = pauseButton.position.y
 		pauseButtonTouch.position.x = pauseButton.position.x
 		pauseButtonTouch.zPosition = 1
@@ -577,11 +578,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
-		
-		if gameState.currentState is Paused {
-			self.isPaused = true
-		}
-        
+
         if gameState.currentState is Playing {
 			xSpeed = ball.physicsBody!.velocity.dx
 			ySpeed = ball.physicsBody!.velocity.dy
@@ -771,66 +768,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 				
-//				let xSpeedCorrected: Double = sqrt(Double(xSpeed*xSpeed))
-//
-//				var angleRad = atan2(Double(ySpeed), Double(xSpeedCorrected))
-//				var angleDeg = Double(angleRad)/Double.pi*180
-//				// Variables to hold the angle of the ball
-//
-//				print("hit angle: ", angleDeg, "xSpeed: ", xSpeed, "ySpeed: ", ySpeed)
-//
-//				if ball.position.x > 0 && xSpeed > 0 {
-//				// Ball hits right wall and travelling to the right
-//
-//					print("right")
-//
-//					if angleDeg >= 0 && angleDeg <= 90 {
-//						angleDeg = 180-angleDeg
-//						print("1", angleDeg)
-//					}
-//					// Changes the angle of the ball if it is travelling up
-//
-//					if angleDeg >= -180 && angleDeg <= -90 {
-//						angleDeg = -180-angleDeg
-//						print("2", angleDeg)
-//					}
-//					// Changes the angle of the ball if it is travelling down
-//				}
-//
-//				if ball.position.x < 0 && xSpeed < 0 {
-//				// Ball hits left wall and travelling to the left
-//
-//					print("left")
-//
-//					if angleDeg > 90 && angleDeg <= 180 {
-//						angleDeg = 180-angleDeg
-//						print("3", angleDeg)
-//					}
-//					// Changes the angle of the ball if it is travelling up
-//
-//					if angleDeg > -90 && angleDeg < 0 {
-//						angleDeg = -180-angleDeg
-//						print("4", angleDeg)
-//					}
-//					// Changes the angle of the ball if it is travelling down
-//				}
-//
-//				angleRad = (angleDeg * Double.pi / 180)
-//				xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-				
 				if ball.position.x < 0 && xSpeed < 0 {
 					xSpeed = -xSpeed
-					print("corrected left")
 				}
 				if ball.position.x > 0 && xSpeed > 0 {
 					xSpeed = -xSpeed
-					print("corrected right")
 				}
 				// Ensure the xSpeed is calculated in the correct direction based on the ball position
-				
-//				ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-//
-//				print("new angle: ", angleDeg, "new xSpeed: ", xSpeed, "new ySpeed: ", ySpeed)
 				
 				ball.physicsBody!.velocity.dx = xSpeed
 				ball.physicsBody!.velocity.dy = ySpeed
@@ -843,7 +787,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 				if ySpeed > 0 {
 					ySpeed = -ySpeed
-					print("corrected top")
 				}
 				// Ensure the ySpeed is downwards
 			}
@@ -914,7 +857,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 let fadeOut = SKAction.fadeOut(withDuration: 0)
                 let resetGroup = SKAction.group([scaleDown, fadeOut])
                 let scaleUp = SKAction.scale(to: 1, duration: 0)
-                let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+                let fadeIn = SKAction.fadeIn(withDuration: 0.1)
                 let brickHitGroup = SKAction.group([scaleUp, fadeIn])
                 sprite.run(resetGroup, completion: {
                     sprite.isHidden = false
@@ -1035,27 +978,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
     }
-
-    func pauseGame() {
-		gameState.enter(Paused.self)
-		pauseButton.texture = playTexture
-		self.isPaused = true
-		let generator = UIImpactFeedbackGenerator(style: .light)
-		generator.impactOccurred()
-		// Haptic feedback
-    }
-    
-    func unpauseGame() {
-		pauseButton.texture = pauseTexture
-		self.isPaused = false
-		let generator = UIImpactFeedbackGenerator(style: .light)
-		generator.impactOccurred()
-		// Haptic feedback
-		gameState.enter(Playing.self)
-    }
     
     @objc func pauseNotificationKeyReceived() {
-        pauseGame()
+        gameState.enter(Paused.self)
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
     
@@ -1370,7 +1295,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					let startingScale = SKAction.scale(to: 1, duration: 0)
 					let startingFade = SKAction.fadeOut(withDuration: 0)
 					let scaleUp = SKAction.scale(to: 1, duration: 0)
-					let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+					let fadeIn = SKAction.fadeIn(withDuration: 0.1)
 					let startingGroup = SKAction.group([startingFade, startingScale])
 					let brickGroup = SKAction.group([scaleUp, fadeIn])
 					node.run(startingGroup, completion: {
@@ -1448,7 +1373,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Gravity ball
 			self.removeAction(forKey: "powerUpGravityBall")
 			// Remove any current gravity timers
-			physicsWorld.gravity = CGVector(dx: 0, dy: -1.62)
+			physicsWorld.gravity = CGVector(dx: 0, dy: -1)
 			ball.physicsBody!.affectedByGravity = true
 			gravityActivated = true
 			powerUpScore = -25
@@ -1532,6 +1457,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
 		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
         paddle.zPosition = 2
+		paddle.physicsBody?.usesPreciseCollisionDetection = true
 		paddle.physicsBody!.restitution = 1
         // Define paddle properties
         let xRangePaddle = SKRange(lowerLimit:-self.frame.width/2 + paddle.size.width/2,upperLimit:self.frame.width/2 - paddle.size.width/2)
