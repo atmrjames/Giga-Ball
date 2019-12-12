@@ -82,9 +82,11 @@ class PauseMenuViewController: UIViewController {
             self.view.alpha = 0.0})
         { (finished: Bool) in
             if (finished) {
+                self.view.removeFromSuperview()
+                
                 NotificationCenter.default.post(name: nextAction, object: nil)
                 // Send notification to unpause the game
-                self.view.removeFromSuperview()
+                
             }
         }
     }

@@ -58,6 +58,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var scoreLabel = SKLabelNode()
     var highScoreLabel = SKLabelNode()
 	var multiplierLabel = SKLabelNode()
+	var unpauseCountdownLabel = SKLabelNode()
     // Define labels
     
     var pauseButton = SKSpriteNode()
@@ -120,6 +121,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var powerUpProbFactor: Int = 0
 	var brickRemovalCounter: Int = 0
 	var gravityActivated: Bool = false
+	var pauseBallVelocityX: CGFloat = 0
+	var pauseBallVelocityY: CGFloat = 0
     // Setup game metrics
     
     var lifeLostScore: Int = 0
@@ -341,6 +344,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel = self.childNode(withName: "scoreLabel") as! SKLabelNode
         highScoreLabel = self.childNode(withName: "highScoreLabel") as! SKLabelNode
 		multiplierLabel = self.childNode(withName: "multiplierLabel") as! SKLabelNode
+		unpauseCountdownLabel = self.childNode(withName: "unpauseCountdownLabel") as! SKLabelNode
         // Links objects to labels
 
         fontSize = 16
@@ -354,6 +358,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplierLabel.position.y = scoreLabel.position.y
 		multiplierLabel.position.x = scoreLabel.position.x + labelSpacing
 		multiplierLabel.fontSize = fontSize
+		unpauseCountdownLabel.position.x = 0
+		unpauseCountdownLabel.position.y = 0
+		unpauseCountdownLabel.fontSize = fontSize*4
+		unpauseCountdownLabel.isHidden = true
+		unpauseCountdownLabel.zPosition = 10
 		
 		life.position.y = highScoreLabel.position.y - fontSize/2
 		life.position.x = -life.size.width/2
@@ -392,7 +401,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		angleAdjustmentK = 75
 		// Ball angle parameters
 		
-		powerUpProbFactor = 20
+		powerUpProbFactor = 2
 		// Power-up parameters
 		
 		brickDestroyScore = 10
@@ -1004,7 +1013,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 1
         addChild(powerUp)
         
-        let powerUpProb = Int.random(in: 0...21)
+        let powerUpProb = Int.random(in: 2...2)
         switch powerUpProb {
         case 0:
             powerUp.texture = powerUpGetALife

@@ -24,8 +24,28 @@ class Playing: GKState {
             reloadUI()
             loadNextLevel()
         } else if previousState is Paused {
+            
             scene.pauseButton.texture = scene.pauseTexture
-            self.scene.isPaused = false
+            
+            scene.enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
+                node.isPaused = false
+            }
+            scene.enumerateChildNodes(withName: BallCategoryName) { (node, _) in
+                self.scene.ball.physicsBody!.velocity.dx = self.scene.pauseBallVelocityX
+                self.scene.ball.physicsBody!.velocity.dy = self.scene.pauseBallVelocityY
+                node.isPaused = false
+            }
+            scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+                node.isPaused = false
+            }
+            scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
+                node.isPaused = false
+            }
+            scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
+                node.isPaused = false
+            }
+            // Restart game, unpause all nodes
+            
             let generator = UIImpactFeedbackGenerator(style: .light)
             generator.impactOccurred()
             // Haptic feedback
@@ -35,7 +55,6 @@ class Playing: GKState {
 
     
     func reloadUI() {
-//        scene.levelNumberLabel.isHidden = false
         scene.scoreLabel.isHidden = false
         scene.highScoreLabel.isHidden = false
         scene.multiplierLabel.isHidden = false
