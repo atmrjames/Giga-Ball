@@ -34,7 +34,7 @@ class InbewteenLevelsViewController: UIViewController {
     
     @IBAction func nextLevelButton(_ sender: UIButton) {
         removeAnimate(nextAction: .continueToNextLevel)
-        // move game scene to playing
+        // Move game scene to playing
     }
     
     @IBAction func restartButton(_ sender: UIButton) {

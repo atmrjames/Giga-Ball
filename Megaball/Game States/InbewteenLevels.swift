@@ -119,7 +119,7 @@ class InbetweenLevels: GKState {
     }
     
     @objc func notificationToContinueReceived(_ notification: Notification) {
-        moveToNextLevel()
+        scene.gameState.enter(Playing.self)
     }
     // Call the function to load the next level if a notification from the end level popup is received
     
@@ -127,10 +127,6 @@ class InbetweenLevels: GKState {
         scene.gameState.enter(PreGame.self)
     }
     // Call the function to load the next level if a notification from the end level popup is received
-    
-    func moveToNextLevel() {
-        scene.gameState.enter(Playing.self)
-    }
     
     override func willExit(to nextState: GKState) {
     }

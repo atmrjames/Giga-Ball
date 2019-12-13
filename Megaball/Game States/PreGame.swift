@@ -19,10 +19,7 @@ class PreGame: GKState {
     
     override func didEnter(from previousState: GKState?) {
         resetGame()
-        let waitScene = SKAction.wait(forDuration: 0.25)
-        self.scene.run(waitScene, completion: {
-            self.scene.gameState.enter(Playing.self)
-        })
+        scene.gameState.enter(Playing.self)
     }
     // This function runs when this state is entered.
     

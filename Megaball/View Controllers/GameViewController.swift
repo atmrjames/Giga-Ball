@@ -37,7 +37,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     }
     
     func moveToMainMenu() {
-        navigationController?.popToRootViewController(animated: false)
+        navigationController?.popToRootViewController(animated: true)
     }
     // Segue to MenuViewController
     

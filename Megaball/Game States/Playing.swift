@@ -18,14 +18,18 @@ class Playing: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
+        
         if scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber {
             scene.gameState.enter(GameOver.self)
         } else if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
             loadNextLevel()
         } else if previousState is Paused {
+        // Unpause game
             
+            scene.countdownStarted = false
             scene.pauseButton.texture = scene.pauseTexture
+            scene.directionMarker.isHidden = true
             
             scene.enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
                 node.isPaused = false
@@ -45,10 +49,6 @@ class Playing: GKState {
                 node.isPaused = false
             }
             // Restart game, unpause all nodes
-            
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
-            // Haptic feedback
         }
     }
     // This function runs when this state is entered.
@@ -111,8 +111,7 @@ class Playing: GKState {
         
         scene.ball.removeAllActions()
         scene.paddle.removeAllActions()
-        scene.ball.isHidden = false
-        scene.paddle.isHidden = false
+
         scene.ballIsOnPaddle = true
         scene.paddle.position.x = 0
         scene.paddle.position.y = (-self.scene.frame.height/2 + scene.paddleGap)
@@ -120,17 +119,25 @@ class Playing: GKState {
         scene.ball.position.x = 0
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
-        
-        let startingScale = SKAction.scale(to: 0, duration: 0)
-        let startingFade = SKAction.fadeIn(withDuration: 0)
+
+        let startingScale = SKAction.scale(to: 0.8, duration: 0)
+        let startingFade = SKAction.fadeOut(withDuration: 0)
         let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-        let ballSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
-        let paddleSequence = SKAction.sequence([startingScale, startingFade, scaleUp])
-        scene.ball.run(ballSequence, completion: {
+        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
+        let wait = SKAction.wait(forDuration: 0.25)
+        let startingGroup = SKAction.group([startingScale, startingFade])
+        let animationGroup = SKAction.group([scaleUp, fadeIn])
+        let animationSequence = SKAction.group([wait, animationGroup])
+        
+        scene.ball.run(startingGroup)
+        scene.ball.isHidden = false
+        scene.ball.run(animationSequence, completion: {
             self.scene.ballStartingPositionY = self.scene.ball.position.y
-            // Resets the ball's starting position to its current position to prevent it jumping up and down when sliding the paddle
+            // Resets the ball's starting position incase it is moved during the animation in
         })
-        scene.paddle.run(paddleSequence)
+        scene.paddle.run(startingGroup)
+        scene.paddle.isHidden = false
+        scene.paddle.run(animationSequence)
         // Animate paddle and ball in
         
         switch scene.levelNumber {

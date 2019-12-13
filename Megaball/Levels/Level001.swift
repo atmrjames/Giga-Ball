@@ -11,12 +11,14 @@ import GameplayKit
 
 extension GameScene {
     func loadLevel1() {
-        let startingScale = SKAction.scale(to: 0, duration: 0)
+        let startingScale = SKAction.scale(to: 0.8, duration: 0)
         let startingFade = SKAction.fadeOut(withDuration: 0)
-        let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
+        let scaleUp = SKAction.scale(to: 1, duration: 0.25)
+        let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+        let wait = SKAction.wait(forDuration: 0.25)
         let startingGroup = SKAction.group([startingScale, startingFade])
         let brickGroup = SKAction.group([scaleUp, fadeIn])
+        let brickSequence = SKAction.sequence([wait, brickGroup])
         // Setup brick animation
 
         var brickArray: [SKNode] = []
@@ -51,7 +53,7 @@ extension GameScene {
         for brick in brickArray {
             let brickCurrent = brick as! SKSpriteNode
             brick.run(startingGroup)
-            brick.run(brickGroup)
+            brick.run(brickSequence)
             // Run animation for each brick
 
             if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructibleTexture {
@@ -63,5 +65,6 @@ extension GameScene {
             }
             // Remove null bricks & discount indestructible bricks
         }
+        mediumHaptic.impactOccurred()
     }
 }

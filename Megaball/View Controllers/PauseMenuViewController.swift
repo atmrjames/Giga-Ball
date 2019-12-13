@@ -13,14 +13,17 @@ class PauseMenuViewController: UIViewController {
     var levelNumber: Int = 0
     // Properties to store passed over data
     
+    let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    
     @IBOutlet weak var popupView: UIView!
     @IBOutlet weak var levelNumberLabel: UILabel!
     
     @IBAction func returnToMainMenuButton(_ sender: UIButton) {
-        
+        moveToMainMenu()
     }
     
-    @IBAction func playButtonPressed(_ sender: UIButton) {
+    @IBAction func playButtonPressed(_ sender: UIButton) {        
+        mediumHaptic.impactOccurred()
         removeAnimate(nextAction: .unpause)
     }
     
@@ -77,6 +80,7 @@ class PauseMenuViewController: UIViewController {
     }
     
     func removeAnimate(nextAction: Notification.Name) {
+        
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.view.alpha = 0.0})
@@ -91,10 +95,8 @@ class PauseMenuViewController: UIViewController {
         }
     }
     
-    
-    
     func addParallaxToView(vw: UIView, ve: UIVisualEffectView) {
-        let amount = 20
+        let amount = 33
 
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount
@@ -110,6 +112,11 @@ class PauseMenuViewController: UIViewController {
         ve.addMotionEffect(group)
 
     }
+    
+    func moveToMainMenu() {
+        navigationController?.popToRootViewController(animated: true)
+    }
+    // Segue to MenuViewController
     
     //    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
     //        return []

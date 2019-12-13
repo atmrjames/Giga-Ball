@@ -108,9 +108,9 @@
 			children = (
 				1A5A949C230F08770076D635 /* PreGame.swift */,
 				1A5A949E230F08840076D635 /* Playing.swift */,
-				1A7D6528231B0E980091CA58 /* Paused.swift */,
-				1A5A94A0230F088F0076D635 /* GameOver.swift */,
 				1AE9573A2321A74700E5618A /* InbewteenLevels.swift */,
+				1A5A94A0230F088F0076D635 /* GameOver.swift */,
+				1A7D6528231B0E980091CA58 /* Paused.swift */,
 			);
 			path = "Game States";
 			sourceTree = "<group>";
