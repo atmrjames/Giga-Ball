@@ -19,6 +19,7 @@ class PauseMenuViewController: UIViewController {
     @IBOutlet weak var levelNumberLabel: UILabel!
     
     @IBAction func returnToMainMenuButton(_ sender: UIButton) {
+        mediumHaptic.impactOccurred()
         moveToMainMenu()
     }
     
@@ -28,12 +29,12 @@ class PauseMenuViewController: UIViewController {
     }
     
     @IBAction func settingsButton(_ sender: UIButton) {
+        mediumHaptic.impactOccurred()
     }
     // Defining object properties
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       
         setBlur()
         showAnimate()
         updateLabels()
@@ -61,7 +62,6 @@ class PauseMenuViewController: UIViewController {
         // Keep the frame of the blurView consistent with that of the associated view.
         
         addParallaxToView(vw: popupView, ve: blurView)
-        
     }
     
     func showAnimate() {

@@ -56,7 +56,6 @@ class Playing: GKState {
     
     func reloadUI() {
         scene.scoreLabel.isHidden = false
-        scene.highScoreLabel.isHidden = false
         scene.multiplierLabel.isHidden = false
         scene.pauseButton.isHidden = false
         scene.livesLabel.isHidden = false
@@ -90,9 +89,6 @@ class Playing: GKState {
         
         if scene.levelScoreArray[scene.levelNumber-1] != 1 {
             scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
-            scene.highScoreLabel.text = String(scene.levelHighscore)
-        } else {
-            scene.highScoreLabel.text = ""
         }
         // Add level highscore to level highscore label, if no highscore exists (value = 1) show nothing
         

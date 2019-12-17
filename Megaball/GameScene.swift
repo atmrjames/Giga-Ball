@@ -57,7 +57,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var livesLabel = SKLabelNode()
     var scoreLabel = SKLabelNode()
-    var highScoreLabel = SKLabelNode()
 	var multiplierLabel = SKLabelNode()
 	var unpauseCountdownLabel = SKLabelNode()
     // Define labels
@@ -179,6 +178,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let undestructiballTexture: SKTexture = SKTexture(imageNamed: "BallUndestructi")
 	let directionMarkerOuterTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerOuter")
 	let directionMarkerInnerTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerInner")
+	let directionMarkerOuterSuperTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerOuterSuper")
+	let directionMarkerInnerSuperTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerInnerSuper")
+	let directionMarkerOuterUndestructiTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerOuterUndestructi")
+	let directionMarkerInnerUndestructiTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerInnerUndestructi")
     // Ball textures
     
 	let laserNormalTexture: SKTexture = SKTexture(imageNamed: "LaserNormal")
@@ -236,6 +239,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     weak var gameViewControllerDelegate:GameViewControllerDelegate?
     // Create the delegate property for the GameViewController
+	
+//MARK: - NSCoder Data Store Setup
     
     let dataStore = UserDefaults.standard
     // Setup NSUserDefaults data store
@@ -362,32 +367,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
         livesLabel = self.childNode(withName: "livesLabel") as! SKLabelNode
         scoreLabel = self.childNode(withName: "scoreLabel") as! SKLabelNode
-        highScoreLabel = self.childNode(withName: "highScoreLabel") as! SKLabelNode
 		multiplierLabel = self.childNode(withName: "multiplierLabel") as! SKLabelNode
 		unpauseCountdownLabel = self.childNode(withName: "unpauseCountdownLabel") as! SKLabelNode
         // Links objects to labels
 
         fontSize = 16
         labelSpacing = fontSize/1.5
-        scoreLabel.position.y = self.frame.height/2 - topScreenBlock.size.height + labelSpacing*4
-        scoreLabel.position.x = -self.frame.width/2 + labelSpacing*6
-        scoreLabel.fontSize = fontSize
-		highScoreLabel.position.y = scoreLabel.position.y - labelSpacing*2
-        highScoreLabel.position.x = scoreLabel.position.x
-        highScoreLabel.fontSize = fontSize
-		multiplierLabel.position.y = scoreLabel.position.y
-		multiplierLabel.position.x = scoreLabel.position.x + labelSpacing
+        
+		multiplierLabel.position.x = self.frame.width/2 - labelSpacing*2
+		multiplierLabel.position.y = self.frame.height/2 - topScreenBlock.size.height + labelSpacing + fontSize/2
 		multiplierLabel.fontSize = fontSize
+		scoreLabel.position.x = multiplierLabel.position.x
+		scoreLabel.position.y = multiplierLabel.position.y + labelSpacing + fontSize/2
+		scoreLabel.fontSize = fontSize
 		unpauseCountdownLabel.position.x = 0
 		unpauseCountdownLabel.position.y = 0
 		unpauseCountdownLabel.fontSize = fontSize*4
 		unpauseCountdownLabel.isHidden = true
 		unpauseCountdownLabel.zPosition = 10
 		
-		life.position.y = highScoreLabel.position.y - fontSize/2
-		life.position.x = -life.size.width/2
+		life.position.x = -life.size.width/3
+		life.position.y = self.frame.height/2 - topScreenBlock.size.height + labelSpacing + life.size.height/2
+		livesLabel.position.x = life.size.width/3
 		livesLabel.position.y = life.position.y
-		livesLabel.position.x = life.size.width/2
         livesLabel.fontSize = fontSize
         // Label size & position definition
 		
@@ -395,8 +397,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
+		pauseButton.position.x = -self.frame.width/2 + labelSpacing*2 + pauseButton.size.width/2
 		pauseButton.position.y = self.frame.height/2 - topScreenBlock.size.height + labelSpacing + pauseButton.size.height/2
-		pauseButton.position.x = self.frame.width/2 - labelSpacing*2 - pauseButton.size.width/2
 		pauseButton.zPosition = 1
         pauseButton.isUserInteractionEnabled = false
 		
@@ -493,7 +495,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 			}
 			// Ball matches paddle position
-			
         }
     }
 
@@ -729,9 +730,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.text = String(levelScore)
 		// Update score
 		
+		multiplier = 1
 		scoreFactorString = String(format:"%.1f", multiplier)
 		multiplierLabel.text = "x\(scoreFactorString)"
-		multiplier = 1
 		// Reset score multiplier
 		
         if numberOfLives > 0 {
@@ -943,7 +944,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove and update number of bricks left and current score
 		
 		let powerUpProb = Int.random(in: 1...powerUpProbFactor)
-        if powerUpProb == 1 && bricksLeft != 1 {
+        if powerUpProb == 1 && bricksLeft > 1 {
             powerUpGenerator(sprite: sprite)
         }
         // probability of getting a power up if brick is removed
@@ -1049,7 +1050,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 1
         addChild(powerUp)
         
-        let powerUpProb = Int.random(in: 4...4)
+        let powerUpProb = Int.random(in: 0...21)
         switch powerUpProb {
         case 0:
             powerUp.texture = powerUpGetALife
@@ -1070,55 +1071,67 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             powerUp.texture = powerUpIncreasePaddleSize
 			// Increase paddle size
         case 6:
-			powerUp.texture = self.powerUpShowInvisibleBricks
-//			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-//				if node.isHidden == true {
-//					powerUp.texture = self.powerUpShowInvisibleBricks
-//					return
-//				} else {
-//					self.powerUpGenerator (sprite: sprite)
-//				}
-//			}
 			// Invisible bricks become visible
+			powerUp.texture = self.powerUpShowInvisibleBricks
+			var hiddenNodeFound = false
+			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+				if node.isHidden == true {
+					hiddenNodeFound = true
+					stop.initialize(to: true)
+				}
+			}
+			if hiddenNodeFound == false {
+				self.powerUpGenerator (sprite: sprite)
+				powerUp.removeFromParent()
+			}
 			// Don't show if no invisible/hidden bricks
+			// Working
         case 7:
             powerUp.texture = powerUpLasers
 			// Lasers
 		case 8:
-			powerUp.texture = powerUpRemoveIndestructibleBricks
-//			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-//				let sprite = node as! SKSpriteNode
-//				if sprite.texture == self.brickIndestructibleTexture {
-//					powerUp.texture = self.powerUpRemoveIndestructibleBricks
-//					return
-//				} else {
-//					self.powerUpGenerator (sprite: sprite)
-//				}
-//			}
 			// Remove indestructible bricks
+			powerUp.texture = powerUpRemoveIndestructibleBricks
+			var indestructibleNodeFound = false
+			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+				let sprite = node as! SKSpriteNode
+				if sprite.texture == self.brickIndestructibleTexture {
+					indestructibleNodeFound = true
+					stop.initialize(to: true)
+				}
+			}
+			if indestructibleNodeFound == false {
+				self.powerUpGenerator (sprite: sprite)
+				powerUp.removeFromParent()
+			}
 			// Don't show if no indestructible bricks
+			// Working
 		case 9:
-			powerUp.texture = powerUpMultiHitToNormalBricks
-//			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-//				let sprite = node as! SKSpriteNode
-//				if sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture {
-//					powerUp.texture = self.powerUpMultiHitToNormalBricks
-//					return
-//				} else {
-//					self.powerUpGenerator (sprite: sprite)
-//				}
-//			}
 			// Multi-hit bricks become normal bricks
+			powerUp.texture = powerUpMultiHitToNormalBricks
+			var multiNodeFound = false
+			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+				let sprite = node as! SKSpriteNode
+				if sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture {
+					multiNodeFound = true
+					stop.initialize(to: true)
+				}
+			}
+			if multiNodeFound == false {
+				self.powerUpGenerator (sprite: sprite)
+				powerUp.removeFromParent()
+			}
 			// Don't show if no multi-hit bricks
         case 10:
+			// Lose a life
 			if numberOfLives > 0 {
 				powerUp.texture = powerUpLoseALife
 			} else {
 				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
 			}
-			// Lose a life
 			// Don't show if on last life
+			// Working
         case 11:
             powerUp.texture = powerUpIncreaseBallSpeed
 			// Increase ball speed
@@ -1138,30 +1151,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUp.texture = powerUpPointsPenalty
 			// Penalty points
 		case 17:
-			powerUp.texture = powerUpNormalToInvisibleBricks
-//			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-//				let sprite = node as! SKSpriteNode
-//				if sprite.texture == self.brickNormalTexture {
-//					powerUp.texture = self.powerUpNormalToInvisibleBricks
-//					return
-//				} else {
-//					self.powerUpGenerator (sprite: sprite)
-//				}
-//			}
 			// Normal bricks become invisble bricks
+			powerUp.texture = powerUpNormalToInvisibleBricks
+			var normalNodeFound = false
+			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+				let sprite = node as! SKSpriteNode
+				if sprite.texture == self.brickNormalTexture {
+					normalNodeFound = true
+					stop.initialize(to: true)
+				}
+			}
+			if normalNodeFound == false {
+				self.powerUpGenerator (sprite: sprite)
+				powerUp.removeFromParent()
+			}
 			// Don't show if no normal bricks
 		case 18:
-			powerUp.texture = powerUpNormalToMultiHitBricks
-//			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-//				let sprite = node as! SKSpriteNode
-//				if sprite.texture == self.brickNormalTexture {
-//					powerUp.texture = self.powerUpNormalToMultiHitBricks
-//					return
-//				} else {
-//					self.powerUpGenerator (sprite: sprite)
-//				}
-//			}
 			// Normal bricks become multi-hit bricks
+			powerUp.texture = powerUpNormalToMultiHitBricks
+			var normalNodeFound = false
+			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+				let sprite = node as! SKSpriteNode
+				if sprite.texture == self.brickNormalTexture {
+					normalNodeFound = true
+					stop.initialize(to: true)
+				}
+			}
+			if normalNodeFound == false {
+				self.powerUpGenerator (sprite: sprite)
+				powerUp.removeFromParent()
+			}
 			// Don't show if no normal bricks
 		case 19:
 			powerUp.texture = powerUpGravityBall
@@ -1170,14 +1189,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUp.texture = powerUpMystery
 			// Mystery power-up
 		case 21:
+			// Multiplier reset
 			if multiplier <= 1 {
 				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
 			} else {
 				powerUp.texture = powerUpMultiplierReset
 			}
-			// Multiplier reset
 			// Don't show if multiplier is 1
+			// Working
         default:
             break
         }
@@ -1318,13 +1338,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Next level
             powerUpScore = 50
 			powerUpMultiplierScore = 0
-			levelScore = levelScore + levelCompleteScore + powerUpScore
+			levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
 			scoreLabel.text = String(levelScore)
             if levelNumber == endLevelNumber {
                 gameoverStatus = true
             }
             gameState.enter(InbetweenLevels.self)
-            
+
         case powerUpIncreasePaddleSize:
         // Increase paddle size
             self.removeAction(forKey: "powerUpIncreasePaddleSize")
@@ -1534,13 +1554,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         }
         // Identify power up and perform action
-		
-		if multiplier < 1 {
-			multiplier = 1
-		}
 
         levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
 		multiplier = multiplier + powerUpMultiplierScore
+		if multiplier < 1 {
+			multiplier = 1
+		}
+		// Ensure multiplier never goes below 1
         scoreLabel.text = String(levelScore)
 		scoreFactorString = String(format:"%.1f", multiplier)
 		multiplierLabel.text = "x\(scoreFactorString)"

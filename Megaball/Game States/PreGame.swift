@@ -30,7 +30,6 @@ class PreGame: GKState {
     
     func resetGame() {
         scene.scoreLabel.isHidden = true
-        scene.highScoreLabel.isHidden = true
         scene.multiplierLabel.isHidden = true
         scene.pauseButton.isHidden = true
         scene.livesLabel.isHidden = true

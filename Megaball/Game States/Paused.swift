@@ -69,33 +69,56 @@ class Paused: GKState {
         scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
             node.isPaused = true
         }
+        // Pause all nodes individually
         
         if scene.ballIsOnPaddle == false && scene.ball.position.y >= scene.paddle.position.y - scene.ballLostAnimationHeight {
+            
             let angleRad = atan2(Double(self.scene.pauseBallVelocityY), Double(self.scene.pauseBallVelocityX))
             let angleDeg = Double(angleRad)/Double.pi*180
             let rotationAngle = CGFloat(angleRad)
             scene.directionMarker.zRotation = rotationAngle
-            // Set direction marker rotation to match the ball's direction of travel
-            
             scene.directionMarker.position.x = scene.ball.position.x
             scene.directionMarker.position.y = scene.ball.position.y
+            // Set direction marker rotation to match the ball's direction of travel and position
             
-            scene.directionMarker.texture = scene.directionMarkerOuterTexture
+            if scene.ball.texture == scene.superballTexture {
+                scene.directionMarker.texture = scene.directionMarkerOuterSuperTexture
+            } else if scene.ball.texture == scene.undestructiballTexture {
+                scene.directionMarker.texture = scene.directionMarkerOuterUndestructiTexture
+            } else {
+                scene.directionMarker.texture = scene.directionMarkerOuterTexture
+            }
+            // Set direction marker outer texture if the ball is near either edge of frame
             
             if scene.directionMarker.position.x > 0 + scene.frame.size.width/2 - scene.directionMarker.size.width/2 {
                 if angleDeg > -90 && angleDeg < 90 {
-                    scene.directionMarker.texture = scene.directionMarkerInnerTexture
-                }
-            } else if scene.directionMarker.position.x < 0 - scene.frame.size.width/2 + scene.directionMarker.size.width/2 {
-                if angleDeg < -90 || angleDeg > 90 {
-                    scene.directionMarker.texture = scene.directionMarkerInnerTexture
+                    if scene.ball.texture == scene.superballTexture {
+                        scene.directionMarker.texture = scene.directionMarkerInnerSuperTexture
+                    } else if scene.ball.texture == scene.undestructiballTexture {
+                        scene.directionMarker.texture = scene.directionMarkerInnerUndestructiTexture
+                    } else {
+                        scene.directionMarker.texture = scene.directionMarkerInnerTexture
+                    }
+                    // Set texture of direction marker based on ball texture
                 }
             }
-            
+            else if scene.directionMarker.position.x < 0 - scene.frame.size.width/2 + scene.directionMarker.size.width/2 {
+                if angleDeg < -90 || angleDeg > 90 {
+                    if scene.ball.texture == scene.superballTexture {
+                        scene.directionMarker.texture = scene.directionMarkerInnerSuperTexture
+                    } else if scene.ball.texture == scene.undestructiballTexture {
+                        scene.directionMarker.texture = scene.directionMarkerInnerUndestructiTexture
+                    } else {
+                        scene.directionMarker.texture = scene.directionMarkerInnerTexture
+                    }
+                    // Set texture of direction marker based on ball texture
+                }
+            }
+            // Set direction marker inner texture if the ball is near either edge of frame
+    
             scene.directionMarker.isHidden = false
             // Show ball direction marker
         }
-        
     }
     // Pause all nodes
     
