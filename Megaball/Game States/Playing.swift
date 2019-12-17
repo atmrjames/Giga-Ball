@@ -42,6 +42,9 @@ class Playing: GKState {
             scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
                 node.isPaused = false
             }
+            scene.enumerateChildNodes(withName: BrickRemovalCategoryName) { (node, _) in
+                node.isPaused = false
+            }
             scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
                 node.isPaused = false
             }
@@ -49,6 +52,9 @@ class Playing: GKState {
                 node.isPaused = false
             }
             // Restart game, unpause all nodes
+            
+            scene.ball.physicsBody!.affectedByGravity = true
+            // Enusre the ball is affected by gravity
         }
     }
     // This function runs when this state is entered.

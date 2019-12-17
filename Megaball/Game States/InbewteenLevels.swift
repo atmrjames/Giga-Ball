@@ -73,6 +73,15 @@ class InbetweenLevels: GKState {
         scene.bricksLeft = 0
         // Remove any remaining bricks
         
+        scene.enumerateChildNodes(withName: BrickRemovalCategoryName) { (node, _) in
+            node.removeAllActions()
+            node.run(removeItemGroup, completion: {
+                node.removeFromParent()
+            })
+        }
+        scene.bricksLeft = 0
+        // Remove any remaining bricks being removed
+        
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
             node.removeAllActions()
             node.run(removeItemGroup, completion: {

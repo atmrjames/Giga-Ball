@@ -96,7 +96,7 @@ class PauseMenuViewController: UIViewController {
     }
     
     func addParallaxToView(vw: UIView, ve: UIVisualEffectView) {
-        let amount = 33
+        let amount = 25
 
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount
@@ -110,7 +110,6 @@ class PauseMenuViewController: UIViewController {
         group.motionEffects = [horizontal, vertical]
         vw.addMotionEffect(group)
         ve.addMotionEffect(group)
-
     }
     
     func moveToMainMenu() {

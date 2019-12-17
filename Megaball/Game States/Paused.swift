@@ -29,8 +29,6 @@ class Paused: GKState {
                 scene.ball.physicsBody!.velocity.dx = sqrt(scene.ball.physicsBody!.velocity.dy*scene.ball.physicsBody!.velocity.dy)
             }
             // Give the ball a boost to the right or left depending on where it is
-            
-            print("llama saved ball from edge")
         }
         
         self.scene.pauseBallVelocityX = self.scene.ball.physicsBody!.velocity.dx
@@ -63,6 +61,9 @@ class Paused: GKState {
         scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
             node.isPaused = true
         }
+        scene.enumerateChildNodes(withName: BrickRemovalCategoryName) { (node, _) in
+            node.isPaused = true
+        }
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
             node.isPaused = true
         }
@@ -70,6 +71,9 @@ class Paused: GKState {
             node.isPaused = true
         }
         // Pause all nodes individually
+        
+        scene.ball.physicsBody!.affectedByGravity = false
+        // Ensure the ball won't fall under gravity if the gameScene is unpaused
         
         if scene.ballIsOnPaddle == false && scene.ball.position.y >= scene.paddle.position.y - scene.ballLostAnimationHeight {
             
