@@ -78,6 +78,7 @@ class Playing: GKState {
         // Increment level number
         
         scene.brickRemovalCounter = 0
+        scene.powerUpsOnScreen = 0
         
         scene.newLevelHighScore = false
         scene.newTotalHighScore = false

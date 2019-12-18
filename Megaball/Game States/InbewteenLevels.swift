@@ -79,7 +79,6 @@ class InbetweenLevels: GKState {
                 node.removeFromParent()
             })
         }
-        scene.bricksLeft = 0
         // Remove any remaining bricks being removed
         
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
@@ -88,6 +87,7 @@ class InbetweenLevels: GKState {
                 node.removeFromParent()
             })
         }
+        scene.powerUpsOnScreen = 0
         // Remove any remaining power-ups
         
         scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
