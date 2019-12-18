@@ -292,8 +292,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
         ball.size.height = ballSize
-		life.size.width = ballSize
-        life.size.height = ballSize
+		life.size.width = ballSize*1.15
+		life.size.height = ballSize*1.15
 		paddleWidth = layoutUnit*5
 		paddle.size.width = paddleWidth
 		paddle.size.height = ballSize
@@ -347,8 +347,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.constraints = [SKConstraint.positionX(xRangeBall)]
 		// Define ball properties
 		
-		print("ball size: ", ballSize)
-		
 		definePaddleProperties()
 		// Define paddle properties
 		
@@ -399,7 +397,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         livesLabel.fontSize = fontSize
         // Label size & position definition
 		
-		pauseButtonSize = brickWidth*0.75
+		pauseButtonSize = brickWidth
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
@@ -408,8 +406,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButton.zPosition = 1
         pauseButton.isUserInteractionEnabled = false
 		
-		pauseButtonTouch.size.width = pauseButtonSize*3
-		pauseButtonTouch.size.height = pauseButtonSize*3
+		pauseButtonTouch.size.width = pauseButtonSize*2.75
+		pauseButtonTouch.size.height = pauseButtonSize*2.75
 		pauseButtonTouch.position.y = pauseButton.position.y
 		pauseButtonTouch.position.x = pauseButton.position.x
 		pauseButtonTouch.zPosition = 1
@@ -632,6 +630,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if node.position.y < self.paddle.position.y - self.paddle.size.height - self.brickWidth/2 {
 					let sprite = node as! SKSpriteNode
 					if sprite.texture == self.powerUpMystery {
+						self.powerUpsOnScreen-=1
 						self.powerUpGenerator (sprite: sprite)
 						node.removeFromParent()
 					}
@@ -665,7 +664,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			xSpeed = ball.physicsBody!.velocity.dx
 			ySpeed = ball.physicsBody!.velocity.dy
 			currentSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
-			print("ball speed: ", currentSpeed)
 			// Calculate ball speed
 			
             if ball.position.y <= paddle.position.y - ballLostAnimationHeight {
@@ -787,7 +785,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove any remaining power-ups
 		
 		levelScore = levelScore + lifeLostScore
-        scoreLabel.text = String(levelScore)
+        scoreLabel.text = String(totalScore + levelScore)
 		// Update score
 		
 		multiplier = 1
@@ -929,12 +927,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				applyPowerUp(sprite: sprite)
 				
 				let scaleUp = SKAction.scale(to: 1.25, duration: 0.05)
-				let scaleDown = SKAction.scale(to: 0.75, duration: 0.05)
+				let scaleDown = SKAction.scale(to: 0.5, duration: 0.1)
+				let fadeOut = SKAction.fadeOut(withDuration: 0.15)
 				let mysteryWait = SKAction.wait(forDuration: 0.1)
 				
 				var powerupSequence = SKAction.sequence([scaleUp, scaleDown])
+				let powerupGroup = SKAction.group([fadeOut, powerupSequence])
 				if mysteryPowerUp && sprite.texture != powerUpMystery {
-					powerupSequence = SKAction.sequence([mysteryWait, scaleUp, scaleDown])
+					powerupSequence = SKAction.sequence([mysteryWait, powerupGroup])
 				}
 				// If the power-up is a mystery power-up, leave the power-up icon lingering for a moment
 				
@@ -942,7 +942,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					secondBody.node!.removeFromParent()
 				} else {
 					secondBody.node!.removeAllActions()
-					secondBody.node!.run(powerupSequence, completion: {
+					secondBody.node!.run(powerupGroup, completion: {
 						self.mysteryPowerUp = false
 						secondBody.node!.removeFromParent()
 					})
@@ -995,7 +995,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         default:
             break
         }
-        scoreLabel.text = String(levelScore)
+        scoreLabel.text = String(totalScore + levelScore)
 		scoreFactorString = String(format:"%.1f", multiplier)
 		multiplierLabel.text = "x\(scoreFactorString)"
         // Update score
@@ -1028,18 +1028,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Update multiplier
 		
         levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
-        scoreLabel.text = String(levelScore)
+        scoreLabel.text = String(totalScore + levelScore)
 		scoreFactorString = String(format:"%.1f", multiplier)
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Update score
         
         if bricksLeft == 0 {
 			levelScore = levelScore + levelCompleteScore
-			scoreLabel.text = String(levelScore)
+			scoreLabel.text = String(totalScore + levelScore)
             if levelNumber == endLevelNumber {
                 gameoverStatus = true
             }
             gameState.enter(InbetweenLevels.self)
+			return
         }
         // Loads the next level or ends the game if all bricks have been removed
     }
@@ -1127,7 +1128,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 1
         addChild(powerUp)
         
-        let powerUpProb = Int.random(in: 0...22)
+        let powerUpProb = Int.random(in: 4...4)
         switch powerUpProb {
         case 0:
             powerUp.texture = powerUpGetALife
@@ -1437,7 +1438,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         case powerUpStickyPaddle:
         // Sticky paddle
-            stickyPaddleCatches = 5 * Int(Double(multiplier))
+            stickyPaddleCatches = 5 + Int(Double(multiplier))
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
             paddle.color = #colorLiteral(red: 0.8078431487, green: 0.02745098062, blue: 0.3333333433, alpha: 1)
@@ -1449,11 +1450,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             powerUpScore = 50
 			powerUpMultiplierScore = 0
 			levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
-			scoreLabel.text = String(levelScore)
+			scoreLabel.text = String(totalScore + levelScore)
             if levelNumber == endLevelNumber {
                 gameoverStatus = true
             }
             gameState.enter(InbetweenLevels.self)
+			return
 
         case powerUpIncreasePaddleSize:
         // Increase paddle size
@@ -1668,7 +1670,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Move all bricks down by 1 row
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let brickSprite = node as! SKSpriteNode
-				let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height, duration: 0.5)
+				let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height*2, duration: 0.5)
 				moveBricksDown.timingMode = .easeInEaseOut
 				node.run(moveBricksDown)
 			}
@@ -1686,7 +1688,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			multiplier = 1
 		}
 		// Ensure multiplier never goes below 1
-        scoreLabel.text = String(levelScore)
+        scoreLabel.text = String(totalScore + levelScore)
 		scoreFactorString = String(format:"%.1f", multiplier)
 		multiplierLabel.text = "x\(scoreFactorString)"
         // Update score

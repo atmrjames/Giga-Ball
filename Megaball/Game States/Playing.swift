@@ -109,7 +109,7 @@ class Playing: GKState {
         
         scene.levelScore = 0
         scene.multiplier = 1
-        scene.scoreLabel.text = String(scene.levelScore)
+        scene.scoreLabel.text = String(scene.totalScore)
         scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
         scene.multiplierLabel.text = "x\(scene.scoreFactorString)"
         // Update score

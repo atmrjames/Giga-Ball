@@ -84,7 +84,7 @@ class InbewteenLevelsViewController: UIViewController {
         }
         
         if levelScore >= 0 {
-            levelScoreLabel.text = "+ \(levelScore)"
+            levelScoreLabel.text = "+\(levelScore)"
         } else {
             levelScoreLabel.text = String(levelScore)
         }
