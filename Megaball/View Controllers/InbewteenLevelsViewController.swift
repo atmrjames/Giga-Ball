@@ -82,10 +82,25 @@ class InbewteenLevelsViewController: UIViewController {
             nextLevelButtonLabel.setTitle("NEXT LEVEL", for: .normal)
             restartButtonLabel.isHidden = true
         }
-        levelScoreLabel.text = String(levelScore)
-        levelHighscoreLabel.text = "Highscore: \(levelHighscore)"
+        
+        if levelScore >= 0 {
+            levelScoreLabel.text = "+ \(levelScore)"
+        } else {
+            levelScoreLabel.text = String(levelScore)
+        }
+        
+        if levelScore >= levelHighscore {
+            levelHighscoreLabel.text = "New level \(levelNumber) highscore!"
+        } else {
+            levelHighscoreLabel.text = String(levelHighscore)
+        }
+        
         totalScoreLabel.text = String(totalScore)
-        totalHighscoreLabel.text = "Highscore: \(totalHighscore)"
+        if totalScore >= totalHighscore {
+            totalHighscoreLabel.text = "New total highscore"
+        } else {
+            totalHighscoreLabel.text = String(totalHighscore)
+        }
     }
     
     func restart() {

@@ -40,6 +40,7 @@ protocol GameViewControllerDelegate: class {
     func moveToMainMenu()
     func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool)
 	func showPauseMenu(levelNumber: Int)
+	var selectedLevel: Int? { get }
 }
 // Setup the protocol to return to the main menu from GameViewController
 
@@ -94,9 +95,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var screenBlockHeight: CGFloat = 0
     // Object layout property defintion
     
-    var dxBall: Double = 0
-    var dyBall: Double = 0
-    var speedBall: Double = 0
     var ballIsOnPaddle: Bool = true
     var numberOfLives: Int = 0
     var collisionLocation: Double = 0
@@ -106,15 +104,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Effect of paddle position hit on ball angle. Larger number means more effect
     var bricksLeft: Int = 0
     var ballLinearDampening: CGFloat = 0
-	let ballMaxSet: CGFloat = 450
-	let ballMinSet: CGFloat = 350
-	let ballMaxLimit: CGFloat = 750
-    let ballMinLimit: CGFloat = 150
-    var ballMaxSpeed: CGFloat = 0
-    var ballMinSpeed: CGFloat = 0
-	
-    var reducedBallSpeed: CGFloat = 0
-    var increasedBallSpeed: CGFloat = 0
+	var ballSpeedSlow: CGFloat = 0
+	var ballSpeedSlowest: CGFloat = 0
+	var ballSpeedNominal: CGFloat = 0
+	var ballSpeedFast: CGFloat = 0
+	var ballSpeedFastest: CGFloat = 0
+	var ballSpeedLimit: CGFloat = 0
     var xSpeed: CGFloat = 0
     var ySpeed: CGFloat = 0
     var currentSpeed: CGFloat = 0
@@ -195,7 +190,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var laserPowerUpIsOn: Bool = false
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
-	let ballSpeedChange: CGFloat = 150
     // Power up properties
     
     var contactCount: Int = 0
@@ -287,8 +281,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock = self.childNode(withName: "topScreenBlock") as! SKSpriteNode
 		directionMarker = self.childNode(withName: "directionMarker") as! SKSpriteNode
         // Links objects to nodes
-	
-		layoutUnit = (self.frame.width-1)/18
+		
+		numberOfBrickRows = 22
+        numberOfBrickColumns = numberOfBrickRows/2
+		layoutUnit = (self.frame.width-1)/CGFloat(numberOfBrickRows)
 		
 		brickWidth = layoutUnit*2 - 1
 		brickHeight = layoutUnit*1 - 1
@@ -305,7 +301,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		minPaddleGap = paddleGap/2
 		ballLostAnimationHeight = paddle.size.height
 		ballLostHeight = ballLostAnimationHeight*4
-		screenBlockHeight = layoutUnit*4
+		screenBlockHeight = layoutUnit*6
 		topScreenBlock.size.height = screenBlockHeight
 		topScreenBlock.size.width = self.frame.width
 		topGap = layoutUnit*3
@@ -314,11 +310,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		directionMarker.position.x = 0
 		directionMarker.position.y = 0
 		// Object size definition
+		
+		ballLinearDampening = -0.02
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
-		numberOfBrickRows = 18
-        numberOfBrickColumns = 9
         totalBricksWidth = (brickWidth + objectSpacing) * CGFloat(numberOfBrickColumns) + objectSpacing
 		totalBricksHeight = (brickHeight + objectSpacing) * CGFloat(numberOfBrickRows) + objectSpacing
         xBrickOffset = totalBricksWidth/2 - brickWidth/2 - objectSpacing
@@ -342,14 +338,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
         ball.zPosition = 2
-		ball.physicsBody?.usesPreciseCollisionDetection = true
-        ball.physicsBody?.linearDamping = ballLinearDampening
-        ball.physicsBody?.angularDamping = 0
-		ball.physicsBody?.restitution = 1
+		ball.physicsBody!.usesPreciseCollisionDetection = true
+		ball.physicsBody!.linearDamping = ballLinearDampening
+        ball.physicsBody!.angularDamping = 0
+		ball.physicsBody!.restitution = 1
+		ball.physicsBody!.density = 2
 		let xRangeBall = SKRange(lowerLimit:-self.frame.width/2 + ballSize/2,upperLimit:self.frame.width/2 - ballSize/2)
         ball.constraints = [SKConstraint.positionX(xRangeBall)]
-        // Stops the ball leaving the screen
 		// Define ball properties
+		
+		print("ball size: ", ballSize)
 		
 		definePaddleProperties()
 		// Define paddle properties
@@ -420,10 +418,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 //MARK: - Game Properties Initialisation
         
-        ballMaxSpeed = ballMaxSet
-        ballMinSpeed = ballMinSet
-        ballLinearDampening = -0.01
-		ballLaunchSpeed = 2
+		ballSpeedNominal = ballSize * 30
+		ballSpeedSlow = ballSize * 25
+		ballSpeedSlowest = ballSize * 20
+		ballSpeedFast = ballSize * 35
+		ballSpeedFastest = ballSize * 40
+		ballSpeedLimit = ballSpeedNominal
 		// Ball speed parameters
 		
 		minAngleDeg = 7.5
@@ -431,7 +431,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		angleAdjustmentK = 45
 		// Ball angle parameters
 		
-		powerUpProbFactor = 10
+		powerUpProbFactor = 5
 		powerUpLimit = 2
 		// Power-up parameters
 		
@@ -441,7 +441,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplier = 1.0
 		// Score properties
         
-        endLevelNumber = 3
+        endLevelNumber = 10
 		// Define number of levels
 		
 //MARK: - Score Database Setup
@@ -573,7 +573,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let straightLaunchAngleRad = 90 * Double.pi / 180
         let minLaunchAngleRad = 10 * Double.pi / 180
-        let maxLaunchAngleRad = 60 * Double.pi / 180
+        let maxLaunchAngleRad = 70 * Double.pi / 180
         var launchAngleMultiplier = 1
         
         ballPositionOnPaddle = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
@@ -604,9 +604,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Determine the launch angle based on the location of the ball on the paddle
         }
         
-        let dxLaunch = cos(ballLaunchAngleRad) * ballLaunchSpeed
-        let dyLaunch = sin(ballLaunchAngleRad) * ballLaunchSpeed
-        ball.physicsBody?.applyImpulse(CGVector(dx: dxLaunch, dy: dyLaunch))
+        let dxLaunch = cos(ballLaunchAngleRad) * Double(ballSpeedLimit)
+        let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)
+		ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
         // Launches ball
 
         lightHaptic.impactOccurred()
@@ -665,6 +665,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			xSpeed = ball.physicsBody!.velocity.dx
 			ySpeed = ball.physicsBody!.velocity.dy
 			currentSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
+			print("ball speed: ", currentSpeed)
 			// Calculate ball speed
 			
             if ball.position.y <= paddle.position.y - ballLostAnimationHeight {
@@ -731,18 +732,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			angleRad = (angleDeg*Double.pi/180)
 			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
 			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-			ball.physicsBody!.velocity.dx = xSpeed
-			ball.physicsBody!.velocity.dy = ySpeed
+			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
 			// Set the new angle of the ball
 			
-			if currentSpeed > ballMaxSpeed {
+			if currentSpeed > ballSpeedLimit + currentSpeed/10 {
 				ball.physicsBody!.linearDamping = 0.5
-            } else if currentSpeed < ballMinSpeed {
+            } else if currentSpeed < ballSpeedLimit {
 				ball.physicsBody!.linearDamping = -0.5
             } else {
                 ball.physicsBody!.linearDamping = ballLinearDampening
             }
-			// Set the new speed of the ball
+			// Set the new speed of the ball and ensure it stays within the boundary
         }
 		// Code to run continuously whilst playing when the ball is off the paddle and gravity power-up is off
     }
@@ -753,7 +753,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballRelativePositionOnPaddle = 0
         ball.position.x = paddle.position.x
         ball.position.y = ballStartingPositionY
-        ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+        ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
         ballIsOnPaddle = true
         paddleMoved = true
 		ballLostBool = true
@@ -879,8 +879,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 				// Ensure the xSpeed is calculated in the correct direction based on the ball position
 				
-				ball.physicsBody!.velocity.dx = xSpeed
-				ball.physicsBody!.velocity.dy = ySpeed
+				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
 				// Set the new speed in the x direction
 			}
 			// Ball hits Frame - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
@@ -1057,7 +1056,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if ball.position.x > paddleLeftEdgePosition + stickyPaddleTolerance && ball.position.x < paddleRightEdgePosition - stickyPaddleTolerance && stickyPaddleCatches != 0 {
 			// Catch the ball if the sticky paddle power up is applied and the ball hits the centre of the paddle
-            ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+            ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 			// Reposition ball within boundries of paddle
             ballIsOnPaddle = true
             paddleMoved = true
@@ -1093,8 +1092,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 xSpeed = CGFloat(cos(angleRad)) * currentSpeed
                 ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-                ball.physicsBody!.velocity.dx = xSpeed
-                ball.physicsBody!.velocity.dy = ySpeed
+				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
                 // Set the new speed and angle of the ball
             }
         }
@@ -1326,7 +1324,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         case powerUpLoseALife:
         // Lose a life
-			ball.physicsBody?.linearDamping = 2
+			ball.physicsBody!.linearDamping = 2
             ballLostAnimation()
             self.run(SKAction.wait(forDuration: 0.2), completion: {
                 self.ballLost()
@@ -1339,9 +1337,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.removeAction(forKey: "powerUpReduceBallSpeed")
 			self.removeAction(forKey: "powerUpIncreaseBallSpeed")
 			// Remove any current ball speed power up timers
-			if ballMinSpeed >= ballMinLimit + ballSpeedChange {
-				ballMaxSpeed = ballMaxSpeed - ballSpeedChange
-				ballMinSpeed = ballMinSpeed - ballSpeedChange
+			if ballSpeedLimit == ballSpeedNominal {
+				ballSpeedLimit = ballSpeedSlow
+			} else if ballSpeedLimit == ballSpeedSlow {
+				ballSpeedLimit = ballSpeedSlowest
+			} else if ballSpeedLimit == ballSpeedSlowest {
+				ballSpeedLimit = ballSpeedSlowest
+			} else if ballSpeedLimit == ballSpeedFast {
+				ballSpeedLimit = ballSpeedNominal
+			} else if ballSpeedLimit == ballSpeedFastest {
+				ballSpeedLimit = ballSpeedFast
 			}
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
@@ -1349,8 +1354,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
-				self.ballMaxSpeed = self.ballMaxSet
-				self.ballMinSpeed = self.ballMinSet
+				self.ballSpeedLimit = self.ballSpeedNominal
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpReduceBallSpeed")
@@ -1361,9 +1365,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.removeAction(forKey: "powerUpReduceBallSpeed")
 			self.removeAction(forKey: "powerUpIncreaseBallSpeed")
 			// Remove any current ball speed power up timers
-			if ballMaxSpeed <= ballMaxLimit - ballSpeedChange {
-				ballMaxSpeed = ballMaxSpeed + ballSpeedChange
-				ballMinSpeed = ballMinSpeed + ballSpeedChange
+			if ballSpeedLimit == ballSpeedNominal {
+				ballSpeedLimit = ballSpeedFast
+			} else if ballSpeedLimit == ballSpeedSlow {
+				ballSpeedLimit = ballSpeedNominal
+			} else if ballSpeedLimit == ballSpeedSlowest {
+				ballSpeedLimit = ballSpeedSlow
+			} else if ballSpeedLimit == ballSpeedFast {
+				ballSpeedLimit = ballSpeedFastest
+			} else if ballSpeedLimit == ballSpeedFastest {
+				ballSpeedLimit = ballSpeedFastest
 			}
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
@@ -1371,8 +1382,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
-				self.ballMaxSpeed = self.ballMaxSet
-				self.ballMinSpeed = self.ballMinSet
+				self.ballSpeedLimit = self.ballSpeedNominal
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpIncreaseBallSpeed")
@@ -1643,6 +1653,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Mystery power-up
 			powerUpScore = 0
 			powerUpMultiplierScore = 0
+			powerUpsOnScreen-=1
 			mysteryPowerUp = true
 			powerUpGenerator (sprite: sprite)
 			
@@ -1692,16 +1703,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.color = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		paddle.physicsBody!.restitution = 1
         ball.texture = ballTexture
-		ballMinSpeed = ballMinSet
-		ballMaxSpeed = ballMaxSet
         definePaddleProperties()
         laserPowerUpIsOn = false
         laserTimer?.invalidate()
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
 		ball.physicsBody!.affectedByGravity = false
 		gravityActivated = false
-		ball.physicsBody?.linearDamping = ballLinearDampening
+		ball.physicsBody!.linearDamping = ballLinearDampening
 		powerUpLimit = 2
+		ballSpeedLimit = ballSpeedNominal
     }
     
     func moveToMainMenu() {
@@ -1727,7 +1737,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
 		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
         paddle.zPosition = 2
-		paddle.physicsBody?.usesPreciseCollisionDetection = true
+		paddle.physicsBody!.usesPreciseCollisionDetection = true
 		paddle.physicsBody!.restitution = 1
         // Define paddle properties
         let xRangePaddle = SKRange(lowerLimit:-self.frame.width/2 + paddle.size.width/2,upperLimit:self.frame.width/2 - paddle.size.width/2)

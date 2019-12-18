@@ -27,26 +27,26 @@ extension GameScene {
         for i in 0..<numberOfBrickRows {
             for j in 0..<numberOfBrickColumns {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
-                if i == 0 || i == 1 || i == 16 || i == 17 {
+                if i == 0 || i == 1 || i == 20 || i == 21 {
                     // Normal bricks
                     brick.texture = brickNormalTexture
                 }
-                if i == 2 || i == 4 || i == 15 || i == 13 {
+                if i == 2 || i == 3 || i == 18 || i == 19 {
                     // Invisible bricks
                     brick.texture = brickInvisibleTexture
                     brick.isHidden = true
                 }
-                if i == 3 || i == 6 || i == 11 || i == 14 {
+                if i == 6 || i == 7 || i == 14 || i == 15 {
                     // Double bricks
                     brick.texture = brickMultiHit1Texture
                 }
-                if i == 5 || i == 7 || i == 10 || i == 12 {
+                if i == 4 || i == 5 || i == 8 || i == 9 || i == 12 || i == 13 || i == 16 || i == 17 {
                     // Null bricks
                     brick.texture = brickNullTexture
                     brick.isHidden = true
                 }
-                if i == 8 || i == 9 {
-                    if j == 0 || j == 2 || j == 4 || j == 6 || j == 8 {
+                if i == 10 || i == 11 {
+                    if j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10 {
                         // Indestructible bricks
                         brick.texture = brickIndestructibleTexture
                     } else {
@@ -70,7 +70,7 @@ extension GameScene {
                 brick.physicsBody!.collisionBitMask = CollisionTypes.laserCategory.rawValue
                 brick.physicsBody!.contactTestBitMask = CollisionTypes.laserCategory.rawValue
                 brick.zPosition = 0
-                brick.physicsBody?.usesPreciseCollisionDetection = true
+                brick.physicsBody!.usesPreciseCollisionDetection = true
                 addChild(brick)
                 brickArray.append(brick)
             }

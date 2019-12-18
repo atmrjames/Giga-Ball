@@ -47,8 +47,7 @@ class InbetweenLevels: GKState {
         let resetGroup = SKAction.group([scaleReset, fadeReset])
         // Setup ball and paddle animations
         
-        scene.ball.physicsBody!.velocity.dx = 0
-        scene.ball.physicsBody!.velocity.dy = 0
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
         // Stop ball
         
         scene.ball.run(ballSequence, completion: {
@@ -111,12 +110,12 @@ class InbetweenLevels: GKState {
         scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
         // Save level score if its the highscore and update NSUserDefaults
     
-        if scene.totalScore > scene.totalScoreArray[scene.levelNumber-1] {
+        if scene.totalScore >= scene.totalScoreArray.max()! {
             scene.totalScoreArray[scene.levelNumber-1] = scene.totalScore
             scene.dataStore.set(scene.totalScoreArray, forKey: "TotalScoreStore")
             scene.newTotalHighScore = true
         }
-        scene.totalHighscore = scene.totalScoreArray[scene.levelNumber-1]
+        scene.totalHighscore = scene.totalScoreArray.max()!
         // Save total score if its the highscore and update NSUserDefaults
         
         let waitScene = SKAction.wait(forDuration: 1)
@@ -128,6 +127,8 @@ class InbetweenLevels: GKState {
     }
     
     @objc func notificationToContinueReceived(_ notification: Notification) {
+        scene.levelNumber += 1
+        // Increment level number
         scene.gameState.enter(Playing.self)
     }
     // Call the function to load the next level if a notification from the end level popup is received

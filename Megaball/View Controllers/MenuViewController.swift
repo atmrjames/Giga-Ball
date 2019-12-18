@@ -8,49 +8,28 @@
 
 import UIKit
 
-class MenuViewController: UIViewController {
+class MenuViewController: UIViewController, MenuViewControllerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
     }
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
-    
+
     @IBAction func playButtonPressed(_ sender: UIButton) {
         mediumHaptic.impactOccurred()
-        moveToGame()
+        moveToGame(selectedLevel: 1)
     }
     
-    @IBAction func hapticTestingButton(_ sender: UIButton) {
-        
-        var hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle
-        
-        switch sender.tag {
-        case 1:
-            hapticStyle = .light
-            // use for ball hitting bricks and paddle
-        case 2:
-            hapticStyle = .medium
-            // use for UI interactions
-        case 3:
-            hapticStyle = .heavy
-        case 4:
-            hapticStyle = .soft
-            // use for lost ball
-        case 5:
-            hapticStyle = .rigid
-            // use for power-ups collected
-        default:
-            hapticStyle = .light
-        }
-        
-        let hapticFeedback = UIImpactFeedbackGenerator(style: hapticStyle)
-        hapticFeedback.impactOccurred()
-        
+    @IBAction func levelSelectionButton(_ sender: UIButton) {
+        mediumHaptic.impactOccurred()
+        moveToGame(selectedLevel: sender.tag)
     }
     
-    func moveToGame() {
+    func moveToGame(selectedLevel: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
+        gameView.menuViewControllerDelegate = self
+        gameView.selectedLevel = selectedLevel
         self.navigationController?.pushViewController(gameView, animated: true)
     }
     // Segue to GameViewController

@@ -1,8 +1,8 @@
 //
-//  Level002.swift
+//  Level005.swift
 //  Megaball
 //
-//  Created by James Harding on 08/09/2019.
+//  Created by James Harding on 18/12/2019.
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
@@ -10,7 +10,7 @@ import SpriteKit
 import GameplayKit
 
 extension GameScene {
-    func loadLevel2() {
+    func loadLevel5() {
         let startingScale = SKAction.scale(to: 0.8, duration: 0)
         let startingFade = SKAction.fadeOut(withDuration: 0)
         let scaleUp = SKAction.scale(to: 1, duration: 0.25)
@@ -20,46 +20,86 @@ extension GameScene {
         let brickGroup = SKAction.group([scaleUp, fadeIn])
         let brickSequence = SKAction.sequence([wait, brickGroup])
         // Setup brick animation
-        
+
         var brickArray: [SKNode] = []
         // Array to store all bricks
         
         for i in 0..<numberOfBrickRows {
             for j in 0..<numberOfBrickColumns {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
-                if j == 0 || j == 10 {
-                    // Normal bricks
+                brick.texture = brickNullTexture
+                // set default brick texture
+
+                if i == 20 || i == 21 {
                     brick.texture = brickNormalTexture
                 }
-                if j == 1 || j == 9 {
-                    // Invisible bricks
-                    brick.texture = brickInvisibleTexture
-                    brick.isHidden = true
-                }
-                if j == 3 || j == 7 {
-                    // Double bricks
-                    brick.texture = brickMultiHit1Texture
-                }
-                if j == 5 {
-                    if i == 1 || i == 2 || i == 5 || i == 6 || i == 10 || i == 11 || i == 15 || i == 16 || i == 20 || i == 21 {
-                        // Indestructible bricks
-                        brick.texture = brickIndestructibleTexture
-                    } else {
-                        // Null bricks
-                        brick.texture = brickNullTexture
-                        brick.isHidden = true
+                if i == 18 || i == 19 {
+                    if j <= 7 {
+                        brick.texture = brickNormalTexture
                     }
                 }
-                if j == 2 || j == 4 || j == 6 || j == 8 {
-                    // Null bricks
-                    brick.texture = brickNullTexture
+                if i == 16 || i == 17 {
+                    if j <= 5 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 14 || i == 15 {
+                    if j <= 4 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 13 {
+                    if j >= 1 && j <= 4 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 11 || i == 12 {
+                    if j >= 1 && j <= 3 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 10 {
+                    if j >= 2 && j <= 3 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 8 || i == 9 {
+                    if j >= 2 && j <= 4 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 7 {
+                    if (j >= 3 && j <= 6) || j == 10 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 6 {
+                    if (j >= 3 && j <= 6) || (j >= 8 && j <= 9) {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 5 {
+                    if j >= 4 && j <= 8 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                if i == 4 {
+                    if j >= 5 && j <= 7 {
+                        brick.texture = brickNormalTexture
+                    }
+                }
+                // Normal bricks
+               
+                if brick.texture == brickInvisibleTexture || brick.texture == brickNullTexture {
                     brick.isHidden = true
                 }
+                // Hide invisible and null bricks
+
                 brick.size.width = brickWidth
                 brick.size.height = brickHeight
                 brick.anchorPoint.x = 0.5
                 brick.anchorPoint.y = 0.5
-                brick.position = CGPoint(x: -xBrickOffset + (brickWidth+objectSpacing)*CGFloat(j), y: yBrickOffset - (brickHeight+objectSpacing)*CGFloat(i))   
+                brick.position = CGPoint(x: -xBrickOffset + (brickWidth+objectSpacing)*CGFloat(j), y: yBrickOffset - (brickHeight+objectSpacing)*CGFloat(i))
                 brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
                 brick.physicsBody!.allowsRotation = false
                 brick.physicsBody!.friction = 0.0
@@ -76,7 +116,7 @@ extension GameScene {
             }
         }
         // Define brick properties
-        
+
         for brick in brickArray {
             let brickCurrent = brick as! SKSpriteNode
             brick.run(startingGroup)
@@ -95,3 +135,4 @@ extension GameScene {
         mediumHaptic.impactOccurred()
     }
 }
+

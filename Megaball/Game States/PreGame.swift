@@ -36,11 +36,10 @@ class PreGame: GKState {
         scene.life.isHidden = true
         // Hide labels
         
-        scene.levelNumber = 0
+        scene.levelNumber = scene.gameViewControllerDelegate!.selectedLevel!
         scene.totalScore = 0
         scene.numberOfLives = 3
         scene.gameoverStatus = false
-        
     }
 
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {

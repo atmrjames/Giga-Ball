@@ -10,7 +10,18 @@ import UIKit
 import SpriteKit
 import GameplayKit
 
+protocol MenuViewControllerDelegate: class {
+    func moveToGame(selectedLevel: Int)
+}
+// Setup the protocol to return to the main menu from GameViewController
+
 class GameViewController: UIViewController, GameViewControllerDelegate {
+    
+    weak var menuViewControllerDelegate:MenuViewControllerDelegate?
+    // Create the delegate property for the MenuViewController
+    
+    var selectedLevel: Int?
+    // Property to store the correct level to load
     
     override func viewDidLoad() {
         super.viewDidLoad()

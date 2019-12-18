@@ -19,7 +19,7 @@ class Playing: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        if scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber {
+        if previousState is InbetweenLevels && (scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber) {
             scene.gameState.enter(GameOver.self)
         } else if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
@@ -35,8 +35,7 @@ class Playing: GKState {
                 node.isPaused = false
             }
             scene.enumerateChildNodes(withName: BallCategoryName) { (node, _) in
-                self.scene.ball.physicsBody!.velocity.dx = self.scene.pauseBallVelocityX
-                self.scene.ball.physicsBody!.velocity.dy = self.scene.pauseBallVelocityY
+                self.scene.ball.physicsBody!.velocity = CGVector(dx: self.scene.pauseBallVelocityX, dy: self.scene.pauseBallVelocityY)
                 node.isPaused = false
             }
             scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
@@ -74,8 +73,9 @@ class Playing: GKState {
     
     func loadNextLevel() {
         
-        scene.levelNumber += 1
-        // Increment level number
+        if scene.levelNumber > scene.endLevelNumber {
+            scene.levelNumber = scene.endLevelNumber
+        }
         
         scene.brickRemovalCounter = 0
         scene.powerUpsOnScreen = 0
@@ -83,16 +83,24 @@ class Playing: GKState {
         scene.newLevelHighScore = false
         scene.newTotalHighScore = false
         // Reset level and total highscore booleans
+
+        if scene.totalScoreArray.count < scene.levelNumber {
+            var totalNumberDiff = scene.levelNumber - scene.totalScoreArray.count
+            while totalNumberDiff >= 1 {
+                scene.totalScoreArray.append(1)
+                totalNumberDiff-=1
+            }
+        }
+        // Add new totalScorearry entry for the level
         
         if scene.levelScoreArray.count < scene.levelNumber {
-            scene.levelScoreArray.append(1)
+            var levelNumberDiff = scene.levelNumber - scene.levelScoreArray.count
+            while levelNumberDiff >= 1 {
+                scene.levelScoreArray.append(1)
+                levelNumberDiff-=1
+            }
         }
-        // Check the level score item exists in the array for the new level, if not create a placeholder
-        
-        if scene.totalScoreArray.count < scene.levelNumber {
-            scene.totalScoreArray.append(1)
-        }
-        // Check the total score item exists in the array for the new level, if not create a placeholder (value = 1)
+        // Add new levelScoreArray entry for the level
         
         if scene.levelScoreArray[scene.levelNumber-1] != 1 {
             scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
@@ -150,6 +158,20 @@ class Playing: GKState {
             scene.loadLevel2()
         case 3:
             scene.loadLevel3()
+        case 4:
+            scene.loadLevel4()
+        case 5:
+            scene.loadLevel5()
+        case 6:
+            scene.loadLevel6()
+        case 7:
+            scene.loadLevel7()
+        case 8:
+            scene.loadLevel8()
+        case 9:
+            scene.loadLevel9()
+        case 10:
+            scene.loadLevel10()
         default:
             break
         }
