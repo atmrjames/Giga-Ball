@@ -83,7 +83,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var iconSize: CGFloat = 0
 	var progressIconFrames: [SKTexture] = []
 	// Define timer icons
-
+	
+	var iconArray: [SKSpriteNode] = []
+	var iconTextureArray: [SKTexture] = []
+	var progressIconArray: [SKSpriteNode] = []
+	var imageFolderNameArray: [String] = []
+	var progressIconNameArray: [String] = []
+	var progressIconFramesArray: [[SKTexture]] = []
+	
+	var increasePaddleSizeIconFrames: [SKTexture] = []
+	var decreasePaddleSizeIconFrames: [SKTexture] = []
+	var decreaseBallSpeedIconFrames: [SKTexture] = []
+	var increaseBallSpeedIconFrames: [SKTexture] = []
+	var stickyPaddleIconFrames: [SKTexture] = []
+	var gravityIconFrames: [SKTexture] = []
+	var lasersIconFrames: [SKTexture] = []
+	var undestructiballIconFrames: [SKTexture] = []
+	var superballIconFrames: [SKTexture] = []
+	
 	var layoutUnit: CGFloat = 0
     var paddleWidth: CGFloat = 0
     var paddleGap: CGFloat = 0
@@ -94,7 +111,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var ballLaunchAngleRad: Double = 0
     var ballLostHeight: CGFloat = 0
 	var ballLostAnimationHeight: CGFloat = 0
-	var objectSpacing:CGFloat = 0
 	var brickHeight: CGFloat = 0
     var brickWidth: CGFloat = 0
     var numberOfBrickRows: Int = 0
@@ -215,6 +231,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let pauseTexture: SKTexture = SKTexture(imageNamed: "PauseButton")
     // Play/pause button textures
 	
+	let increasePaddleSizeProgressIcon = SKSpriteNode()
+	let decreasePaddleSizeProgressIcon = SKSpriteNode()
+	let decreaseBallSpeedProgressIcon = SKSpriteNode()
+	let increaseBallSpeedProgressIcon = SKSpriteNode()
+	let stickyPaddleProgressIcon = SKSpriteNode()
+	let gravityProgressIcon = SKSpriteNode()
+	let lasersProgressIcon = SKSpriteNode()
+	let undestructiballProgressIcon = SKSpriteNode()
+	let superballProgressIcon = SKSpriteNode()
+	
 	let iconIncreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "timerIncreasePaddleSize")
 	let iconDecreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "timerDecreasePaddleSize")
 	let iconDecreaseBallSpeedTexture: SKTexture = SKTexture(imageNamed: "timerDecreaseBallSpeed")
@@ -322,11 +348,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		numberOfBrickRows = 22
         numberOfBrickColumns = numberOfBrickRows/2
-		layoutUnit = (self.frame.width-1)/CGFloat(numberOfBrickRows)
+		layoutUnit = (self.frame.width)/CGFloat(numberOfBrickRows)
 		
-		brickWidth = layoutUnit*2 - 1
-		brickHeight = layoutUnit*1 - 1
-		objectSpacing = 1
+		brickWidth = layoutUnit*2
+		brickHeight = layoutUnit*1
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
         ball.size.height = ballSize
@@ -353,15 +378,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
-        totalBricksWidth = (brickWidth + objectSpacing) * CGFloat(numberOfBrickColumns) + objectSpacing
-		totalBricksHeight = (brickHeight + objectSpacing) * CGFloat(numberOfBrickRows) + objectSpacing
-        xBrickOffset = totalBricksWidth/2 - brickWidth/2 - objectSpacing
-		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2 - objectSpacing
+        totalBricksWidth = brickWidth * CGFloat(numberOfBrickColumns)
+		totalBricksHeight = brickHeight * CGFloat(numberOfBrickRows)
+        xBrickOffset = totalBricksWidth/2 - brickWidth/2
+		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
 		paddle.position.x = 0
 		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
 		paddle.position.y = paddlePositionY
 		ball.position.x = 0
-		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ballSize/2 + objectSpacing
+		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ballSize/2 + 1
 		ball.position.y = ballStartingPositionY
 		directionMarker.zPosition = 10
 		// Object positioning definition
@@ -452,31 +477,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 		
-		increasePaddleSizeIcon = self.childNode(withName: "increasePaddleSizeIcon") as! SKSpriteNode
-		decreasePaddleSizeIcon = self.childNode(withName: "decreasePaddleSizeIcon") as! SKSpriteNode
-		decreaseBallSpeedIcon = self.childNode(withName: "decreaseBallSpeedIcon") as! SKSpriteNode
-		increaseBallSpeedIcon = self.childNode(withName: "increaseBallSpeedIcon") as! SKSpriteNode
-		stickyPaddleIcon = self.childNode(withName: "stickyPaddleIcon") as! SKSpriteNode
-		gravityIcon = self.childNode(withName: "gravityIcon") as! SKSpriteNode
-		lasersIcon = self.childNode(withName: "lasersIcon") as! SKSpriteNode
-		undestructiballIcon = self.childNode(withName: "undestructiballIcon") as! SKSpriteNode
-		superballIcon = self.childNode(withName: "superballIcon") as! SKSpriteNode
-		let iconArray = [increasePaddleSizeIcon, decreasePaddleSizeIcon, decreaseBallSpeedIcon, increaseBallSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, undestructiballIcon, superballIcon]
-		let iconTextureArray = [iconIncreasePaddleSizeTexture, iconDecreasePaddleSizeTexture, iconDecreaseBallSpeedTexture, iconIncreaseBallSpeedTexture, iconStickyPaddleTexture, iconGravityTexture, iconLasersTexture, iconUndestructiballTexture, iconSuperballTexture]
-		iconSize = brickWidth*0.75
-		let iconSpacing = (-pauseButton.position.x*2 - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
-		for i in 1...iconArray.count {
-			let index = i-1
-			iconArray[index].size.width = iconSize
-			iconArray[index].size.height = iconSize
-			iconArray[index].texture = iconTextureArray[index]
-			iconArray[index].position.x = pauseButton.position.x + (iconSize+iconSpacing)*CGFloat(index)
-			iconArray[index].position.y = pauseButton.position.y + pauseButtonSize/2 + iconSize/2 + labelSpacing
-			iconArray[index].zPosition = 10
-			iconArray[index].name = powerIconCategoryName
-			iconArray[index].isHidden = true
-		}
-		// Power-up timer icon definition
+		
 		
 //MARK: - Game Properties Initialisation
         
@@ -523,11 +524,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
+
+		iconArray = [increasePaddleSizeIcon, decreasePaddleSizeIcon, decreaseBallSpeedIcon, increaseBallSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, undestructiballIcon, superballIcon]
+		iconTextureArray = [iconIncreasePaddleSizeTexture, iconDecreasePaddleSizeTexture, iconDecreaseBallSpeedTexture, iconIncreaseBallSpeedTexture, iconStickyPaddleTexture, iconGravityTexture, iconLasersTexture, iconUndestructiballTexture, iconSuperballTexture]
+		progressIconArray = [increasePaddleSizeProgressIcon, decreasePaddleSizeProgressIcon, decreaseBallSpeedProgressIcon, increaseBallSpeedProgressIcon, stickyPaddleProgressIcon, gravityProgressIcon, lasersProgressIcon, undestructiballProgressIcon, superballProgressIcon]
+		imageFolderNameArray = ["ProgressIconIncreasePaddleSize", "ProgressIconDecreasePaddleSize", "ProgressIconIncreaseBallSpeed", "ProgressIconDecreaseBallSpeed.atlas", "ProgressIconStickyPaddle", "ProgressIconGravity", "ProgressIconLasers", "ProgressIconUndestructible", "ProgressIconSuperball"]
+		progressIconNameArray = ["increasePaddleSizeTimerIcon", "decreasePaddleSizeTimerIcon", "increaseBallSpeedTimerIcon", "decreaseBallSpeedTimerIcon", "stickyPaddleTimerIcon", "gravityTimerIcon", "lasersTimerIcon", "undestructiballTimerIcon", "superballTimerIcon"]
+		progressIconFramesArray = [increasePaddleSizeIconFrames, decreasePaddleSizeIconFrames, decreaseBallSpeedIconFrames, increaseBallSpeedIconFrames, stickyPaddleIconFrames, gravityIconFrames, lasersIconFrames, undestructiballIconFrames, superballIconFrames]
+		iconSize = brickWidth*0.75
+		
+		for i in 1...iconArray.count {
+			let index = i-1
+			let iconSpacing = (-pauseButton.position.x*2 - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
+			iconArray[index].size.width = iconSize
+			iconArray[index].size.height = iconSize
+			iconArray[index].texture = iconTextureArray[index]
+			iconArray[index].position.x = pauseButton.position.x + (iconSize+iconSpacing)*CGFloat(index)
+			iconArray[index].position.y = pauseButton.position.y + pauseButtonSize/2 + iconSize/2 + labelSpacing
+			iconArray[index].zPosition = 10
+			iconArray[index].name = powerIconCategoryName
+			iconArray[index].isHidden = true
+			progressIconArray[index].name = progressIconNameArray[index]
+			buildProgressAnimation(progressIcon: progressIconArray[index], imageFolder: imageFolderNameArray[index], index: index)
+		}
+		// Power-up progress icon definition and setup
 		
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
-		
     }
+	
+	func buildProgressAnimation(progressIcon: SKSpriteNode, imageFolder: String, index: Int) {
+		let progressAnimatedAtlas = SKTextureAtlas(named: "ProgressIcon")
+		var progressFrames: [SKTexture] = []
+		let numImages = progressAnimatedAtlas.textureNames.count
+
+		for i in 1...numImages {
+			let progressTextureName = "ProgressIcon\(i)"
+			progressFrames.append(progressAnimatedAtlas.textureNamed(progressTextureName))
+		}
+		let firstFrameTexture = progressFrames[0]
+		progressIconFramesArray[index] = progressFrames
+		
+		progressIcon.texture = firstFrameTexture
+		progressIcon.size.height = iconSize
+		progressIcon.size.width = iconSize
+		progressIcon.isHidden = true
+		progressIcon.zPosition = 9
+		
+		addChild(progressIcon)
+	}
+	// Setup progress icon animation
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
     // Defines actions for a dragged touch
@@ -2068,80 +2114,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
 	
-	func buildProgressAnimation(progressIcon: SKSpriteNode) {
-		let progressAnimatedAtlas = SKTextureAtlas(named: "RadialProgress")
-		var progressFrames: [SKTexture] = []
-		let numImages = progressAnimatedAtlas.textureNames.count
-		for i in 1...numImages {
-			let progressTextureName = "radialProgress\(i)"
-			progressFrames.append(progressAnimatedAtlas.textureNamed(progressTextureName))
-		}
-		progressIconFrames = progressFrames
-		
-		let firstFrameTexture = progressIconFrames[0]
-		progressIcon.texture = firstFrameTexture
-		progressIcon.size.height = iconSize
-		progressIcon.size.width = iconSize
-		progressIcon.zPosition = 1
-		
-		print(iconSize)
-	}
-	// Setup progress icon animation
+	
 	
 	func animateProgressIcon(node: SKNode, duration: Double, powerUp: SKTexture) {
 		
-//		animateProgressIcon(node: increasePaddleSizeIcon, duration: timer, powerUp: powerUpIncreasePaddleSize)
-		
-		let progressIcon = SKSpriteNode()
-		buildProgressAnimation(progressIcon: progressIcon)
-		addChild(progressIcon)
+		var index = Int()
 		
 		var animationKey = ""
 		
+		let animationKeyArray: [String] = ["powerUpIncreasePaddleSizeProgress", "powerUpDecreasePaddleSizeProgress", "powerUpIncreaseBallSpeedProgress", "powerUpDecreaseBallSpeedProgress", "powerUpStickyPaddleProgress", "powerUpGravityBallProgress", "powerUpLasersProgress", "powerUpUndestructiBallProgress", "powerUpSuperBallProgress"]
+		
 		switch powerUp {
 		case powerUpIncreasePaddleSize:
-			progressIcon.name = "increasePaddleSizeTimerIcon"
-			increasePaddleSizeIcon.isHidden = false
-			animationKey = "powerUpIncreasePaddleSizeProgress"
+			index = 0
 		case powerUpDecreasePaddleSize:
-			progressIcon.name = "decreasePaddleSizeTimerIcon"
-			decreasePaddleSizeIcon.isHidden = false
-			animationKey = "powerUpDecreasePaddleSizeProgress"
+			index = 1
 		case powerUpIncreaseBallSpeed:
-			progressIcon.name = "increaseBallSpeedTimerIcon"
-			increaseBallSpeedIcon.isHidden = false
-			animationKey = "powerUpIncreaseBallSpeedProgress"
+			index = 2
 		case powerUpDecreaseBallSpeed:
-			progressIcon.name = "decreaseBallSpeedTimerIcon"
-			decreaseBallSpeedIcon.isHidden = false
-			animationKey = "powerUpDecreaseBallSpeedProgress"
+			index = 3
 		case powerUpStickyPaddle:
-			progressIcon.name = "stickyPaddleTimerIcon"
-			stickyPaddleIcon.isHidden = false
-			animationKey = "powerUpStickyPaddleProgress"
+			index = 4
 		case powerUpGravityBall:
-			progressIcon.name = "gravityTimerIcon"
-			gravityIcon.isHidden = false
-			animationKey = "powerUpGravityBallProgress"
+			index = 5
 		case powerUpLasers:
-			progressIcon.name = "lasersTimerIcon"
-			lasersIcon.isHidden = false
-			animationKey = "powerUpLasersProgress"
+			index = 6
 		case powerUpUndestructiBall:
-			progressIcon.name = "undestructiballTimerIcon"
-			undestructiballIcon.isHidden = false
-			animationKey = "powerUpUndestructiBallProgress"
+			index = 7
 		case powerUpSuperBall:
-			progressIcon.name = "superballTimerIcon"
-			superballIcon.isHidden = false
-			animationKey = "powerUpSuperBallProgress"
+			index = 8
 		default:
 			break
 		}
-
+		
+		var progressIcon = SKSpriteNode()
+		progressIcon = progressIconArray[index]
+		progressIcon.isHidden = false
+		node.isHidden = false
+		animationKey = animationKeyArray[index]
+		
 		progressIcon.position = CGPoint(x: node.position.x, y: node.position.y)
-			let timePerFrame = duration/Double(progressIconFrames.count)
-			progressIcon.run(SKAction.repeat(SKAction.animate(with: progressIconFrames, timePerFrame: timePerFrame, resize: false, restore: true), count: 1), withKey: animationKey)
+		print("progressIconPosition: ", progressIcon.position, progressIcon.isHidden, progressIcon.size, progressIcon.texture!)
+		let timePerFrame = duration/Double(progressIconFramesArray[index].count)
+		progressIcon.run(SKAction.repeat(SKAction.animate(with: progressIconFramesArray[index], timePerFrame: timePerFrame, resize: false, restore: true), count: 1), withKey: animationKey)
 	}
 	// Animate progress icon
 }

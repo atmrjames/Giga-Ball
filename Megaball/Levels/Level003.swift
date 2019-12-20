@@ -55,11 +55,19 @@ extension GameScene {
                         brick.isHidden = true
                     }
                 }
+                
                 brick.size.width = brickWidth
                 brick.size.height = brickHeight
+                brick.centerRect = CGRect(x: 2.0/16.0,
+                y: 2.0/16.0,
+                width: 12.0/16.0,
+                height: 12.0/16.0)
+                brick.scale(to:CGSize(width: brickWidth, height: brickHeight))
+                // Set brick size without stretching edges
+                
                 brick.anchorPoint.x = 0.5
                 brick.anchorPoint.y = 0.5
-                brick.position = CGPoint(x: -xBrickOffset + (brickWidth+objectSpacing)*CGFloat(j), y: yBrickOffset - (brickHeight+objectSpacing)*CGFloat(i))   
+                brick.position = CGPoint(x: -xBrickOffset + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
                 brick.physicsBody!.allowsRotation = false
                 brick.physicsBody!.friction = 0.0
