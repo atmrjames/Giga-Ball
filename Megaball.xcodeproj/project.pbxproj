@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		1A04BEFA238FE42700EB6150 /* Level003.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A04BEF9238FE42700EB6150 /* Level003.swift */; };
-		1A2F585523AD19C400FE33AF /* ProgressIcon.atlas in Resources */ = {isa = PBXBuildFile; fileRef = 1A2F585423AD19C400FE33AF /* ProgressIcon.atlas */; };
 		1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94842309E4F30076D635 /* AppDelegate.swift */; };
 		1A5A94872309E4F30076D635 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94862309E4F30076D635 /* GameScene.sks */; };
 		1A5A94892309E4F30076D635 /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94882309E4F30076D635 /* Actions.sks */; };
@@ -40,7 +39,6 @@
 
 /* Begin PBXFileReference section */
 		1A04BEF9238FE42700EB6150 /* Level003.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level003.swift; sourceTree = "<group>"; };
-		1A2F585423AD19C400FE33AF /* ProgressIcon.atlas */ = {isa = PBXFileReference; lastKnownFileType = folder.skatlas; path = ProgressIcon.atlas; sourceTree = "<group>"; };
 		1A5A94812309E4F30076D635 /* MegaBall.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaBall.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A5A94842309E4F30076D635 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A5A94862309E4F30076D635 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
@@ -102,7 +100,6 @@
 		1A5A94832309E4F30076D635 /* Megaball */ = {
 			isa = PBXGroup;
 			children = (
-				1A2F585423AD19C400FE33AF /* ProgressIcon.atlas */,
 				1A5A94842309E4F30076D635 /* AppDelegate.swift */,
 				1A5A94862309E4F30076D635 /* GameScene.sks */,
 				1A5A94882309E4F30076D635 /* Actions.sks */,
@@ -218,7 +215,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A2F585523AD19C400FE33AF /* ProgressIcon.atlas in Resources */,
 				1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */,
 				1A5A94902309E4F30076D635 /* Main.storyboard in Resources */,
 				1A5A94872309E4F30076D635 /* GameScene.sks in Resources */,

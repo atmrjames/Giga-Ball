@@ -80,26 +80,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var superballIcon = SKSpriteNode()
 	// Power-up icons
 
-	var iconSize: CGFloat = 0
-	var progressIconFrames: [SKTexture] = []
-	// Define timer icons
-	
 	var iconArray: [SKSpriteNode] = []
 	var iconTextureArray: [SKTexture] = []
-	var progressIconArray: [SKSpriteNode] = []
-	var imageFolderNameArray: [String] = []
-	var progressIconNameArray: [String] = []
-	var progressIconFramesArray: [[SKTexture]] = []
-	
-	var increasePaddleSizeIconFrames: [SKTexture] = []
-	var decreasePaddleSizeIconFrames: [SKTexture] = []
-	var decreaseBallSpeedIconFrames: [SKTexture] = []
-	var increaseBallSpeedIconFrames: [SKTexture] = []
-	var stickyPaddleIconFrames: [SKTexture] = []
-	var gravityIconFrames: [SKTexture] = []
-	var lasersIconFrames: [SKTexture] = []
-	var undestructiballIconFrames: [SKTexture] = []
-	var superballIconFrames: [SKTexture] = []
+	var iconSize: CGFloat = 0
 	
 	var layoutUnit: CGFloat = 0
     var paddleWidth: CGFloat = 0
@@ -230,16 +213,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let playTexture: SKTexture = SKTexture(imageNamed: "PlayButton")
     let pauseTexture: SKTexture = SKTexture(imageNamed: "PauseButton")
     // Play/pause button textures
-	
-	let increasePaddleSizeProgressIcon = SKSpriteNode()
-	let decreasePaddleSizeProgressIcon = SKSpriteNode()
-	let decreaseBallSpeedProgressIcon = SKSpriteNode()
-	let increaseBallSpeedProgressIcon = SKSpriteNode()
-	let stickyPaddleProgressIcon = SKSpriteNode()
-	let gravityProgressIcon = SKSpriteNode()
-	let lasersProgressIcon = SKSpriteNode()
-	let undestructiballProgressIcon = SKSpriteNode()
-	let superballProgressIcon = SKSpriteNode()
 	
 	let iconIncreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "timerIncreasePaddleSize")
 	let iconDecreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "timerDecreasePaddleSize")
@@ -477,8 +450,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 		
-		
-		
+		iconArray = [increasePaddleSizeIcon, decreasePaddleSizeIcon, decreaseBallSpeedIcon, increaseBallSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, undestructiballIcon, superballIcon]
+				iconTextureArray = [iconIncreasePaddleSizeTexture, iconDecreasePaddleSizeTexture, iconDecreaseBallSpeedTexture, iconIncreaseBallSpeedTexture, iconStickyPaddleTexture, iconGravityTexture, iconLasersTexture, iconUndestructiballTexture, iconSuperballTexture]
+				
+				iconSize = brickWidth*0.75
+				
+				for i in 1...iconArray.count {
+					let index = i-1
+					let iconSpacing = (-pauseButton.position.x*2 - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
+					iconArray[index].size.width = iconSize
+					iconArray[index].size.height = iconSize
+					iconArray[index].texture = iconTextureArray[index]
+					iconArray[index].position.x = pauseButton.position.x + (iconSize+iconSpacing)*CGFloat(index)
+					iconArray[index].position.y = pauseButton.position.y + pauseButtonSize/2 + iconSize/2 + labelSpacing
+					iconArray[index].zPosition = 10
+					iconArray[index].name = powerIconCategoryName
+					iconArray[index].isHidden = true
+				}
+				// Power-up progress icon definition and setup
+
 //MARK: - Game Properties Initialisation
         
 		ballSpeedNominal = ballSize * 30
@@ -524,56 +514,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
-
-		iconArray = [increasePaddleSizeIcon, decreasePaddleSizeIcon, decreaseBallSpeedIcon, increaseBallSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, undestructiballIcon, superballIcon]
-		iconTextureArray = [iconIncreasePaddleSizeTexture, iconDecreasePaddleSizeTexture, iconDecreaseBallSpeedTexture, iconIncreaseBallSpeedTexture, iconStickyPaddleTexture, iconGravityTexture, iconLasersTexture, iconUndestructiballTexture, iconSuperballTexture]
-		progressIconArray = [increasePaddleSizeProgressIcon, decreasePaddleSizeProgressIcon, decreaseBallSpeedProgressIcon, increaseBallSpeedProgressIcon, stickyPaddleProgressIcon, gravityProgressIcon, lasersProgressIcon, undestructiballProgressIcon, superballProgressIcon]
-		imageFolderNameArray = ["ProgressIconIncreasePaddleSize", "ProgressIconDecreasePaddleSize", "ProgressIconIncreaseBallSpeed", "ProgressIconDecreaseBallSpeed.atlas", "ProgressIconStickyPaddle", "ProgressIconGravity", "ProgressIconLasers", "ProgressIconUndestructible", "ProgressIconSuperball"]
-		progressIconNameArray = ["increasePaddleSizeTimerIcon", "decreasePaddleSizeTimerIcon", "increaseBallSpeedTimerIcon", "decreaseBallSpeedTimerIcon", "stickyPaddleTimerIcon", "gravityTimerIcon", "lasersTimerIcon", "undestructiballTimerIcon", "superballTimerIcon"]
-		progressIconFramesArray = [increasePaddleSizeIconFrames, decreasePaddleSizeIconFrames, decreaseBallSpeedIconFrames, increaseBallSpeedIconFrames, stickyPaddleIconFrames, gravityIconFrames, lasersIconFrames, undestructiballIconFrames, superballIconFrames]
-		iconSize = brickWidth*0.75
-		
-		for i in 1...iconArray.count {
-			let index = i-1
-			let iconSpacing = (-pauseButton.position.x*2 - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
-			iconArray[index].size.width = iconSize
-			iconArray[index].size.height = iconSize
-			iconArray[index].texture = iconTextureArray[index]
-			iconArray[index].position.x = pauseButton.position.x + (iconSize+iconSpacing)*CGFloat(index)
-			iconArray[index].position.y = pauseButton.position.y + pauseButtonSize/2 + iconSize/2 + labelSpacing
-			iconArray[index].zPosition = 10
-			iconArray[index].name = powerIconCategoryName
-			iconArray[index].isHidden = true
-			progressIconArray[index].name = progressIconNameArray[index]
-			buildProgressAnimation(progressIcon: progressIconArray[index], imageFolder: imageFolderNameArray[index], index: index)
-		}
-		// Power-up progress icon definition and setup
 		
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
     }
-	
-	func buildProgressAnimation(progressIcon: SKSpriteNode, imageFolder: String, index: Int) {
-		let progressAnimatedAtlas = SKTextureAtlas(named: "ProgressIcon")
-		var progressFrames: [SKTexture] = []
-		let numImages = progressAnimatedAtlas.textureNames.count
-
-		for i in 1...numImages {
-			let progressTextureName = "ProgressIcon\(i)"
-			progressFrames.append(progressAnimatedAtlas.textureNamed(progressTextureName))
-		}
-		let firstFrameTexture = progressFrames[0]
-		progressIconFramesArray[index] = progressFrames
-		
-		progressIcon.texture = firstFrameTexture
-		progressIcon.size.height = iconSize
-		progressIcon.size.width = iconSize
-		progressIcon.isHidden = true
-		progressIcon.zPosition = 9
-		
-		addChild(progressIcon)
-	}
-	// Setup progress icon animation
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
     // Defines actions for a dragged touch
@@ -1479,27 +1423,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeAction(forKey: "powerUpDecreaseBallSpeed")
 			removeAction(forKey: "powerUpIncreaseBallSpeed")
 			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpDecreaseBallSpeedProgress")
-			enumerateChildNodes(withName: "decreaseBallSpeedTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			removeAction(forKey: "powerUpIncreaseBallSpeedProgress")
-			enumerateChildNodes(withName: "increaseBallSpeedTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			decreaseBallSpeedIcon.isHidden = true
-			increaseBallSpeedIcon.isHidden = true
-			// Remove any existing timers
 			if ballSpeedLimit == ballSpeedNominal {
 				ballSpeedLimit = ballSpeedSlow
+				decreaseBallSpeedIcon.isHidden = false
+				increaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedSlow {
 				ballSpeedLimit = ballSpeedSlowest
+				decreaseBallSpeedIcon.isHidden = false
+				increaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedSlowest {
 				ballSpeedLimit = ballSpeedSlowest
+				decreaseBallSpeedIcon.isHidden = false
+				increaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedFast {
 				ballSpeedLimit = ballSpeedNominal
+				increaseBallSpeedIcon.isHidden = true
+				decreaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedFastest {
-				ballSpeedLimit = ballSpeedFast
+				ballSpeedLimit = ballSpeedNominal
+				increaseBallSpeedIcon.isHidden = true
+				decreaseBallSpeedIcon.isHidden = true
 			}
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
@@ -1509,43 +1452,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let completionBlock = SKAction.run {
 				self.ballSpeedLimit = self.ballSpeedNominal
 				self.decreaseBallSpeedIcon.isHidden = true
-				self.enumerateChildNodes(withName: "decreaseBallSpeedTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				self.increaseBallSpeedIcon.isHidden = true
+				// Hide power-up icons
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpDecreaseBallSpeed")
             // Power up reverted
-			animateProgressIcon(node: decreaseBallSpeedIcon, duration: timer, powerUp: powerUpDecreaseBallSpeed)
-			// Timer animation
             
         case powerUpIncreaseBallSpeed:
         // Increase ball speed
 			removeAction(forKey: "powerUpDecreaseBallSpeed")
 			removeAction(forKey: "powerUpIncreaseBallSpeed")
 			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpDecreaseBallSpeedProgress")
-			enumerateChildNodes(withName: "decreaseBallSpeedTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			removeAction(forKey: "powerUpIncreaseBallSpeedProgress")
-			enumerateChildNodes(withName: "increaseBallSpeedTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			decreaseBallSpeedIcon.isHidden = true
-			increaseBallSpeedIcon.isHidden = true
-			// Remove any existing timers
 			if ballSpeedLimit == ballSpeedNominal {
 				ballSpeedLimit = ballSpeedFast
+				increaseBallSpeedIcon.isHidden = false
+				decreaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedSlow {
 				ballSpeedLimit = ballSpeedNominal
+				increaseBallSpeedIcon.isHidden = true
+				decreaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedSlowest {
-				ballSpeedLimit = ballSpeedSlow
+				ballSpeedLimit = ballSpeedNominal
+				increaseBallSpeedIcon.isHidden = true
+				decreaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedFast {
 				ballSpeedLimit = ballSpeedFastest
+				increaseBallSpeedIcon.isHidden = false
+				decreaseBallSpeedIcon.isHidden = true
 			} else if ballSpeedLimit == ballSpeedFastest {
 				ballSpeedLimit = ballSpeedFastest
+				increaseBallSpeedIcon.isHidden = false
+				decreaseBallSpeedIcon.isHidden = true
 			}
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
@@ -1554,34 +1492,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
 				self.ballSpeedLimit = self.ballSpeedNominal
+				self.decreaseBallSpeedIcon.isHidden = true
 				self.increaseBallSpeedIcon.isHidden = true
-				self.enumerateChildNodes(withName: "increaseBallSpeedTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				// Hide power-up icons
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpIncreaseBallSpeed")
             // Power up reverted
-			animateProgressIcon(node: increaseBallSpeedIcon, duration: timer, powerUp: powerUpIncreaseBallSpeed)
-			// Timer animation
             
         case powerUpSuperBall:
         // Super-ball
 			removeAction(forKey: "powerUpSuperBall")
 			removeAction(forKey: "powerUpUndestructiBall")
-			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpSuperBallProgress")
-			enumerateChildNodes(withName: "superballTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			removeAction(forKey: "powerUpUndestructiBallProgress")
-			enumerateChildNodes(withName: "undestructiballTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			superballIcon.isHidden = true
 			undestructiballIcon.isHidden = true
-			// Remove any existing timers
+			// Remove any current ball speed power up timers
             ball.texture = superballTexture
             ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             // Reset undestructi-ball power up
@@ -1589,6 +1513,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerUpLimit = 4
+			superballIcon.isHidden = false
             // Power up set
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -1598,39 +1523,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 self.ball.texture = self.ballTexture
 				self.powerUpLimit = 2
 				self.superballIcon.isHidden = true
-				self.enumerateChildNodes(withName: "superballTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				// Hide power-up icons
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpSuperBall")
             // Power up reverted
-			animateProgressIcon(node: superballIcon, duration: timer, powerUp: powerUpSuperBall)
-			// Timer animation
             
         case powerUpUndestructiBall:
         // Undestructi-ball
             removeAction(forKey: "powerUpSuperBall")
 			removeAction(forKey: "powerUpUndestructiBall")
-			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpSuperBallProgress")
-			enumerateChildNodes(withName: "superballTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			removeAction(forKey: "powerUpUndestructiBallProgress")
-			enumerateChildNodes(withName: "undestructiballTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
 			superballIcon.isHidden = true
-			undestructiballIcon.isHidden = true
-			// Remove any existing timers
+			// Remove any current ball speed power up timers
             ball.texture = undestructiballTexture
             ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             // Reset super-ball power up
             ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			undestructiballIcon.isHidden = false
             // Power up set
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -1638,16 +1549,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 self.ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue
                 self.ball.texture = self.ballTexture
 				self.undestructiballIcon.isHidden = true
-				self.enumerateChildNodes(withName: "undestructiballTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				// Hide power-up icons
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpUndestructiBall")
             // Power up reverted
-			animateProgressIcon(node: undestructiballIcon, duration: timer, powerUp: powerUpUndestructiBall)
-			// Timer animation
 
         case powerUpStickyPaddle:
         // Sticky paddle
@@ -1675,22 +1581,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeAction(forKey: "powerUpIncreasePaddleSize")
 			removeAction(forKey: "powerUpDecreasePaddleSize")
 			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpIncreasePaddleSizeProgress")
-			enumerateChildNodes(withName: "increasePaddleSizeTimerIcon") { (node, _) in
-				node.removeFromParent()
+			if paddle.xScale < 1.0 {
+				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.increasePaddleSizeIcon.isHidden = true
+					self.decreasePaddleSizeIcon.isHidden = true
+				})
 			}
-			removeAction(forKey: "powerUpDecreasePaddleSizeProgress")
-			enumerateChildNodes(withName: "decreasePaddleSizeTimerIcon") { (node, _) in
-				node.removeFromParent()
+			if paddle.xScale == 1.0 {
+				paddle.run(SKAction.scaleX(to: 1.5, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.increasePaddleSizeIcon.isHidden = false
+					self.decreasePaddleSizeIcon.isHidden = true
+				})
 			}
-			increasePaddleSizeIcon.isHidden = true
-			decreasePaddleSizeIcon.isHidden = true
-			// Remove any existing timers
-            if paddle.size.width <= frame.size.width/2 {
-                paddle.run(SKAction.scaleX(by: 1.5, y: 1, duration: 0.2), completion: {
-                    self.definePaddleProperties()
-                })
-            }
+			if paddle.xScale == 1.5 {
+				paddle.run(SKAction.scaleX(to: 2.0, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.increasePaddleSizeIcon.isHidden = false
+					self.decreasePaddleSizeIcon.isHidden = true
+				})
+			}
+			if paddle.xScale == 2.0 || paddle.xScale == 2.5 {
+				paddle.run(SKAction.scaleX(to: 2.5, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.increasePaddleSizeIcon.isHidden = false
+					self.decreasePaddleSizeIcon.isHidden = true
+				})
+			}
+			// Resize paddle based on its current size
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
             // Power up set
@@ -1709,44 +1628,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
 				// Recentre ball if it isn't on smaller paddle
 				self.increasePaddleSizeIcon.isHidden = true
-				self.enumerateChildNodes(withName: "increasePaddleSizeTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				self.decreasePaddleSizeIcon.isHidden = true
+				// Hide power-up icons
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpIncreasePaddleSize")
             // Power up reverted
-			animateProgressIcon(node: increasePaddleSizeIcon, duration: timer, powerUp: powerUpIncreasePaddleSize)
-			// Timer animation
             
         case powerUpDecreasePaddleSize:
         // Decrease paddle size
 			removeAction(forKey: "powerUpDecreasePaddleSize")
 			removeAction(forKey: "powerUpIncreasePaddleSize")
 			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpIncreasePaddleSizeProgress")
-			enumerateChildNodes(withName: "increasePaddleSizeTimerIcon") { (node, _) in
-				node.removeFromParent()
+			if paddle.xScale < 1.0 {
+				paddle.run(SKAction.scaleX(to: 0.5, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.decreasePaddleSizeIcon.isHidden = false
+					self.increasePaddleSizeIcon.isHidden = true
+				})
+			} else if paddle.xScale == 1.0 {
+				paddle.run(SKAction.scaleX(to: 0.75, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.decreasePaddleSizeIcon.isHidden = false
+					self.increasePaddleSizeIcon.isHidden = true
+				})
+			} else if paddle.xScale > 1.0 {
+				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+					self.definePaddleProperties()
+					self.increasePaddleSizeIcon.isHidden = true
+					self.decreasePaddleSizeIcon.isHidden = true
+				})
 			}
-			removeAction(forKey: "powerUpDecreasePaddleSizeProgress")
-			enumerateChildNodes(withName: "decreasePaddleSizeTimerIcon") { (node, _) in
-				node.removeFromParent()
+			// Resize paddle based on its current size
+			if ballIsOnPaddle {
+				if ball.position.x < paddle.position.x - paddle.size.width/2 + ball.size.width/2 || ball.position.x > paddle.position.x + paddle.size.width/2 - ball.size.width/2 {
+					ball.position.x = paddle.position.x
+				}
 			}
-			increasePaddleSizeIcon.isHidden = true
-			decreasePaddleSizeIcon.isHidden = true
-			// Remove any existing timers
-            if paddle.size.width >= frame.size.width/8 {
-                paddle.run(SKAction.scaleX(by: 0.67, y: 1, duration: 0.2), completion: {
-                    self.definePaddleProperties()
-                })
-                if ballIsOnPaddle {
-					if ball.position.x < paddle.position.x - paddle.size.width/2 + ball.size.width/2 || ball.position.x > paddle.position.x + paddle.size.width/2 - ball.size.width/2 {
-						ball.position.x = paddle.position.x
-					}
-                }
-				// Recentre ball if it isn't on smaller paddle
-            }
+			// Recentre ball if it isn't on smaller paddle
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
             // Power up set
@@ -1758,34 +1677,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     self.paddle.size.width = self.paddleWidth
                     self.definePaddleProperties()
                 })
+				self.increasePaddleSizeIcon.isHidden = true
 				self.decreasePaddleSizeIcon.isHidden = true
-				self.enumerateChildNodes(withName: "decreasePaddleSizeTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				// Hide power-up icons
             }
             let sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(sequence, withKey: "powerUpDecreasePaddleSize")
             // Power up reverted
-			animateProgressIcon(node: decreasePaddleSizeIcon, duration: timer, powerUp: powerUpDecreasePaddleSize)
-			// Timer animation
             
         case powerUpLasers:
         // Lasers
 			removeAction(forKey: "powerUpLasers")
 			laserTimer?.invalidate()
 			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpLasersProgress")
-			enumerateChildNodes(withName: "lasersTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			lasersIcon.isHidden = true
-			// Remove any existing timers
             laserPowerUpIsOn = true
             laserTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerUpLimit = 4
+			lasersIcon.isHidden = false
             // Power up set - lasers will fire every 0.1s
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -1793,16 +1703,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 self.laserTimer?.invalidate()
 				self.powerUpLimit = 2
 				self.lasersIcon.isHidden = true
-				self.enumerateChildNodes(withName: "lasersTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				// Hide power-up icons
             }
             let powerUp07Sequence = SKAction.sequence([waitDuration, completionBlock])
             self.run(powerUp07Sequence, withKey: "powerUpLasers")
             // Power up reverted - lasers will fire for 10s
-			animateProgressIcon(node: lasersIcon, duration: timer, powerUp: powerUpLasers)
-			// Timer animation
 			
 		case powerUpShowInvisibleBricks:
 		// Invisible bricks become visible
@@ -1895,17 +1800,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Gravity ball
 			removeAction(forKey: "powerUpGravityBall")
 			// Remove any current ball speed power up timers
-			removeAction(forKey: "powerUpGravityBallProgress")
-			enumerateChildNodes(withName: "gravityTimerIcon") { (node, _) in
-				node.removeFromParent()
-			}
-			gravityIcon.isHidden = true
-			// Remove any existing timers
 			physicsWorld.gravity = CGVector(dx: 0, dy: -1)
 			ball.physicsBody!.affectedByGravity = true
 			gravityActivated = true
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			gravityIcon.isHidden = false
 			// Power up set
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
@@ -1914,16 +1814,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.ball.physicsBody!.affectedByGravity = false
 				self.gravityActivated = false
 				self.gravityIcon.isHidden = true
-				self.enumerateChildNodes(withName: "gravityTimerIcon") { (node, _) in
-					node.removeFromParent()
-				}
-				// Hide power-up and progress icons
+				// Hide power-up icons
 			}
 			let sequence = SKAction.sequence([waitDuration, completionBlock])
 			self.run(sequence, withKey: "powerUpGravityBall")
 			// Power up reverted
-			animateProgressIcon(node: gravityIcon, duration: timer, powerUp: powerUpGravityBall)
-			// Timer animation
 			
 		case powerUpMystery:
 		// Mystery power-up
@@ -1973,7 +1868,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func powerUpsReset() {
         self.removeAllActions()
         // Stop all timers
-        paddle.size.width = paddleWidth
+        paddle.xScale = 1.0
 		ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 		
 		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
@@ -1990,43 +1885,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ball.physicsBody!.linearDamping = ballLinearDampening
 		powerUpLimit = 2
 		ballSpeedLimit = ballSpeedNominal
-
-		removeAction(forKey: "powerUpIncreasePaddleSizeProgress")
-		enumerateChildNodes(withName: "increasePaddleSizeTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpDecreasePaddleSizeProgress")
-		enumerateChildNodes(withName: "decreasePaddleSizeTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpIncreaseBallSpeedProgress")
-		enumerateChildNodes(withName: "increaseBallSpeedTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpDecreaseBallSpeedProgress")
-		enumerateChildNodes(withName: "decreaseBallSpeedTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpStickyPaddleProgress")
-		enumerateChildNodes(withName: "stickyPaddleTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpGravityBallProgress")
-		enumerateChildNodes(withName: "gravityTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpLasersProgress")
-		enumerateChildNodes(withName: "lasersTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpUndestructiBallProgress")
-		enumerateChildNodes(withName: "undestructiballTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
-		removeAction(forKey: "powerUpSuperBallProgress")
-		enumerateChildNodes(withName: "superballTimerIcon") { (node, _) in
-			node.removeFromParent()
-		}
 		enumerateChildNodes(withName: powerIconCategoryName) { (node, _) in
 			node.isHidden = true
 		}
@@ -2113,52 +1971,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Define laser movement
 		}
     }
-	
-	
-	
-	func animateProgressIcon(node: SKNode, duration: Double, powerUp: SKTexture) {
-		
-		var index = Int()
-		
-		var animationKey = ""
-		
-		let animationKeyArray: [String] = ["powerUpIncreasePaddleSizeProgress", "powerUpDecreasePaddleSizeProgress", "powerUpIncreaseBallSpeedProgress", "powerUpDecreaseBallSpeedProgress", "powerUpStickyPaddleProgress", "powerUpGravityBallProgress", "powerUpLasersProgress", "powerUpUndestructiBallProgress", "powerUpSuperBallProgress"]
-		
-		switch powerUp {
-		case powerUpIncreasePaddleSize:
-			index = 0
-		case powerUpDecreasePaddleSize:
-			index = 1
-		case powerUpIncreaseBallSpeed:
-			index = 2
-		case powerUpDecreaseBallSpeed:
-			index = 3
-		case powerUpStickyPaddle:
-			index = 4
-		case powerUpGravityBall:
-			index = 5
-		case powerUpLasers:
-			index = 6
-		case powerUpUndestructiBall:
-			index = 7
-		case powerUpSuperBall:
-			index = 8
-		default:
-			break
-		}
-		
-		var progressIcon = SKSpriteNode()
-		progressIcon = progressIconArray[index]
-		progressIcon.isHidden = false
-		node.isHidden = false
-		animationKey = animationKeyArray[index]
-		
-		progressIcon.position = CGPoint(x: node.position.x, y: node.position.y)
-		print("progressIconPosition: ", progressIcon.position, progressIcon.isHidden, progressIcon.size, progressIcon.texture!)
-		let timePerFrame = duration/Double(progressIconFramesArray[index].count)
-		progressIcon.run(SKAction.repeat(SKAction.animate(with: progressIconFramesArray[index], timePerFrame: timePerFrame, resize: false, restore: true), count: 1), withKey: animationKey)
-	}
-	// Animate progress icon
+
 }
 
 extension Notification.Name {
