@@ -31,10 +31,7 @@ extension GameScene {
                 
                 brick.size.width = brickWidth
                 brick.size.height = brickHeight
-                brick.centerRect = CGRect(x: 2.0/16.0,
-                y: 2.0/16.0,
-                width: 12.0/16.0,
-                height: 12.0/16.0)
+                brick.centerRect = CGRect(x: 2.0/16.0, y: 2.0/16.0, width: 12.0/16.0, height: 12.0/16.0)
                 brick.scale(to:CGSize(width: brickWidth, height: brickHeight))
                 // Set brick size without stretching edges
                 

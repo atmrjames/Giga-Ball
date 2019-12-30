@@ -31,6 +31,8 @@ class Playing: GKState {
             scene.pauseButton.texture = scene.pauseTexture
             scene.directionMarker.isHidden = true
             
+            scene.isPaused = false
+            
             scene.enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
                 node.isPaused = false
             }
