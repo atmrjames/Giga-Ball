@@ -48,6 +48,8 @@ protocol GameViewControllerDelegate: class {
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var paddle = SKSpriteNode()
+	var paddleLaser = SKSpriteNode()
+	var paddleSticky = SKSpriteNode()
     var ball = SKSpriteNode()
     var brick = SKSpriteNode()
     var brickMultiHit = SKSpriteNode()
@@ -217,6 +219,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let directionMarkerOuterUndestructiTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerOuterUndestructi")
 	let directionMarkerInnerUndestructiTexture: SKTexture = SKTexture(imageNamed: "DirectionMarkerInnerUndestructi")
     // Ball textures
+	
+	let paddleTexture: SKTexture = SKTexture(imageNamed: "regularPaddle")
+	let laserPaddleTexture: SKTexture = SKTexture(imageNamed: "laserPaddle")
+	let stickyPaddleTexture: SKTexture = SKTexture(imageNamed: "stickyPaddle")
+    // Paddle textures
     
 	let laserNormalTexture: SKTexture = SKTexture(imageNamed: "LaserNormal")
     let superLaserTexture: SKTexture = SKTexture(imageNamed: "LaserSuper")
@@ -338,6 +345,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         ball = self.childNode(withName: "ball") as! SKSpriteNode
         paddle = self.childNode(withName: "paddle") as! SKSpriteNode
+		paddleLaser = self.childNode(withName: "paddleLaser") as! SKSpriteNode
+		paddleSticky = self.childNode(withName: "paddleSticky") as! SKSpriteNode
         pauseButton = self.childNode(withName: "pauseButton") as! SKSpriteNode
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
@@ -385,9 +394,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.size.height = ballSize
 		life.size.width = ballSize*1.15
 		life.size.height = ballSize*1.15
+		
 		paddleWidth = layoutUnit*5
 		paddle.size.width = paddleWidth
 		paddle.size.height = ballSize
+		paddleLaser.size.width = paddleWidth
+		paddleLaser.size.height = ballSize*1.6
+		paddleSticky.size.width = paddleWidth
+		paddleSticky.size.height = ballSize*1.1
+		paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
+		paddle.scale(to:CGSize(width: paddleWidth, height: ballSize))
+		paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 10.0/16.0)
+		paddleLaser.scale(to:CGSize(width: paddleWidth, height: ballSize*1.6))
+		paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 10.0/11.0)
+		paddleSticky.scale(to:CGSize(width: paddleWidth, height: ballSize*1.1))
+		paddle.texture = paddleTexture
+		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
+		
 		paddleGap = layoutUnit*7
 		minPaddleGap = paddleGap/2
 		ballLostAnimationHeight = paddle.size.height
@@ -419,6 +442,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		directionMarker.zPosition = 10
 		// Object positioning definition
 		
+		ball.texture = ballTexture
 		ball.physicsBody = SKPhysicsBody(circleOfRadius: ballSize/2)
         ball.physicsBody!.allowsRotation = false
         ball.physicsBody!.friction = 0.0
@@ -437,12 +461,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let xRangeBall = SKRange(lowerLimit:-self.frame.width/2 + ballSize/2,upperLimit:self.frame.width/2 - ballSize/2)
         ball.constraints = [SKConstraint.positionX(xRangeBall)]
 		// Define ball properties
-		
-		definePaddleProperties()
+
+		print(paddle.physicsBody as Any)
+		if paddle.physicsBody == nil {
+			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
+		}
+        paddle.physicsBody!.allowsRotation = false
+        paddle.physicsBody!.friction = 0.0
+        paddle.physicsBody!.affectedByGravity = false
+        paddle.physicsBody!.isDynamic = true
+        paddle.name = PaddleCategoryName
+        paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
+		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+        paddle.zPosition = 2
+		paddleLaser.zPosition = 3
+		paddleSticky.zPosition = 4
+		paddle.physicsBody!.usesPreciseCollisionDetection = true
+		paddle.physicsBody!.restitution = 1
 		// Define paddle properties
 		
 		ball.isHidden = true
         paddle.isHidden = true
+		paddleLaser.isHidden = true
+		paddleSticky.isHidden = true
 		directionMarker.isHidden = true
         // Hide ball and paddle
 
@@ -703,7 +744,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			stickyPaddleIconBar.run(SKAction.scaleX(to: iconBarLength, duration: 0.05))
 			// Size icon timer based on number of catches remaining
             if stickyPaddleCatches == 0 {
-                paddle.color = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+				paddleSticky.isHidden = true
 				stickyPaddleCatchesTotal = 0
 				stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
 				stickyPaddleIconBar.isHidden = true
@@ -795,8 +836,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddle.position.y = paddlePositionY
 			// Ensure paddle remains at its set height
 			
+			paddleLaser.position.x = paddle.position.x
+			paddleLaser.position.y = paddle.position.y - paddle.size.height/2
+			paddleSticky.position.x = paddle.position.x
+			paddleSticky.position.y = paddle.position.y - paddle.size.height/2
+			// Keep the different paddle textures together
+			
 			if ballIsOnPaddle {
 				ball.position.y = ballStartingPositionY
+				recentreBall()
 			}
 			// Ensure ball remains on paddle
 		}
@@ -1658,7 +1706,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			stickyPaddleCatchesTotal = stickyPaddleCatches
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-            paddle.color = #colorLiteral(red: 0.8078431487, green: 0.02745098062, blue: 0.3333333433, alpha: 1)
+			paddleSticky.isHidden = false
             // Power up set and limit number of catches per power up
             
         case powerUpNextLevel:
@@ -1686,12 +1734,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
 				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 			} else if paddle.xScale == 1.0 {
 				paddle.run(SKAction.scaleX(to: 1.5, duration: 0.2))
+				paddleLaser.run(SKAction.scaleX(to: 1.5, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 1.5, duration: 0.2))
 			} else if paddle.xScale == 1.5 {
 				paddle.run(SKAction.scaleX(to: 2.0, duration: 0.2))
+				paddleLaser.run(SKAction.scaleX(to: 2.0, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 2.0, duration: 0.2))
 			} else if paddle.xScale == 2.0 || paddle.xScale == 2.5 {
 				paddle.run(SKAction.scaleX(to: 2.5, duration: 0.2))
+				paddleLaser.run(SKAction.scaleX(to: 2.5, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 2.5, duration: 0.2))
 			}
 			// Resize paddle based on its current size
             powerUpScore = 50
@@ -1701,13 +1757,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
                 self.rigidHaptic.impactOccurred()
-                self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
-				if self.ballIsOnPaddle {
-					if self.ball.position.x < self.paddle.position.x - self.paddle.size.width/2 + self.ball.size.width/2 || self.ball.position.x > self.paddle.position.x + self.paddle.size.width/2 - self.ball.size.width/2 {
-						self.ball.position.x = self.paddle.position.x
-					}
-                }
-				// Recentre ball if it isn't on smaller paddle
+				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+					self.recentreBall()
+				})
+				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -1730,21 +1784,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIconBar.isHidden = false
 			// Show power-up icon timer
 			if paddle.xScale < 1.0 {
-				paddle.run(SKAction.scaleX(to: 0.5, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 0.5, duration: 0.2), completion: {
+					self.recentreBall()
+				})
+				paddleLaser.run(SKAction.scaleX(to: 0.5, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 0.5, duration: 0.2))
 			} else if paddle.xScale == 1.0 {
-				paddle.run(SKAction.scaleX(to: 0.75, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 0.75, duration: 0.2), completion: {
+					self.recentreBall()
+				})
+				paddleLaser.run(SKAction.scaleX(to: 0.75, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 0.75, duration: 0.2))
 			} else if paddle.xScale > 1.0 {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
-				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+					self.recentreBall()
+				})
+				paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 			}
 			// Resize paddle based on its current size
-			if ballIsOnPaddle {
-				if ball.position.x < paddle.position.x - paddle.size.width/2 + ball.size.width/2 || ball.position.x > paddle.position.x + paddle.size.width/2 - ball.size.width/2 {
-					ball.position.x = paddle.position.x
-				}
-			}
-			// Recentre ball if it isn't on smaller paddle
+			
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
             // Power up set
@@ -1752,10 +1813,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
                 self.rigidHaptic.impactOccurred()
-                self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
-                    self.paddle.size.width = self.paddleWidth
-                    self.definePaddleProperties()
-                })
+                self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -1778,16 +1838,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			lasersIconBar.isHidden = false
 			// Show power-up icon timer
             laserPowerUpIsOn = true
+			paddleLaser.isHidden = false
             laserTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerUpLimit = 4
-			lasersIcon.isHidden = false
             // Power up set - lasers will fire every 0.1s
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
                 self.laserTimer?.invalidate()
+				self.paddleLaser.isHidden = true
 				self.laserPowerUpIsOn = false
 				self.powerUpLimit = 2
 				self.lasersIcon.texture = self.iconLasersDisabledTexture
@@ -1875,7 +1936,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if temporarySprite.texture == self.brickNormalTexture {
+				if temporarySprite.texture == self.brickNormalTexture || temporarySprite.texture == self.brickInvisibleTexture {
 					temporarySprite.isHidden = true
 				}
 			}
@@ -1915,7 +1976,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Normal bricks become multi-hit bricks
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if temporarySprite.texture == self.brickNormalTexture && temporarySprite.isHidden == false {
+				if (temporarySprite.texture == self.brickNormalTexture || temporarySprite.texture == self.brickMultiHit2Texture || temporarySprite.texture == self.brickMultiHit3Texture) && temporarySprite.isHidden == false {
 					temporarySprite.texture = self.brickMultiHit1Texture
 				}
 			}
@@ -1936,7 +1997,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gravityActivated = true
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-			gravityIcon.isHidden = false
 			// Power up set
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
@@ -2016,10 +2076,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		superballIconBar.isHidden = true
 		// Superball/Undestructiball reset
 		
-		paddle.xScale = 1.0
+		paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
+		paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
+		paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
 		paddleSizeIcon.texture = iconPaddleSizeDisabledTexture
 		paddleSizeIconBar.isHidden = true
-		definePaddleProperties()
 		// Paddle size reset
 		
 		ballSpeedLimit = ballSpeedNominal
@@ -2029,6 +2090,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		laserTimer?.invalidate()
 		lasersIcon.texture = iconLasersDisabledTexture
+		paddleLaser.isHidden = true
 		lasersIconBar.isHidden = true
 		laserPowerUpIsOn = false
 		// Laser reset
@@ -2040,13 +2102,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gravityIconBar.isHidden = true
 		// Gravity reset
 		
-		paddle.color = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		paddleSticky.isHidden = true
 		stickyPaddleCatches = 0
 		stickyPaddleCatchesTotal = 0
 		stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
 		stickyPaddleIconBar.isHidden = true
 		stickyPaddleIconBar.xScale = 0
 		// Sticky paddle reset
+		
 		
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			let temporarySprite = node as! SKSpriteNode
@@ -2083,24 +2146,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber)
     }
     
-    func definePaddleProperties() {
-		paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
-        paddle.physicsBody!.allowsRotation = false
-        paddle.physicsBody!.friction = 0.0
-        paddle.physicsBody!.affectedByGravity = false
-        paddle.physicsBody!.isDynamic = true
-        paddle.name = PaddleCategoryName
-        paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
-		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
-        paddle.zPosition = 2
-		paddle.physicsBody!.usesPreciseCollisionDetection = true
-		paddle.physicsBody!.restitution = 1
-        // Define paddle properties
-//        let xRangePaddle = SKRange(lowerLimit:-self.frame.width/2 + paddle.size.width/2,upperLimit:self.frame.width/2 - paddle.size.width/2)
-//        paddle.constraints = [SKConstraint.positionX(xRangePaddle)]
-        // Stops the paddle leaving the screen - not necessary as frame acts as block
-    }
-    
     @objc func laserGenerator() {
 		
 		if gameState.currentState is Playing {
@@ -2111,12 +2156,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			laser.size.height = laser.size.width*4
 			
 			if laserSideLeft {
-				laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2 + laser.size.width/2, y: paddle.position.y + paddle.size.height/2 + laser.size.height/2)
+				laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2 + laser.size.width, y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
 				laser.texture = laserNormalTexture
 				laserSideLeft = false
 				// Left position
 			} else {
-				laser.position = CGPoint(x: paddle.position.x + paddle.size.width/2  - laser.size.width/2, y: paddle.position.y + paddle.size.height/2 + laser.size.height/2)
+				laser.position = CGPoint(x: paddle.position.x + paddle.size.width/2  - laser.size.width, y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
 				laser.texture = laserNormalTexture
 				laserSideLeft = true
 				// Right position
@@ -2150,6 +2195,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Define laser movement
 		}
     }
+	
+	func recentreBall() {
+		if ballIsOnPaddle {
+			if ball.position.x - ball.size.width/2 < paddle.position.x - paddle.size.width/2 {
+				ball.position.x = paddle.position.x - paddle.size.width/2 + ball.size.width/2
+			} else if ball.position.x + ball.size.width/2 > paddle.position.x + paddle.size.width/2 {
+				ball.position.x = paddle.position.x + paddle.size.width/2 - ball.size.width/2
+			}
+		}
+	}
+	// Recentre ball if it isn't on smaller paddle
 
 }
 

@@ -128,7 +128,6 @@ class Playing: GKState {
         scene.ballIsOnPaddle = true
         scene.paddle.position.x = 0
         scene.paddle.position.y = (-self.scene.frame.height/2 + scene.paddleGap)
-        scene.paddle.size.width = scene.paddleWidth
         scene.ball.position.x = 0
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
