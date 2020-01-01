@@ -81,17 +81,17 @@ extension GameScene {
                 
                 if j >= 3 && j <= 7 {
                     if i == 8 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if j == 3 || j == 5 || j == 7 {
                     if i >= 9 && i <= 11 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if j == 3 || j == 7 {
                     if i >= 12 && i <= 13 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 // Indestructible bricks
@@ -103,10 +103,7 @@ extension GameScene {
                 
                 brick.size.width = brickWidth
                 brick.size.height = brickHeight
-                brick.centerRect = CGRect(x: 2.0/16.0,
-                y: 2.0/16.0,
-                width: 12.0/16.0,
-                height: 12.0/16.0)
+                brick.centerRect = CGRect(x: 6.0/16.0, y: 6.0/16.0, width: 4.0/16.0, height: 4.0/16.0)
                 brick.scale(to:CGSize(width: brickWidth, height: brickHeight))
                 // Set brick size without stretching edges
                 
@@ -136,7 +133,7 @@ extension GameScene {
             brick.run(brickSequence)
             // Run animation for each brick
 
-            if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructibleTexture {
+            if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructible2Texture {
                 if brickCurrent.texture == brickNullTexture {
                     brickCurrent.removeFromParent()
                 }

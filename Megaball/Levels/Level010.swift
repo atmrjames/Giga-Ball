@@ -99,47 +99,47 @@ extension GameScene {
                 
                 if i == 17 || i == 18 {
                     if j == 2 || j == 3 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 12 || i == 13 {
                     if j == 3 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 10 || i == 11 {
                     if j == 4 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 9 {
                     if j == 5 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 7 || i == 8 {
                     if j == 6 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 6 {
                     if j == 7 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 4 || i == 5 {
                     if j == 8 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 4 {
                     if j == 9 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 if i == 3 {
                     if j == 10 {
-                        brick.texture = brickIndestructibleTexture
+                        brick.texture = brickIndestructible2Texture
                     }
                 }
                 // Indestructible bricks
@@ -183,10 +183,7 @@ extension GameScene {
                 
                 brick.size.width = brickWidth
                 brick.size.height = brickHeight
-                brick.centerRect = CGRect(x: 2.0/16.0,
-                y: 2.0/16.0,
-                width: 12.0/16.0,
-                height: 12.0/16.0)
+                brick.centerRect = CGRect(x: 6.0/16.0, y: 6.0/16.0, width: 4.0/16.0, height: 4.0/16.0)
                 brick.scale(to:CGSize(width: brickWidth, height: brickHeight))
                 // Set brick size without stretching edges
                 
@@ -216,7 +213,7 @@ extension GameScene {
             brick.run(brickSequence)
             // Run animation for each brick
 
-            if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructibleTexture {
+            if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructible2Texture {
                 if brickCurrent.texture == brickNullTexture {
                     brickCurrent.removeFromParent()
                 }

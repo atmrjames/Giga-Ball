@@ -24,6 +24,9 @@ class Playing: GKState {
         } else if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
             loadNextLevel()
+        } else if previousState is InbetweenLevels {
+            scene.levelNumber += 1
+            // Increment level number
         } else if previousState is Paused {
         // Unpause game
             

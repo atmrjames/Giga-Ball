@@ -176,16 +176,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup score properties
     
     let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
+	
 	let brickInvisibleTexture: SKTexture = SKTexture(imageNamed: "BrickInvisible")
+	
     let brickMultiHit1Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit1")
     let brickMultiHit2Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit2")
     let brickMultiHit3Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit3")
-    let brickIndestructibleTexture: SKTexture = SKTexture(imageNamed: "BrickIndestructible")
+	let brickMultiHit4Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit4")
+	
+	let brickIndestructible1Texture: SKTexture = SKTexture(imageNamed: "BrickIndestructible1")
+    let brickIndestructible2Texture: SKTexture = SKTexture(imageNamed: "BrickIndestructible2")
+	
 	let brickNullTexture: SKTexture = SKTexture(imageNamed: "BrickNull")
     // Brick textures
     
     let powerUpGetALife: SKTexture = SKTexture(imageNamed: "PowerUpGetALife")
-    let powerUpDecreaseBallSpeed: SKTexture = SKTexture(imageNamed: "PowerUpDecreaseBallSpeed")
+    let powerUpDecreaseBallSpeed: SKTexture = SKTexture(imageNamed: "PowerUpReduceBallSpeed")
     let powerUpSuperBall: SKTexture = SKTexture(imageNamed: "PowerUpSuperBall")
     let powerUpStickyPaddle: SKTexture = SKTexture(imageNamed: "PowerUpStickyPaddle")
     let powerUpNextLevel: SKTexture = SKTexture(imageNamed: "PowerUpNextLevel")
@@ -203,7 +209,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let powerUpPointsBonus: SKTexture = SKTexture(imageNamed: "PowerUpPointsBonus")
     let powerUpPointsPenalty: SKTexture = SKTexture(imageNamed: "PowerUpPointsPenalty")
     let powerUpNormalToInvisibleBricks: SKTexture = SKTexture(imageNamed: "PowerUpNormalToInvisibleBricks")
-    let powerUpNormalToMultiHitBricks: SKTexture = SKTexture(imageNamed: "PowerUpNormalToMultiHitBricks")
+    let powerUpMultiHitBricksReset: SKTexture = SKTexture(imageNamed: "PowerUpNormalToMultiHitBricks")
     let powerUpGravityBall: SKTexture = SKTexture(imageNamed: "PowerUpGravityBall")
 	let powerUpMultiplierReset: SKTexture = SKTexture(imageNamed: "PowerUpMultiplierReset")
 	let powerUpBricksDown: SKTexture = SKTexture(imageNamed: "PowerUpBricksDown")
@@ -606,7 +612,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		angleAdjustmentK = 45
 		// Ball angle parameters
 		
-		powerUpProbFactor = 5
+		powerUpProbFactor = 2
 		powerUpLimit = 2
 		// Power-up parameters
 		
@@ -797,6 +803,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
 		
+		recentreBall()
+		
 		if gameState.currentState is Paused && self.isPaused == false && countdownStarted == false {
 			self.isPaused = true
 		}
@@ -844,7 +852,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			if ballIsOnPaddle {
 				ball.position.y = ballStartingPositionY
-				recentreBall()
 			}
 			// Ensure ball remains on paddle
 		}
@@ -1175,8 +1182,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case brickMultiHit2Texture:
             sprite.texture = brickMultiHit3Texture
             break
-        case brickMultiHit3Texture:
+		case brickMultiHit3Texture:
+            sprite.texture = brickMultiHit4Texture
+            break
+        case brickMultiHit4Texture:
             removeBrick(node: node, sprite: sprite)
+            break
+		case brickIndestructible1Texture:
+            sprite.texture = brickIndestructible2Texture
+			bricksLeft -= 1
+			if bricksLeft == 0 {
+				levelScore = levelScore + levelCompleteScore
+				scoreLabel.text = String(totalScore + levelScore)
+				if levelNumber == endLevelNumber {
+					gameoverStatus = true
+				}
+				gameState.enter(InbetweenLevels.self)
+				return
+			}
             break
         case brickInvisibleTexture:
             if sprite.isHidden {
@@ -1259,7 +1282,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
 		let paddleRightEdgePosition = paddle.position.x + paddle.size.width/2
-		let stickyPaddleTolerance = paddle.size.width*0.05
+		let stickyPaddleTolerance = ballSize/2
 		
 		if ball.position.x > paddleLeftEdgePosition + stickyPaddleTolerance && ball.position.x < paddleRightEdgePosition - stickyPaddleTolerance && stickyPaddleCatches != 0 {
 			// Catch the ball if the sticky paddle power up is applied and the ball hits the centre of the paddle
@@ -1268,7 +1291,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ballIsOnPaddle = true
             paddleMoved = true
             ball.position.y = ballStartingPositionY
-			
             
         } else {
         
@@ -1315,10 +1337,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if powerUpsOnScreen >= powerUpLimit {
 			return
 		}
+		// Limit number of power-ups available at once
         
         let powerUp = SKSpriteNode(imageNamed: "PowerUpPreSet")
         
-		powerUp.size.width = brickWidth*0.9
+		powerUp.size.width = brickWidth*0.85
         powerUp.size.height = powerUp.size.width
         powerUp.position = CGPoint(x: sprite.position.x, y: sprite.position.y)
         powerUp.physicsBody = SKPhysicsBody(rectangleOf: powerUp.frame.size)
@@ -1329,8 +1352,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUp.physicsBody!.mass = 0
         powerUp.name = PowerUpCategoryName
         powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
-		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
-		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue
+		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
+		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
         powerUp.zPosition = 1
         addChild(powerUp)
         
@@ -1380,7 +1403,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			var indestructibleNodeFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickIndestructibleTexture {
+				if sprite.texture == self.brickIndestructible2Texture || sprite.texture == self.brickIndestructible1Texture {
 					indestructibleNodeFound = true
 					stop.initialize(to: true)
 				}
@@ -1461,17 +1484,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Don't show if no normal bricks
 		case 18:
-		// Normal bricks become multi-hit bricks
-			powerUp.texture = powerUpNormalToMultiHitBricks
-			var normalNodeFound = false
+		// Multi-hit bricks reset
+			powerUp.texture = powerUpMultiHitBricksReset
+			var multiHitBrickFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickNormalTexture {
-					normalNodeFound = true
+				if sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture || sprite.texture == self.brickIndestructible2Texture {
+					multiHitBrickFound = true
 					stop.initialize(to: true)
 				}
 			}
-			if normalNodeFound == false {
+			if multiHitBrickFound == false {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
@@ -1887,7 +1910,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Remove indestructible bricks
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if temporarySprite.texture == self.brickIndestructibleTexture {
+				if temporarySprite.texture == self.brickIndestructible2Texture || temporarySprite.texture == self.brickIndestructible1Texture {
 					node.removeFromParent()
 				}
 			}
@@ -1899,8 +1922,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Multi-hit bricks become normal bricks
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if temporarySprite.texture == self.brickMultiHit1Texture || temporarySprite.texture == self.brickMultiHit2Texture {
-					temporarySprite.texture = self.brickMultiHit3Texture
+				if temporarySprite.texture == self.brickMultiHit1Texture || temporarySprite.texture == self.brickMultiHit2Texture || temporarySprite.texture == self.brickMultiHit3Texture {
+					temporarySprite.texture = self.brickMultiHit4Texture
 				}
 			}
 			powerUpScore = 50
@@ -1972,12 +1995,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.run(sequence, withKey: "powerUpInvisibleBricks")
 			// Power up reverted
 			
-		case powerUpNormalToMultiHitBricks:
-		// Normal bricks become multi-hit bricks
+		case powerUpMultiHitBricksReset:
+		// Multi-hit bricks reset
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if (temporarySprite.texture == self.brickNormalTexture || temporarySprite.texture == self.brickMultiHit2Texture || temporarySprite.texture == self.brickMultiHit3Texture) && temporarySprite.isHidden == false {
+				if temporarySprite.texture == self.brickMultiHit2Texture || temporarySprite.texture == self.brickMultiHit3Texture || temporarySprite.texture == self.brickMultiHit4Texture {
 					temporarySprite.texture = self.brickMultiHit1Texture
+				}
+				if temporarySprite.texture == self.brickIndestructible2Texture  {
+					temporarySprite.texture = self.brickIndestructible1Texture
+					self.bricksLeft+=1
 				}
 			}
 			powerUpScore = -50

@@ -127,8 +127,6 @@ class InbetweenLevels: GKState {
     }
     
     @objc func notificationToContinueReceived(_ notification: Notification) {
-        scene.levelNumber += 1
-        // Increment level number
         scene.gameState.enter(Playing.self)
     }
     // Call the function to load the next level if a notification from the end level popup is received

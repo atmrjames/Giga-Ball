@@ -10,11 +10,11 @@ import UIKit
 
 class InbewteenLevelsViewController: UIViewController {
     
-    var levelNumber: Int = 4
-    var levelScore: Int = 4
-    var levelHighscore: Int = 4
-    var totalScore: Int = 4
-    var totalHighscore: Int = 4
+    var levelNumber: Int = 0
+    var levelScore: Int = 0
+    var levelHighscore: Int = 0
+    var totalScore: Int = 0
+    var totalHighscore: Int = 0
     var gameoverStatus: Bool = false
     // Properties to store passed over data
 
