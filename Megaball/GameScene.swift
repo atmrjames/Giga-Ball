@@ -120,6 +120,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballLostAnimationHeight: CGFloat = 0
 	var brickHeight: CGFloat = 0
     var brickWidth: CGFloat = 0
+	var brickOverlap: CGFloat = 0
     var numberOfBrickRows: Int = 0
     var numberOfBrickColumns: Int = 0
     var totalBricksWidth: CGFloat = 0
@@ -240,6 +241,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var laserPowerUpIsOn: Bool = false
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
+	var powerUpProximity: Bool = false
     // Power up properties
     
     var contactCount: Int = 0
@@ -393,8 +395,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         numberOfBrickColumns = numberOfBrickRows/2
 		layoutUnit = (self.frame.width)/CGFloat(numberOfBrickRows)
 		
-		brickWidth = layoutUnit*2
+		brickOverlap = 1
+		brickWidth = layoutUnit*2 + brickOverlap - brickOverlap/11
 		brickHeight = layoutUnit*1
+		
+		totalBricksWidth = (CGFloat(numberOfBrickColumns) * brickWidth - brickOverlap) + brickOverlap
+		totalBricksHeight = (CGFloat(numberOfBrickRows) * brickHeight - brickOverlap) + brickOverlap
+		
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
         ball.size.height = ballSize
@@ -435,9 +442,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
-        totalBricksWidth = brickWidth * CGFloat(numberOfBrickColumns)
-		totalBricksHeight = brickHeight * CGFloat(numberOfBrickRows)
-        xBrickOffset = totalBricksWidth/2 - brickWidth/2
 		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
 		paddle.position.x = 0
 		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
@@ -468,7 +472,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.constraints = [SKConstraint.positionX(xRangeBall)]
 		// Define ball properties
 
-		print(paddle.physicsBody as Any)
 		if paddle.physicsBody == nil {
 			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
 		}
@@ -612,7 +615,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		angleAdjustmentK = 45
 		// Ball angle parameters
 		
-		powerUpProbFactor = 2
+		powerUpProbFactor = 10
 		powerUpLimit = 2
 		// Power-up parameters
 		
@@ -1190,16 +1193,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
 		case brickIndestructible1Texture:
             sprite.texture = brickIndestructible2Texture
-			bricksLeft -= 1
-			if bricksLeft == 0 {
-				levelScore = levelScore + levelCompleteScore
-				scoreLabel.text = String(totalScore + levelScore)
-				if levelNumber == endLevelNumber {
-					gameoverStatus = true
-				}
-				gameState.enter(InbetweenLevels.self)
-				return
-			}
             break
         case brickInvisibleTexture:
             if sprite.isHidden {
@@ -1229,14 +1222,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func removeBrick(node: SKNode, sprite: SKSpriteNode) {
-		bricksLeft -= 1
-		// Remove and update number of bricks left
 		
-		let powerUpProb = Int.random(in: 1...powerUpProbFactor)
-        if powerUpProb == 1 && bricksLeft > 1 {
-            powerUpGenerator(sprite: sprite)
-        }
-        // probability of getting a power up if brick is removed
+		bricksLeft = 0
+		
+		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
+			let spriteBrick = nodeBrick as! SKSpriteNode
+			if spriteBrick.texture == self.brickNormalTexture || spriteBrick.texture == self.brickInvisibleTexture || spriteBrick.texture == self.brickMultiHit1Texture || spriteBrick.texture == self.brickMultiHit2Texture || spriteBrick.texture == self.brickMultiHit3Texture || spriteBrick.texture == self.brickMultiHit4Texture || spriteBrick.texture == self.brickIndestructible1Texture || spriteBrick.texture == self.brickMultiHit2Texture {
+				self.bricksLeft+=1
+			}
+		}
+		self.bricksLeft-=1 // Don't count this brick as it hasn't been removed yet
+		// Count number of removable bricks
+		
+		powerUpProximity = false
+		
+		enumerateChildNodes(withName: PowerUpCategoryName) { (nodePowerUp, stop) in
+			if sprite.position.y > nodePowerUp.position.y-self.brickWidth && sprite.position.y < nodePowerUp.position.y+self.brickWidth {
+				self.powerUpProximity = true
+				stop.initialize(to: true)
+			}
+		}
+		
+		if powerUpProximity == false {
+			let powerUpProb = Int.random(in: 1...powerUpProbFactor)
+			if powerUpProb == 1 && bricksLeft > 1 {
+				powerUpGenerator(sprite: sprite)
+			}
+			// probability of getting a power up if brick is removed
+		}
 		
 		let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 		node.name = BrickRemovalCategoryName
@@ -1360,7 +1373,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let powerUpProb = Int.random(in: 0...22)
         switch powerUpProb {
         case 0:
-		// Get a life
+		// Get a life			
             powerUp.texture = powerUpGetALife
         case 1:
 		// Decrease ball speed
@@ -1489,7 +1502,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			var multiHitBrickFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture || sprite.texture == self.brickIndestructible2Texture {
+				if sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture {
 					multiHitBrickFound = true
 					stop.initialize(to: true)
 				}
@@ -1499,7 +1512,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
 			}
-			// Don't show if no normal bricks
+			// Don't show if no multi-hit bricks that have been hit
 		case 19:
 		// Gravity ball
 			powerUp.texture = powerUpGravityBall
@@ -1517,7 +1530,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Don't show if multiplier is 1
 		case 22:
-		// Move all bricks down 1 row
+		// Move all bricks down 2 rows
 			powerUp.texture = powerUpBricksDown
 			var bricksAtBottom = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -1888,6 +1901,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 		case powerUpShowInvisibleBricks:
 		// Invisible bricks become visible
+			removeAction(forKey: "powerUpInvisibleBricks")
+			removeAction(forKey: "invisibleBricksTimer")
+			// Remove any animations and timers
+			hiddenBricksIcon.texture = iconHiddenBlocksDisabledTexture
+			hiddenBricksIconBar.isHidden = true
+			// Show power-up icon timer for invisible bricks
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				if node.isHidden == true {
 					let startingScale = SKAction.scale(to: 1, duration: 0)
@@ -2002,9 +2021,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if temporarySprite.texture == self.brickMultiHit2Texture || temporarySprite.texture == self.brickMultiHit3Texture || temporarySprite.texture == self.brickMultiHit4Texture {
 					temporarySprite.texture = self.brickMultiHit1Texture
 				}
-				if temporarySprite.texture == self.brickIndestructible2Texture  {
+				if temporarySprite.texture == self.brickIndestructible2Texture {
 					temporarySprite.texture = self.brickIndestructible1Texture
-					self.bricksLeft+=1
 				}
 			}
 			powerUpScore = -50

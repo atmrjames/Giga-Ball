@@ -21,13 +21,19 @@ class Playing: GKState {
         
         if previousState is InbetweenLevels && (scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber) {
             scene.gameState.enter(GameOver.self)
-        } else if previousState is PreGame || previousState is InbetweenLevels {
+        }
+        
+        if previousState is InbetweenLevels {
+            scene.levelNumber+=1
+        // Increment level number
+        }
+        
+        if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
             loadNextLevel()
-        } else if previousState is InbetweenLevels {
-            scene.levelNumber += 1
-            // Increment level number
-        } else if previousState is Paused {
+        }
+        
+        if previousState is Paused {
         // Unpause game
             
             scene.countdownStarted = false
