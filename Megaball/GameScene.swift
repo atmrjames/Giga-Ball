@@ -210,7 +210,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let powerUpPointsBonus: SKTexture = SKTexture(imageNamed: "PowerUpPointsBonus")
     let powerUpPointsPenalty: SKTexture = SKTexture(imageNamed: "PowerUpPointsPenalty")
     let powerUpNormalToInvisibleBricks: SKTexture = SKTexture(imageNamed: "PowerUpNormalToInvisibleBricks")
-    let powerUpMultiHitBricksReset: SKTexture = SKTexture(imageNamed: "PowerUpNormalToMultiHitBricks")
+    let powerUpMultiHitBricksReset: SKTexture = SKTexture(imageNamed: "PowerUpMultiHitBricksReset")
     let powerUpGravityBall: SKTexture = SKTexture(imageNamed: "PowerUpGravityBall")
 	let powerUpMultiplierReset: SKTexture = SKTexture(imageNamed: "PowerUpMultiplierReset")
 	let powerUpBricksDown: SKTexture = SKTexture(imageNamed: "PowerUpBricksDown")
@@ -645,6 +645,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
+		
+//		let doubleTap = UITapGestureRecognizer(target: self, action: #selector(doubleTapped))
+//		doubleTap.numberOfTapsRequired = 2
+//		view.addGestureRecognizer(doubleTap)
+//		doubleTap.delaysTouchesBegan = false
+//		// Setup double tap gesture recogniser
+		
+		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
+		swipeUp.direction = .up
+		view.addGestureRecognizer(swipeUp)
 		
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
@@ -1192,7 +1202,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             removeBrick(node: node, sprite: sprite)
             break
 		case brickIndestructible1Texture:
-            sprite.texture = brickIndestructible2Texture
+			removeBrick(node: node, sprite: sprite)
+			sprite.texture = brickIndestructible2Texture
             break
         case brickInvisibleTexture:
             if sprite.isHidden {
@@ -1215,10 +1226,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         default:
             break
         }
-        scoreLabel.text = String(totalScore + levelScore)
-		scoreFactorString = String(format:"%.1f", multiplier)
-		multiplierLabel.text = "x\(scoreFactorString)"
-        // Update score
     }
     
     func removeBrick(node: SKNode, sprite: SKSpriteNode) {
@@ -1251,13 +1258,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// probability of getting a power up if brick is removed
 		}
 		
-		let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
-		node.name = BrickRemovalCategoryName
-		node.isHidden = true
-		node.run(waitBrickRemove, completion: {
-			node.removeFromParent()
-		})
-		// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
+		if sprite.texture != brickIndestructible1Texture || sprite.texture != brickIndestructible2Texture {
+			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
+			node.name = BrickRemovalCategoryName
+			node.isHidden = true
+			node.run(waitBrickRemove, completion: {
+				node.removeFromParent()
+			})
+			// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
+		}
 		
 		if brickRemovalCounter == 9 {
 			if multiplier < 10.0 {
@@ -1339,11 +1348,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
     }
-    
-    @objc func pauseNotificationKeyReceived() {
-        gameState.enter(Paused.self)
-    }
-    // Pause the game if a notifcation from AppDelegate is received that the game will quit
     
     func powerUpGenerator (sprite: SKSpriteNode) {
 		
@@ -1570,10 +1574,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			life.removeAllActions()
 			
-			let scaleUp = SKAction.scale(to: 1.25, duration: 0.05)
-			let scaleDown = SKAction.scale(to: 1, duration: 0.1)
+			let scaleUp = SKAction.scale(to: 1.75, duration: 0.1)
+			let scaleDown = SKAction.scale(to: 1, duration: 0.15)
 			let newLifeSequence = SKAction.sequence([scaleUp, scaleDown])
-			
 			life.run(newLifeSequence)
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
@@ -2190,6 +2193,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func showPauseMenu() {
         gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber)
     }
+	
+	func recentreBall() {
+		if ballIsOnPaddle {
+			if ball.position.x - ball.size.width/2 < paddle.position.x - paddle.size.width/2 {
+				ball.position.x = paddle.position.x - paddle.size.width/2 + ball.size.width/2
+			} else if ball.position.x + ball.size.width/2 > paddle.position.x + paddle.size.width/2 {
+				ball.position.x = paddle.position.x + paddle.size.width/2 - ball.size.width/2
+			}
+		}
+	}
+	// Recentre ball if it isn't on smaller paddle
     
     @objc func laserGenerator() {
 		
@@ -2240,17 +2254,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Define laser movement
 		}
     }
+    
+    @objc func pauseNotificationKeyReceived() {
+        gameState.enter(Paused.self)
+    }
+    // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
-	func recentreBall() {
-		if ballIsOnPaddle {
-			if ball.position.x - ball.size.width/2 < paddle.position.x - paddle.size.width/2 {
-				ball.position.x = paddle.position.x - paddle.size.width/2 + ball.size.width/2
-			} else if ball.position.x + ball.size.width/2 > paddle.position.x + paddle.size.width/2 {
-				ball.position.x = paddle.position.x + paddle.size.width/2 - ball.size.width/2
-			}
-		}
+//	@objc func doubleTapped() {
+//		gameState.enter(Paused.self)
+//	}
+//	// Function to perform when double tap gesture recognised
+	
+	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
+		gameState.enter(Paused.self)
 	}
-	// Recentre ball if it isn't on smaller paddle
 
 }
 
