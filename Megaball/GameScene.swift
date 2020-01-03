@@ -1258,10 +1258,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// probability of getting a power up if brick is removed
 		}
 		
-		if sprite.texture != brickIndestructible1Texture || sprite.texture != brickIndestructible2Texture {
+		
+		
+		if sprite.texture != brickIndestructible1Texture {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 			node.name = BrickRemovalCategoryName
 			node.isHidden = true
+			print(sprite.texture)
 			node.run(waitBrickRemove, completion: {
 				node.removeFromParent()
 			})

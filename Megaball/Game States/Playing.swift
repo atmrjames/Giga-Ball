@@ -186,7 +186,6 @@ class Playing: GKState {
             break
         }
         // Load level in
-        
     }
     
     override func willExit(to nextState: GKState) {

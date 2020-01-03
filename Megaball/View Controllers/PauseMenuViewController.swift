@@ -43,8 +43,8 @@ class PauseMenuViewController: UIViewController {
     func setBlur() {
         popupView.backgroundColor = .clear
         // 1: change the superview transparent
-        let blurEffect = UIBlurEffect(style: .light)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .extraDark, regular, and prominent.
+        let blurEffect = UIBlurEffect(style: .extraLight)
+        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .extraDark, .regular, and .prominent.
         let blurView = UIVisualEffectView(effect: blurEffect)
         // 3 Create a UIVisualEffectView with the new blur
         blurView.translatesAutoresizingMaskIntoConstraints = false
@@ -74,9 +74,7 @@ class PauseMenuViewController: UIViewController {
     }
     
     func updateLabels() {
-        
         levelNumberLabel.text = "Level \(levelNumber)"
-
     }
     
     func removeAnimate(nextAction: Notification.Name) {
