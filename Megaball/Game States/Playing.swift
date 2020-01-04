@@ -65,6 +65,11 @@ class Playing: GKState {
             
             scene.ball.physicsBody!.affectedByGravity = true
             // Enusre the ball is affected by gravity
+            
+            if scene.killBall {
+                scene.ballLost()
+                scene.killBall = false
+            }
         }
     }
     // This function runs when this state is entered.
@@ -128,8 +133,6 @@ class Playing: GKState {
         
         scene.livesLabel.text = "x\(self.scene.numberOfLives)"
         // Update number of lives label
-        
-        scene.contactCount = 0
         
         scene.ball.removeAllActions()
         scene.paddle.removeAllActions()

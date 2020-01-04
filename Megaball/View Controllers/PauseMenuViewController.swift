@@ -31,10 +31,20 @@ class PauseMenuViewController: UIViewController {
     @IBAction func settingsButton(_ sender: UIButton) {
         mediumHaptic.impactOccurred()
     }
+    
+    @IBAction func killBall(_ sender: UIButton) {
+        mediumHaptic.impactOccurred()
+        NotificationCenter.default.post(name: .killBallNotification, object: nil)
+        removeAnimate(nextAction: .unpause)
+    }
     // Defining object properties
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
+        swipeDown.direction = .down
+        view.addGestureRecognizer(swipeDown)
+        // Setup swipe gesture
         setBlur()
         showAnimate()
         updateLabels()
@@ -88,7 +98,6 @@ class PauseMenuViewController: UIViewController {
                 
                 NotificationCenter.default.post(name: nextAction, object: nil)
                 // Send notification to unpause the game
-                
             }
         }
     }
@@ -113,6 +122,12 @@ class PauseMenuViewController: UIViewController {
     func moveToMainMenu() {
         navigationController?.popToRootViewController(animated: true)
     }
+    
+    @objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
+        mediumHaptic.impactOccurred()
+        removeAnimate(nextAction: .unpause)
+    }
+    
     // Segue to MenuViewController
     
     //    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {

@@ -244,7 +244,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var powerUpProximity: Bool = false
     // Power up properties
     
-    var contactCount: Int = 0
     var ballPositionOnPaddle: Double = 0
     
     let playTexture: SKTexture = SKTexture(imageNamed: "PlayButton")
@@ -287,6 +286,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballLostBool: Bool = true
 	var powerUpsOnScreen: Int = 0
 	var powerUpLimit: Int = 0
+	var brickBounceCounter: Int = 0
+	var killBall: Bool = false
     // Game trackers
     
     var fontSize: CGFloat = 0
@@ -628,6 +629,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         endLevelNumber = 10
 		// Define number of levels
 		
+		brickBounceCounter = 0
+		
 //MARK: - Score Database Setup
         
         if let levelScoreStore = dataStore.array(forKey: "LevelScoreStore") as? [Int] {
@@ -646,15 +649,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
 		
-//		let doubleTap = UITapGestureRecognizer(target: self, action: #selector(doubleTapped))
-//		doubleTap.numberOfTapsRequired = 2
-//		view.addGestureRecognizer(doubleTap)
-//		doubleTap.delaysTouchesBegan = false
-//		// Setup double tap gesture recogniser
-		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
 		swipeUp.direction = .up
 		view.addGestureRecognizer(swipeUp)
+		// Setup swipe gesture
 		
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
@@ -751,6 +749,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Reset ball on paddle immediately
         }
 		
+		brickBounceCounter = 0
 		ballIsOnPaddle = false
 		ballLostBool = false
         // Resets ball on paddle status
@@ -884,6 +883,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 ballLost()
             }
 			// Determine if ball has been lost below paddle
+			
+			if brickBounceCounter == 100 {
+				enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+					let temporarySprite = node as! SKSpriteNode
+					if temporarySprite.texture == self.brickIndestructible1Texture || temporarySprite.texture == self.brickIndestructible2Texture {
+						node.removeFromParent()
+					}
+				}
+			}
+			// Remove indestructible bricks if the ball hits them a certain number of times consecutively
+			
         }
 		// Code to run continuously whilst playing when the ball is off the paddle
         
@@ -959,6 +969,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func ballLost() {
 		softHaptic.impactOccurred()
         self.ball.isHidden = true
+		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = 0
         ball.position.x = paddle.position.x
         ball.position.y = ballStartingPositionY
@@ -1171,6 +1182,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             laserNode?.removeFromParent()
         }
         // Remove laser if super-ball power up isn't activated
+		
+		if sprite.texture == brickIndestructible2Texture {
+			brickBounceCounter+=1
+		} else {
+			brickBounceCounter = 0
+		}
         
         switch sprite.texture {
         case brickNormalTexture:
@@ -1264,7 +1281,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 			node.name = BrickRemovalCategoryName
 			node.isHidden = true
-			print(sprite.texture)
 			node.run(waitBrickRemove, completion: {
 				node.removeFromParent()
 			})
@@ -1302,7 +1318,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func paddleHit() {
         lightHaptic.impactOccurred()
         
-        contactCount = 0
+		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
         
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2

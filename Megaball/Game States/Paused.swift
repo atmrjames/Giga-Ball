@@ -10,13 +10,14 @@ import SpriteKit
 import GameplayKit
 
 class Paused: GKState {
+    
     unowned let scene: GameScene
     
     init(scene: SKScene) {
         self.scene = scene as! GameScene
         super.init()
     }
-    
+
     override func didEnter(from previousState: GKState?) {
         
         if scene.ballIsOnPaddle == false && scene.pauseBallVelocityX == 0 && (scene.ball.position.x >= (scene.frame.size.width/2 - scene.ball.size.width/2) || scene.ball.position.x <= -(scene.frame.size.width/2 - scene.ball.size.width/2)) {
@@ -42,6 +43,9 @@ class Paused: GKState {
         
         scene.mediumHaptic.impactOccurred()
         scene.showPauseMenu()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.killBallNotificationKeyReceived), name: .killBallNotification, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.unpauseNotificationKeyReceived), name: .unpause, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu
@@ -126,9 +130,13 @@ class Paused: GKState {
     }
     // Pause all nodes
     
+    @objc func killBallNotificationKeyReceived(_ notification: Notification) {
+        scene.killBall = true
+    }
+    
     @objc func unpauseNotificationKeyReceived(_ notification: Notification) {
         
-        if scene.ballIsOnPaddle {
+        if scene.ballIsOnPaddle || scene.killBall {
             scene.isPaused = false
             scene.gameState.enter(Playing.self)
             // Restart playing
@@ -197,5 +205,6 @@ class Paused: GKState {
 
 extension Notification.Name {
     public static let unpause = Notification.Name(rawValue: "unpause")
+    public static let killBallNotification = Notification.Name(rawValue: "killBallNotification")
 }
 // Notification setup for sending information from the pause menu popup to unpause the game
