@@ -295,6 +295,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Label metrics
 	
 	var countdownStarted: Bool = false
+	
+//MARK: - Sound and Haptic Definition
     
     let lightHaptic = UIImpactFeedbackGenerator(style: .light)
 	// use for UI interactions
@@ -308,6 +310,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let rigidHaptic = UIImpactFeedbackGenerator(style: .rigid)
 	// use for power-ups collected
 	// Haptics defined
+	
+	let brickHitSound = SKAction.playSoundFileNamed("BrickHit.m4a", waitForCompletion: false)
+	// Sounds defined
+	
+//MARK: - State Machine Defintion
 
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
         PreGame(scene: self),
@@ -1176,6 +1183,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
 		
+		node.run(brickHitSound)
         lightHaptic.impactOccurred()
 
 		if  laserSprite?.texture == laserNormalTexture {
