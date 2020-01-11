@@ -11,12 +11,17 @@ import UIKit
 class PauseMenuViewController: UIViewController {
     
     var levelNumber: Int = 0
+    var score: Int = 0
+    var highscore: Int = 0
     // Properties to store passed over data
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
     
     @IBOutlet weak var popupView: UIView!
     @IBOutlet weak var levelNumberLabel: UILabel!
+    @IBOutlet weak var scoreLabel: UILabel!
+    @IBOutlet weak var highscoreLabel: UILabel!
+    @IBOutlet weak var highscoreLabelTitle: UILabel!
     
     @IBAction func returnToMainMenuButton(_ sender: UIButton) {
         mediumHaptic.impactOccurred()
@@ -85,6 +90,16 @@ class PauseMenuViewController: UIViewController {
     
     func updateLabels() {
         levelNumberLabel.text = "Level \(levelNumber)"
+        scoreLabel.text = String(score)
+        if highscore <= 1 {
+            highscoreLabelTitle.isHidden = true
+            highscoreLabel.isHidden = true
+        } else {
+            highscoreLabelTitle.isHidden = false
+            highscoreLabel.isHidden = false
+            highscoreLabel.text = String(highscore)
+        }
+        
     }
     
     func removeAnimate(nextAction: Notification.Name) {
@@ -120,6 +135,8 @@ class PauseMenuViewController: UIViewController {
     }
     
     func moveToMainMenu() {
+        let mainMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "menuView") as! MenuViewController
+        mainMenuVC.currentHighscore = highscore
         navigationController?.popToRootViewController(animated: true)
     }
     

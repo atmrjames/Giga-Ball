@@ -47,7 +47,9 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         }
     }
     
-    func moveToMainMenu() {
+    func moveToMainMenu(currentHighscore: Int) {
+        let mainMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "menuView") as! MenuViewController
+        mainMenuVC.currentHighscore = currentHighscore
         navigationController?.popToRootViewController(animated: true)
     }
     // Segue to MenuViewController
@@ -69,9 +71,12 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     }
     // Show InbetweenLevelsViewController as popup
     
-    func showPauseMenu(levelNumber: Int) {
+    func showPauseMenu(levelNumber: Int, score: Int, highscore: Int) {
         let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         popoverVC.levelNumber = levelNumber
+        popoverVC.score = score
+        popoverVC.highscore = highscore
+        
         // Update pause menu view controller properties with function input values
 
         self.addChild(popoverVC)

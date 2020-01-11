@@ -43,10 +43,9 @@ class InbewteenLevelsViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        setBlur()
         showAnimate()
         updateLabels()
-        addParallaxToView(vw: popupView)
     }
 
     func showAnimate() {
@@ -64,6 +63,8 @@ class InbewteenLevelsViewController: UIViewController {
             self.view.alpha = 0.0
         }) { (finished: Bool) in
             if (finished) {
+                let mainMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "menuView") as! MenuViewController
+                mainMenuVC.currentHighscore = self.totalHighscore
                 NotificationCenter.default.post(name: nextAction, object: nil)
                 // Send notification to load the next level
                 self.view.removeFromSuperview()
@@ -73,16 +74,10 @@ class InbewteenLevelsViewController: UIViewController {
     
     func updateLabels() {
         
-        if gameoverStatus {
-            levelCompleteLabel.text = "G A M E  O V E R"
-            nextLevelButtonLabel.setTitle("MAIN MENU", for: .normal)
-            restartButtonLabel.isHidden = false
-        } else {
-            levelCompleteLabel.text = "L E V E L  \(levelNumber)"
-            nextLevelButtonLabel.setTitle("NEXT LEVEL", for: .normal)
-            restartButtonLabel.isHidden = true
-        }
-        
+        levelCompleteLabel.text = "G A M E  O V E R"
+        nextLevelButtonLabel.setTitle("MAIN MENU", for: .normal)
+        restartButtonLabel.isHidden = false
+            
         if levelScore >= 0 {
             levelScoreLabel.text = "+\(levelScore)"
         } else {
@@ -108,7 +103,31 @@ class InbewteenLevelsViewController: UIViewController {
         // move game scene to pregame
     }
     
-    func addParallaxToView(vw: UIView) {
+    func setBlur() {
+        popupView.backgroundColor = .clear
+        // 1: change the superview transparent
+        let blurEffect = UIBlurEffect(style: .extraLight)
+        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .extraDark, .regular, and .prominent.
+        let blurView = UIVisualEffectView(effect: blurEffect)
+        // 3 Create a UIVisualEffectView with the new blur
+        blurView.translatesAutoresizingMaskIntoConstraints = false
+        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
+        view.insertSubview(blurView, at: 0)
+
+        NSLayoutConstraint.activate([
+        blurView.heightAnchor.constraint(equalTo: popupView.heightAnchor),
+        blurView.widthAnchor.constraint(equalTo: popupView.widthAnchor),
+        blurView.leadingAnchor.constraint(equalTo: popupView.leadingAnchor),
+        blurView.trailingAnchor.constraint(equalTo: popupView.trailingAnchor),
+        blurView.topAnchor.constraint(equalTo: popupView.topAnchor),
+        blurView.bottomAnchor.constraint(equalTo: popupView.bottomAnchor)
+        ])
+        // Keep the frame of the blurView consistent with that of the associated view.
+        
+        addParallaxToView(vw: popupView, ve: blurView)
+    }
+    
+    func addParallaxToView(vw: UIView, ve: UIVisualEffectView) {
         let amount = 25
 
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
@@ -122,6 +141,7 @@ class InbewteenLevelsViewController: UIViewController {
         let group = UIMotionEffectGroup()
         group.motionEffects = [horizontal, vertical]
         vw.addMotionEffect(group)
+        ve.addMotionEffect(group)
     }
 }
 

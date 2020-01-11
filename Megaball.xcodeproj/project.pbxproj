@@ -22,7 +22,6 @@
 		1A5A94A7231720FE0076D635 /* Megaball.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94A5231720FE0076D635 /* Megaball.xcdatamodeld */; };
 		1A6673792358F62800EE8F7E /* PauseMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */; };
 		1A7D6529231B0E980091CA58 /* Paused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7D6528231B0E980091CA58 /* Paused.swift */; };
-		1AB723DC23C27C2B00F3F5B8 /* BrickHit.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AB723DB23C27C2B00F3F5B8 /* BrickHit.m4a */; };
 		1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1AD2BDCE23A2A5C100F2463F /* FoundryGridnik Medium.otf */; };
 		1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE9573A2321A74700E5618A /* InbewteenLevels.swift */; };
 		1AE957442324523800E5618A /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957432324523800E5618A /* MenuViewController.swift */; };
@@ -56,7 +55,6 @@
 		1A5A94A6231720FE0076D635 /* MegaballCoreDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MegaballCoreDataModel.xcdatamodel; sourceTree = "<group>"; };
 		1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseMenuViewController.swift; sourceTree = "<group>"; };
 		1A7D6528231B0E980091CA58 /* Paused.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paused.swift; sourceTree = "<group>"; };
-		1AB723DB23C27C2B00F3F5B8 /* BrickHit.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = BrickHit.m4a; sourceTree = "<group>"; };
 		1AD2BDCE23A2A5C100F2463F /* FoundryGridnik Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FoundryGridnik Medium.otf"; sourceTree = "<group>"; };
 		1AE9573A2321A74700E5618A /* InbewteenLevels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbewteenLevels.swift; sourceTree = "<group>"; };
 		1AE957432324523800E5618A /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
@@ -111,7 +109,6 @@
 				1AE957492324ECF900E5618A /* Levels */,
 				1A5A948E2309E4F30076D635 /* Main.storyboard */,
 				1A5A94912309E4F40076D635 /* Assets.xcassets */,
-				1AB723DA23C27C0B00F3F5B8 /* Sounds */,
 				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
 				1A5A94A5231720FE0076D635 /* Megaball.xcdatamodeld */,
 				1A5A94962309E4F40076D635 /* Info.plist */,
@@ -130,14 +127,6 @@
 				1A7D6528231B0E980091CA58 /* Paused.swift */,
 			);
 			path = "Game States";
-			sourceTree = "<group>";
-		};
-		1AB723DA23C27C0B00F3F5B8 /* Sounds */ = {
-			isa = PBXGroup;
-			children = (
-				1AB723DB23C27C2B00F3F5B8 /* BrickHit.m4a */,
-			);
-			path = Sounds;
 			sourceTree = "<group>";
 		};
 		1AE957492324ECF900E5618A /* Levels */ = {
@@ -227,7 +216,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */,
-				1AB723DC23C27C2B00F3F5B8 /* BrickHit.m4a in Resources */,
 				1A5A94902309E4F30076D635 /* Main.storyboard in Resources */,
 				1A5A94872309E4F30076D635 /* GameScene.sks in Resources */,
 				1A5A94922309E4F40076D635 /* Assets.xcassets in Resources */,

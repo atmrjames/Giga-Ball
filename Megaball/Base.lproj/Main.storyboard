@@ -20,140 +20,123 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WqO-Zu-yT0">
-                                <rect key="frame" x="153" y="309" width="70" height="54"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="MEGABALL" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kD8-ZB-cpA">
+                                <rect key="frame" x="0.0" y="100" width="375" height="60"/>
+                                <color key="tintColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
+                                <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="A game by James Harding" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="azD-Ym-dKV">
+                                <rect key="frame" x="0.0" y="626" width="375" height="21"/>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zyV-Na-Dvb">
+                                <rect key="frame" x="0.0" y="439" width="375" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="2uQ-jW-K9b"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Tutorial">
+                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="tutorialButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="WTj-Gd-8f2"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Tri-5X-6j7">
+                                <rect key="frame" x="0.0" y="477" width="375" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="mcb-WJ-4Qe"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Select Level">
+                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="selectLevelButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Cis-sM-5rj"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KQp-LJ-dtT">
+                                <rect key="frame" x="0.0" y="515" width="375" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="ApH-KC-FJl"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Known Issues">
+                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="knownIssuesButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="3cO-C1-P5B"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KD4-sD-NrB">
+                                <rect key="frame" x="0.0" y="553" width="375" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="Hms-Vy-GvC"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Feedback">
+                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="feedbackButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="G7N-Xe-R9Y"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WqO-Zu-yT0" userLabel="PlayButton">
+                                <rect key="frame" x="145" y="285" width="85" height="96.5"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="100" id="n5T-Z6-nAb"/>
+                                    <constraint firstAttribute="width" constant="85" id="rNC-a1-BPO"/>
+                                </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
-                                <state key="normal" title="Play"/>
+                                <color key="tintColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <state key="normal" backgroundImage="play.fill" catalog="system"/>
                                 <connections>
                                     <action selector="playButtonPressed:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Z6Y-gK-Z8G"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="R0A-86-VFa">
-                                <rect key="frame" x="80" y="371" width="216" height="54"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
-                                <state key="normal" title="Leaderboard"/>
-                                <connections>
-                                    <action selector="playButtonPressed:" destination="uoD-CG-D3c" eventType="touchUpInside" id="qX8-vs-YXU"/>
-                                </connections>
-                            </button>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="MEGABALL" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kD8-ZB-cpA">
-                                <rect key="frame" x="52" y="67" width="276" height="60"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
-                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="W5r-pY-8qj">
-                                <rect key="frame" x="117" y="433" width="141" height="54"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
-                                <state key="normal" title="Settings"/>
-                                <connections>
-                                    <action selector="playButtonPressed:" destination="uoD-CG-D3c" eventType="touchUpInside" id="VkK-SZ-jRc"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="1" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MNs-tl-Lkt">
-                                <rect key="frame" x="1" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="1"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="4nf-0r-tts"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="2" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HFo-xK-d1w">
-                                <rect key="frame" x="39" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="2"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="UKk-3W-KpR"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="3" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="40a-V2-QKi">
-                                <rect key="frame" x="77" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="3"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="XhC-dJ-8ld"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="4" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="6Jw-Xp-EGm">
-                                <rect key="frame" x="115" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="4"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="6rP-xm-XxE"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="5" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Mej-LI-qfU">
-                                <rect key="frame" x="153" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="5"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="TwI-ym-RQK"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="6" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="JHo-0v-xRZ">
-                                <rect key="frame" x="191" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="6"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Q0r-76-qPk"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="7" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Bh4-Ec-LeP">
-                                <rect key="frame" x="229" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="7"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="JSa-6e-vfG"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="8" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="b0B-xk-pbY">
-                                <rect key="frame" x="267" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="8"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="DLc-gy-IXY"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="9" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="UAp-JA-Irz">
-                                <rect key="frame" x="305" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="9"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="mBa-dp-qOH"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" tag="10" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="paD-uO-3xW">
-                                <rect key="frame" x="343" y="141" width="30" height="36"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                <state key="normal" title="10"/>
-                                <connections>
-                                    <action selector="levelSelectionButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="1C5-Kg-tBa"/>
-                                </connections>
-                            </button>
                         </subviews>
-                        <color key="backgroundColor" red="0.079410118486928652" green="0.20021294763190542" blue="0.34870717005076146" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <color key="backgroundColor" red="0.14902216200000001" green="0.14901494979999999" blue="0.14901983739999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="Tri-5X-6j7" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="0sF-pk-jib"/>
+                            <constraint firstItem="KQp-LJ-dtT" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="30G-Ow-XsX"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="kD8-ZB-cpA" secondAttribute="trailing" id="3ed-jq-7bi"/>
+                            <constraint firstItem="KD4-sD-NrB" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="9Ll-Ht-10G"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="KQp-LJ-dtT" secondAttribute="trailing" id="Ctn-Ns-VEp"/>
+                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="EeV-1v-Dqj"/>
+                            <constraint firstItem="KQp-LJ-dtT" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="I0d-6y-YxT"/>
+                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="Iio-Bi-GCR"/>
+                            <constraint firstItem="kD8-ZB-cpA" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="JSf-HH-cn3"/>
+                            <constraint firstItem="azD-Ym-dKV" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="N6E-up-JB9"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="Tri-5X-6j7" secondAttribute="trailing" id="OBw-s3-VK4"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="KD4-sD-NrB" secondAttribute="trailing" id="REA-aj-2wi"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="azD-Ym-dKV" secondAttribute="trailing" id="XfP-Sm-fFx"/>
+                            <constraint firstItem="zyV-Na-Dvb" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="Xg0-KA-xlM"/>
+                            <constraint firstItem="KD4-sD-NrB" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="azv-XU-FzC"/>
+                            <constraint firstItem="KQp-LJ-dtT" firstAttribute="top" secondItem="Tri-5X-6j7" secondAttribute="bottom" constant="5" id="cDT-G2-Sd2"/>
+                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="e0T-rD-su6"/>
+                            <constraint firstItem="azD-Ym-dKV" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="fPD-CQ-zoR"/>
+                            <constraint firstItem="kD8-ZB-cpA" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="g0X-IJ-e2Q"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="bottom" secondItem="azD-Ym-dKV" secondAttribute="bottom" constant="20" id="lzI-MM-Dbi"/>
+                            <constraint firstItem="zyV-Na-Dvb" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="mzM-it-dct"/>
+                            <constraint firstItem="KD4-sD-NrB" firstAttribute="top" secondItem="KQp-LJ-dtT" secondAttribute="bottom" constant="5" id="nsb-Zb-9fe"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="zyV-Na-Dvb" secondAttribute="trailing" id="o2l-8G-4QX"/>
+                            <constraint firstItem="Tri-5X-6j7" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="p3C-os-tqb"/>
+                            <constraint firstItem="Tri-5X-6j7" firstAttribute="top" secondItem="zyV-Na-Dvb" secondAttribute="bottom" constant="5" id="qNV-0r-ViA"/>
+                            <constraint firstItem="azD-Ym-dKV" firstAttribute="top" secondItem="KD4-sD-NrB" secondAttribute="bottom" constant="40" id="qvT-JV-qVE"/>
+                            <constraint firstItem="kD8-ZB-cpA" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="100" id="qxl-5c-pro"/>
+                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="vDe-mr-3AB"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="3NZ-mn-eyJ"/>
                     </view>
                     <navigationItem key="navigationItem" id="Fg4-ij-J4b"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="KUs-bl-DZX" userLabel="First Responder" sceneMemberID="firstResponder"/>
-                <exit id="uoD-CG-D3c" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
-            <point key="canvasLocation" x="197" y="128"/>
+            <point key="canvasLocation" x="196" y="127.28635682158921"/>
         </scene>
         <!--Game View Controller-->
         <scene sceneID="tXr-a1-R10">
@@ -179,88 +162,78 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bk6-6M-rr7">
-                                <rect key="frame" x="16" y="208" width="343" height="403"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="bk6-6M-rr7">
+                                <rect key="frame" x="32" y="173" width="311" height="321"/>
                                 <subviews>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zxV-ag-nP5" userLabel="exitButton">
-                                        <rect key="frame" x="8" y="353" width="159" height="42"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="G A M E   O V E R" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="DwY-qh-TUd" userLabel="levelCompleteLabel">
+                                        <rect key="frame" x="50" y="18" width="211" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="25"/>
-                                        <state key="normal" title="RESTART">
-                                            <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                        </state>
-                                        <connections>
-                                            <action selector="restartButton:" destination="fjJ-pg-0SJ" eventType="touchUpInside" id="Mn3-q9-yQh"/>
-                                        </connections>
-                                    </button>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="L E V E L  00" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="DwY-qh-TUd" userLabel="levelCompleteLabel">
-                                        <rect key="frame" x="0.0" y="0.0" width="343" height="42"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
                                         <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="C O M P L E T E" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Edm-hr-gqX" userLabel="completeTitleLabel">
-                                        <rect key="frame" x="0.0" y="40" width="343" height="27"/>
+                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="leading" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="b4n-cC-ZiX" userLabel="nextLevelButton">
+                                        <rect key="frame" x="8" y="283" width="202" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="22"/>
-                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="trailing" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="b4n-cC-ZiX" userLabel="nextLevelButton">
-                                        <rect key="frame" x="164" y="353" width="171" height="42"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="25"/>
-                                        <state key="normal" title="NEXT LEVEL">
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="15"/>
+                                        <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <state key="normal" title=" Exit to Main Menu" image="arrow.uturn.left" catalog="system">
                                             <color key="titleColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="font" scale="medium" weight="medium">
+                                                <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
+                                            </preferredSymbolConfiguration>
                                         </state>
                                         <connections>
                                             <action selector="nextLevelButton:" destination="fjJ-pg-0SJ" eventType="touchUpInside" id="9vn-z4-XAF"/>
                                         </connections>
                                     </button>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="+000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Fr1-Ty-VGd" userLabel="levelScoreLabel">
-                                        <rect key="frame" x="0.0" y="115" width="343" height="60"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
-                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="(New) Level Highscore(: 000000)" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7kp-sG-TyN" userLabel="levelHighscoreLabel">
-                                        <rect key="frame" x="0.0" y="163" width="343" height="24"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Score" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vcg-EO-0so" userLabel="scoreLabel">
+                                        <rect key="frame" x="0.0" y="73" width="311" height="24"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                        <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="textColor" white="0.33333333329999998" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="0LM-B6-Fna" userLabel="totalScoreLabel">
-                                        <rect key="frame" x="0.0" y="216" width="343" height="50"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="0LM-B6-Fna" userLabel="score">
+                                        <rect key="frame" x="0.0" y="96" width="311" height="60"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
                                         <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="(New) Highscore(: 000000)" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bpN-8O-ZhC" userLabel="totalHighscoreLabel">
-                                        <rect key="frame" x="0.0" y="264" width="343" height="24"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Highscore" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bpN-8O-ZhC" userLabel="highscoreLabel">
+                                        <rect key="frame" x="0.0" y="174" width="311" height="24"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
                                         <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6tU-jU-djw" userLabel="highscore">
+                                        <rect key="frame" x="0.0" y="197" width="311" height="60"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
+                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
                                 </subviews>
-                                <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="0.80000000000000004" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="311" id="BaZ-yE-oAF"/>
+                                    <constraint firstAttribute="height" constant="321" id="kYM-se-nFO"/>
+                                </constraints>
                             </view>
                         </subviews>
                         <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.67000000000000004" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="bk6-6M-rr7" firstAttribute="centerX" secondItem="1E9-4t-kMl" secondAttribute="centerX" id="OBR-cE-JON"/>
+                            <constraint firstItem="bk6-6M-rr7" firstAttribute="centerY" secondItem="1E9-4t-kMl" secondAttribute="centerY" id="TgD-Yb-XGV"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="OXH-MI-k47"/>
                     </view>
                     <connections>
                         <outlet property="levelCompleteLabel" destination="DwY-qh-TUd" id="lZI-MB-ZNd"/>
-                        <outlet property="levelHighscoreLabel" destination="7kp-sG-TyN" id="jBy-3D-fPA"/>
-                        <outlet property="levelScoreLabel" destination="Fr1-Ty-VGd" id="uaN-9u-m85"/>
                         <outlet property="nextLevelButtonLabel" destination="b4n-cC-ZiX" id="Vzz-6q-7mv"/>
                         <outlet property="popupView" destination="bk6-6M-rr7" id="KIE-Uh-zSr"/>
-                        <outlet property="restartButtonLabel" destination="zxV-ag-nP5" id="pzs-q9-JzS"/>
                         <outlet property="totalHighscoreLabel" destination="bpN-8O-ZhC" id="Ixf-Ig-Z6D"/>
                         <outlet property="totalScoreLabel" destination="0LM-B6-Fna" id="K1B-Qr-XxS"/>
                     </connections>
@@ -277,30 +250,36 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="J8s-ZY-56R">
-                                <rect key="frame" x="32" y="230" width="311" height="207"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="J8s-ZY-56R">
+                                <rect key="frame" x="32" y="173" width="311" height="321"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="P A U S E D" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tF4-3g-Qja">
-                                        <rect key="frame" x="87" y="8" width="141" height="30"/>
+                                        <rect key="frame" x="0.0" y="8" width="311" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="25"/>
                                         <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Score" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mUc-63-5DD">
+                                        <rect key="frame" x="0.0" y="148" width="311" height="24"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
+                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Level 00" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Z9j-4p-wqX">
-                                        <rect key="frame" x="120" y="37" width="72" height="22"/>
+                                        <rect key="frame" x="0.0" y="37" width="311" height="22"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="18"/>
                                         <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pLF-gl-vhi" userLabel="mainMenuButton">
-                                        <rect key="frame" x="8" y="169" width="202" height="30"/>
+                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pLF-gl-vhi" userLabel="mainMenuButton">
+                                        <rect key="frame" x="8" y="283" width="202" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="15"/>
                                         <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                        <state key="normal" title=" Return to Main Menu" image="arrow.uturn.left" catalog="system">
+                                        <state key="normal" title=" Exit to Main Menu" image="arrow.uturn.left" catalog="system">
                                             <color key="titleColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                             <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="font" scale="medium" weight="medium">
                                                 <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
@@ -310,8 +289,47 @@
                                             <action selector="returnToMainMenuButton:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="Kzc-g2-9eK"/>
                                         </connections>
                                     </button>
+                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pGX-fQ-jBi" userLabel="playButton">
+                                        <rect key="frame" x="127" y="68.5" width="57" height="65"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <state key="normal" backgroundImage="play.fill" catalog="system"/>
+                                        <connections>
+                                            <action selector="playButtonPressed:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="6xv-9u-NuJ"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" restorationIdentifier="killBall" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cmg-8i-N0z" userLabel="killBall">
+                                        <rect key="frame" x="237" y="285.5" width="30" height="29"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <state key="normal" backgroundImage="arrow.uturn.down.circle.fill" catalog="system"/>
+                                        <connections>
+                                            <action selector="killBall:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="J2Q-ZR-nb2"/>
+                                        </connections>
+                                    </button>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jXp-mQ-vg2">
+                                        <rect key="frame" x="0.0" y="171" width="311" height="36"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Highscore" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pHn-nN-xEW">
+                                        <rect key="frame" x="0.0" y="211" width="311" height="24"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
+                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="I9a-19-gog">
+                                        <rect key="frame" x="0.0" y="234" width="311" height="36"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
                                     <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oI5-Yx-5s0" userLabel="settingsButton">
-                                        <rect key="frame" x="275" y="171" width="28" height="27"/>
+                                        <rect key="frame" x="275" y="286" width="30" height="29"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="18"/>
                                         <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
@@ -325,34 +343,27 @@
                                             <action selector="settingsButton:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="f93-27-bCf"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pGX-fQ-jBi" userLabel="playButton">
-                                        <rect key="frame" x="127" y="76.5" width="57" height="65"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                        <state key="normal" backgroundImage="play.fill" catalog="system"/>
-                                        <connections>
-                                            <action selector="playButtonPressed:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="6xv-9u-NuJ"/>
-                                        </connections>
-                                    </button>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" restorationIdentifier="killBall" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cmg-8i-N0z" userLabel="killBall">
-                                        <rect key="frame" x="39" y="86.5" width="46" height="44"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                        <state key="normal" backgroundImage="xmark.circle.fill" catalog="system"/>
-                                        <connections>
-                                            <action selector="killBall:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="J2Q-ZR-nb2"/>
-                                        </connections>
-                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="321" id="co3-BU-WUH"/>
+                                    <constraint firstAttribute="width" constant="311" id="r6S-Uz-84V"/>
+                                </constraints>
                             </view>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="0.67000000000000004" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="J8s-ZY-56R" firstAttribute="centerX" secondItem="Ulk-Qo-bdS" secondAttribute="centerX" id="W8l-89-fB7"/>
+                            <constraint firstItem="J8s-ZY-56R" firstAttribute="centerY" secondItem="Ulk-Qo-bdS" secondAttribute="centerY" id="WnY-P9-5ZB"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="4uA-Vf-8ca"/>
                     </view>
                     <connections>
+                        <outlet property="highscoreLabel" destination="I9a-19-gog" id="VpO-wh-14D"/>
+                        <outlet property="highscoreLabelTitle" destination="pHn-nN-xEW" id="HB7-wJ-48h"/>
                         <outlet property="levelNumberLabel" destination="Z9j-4p-wqX" id="2dE-xH-RCR"/>
                         <outlet property="popupView" destination="J8s-ZY-56R" id="HlI-eL-M4a"/>
+                        <outlet property="scoreLabel" destination="jXp-mQ-vg2" id="aPX-ge-Nru"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ju6-9d-N4W" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -378,9 +389,9 @@
         </scene>
     </scenes>
     <resources>
+        <image name="arrow.uturn.down.circle.fill" catalog="system" width="64" height="60"/>
         <image name="arrow.uturn.left" catalog="system" width="64" height="56"/>
         <image name="gear" catalog="system" width="64" height="58"/>
         <image name="play.fill" catalog="system" width="58" height="64"/>
-        <image name="xmark.circle.fill" catalog="system" width="64" height="60"/>
     </resources>
 </document>

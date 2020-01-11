@@ -10,9 +10,7 @@ import UIKit
 
 class MenuViewController: UIViewController, MenuViewControllerDelegate {
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
+    var currentHighscore: Int = 0
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
 
@@ -26,6 +24,28 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
         moveToGame(selectedLevel: sender.tag)
     }
     
+    @IBAction func tutorialButton(_ sender: Any) {
+    }
+    
+    @IBAction func selectLevelButton(_ sender: Any) {
+    }
+    
+    @IBAction func knownIssuesButton(_ sender: Any) {
+    }
+    
+    @IBAction func feedbackButton(_ sender: Any) {
+    }
+    
+    @IBOutlet weak var highscore: UILabel!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+    }
+
     func moveToGame(selectedLevel: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
         gameView.menuViewControllerDelegate = self

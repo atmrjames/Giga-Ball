@@ -38,9 +38,9 @@ enum CollisionTypes: UInt32 {
 //If you give a node contact test but not collision bitmask it means they won't bounce off each other but you will be told when they overlap.
 
 protocol GameViewControllerDelegate: class {
-    func moveToMainMenu()
+	func moveToMainMenu(currentHighscore: Int)
     func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool)
-	func showPauseMenu(levelNumber: Int)
+	func showPauseMenu(levelNumber: Int, score: Int, highscore: Int)
 	var selectedLevel: Int? { get }
 }
 // Setup the protocol to return to the main menu from GameViewController
@@ -57,6 +57,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
+	var rightScreenBlock = SKSpriteNode()
+	var leftScreenBlock = SKSpriteNode()
 	var directionMarker = SKSpriteNode()
     // Define objects
     
@@ -296,6 +298,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var countdownStarted: Bool = false
 	
+	var screenSize: String = ""
+	
 //MARK: - Sound and Haptic Definition
     
     let lightHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -310,10 +314,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let rigidHaptic = UIImpactFeedbackGenerator(style: .rigid)
 	// use for power-ups collected
 	// Haptics defined
-	
-	let brickHitSound = SKAction.playSoundFileNamed("BrickHit.m4a", waitForCompletion: false)
-	// Sounds defined
-	
+
 //MARK: - State Machine Defintion
 
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
@@ -358,7 +359,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Setup gravity
 		
 //MARK: - Object Initialisation
-        
+		
+		if frame.size.height == 896 {
+			screenSize = "promax"
+		}
+		if frame.size.height == 812  {
+			screenSize = "pro"
+		}
+//		if frame.size.height == 896 {
+//			screenSize = "11"
+//		}
+		if frame.size.height == 736 {
+			screenSize = "plus"
+		}
+		if frame.size.height == 667 {
+			screenSize = "8"
+		}
+
         ball = self.childNode(withName: "ball") as! SKSpriteNode
         paddle = self.childNode(withName: "paddle") as! SKSpriteNode
 		paddleLaser = self.childNode(withName: "paddleLaser") as! SKSpriteNode
@@ -367,6 +384,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
 		topScreenBlock = self.childNode(withName: "topScreenBlock") as! SKSpriteNode
+		rightScreenBlock = self.childNode(withName: "rightScreenBlock") as! SKSpriteNode
+		leftScreenBlock = self.childNode(withName: "leftScreenBlock") as! SKSpriteNode
 		directionMarker = self.childNode(withName: "directionMarker") as! SKSpriteNode
         // Links objects to nodes
 		
@@ -433,12 +452,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 		
 		paddleGap = layoutUnit*7
-		minPaddleGap = paddleGap/2
+		minPaddleGap = brickHeight*4
 		ballLostAnimationHeight = paddle.size.height
 		ballLostHeight = ballLostAnimationHeight*4
 		screenBlockHeight = layoutUnit*8.5
 		topScreenBlock.size.height = screenBlockHeight
 		topScreenBlock.size.width = self.frame.width
+		rightScreenBlock.size.height = self.frame.height
+		rightScreenBlock.size.width = brickWidth
+		leftScreenBlock.size.height = self.frame.height
+		leftScreenBlock.size.width = brickWidth
 		topGap = layoutUnit*2
 		directionMarker.size.width = ballSize*3.5
 		directionMarker.size.height = ballSize*3.5
@@ -450,6 +473,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
+		rightScreenBlock.position.x = self.frame.width/2 + rightScreenBlock.size.width/2
+		rightScreenBlock.position.y = 0
+		leftScreenBlock.position.x = -self.frame.width/2 - leftScreenBlock.size.width/2
+		leftScreenBlock.position.y = 0
 		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
 		paddle.position.x = 0
 		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
@@ -514,6 +541,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
 		topScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 		topScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
+		// Define top screen block properties
+		
+		rightScreenBlock.physicsBody = SKPhysicsBody(rectangleOf: rightScreenBlock.frame.size)
+		rightScreenBlock.physicsBody!.allowsRotation = false
+		rightScreenBlock.physicsBody!.friction = 0.0
+		rightScreenBlock.physicsBody!.affectedByGravity = false
+		rightScreenBlock.physicsBody!.isDynamic = false
+		rightScreenBlock.zPosition = 0
+		rightScreenBlock.name = ScreenBlockCategoryName
+		rightScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
+		rightScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
+		rightScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
+		// Define top screen block properties
+		
+		leftScreenBlock.physicsBody = SKPhysicsBody(rectangleOf: leftScreenBlock.frame.size)
+		leftScreenBlock.physicsBody!.allowsRotation = false
+		leftScreenBlock.physicsBody!.friction = 0.0
+		leftScreenBlock.physicsBody!.affectedByGravity = false
+		leftScreenBlock.physicsBody!.isDynamic = false
+		leftScreenBlock.zPosition = 0
+		leftScreenBlock.name = ScreenBlockCategoryName
+		leftScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
+		leftScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
+		leftScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 		// Define top screen block properties
 		
 //MARK: - Label & UI Initialisation
@@ -605,8 +656,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpTray.scale(to:CGSize(width: frame.size.width*1.5, height: iconSize*2))
 		powerUpTray.position.x = 0
 		powerUpTray.position.y = (paddleSizeIcon.position.y-iconSize/5)
+		
+		
+		if screenSize == "8" || screenSize == "plus" {
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+		}
+		// phone specific setup
 
-//		powerUpTray.isHidden = true
 
 //MARK: - Game Properties Initialisation
         
@@ -971,6 +1036,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Set the new speed of the ball and ensure it stays within the boundary
         }
 		// Code to run continuously whilst playing when the ball is off the paddle and gravity power-up is off
+		
+		if gameState.currentState is Playing && gravityActivated == true {
+			
+			if ball.position.y < paddle.position.y + ballSize*5 {
+				ball.physicsBody?.affectedByGravity = false
+			} else {
+				ball.physicsBody?.affectedByGravity = true
+			}
+			
+			if currentSpeed > ballSpeedLimit + currentSpeed/10 {
+				ball.physicsBody!.linearDamping = 0.5
+            } else {
+                ball.physicsBody!.linearDamping = ballLinearDampening
+            }
+			// Set the new speed of the ball and ensure it stays within the boundary
+			
+		}
+		// Code to run coninuously when gravity is acitvated
     }
     
     func ballLost() {
@@ -1183,7 +1266,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
 		
-		node.run(brickHitSound)
         lightHaptic.impactOccurred()
 
 		if  laserSprite?.texture == laserNormalTexture {
@@ -1256,7 +1338,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func removeBrick(node: SKNode, sprite: SKSpriteNode) {
 		
 		bricksLeft = 0
-		
 		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
 			let spriteBrick = nodeBrick as! SKSpriteNode
 			if spriteBrick.texture == self.brickNormalTexture || spriteBrick.texture == self.brickInvisibleTexture || spriteBrick.texture == self.brickMultiHit1Texture || spriteBrick.texture == self.brickMultiHit2Texture || spriteBrick.texture == self.brickMultiHit3Texture || spriteBrick.texture == self.brickMultiHit4Texture || spriteBrick.texture == self.brickIndestructible1Texture || spriteBrick.texture == self.brickMultiHit2Texture {
@@ -1269,7 +1350,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpProximity = false
 		
 		enumerateChildNodes(withName: PowerUpCategoryName) { (nodePowerUp, stop) in
-			if sprite.position.y > nodePowerUp.position.y-self.brickWidth && sprite.position.y < nodePowerUp.position.y+self.brickWidth {
+			if sprite.position.y > nodePowerUp.position.y-self.brickWidth*2 && sprite.position.y < nodePowerUp.position.y+self.brickWidth*2 {
 				self.powerUpProximity = true
 				stop.initialize(to: true)
 			}
@@ -1346,8 +1427,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
             // Define collision position between the ball and paddle
             
-            if ball.position.y - ballSize/2 > paddle.position.y {
-            // Only apply if the ball hits the paddles top surface
+			if ball.position.y - ballSize/2 >= paddle.position.y + paddle.size.height/4 && ball.position.x > paddleLeftEdgePosition + stickyPaddleTolerance && ball.position.x < paddleRightEdgePosition - stickyPaddleTolerance {
+            // Only apply if the ball hits the paddles top flat surface
 				
 				let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
 				// Assumes the ball's ySpeed is always positive
@@ -1401,7 +1482,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 1
         addChild(powerUp)
         
-		let powerUpProb = Int.random(in: 0...22)
+		let powerUpProb = Int.random(in: 19...20)
         switch powerUpProb {
         case 0:
 		// Get a life			
@@ -1412,7 +1493,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 2:
 		// Superball
             powerUp.texture = powerUpSuperBall
-        case 3:
+        case 20:
 		// Sticky paddle
             powerUp.texture = powerUpStickyPaddle
         case 4:
@@ -1547,9 +1628,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case 19:
 		// Gravity ball
 			powerUp.texture = powerUpGravityBall
-		case 20:
-		// Mystery power-up
-			powerUp.texture = powerUpMystery
+//		case 20:
+//		// Mystery power-up
+//			powerUp.texture = powerUpMystery
 		case 21:
 		// Multiplier reset
 			if multiplier <= 1 {
@@ -1565,7 +1646,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUp.texture = powerUpBricksDown
 			var bricksAtBottom = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				if node.position.y <= self.paddle.position.y + self.minPaddleGap + self.layoutUnit {
+				if node.position.y < self.paddle.position.y + self.minPaddleGap {
 					bricksAtBottom = true
 					stop.initialize(to: true)
 				}
@@ -1966,6 +2047,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			// Power up set
+			bricksLeft = 0
+			enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
+				let spriteBrick = nodeBrick as! SKSpriteNode
+				if spriteBrick.texture == self.brickNormalTexture || spriteBrick.texture == self.brickInvisibleTexture || spriteBrick.texture == self.brickMultiHit1Texture || spriteBrick.texture == self.brickMultiHit2Texture || spriteBrick.texture == self.brickMultiHit3Texture || spriteBrick.texture == self.brickMultiHit4Texture || spriteBrick.texture == self.brickIndestructible1Texture || spriteBrick.texture == self.brickMultiHit2Texture {
+					self.bricksLeft+=1
+				}
+			}
+			if bricksLeft == 0 {
+				levelScore = levelScore + levelCompleteScore
+				scoreLabel.text = String(totalScore + levelScore)
+				if levelNumber == endLevelNumber {
+					gameoverStatus = true
+				}
+				gameState.enter(InbetweenLevels.self)
+				return
+			}
+			// If the last active brick has been removed, end the level
 			
 		case powerUpMultiHitToNormalBricks:
 		// Multi-hit bricks become normal bricks
@@ -2051,9 +2149,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if temporarySprite.texture == self.brickMultiHit2Texture || temporarySprite.texture == self.brickMultiHit3Texture || temporarySprite.texture == self.brickMultiHit4Texture {
 					temporarySprite.texture = self.brickMultiHit1Texture
 				}
-				if temporarySprite.texture == self.brickIndestructible2Texture {
-					temporarySprite.texture = self.brickIndestructible1Texture
-				}
 			}
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
@@ -2107,7 +2202,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = 0
 			
 		case powerUpBricksDown:
-		// Move all bricks down by 1 row
+		// Move all bricks down
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let brickSprite = node as! SKSpriteNode
 				let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height*2, duration: 0.5)
@@ -2209,7 +2304,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func moveToMainMenu() {
-        gameViewControllerDelegate?.moveToMainMenu()
+		gameViewControllerDelegate?.moveToMainMenu(currentHighscore: totalScoreArray.max()!)
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
     
@@ -2218,7 +2313,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 	
 	func showPauseMenu() {
-        gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber)
+		let pauseMenuScore = totalScore + levelScore
+		totalHighscore = totalScoreArray.max()!
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highscore: totalHighscore)
     }
 	
 	func recentreBall() {

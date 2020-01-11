@@ -136,13 +136,12 @@ class Paused: GKState {
     
     @objc func unpauseNotificationKeyReceived(_ notification: Notification) {
         
-        if scene.ballIsOnPaddle || scene.killBall {
+        if scene.ballIsOnPaddle || scene.killBall || scene.ball.position.y + scene.ballSize/2 < scene.paddle.position.y - scene.paddle.size.height/2 {
             scene.isPaused = false
             scene.gameState.enter(Playing.self)
             // Restart playing
         } else {
-        // Only run countdown if the ball is not on the paddle
-        
+        // Only run countdown if the ball is not on the paddle or above paddle
             scene.countdownStarted = true
             scene.isPaused = false
             pauseAllNodes()
