@@ -66,6 +66,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var scoreLabel = SKLabelNode()
 	var multiplierLabel = SKLabelNode()
 	var unpauseCountdownLabel = SKLabelNode()
+	var buildLabel = SKLabelNode()
     // Define labels
     
     var pauseButton = SKSpriteNode()
@@ -298,6 +299,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var countdownStarted: Bool = false
 	
+	var screenRatio: CGFloat = 0.0
 	var screenSize: String = ""
 	
 //MARK: - Sound and Haptic Definition
@@ -360,19 +362,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 //MARK: - Object Initialisation
 		
-		if frame.size.height == 896 {
-			screenSize = "promax"
-		}
-		if frame.size.height == 812  {
-			screenSize = "pro"
-		}
-//		if frame.size.height == 896 {
-//			screenSize = "11"
-//		}
-		if frame.size.height == 736 {
-			screenSize = "plus"
-		}
-		if frame.size.height == 667 {
+		screenRatio = frame.size.height/frame.size.width
+		
+		if screenRatio > 2 {
+			screenSize = "X"
+		} else {
 			screenSize = "8"
 		}
 
@@ -424,10 +418,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		brickOverlap = 1
 		brickWidth = layoutUnit*2 + brickOverlap - brickOverlap/11
-		brickHeight = layoutUnit*1
 		
-		totalBricksWidth = (CGFloat(numberOfBrickColumns) * brickWidth - brickOverlap) + brickOverlap
-		totalBricksHeight = (CGFloat(numberOfBrickRows) * brickHeight - brickOverlap) + brickOverlap
+		
+		if screenSize == "X" {
+			screenBlockHeight = layoutUnit*8.5
+			brickHeight = layoutUnit
+		} else {
+			screenBlockHeight = layoutUnit*8.5 - 32
+			brickHeight = (frame.size.width*0.87)/CGFloat(numberOfBrickRows-1)
+		}
+		
+		paddleGap = layoutUnit*7
+		minPaddleGap = brickHeight*4
+		ballLostAnimationHeight = paddle.size.height
+		ballLostHeight = ballLostAnimationHeight*4
+		
+		
+		
+		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth-1)
+		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight-1)
 		
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
@@ -451,11 +460,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.texture = paddleTexture
 		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 		
-		paddleGap = layoutUnit*7
-		minPaddleGap = brickHeight*4
-		ballLostAnimationHeight = paddle.size.height
-		ballLostHeight = ballLostAnimationHeight*4
-		screenBlockHeight = layoutUnit*8.5
+		
+		
 		topScreenBlock.size.height = screenBlockHeight
 		topScreenBlock.size.width = self.frame.width
 		rightScreenBlock.size.height = self.frame.height
@@ -473,9 +479,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
-		rightScreenBlock.position.x = self.frame.width/2 + rightScreenBlock.size.width/2
+		rightScreenBlock.position.x = self.frame.width/2 + rightScreenBlock.size.width
 		rightScreenBlock.position.y = 0
-		leftScreenBlock.position.x = -self.frame.width/2 - leftScreenBlock.size.width/2
+		leftScreenBlock.position.x = -self.frame.width/2 - leftScreenBlock.size.width
 		leftScreenBlock.position.y = 0
 		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
 		paddle.position.x = 0
@@ -573,6 +579,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel = self.childNode(withName: "scoreLabel") as! SKLabelNode
 		multiplierLabel = self.childNode(withName: "multiplierLabel") as! SKLabelNode
 		unpauseCountdownLabel = self.childNode(withName: "unpauseCountdownLabel") as! SKLabelNode
+		buildLabel = self.childNode(withName: "buildLabel") as! SKLabelNode
         // Links objects to labels
 
         fontSize = 16
@@ -589,7 +596,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
 		pauseButton.position.x = -self.frame.width/2 + labelSpacing*2 + pauseButton.size.width/2
-		pauseButton.position.y = self.frame.height/2 - labelSpacing*4 - pauseButton.size.height/2
+		pauseButton.position.y = self.frame.height/2 - screenBlockHeight + labelSpacing*8
 		pauseButton.zPosition = 1
         pauseButton.isUserInteractionEnabled = false
 		
@@ -612,6 +619,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		livesLabel.position.x = life.size.width/3
 		livesLabel.position.y = life.position.y
         livesLabel.fontSize = fontSize
+		buildLabel.position.x = -frame.size.width/2 + labelSpacing
+		buildLabel.position.y = -frame.size.height/2 + labelSpacing
+		buildLabel.fontSize = fontSize/3*2
+		buildLabel.text = "601886e, 12012020 1137, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, superballIcon, hiddenBricksIcon]
@@ -656,22 +667,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpTray.scale(to:CGSize(width: frame.size.width*1.5, height: iconSize*2))
 		powerUpTray.position.x = 0
 		powerUpTray.position.y = (paddleSizeIcon.position.y-iconSize/5)
-		
-		
-		if screenSize == "8" || screenSize == "plus" {
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-		}
-		// phone specific setup
-
 
 //MARK: - Game Properties Initialisation
         
@@ -1482,7 +1477,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 1
         addChild(powerUp)
         
-		let powerUpProb = Int.random(in: 19...20)
+		let powerUpProb = Int.random(in: 0...22)
         switch powerUpProb {
         case 0:
 		// Get a life			
@@ -1493,7 +1488,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 2:
 		// Superball
             powerUp.texture = powerUpSuperBall
-        case 20:
+        case 3:
 		// Sticky paddle
             powerUp.texture = powerUpStickyPaddle
         case 4:
@@ -1628,9 +1623,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case 19:
 		// Gravity ball
 			powerUp.texture = powerUpGravityBall
-//		case 20:
-//		// Mystery power-up
-//			powerUp.texture = powerUpMystery
+		case 20:
+		// Mystery power-up
+			powerUp.texture = powerUpMystery
 		case 21:
 		// Multiplier reset
 			if multiplier <= 1 {

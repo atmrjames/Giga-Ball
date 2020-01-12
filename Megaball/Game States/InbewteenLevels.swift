@@ -107,23 +107,23 @@ class InbetweenLevels: GKState {
         scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
         // Save level score if its the highscore and update NSUserDefaults
         
-        let waitScene = SKAction.wait(forDuration: 2)
-        self.scene.run(waitScene, completion: {
-            if self.scene.levelNumber < self.scene.endLevelNumber {
-                self.scene.gameState.enter(Playing.self)
-            } else {
-                if self.scene.totalScore >= self.scene.totalScoreArray.max()! {
-                    self.scene.totalScoreArray[self.scene.levelNumber-1] = self.scene.totalScore
-                    self.scene.dataStore.set(self.scene.totalScoreArray, forKey: "TotalScoreStore")
-                    self.scene.newTotalHighScore = true
-                }
-                self.scene.totalHighscore = self.scene.totalScoreArray.max()!
-                // Save total score if its the highscore and update NSUserDefaults
-                self.scene.showEndLevelStats()
+        if scene.gameoverStatus {
+            if scene.totalScore >= scene.totalScoreArray.max()! {
+                scene.totalScoreArray[scene.levelNumber-1] = scene.totalScore
+                scene.dataStore.set(scene.totalScoreArray, forKey: "TotalScoreStore")
+                scene.newTotalHighScore = true
             }
-        })
-        // Move to the next level after a delay or show the game over dialog
-        
+            scene.totalHighscore = scene.totalScoreArray.max()!
+            // Save score if its the highscore and update NSUserDefaults
+            scene.showEndLevelStats()
+            // Show game over pop-up
+        } else {
+            let waitScene = SKAction.wait(forDuration: 2)
+            self.scene.run(waitScene, completion: {
+                self.scene.gameState.enter(Playing.self)
+            })
+            // Move to the next level after a delay
+        }
     }
     
     @objc func notificationToContinueReceived(_ notification: Notification) {

@@ -28,6 +28,7 @@
 		1AE957462324EC2A00E5618A /* Level001.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957452324EC2A00E5618A /* Level001.swift */; };
 		1AE957482324ECF200E5618A /* Level002.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957472324ECF200E5618A /* Level002.swift */; };
 		1AE9574B23257BB600E5618A /* InbewteenLevelsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE9574A23257BB600E5618A /* InbewteenLevelsViewController.swift */; };
+		1AF31EED23CB424D00848F63 /* LevelSelectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF31EEC23CB424D00848F63 /* LevelSelectorViewController.swift */; };
 		1AF5749223AA3F4D00DCBAE5 /* Level004.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749123AA3F4D00DCBAE5 /* Level004.swift */; };
 		1AF5749423AA53B400DCBAE5 /* Level005.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749323AA53B400DCBAE5 /* Level005.swift */; };
 		1AF5749623AA5F4200DCBAE5 /* Level006.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749523AA5F4200DCBAE5 /* Level006.swift */; };
@@ -61,6 +62,7 @@
 		1AE957452324EC2A00E5618A /* Level001.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level001.swift; sourceTree = "<group>"; };
 		1AE957472324ECF200E5618A /* Level002.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level002.swift; sourceTree = "<group>"; };
 		1AE9574A23257BB600E5618A /* InbewteenLevelsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbewteenLevelsViewController.swift; sourceTree = "<group>"; };
+		1AF31EEC23CB424D00848F63 /* LevelSelectorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelSelectorViewController.swift; sourceTree = "<group>"; };
 		1AF5749123AA3F4D00DCBAE5 /* Level004.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level004.swift; sourceTree = "<group>"; };
 		1AF5749323AA53B400DCBAE5 /* Level005.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level005.swift; sourceTree = "<group>"; };
 		1AF5749523AA5F4200DCBAE5 /* Level006.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level006.swift; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 				1A5A948C2309E4F30076D635 /* GameViewController.swift */,
 				1AE9574A23257BB600E5618A /* InbewteenLevelsViewController.swift */,
 				1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */,
+				1AF31EEC23CB424D00848F63 /* LevelSelectorViewController.swift */,
 			);
 			path = "View Controllers";
 			sourceTree = "<group>";
@@ -250,6 +253,7 @@
 				1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */,
 				1AE957482324ECF200E5618A /* Level002.swift in Sources */,
 				1AE957462324EC2A00E5618A /* Level001.swift in Sources */,
+				1AF31EED23CB424D00848F63 /* LevelSelectorViewController.swift in Sources */,
 				1A5A949F230F08840076D635 /* Playing.swift in Sources */,
 				1A5A94A7231720FE0076D635 /* Megaball.xcdatamodeld in Sources */,
 				1A7D6529231B0E980091CA58 /* Paused.swift in Sources */,

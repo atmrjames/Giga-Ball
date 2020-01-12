@@ -92,13 +92,9 @@ class PauseMenuViewController: UIViewController {
         levelNumberLabel.text = "Level \(levelNumber)"
         scoreLabel.text = String(score)
         if highscore <= 1 {
-            highscoreLabelTitle.isHidden = true
-            highscoreLabel.isHidden = true
-        } else {
-            highscoreLabelTitle.isHidden = false
-            highscoreLabel.isHidden = false
-            highscoreLabel.text = String(highscore)
+            highscore = 0
         }
+        highscoreLabel.text = String(highscore)
         
     }
     
@@ -135,8 +131,6 @@ class PauseMenuViewController: UIViewController {
     }
     
     func moveToMainMenu() {
-        let mainMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "menuView") as! MenuViewController
-        mainMenuVC.currentHighscore = highscore
         navigationController?.popToRootViewController(animated: true)
     }
     

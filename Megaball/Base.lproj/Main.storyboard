@@ -21,33 +21,33 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="MEGABALL" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kD8-ZB-cpA">
-                                <rect key="frame" x="0.0" y="100" width="375" height="60"/>
+                                <rect key="frame" x="0.0" y="100" width="375" height="59.5"/>
                                 <color key="tintColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
                                 <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="A game by James Harding" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="azD-Ym-dKV">
-                                <rect key="frame" x="0.0" y="626" width="375" height="21"/>
+                                <rect key="frame" x="0.0" y="627" width="375" height="20"/>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zyV-Na-Dvb">
-                                <rect key="frame" x="0.0" y="439" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="440" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="2uQ-jW-K9b"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
                                 <state key="normal" title="Tutorial">
-                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 </state>
                                 <connections>
                                     <action selector="tutorialButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="WTj-Gd-8f2"/>
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Tri-5X-6j7">
-                                <rect key="frame" x="0.0" y="477" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="478" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="mcb-WJ-4Qe"/>
                                 </constraints>
@@ -60,26 +60,26 @@
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KQp-LJ-dtT">
-                                <rect key="frame" x="0.0" y="515" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="516" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="ApH-KC-FJl"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
                                 <state key="normal" title="Known Issues">
-                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 </state>
                                 <connections>
                                     <action selector="knownIssuesButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="3cO-C1-P5B"/>
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KD4-sD-NrB">
-                                <rect key="frame" x="0.0" y="553" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="554" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="Hms-Vy-GvC"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
                                 <state key="normal" title="Feedback">
-                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 </state>
                                 <connections>
                                     <action selector="feedbackButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="G7N-Xe-R9Y"/>
@@ -154,6 +154,205 @@
             </objects>
             <point key="canvasLocation" x="1047.8260869565217" y="127.90178571428571"/>
         </scene>
+        <!--Level Selector View Controller-->
+        <scene sceneID="wr2-xw-uCf">
+            <objects>
+                <viewController storyboardIdentifier="levelSelectorView" id="AYy-M8-UbX" customClass="LevelSelectorViewController" customModule="MegaBall" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="6tW-0N-nMZ">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hMr-6i-6gT">
+                                <rect key="frame" x="20" y="70" width="335" height="18"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <state key="normal" title=" Return To Main Menu" image="arrow.uturn.left" catalog="system">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="font" scale="medium" weight="medium">
+                                        <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
+                                    </preferredSymbolConfiguration>
+                                </state>
+                                <connections>
+                                    <action selector="returnToMainMenuButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="7w8-nm-3r2"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Zls-w1-eOx">
+                                <rect key="frame" x="172.5" y="96" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="1xi-9f-Gsn"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="1">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="ZpZ-a1-dqf"/>
+                                </connections>
+                            </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="LEVEL SELECTION" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vqU-qJ-sYl">
+                                <rect key="frame" x="0.0" y="20" width="375" height="42"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="42" id="PaV-R7-x0g"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
+                                <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button opaque="NO" tag="2" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CPU-yY-owJ">
+                                <rect key="frame" x="172.5" y="152" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="wkZ-XO-Auv"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="2">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="WRC-ZL-XeT"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="3" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="g44-Lr-tPt">
+                                <rect key="frame" x="172.5" y="208" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="HBf-fB-41P"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="3">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="Jft-hR-Gkn"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="4" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gfB-l6-ZTO">
+                                <rect key="frame" x="172.5" y="264" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="xGJ-tp-Uqx"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="4">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="Wcz-cD-1qs"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="5" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WJ2-PS-PTG">
+                                <rect key="frame" x="172.5" y="320" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="7rg-5w-laq"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="5">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="d4c-i9-ksd"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="6" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zy2-5A-hIW">
+                                <rect key="frame" x="172.5" y="376" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="aJ7-BW-E31"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="6">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="M4g-Xl-joy"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="7" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="29E-ne-QrR">
+                                <rect key="frame" x="172.5" y="432" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="sSO-NR-rAu"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="7">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="rH4-z3-bVg"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="8" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="NTn-Q2-j2c">
+                                <rect key="frame" x="172.5" y="488" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="r6W-0M-TQh"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="8">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="imm-lM-SUt"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="9" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XAw-J3-edO">
+                                <rect key="frame" x="172.5" y="544" width="30" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="OEP-ZY-VSB"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="9">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="oFg-iQ-DYY"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" tag="10" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SwH-nS-7R3">
+                                <rect key="frame" x="169" y="600" width="37" height="48"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="48" id="0wN-bO-4rx"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
+                                <state key="normal" title="10">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="levelSelectionButton:" destination="AYy-M8-UbX" eventType="touchUpInside" id="tte-fr-w23"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" red="0.14902216200000001" green="0.14901494979999999" blue="0.14901983739999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="gfB-l6-ZTO" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="0Sw-8b-pzS"/>
+                            <constraint firstItem="WJ2-PS-PTG" firstAttribute="top" secondItem="gfB-l6-ZTO" secondAttribute="bottom" constant="8" id="4fs-DW-9TQ"/>
+                            <constraint firstItem="hMr-6i-6gT" firstAttribute="leading" secondItem="9la-Ua-dVp" secondAttribute="leading" constant="20" id="9Su-PI-NrM"/>
+                            <constraint firstItem="XAw-J3-edO" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="AcE-uy-Ns7"/>
+                            <constraint firstItem="NTn-Q2-j2c" firstAttribute="top" secondItem="29E-ne-QrR" secondAttribute="bottom" constant="8" id="BkH-ZJ-uCg"/>
+                            <constraint firstItem="SwH-nS-7R3" firstAttribute="top" secondItem="XAw-J3-edO" secondAttribute="bottom" constant="8" id="KVu-mU-vbS"/>
+                            <constraint firstItem="XAw-J3-edO" firstAttribute="top" secondItem="NTn-Q2-j2c" secondAttribute="bottom" constant="8" id="LDI-4P-h0Q"/>
+                            <constraint firstItem="vqU-qJ-sYl" firstAttribute="leading" secondItem="9la-Ua-dVp" secondAttribute="leading" id="O9S-tC-sto"/>
+                            <constraint firstItem="g44-Lr-tPt" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="TYL-vd-j3Y"/>
+                            <constraint firstItem="hMr-6i-6gT" firstAttribute="top" secondItem="vqU-qJ-sYl" secondAttribute="bottom" constant="8" id="W32-OU-SjW"/>
+                            <constraint firstItem="vqU-qJ-sYl" firstAttribute="top" secondItem="9la-Ua-dVp" secondAttribute="top" constant="20" id="Wwh-um-f1W"/>
+                            <constraint firstItem="zy2-5A-hIW" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="XGf-SJ-ugN"/>
+                            <constraint firstItem="Zls-w1-eOx" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="XJG-qg-YX0"/>
+                            <constraint firstItem="g44-Lr-tPt" firstAttribute="top" secondItem="CPU-yY-owJ" secondAttribute="bottom" constant="8" id="aT9-lw-j1d"/>
+                            <constraint firstItem="WJ2-PS-PTG" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="agR-92-dl4"/>
+                            <constraint firstItem="Zls-w1-eOx" firstAttribute="top" secondItem="hMr-6i-6gT" secondAttribute="bottom" constant="8" id="ahC-zt-vxD"/>
+                            <constraint firstItem="NTn-Q2-j2c" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="bxz-Iy-Pyp"/>
+                            <constraint firstItem="vqU-qJ-sYl" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="c9v-Ov-gel"/>
+                            <constraint firstItem="29E-ne-QrR" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="dnN-Iy-LGX"/>
+                            <constraint firstItem="SwH-nS-7R3" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="e8c-an-846"/>
+                            <constraint firstItem="zy2-5A-hIW" firstAttribute="top" secondItem="WJ2-PS-PTG" secondAttribute="bottom" constant="8" id="lrh-lt-1bV"/>
+                            <constraint firstItem="gfB-l6-ZTO" firstAttribute="top" secondItem="g44-Lr-tPt" secondAttribute="bottom" constant="8" id="n5v-ch-geY"/>
+                            <constraint firstItem="CPU-yY-owJ" firstAttribute="top" secondItem="Zls-w1-eOx" secondAttribute="bottom" constant="8" id="qxl-Zv-1Qx"/>
+                            <constraint firstItem="CPU-yY-owJ" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="rJp-92-4fK"/>
+                            <constraint firstItem="29E-ne-QrR" firstAttribute="top" secondItem="zy2-5A-hIW" secondAttribute="bottom" constant="8" id="wOT-w5-JW2"/>
+                            <constraint firstAttribute="trailing" secondItem="vqU-qJ-sYl" secondAttribute="trailing" id="wQW-EP-E23"/>
+                            <constraint firstItem="hMr-6i-6gT" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="zpr-6U-NcJ"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="9la-Ua-dVp"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="FcC-da-Bel" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1832.8" y="123.68815592203899"/>
+        </scene>
         <!--Inbewteen Levels View Controller-->
         <scene sceneID="4p0-ms-iAF">
             <objects>
@@ -184,14 +383,14 @@
                                             </preferredSymbolConfiguration>
                                         </state>
                                         <connections>
-                                            <action selector="nextLevelButton:" destination="fjJ-pg-0SJ" eventType="touchUpInside" id="9vn-z4-XAF"/>
+                                            <action selector="exitButton:" destination="fjJ-pg-0SJ" eventType="touchUpInside" id="9vn-z4-XAF"/>
                                         </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Score" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vcg-EO-0so" userLabel="scoreLabel">
                                         <rect key="frame" x="0.0" y="73" width="311" height="24"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                        <color key="textColor" white="0.33333333329999998" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="0LM-B6-Fna" userLabel="score">
@@ -205,7 +404,7 @@
                                         <rect key="frame" x="0.0" y="174" width="311" height="24"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                        <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6tU-jU-djw" userLabel="highscore">
@@ -231,11 +430,10 @@
                         <viewLayoutGuide key="safeArea" id="OXH-MI-k47"/>
                     </view>
                     <connections>
-                        <outlet property="levelCompleteLabel" destination="DwY-qh-TUd" id="lZI-MB-ZNd"/>
-                        <outlet property="nextLevelButtonLabel" destination="b4n-cC-ZiX" id="Vzz-6q-7mv"/>
+                        <outlet property="highscoreLabel" destination="6tU-jU-djw" id="glD-2f-zpJ"/>
+                        <outlet property="highscoreLabelTitle" destination="bpN-8O-ZhC" id="QaB-F5-CFO"/>
                         <outlet property="popupView" destination="bk6-6M-rr7" id="KIE-Uh-zSr"/>
-                        <outlet property="totalHighscoreLabel" destination="bpN-8O-ZhC" id="Ixf-Ig-Z6D"/>
-                        <outlet property="totalScoreLabel" destination="0LM-B6-Fna" id="K1B-Qr-XxS"/>
+                        <outlet property="scoreLabel" destination="0LM-B6-Fna" id="K1B-Qr-XxS"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="MEb-ve-qY2" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -264,14 +462,14 @@
                                         <rect key="frame" x="0.0" y="148" width="311" height="24"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Level 00" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Z9j-4p-wqX">
                                         <rect key="frame" x="0.0" y="37" width="311" height="22"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="18"/>
-                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pLF-gl-vhi" userLabel="mainMenuButton">
@@ -318,7 +516,7 @@
                                         <rect key="frame" x="0.0" y="211" width="311" height="24"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
-                                        <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="I9a-19-gog">

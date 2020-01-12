@@ -19,24 +19,22 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
         moveToGame(selectedLevel: 1)
     }
     
-    @IBAction func levelSelectionButton(_ sender: UIButton) {
-        mediumHaptic.impactOccurred()
-        moveToGame(selectedLevel: sender.tag)
-    }
-    
     @IBAction func tutorialButton(_ sender: Any) {
+        mediumHaptic.impactOccurred()
     }
     
     @IBAction func selectLevelButton(_ sender: Any) {
+        mediumHaptic.impactOccurred()
+        moveToLevelSelector()
     }
     
     @IBAction func knownIssuesButton(_ sender: Any) {
+        mediumHaptic.impactOccurred()
     }
     
     @IBAction func feedbackButton(_ sender: Any) {
+        mediumHaptic.impactOccurred()
     }
-    
-    @IBOutlet weak var highscore: UILabel!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -53,5 +51,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
         self.navigationController?.pushViewController(gameView, animated: true)
     }
     // Segue to GameViewController
+    
+    func moveToLevelSelector() {
+        let levelSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "levelSelectorView") as! LevelSelectorViewController
+        self.navigationController?.pushViewController(levelSelectorView, animated: true)
+    }
+    // Segue to LevelSelectorViewController
 
 }

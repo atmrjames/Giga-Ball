@@ -10,6 +10,8 @@ import UIKit
 
 class InbewteenLevelsViewController: UIViewController {
     
+    let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    
     var levelNumber: Int = 0
     var levelScore: Int = 0
     var levelHighscore: Int = 0
@@ -19,26 +21,14 @@ class InbewteenLevelsViewController: UIViewController {
     // Properties to store passed over data
 
     @IBOutlet weak var popupView: UIView!
-    @IBOutlet weak var levelCompleteLabel: UILabel!
-    @IBOutlet weak var levelScoreLabel: UILabel!
-    @IBOutlet weak var levelHighscoreLabel: UILabel!
-    @IBOutlet weak var totalScoreLabel: UILabel!
-    @IBOutlet weak var totalHighscoreLabel: UILabel!
-
-    @IBOutlet weak var filledStar1: UIImageView!
-    @IBOutlet weak var filledStar2: UIImageView!
-    @IBOutlet weak var filledStar3: UIImageView!
+    @IBOutlet weak var scoreLabel: UILabel!
+    @IBOutlet weak var highscoreLabel: UILabel!
+    @IBOutlet weak var highscoreLabelTitle: UILabel!
     
-    @IBOutlet weak var nextLevelButtonLabel: UIButton!
-    @IBOutlet weak var restartButtonLabel: UIButton!
-    
-    @IBAction func nextLevelButton(_ sender: UIButton) {
-        removeAnimate(nextAction: .continueToNextLevel)
+    @IBAction func exitButton(_ sender: UIButton) {
+        mediumHaptic.impactOccurred()
+        moveToMainMenu()
         // Move game scene to playing
-    }
-    
-    @IBAction func restartButton(_ sender: UIButton) {
-        restart()
     }
     
     override func viewDidLoad() {
@@ -57,50 +47,23 @@ class InbewteenLevelsViewController: UIViewController {
             })
     }
     
-    func removeAnimate(nextAction: Notification.Name) {
-        UIView.animate(withDuration: 0.25, animations: {
-            self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
-            self.view.alpha = 0.0
-        }) { (finished: Bool) in
-            if (finished) {
-                let mainMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "menuView") as! MenuViewController
-                mainMenuVC.currentHighscore = self.totalHighscore
-                NotificationCenter.default.post(name: nextAction, object: nil)
-                // Send notification to load the next level
-                self.view.removeFromSuperview()
-            }
-        }
+    func moveToMainMenu() {
+        navigationController?.popToRootViewController(animated: true)
     }
     
     func updateLabels() {
-        
-        levelCompleteLabel.text = "G A M E  O V E R"
-        nextLevelButtonLabel.setTitle("MAIN MENU", for: .normal)
-        restartButtonLabel.isHidden = false
-            
-        if levelScore >= 0 {
-            levelScoreLabel.text = "+\(levelScore)"
-        } else {
-            levelScoreLabel.text = String(levelScore)
+        scoreLabel.text = String(totalScore)
+        if totalHighscore <= 1 {
+            totalHighscore = 0
         }
         
-        if levelScore >= levelHighscore {
-            levelHighscoreLabel.text = "New level \(levelNumber) highscore!"
+        if totalScore >= totalHighscore && totalHighscore > 1 {
+            highscoreLabelTitle.text = "New Highscore"
         } else {
-            levelHighscoreLabel.text = String(levelHighscore)
+            highscoreLabelTitle.text = "Highscore"
         }
         
-        totalScoreLabel.text = String(totalScore)
-        if totalScore >= totalHighscore {
-            totalHighscoreLabel.text = "New total highscore"
-        } else {
-            totalHighscoreLabel.text = String(totalHighscore)
-        }
-    }
-    
-    func restart() {
-        removeAnimate(nextAction: .restart)
-        // move game scene to pregame
+        highscoreLabel.text = String(totalHighscore)
     }
     
     func setBlur() {
