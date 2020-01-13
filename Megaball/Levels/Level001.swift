@@ -14,10 +14,12 @@ extension GameScene {
         let startingScale = SKAction.scale(to: 0.8, duration: 0)
         let startingFade = SKAction.fadeOut(withDuration: 0)
         let scaleUp = SKAction.scale(to: 1, duration: 0.25)
-        let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+        let fadeIn = SKAction.fadeIn(withDuration: 2.25)
+        let move = SKAction.moveBy(x: 0, y: -frame.size.height, duration: 2)
+        move.timingMode = SKActionTimingMode.easeInEaseOut
         let wait = SKAction.wait(forDuration: 0.25)
         let startingGroup = SKAction.group([startingScale, startingFade])
-        let brickGroup = SKAction.group([scaleUp, fadeIn])
+        let brickGroup = SKAction.group([move, scaleUp, fadeIn])
         let brickSequence = SKAction.sequence([wait, brickGroup])
         // Setup brick animation
 
@@ -37,7 +39,7 @@ extension GameScene {
                 
                 brick.anchorPoint.x = 0.5
                 brick.anchorPoint.y = 0.5
-                brick.position = CGPoint(x: -frame.size.width/2 + brickWidth/2 + (brickWidth-brickOverlap)*CGFloat(j), y: yBrickOffset - (brickHeight-brickOverlap)*CGFloat(i))
+                brick.position = CGPoint(x: -frame.size.width/2 + brickWidth/2 + (brickWidth-brickOverlap)*CGFloat(j), y: yBrickOffset - (brickHeight-brickOverlap)*CGFloat(i)+frame.size.height)
                 brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
                 brick.physicsBody!.allowsRotation = false
                 brick.physicsBody!.friction = 0.0

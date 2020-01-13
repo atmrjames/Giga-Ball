@@ -15,7 +15,7 @@
         <!--Menu View Controller-->
         <scene sceneID="zl1-ye-3F0">
             <objects>
-                <viewController storyboardIdentifier="menuView" id="Ayl-hg-Npr" customClass="MenuViewController" customModule="MegaBall" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="menuView" id="Ayl-hg-Npr" customClass="MenuViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="qoM-35-LIT">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -27,14 +27,16 @@
                                 <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="A game by James Harding" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="azD-Ym-dKV">
-                                <rect key="frame" x="0.0" y="627" width="375" height="20"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="azD-Ym-dKV">
+                                <rect key="frame" x="0.0" y="606.5" width="375" height="40.5"/>
+                                <string key="text">A game by James Harding 
+with music from Brendan Lawton</string>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zyV-Na-Dvb">
-                                <rect key="frame" x="0.0" y="440" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="419.5" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="2uQ-jW-K9b"/>
                                 </constraints>
@@ -47,7 +49,7 @@
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Tri-5X-6j7">
-                                <rect key="frame" x="0.0" y="478" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="457.5" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="mcb-WJ-4Qe"/>
                                 </constraints>
@@ -60,7 +62,7 @@
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KQp-LJ-dtT">
-                                <rect key="frame" x="0.0" y="516" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="495.5" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="ApH-KC-FJl"/>
                                 </constraints>
@@ -73,7 +75,7 @@
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KD4-sD-NrB">
-                                <rect key="frame" x="0.0" y="554" width="375" height="33"/>
+                                <rect key="frame" x="0.0" y="533.5" width="375" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="Hms-Vy-GvC"/>
                                 </constraints>
@@ -141,7 +143,7 @@
         <!--Game View Controller-->
         <scene sceneID="tXr-a1-R10">
             <objects>
-                <viewController storyboardIdentifier="gameView" id="BV1-FR-VrT" customClass="GameViewController" customModule="MegaBall" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="gameView" id="BV1-FR-VrT" customClass="GameViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" multipleTouchEnabled="YES" contentMode="scaleToFill" id="3se-qz-xqx" customClass="SKView">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -157,7 +159,7 @@
         <!--Level Selector View Controller-->
         <scene sceneID="wr2-xw-uCf">
             <objects>
-                <viewController storyboardIdentifier="levelSelectorView" id="AYy-M8-UbX" customClass="LevelSelectorViewController" customModule="MegaBall" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="levelSelectorView" id="AYy-M8-UbX" customClass="LevelSelectorViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="6tW-0N-nMZ">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -356,7 +358,7 @@
         <!--Inbewteen Levels View Controller-->
         <scene sceneID="4p0-ms-iAF">
             <objects>
-                <viewController storyboardIdentifier="inbetweenLevelsVC" id="fjJ-pg-0SJ" customClass="InbewteenLevelsViewController" customModule="MegaBall" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="inbetweenLevelsVC" id="fjJ-pg-0SJ" customClass="InbewteenLevelsViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="1E9-4t-kMl">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -443,7 +445,7 @@
         <!--Pause Menu View Controller-->
         <scene sceneID="uku-9Z-NPg">
             <objects>
-                <viewController storyboardIdentifier="pauseMenuVC" id="B3u-Ha-WlJ" customClass="PauseMenuViewController" customModule="MegaBall" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="pauseMenuVC" id="B3u-Ha-WlJ" customClass="PauseMenuViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Ulk-Qo-bdS">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

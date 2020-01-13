@@ -115,7 +115,10 @@ class InbetweenLevels: GKState {
             }
             scene.totalHighscore = scene.totalScoreArray.max()!
             // Save score if its the highscore and update NSUserDefaults
-            scene.showEndLevelStats()
+            let waitScene = SKAction.wait(forDuration: 1)
+            self.scene.run(waitScene, completion: {
+                self.scene.showEndLevelStats()
+            })
             // Show game over pop-up
         } else {
             let waitScene = SKAction.wait(forDuration: 2)

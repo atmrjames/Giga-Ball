@@ -57,8 +57,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
-	var rightScreenBlock = SKSpriteNode()
-	var leftScreenBlock = SKSpriteNode()
+	var bottomScreenBlock = SKSpriteNode()
 	var directionMarker = SKSpriteNode()
     // Define objects
     
@@ -348,7 +347,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.contactDelegate = self
         // Sets the GameScene as the delegate in the physicsWorld
         
-        let boarder = SKPhysicsBody(edgeLoopFrom: self.frame)
+        let boarder = SKPhysicsBody(edgeLoopFrom: frame)
         boarder.friction = 0
         boarder.restitution = 1
 		boarder.categoryBitMask = CollisionTypes.boarderCategory.rawValue
@@ -378,8 +377,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
 		topScreenBlock = self.childNode(withName: "topScreenBlock") as! SKSpriteNode
-		rightScreenBlock = self.childNode(withName: "rightScreenBlock") as! SKSpriteNode
-		leftScreenBlock = self.childNode(withName: "leftScreenBlock") as! SKSpriteNode
+		bottomScreenBlock = self.childNode(withName: "bottomScreenBlock") as! SKSpriteNode
 		directionMarker = self.childNode(withName: "directionMarker") as! SKSpriteNode
         // Links objects to nodes
 		
@@ -414,7 +412,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		numberOfBrickRows = 22
         numberOfBrickColumns = numberOfBrickRows/2
-		layoutUnit = (self.frame.width)/CGFloat(numberOfBrickRows)
+		layoutUnit = (frame.width)/CGFloat(numberOfBrickRows)
 		
 		brickOverlap = 1
 		brickWidth = layoutUnit*2 + brickOverlap - brickOverlap/11
@@ -432,8 +430,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		minPaddleGap = brickHeight*4
 		ballLostAnimationHeight = paddle.size.height
 		ballLostHeight = ballLostAnimationHeight*4
-		
-		
 		
 		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth-1)
 		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight-1)
@@ -460,15 +456,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.texture = paddleTexture
 		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 		
-		
-		
 		topScreenBlock.size.height = screenBlockHeight
-		topScreenBlock.size.width = self.frame.width
-		rightScreenBlock.size.height = self.frame.height
-		rightScreenBlock.size.width = brickWidth
-		leftScreenBlock.size.height = self.frame.height
-		leftScreenBlock.size.width = brickWidth
-		topGap = layoutUnit*2
+		topScreenBlock.size.width = frame.width
+		
+		topGap = brickHeight*2
 		directionMarker.size.width = ballSize*3.5
 		directionMarker.size.height = ballSize*3.5
 		directionMarker.position.x = 0
@@ -478,20 +469,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballLinearDampening = -0.02
 
 		topScreenBlock.position.x = 0
-		topScreenBlock.position.y = self.frame.height/2 - screenBlockHeight/2
-		rightScreenBlock.position.x = self.frame.width/2 + rightScreenBlock.size.width
-		rightScreenBlock.position.y = 0
-		leftScreenBlock.position.x = -self.frame.width/2 - leftScreenBlock.size.width
-		leftScreenBlock.position.y = 0
-		yBrickOffset = self.frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
+		topScreenBlock.position.y = frame.height/2 - screenBlockHeight/2
+		yBrickOffset = frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
 		paddle.position.x = 0
-		paddlePositionY = self.frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
+		paddlePositionY = frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
 		paddle.position.y = paddlePositionY
 		ball.position.x = 0
 		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ballSize/2 + 1
 		ball.position.y = ballStartingPositionY
 		directionMarker.zPosition = 10
 		// Object positioning definition
+		
+		bottomScreenBlock.size.height = (paddlePositionY - paddle.size.height/2*3) + frame.size.height/2
+		bottomScreenBlock.size.width = frame.size.width
+		bottomScreenBlock.position.x = 0
+		bottomScreenBlock.position.y = -frame.size.height/2
+		bottomScreenBlock.zPosition = 9
 		
 		ball.texture = ballTexture
 		ball.physicsBody = SKPhysicsBody(circleOfRadius: ballSize/2)
@@ -509,7 +502,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.angularDamping = 0
 		ball.physicsBody!.restitution = 1
 		ball.physicsBody!.density = 2
-		let xRangeBall = SKRange(lowerLimit:-self.frame.width/2 + ballSize/2,upperLimit:self.frame.width/2 - ballSize/2)
+		let xRangeBall = SKRange(lowerLimit:-frame.width/2 + ballSize/2,upperLimit:frame.width/2 - ballSize/2)
         ball.constraints = [SKConstraint.positionX(xRangeBall)]
 		// Define ball properties
 
@@ -542,35 +535,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock.physicsBody!.friction = 0.0
 		topScreenBlock.physicsBody!.affectedByGravity = false
 		topScreenBlock.physicsBody!.isDynamic = false
-		topScreenBlock.zPosition = 0
+		topScreenBlock.zPosition = 7
 		topScreenBlock.name = ScreenBlockCategoryName
 		topScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
 		topScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 		topScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
-		// Define top screen block properties
-		
-		rightScreenBlock.physicsBody = SKPhysicsBody(rectangleOf: rightScreenBlock.frame.size)
-		rightScreenBlock.physicsBody!.allowsRotation = false
-		rightScreenBlock.physicsBody!.friction = 0.0
-		rightScreenBlock.physicsBody!.affectedByGravity = false
-		rightScreenBlock.physicsBody!.isDynamic = false
-		rightScreenBlock.zPosition = 0
-		rightScreenBlock.name = ScreenBlockCategoryName
-		rightScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
-		rightScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
-		rightScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
-		// Define top screen block properties
-		
-		leftScreenBlock.physicsBody = SKPhysicsBody(rectangleOf: leftScreenBlock.frame.size)
-		leftScreenBlock.physicsBody!.allowsRotation = false
-		leftScreenBlock.physicsBody!.friction = 0.0
-		leftScreenBlock.physicsBody!.affectedByGravity = false
-		leftScreenBlock.physicsBody!.isDynamic = false
-		leftScreenBlock.zPosition = 0
-		leftScreenBlock.name = ScreenBlockCategoryName
-		leftScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
-		leftScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
-		leftScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 		// Define top screen block properties
 		
 //MARK: - Label & UI Initialisation
@@ -595,34 +564,39 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
-		pauseButton.position.x = -self.frame.width/2 + labelSpacing*2 + pauseButton.size.width/2
-		pauseButton.position.y = self.frame.height/2 - screenBlockHeight + labelSpacing*8
-		pauseButton.zPosition = 1
+		pauseButton.position.x = -frame.width/2 + labelSpacing*2 + pauseButton.size.width/2
+		pauseButton.position.y = frame.height/2 - screenBlockHeight + labelSpacing*8
+		pauseButton.zPosition = 10
         pauseButton.isUserInteractionEnabled = false
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
 		pauseButtonTouch.position.y = pauseButton.position.y
 		pauseButtonTouch.position.x = pauseButton.position.x
-		pauseButtonTouch.zPosition = 1
+		pauseButtonTouch.zPosition = 10
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 
-		scoreLabel.position.x = self.frame.width/2 - labelSpacing*2
+		scoreLabel.position.x = frame.width/2 - labelSpacing*2
 		scoreLabel.position.y = pauseButton.position.y + pauseButton.size.height/2 - fontSize/2
 		scoreLabel.fontSize = fontSize
+		scoreLabel.zPosition = 10
 		multiplierLabel.position.x = scoreLabel.position.x
 		multiplierLabel.position.y = scoreLabel.position.y - labelSpacing - fontSize/2
 		multiplierLabel.fontSize = fontSize
+		multiplierLabel.zPosition = 10
 		life.position.x = -life.size.width/3
 		life.position.y = pauseButton.position.y
+		life.zPosition = 10
 		livesLabel.position.x = life.size.width/3
 		livesLabel.position.y = life.position.y
         livesLabel.fontSize = fontSize
+		livesLabel.zPosition = 10
 		buildLabel.position.x = -frame.size.width/2 + labelSpacing
-		buildLabel.position.y = -frame.size.height/2 + labelSpacing
+		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
-		buildLabel.text = "601886e, 12012020 1137, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.zPosition = 10
+		buildLabel.text = "GitID, DDMMYYYY, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, superballIcon, hiddenBricksIcon]
@@ -1407,9 +1381,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
 		let paddleRightEdgePosition = paddle.position.x + paddle.size.width/2
-		let stickyPaddleTolerance = ballSize/2
 		
-		if ball.position.x > paddleLeftEdgePosition + stickyPaddleTolerance && ball.position.x < paddleRightEdgePosition - stickyPaddleTolerance && stickyPaddleCatches != 0 {
+		if ball.position.x > paddleLeftEdgePosition + ballSize/4 && ball.position.x < paddleRightEdgePosition - ballSize/4 && stickyPaddleCatches != 0 {
 			// Catch the ball if the sticky paddle power up is applied and the ball hits the centre of the paddle
             ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 			// Reposition ball within boundries of paddle
@@ -1422,7 +1395,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
             // Define collision position between the ball and paddle
             
-			if ball.position.y - ballSize/2 >= paddle.position.y + paddle.size.height/4 && ball.position.x > paddleLeftEdgePosition + stickyPaddleTolerance && ball.position.x < paddleRightEdgePosition - stickyPaddleTolerance {
+			if ball.position.y - ballSize/2 >= paddle.position.y + paddle.size.height/4 && ball.position.x > paddleLeftEdgePosition + ballSize/2 && ball.position.x < paddleRightEdgePosition - ballSize/2 {
             // Only apply if the ball hits the paddles top flat surface
 				
 				let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
@@ -1656,7 +1629,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         }
         
-        let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 10)
+        let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 10)
 		powerUp.run(move)
     }
     
@@ -2366,7 +2339,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			addChild(laser)
 			
-			let move = SKAction.moveBy(x: 0, y: self.frame.height, duration: 2)
+			let move = SKAction.moveBy(x: 0, y: frame.height, duration: 2)
 			laser.run(move, completion: {
 				laser.removeFromParent()
 			})

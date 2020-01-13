@@ -40,7 +40,7 @@
 
 /* Begin PBXFileReference section */
 		1A04BEF9238FE42700EB6150 /* Level003.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level003.swift; sourceTree = "<group>"; };
-		1A5A94812309E4F30076D635 /* MegaBall.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaBall.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A5A94812309E4F30076D635 /* Megaball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Megaball.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A5A94842309E4F30076D635 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A5A94862309E4F30076D635 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
 		1A5A94882309E4F30076D635 /* Actions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Actions.sks; sourceTree = "<group>"; };
@@ -94,7 +94,7 @@
 		1A5A94822309E4F30076D635 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1A5A94812309E4F30076D635 /* MegaBall.app */,
+				1A5A94812309E4F30076D635 /* Megaball.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -177,7 +177,7 @@
 			);
 			name = Megaball;
 			productName = Megaball;
-			productReference = 1A5A94812309E4F30076D635 /* MegaBall.app */;
+			productReference = 1A5A94812309E4F30076D635 /* Megaball.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -410,10 +410,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
-				PRODUCT_NAME = MegaBall;
+				PRODUCT_NAME = Megaball;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -429,10 +430,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
-				PRODUCT_NAME = MegaBall;
+				PRODUCT_NAME = Megaball;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
