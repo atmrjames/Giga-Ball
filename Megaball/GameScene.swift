@@ -57,6 +57,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
+	var sideScreenBlockLeft = SKSpriteNode()
+	var sideScreenBlockRight = SKSpriteNode()
 	var background = SKSpriteNode()
 	var directionMarker = SKSpriteNode()
     // Define objects
@@ -101,6 +103,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Power-up empty progress bars
 	
 	var powerUpTray = SKSpriteNode()
+	
+	var screenBlockArray: [SKSpriteNode] = []
 
 	var iconArray: [SKSpriteNode] = []
 	var iconTextureArray: [SKTexture] = []
@@ -130,10 +134,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var yBrickOffset: CGFloat = 0
     var xBrickOffset: CGFloat = 0
     var powerUpSize: CGFloat = 0
-	var screenBlockWidth: CGFloat = 0
+	var screenBlockTopWidth: CGFloat = 0
 	var topGap: CGFloat = 0
 	var paddlePositionY: CGFloat = 0
-	var screenBlockHeight: CGFloat = 0
+	var screenBlockTopHeight: CGFloat = 0
+	var screenBlockSideWidth: CGFloat = 0
+	var gameWidth: CGFloat = 0
     // Object layout property defintion
     
     var ballIsOnPaddle: Bool = true
@@ -317,19 +323,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 //MARK: - Sound and Haptic Definition
     
-    let lightHaptic = UIImpactFeedbackGenerator(style: .light)
+    var lightHaptic = UIImpactFeedbackGenerator(style: .light)
 	// use for UI interactions
 	// use for ball hitting bricks and paddle
-    let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    var mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
 	//
-    let heavyHaptic = UIImpactFeedbackGenerator(style: .heavy)
+    var heavyHaptic = UIImpactFeedbackGenerator(style: .heavy)
 	//
-	let softHaptic = UIImpactFeedbackGenerator(style: .soft)
+	var softHaptic = UIImpactFeedbackGenerator(style: .heavy)
 	// use for lost ball
-	let rigidHaptic = UIImpactFeedbackGenerator(style: .rigid)
+	var rigidHaptic = UIImpactFeedbackGenerator(style: .heavy)
 	// use for power-ups collected
+	
 	// Haptics defined
-
+	
 //MARK: - State Machine Defintion
 
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
@@ -357,6 +364,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
 		
 //MARK: - Scene Setup
+		
+		if #available(iOS 13.0, *) {
+			softHaptic = UIImpactFeedbackGenerator(style: .soft)
+			// use for lost ball
+			rigidHaptic = UIImpactFeedbackGenerator(style: .rigid)
+			// use for power-ups collected
+		}
+		// Haptics redefined for iOS13
 	
         physicsWorld.contactDelegate = self
         // Sets the GameScene as the delegate in the physicsWorld
@@ -374,14 +389,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Setup gravity
 		
 //MARK: - Object Initialisation
-		
-		screenRatio = frame.size.height/frame.size.width
-		
-		if screenRatio > 2 {
-			screenSize = "X"
-		} else {
-			screenSize = "8"
-		}
 
         ball = self.childNode(withName: "ball") as! SKSpriteNode
         paddle = self.childNode(withName: "paddle") as! SKSpriteNode
@@ -391,6 +398,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
 		topScreenBlock = self.childNode(withName: "topScreenBlock") as! SKSpriteNode
+		sideScreenBlockLeft = self.childNode(withName: "sideScreenBlockLeft") as! SKSpriteNode
+		sideScreenBlockRight = self.childNode(withName: "sideScreenBlockRight") as! SKSpriteNode
 		background = self.childNode(withName: "background") as! SKSpriteNode
 		directionMarker = self.childNode(withName: "directionMarker") as! SKSpriteNode
         // Links objects to nodes
@@ -423,22 +432,58 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Power-up icon timer bar creation
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
+		// Power-up area
+		
+		screenRatio = frame.size.height/frame.size.width
+        
+		if screenRatio > 2 {
+			screenSize = "X"
+		} else if screenRatio < 1.7  {
+			screenSize = "Pad"
+			
+		} else {
+			screenSize = "8"
+		}
+		// Screen size and device detected
+		
+		screenBlockSideWidth = 1
+		gameWidth = frame.size.width - screenBlockSideWidth*2
+		
+		sideScreenBlockLeft.isHidden = true
+		sideScreenBlockRight.isHidden = true
 		
 		numberOfBrickRows = 22
         numberOfBrickColumns = numberOfBrickRows/2
-		layoutUnit = (frame.width)/CGFloat(numberOfBrickRows)
+		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
+		pauseButtonSize = layoutUnit*2
+		iconSize = layoutUnit*1.5
+		fontSize = 16
+		
+		if screenSize == "X" {
+			screenBlockTopHeight = layoutUnit*8.5
+			brickHeight = layoutUnit
+		} else if screenSize == "Pad" {
+			print("ipad", screenBlockSideWidth)
+			screenBlockSideWidth = layoutUnit*2.15
+			screenBlockTopHeight = layoutUnit*4
+			gameWidth = frame.size.width - screenBlockSideWidth*2
+			layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
+			sideScreenBlockLeft.isHidden = false
+			sideScreenBlockRight.isHidden = false
+			pauseButtonSize = layoutUnit*1.5
+			iconSize = layoutUnit*1.25
+		} else {
+			screenBlockTopHeight = layoutUnit*8.5 - gameWidth/12
+		}
+		
+		sideScreenBlockLeft.size.width = screenBlockSideWidth
+		sideScreenBlockRight.size.width = screenBlockSideWidth
 		
 		brickOverlap = 1
 		brickWidth = layoutUnit*2 + brickOverlap - brickOverlap/11
+		brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
 		
-		
-		if screenSize == "X" {
-			screenBlockHeight = layoutUnit*8.5
-			brickHeight = layoutUnit
-		} else {
-			screenBlockHeight = layoutUnit*8.5 - frame.size.width/12
-			brickHeight = (frame.size.width*0.87)/CGFloat(numberOfBrickRows-1)
-		}
+		labelSpacing = fontSize/1.5
 		
 		paddleGap = layoutUnit*7
 		minPaddleGap = brickHeight*4
@@ -461,17 +506,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleLaser.size.height = ballSize*1.6
 		paddleSticky.size.width = paddleWidth
 		paddleSticky.size.height = ballSize*1.1
-		paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
-		paddle.scale(to:CGSize(width: paddleWidth, height: ballSize))
-		paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 10.0/16.0)
-		paddleLaser.scale(to:CGSize(width: paddleWidth, height: ballSize*1.6))
-		paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 10.0/11.0)
-		paddleSticky.scale(to:CGSize(width: paddleWidth, height: ballSize*1.1))
-		paddle.texture = paddleTexture
-		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
+		paddle.centerRect = CGRect(x: 0.0/80.0, y: 0.0/10.0, width: 80.0/80.0, height: 10.0/10.0)
+		paddleLaser.centerRect = CGRect(x: 0.0/80.0, y: 0.0/16.0, width: 80.0/80.0, height: 16.0/16.0)
+		paddleSticky.centerRect = CGRect(x: 0.0/80.0, y: 0.0/11.0, width: 80.0/80.0, height: 11.0/11.0)
 		
-		topScreenBlock.size.height = screenBlockHeight
-		topScreenBlock.size.width = frame.width
+		topScreenBlock.size.height = screenBlockTopHeight
+		topScreenBlock.size.width = frame.size.width
+		sideScreenBlockLeft.size.height = frame.size.height - screenBlockTopHeight
+		sideScreenBlockRight.size.height = frame.size.height - screenBlockTopHeight
+		sideScreenBlockLeft.position.x = -frame.size.width/2+screenBlockSideWidth/2
+		sideScreenBlockLeft.position.y = -frame.size.height/2+sideScreenBlockLeft.size.height/2
+		sideScreenBlockLeft.zPosition = 1
+		sideScreenBlockRight.position.x = frame.size.width/2-screenBlockSideWidth/2
+		sideScreenBlockRight.position.y = -frame.size.height/2+sideScreenBlockRight.size.height/2
+		sideScreenBlockRight.zPosition = 1
+		
+		if screenSize != "Pad" {
+			sideScreenBlockLeft.position.x = -frame.size.width
+			sideScreenBlockRight.position.x = frame.size.width
+		}
 		
 		topGap = brickHeight*2
 		// Object size definition
@@ -479,7 +532,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballLinearDampening = -0.02
 
 		topScreenBlock.position.x = 0
-		topScreenBlock.position.y = frame.height/2 - screenBlockHeight/2
+		topScreenBlock.position.y = frame.height/2 - screenBlockTopHeight/2
 		yBrickOffset = frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
 		paddle.position.x = 0
 		paddlePositionY = frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
@@ -491,8 +544,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Object positioning definition
 		
 		background.texture = plainBackgroundTexture
-		background.size.height = frame.size.height - screenBlockHeight
-		background.size.width = frame.size.width
+		background.size.height = frame.size.height - screenBlockTopHeight
+		background.size.width = gameWidth
 		background.position.x = 0
 		background.position.y = -frame.size.height/2
 		background.zPosition = 0
@@ -506,17 +559,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.name = BallCategoryName
         ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
         ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
-		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
         ball.zPosition = 2
 		ball.physicsBody!.usesPreciseCollisionDetection = true
 		ball.physicsBody!.linearDamping = ballLinearDampening
         ball.physicsBody!.angularDamping = 0
 		ball.physicsBody!.restitution = 1
 		ball.physicsBody!.density = 2
-		let xRangeBall = SKRange(lowerLimit:-frame.width/2 + ballSize/2,upperLimit:frame.width/2 - ballSize/2)
-        ball.constraints = [SKConstraint.positionX(xRangeBall)]
+//		let xRangeBall = SKRange(lowerLimit:-gameWidth/2 + ballSize/2,upperLimit:gameWidth/2 - ballSize/2)
+//        ball.constraints = [SKConstraint.positionX(xRangeBall)]
 		// Define ball properties
 
+		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 		if paddle.physicsBody == nil {
 			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
 		}
@@ -540,18 +594,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleSticky.isHidden = true
 		directionMarker.isHidden = true
         // Hide ball and paddle
-
-		topScreenBlock.physicsBody = SKPhysicsBody(rectangleOf: topScreenBlock.frame.size)
-		topScreenBlock.physicsBody!.allowsRotation = false
-		topScreenBlock.physicsBody!.friction = 0.0
-		topScreenBlock.physicsBody!.affectedByGravity = false
-		topScreenBlock.physicsBody!.isDynamic = false
-		topScreenBlock.zPosition = 7
-		topScreenBlock.name = ScreenBlockCategoryName
-		topScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
-		topScreenBlock.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
-		topScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
-		// Define top screen block properties
+		
+		screenBlockArray = [topScreenBlock, sideScreenBlockLeft, sideScreenBlockRight]
+		
+		for i in 1...screenBlockArray.count {
+			let index = i-1
+			screenBlockArray[index].physicsBody = SKPhysicsBody(rectangleOf: screenBlockArray[index].frame.size)
+			screenBlockArray[index].physicsBody!.allowsRotation = false
+			screenBlockArray[index].physicsBody!.friction = 0.0
+			screenBlockArray[index].physicsBody!.affectedByGravity = false
+			screenBlockArray[index].physicsBody!.isDynamic = false
+			screenBlockArray[index].zPosition = 7
+			screenBlockArray[index].name = ScreenBlockCategoryName
+			screenBlockArray[index].physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
+			screenBlockArray[index].physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
+			screenBlockArray[index].physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
+		}
+		// Define all screen block properties
 		
 //MARK: - Label & UI Initialisation
 		
@@ -560,10 +619,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplierLabel = self.childNode(withName: "multiplierLabel") as! SKLabelNode
 		unpauseCountdownLabel = self.childNode(withName: "unpauseCountdownLabel") as! SKLabelNode
 		buildLabel = self.childNode(withName: "buildLabel") as! SKLabelNode
-        // Links objects to labels
-
-        fontSize = 16
-        labelSpacing = fontSize/1.5
+        // Links objects to label
 		
 		unpauseCountdownLabel.position.x = 0
 		unpauseCountdownLabel.position.y = 0
@@ -571,16 +627,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		unpauseCountdownLabel.isHidden = true
 		unpauseCountdownLabel.zPosition = 10
 		
-		pauseButtonSize = brickWidth
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
-		pauseButton.position.x = -frame.width/2 + labelSpacing*2 + pauseButton.size.width/2
-		pauseButton.position.y = frame.height/2 - screenBlockHeight + labelSpacing*8
+		pauseButton.position.x = -frame.size.width/2 + labelSpacing*2 + pauseButton.size.width/2
+		pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight + labelSpacing*8
 		if screenRatio < 1.777 {
 		// iPhone SE (1.775)
-			pauseButton.position.y = frame.height/2 - screenBlockHeight + labelSpacing*7
+			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight + labelSpacing*7
 		}
+		if screenRatio < 1.7 {
+		// iPads
+			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight + labelSpacing*10
+		}
+
 		pauseButton.zPosition = 10
         pauseButton.isUserInteractionEnabled = false
 		
@@ -592,8 +652,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 
-		scoreLabel.position.x = frame.width/2 - labelSpacing*2
-		scoreLabel.position.y = pauseButton.position.y + pauseButton.size.height/2 - fontSize/2
+		scoreLabel.position.x = frame.size.width/2 - labelSpacing*2
+		scoreLabel.position.y = pauseButton.position.y + fontSize/4 + labelSpacing/2
 		scoreLabel.fontSize = fontSize
 		scoreLabel.zPosition = 10
 		multiplierLabel.position.x = scoreLabel.position.x
@@ -607,7 +667,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		livesLabel.position.y = life.position.y
         livesLabel.fontSize = fontSize
 		livesLabel.zPosition = 10
-		buildLabel.position.x = -frame.size.width/2 + labelSpacing
+		buildLabel.position.x = -gameWidth/2 + labelSpacing
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
@@ -620,15 +680,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		iconTimerArray = [paddleSizeIconBar, ballSpeedIconBar, stickyPaddleIconBar, gravityIconBar, lasersIconBar, superballIconBar, hiddenBricksIconBar]
 		iconEmptyTimerArray = [paddleSizeIconEmptyBar, ballSpeedIconEmptyBar, stickyPaddleIconEmptyBar, gravityIconEmptyBar, lasersIconEmptyBar, superballIconEmptyBar, hiddenBricksIconEmptyBar]
 		
-		iconSize = brickWidth*0.75
-		
 		for i in 1...iconArray.count {
 			let index = i-1
-			let iconSpacing = ((frame.size.width-labelSpacing*5) - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
+			let iconSpacing = ((frame.size.width-iconSize*2) - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
 			iconArray[index].size.width = iconSize
 			iconArray[index].size.height = iconSize
 			iconArray[index].texture = disabledIconTextureArray[index]
-			iconArray[index].position.x = -frame.size.width/2+labelSpacing*2.5 + (iconSize+iconSpacing)*CGFloat(index)
+			iconArray[index].position.x = -frame.size.width/2 + iconSize + (iconSize+iconSpacing)*CGFloat(index)
 			iconArray[index].position.y = pauseButton.position.y - pauseButtonSize/2 - iconSize/2 - labelSpacing*2
 			if screenRatio < 1.777 {
 			// iPhone SE (1.775)
@@ -657,7 +715,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		powerUpTray.zPosition = 8
 		powerUpTray.centerRect = CGRect(x: 5.0/40.0, y: 5.0/40.0, width: 30.0/40.0, height: 30.0/40.0)
-		powerUpTray.scale(to:CGSize(width: frame.size.width*1.5, height: iconSize*2))
+		powerUpTray.scale(to:CGSize(width: gameWidth*1.5, height: iconSize*2))
 		powerUpTray.position.x = 0
 		powerUpTray.position.y = (paddleSizeIcon.position.y-iconSize/5)
 
@@ -737,11 +795,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleX0 = paddle.position.x
 			paddleX1 = paddleX0 + (paddleMovedDistance*paddleMovementFactor)
 			
-			if paddleX1 > (frame.size.width/2 - paddle.size.width/2) {
-				paddleX1 = frame.size.width/2 - paddle.size.width/2
+			if paddleX1 > (gameWidth/2 - paddle.size.width/2) {
+				paddleX1 = gameWidth/2 - paddle.size.width/2
 			}
-			if paddleX1 < -(frame.size.width/2 - paddle.size.width/2) {
-				paddleX1 = -(frame.size.width/2 - paddle.size.width/2)
+			if paddleX1 < -(gameWidth/2 - paddle.size.width/2) {
+				paddleX1 = -(gameWidth/2 - paddle.size.width/2)
 			}
 			// Check paddle position isn't outside the frame
 			
@@ -1150,52 +1208,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 				
-				if ball.position.x < 0 && xSpeed < 0 {
-					xSpeed = -xSpeed
-				}
-				if ball.position.x > 0 && xSpeed > 0 {
-					xSpeed = -xSpeed
-				}
-				// Ensure the xSpeed is calculated in the correct direction based on the ball position
-				
-				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-				// Set the new speed in the x direction
-				
-				var angleRad = Double(atan2(ySpeed, xSpeed))
-				var angleDeg = Double(angleRad)/Double.pi*180
-				if angleDeg < minAngleDeg && angleDeg > 0 {
-					angleDeg = minAngleDeg
-				}
-				else if angleDeg > 180-minAngleDeg && angleDeg <= 180 {
-					angleDeg = 180-minAngleDeg
-				}
-				else if angleDeg < -180+minAngleDeg && angleDeg >= -180 {
-					angleDeg = -180+minAngleDeg
-				}
-				else if angleDeg > -minAngleDeg && angleDeg <= 0 {
-					angleDeg = -minAngleDeg
-				}
-				// check ball x-angle
-				angleRad = (angleDeg*Double.pi/180)
-				xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-				ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-				// Set the new angle of the ball
+				correctBallAngle()
 				
 			}
 			// Ball hits Frame - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.screenBlockCategory.rawValue {
 				
-				if ySpeed > 0 {
-					ySpeed = -ySpeed
-				}
-				// Ensure the ySpeed is downwards
+				let frameBlockNode = secondBody.node
+				let frameBlockSprite = frameBlockNode as! SKSpriteNode
+				
+				if frameBlockSprite.size.width > frameBlockSprite.size.height {
+				// Ball hits top block
+					if ySpeed > 0 {
+						ySpeed = -ySpeed
+					}
+					// Ensure the ySpeed is downwards
 
-				ball.physicsBody!.velocity.dy = ySpeed
-				// Set the new speed in the y direction
+					ball.physicsBody!.velocity.dy = ySpeed
+					// Set the new speed in the y direction
+				} else {
+				// Ball hits side blocks
+					correctBallAngle()
+				}
+				
 			}
-		   // Ball hits Top - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
+		   // Ball hits screenblock - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
 
             if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.brickCategory.rawValue {
                 if let brickNode = secondBody.node {
@@ -1472,7 +1510,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 2
         addChild(powerUp)
         
-		let powerUpProb = Int.random(in: 14...21)
+		let powerUpProb = Int.random(in: 5...7)
         switch powerUpProb {
         case 0:
 		// Get a life			
@@ -1883,6 +1921,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIcon.texture = self.iconIncreasePaddleSizeTexture
 			paddleSizeIconBar.isHidden = false
 			// Show power-up icon timer
+			paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
+			paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
+			paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+			// Ensure good scaling of paddles
 			if paddle.xScale < 1.0 {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
@@ -1938,6 +1980,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIcon.texture = self.iconDecreasePaddleSizeTexture
 			paddleSizeIconBar.isHidden = false
 			// Show power-up icon timer
+			paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
+			paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
+			paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+			// Ensure good scaling of paddles
 			if paddle.xScale < 1.0 {
 				paddle.run(SKAction.scaleX(to: 0.5, duration: 0.2), completion: {
 					self.recentreBall()
@@ -2269,6 +2315,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		superballIconBar.isHidden = true
 		// Superball/Undestructiball reset
 		
+		paddle.centerRect = CGRect(x: 0.0/80.0, y: 0.0/10.0, width: 80.0/80.0, height: 10.0/10.0)
+		paddleLaser.centerRect = CGRect(x: 0.0/80.0, y: 0.0/16.0, width: 80.0/80.0, height: 16.0/16.0)
+		paddleSticky.centerRect = CGRect(x: 0.0/80.0, y: 0.0/11.0, width: 80.0/80.0, height: 11.0/11.0)
+		// Ensure good scaling of paddles
 		paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
 		paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
 		paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
@@ -2350,7 +2400,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 	}
 	// Recentre ball if it isn't on smaller paddle
-    
+	
+	func correctBallAngle() {
+		if ball.position.x < 0 && xSpeed < 0 {
+			xSpeed = -xSpeed
+		}
+		if ball.position.x > 0 && xSpeed > 0 {
+			xSpeed = -xSpeed
+		}
+		// Ensure the xSpeed is calculated in the correct direction based on the ball position
+		
+		ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+		// Set the new speed in the x direction
+		
+		var angleRad = Double(atan2(ySpeed, xSpeed))
+		var angleDeg = Double(angleRad)/Double.pi*180
+		if angleDeg < minAngleDeg && angleDeg > 0 {
+			angleDeg = minAngleDeg
+		}
+		else if angleDeg > 180-minAngleDeg && angleDeg <= 180 {
+			angleDeg = 180-minAngleDeg
+		}
+		else if angleDeg < -180+minAngleDeg && angleDeg >= -180 {
+			angleDeg = -180+minAngleDeg
+		}
+		else if angleDeg > -minAngleDeg && angleDeg <= 0 {
+			angleDeg = -minAngleDeg
+		}
+		// check ball x-angle
+		angleRad = (angleDeg*Double.pi/180)
+		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
+		ySpeed = CGFloat(sin(angleRad)) * currentSpeed
+		ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+		// Set the new angle of the ball
+	}
+    // Ensure ball angle when hitting off of wals
+	
     @objc func laserGenerator() {
 		
 		if gameState.currentState is Playing {
