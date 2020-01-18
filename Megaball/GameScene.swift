@@ -57,7 +57,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
-	var bottomScreenBlock = SKSpriteNode()
+	var background = SKSpriteNode()
 	var directionMarker = SKSpriteNode()
     // Define objects
     
@@ -237,6 +237,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let laserNormalTexture: SKTexture = SKTexture(imageNamed: "LaserNormal")
     let superLaserTexture: SKTexture = SKTexture(imageNamed: "LaserSuper")
     // Laser textures
+	
+	let plainBackgroundTexture: SKTexture = SKTexture(imageNamed: "plainBackground")
     
     var stickyPaddleCatches: Int = 0
 	var stickyPaddleCatchesTotal: Int = 0
@@ -252,6 +254,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let pauseTexture: SKTexture = SKTexture(imageNamed: "PauseButton")
     // Play/pause button textures
 	
+	let iconIncreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "ExpandPaddleIcon")
+	let iconDecreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "ShrinkPaddleIcon")
+	let iconDecreaseBallSpeedTexture: SKTexture = SKTexture(imageNamed: "SlowBallIcon")
+	let iconIncreaseBallSpeedTexture: SKTexture = SKTexture(imageNamed: "FastBallIcon")
+	let iconStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "StickyPaddleIcon")
+	let iconGravityTexture: SKTexture = SKTexture(imageNamed: "GravityIcon")
+	let iconLasersTexture: SKTexture = SKTexture(imageNamed: "LasersIcon")
+	let iconUndestructiballTexture: SKTexture = SKTexture(imageNamed: "UndestructiBallIcon")
+	let iconSuperballTexture: SKTexture = SKTexture(imageNamed: "SuperballIcon")
+	let iconHiddenBlocksTexture: SKTexture = SKTexture(imageNamed: "HiddenBricksIcon")
+	// Power-up icon textures
+	
 	let iconPaddleSizeDisabledTexture: SKTexture = SKTexture(imageNamed: "PaddleSizeIconDisabled")
 	let iconBallSpeedDisabledTexture: SKTexture = SKTexture(imageNamed: "BallSpeedIconDisabled")
 	let iconStickyPaddleDisabledTexture: SKTexture = SKTexture(imageNamed: "StickyPaddleIconDisabled")
@@ -264,20 +278,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpIconBarEmpty: SKTexture = SKTexture(imageNamed: "PowerUpTimerEmpty")
 	let powerUpIconBarFull: SKTexture = SKTexture(imageNamed: "PowerUpTimerFull")
 	// Power-up icon bar textures
-	
-	let iconIncreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "ExpandPaddleIcon")
-	let iconDecreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "ShrinkPaddleIcon")
-	let iconDecreaseBallSpeedTexture: SKTexture = SKTexture(imageNamed: "SlowBallIcon")
-	let iconIncreaseBallSpeedTexture: SKTexture = SKTexture(imageNamed: "FastBallIcon")
-	let iconStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "StickyPaddleIcon")
-	let iconGravityTexture: SKTexture = SKTexture(imageNamed: "GravityIcon")
-	let iconLasersTexture: SKTexture = SKTexture(imageNamed: "LasersIcon")
-	let iconUndestructiballTexture: SKTexture = SKTexture(imageNamed: "UndestructiBallIcon")
-	let iconSuperballTexture: SKTexture = SKTexture(imageNamed: "SuperballIcon")
-	let iconHiddenBlocksTexture: SKTexture = SKTexture(imageNamed: "HiddenBricksIcon")
-	let iconTimerTexture: SKTexture = SKTexture(imageNamed: "PowerUpTimerFull")
-	// Power-up icon textures
-    
+
     var touchBeganWhilstPlaying: Bool = false
     var paddleMoved: Bool = false
     var paddleMovedDistance: CGFloat = 0
@@ -291,6 +292,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var brickBounceCounter: Int = 0
 	var killBall: Bool = false
     // Game trackers
+	
+	let straightLaunchAngleRad = 90 * Double.pi / 180
+	let minLaunchAngleRad = 10 * Double.pi / 180
+	let maxLaunchAngleRad = 70 * Double.pi / 180
+	var launchAngleMultiplier = 1
+	// Ball launch
     
     var fontSize: CGFloat = 0
     var labelSpacing: CGFloat = 0
@@ -300,6 +307,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var screenRatio: CGFloat = 0.0
 	var screenSize: String = ""
+	
+//MARK: - Animation Setup
+	
+	let timerScaleUp = SKAction.scale(to: 1.25, duration: 0.05)
+	let timerScaleDown = SKAction.scale(to: 1, duration: 0.05)
+	let pointsScaleDown = SKAction.scale(to: 0.75, duration: 0.05)
+	// Setup timer icon animation
 	
 //MARK: - Sound and Haptic Definition
     
@@ -377,7 +391,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
 		topScreenBlock = self.childNode(withName: "topScreenBlock") as! SKSpriteNode
-		bottomScreenBlock = self.childNode(withName: "bottomScreenBlock") as! SKSpriteNode
+		background = self.childNode(withName: "background") as! SKSpriteNode
 		directionMarker = self.childNode(withName: "directionMarker") as! SKSpriteNode
         // Links objects to nodes
 		
@@ -422,7 +436,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			screenBlockHeight = layoutUnit*8.5
 			brickHeight = layoutUnit
 		} else {
-			screenBlockHeight = layoutUnit*8.5 - 32
+			screenBlockHeight = layoutUnit*8.5 - frame.size.width/12
 			brickHeight = (frame.size.width*0.87)/CGFloat(numberOfBrickRows-1)
 		}
 		
@@ -460,10 +474,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock.size.width = frame.width
 		
 		topGap = brickHeight*2
-		directionMarker.size.width = ballSize*3.5
-		directionMarker.size.height = ballSize*3.5
-		directionMarker.position.x = 0
-		directionMarker.position.y = 0
 		// Object size definition
 		
 		ballLinearDampening = -0.02
@@ -480,11 +490,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		directionMarker.zPosition = 10
 		// Object positioning definition
 		
-		bottomScreenBlock.size.height = (paddlePositionY - paddle.size.height/2*3) + frame.size.height/2
-		bottomScreenBlock.size.width = frame.size.width
-		bottomScreenBlock.position.x = 0
-		bottomScreenBlock.position.y = -frame.size.height/2
-		bottomScreenBlock.zPosition = 9
+		background.texture = plainBackgroundTexture
+		background.size.height = frame.size.height - screenBlockHeight
+		background.size.width = frame.size.width
+		background.position.x = 0
+		background.position.y = -frame.size.height/2
+		background.zPosition = 0
 		
 		ball.texture = ballTexture
 		ball.physicsBody = SKPhysicsBody(circleOfRadius: ballSize/2)
@@ -566,6 +577,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.texture = pauseTexture
 		pauseButton.position.x = -frame.width/2 + labelSpacing*2 + pauseButton.size.width/2
 		pauseButton.position.y = frame.height/2 - screenBlockHeight + labelSpacing*8
+		if screenRatio < 1.777 {
+		// iPhone SE (1.775)
+			pauseButton.position.y = frame.height/2 - screenBlockHeight + labelSpacing*7
+		}
 		pauseButton.zPosition = 10
         pauseButton.isUserInteractionEnabled = false
 		
@@ -615,6 +630,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			iconArray[index].texture = disabledIconTextureArray[index]
 			iconArray[index].position.x = -frame.size.width/2+labelSpacing*2.5 + (iconSize+iconSpacing)*CGFloat(index)
 			iconArray[index].position.y = pauseButton.position.y - pauseButtonSize/2 - iconSize/2 - labelSpacing*2
+			if screenRatio < 1.777 {
+			// iPhone SE (1.775)
+				iconArray[index].position.y = pauseButton.position.y - pauseButtonSize/2 - iconSize/2 - labelSpacing*2+2
+			}
 			iconArray[index].zPosition = 10
 			iconArray[index].name = powerIconCategoryName
 			iconEmptyTimerArray[index].size.width = iconSize
@@ -812,11 +831,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-        let straightLaunchAngleRad = 90 * Double.pi / 180
-        let minLaunchAngleRad = 10 * Double.pi / 180
-        let maxLaunchAngleRad = 70 * Double.pi / 180
-        var launchAngleMultiplier = 1
-        
         ballPositionOnPaddle = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
         // Define the relative position between the ball and paddle
         
@@ -942,20 +956,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
 			var angleRad = Double(atan2(ySpeed, xSpeed))
 			var angleDeg = Double(angleRad)/Double.pi*180
-
-			if angleDeg < minAngleDeg && angleDeg > 0 {
-				angleDeg = minAngleDeg
-			}
-			else if angleDeg > 180-minAngleDeg && angleDeg <= 180 {
-				angleDeg = 180-minAngleDeg
-			}
-			else if angleDeg < -180+minAngleDeg && angleDeg >= -180 {
-				angleDeg = -180+minAngleDeg
-			}
-			else if angleDeg > -minAngleDeg && angleDeg <= 0 {
-				angleDeg = -minAngleDeg
-			}
-			// check x-angle
 				
 			if ball.position.x >= 0 {
 				// ball is on right side of screen
@@ -1008,7 +1008,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if gameState.currentState is Playing && gravityActivated == true {
 			
-			if ball.position.y < paddle.position.y + ballSize*5 {
+			if ball.position.y < paddle.position.y + ballSize*4 {
 				ball.physicsBody?.affectedByGravity = false
 			} else {
 				ball.physicsBody?.affectedByGravity = true
@@ -1160,6 +1160,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
 				// Set the new speed in the x direction
+				
+				var angleRad = Double(atan2(ySpeed, xSpeed))
+				var angleDeg = Double(angleRad)/Double.pi*180
+				if angleDeg < minAngleDeg && angleDeg > 0 {
+					angleDeg = minAngleDeg
+				}
+				else if angleDeg > 180-minAngleDeg && angleDeg <= 180 {
+					angleDeg = 180-minAngleDeg
+				}
+				else if angleDeg < -180+minAngleDeg && angleDeg >= -180 {
+					angleDeg = -180+minAngleDeg
+				}
+				else if angleDeg > -minAngleDeg && angleDeg <= 0 {
+					angleDeg = -minAngleDeg
+				}
+				// check ball x-angle
+				angleRad = (angleDeg*Double.pi/180)
+				xSpeed = CGFloat(cos(angleRad)) * currentSpeed
+				ySpeed = CGFloat(sin(angleRad)) * currentSpeed
+				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+				// Set the new angle of the ball
+				
 			}
 			// Ball hits Frame - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
 
@@ -1382,7 +1404,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
 		let paddleRightEdgePosition = paddle.position.x + paddle.size.width/2
 		
-		if ball.position.x > paddleLeftEdgePosition + ballSize/4 && ball.position.x < paddleRightEdgePosition - ballSize/4 && stickyPaddleCatches != 0 {
+		if ball.position.x > paddleLeftEdgePosition + ball.size.width/2 && ball.position.x < paddleRightEdgePosition - ball.size.width/2 && stickyPaddleCatches != 0 {
 			// Catch the ball if the sticky paddle power up is applied and the ball hits the centre of the paddle
             ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 			// Reposition ball within boundries of paddle
@@ -1395,7 +1417,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
             // Define collision position between the ball and paddle
             
-			if ball.position.y - ballSize/2 >= paddle.position.y + paddle.size.height/4 && ball.position.x > paddleLeftEdgePosition + ballSize/2 && ball.position.x < paddleRightEdgePosition - ballSize/2 {
+			if ball.position.y - ball.size.width/3 >= paddle.position.y + paddle.size.height/3 && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
             // Only apply if the ball hits the paddles top flat surface
 				
 				let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
@@ -1447,10 +1469,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
 		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
 		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
-        powerUp.zPosition = 1
+        powerUp.zPosition = 2
         addChild(powerUp)
         
-		let powerUpProb = Int.random(in: 0...22)
+		let powerUpProb = Int.random(in: 14...21)
         switch powerUpProb {
         case 0:
 		// Get a life			
@@ -1558,7 +1580,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUp.texture = powerUpPointsBonus
 		case 16:
 		// Penalty points
-			powerUp.texture = powerUpPointsPenalty
+			if levelScore >= 0 {
+				powerUp.texture = powerUpPointsPenalty
+			} else {
+				powerUpsOnScreen-=1
+				powerUpGenerator (sprite: sprite)
+				powerUp.removeFromParent()
+			}
+			// Don't show if score is less than 0
 		case 17:
 		// Normal bricks become invisble bricks
 			powerUp.texture = powerUpNormalToInvisibleBricks
@@ -1619,9 +1648,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
-			if bricksAtBottom == true {
+			if bricksAtBottom {
 				powerUpsOnScreen-=1
-				self.powerUpGenerator (sprite: sprite)
+				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
 			}
 			// Don't show if bricks are already at lowest point
@@ -1671,6 +1700,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Decrease ball speed
 			removeAction(forKey: "powerUpDecreaseBallSpeed")
 			removeAction(forKey: "powerUpIncreaseBallSpeed")
+			removeAction(forKey: "powerUpDecreaseBallSpeedTimer")
 			removeAction(forKey: "ballSpeedTimer")
 			// Remove any current ball speed power up timers
 			ballSpeedIcon.texture = self.iconDecreaseBallSpeedTexture
@@ -1699,8 +1729,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSpeedIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.ballSpeedIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "ballSpeedTimer")
 			})
-			// Setup timer animation
             let sequence = SKAction.sequence([waitDuration, completionBlock])
+			ballSpeedIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpDecreaseBallSpeedTimer")
+			// Setup timer animation
             self.run(sequence, withKey: "powerUpDecreaseBallSpeed")
             // Power up reverted
             
@@ -1708,6 +1739,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Increase ball speed
 			removeAction(forKey: "powerUpDecreaseBallSpeed")
 			removeAction(forKey: "powerUpIncreaseBallSpeed")
+			removeAction(forKey: "powerUpDecreaseBallSpeedTimer")
 			removeAction(forKey: "ballSpeedTimer")
 			// Remove any current ball speed power up timers
 			ballSpeedIcon.texture = self.iconIncreaseBallSpeedTexture
@@ -1736,8 +1768,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSpeedIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.ballSpeedIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "ballSpeedTimer")
 			})
-			// Setup timer animation
             let sequence = SKAction.sequence([waitDuration, completionBlock])
+			ballSpeedIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpDecreaseBallSpeedTimer")
+			// Setup timer animation
             self.run(sequence, withKey: "powerUpIncreaseBallSpeed")
             // Power up reverted
 
@@ -1745,6 +1778,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Superball
 			removeAction(forKey: "powerUpSuperBall")
 			removeAction(forKey: "powerUpUndestructiBall")
+			removeAction(forKey: "powerUpSuperBallTimer")
 			removeAction(forKey: "superballTimer")
 			// Remove any animations and timers
 			superballIcon.texture = self.iconSuperballTexture
@@ -1772,8 +1806,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			superballIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.superballIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "superballTimer")
 			})
-			// Setup timer animation
             let sequence = SKAction.sequence([waitDuration, completionBlock])
+			superballIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpSuperBallTimer")
+			// Setup timer animation
             self.run(sequence, withKey: "powerUpSuperBall")
             // Power up reverted
             
@@ -1781,6 +1816,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Undestructi-ball
             removeAction(forKey: "powerUpSuperBall")
 			removeAction(forKey: "powerUpUndestructiBall")
+			removeAction(forKey: "powerUpSuperBallTimer")
 			removeAction(forKey: "superballTimer")
 			// Remove any animations and timers
 			superballIcon.texture = self.iconUndestructiballTexture
@@ -1806,8 +1842,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			superballIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.superballIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "superballTimer")
 			})
-			// Setup timer animation
             let sequence = SKAction.sequence([waitDuration, completionBlock])
+			superballIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpSuperBallTimer")
+			// Setup timer animation
             self.run(sequence, withKey: "powerUpUndestructiBall")
             // Power up reverted
 
@@ -1840,6 +1877,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Increase paddle size
 			removeAction(forKey: "powerUpIncreasePaddleSize")
 			removeAction(forKey: "powerUpDecreasePaddleSize")
+			removeAction(forKey: "powerUpPaddleSizeTimer")
 			removeAction(forKey: "paddleSizeTimer")
 			// Remove any current ball speed power up timers
 			paddleSizeIcon.texture = self.iconIncreasePaddleSizeTexture
@@ -1884,8 +1922,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.paddleSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "paddleSizeTimer")
 			})
-			// Setup timer animation
             let sequence = SKAction.sequence([waitDuration, completionBlock])
+			paddleSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpPaddleSizeTimer")
+			// Setup timer animation
             self.run(sequence, withKey: "powerUpIncreasePaddleSize")
             // Power up reverted
             
@@ -1893,6 +1932,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Decrease paddle size
 			removeAction(forKey: "powerUpDecreasePaddleSize")
 			removeAction(forKey: "powerUpIncreasePaddleSize")
+			removeAction(forKey: "powerUpPaddleSizeTimer")
 			removeAction(forKey: "paddleSizeTimer")
 			// Remove any current ball speed power up timers
 			paddleSizeIcon.texture = self.iconDecreasePaddleSizeTexture
@@ -1938,14 +1978,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.paddleSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "paddleSizeTimer")
 			})
-			// Setup timer animation
             let sequence = SKAction.sequence([waitDuration, completionBlock])
+			paddleSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpPaddleSizeTimer")
+			// Setup timer animation
             self.run(sequence, withKey: "powerUpDecreasePaddleSize")
             // Power up reverted
 			
         case powerUpLasers:
         // Lasers
 			removeAction(forKey: "powerUpLasers")
+			removeAction(forKey: "powerUpLaserTimer")
 			removeAction(forKey: "laserTimer")
 			laserTimer?.invalidate()
 			// Remove any current animations and timers
@@ -1973,9 +2015,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			lasersIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.lasersIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "laserTimer")
 			})
+            let sequence = SKAction.sequence([waitDuration, completionBlock])
+			lasersIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpLaserTimer")
 			// Setup timer animation
-            let powerUp07Sequence = SKAction.sequence([waitDuration, completionBlock])
-            self.run(powerUp07Sequence, withKey: "powerUpLasers")
+            self.run(sequence, withKey: "powerUpLasers")
             // Power up reverted - lasers will fire for 10s
 			
 		case powerUpShowInvisibleBricks:
@@ -2047,27 +2090,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		case powerUpMultiplier:
 		// Multiplier
+			removeAction(forKey: "multiplierAnimation")
 			multiplier = multiplier*2
 			powerUpScore = 50
 			powerUpMultiplierScore = 0
+			multiplierLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "multiplierAnimation")
 			// Power up set
 			
 		case powerUpPointsBonus:
 		// 100 points
-			powerUpScore = 100
-			powerUpMultiplierScore = 0.2
+			removeAction(forKey: "pointsAnimation")
+			powerUpScore = 1000
+			powerUpMultiplierScore = 0.1
+			scoreLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "pointsAnimation")
 			// Power up set
 			
 		case powerUpPointsPenalty:
 		// -100 points
-			powerUpScore = -100
-			powerUpMultiplierScore = -0.2
+			removeAction(forKey: "pointsAnimation")
+			powerUpScore = -1000
+			powerUpMultiplierScore = -0.1
+			scoreLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "pointsAnimation")
 			// Power up set
 			
 		case powerUpNormalToInvisibleBricks:
 		// Normal bricks become invisble bricks
 			removeAction(forKey: "powerUpInvisibleBricks")
 			removeAction(forKey: "invisibleBricksTimer")
+			removeAction(forKey: "powerUpHiddenBricksTimer")
 			// Remove any animations and timers
 			hiddenBricksIcon.texture = self.iconHiddenBlocksTexture
 			hiddenBricksIconBar.isHidden = false
@@ -2105,8 +2155,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			hiddenBricksIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.hiddenBricksIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "invisibleBricksTimer")
 			})
-			// Setup timer animation
 			let sequence = SKAction.sequence([waitDuration, completionBlock])
+			hiddenBricksIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpHiddenBricksTimer")
+			// Setup timer animation
 			self.run(sequence, withKey: "powerUpInvisibleBricks")
 			// Power up reverted
 			
@@ -2126,6 +2177,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Gravity ball
 			removeAction(forKey: "powerUpGravityBall")
 			removeAction(forKey: "gravityTimer")
+			removeAction(forKey: "powerUpGravityTimer")
 			// Remove any current ball speed power up timers
 			gravityIcon.texture = self.iconGravityTexture
 			gravityIconBar.isHidden = false
@@ -2149,8 +2201,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gravityIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.gravityIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "gravityTimer")
 			})
-			// Setup timer animation
 			let sequence = SKAction.sequence([waitDuration, completionBlock])
+			gravityIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGravityTimer")
+			// Setup timer animation
 			self.run(sequence, withKey: "powerUpGravityBall")
 			// Power up reverted
 			
@@ -2164,10 +2217,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 		case powerUpMultiplierReset:
 		// Mutliplier reset to 1
+			removeAction(forKey: "multiplierAnimation")
 			multiplier = 1
 			brickRemovalCounter = 0
 			powerUpScore = -50
 			powerUpMultiplierScore = 0
+			multiplierLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "multiplierAnimation")
 			
 		case powerUpBricksDown:
 		// Move all bricks down
@@ -2179,7 +2234,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-			
+
         default:
             break
         }
@@ -2247,7 +2302,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		stickyPaddleIconBar.isHidden = true
 		stickyPaddleIconBar.xScale = 0
 		// Sticky paddle reset
-		
 		
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			let temporarySprite = node as! SKSpriteNode
@@ -2328,7 +2382,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			laser.physicsBody!.categoryBitMask = CollisionTypes.laserCategory.rawValue
 			laser.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
 			laser.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
-			laser.zPosition = 1
+			laser.zPosition = 2
 			// Define laser properties
 			
 			if ball.texture == superballTexture {

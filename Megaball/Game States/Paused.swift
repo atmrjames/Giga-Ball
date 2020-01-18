@@ -85,6 +85,8 @@ class Paused: GKState {
             let angleDeg = Double(angleRad)/Double.pi*180
             let rotationAngle = CGFloat(angleRad)
             scene.directionMarker.zRotation = rotationAngle
+            scene.directionMarker.size.width = scene.ball.size.width*3.5
+            scene.directionMarker.size.height = scene.ball.size.height*3.5
             scene.directionMarker.position.x = scene.ball.position.x
             scene.directionMarker.position.y = scene.ball.position.y
             // Set direction marker rotation to match the ball's direction of travel and position

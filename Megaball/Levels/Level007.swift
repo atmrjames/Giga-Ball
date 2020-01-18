@@ -119,7 +119,7 @@ extension GameScene {
                 brick.physicsBody!.categoryBitMask = CollisionTypes.brickCategory.rawValue
                 brick.physicsBody!.collisionBitMask = CollisionTypes.laserCategory.rawValue
                 brick.physicsBody!.contactTestBitMask = CollisionTypes.laserCategory.rawValue
-                brick.zPosition = 0
+                brick.zPosition = 1
                 brick.physicsBody!.usesPreciseCollisionDetection = true
                 addChild(brick)
                 brickArray.append(brick)
