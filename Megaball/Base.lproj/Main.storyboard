@@ -162,9 +162,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Zls-w1-eOx">
-                                <rect key="frame" x="172.5" y="96" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="96" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="1xi-9f-Gsn"/>
+                                    <constraint firstAttribute="height" constant="32" id="1xi-9f-Gsn"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="1">
@@ -184,9 +184,9 @@ with music from Brendan Lawton</string>
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" tag="2" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CPU-yY-owJ">
-                                <rect key="frame" x="172.5" y="152" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="136" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="wkZ-XO-Auv"/>
+                                    <constraint firstAttribute="height" constant="32" id="wkZ-XO-Auv"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="2">
@@ -197,9 +197,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="3" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="g44-Lr-tPt">
-                                <rect key="frame" x="172.5" y="208" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="176" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="HBf-fB-41P"/>
+                                    <constraint firstAttribute="height" constant="32" id="BM9-d0-7UN"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="3">
@@ -210,9 +210,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="4" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gfB-l6-ZTO">
-                                <rect key="frame" x="172.5" y="264" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="216" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="xGJ-tp-Uqx"/>
+                                    <constraint firstAttribute="height" constant="32" id="kou-ur-dD7"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="4">
@@ -223,9 +223,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="5" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WJ2-PS-PTG">
-                                <rect key="frame" x="172.5" y="320" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="256" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="7rg-5w-laq"/>
+                                    <constraint firstAttribute="height" constant="32" id="xOZ-Nc-Pc6"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="5">
@@ -236,9 +236,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="6" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zy2-5A-hIW">
-                                <rect key="frame" x="172.5" y="376" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="296" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="aJ7-BW-E31"/>
+                                    <constraint firstAttribute="height" constant="32" id="7Wn-SL-3TA"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="6">
@@ -249,9 +249,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="7" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="29E-ne-QrR">
-                                <rect key="frame" x="172.5" y="432" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="336" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="sSO-NR-rAu"/>
+                                    <constraint firstAttribute="height" constant="32" id="ln6-ZO-mdv"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="7">
@@ -262,9 +262,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="8" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="NTn-Q2-j2c">
-                                <rect key="frame" x="172.5" y="488" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="376" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="r6W-0M-TQh"/>
+                                    <constraint firstAttribute="height" constant="32" id="uer-Fs-Sgm"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="8">
@@ -275,9 +275,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="9" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XAw-J3-edO">
-                                <rect key="frame" x="172.5" y="544" width="30" height="48"/>
+                                <rect key="frame" x="172.5" y="416" width="30" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="OEP-ZY-VSB"/>
+                                    <constraint firstAttribute="height" constant="32" id="LFL-67-kGT"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="9">
@@ -288,9 +288,9 @@ with music from Brendan Lawton</string>
                                 </connections>
                             </button>
                             <button opaque="NO" tag="10" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SwH-nS-7R3">
-                                <rect key="frame" x="169" y="600" width="37" height="48"/>
+                                <rect key="frame" x="169" y="456" width="37" height="32"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="48" id="0wN-bO-4rx"/>
+                                    <constraint firstAttribute="height" constant="32" id="41g-I8-ik4"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="30"/>
                                 <state key="normal" title="10">

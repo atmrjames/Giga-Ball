@@ -189,7 +189,7 @@ extension GameScene {
                 
                 brick.anchorPoint.x = 0.5
                 brick.anchorPoint.y = 0.5
-                brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + (brickWidth-brickOverlap)*CGFloat(j), y: yBrickOffset - (brickHeight-brickOverlap)*CGFloat(i))
+                brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
                 brick.physicsBody!.allowsRotation = false
                 brick.physicsBody!.friction = 0.0

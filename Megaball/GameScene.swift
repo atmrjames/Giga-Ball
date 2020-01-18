@@ -126,7 +126,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballLostAnimationHeight: CGFloat = 0
 	var brickHeight: CGFloat = 0
     var brickWidth: CGFloat = 0
-	var brickOverlap: CGFloat = 0
     var numberOfBrickRows: Int = 0
     var numberOfBrickColumns: Int = 0
     var totalBricksWidth: CGFloat = 0
@@ -457,6 +456,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
+		brickWidth = layoutUnit*2
+		brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
 		fontSize = 16
 		
 		if screenSize == "X" {
@@ -472,16 +473,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			sideScreenBlockRight.isHidden = false
 			pauseButtonSize = layoutUnit*1.5
 			iconSize = layoutUnit*1.25
+			brickWidth = layoutUnit*2
+			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
 		} else {
 			screenBlockTopHeight = layoutUnit*8.5 - gameWidth/12
 		}
 		
 		sideScreenBlockLeft.size.width = screenBlockSideWidth
 		sideScreenBlockRight.size.width = screenBlockSideWidth
-		
-		brickOverlap = 1
-		brickWidth = layoutUnit*2 + brickOverlap - brickOverlap/11
-		brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
 		
 		labelSpacing = fontSize/1.5
 		
@@ -671,7 +670,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "GitID, DDMMYYYY, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.text = "a863e46, 18012020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, superballIcon, hiddenBricksIcon]
@@ -1510,7 +1509,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.zPosition = 2
         addChild(powerUp)
         
-		let powerUpProb = Int.random(in: 5...7)
+		let powerUpProb = Int.random(in: 0...22)
         switch powerUpProb {
         case 0:
 		// Get a life			
