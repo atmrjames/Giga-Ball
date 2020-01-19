@@ -450,21 +450,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		sideScreenBlockLeft.isHidden = true
 		sideScreenBlockRight.isHidden = true
-		
 		numberOfBrickRows = 22
         numberOfBrickColumns = numberOfBrickRows/2
 		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
 		brickWidth = layoutUnit*2
-		brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
+		brickHeight = layoutUnit
+		paddleGap = layoutUnit*7
 		fontSize = 16
 		
 		if screenSize == "X" {
 			screenBlockTopHeight = layoutUnit*8.5
 			brickHeight = layoutUnit
 		} else if screenSize == "Pad" {
-			print("ipad", screenBlockSideWidth)
 			screenBlockSideWidth = layoutUnit*2.15
 			screenBlockTopHeight = layoutUnit*4
 			gameWidth = frame.size.width - screenBlockSideWidth*2
@@ -475,22 +474,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			iconSize = layoutUnit*1.25
 			brickWidth = layoutUnit*2
 			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
+			paddleGap = layoutUnit*5
 		} else {
 			screenBlockTopHeight = layoutUnit*8.5 - gameWidth/12
+			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
+			paddleGap = layoutUnit*5
 		}
 		
 		sideScreenBlockLeft.size.width = screenBlockSideWidth
 		sideScreenBlockRight.size.width = screenBlockSideWidth
 		
 		labelSpacing = fontSize/1.5
-		
-		paddleGap = layoutUnit*7
 		minPaddleGap = brickHeight*4
 		ballLostAnimationHeight = paddle.size.height
 		ballLostHeight = ballLostAnimationHeight*4
 		
-		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth-1)
-		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight-1)
+		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth)
+		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight)
 		
 		ballSize = layoutUnit*0.67
 		ball.size.width = ballSize
@@ -670,7 +670,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "a863e46, 18012020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.text = "d36426a, 19012020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, superballIcon, hiddenBricksIcon]
@@ -1046,6 +1046,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// check y-angle - stops the ball getting trapped on the wall
 			
+			correctBallAngle(correctedAngle: minAngleDeg/2)
+			
 			angleRad = (angleDeg*Double.pi/180)
 			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
 			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
@@ -1207,7 +1209,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 				
-				correctBallAngle()
+				correctBallAngle(correctedAngle: minAngleDeg)
 				
 			}
 			// Ball hits Frame - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
@@ -1228,7 +1230,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					// Set the new speed in the y direction
 				} else {
 				// Ball hits side blocks
-					correctBallAngle()
+					correctBallAngle(correctedAngle: minAngleDeg)
 				}
 				
 			}
@@ -2400,7 +2402,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Recentre ball if it isn't on smaller paddle
 	
-	func correctBallAngle() {
+	func correctBallAngle(correctedAngle: Double) {
 		if ball.position.x < 0 && xSpeed < 0 {
 			xSpeed = -xSpeed
 		}
@@ -2414,17 +2416,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		var angleRad = Double(atan2(ySpeed, xSpeed))
 		var angleDeg = Double(angleRad)/Double.pi*180
-		if angleDeg < minAngleDeg && angleDeg > 0 {
-			angleDeg = minAngleDeg
+		if angleDeg < correctedAngle && angleDeg > 0 {
+			angleDeg = correctedAngle
 		}
-		else if angleDeg > 180-minAngleDeg && angleDeg <= 180 {
-			angleDeg = 180-minAngleDeg
+		else if angleDeg > 180-correctedAngle && angleDeg <= 180 {
+			angleDeg = 180-correctedAngle
 		}
-		else if angleDeg < -180+minAngleDeg && angleDeg >= -180 {
-			angleDeg = -180+minAngleDeg
+		else if angleDeg < -180+correctedAngle && angleDeg >= -180 {
+			angleDeg = -180+correctedAngle
 		}
-		else if angleDeg > -minAngleDeg && angleDeg <= 0 {
-			angleDeg = -minAngleDeg
+		else if angleDeg > -correctedAngle && angleDeg <= 0 {
+			angleDeg = -correctedAngle
 		}
 		// check ball x-angle
 		angleRad = (angleDeg*Double.pi/180)

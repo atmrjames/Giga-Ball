@@ -27,10 +27,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
         mediumHaptic.impactOccurred()
         moveToLevelSelector()
     }
-    
-    @IBAction func knownIssuesButton(_ sender: Any) {
-        mediumHaptic.impactOccurred()
-    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
