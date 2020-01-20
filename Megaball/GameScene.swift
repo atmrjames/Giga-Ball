@@ -450,6 +450,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		sideScreenBlockLeft.isHidden = true
 		sideScreenBlockRight.isHidden = true
+		sideScreenBlockLeft.position.x = -frame.size.width
+		sideScreenBlockRight.position.x = frame.size.width
 		numberOfBrickRows = 22
         numberOfBrickColumns = numberOfBrickRows/2
 		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
@@ -461,24 +463,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		fontSize = 16
 		
 		if screenSize == "X" {
-			screenBlockTopHeight = layoutUnit*8.5
-			brickHeight = layoutUnit
+			screenBlockTopHeight = layoutUnit*7.4
 		} else if screenSize == "Pad" {
-			screenBlockSideWidth = layoutUnit*2.15
-			screenBlockTopHeight = layoutUnit*4
+			screenBlockSideWidth = frame.size.width/10
 			gameWidth = frame.size.width - screenBlockSideWidth*2
 			layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
 			sideScreenBlockLeft.isHidden = false
 			sideScreenBlockRight.isHidden = false
 			pauseButtonSize = layoutUnit*1.5
-			iconSize = layoutUnit*1.25
 			brickWidth = layoutUnit*2
 			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
-			paddleGap = layoutUnit*5
+			paddleGap = layoutUnit*7
+			iconSize = layoutUnit
+			screenBlockTopHeight = iconSize*2
+			sideScreenBlockLeft.position.x = -frame.size.width/2+screenBlockSideWidth/2
+			sideScreenBlockRight.position.x = frame.size.width/2-screenBlockSideWidth/2
 		} else {
-			screenBlockTopHeight = layoutUnit*8.5 - gameWidth/12
+			screenBlockTopHeight = layoutUnit*3
 			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
-			paddleGap = layoutUnit*5
 		}
 		
 		sideScreenBlockLeft.size.width = screenBlockSideWidth
@@ -513,19 +515,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock.size.width = frame.size.width
 		sideScreenBlockLeft.size.height = frame.size.height - screenBlockTopHeight
 		sideScreenBlockRight.size.height = frame.size.height - screenBlockTopHeight
-		sideScreenBlockLeft.position.x = -frame.size.width/2+screenBlockSideWidth/2
 		sideScreenBlockLeft.position.y = -frame.size.height/2+sideScreenBlockLeft.size.height/2
 		sideScreenBlockLeft.zPosition = 1
-		sideScreenBlockRight.position.x = frame.size.width/2-screenBlockSideWidth/2
 		sideScreenBlockRight.position.y = -frame.size.height/2+sideScreenBlockRight.size.height/2
 		sideScreenBlockRight.zPosition = 1
 		
-		if screenSize != "Pad" {
-			sideScreenBlockLeft.position.x = -frame.size.width
-			sideScreenBlockRight.position.x = frame.size.width
-		}
-		
-		topGap = brickHeight*2
+		topGap = brickHeight*3
 		// Object size definition
 		
 		ballLinearDampening = -0.02
@@ -630,31 +625,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
 		pauseButton.position.x = -frame.size.width/2 + labelSpacing*2 + pauseButton.size.width/2
-		pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight + labelSpacing*8
-		if screenRatio < 1.777 {
-		// iPhone SE (1.775)
-			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight + labelSpacing*7
-		}
-		if screenRatio < 1.7 {
-		// iPads
-			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight + labelSpacing*10
-		}
+		pauseButton.position.y = frame.size.height/2 - labelSpacing*0.75 - pauseButton.size.height*1.25
 
 		pauseButton.zPosition = 10
         pauseButton.isUserInteractionEnabled = false
 		
-		pauseButtonTouch.size.width = pauseButtonSize*2.75
-		pauseButtonTouch.size.height = pauseButtonSize*2.75
-		pauseButtonTouch.position.y = pauseButton.position.y
-		pauseButtonTouch.position.x = pauseButton.position.x
-		pauseButtonTouch.zPosition = 10
-        pauseButtonTouch.isUserInteractionEnabled = false
-		// Pause button size and position
-
+		powerUpTray.zPosition = 8
+		powerUpTray.size.width = gameWidth
+		powerUpTray.size.height = iconSize*2
+		powerUpTray.centerRect = CGRect(x: 5.0/40.0, y: 5.0/40.0, width: 30.0/40.0, height: 30.0/40.0)
+		powerUpTray.scale(to:CGSize(width: gameWidth, height: iconSize*2))
+		powerUpTray.position.x = 0
+		
+		if screenSize == "X" {
+			powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - powerUpTray.size.height/2 - labelSpacing/2
+		} else {
+			powerUpTray.position.y = frame.size.height/2 - powerUpTray.size.height/2
+			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight - labelSpacing/2 - pauseButton.size.height/2
+		}
+		
 		scoreLabel.position.x = frame.size.width/2 - labelSpacing*2
 		scoreLabel.position.y = pauseButton.position.y + fontSize/4 + labelSpacing/2
 		scoreLabel.fontSize = fontSize
 		scoreLabel.zPosition = 10
+		
+		if screenSize == "Pad" {
+			pauseButton.position.x = sideScreenBlockLeft.position.x + sideScreenBlockLeft.size.width/2 + pauseButton.size.width/2 + layoutUnit/2
+			scoreLabel.position.x = sideScreenBlockRight.position.x - sideScreenBlockRight.size.width/2 - layoutUnit/2
+		}
+		
 		multiplierLabel.position.x = scoreLabel.position.x
 		multiplierLabel.position.y = scoreLabel.position.y - labelSpacing - fontSize/2
 		multiplierLabel.fontSize = fontSize
@@ -670,8 +669,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "d36426a, 19012020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.text = "00000000, ddmmyyyy, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
+		
+		pauseButtonTouch.size.width = pauseButtonSize*2.75
+		pauseButtonTouch.size.height = pauseButtonSize*2.75
+		pauseButtonTouch.position.y = pauseButton.position.y
+		pauseButtonTouch.position.x = pauseButton.position.x
+		pauseButtonTouch.zPosition = 10
+        pauseButtonTouch.isUserInteractionEnabled = false
+		// Pause button size and position
 		
 		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, superballIcon, hiddenBricksIcon]
 		disabledIconTextureArray = [iconPaddleSizeDisabledTexture, iconBallSpeedDisabledTexture, iconStickyPaddleDisabledTexture, iconGravityDisabledTexture, iconLasersDisabledTexture, iconSuperballDisabledTexture, iconHiddenBlocksDisabledTexture]
@@ -681,16 +688,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		for i in 1...iconArray.count {
 			let index = i-1
-			let iconSpacing = ((frame.size.width-iconSize*2) - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
+			let iconSpacing = ((gameWidth-iconSize*2) - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
 			iconArray[index].size.width = iconSize
 			iconArray[index].size.height = iconSize
 			iconArray[index].texture = disabledIconTextureArray[index]
-			iconArray[index].position.x = -frame.size.width/2 + iconSize + (iconSize+iconSpacing)*CGFloat(index)
-			iconArray[index].position.y = pauseButton.position.y - pauseButtonSize/2 - iconSize/2 - labelSpacing*2
-			if screenRatio < 1.777 {
-			// iPhone SE (1.775)
-				iconArray[index].position.y = pauseButton.position.y - pauseButtonSize/2 - iconSize/2 - labelSpacing*2+2
-			}
+			iconArray[index].position.x = -gameWidth/2 + iconSize + (iconSize+iconSpacing)*CGFloat(index)
+			iconArray[index].position.y = powerUpTray.position.y + labelSpacing/2
 			iconArray[index].zPosition = 10
 			iconArray[index].name = powerIconCategoryName
 			iconEmptyTimerArray[index].size.width = iconSize
@@ -699,7 +702,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			iconEmptyTimerArray[index].position.x = iconArray[index].position.x - iconEmptyTimerArray[index].size.width/2
 			iconEmptyTimerArray[index].position.y = iconArray[index].position.y - iconSize/2 - iconEmptyTimerArray[index].size.height/2 - labelSpacing/2
 			iconEmptyTimerArray[index].zPosition = 9
-//					iconEmptyTimerArray[index].isHidden = true
 			iconTimerArray[index].size.width = iconEmptyTimerArray[index].size.width
 			iconTimerArray[index].size.height = iconEmptyTimerArray[index].size.height
 			iconTimerArray[index].texture = powerUpIconBarFull
@@ -711,12 +713,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			iconTimerArray[index].scale(to:CGSize(width: iconEmptyTimerArray[index].size.width, height: iconEmptyTimerArray[index].size.height))
 		}
 		// Power-up progress icon definition and setup
-
-		powerUpTray.zPosition = 8
-		powerUpTray.centerRect = CGRect(x: 5.0/40.0, y: 5.0/40.0, width: 30.0/40.0, height: 30.0/40.0)
-		powerUpTray.scale(to:CGSize(width: gameWidth*1.5, height: iconSize*2))
-		powerUpTray.position.x = 0
-		powerUpTray.position.y = (paddleSizeIcon.position.y-iconSize/5)
 
 //MARK: - Game Properties Initialisation
         
@@ -1016,6 +1012,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 			if ball.position.x >= 0 {
 				// ball is on right side of screen
+
 				if angleDeg > 85 && angleDeg < 90 {
 					angleDeg = 85
 				}
@@ -1044,15 +1041,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					angleDeg = -85
 				}
 			}
-			// check y-angle - stops the ball getting trapped on the wall
-			
-			correctBallAngle(correctedAngle: minAngleDeg/2)
 			
 			angleRad = (angleDeg*Double.pi/180)
 			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
 			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
 			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
 			// Set the new angle of the ball
+
+			// check y-angle - stops the ball getting trapped on the wall
+			
+			if (angleDeg <= minAngleDeg/2 && angleDeg >= -minAngleDeg/2) || (angleDeg > 180-minAngleDeg/2 && angleDeg <= 180) || (angleDeg < -180+minAngleDeg/2 && angleDeg >= -180) {
+				correctBallAngle(correctedAngle: minAngleDeg/2)
+			}
 			
 			if currentSpeed > ballSpeedLimit + currentSpeed/10 {
 				ball.physicsBody!.linearDamping = 0.5
@@ -1209,6 +1209,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 				
+				if ball.position.x < 0 && xSpeed < 0 {
+					xSpeed = -xSpeed
+				}
+				if ball.position.x > 0 && xSpeed > 0 {
+					xSpeed = -xSpeed
+				}
+				// Ensure the xSpeed is calculated in the correct direction based on the ball position
+				
+				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+				// Set the new speed in the x direction
+				
 				correctBallAngle(correctedAngle: minAngleDeg)
 				
 			}
@@ -1230,6 +1241,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					// Set the new speed in the y direction
 				} else {
 				// Ball hits side blocks
+					if ball.position.x < 0 && xSpeed < 0 {
+						xSpeed = -xSpeed
+					}
+					if ball.position.x > 0 && xSpeed > 0 {
+						xSpeed = -xSpeed
+					}
+					// Ensure the xSpeed is calculated in the correct direction based on the ball position
+					ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+					// Set the new speed in the x direction
 					correctBallAngle(correctedAngle: minAngleDeg)
 				}
 				
@@ -1455,34 +1475,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
             let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
             // Define collision position between the ball and paddle
+			
+			let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
+			// Assumes the ball's ySpeed is always positive
+			var angleRad = atan2(Double(ySpeedCorrected), Double(xSpeed))
+			// Angle of the ball
             
 			if ball.position.y - ball.size.width/3 >= paddle.position.y + paddle.size.height/3 && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
             // Only apply if the ball hits the paddles top flat surface
 				
-				let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
-				// Assumes the ball's ySpeed is always positive
-                var angleRad = atan2(Double(ySpeedCorrected), Double(xSpeed))
-                // Angle of the ball
-                
                 angleRad = angleRad - ((angleAdjustmentK*Double.pi/180)*collisionPercentage)
                 // Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
      
 				angleRad = angleRad + Double.random(in: (-5*Double.pi/180)...5*Double.pi/180)
                 // Adds a small element of randomness into the ball's angle - between -5 and 5 degrees
-                
-                if angleRad < (minAngleDeg*2 * Double.pi / 180) {
-                    angleRad = (minAngleDeg*2 * Double.pi / 180)
-                }
-                if angleRad > (maxAngleDeg*2 * Double.pi / 180) {
-                    angleRad = (maxAngleDeg*2 * Double.pi / 180)
-                }
-                // Limits the angle off of the paddle to 2* the min & max ball angles
-                
-                xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-                ySpeed = CGFloat(sin(angleRad)) * currentSpeed
+				
+				if angleRad < (minAngleDeg*2 * Double.pi / 180) {
+					angleRad = (minAngleDeg*2 * Double.pi / 180)
+				}
+				if angleRad > (maxAngleDeg*2 * Double.pi / 180) {
+					angleRad = (maxAngleDeg*2 * Double.pi / 180)
+				}
+				// Limits the angle off of the paddle to 2* the min & max ball angles
+							   
+				xSpeed = CGFloat(cos(angleRad)) * currentSpeed
+				ySpeed = CGFloat(sin(angleRad)) * currentSpeed
 				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-                // Set the new speed and angle of the ball
-            }
+				// Set the new speed and angle of the ball
+			}
         }
     }
     
@@ -1952,6 +1972,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
+				self.paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
+				self.paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
+				self.paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
                 self.rigidHaptic.impactOccurred()
 				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
 					self.recentreBall()
@@ -2014,6 +2037,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
+				self.paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
+				self.paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
+				self.paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
                 self.rigidHaptic.impactOccurred()
                 self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
@@ -2403,31 +2429,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Recentre ball if it isn't on smaller paddle
 	
 	func correctBallAngle(correctedAngle: Double) {
-		if ball.position.x < 0 && xSpeed < 0 {
-			xSpeed = -xSpeed
-		}
-		if ball.position.x > 0 && xSpeed > 0 {
-			xSpeed = -xSpeed
-		}
-		// Ensure the xSpeed is calculated in the correct direction based on the ball position
-		
-		ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-		// Set the new speed in the x direction
 		
 		var angleRad = Double(atan2(ySpeed, xSpeed))
 		var angleDeg = Double(angleRad)/Double.pi*180
-		if angleDeg < correctedAngle && angleDeg > 0 {
-			angleDeg = correctedAngle
+		
+		if correctedAngle < minAngleDeg {
+			if angleDeg < correctedAngle && angleDeg > -correctedAngle {
+				angleDeg = -correctedAngle
+			}
+			else if angleDeg > 180-correctedAngle || angleDeg < -180+correctedAngle {
+				angleDeg = -180+correctedAngle
+			}
+		} else {
+			if angleDeg < correctedAngle && angleDeg > 0 {
+				angleDeg = correctedAngle
+			}
+			else if angleDeg > 180-correctedAngle && angleDeg <= 180 {
+				angleDeg = 180-correctedAngle
+			}
+			else if angleDeg < -180+correctedAngle && angleDeg >= -180 {
+				angleDeg = -180+correctedAngle
+			}
+			else if angleDeg > -correctedAngle && angleDeg <= 0 {
+				angleDeg = -correctedAngle
+			}
 		}
-		else if angleDeg > 180-correctedAngle && angleDeg <= 180 {
-			angleDeg = 180-correctedAngle
+		
+		if ((angleDeg <= correctedAngle && angleDeg >= -correctedAngle) || (angleDeg > 180-correctedAngle && angleDeg <= 180) || (angleDeg < -180+correctedAngle && angleDeg >= -180)) && ball.position.y < paddle.position.y + ballSize*2 {
+			angleDeg = minAngleDeg
 		}
-		else if angleDeg < -180+correctedAngle && angleDeg >= -180 {
-			angleDeg = -180+correctedAngle
-		}
-		else if angleDeg > -correctedAngle && angleDeg <= 0 {
-			angleDeg = -correctedAngle
-		}
+		
 		// check ball x-angle
 		angleRad = (angleDeg*Double.pi/180)
 		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
