@@ -55,7 +55,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     // Segue to MenuViewController
     
     func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool) {
-        let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! InbewteenLevelsViewController
+        let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
         popoverVC.levelNumber = levelNumber
         popoverVC.levelScore = levelScore
         popoverVC.levelHighscore = levelHighscore
@@ -85,6 +85,14 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         popoverVC.didMove(toParent: self)
     }
     // Show PauseMenuViewController as popup
+    
+    func showAdVC() {
+        let adVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "adVC") as! AdViewController
+        self.addChild(adVC)
+        adVC.view.frame = self.view.frame
+        self.view.addSubview(adVC.view)
+        adVC.didMove(toParent: self)
+    }
 
     override var shouldAutorotate: Bool {
         return true

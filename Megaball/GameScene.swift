@@ -41,6 +41,7 @@ protocol GameViewControllerDelegate: class {
 	func moveToMainMenu(currentHighscore: Int)
     func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool)
 	func showPauseMenu(levelNumber: Int, score: Int, highscore: Int)
+	func showAdVC()
 	var selectedLevel: Int? { get }
 }
 // Setup the protocol to return to the main menu from GameViewController
@@ -182,6 +183,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var newLevelHighScore: Bool = false
 	var newTotalHighScore: Bool = false
     // Setup score properties
+	
+	var showAd: Bool = true
     
     let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
 	
@@ -301,7 +304,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let straightLaunchAngleRad = 90 * Double.pi / 180
 	let minLaunchAngleRad = 10 * Double.pi / 180
 	let maxLaunchAngleRad = 70 * Double.pi / 180
-	var launchAngleMultiplier = 1
+	var launchAngleMultiplier = 0
 	// Ball launch
     
     var fontSize: CGFloat = 0
@@ -343,7 +346,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Playing(scene: self),
         InbetweenLevels(scene: self),
         GameOver(scene: self),
-        Paused(scene: self)])
+        Paused(scene: self),
+		Ad(scene: self)])
     // Sets up the game states
     
     weak var gameViewControllerDelegate:GameViewControllerDelegate?
@@ -883,14 +887,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// Sticky paddle reset
             }
         }
-        
+
         ballPositionOnPaddle = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
         // Define the relative position between the ball and paddle
-        
-        if ballPositionOnPaddle < 0 {
-            launchAngleMultiplier = -1
-        }
+
+		if ballPositionOnPaddle < 0 {
+            launchAngleMultiplier = 1
+		} else {
+			launchAngleMultiplier = -1
+		}
         // Determines which angle the ball will launch and modify the multiplier accordingly
+		
+		print("ball position: ", ballPositionOnPaddle, launchAngleMultiplier)
         
         if ballPositionOnPaddle > 1 {
             ballPositionOnPaddle = 1
@@ -908,9 +916,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             // Randomise which direction the ball leaves the paddle if its in the middle
         } else {
-            ballLaunchAngleRad = straightLaunchAngleRad - ((maxLaunchAngleRad - minLaunchAngleRad) * ballPositionOnPaddle + (minLaunchAngleRad * Double(launchAngleMultiplier)))
+            ballLaunchAngleRad = straightLaunchAngleRad - ((maxLaunchAngleRad - minLaunchAngleRad) * ballPositionOnPaddle) + (minLaunchAngleRad * Double(launchAngleMultiplier))
             // Determine the launch angle based on the location of the ball on the paddle
         }
+		
+		print("ball launch: ", ballPositionOnPaddle, ballLaunchAngleRad)
         
         let dxLaunch = cos(ballLaunchAngleRad) * Double(ballSpeedLimit)
         let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)
@@ -1413,9 +1423,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// probability of getting a power up if brick is removed
 		}
-		
-		
-		
+
 		if sprite.texture != brickIndestructible1Texture {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 			node.name = BrickRemovalCategoryName
@@ -1471,38 +1479,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             paddleMoved = true
             ball.position.y = ballStartingPositionY
             
-        } else {
-        
-            let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
-            // Define collision position between the ball and paddle
-			
+        } else if ball.position.y - ball.size.width/3 >= paddle.position.y + paddle.size.height/3 && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
+            // Only apply if the ball hits the paddles top flat surface
+				
+			let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
+			// Define collision position between the ball and paddle
 			let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
 			// Assumes the ball's ySpeed is always positive
 			var angleRad = atan2(Double(ySpeedCorrected), Double(xSpeed))
 			// Angle of the ball
-            
-			if ball.position.y - ball.size.width/3 >= paddle.position.y + paddle.size.height/3 && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
-            // Only apply if the ball hits the paddles top flat surface
-				
-                angleRad = angleRad - ((angleAdjustmentK*Double.pi/180)*collisionPercentage)
-                // Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
-     
-				angleRad = angleRad + Double.random(in: (-5*Double.pi/180)...5*Double.pi/180)
-                // Adds a small element of randomness into the ball's angle - between -5 and 5 degrees
-				
-				if angleRad < (minAngleDeg*2 * Double.pi / 180) {
-					angleRad = (minAngleDeg*2 * Double.pi / 180)
-				}
-				if angleRad > (maxAngleDeg*2 * Double.pi / 180) {
-					angleRad = (maxAngleDeg*2 * Double.pi / 180)
-				}
-				// Limits the angle off of the paddle to 2* the min & max ball angles
-							   
-				xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-				ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-				// Set the new speed and angle of the ball
+			
+			angleRad = angleRad - ((angleAdjustmentK*Double.pi/180)*collisionPercentage)
+			// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
+ 
+			angleRad = angleRad + Double.random(in: (-5*Double.pi/180)...5*Double.pi/180)
+			// Adds a small element of randomness into the ball's angle - between -5 and 5 degrees
+			
+			if angleRad < (minAngleDeg*2 * Double.pi / 180) {
+				angleRad = (minAngleDeg*2 * Double.pi / 180)
 			}
+			if angleRad > (maxAngleDeg*2 * Double.pi / 180) {
+				angleRad = (maxAngleDeg*2 * Double.pi / 180)
+			}
+			// Limits the angle off of the paddle to 2* the min & max ball angles
+						   
+			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
+			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
+			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+			// Set the new speed and angle of the ball
         }
     }
     
@@ -2416,6 +2420,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		totalHighscore = totalScoreArray.max()!
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highscore: totalHighscore)
     }
+	
+	func showAdVC() {
+		gameViewControllerDelegate?.showAdVC()
+	}
 	
 	func recentreBall() {
 		if ballIsOnPaddle {

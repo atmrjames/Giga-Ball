@@ -121,9 +121,13 @@ class InbetweenLevels: GKState {
             })
             // Show game over pop-up
         } else {
-            let waitScene = SKAction.wait(forDuration: 2)
+            let waitScene = SKAction.wait(forDuration: 1)
             self.scene.run(waitScene, completion: {
-                self.scene.gameState.enter(Playing.self)
+                if self.scene.showAd {
+                    self.scene.gameState.enter(Ad.self)
+                } else {
+                    self.scene.gameState.enter(Playing.self)
+                }
             })
             // Move to the next level after a delay
         }
@@ -148,6 +152,8 @@ class InbetweenLevels: GKState {
         case is PreGame.Type:
             return true
         case is Playing.Type:
+            return true
+        case is Ad.Type:
             return true
         case is GameOver.Type:
             return true

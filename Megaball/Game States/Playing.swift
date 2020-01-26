@@ -23,12 +23,12 @@ class Playing: GKState {
             scene.gameState.enter(GameOver.self)
         }
         
-        if previousState is InbetweenLevels {
+        if previousState is InbetweenLevels || previousState is Ad {
             scene.levelNumber+=1
         // Increment level number
         }
         
-        if previousState is PreGame || previousState is InbetweenLevels {
+        if previousState is PreGame || previousState is InbetweenLevels || previousState is Ad {
             reloadUI()
             loadNextLevel()
         }
@@ -203,6 +203,8 @@ class Playing: GKState {
         case is InbetweenLevels.Type:
             return true
         case is Paused.Type:
+            return true
+        case is Ad.Type:
             return true
         default:
             return false

@@ -27,6 +27,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
         mediumHaptic.impactOccurred()
         moveToLevelSelector()
     }
+    
+    @IBAction func settingsButton(_ sender: Any) {
+        mediumHaptic.impactOccurred()
+//        moveToSettings()
+    }
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,6 +53,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
     func moveToLevelSelector() {
         let levelSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "levelSelectorView") as! LevelSelectorViewController
         self.navigationController?.pushViewController(levelSelectorView, animated: true)
+    }
+    // Segue to LevelSelectorViewController
+    
+    func moveToSettings() {
+        let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
+        self.navigationController?.pushViewController(settingsView, animated: true)
     }
     // Segue to LevelSelectorViewController
 

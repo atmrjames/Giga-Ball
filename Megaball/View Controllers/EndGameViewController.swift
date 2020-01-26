@@ -8,7 +8,7 @@
 
 import UIKit
 
-class InbewteenLevelsViewController: UIViewController {
+class EndGameViewController: UIViewController, MenuViewControllerDelegate {
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
     
@@ -23,12 +23,19 @@ class InbewteenLevelsViewController: UIViewController {
     @IBOutlet weak var popupView: UIView!
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet weak var highscoreLabel: UILabel!
+    @IBOutlet weak var scoreLabelTitle: UILabel!
     @IBOutlet weak var highscoreLabelTitle: UILabel!
+    @IBOutlet weak var endGameTitle: UILabel!
     
     @IBAction func exitButton(_ sender: UIButton) {
         mediumHaptic.impactOccurred()
         moveToMainMenu()
         // Move game scene to playing
+    }
+    
+    @IBAction func restartButton(_ sender: Any) {
+        mediumHaptic.impactOccurred()
+        moveToGame(selectedLevel: 1)
     }
     
     override func viewDidLoad() {
@@ -44,7 +51,7 @@ class InbewteenLevelsViewController: UIViewController {
         UIView.animate(withDuration: 0.25, animations: {
             self.view.alpha = 1.0
             self.view.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-            })
+        })
     }
     
     func moveToMainMenu() {
@@ -52,19 +59,34 @@ class InbewteenLevelsViewController: UIViewController {
     }
     
     func updateLabels() {
-        scoreLabel.text = String(totalScore)
         if totalHighscore <= 1 {
             totalHighscore = 0
         }
-        
         if totalScore >= totalHighscore && totalHighscore > 1 {
-            highscoreLabelTitle.text = "New Highscore"
+            scoreLabelTitle.text = "New Highscore"
+            highscoreLabelTitle.text = "Previous Highscore"
         } else {
+            scoreLabelTitle.text = "Score"
             highscoreLabelTitle.text = "Highscore"
         }
         
+        scoreLabel.text = String(totalScore)
         highscoreLabel.text = String(totalHighscore)
+        
+        if gameoverStatus {
+            endGameTitle.text = "G A M E  O V E R"
+        } else {
+            endGameTitle.text = "C O M P L E T E"
+        }
     }
+    
+    func moveToGame(selectedLevel: Int) {
+        let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
+        gameView.menuViewControllerDelegate = self
+        gameView.selectedLevel = selectedLevel
+        self.navigationController?.pushViewController(gameView, animated: false)
+    }
+    // Segue to GameViewController
     
     func setBlur() {
         popupView.backgroundColor = .clear

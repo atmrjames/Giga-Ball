@@ -13,6 +13,45 @@
         </array>
     </customFonts>
     <scenes>
+        <!--Settings View Controller-->
+        <scene sceneID="wy2-yw-zAz">
+            <objects>
+                <viewController storyboardIdentifier="settingsVC" id="GvT-XF-MH3" customClass="SettingsViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="vRC-Mi-Or5">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="AXe-RJ-CAA">
+                                <rect key="frame" x="16" y="617" width="34" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="Vib-vJ-l26"/>
+                                </constraints>
+                                <state key="normal" title="Back"/>
+                                <connections>
+                                    <action selector="backButton:" destination="GvT-XF-MH3" eventType="touchUpInside" id="ZQT-yu-W75"/>
+                                </connections>
+                            </button>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="d3U-8J-yMb">
+                                <rect key="frame" x="0.0" y="62" width="375" height="542"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="calibratedRGB"/>
+                            </tableView>
+                        </subviews>
+                        <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="1R6-p5-C1Q" firstAttribute="bottom" secondItem="AXe-RJ-CAA" secondAttribute="bottom" constant="20" id="A5P-MQ-bKZ"/>
+                            <constraint firstItem="AXe-RJ-CAA" firstAttribute="leading" secondItem="1R6-p5-C1Q" secondAttribute="leading" constant="16" id="MvE-jN-JDj"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="1R6-p5-C1Q"/>
+                    </view>
+                    <connections>
+                        <outlet property="settingsTableView" destination="d3U-8J-yMb" id="1wA-xd-eyc"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="lDg-D5-MWP" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="196" y="-556.37181409295351"/>
+        </scene>
         <!--Menu View Controller-->
         <scene sceneID="zl1-ye-3F0">
             <objects>
@@ -75,8 +114,21 @@ with music from Brendan Lawton</string>
                                     <action selector="playButtonPressed:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Z6Y-gK-Z8G"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="K3v-su-kFz">
+                                <rect key="frame" x="153" y="437.5" width="69" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="6gb-9a-aIo"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Settings">
+                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="settingsButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="HmI-Id-Mwn"/>
+                                </connections>
+                            </button>
                         </subviews>
-                        <color key="backgroundColor" red="0.14902216200000001" green="0.14901494979999999" blue="0.14901983739999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="0sF-pk-jib"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="kD8-ZB-cpA" secondAttribute="trailing" id="3ed-jq-7bi"/>
@@ -84,9 +136,12 @@ with music from Brendan Lawton</string>
                             <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="Iio-Bi-GCR"/>
                             <constraint firstItem="kD8-ZB-cpA" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="JSf-HH-cn3"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="N6E-up-JB9"/>
+                            <constraint firstItem="zyV-Na-Dvb" firstAttribute="top" secondItem="K3v-su-kFz" secondAttribute="bottom" constant="5" id="Nec-Tt-oN5"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="Tri-5X-6j7" secondAttribute="trailing" id="OBw-s3-VK4"/>
+                            <constraint firstItem="zyV-Na-Dvb" firstAttribute="top" secondItem="K3v-su-kFz" secondAttribute="bottom" constant="5" id="VAN-JB-WKf"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="azD-Ym-dKV" secondAttribute="trailing" id="XfP-Sm-fFx"/>
                             <constraint firstItem="zyV-Na-Dvb" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="Xg0-KA-xlM"/>
+                            <constraint firstItem="K3v-su-kFz" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="bOA-iw-9Fi"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="top" secondItem="Tri-5X-6j7" secondAttribute="bottom" constant="60" id="ce9-in-3pY"/>
                             <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="e0T-rD-su6"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="fPD-CQ-zoR"/>
@@ -98,6 +153,7 @@ with music from Brendan Lawton</string>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="top" secondItem="zyV-Na-Dvb" secondAttribute="bottom" constant="5" id="qNV-0r-ViA"/>
                             <constraint firstItem="kD8-ZB-cpA" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="100" id="qxl-5c-pro"/>
                             <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="vDe-mr-3AB"/>
+                            <constraint firstItem="K3v-su-kFz" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="wiS-dj-QIq"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="3NZ-mn-eyJ"/>
                     </view>
@@ -322,10 +378,10 @@ with music from Brendan Lawton</string>
             </objects>
             <point key="canvasLocation" x="1832.8" y="123.68815592203899"/>
         </scene>
-        <!--Inbewteen Levels View Controller-->
+        <!--End Game View Controller-->
         <scene sceneID="4p0-ms-iAF">
             <objects>
-                <viewController storyboardIdentifier="inbetweenLevelsVC" id="fjJ-pg-0SJ" customClass="InbewteenLevelsViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="inbetweenLevelsVC" id="fjJ-pg-0SJ" customClass="EndGameViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="1E9-4t-kMl">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -383,6 +439,17 @@ with music from Brendan Lawton</string>
                                         <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
+                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="trailing" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="nYt-K3-cRA">
+                                        <rect key="frame" x="248" y="283" width="55" height="30"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="15"/>
+                                        <state key="normal" title="Restart">
+                                            <color key="titleColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="restartButton:" destination="fjJ-pg-0SJ" eventType="touchUpInside" id="joE-gN-IFf"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <constraints>
@@ -399,10 +466,12 @@ with music from Brendan Lawton</string>
                         <viewLayoutGuide key="safeArea" id="OXH-MI-k47"/>
                     </view>
                     <connections>
+                        <outlet property="endGameTitle" destination="DwY-qh-TUd" id="Hg8-cd-2Ny"/>
                         <outlet property="highscoreLabel" destination="6tU-jU-djw" id="glD-2f-zpJ"/>
                         <outlet property="highscoreLabelTitle" destination="bpN-8O-ZhC" id="QaB-F5-CFO"/>
                         <outlet property="popupView" destination="bk6-6M-rr7" id="KIE-Uh-zSr"/>
                         <outlet property="scoreLabel" destination="0LM-B6-Fna" id="K1B-Qr-XxS"/>
+                        <outlet property="scoreLabelTitle" destination="vcg-EO-0so" id="bJZ-uV-PgL"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="MEb-ve-qY2" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -536,6 +605,43 @@ with music from Brendan Lawton</string>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ju6-9d-N4W" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1784.8" y="841.52923538230891"/>
+        </scene>
+        <!--Ad View Controller-->
+        <scene sceneID="TDp-Jh-QKG">
+            <objects>
+                <viewController storyboardIdentifier="adVC" id="xcf-bW-PjK" customClass="AdViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="p8u-EV-KtX">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Ad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qlr-1n-iQ6">
+                                <rect key="frame" x="156" y="304" width="63.5" height="59.5"/>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
+                                <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ube-Im-4Zr">
+                                <rect key="frame" x="155.5" y="363.5" width="64" height="42"/>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="25"/>
+                                <state key="normal" title="Close"/>
+                                <connections>
+                                    <action selector="closeButton:" destination="xcf-bW-PjK" eventType="touchUpInside" id="ji9-8V-hBe"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" red="0.14902216200000001" green="0.14901494979999999" blue="0.14901983739999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="qlr-1n-iQ6" firstAttribute="centerX" secondItem="p8u-EV-KtX" secondAttribute="centerX" id="Hdq-ET-P3E"/>
+                            <constraint firstItem="qlr-1n-iQ6" firstAttribute="centerY" secondItem="p8u-EV-KtX" secondAttribute="centerY" id="TOk-hl-TeG"/>
+                            <constraint firstItem="ube-Im-4Zr" firstAttribute="centerX" secondItem="p8u-EV-KtX" secondAttribute="centerX" id="Y0O-dD-Tnv"/>
+                            <constraint firstItem="ube-Im-4Zr" firstAttribute="top" secondItem="qlr-1n-iQ6" secondAttribute="bottom" id="xUK-6a-Pio"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="oHM-8V-KDw"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Xjs-Hl-Mm0" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2526" y="842"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="nKk-bJ-jOh">

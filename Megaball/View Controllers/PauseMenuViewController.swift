@@ -139,10 +139,4 @@ class PauseMenuViewController: UIViewController {
         removeAnimate(nextAction: .unpause)
     }
     
-    // Segue to MenuViewController
-    
-    //    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
-    //        return []
-    //    }
-    //    // Re-enable home bar on 1st swipe
 }
