@@ -15,20 +15,7 @@
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="SplashScreenLogo" translatesAutoresizingMaskIntoConstraints="NO" id="Wge-qx-Ibj">
-                                <rect key="frame" x="157" y="111.5" width="100" height="673"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="100" id="Ghf-IL-210"/>
-                                    <constraint firstAttribute="height" constant="673" id="Xcz-mE-p8S"/>
-                                </constraints>
-                            </imageView>
-                        </subviews>
                         <color key="backgroundColor" red="0.14902216200000001" green="0.14901494979999999" blue="0.14901983739999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                        <constraints>
-                            <constraint firstItem="Wge-qx-Ibj" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Ee6-9m-m7r"/>
-                            <constraint firstItem="Wge-qx-Ibj" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="iWe-xd-7Uc"/>
-                        </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
                 </viewController>
@@ -37,7 +24,4 @@
             <point key="canvasLocation" x="53" y="375"/>
         </scene>
     </scenes>
-    <resources>
-        <image name="SplashScreenLogo" width="673" height="673"/>
-    </resources>
 </document>

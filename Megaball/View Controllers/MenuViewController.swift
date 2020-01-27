@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import GoogleMobileAds
 
 class MenuViewController: UIViewController, MenuViewControllerDelegate {
 
@@ -33,9 +34,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
 //        moveToSettings()
     }
     
-
+    @IBOutlet var bannerView: GADBannerView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
+        bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
+        bannerView.rootViewController = self
+        // Configure banner ad
+        
+        bannerView.load(GADRequest())
+        // Load banner ad
+        
     }
     
     override func viewDidAppear(_ animated: Bool) {

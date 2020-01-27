@@ -61,46 +61,20 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="MEGABALL" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kD8-ZB-cpA">
-                                <rect key="frame" x="0.0" y="100" width="375" height="59.5"/>
+                                <rect key="frame" x="0.0" y="20" width="375" height="59.5"/>
                                 <color key="tintColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
                                 <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="azD-Ym-dKV">
-                                <rect key="frame" x="0.0" y="606.5" width="375" height="40.5"/>
-                                <string key="text">A game by James Harding 
-with music from Brendan Lawton</string>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <rect key="frame" x="0.0" y="79.5" width="375" height="33.5"/>
+                                <string key="text">Created by James Harding 
+Music by Brendan Lawton</string>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="14"/>
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zyV-Na-Dvb">
-                                <rect key="frame" x="0.0" y="475.5" width="375" height="33"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="33" id="2uQ-jW-K9b"/>
-                                </constraints>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
-                                <state key="normal" title="Tutorial">
-                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                </state>
-                                <connections>
-                                    <action selector="tutorialButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="WTj-Gd-8f2"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Tri-5X-6j7">
-                                <rect key="frame" x="0.0" y="513.5" width="375" height="33"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="33" id="mcb-WJ-4Qe"/>
-                                </constraints>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
-                                <state key="normal" title="Select Level">
-                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                </state>
-                                <connections>
-                                    <action selector="selectLevelButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Cis-sM-5rj"/>
-                                </connections>
-                            </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WqO-Zu-yT0" userLabel="PlayButton">
                                 <rect key="frame" x="145" y="285" width="85" height="96.5"/>
                                 <constraints>
@@ -114,8 +88,52 @@ with music from Brendan Lawton</string>
                                     <action selector="playButtonPressed:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Z6Y-gK-Z8G"/>
                                 </connections>
                             </button>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ETS-ul-Ji7" customClass="GADBannerView">
+                                <rect key="frame" x="27.5" y="597" width="320" height="50"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Banner Ad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pG9-X5-JEl">
+                                        <rect key="frame" x="109" y="13" width="102" height="24"/>
+                                        <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
+                                        <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                                <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstItem="pG9-X5-JEl" firstAttribute="centerY" secondItem="ETS-ul-Ji7" secondAttribute="centerY" id="2hT-iM-h4N"/>
+                                    <constraint firstItem="pG9-X5-JEl" firstAttribute="centerX" secondItem="ETS-ul-Ji7" secondAttribute="centerX" id="3bM-kQ-imb"/>
+                                    <constraint firstAttribute="height" constant="50" id="OVH-CH-MIq"/>
+                                    <constraint firstAttribute="width" constant="320" id="eGT-op-JRK"/>
+                                </constraints>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zyV-Na-Dvb">
+                                <rect key="frame" x="0.0" y="506" width="375" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="2uQ-jW-K9b"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Tutorial">
+                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="tutorialButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="WTj-Gd-8f2"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Tri-5X-6j7">
+                                <rect key="frame" x="0.0" y="544" width="375" height="33"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="33" id="mcb-WJ-4Qe"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
+                                <state key="normal" title="Select Level">
+                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="selectLevelButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="Cis-sM-5rj"/>
+                                </connections>
+                            </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="K3v-su-kFz">
-                                <rect key="frame" x="153" y="437.5" width="69" height="33"/>
+                                <rect key="frame" x="153" y="468" width="69" height="33"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="33" id="6gb-9a-aIo"/>
                                 </constraints>
@@ -132,32 +150,36 @@ with music from Brendan Lawton</string>
                         <constraints>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="0sF-pk-jib"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="kD8-ZB-cpA" secondAttribute="trailing" id="3ed-jq-7bi"/>
+                            <constraint firstItem="ETS-ul-Ji7" firstAttribute="top" secondItem="Tri-5X-6j7" secondAttribute="bottom" constant="20" id="94X-bJ-V54"/>
+                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="9rf-yb-gjW"/>
                             <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="EeV-1v-Dqj"/>
-                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="Iio-Bi-GCR"/>
                             <constraint firstItem="kD8-ZB-cpA" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="JSf-HH-cn3"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="N6E-up-JB9"/>
                             <constraint firstItem="zyV-Na-Dvb" firstAttribute="top" secondItem="K3v-su-kFz" secondAttribute="bottom" constant="5" id="Nec-Tt-oN5"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="Tri-5X-6j7" secondAttribute="trailing" id="OBw-s3-VK4"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="bottom" secondItem="ETS-ul-Ji7" secondAttribute="bottom" constant="20" id="TUy-Ce-rur"/>
                             <constraint firstItem="zyV-Na-Dvb" firstAttribute="top" secondItem="K3v-su-kFz" secondAttribute="bottom" constant="5" id="VAN-JB-WKf"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="azD-Ym-dKV" secondAttribute="trailing" id="XfP-Sm-fFx"/>
                             <constraint firstItem="zyV-Na-Dvb" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="Xg0-KA-xlM"/>
                             <constraint firstItem="K3v-su-kFz" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="bOA-iw-9Fi"/>
-                            <constraint firstItem="azD-Ym-dKV" firstAttribute="top" secondItem="Tri-5X-6j7" secondAttribute="bottom" constant="60" id="ce9-in-3pY"/>
-                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="e0T-rD-su6"/>
+                            <constraint firstItem="ETS-ul-Ji7" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="csr-Rn-him"/>
+                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="bottom" secondItem="ETS-ul-Ji7" secondAttribute="bottom" constant="20" id="fA1-97-qPQ"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="fPD-CQ-zoR"/>
                             <constraint firstItem="kD8-ZB-cpA" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="g0X-IJ-e2Q"/>
-                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="bottom" secondItem="azD-Ym-dKV" secondAttribute="bottom" constant="20" id="lzI-MM-Dbi"/>
                             <constraint firstItem="zyV-Na-Dvb" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="mzM-it-dct"/>
                             <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="zyV-Na-Dvb" secondAttribute="trailing" id="o2l-8G-4QX"/>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="p3C-os-tqb"/>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="top" secondItem="zyV-Na-Dvb" secondAttribute="bottom" constant="5" id="qNV-0r-ViA"/>
-                            <constraint firstItem="kD8-ZB-cpA" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="100" id="qxl-5c-pro"/>
-                            <constraint firstItem="WqO-Zu-yT0" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="vDe-mr-3AB"/>
+                            <constraint firstItem="kD8-ZB-cpA" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="20" id="qxl-5c-pro"/>
                             <constraint firstItem="K3v-su-kFz" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="wiS-dj-QIq"/>
+                            <constraint firstItem="azD-Ym-dKV" firstAttribute="top" secondItem="kD8-ZB-cpA" secondAttribute="bottom" id="yti-dg-SSR"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="3NZ-mn-eyJ"/>
                     </view>
                     <navigationItem key="navigationItem" id="Fg4-ij-J4b"/>
+                    <connections>
+                        <outlet property="bannerView" destination="ETS-ul-Ji7" id="4c1-Ge-vss"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="KUs-bl-DZX" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -614,27 +636,17 @@ with music from Brendan Lawton</string>
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Ad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qlr-1n-iQ6">
-                                <rect key="frame" x="156" y="304" width="63.5" height="59.5"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="50"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Interstitial Ad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qlr-1n-iQ6">
+                                <rect key="frame" x="68.5" y="312.5" width="238" height="42"/>
+                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
                                 <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ube-Im-4Zr">
-                                <rect key="frame" x="155.5" y="363.5" width="64" height="42"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="25"/>
-                                <state key="normal" title="Close"/>
-                                <connections>
-                                    <action selector="closeButton:" destination="xcf-bW-PjK" eventType="touchUpInside" id="ji9-8V-hBe"/>
-                                </connections>
-                            </button>
                         </subviews>
-                        <color key="backgroundColor" red="0.14902216200000001" green="0.14901494979999999" blue="0.14901983739999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="qlr-1n-iQ6" firstAttribute="centerX" secondItem="p8u-EV-KtX" secondAttribute="centerX" id="Hdq-ET-P3E"/>
                             <constraint firstItem="qlr-1n-iQ6" firstAttribute="centerY" secondItem="p8u-EV-KtX" secondAttribute="centerY" id="TOk-hl-TeG"/>
-                            <constraint firstItem="ube-Im-4Zr" firstAttribute="centerX" secondItem="p8u-EV-KtX" secondAttribute="centerX" id="Y0O-dD-Tnv"/>
-                            <constraint firstItem="ube-Im-4Zr" firstAttribute="top" secondItem="qlr-1n-iQ6" secondAttribute="bottom" id="xUK-6a-Pio"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="oHM-8V-KDw"/>
                     </view>

@@ -673,7 +673,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "00000000, ddmmyyyy, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.text = "99f3f5c, 26012020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
@@ -897,8 +897,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			launchAngleMultiplier = -1
 		}
         // Determines which angle the ball will launch and modify the multiplier accordingly
-		
-		print("ball position: ", ballPositionOnPaddle, launchAngleMultiplier)
         
         if ballPositionOnPaddle > 1 {
             ballPositionOnPaddle = 1
@@ -919,8 +917,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ballLaunchAngleRad = straightLaunchAngleRad - ((maxLaunchAngleRad - minLaunchAngleRad) * ballPositionOnPaddle) + (minLaunchAngleRad * Double(launchAngleMultiplier))
             // Determine the launch angle based on the location of the ball on the paddle
         }
-		
-		print("ball launch: ", ballPositionOnPaddle, ballLaunchAngleRad)
         
         let dxLaunch = cos(ballLaunchAngleRad) * Double(ballSpeedLimit)
         let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)

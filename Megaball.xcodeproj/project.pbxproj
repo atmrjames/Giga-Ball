@@ -41,6 +41,7 @@
 		1AF5749A23AA686500DCBAE5 /* Level008.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749923AA686500DCBAE5 /* Level008.swift */; };
 		1AF5749C23AA6DC300DCBAE5 /* Level009.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749B23AA6DC300DCBAE5 /* Level009.swift */; };
 		1AF5749E23AA715A00DCBAE5 /* Level010.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749D23AA715A00DCBAE5 /* Level010.swift */; };
+		2502B01B0C928E896886F6F8 /* Pods_Megaball.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88B48EF8C02FF4C9CD3C7E46 /* Pods_Megaball.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -80,6 +81,9 @@
 		1AF5749923AA686500DCBAE5 /* Level008.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level008.swift; sourceTree = "<group>"; };
 		1AF5749B23AA6DC300DCBAE5 /* Level009.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level009.swift; sourceTree = "<group>"; };
 		1AF5749D23AA715A00DCBAE5 /* Level010.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level010.swift; sourceTree = "<group>"; };
+		7CAD5E5B030048D763E400FA /* Pods-Megaball.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Megaball.release.xcconfig"; path = "Target Support Files/Pods-Megaball/Pods-Megaball.release.xcconfig"; sourceTree = "<group>"; };
+		88B48EF8C02FF4C9CD3C7E46 /* Pods_Megaball.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Megaball.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2AD15A053FB818B15FE2B4B /* Pods-Megaball.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Megaball.debug.xcconfig"; path = "Target Support Files/Pods-Megaball/Pods-Megaball.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +91,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2502B01B0C928E896886F6F8 /* Pods_Megaball.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,6 +112,8 @@
 			children = (
 				1A5A94832309E4F30076D635 /* Megaball */,
 				1A5A94822309E4F30076D635 /* Products */,
+				2ADF62C2E6700F58E7CE7311 /* Pods */,
+				574CE7D6FC78ECBFB980A8C3 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -183,6 +190,24 @@
 			path = "View Controllers";
 			sourceTree = "<group>";
 		};
+		2ADF62C2E6700F58E7CE7311 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				F2AD15A053FB818B15FE2B4B /* Pods-Megaball.debug.xcconfig */,
+				7CAD5E5B030048D763E400FA /* Pods-Megaball.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		574CE7D6FC78ECBFB980A8C3 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				88B48EF8C02FF4C9CD3C7E46 /* Pods_Megaball.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -190,9 +215,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1A5A94992309E4F40076D635 /* Build configuration list for PBXNativeTarget "Megaball" */;
 			buildPhases = (
+				F41AE8002E46411A7F14A75D /* [CP] Check Pods Manifest.lock */,
 				1A5A947D2309E4F30076D635 /* Sources */,
 				1A5A947E2309E4F30076D635 /* Frameworks */,
 				1A5A947F2309E4F30076D635 /* Resources */,
+				3B86DF2591122BBFAF7C4CF8 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -252,6 +279,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3B86DF2591122BBFAF7C4CF8 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Megaball/Pods-Megaball-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Megaball/Pods-Megaball-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Megaball/Pods-Megaball-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		F41AE8002E46411A7F14A75D /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Megaball-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1A5A947D2309E4F30076D635 /* Sources */ = {
@@ -428,6 +497,7 @@
 		};
 		1A5A949A2309E4F40076D635 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F2AD15A053FB818B15FE2B4B /* Pods-Megaball.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -448,6 +518,7 @@
 		};
 		1A5A949B2309E4F40076D635 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7CAD5E5B030048D763E400FA /* Pods-Megaball.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
