@@ -91,8 +91,8 @@ Music by Brendan Lawton</string>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ETS-ul-Ji7" customClass="GADBannerView">
                                 <rect key="frame" x="27.5" y="597" width="320" height="50"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Banner Ad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pG9-X5-JEl">
-                                        <rect key="frame" x="109" y="13" width="102" height="24"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pG9-X5-JEl">
+                                        <rect key="frame" x="160" y="25" width="0.0" height="0.0"/>
                                         <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="20"/>
                                         <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                         <nil key="highlightedColor"/>
@@ -145,6 +145,12 @@ Music by Brendan Lawton</string>
                                     <action selector="settingsButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="HmI-Id-Mwn"/>
                                 </connections>
                             </button>
+                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="w3q-Qz-pGb">
+                                <rect key="frame" x="163" y="429" width="51" height="31"/>
+                                <connections>
+                                    <action selector="adSwitch:" destination="Ayl-hg-Npr" eventType="valueChanged" id="ewv-bE-ITs"/>
+                                </connections>
+                            </switch>
                         </subviews>
                         <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
@@ -171,6 +177,8 @@ Music by Brendan Lawton</string>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="p3C-os-tqb"/>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="top" secondItem="zyV-Na-Dvb" secondAttribute="bottom" constant="5" id="qNV-0r-ViA"/>
                             <constraint firstItem="kD8-ZB-cpA" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="20" id="qxl-5c-pro"/>
+                            <constraint firstItem="K3v-su-kFz" firstAttribute="top" secondItem="w3q-Qz-pGb" secondAttribute="bottom" constant="8" id="rk1-Ss-0p5"/>
+                            <constraint firstItem="w3q-Qz-pGb" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="uRh-lJ-rRa"/>
                             <constraint firstItem="K3v-su-kFz" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="wiS-dj-QIq"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="top" secondItem="kD8-ZB-cpA" secondAttribute="bottom" id="yti-dg-SSR"/>
                         </constraints>
@@ -627,33 +635,6 @@ Music by Brendan Lawton</string>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ju6-9d-N4W" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1784.8" y="841.52923538230891"/>
-        </scene>
-        <!--Ad View Controller-->
-        <scene sceneID="TDp-Jh-QKG">
-            <objects>
-                <viewController storyboardIdentifier="adVC" id="xcf-bW-PjK" customClass="AdViewController" customModule="Megaball" customModuleProvider="target" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="p8u-EV-KtX">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Interstitial Ad" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qlr-1n-iQ6">
-                                <rect key="frame" x="68.5" y="312.5" width="238" height="42"/>
-                                <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="35"/>
-                                <color key="textColor" red="0.8190432191" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                        </subviews>
-                        <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                        <constraints>
-                            <constraint firstItem="qlr-1n-iQ6" firstAttribute="centerX" secondItem="p8u-EV-KtX" secondAttribute="centerX" id="Hdq-ET-P3E"/>
-                            <constraint firstItem="qlr-1n-iQ6" firstAttribute="centerY" secondItem="p8u-EV-KtX" secondAttribute="centerY" id="TOk-hl-TeG"/>
-                        </constraints>
-                        <viewLayoutGuide key="safeArea" id="oHM-8V-KDw"/>
-                    </view>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="Xjs-Hl-Mm0" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="2526" y="842"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="nKk-bJ-jOh">

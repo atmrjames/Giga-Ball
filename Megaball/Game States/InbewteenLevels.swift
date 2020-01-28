@@ -35,6 +35,11 @@ class InbetweenLevels: GKState {
         scene.powerUpsReset()
         // Reset any power ups
         
+        if scene.showAd {
+            scene.createInterstitial()
+        }
+        // Only load next ad if user has ads enabled
+        
         let scaleUp = SKAction.scale(to: 1.5, duration: 0.1)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut = SKAction.fadeOut(withDuration: 0.2)
@@ -125,6 +130,7 @@ class InbetweenLevels: GKState {
             self.scene.run(waitScene, completion: {
                 if self.scene.showAd {
                     self.scene.gameState.enter(Ad.self)
+                    self.scene.loadInterstitial()
                 } else {
                     self.scene.gameState.enter(Playing.self)
                 }

@@ -14,6 +14,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
     var currentHighscore: Int = 0
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    
+    let defaults = UserDefaults.standard
+    
+    
+    
+    
+
 
     @IBAction func playButtonPressed(_ sender: UIButton) {
         mediumHaptic.impactOccurred()
@@ -34,23 +41,38 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
 //        moveToSettings()
     }
     
+    @IBAction func adSwitch(_ sender: Any) {
+        
+        var showAds = defaults.bool(forKey: "ShowAds")
+        // Load show ads status
+        
+        if showAds {
+            showAds = false
+            print(showAds)
+        } else {
+            showAds = true
+            print(showAds)
+        }
+        // Change show ads status
+        
+        defaults.set(showAds, forKey: "ShowAds")
+        // Save show ads status
+    }
+    
     @IBOutlet var bannerView: GADBannerView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
+        defaults.set(true, forKey: "ShowAds")
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
         bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
         bannerView.rootViewController = self
         // Configure banner ad
         
         bannerView.load(GADRequest())
         // Load banner ad
-        
-    }
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
     }
 
     func moveToGame(selectedLevel: Int) {

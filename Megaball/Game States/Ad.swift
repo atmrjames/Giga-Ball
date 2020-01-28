@@ -23,7 +23,7 @@ class Ad: GKState {
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToCloseAd(_:)), name: .closeAd, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
         
-        scene.showAdVC()
+//        scene.showAdVC()
 
     }
     // This function runs when this state is entered.

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -26,7 +26,6 @@
 		1A661D2223DDEC340063CE5A /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A661D2123DDEC340063CE5A /* SettingsViewController.swift */; };
 		1A6673792358F62800EE8F7E /* PauseMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */; };
 		1A7D6529231B0E980091CA58 /* Paused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7D6528231B0E980091CA58 /* Paused.swift */; };
-		1A99F3ED23DDCA6B00C699A0 /* AdViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A99F3EC23DDCA6B00C699A0 /* AdViewController.swift */; };
 		1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1AD2BDCE23A2A5C100F2463F /* FoundryGridnik Medium.otf */; };
 		1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE9573A2321A74700E5618A /* InbewteenLevels.swift */; };
 		1AE957442324523800E5618A /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957432324523800E5618A /* MenuViewController.swift */; };
@@ -66,7 +65,6 @@
 		1A661D2123DDEC340063CE5A /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseMenuViewController.swift; sourceTree = "<group>"; };
 		1A7D6528231B0E980091CA58 /* Paused.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paused.swift; sourceTree = "<group>"; };
-		1A99F3EC23DDCA6B00C699A0 /* AdViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdViewController.swift; sourceTree = "<group>"; };
 		1AD2BDCE23A2A5C100F2463F /* FoundryGridnik Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FoundryGridnik Medium.otf"; sourceTree = "<group>"; };
 		1AE9573A2321A74700E5618A /* InbewteenLevels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbewteenLevels.swift; sourceTree = "<group>"; };
 		1AE957432324523800E5618A /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
@@ -185,7 +183,6 @@
 				1AE9574A23257BB600E5618A /* EndGameViewController.swift */,
 				1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */,
 				1AF31EEC23CB424D00848F63 /* LevelSelectorViewController.swift */,
-				1A99F3EC23DDCA6B00C699A0 /* AdViewController.swift */,
 			);
 			path = "View Controllers";
 			sourceTree = "<group>";
@@ -196,7 +193,6 @@
 				F2AD15A053FB818B15FE2B4B /* Pods-Megaball.debug.xcconfig */,
 				7CAD5E5B030048D763E400FA /* Pods-Megaball.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -349,7 +345,6 @@
 				1AE957462324EC2A00E5618A /* Level001.swift in Sources */,
 				1AF31EED23CB424D00848F63 /* LevelSelectorViewController.swift in Sources */,
 				1A5A949F230F08840076D635 /* Playing.swift in Sources */,
-				1A99F3ED23DDCA6B00C699A0 /* AdViewController.swift in Sources */,
 				1A5A94A7231720FE0076D635 /* Megaball.xcdatamodeld in Sources */,
 				1A661D2223DDEC340063CE5A /* SettingsViewController.swift in Sources */,
 				1A661D2023DDCF4F0063CE5A /* Ad.swift in Sources */,

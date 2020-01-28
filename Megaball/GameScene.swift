@@ -41,7 +41,8 @@ protocol GameViewControllerDelegate: class {
 	func moveToMainMenu(currentHighscore: Int)
     func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool)
 	func showPauseMenu(levelNumber: Int, score: Int, highscore: Int)
-	func showAdVC()
+	func createInterstitial()
+	func loadInterstitial()
 	var selectedLevel: Int? { get }
 }
 // Setup the protocol to return to the main menu from GameViewController
@@ -2417,10 +2418,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highscore: totalHighscore)
     }
 	
-	func showAdVC() {
-		gameViewControllerDelegate?.showAdVC()
+	func createInterstitial() {
+		gameViewControllerDelegate?.createInterstitial()
 	}
+	// Setup interstitial ad
 	
+	func loadInterstitial() {
+		gameViewControllerDelegate?.loadInterstitial()
+	}
+	// Show interstitial ad
+
 	func recentreBall() {
 		if ballIsOnPaddle {
 			if ball.position.x - ball.size.width/2 < paddle.position.x - paddle.size.width/2 {

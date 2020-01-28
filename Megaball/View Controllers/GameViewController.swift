@@ -9,19 +9,23 @@
 import UIKit
 import SpriteKit
 import GameplayKit
+import GoogleMobileAds
 
 protocol MenuViewControllerDelegate: class {
     func moveToGame(selectedLevel: Int)
 }
 // Setup the protocol to return to the main menu from GameViewController
 
-class GameViewController: UIViewController, GameViewControllerDelegate {
+class GameViewController: UIViewController, GameViewControllerDelegate, GADInterstitialDelegate {
     
     weak var menuViewControllerDelegate:MenuViewControllerDelegate?
     // Create the delegate property for the MenuViewController
     
     var selectedLevel: Int?
     // Property to store the correct level to load
+    
+    var interstitial: GADInterstitial!
+    // Define interstitial ad
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -45,6 +49,31 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
             view.showsFPS = true
             view.showsNodeCount = true
         }
+    }
+    
+    func createInterstitial() {
+        print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
+        interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")
+        interstitial.delegate = self
+        interstitial.load(GADRequest())
+    }
+    
+    func loadInterstitial() {
+        if self.interstitial.isReady {
+            self.interstitial.present(fromRootViewController: self)
+        } else {
+            createInterstitial()
+            // Setup next ad when the current one is closed
+            NotificationCenter.default.post(name: .closeAd, object: nil)
+            // Load the next level if the ad didn't load up in time
+        }
+    }
+    
+    func interstitialDidDismissScreen(_ ad: GADInterstitial) {
+        createInterstitial()
+        // Setup next ad when the current one is closed
+        NotificationCenter.default.post(name: .closeAd, object: nil)
+        // Send notification to move to Playing game state
     }
     
     func moveToMainMenu(currentHighscore: Int) {
@@ -85,14 +114,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         popoverVC.didMove(toParent: self)
     }
     // Show PauseMenuViewController as popup
-    
-    func showAdVC() {
-        let adVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "adVC") as! AdViewController
-        self.addChild(adVC)
-        adVC.view.frame = self.view.frame
-        self.view.addSubview(adVC.view)
-        adVC.didMove(toParent: self)
-    }
 
     override var shouldAutorotate: Bool {
         return true
