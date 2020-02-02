@@ -31,14 +31,19 @@
                                     <action selector="backButton:" destination="GvT-XF-MH3" eventType="touchUpInside" id="ZQT-yu-W75"/>
                                 </connections>
                             </button>
-                            <tableView clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="d3U-8J-yMb">
-                                <rect key="frame" x="0.0" y="62" width="375" height="542"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="d3U-8J-yMb">
+                                <rect key="frame" x="0.0" y="20" width="375" height="577"/>
                                 <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="375" id="Lkr-My-C53"/>
+                                </constraints>
                             </tableView>
                         </subviews>
                         <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
+                            <constraint firstItem="AXe-RJ-CAA" firstAttribute="top" secondItem="d3U-8J-yMb" secondAttribute="bottom" constant="20" id="31r-pv-JGj"/>
+                            <constraint firstItem="d3U-8J-yMb" firstAttribute="centerX" secondItem="vRC-Mi-Or5" secondAttribute="centerX" id="5Vw-T0-K26"/>
+                            <constraint firstItem="d3U-8J-yMb" firstAttribute="top" secondItem="1R6-p5-C1Q" secondAttribute="top" constant="20" id="5ue-WX-fXB"/>
                             <constraint firstItem="1R6-p5-C1Q" firstAttribute="bottom" secondItem="AXe-RJ-CAA" secondAttribute="bottom" constant="20" id="A5P-MQ-bKZ"/>
                             <constraint firstItem="AXe-RJ-CAA" firstAttribute="leading" secondItem="1R6-p5-C1Q" secondAttribute="leading" constant="16" id="MvE-jN-JDj"/>
                         </constraints>
@@ -46,6 +51,7 @@
                     </view>
                     <connections>
                         <outlet property="settingsTableView" destination="d3U-8J-yMb" id="1wA-xd-eyc"/>
+                        <outlet property="settingsView" destination="vRC-Mi-Or5" id="EN6-Vm-vPl"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="lDg-D5-MWP" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -139,18 +145,12 @@ Music by Brendan Lawton</string>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FoundryGridnik-Medium" family="FoundryGridnik" pointSize="17"/>
                                 <state key="normal" title="Settings">
-                                    <color key="titleColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 </state>
                                 <connections>
                                     <action selector="settingsButton:" destination="Ayl-hg-Npr" eventType="touchUpInside" id="HmI-Id-Mwn"/>
                                 </connections>
                             </button>
-                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="w3q-Qz-pGb">
-                                <rect key="frame" x="163" y="429" width="51" height="31"/>
-                                <connections>
-                                    <action selector="adSwitch:" destination="Ayl-hg-Npr" eventType="valueChanged" id="ewv-bE-ITs"/>
-                                </connections>
-                            </switch>
                         </subviews>
                         <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
@@ -177,8 +177,6 @@ Music by Brendan Lawton</string>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="p3C-os-tqb"/>
                             <constraint firstItem="Tri-5X-6j7" firstAttribute="top" secondItem="zyV-Na-Dvb" secondAttribute="bottom" constant="5" id="qNV-0r-ViA"/>
                             <constraint firstItem="kD8-ZB-cpA" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="20" id="qxl-5c-pro"/>
-                            <constraint firstItem="K3v-su-kFz" firstAttribute="top" secondItem="w3q-Qz-pGb" secondAttribute="bottom" constant="8" id="rk1-Ss-0p5"/>
-                            <constraint firstItem="w3q-Qz-pGb" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="uRh-lJ-rRa"/>
                             <constraint firstItem="K3v-su-kFz" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="wiS-dj-QIq"/>
                             <constraint firstItem="azD-Ym-dKV" firstAttribute="top" secondItem="kD8-ZB-cpA" secondAttribute="bottom" id="yti-dg-SSR"/>
                         </constraints>
@@ -564,15 +562,6 @@ Music by Brendan Lawton</string>
                                             <action selector="playButtonPressed:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="6xv-9u-NuJ"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" restorationIdentifier="killBall" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cmg-8i-N0z" userLabel="killBall">
-                                        <rect key="frame" x="237" y="285.5" width="30" height="29"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                        <state key="normal" backgroundImage="arrow.uturn.down.circle.fill" catalog="system"/>
-                                        <connections>
-                                            <action selector="killBall:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="J2Q-ZR-nb2"/>
-                                        </connections>
-                                    </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0000000" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jXp-mQ-vg2">
                                         <rect key="frame" x="0.0" y="171" width="311" height="36"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -595,14 +584,14 @@ Music by Brendan Lawton</string>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="right" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oI5-Yx-5s0" userLabel="settingsButton">
-                                        <rect key="frame" x="275" y="286" width="30" height="29"/>
+                                        <rect key="frame" x="249" y="275" width="56" height="40"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="18"/>
+                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="50"/>
                                         <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                         <state key="normal" image="gear" catalog="system">
                                             <color key="titleColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                             <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="font" scale="large" weight="semibold">
-                                                <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
+                                                <fontDescription key="fontDescription" name="HelveticaNeue" family="Helvetica Neue" pointSize="25"/>
                                             </preferredSymbolConfiguration>
                                         </state>
                                         <connections>
@@ -628,7 +617,7 @@ Music by Brendan Lawton</string>
                         <outlet property="highscoreLabel" destination="I9a-19-gog" id="VpO-wh-14D"/>
                         <outlet property="highscoreLabelTitle" destination="pHn-nN-xEW" id="HB7-wJ-48h"/>
                         <outlet property="levelNumberLabel" destination="Z9j-4p-wqX" id="2dE-xH-RCR"/>
-                        <outlet property="popupView" destination="J8s-ZY-56R" id="HlI-eL-M4a"/>
+                        <outlet property="pauseView" destination="J8s-ZY-56R" id="HlI-eL-M4a"/>
                         <outlet property="scoreLabel" destination="jXp-mQ-vg2" id="aPX-ge-Nru"/>
                     </connections>
                 </viewController>
@@ -655,7 +644,6 @@ Music by Brendan Lawton</string>
         </scene>
     </scenes>
     <resources>
-        <image name="arrow.uturn.down.circle.fill" catalog="system" width="64" height="60"/>
         <image name="arrow.uturn.left" catalog="system" width="64" height="56"/>
         <image name="gear" catalog="system" width="64" height="58"/>
         <image name="play.fill" catalog="system" width="58" height="64"/>

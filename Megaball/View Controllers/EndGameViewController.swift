@@ -8,9 +8,14 @@
 
 import UIKit
 
-class EndGameViewController: UIViewController, MenuViewControllerDelegate {
+class EndGameViewController: UIViewController {
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    
+    let defaults = UserDefaults.standard
+    
+    var hapticsSetting: Bool?
+    var parallaxSetting: Bool?
     
     var levelNumber: Int = 0
     var levelScore: Int = 0
@@ -28,18 +33,24 @@ class EndGameViewController: UIViewController, MenuViewControllerDelegate {
     @IBOutlet weak var endGameTitle: UILabel!
     
     @IBAction func exitButton(_ sender: UIButton) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
         moveToMainMenu()
         // Move game scene to playing
     }
     
     @IBAction func restartButton(_ sender: Any) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
         moveToGame(selectedLevel: 1)
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        hapticsSetting = defaults.bool(forKey: "hapticsSetting")
+        parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         setBlur()
         showAnimate()
         updateLabels()
@@ -82,7 +93,7 @@ class EndGameViewController: UIViewController, MenuViewControllerDelegate {
     
     func moveToGame(selectedLevel: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
-        gameView.menuViewControllerDelegate = self
+        gameView.menuViewControllerDelegate = self as? MenuViewControllerDelegate
         gameView.selectedLevel = selectedLevel
         self.navigationController?.pushViewController(gameView, animated: false)
     }
@@ -109,7 +120,9 @@ class EndGameViewController: UIViewController, MenuViewControllerDelegate {
         ])
         // Keep the frame of the blurView consistent with that of the associated view.
         
-        addParallaxToView(vw: popupView, ve: blurView)
+        if parallaxSetting! {
+            addParallaxToView(vw: popupView, ve: blurView)
+        }
     }
     
     func addParallaxToView(vw: UIView, ve: UIVisualEffectView) {

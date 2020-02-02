@@ -17,63 +17,79 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
     
     let defaults = UserDefaults.standard
     
+    var adsSetting: Bool?
+    var soundsSetting: Bool?
+    var musicSetting: Bool?
+    var hapticsSetting: Bool?
+    var parallaxSetting: Bool?
+    var paddleControlSetting: Bool?
+    var paddleSensitivitySetting: Int?
     
-    
-    
-
-
     @IBAction func playButtonPressed(_ sender: UIButton) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
         moveToGame(selectedLevel: 1)
     }
     
     @IBAction func tutorialButton(_ sender: Any) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
     }
     
     @IBAction func selectLevelButton(_ sender: Any) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
         moveToLevelSelector()
     }
     
     @IBAction func settingsButton(_ sender: Any) {
-        mediumHaptic.impactOccurred()
-//        moveToSettings()
-    }
-    
-    @IBAction func adSwitch(_ sender: Any) {
-        
-        var showAds = defaults.bool(forKey: "ShowAds")
-        // Load show ads status
-        
-        if showAds {
-            showAds = false
-            print(showAds)
-        } else {
-            showAds = true
-            print(showAds)
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
         }
-        // Change show ads status
-        
-        defaults.set(showAds, forKey: "ShowAds")
-        // Save show ads status
+        moveToSettings()
     }
     
     @IBOutlet var bannerView: GADBannerView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        defaults.set(true, forKey: "ShowAds")
+        print(NSHomeDirectory())
+        // Prints the location of the NSUserDefaults plist (Library>Preferences)
+        defaultSettings()
+        
     }
 
     override func viewWillAppear(_ animated: Bool) {
-        bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
-        bannerView.rootViewController = self
-        // Configure banner ad
         
-        bannerView.load(GADRequest())
-        // Load banner ad
+        hapticsSetting = defaults.bool(forKey: "hapticsSetting")
+        
+        if defaults.bool(forKey: "adsSetting") {
+            bannerView.isHidden = false
+            bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
+            bannerView.rootViewController = self
+            // Configure banner ad
+            
+            bannerView.load(GADRequest())
+            // Load banner ad
+        } else {
+            bannerView.isHidden = true
+        }
+        // Show or hide banner ad depending on setting
     }
+    
+    func defaultSettings() {
+        defaults.register(defaults: ["adsSetting" : true])
+        defaults.register(defaults: ["soundsSetting" : true])
+        defaults.register(defaults: ["musicSetting" : true])
+        defaults.register(defaults: ["hapticsSetting" : true])
+        defaults.register(defaults: ["parallaxSetting" : true])
+        defaults.register(defaults: ["paddleControlSetting" : true])
+        defaults.register(defaults: ["paddleSensitivitySetting" : 1])
+    }
+    // Set default settings
 
     func moveToGame(selectedLevel: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
@@ -91,6 +107,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate {
     
     func moveToSettings() {
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
+        settingsView.navigatedFrom = "MainMenu"
         self.navigationController?.pushViewController(settingsView, animated: true)
     }
     // Segue to LevelSelectorViewController

@@ -8,23 +8,42 @@
 
 import UIKit
 
-class LevelSelectorViewController: UIViewController, MenuViewControllerDelegate {
+class LevelSelectorViewController: UIViewController {
+    
+    let defaults = UserDefaults.standard
+    
+    var hapticsSetting: Bool?
     
     let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
     
     @IBAction func returnToMainMenuButton(_ sender: Any) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
         navigationController?.popToRootViewController(animated: true)
     }
     
     @IBAction func levelSelectionButton(_ sender: UIButton) {
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
         moveToGame(selectedLevel: sender.tag)
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
+        swipeRight.direction = .right
+        view.addGestureRecognizer(swipeRight)
+        // Setup swipe gesture to return to main menu
+        
+        hapticsSetting = defaults.bool(forKey: "hapticsSetting")
     }
     
     func moveToGame(selectedLevel: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
-        gameView.menuViewControllerDelegate = self
+        gameView.menuViewControllerDelegate = self as? MenuViewControllerDelegate
         gameView.selectedLevel = selectedLevel
         self.navigationController?.pushViewController(gameView, animated: true)
     }
@@ -34,11 +53,12 @@ class LevelSelectorViewController: UIViewController, MenuViewControllerDelegate 
         navigationController?.popToRootViewController(animated: true)
     }
     
-    
-    
-    
-    
-    
-    
+    @objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
+        navigationController?.popToRootViewController(animated: true)
+    }
+    // Setup swipe gesture to return to main menu
 
 }

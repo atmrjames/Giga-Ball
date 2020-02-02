@@ -6,6 +6,7 @@
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
+import CoreMotion
 import SpriteKit
 import GameplayKit
 
@@ -48,6 +49,12 @@ protocol GameViewControllerDelegate: class {
 // Setup the protocol to return to the main menu from GameViewController
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
+	
+	var motionManager: CMMotionManager!
+	// Setup motion manager for tilt control
+	
+	var backgroundMusic: SKAudioNode!
+	// Setup game music
     
     var paddle = SKSpriteNode()
 	var paddleLaser = SKSpriteNode()
@@ -161,7 +168,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var xSpeed: CGFloat = 0
     var ySpeed: CGFloat = 0
     var currentSpeed: CGFloat = 0
-	var paddleMovementFactor: CGFloat = 1.25
+	var paddleMovementFactor: CGFloat = 0
+	var paddleTiltMagnitude: CGFloat = 0
+	var minTilt: CGFloat = 0
+	var maxTilt: CGFloat = 0
 	var levelNumber: Int = 0
 	var powerUpProbFactor: Int = 0
 	var brickRemovalCounter: Int = 0
@@ -185,7 +195,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var newTotalHighScore: Bool = false
     // Setup score properties
 	
-	var showAd: Bool = true
+	var adsSetting: Bool?
+	var soundsSetting: Bool?
+	var musicSetting: Bool?
+	var hapticsSetting: Bool?
+	var parallaxSetting: Bool?
+	var paddleControlSetting: Bool?
+	var paddleSensitivitySetting: Int?
     
     let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
 	
@@ -355,11 +371,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Create the delegate property for the GameViewController
 	
 //MARK: - NSCoder Data Store Setup
-    
-    let dataStore = UserDefaults.standard
-    // Setup NSUserDefaults data store
-    
-    var levelScoreArray: [Int] = [1]
+	
+	var defaults = UserDefaults.standard
+	
+	var levelScoreArray: [Int] = [1]
     // Creates arrays to store level highscores from NSUserDefauls
 	
 	var totalScoreArray: [Int] = [1]
@@ -391,6 +406,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
 		// Setup gravity
+		
+		motionManager = CMMotionManager()
+		motionManager.startAccelerometerUpdates()
+		// Core motion setup
+		
+		userSettings()
+		// Load user settings
 		
 //MARK: - Object Initialisation
 
@@ -565,8 +587,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.angularDamping = 0
 		ball.physicsBody!.restitution = 1
 		ball.physicsBody!.density = 2
-//		let xRangeBall = SKRange(lowerLimit:-gameWidth/2 + ballSize/2,upperLimit:gameWidth/2 - ballSize/2)
-//        ball.constraints = [SKConstraint.positionX(xRangeBall)]
 		// Define ball properties
 
 		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
@@ -674,7 +694,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "99f3f5c, 26012020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.text = "#, 02022020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
@@ -749,20 +769,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		brickBounceCounter = 0
 		
+		if paddleSensitivitySetting == 0 {
+			paddleMovementFactor = 1.5
+			paddleTiltMagnitude = 750
+			minTilt = 0.01
+			maxTilt = 0.2
+		} else if paddleSensitivitySetting == 1 {
+			paddleMovementFactor = 1.25
+			paddleTiltMagnitude = 500
+			minTilt = 0.05
+			maxTilt = 0.3
+		} else if paddleSensitivitySetting == 2 {
+			paddleMovementFactor = 1
+			paddleTiltMagnitude = 350
+			minTilt = 0.05
+			maxTilt = 0.4
+		}
+		
+		if musicSetting! {
+			if let musicURL = Bundle.main.url(forResource: "BrendanBlockTitleMusic", withExtension: "mp3") {
+				backgroundMusic = SKAudioNode(url: musicURL)
+				addChild(backgroundMusic)
+			}
+		}
+		// Background music setup
+		
 //MARK: - Score Database Setup
         
-        if let levelScoreStore = dataStore.array(forKey: "LevelScoreStore") as? [Int] {
+        if let levelScoreStore = defaults.array(forKey: "LevelScoreStore") as? [Int] {
             levelScoreArray = levelScoreStore
         }
         // Setup array to store level highscores
 		
-		if let totalScoreStore = dataStore.array(forKey: "TotalScoreStore") as? [Int] {
+		if let totalScoreStore = defaults.array(forKey: "TotalScoreStore") as? [Int] {
             totalScoreArray = totalScoreStore
         }
         // Setup array to store total highscores
-        
-        print(NSHomeDirectory())
-        // Prints the location of the NSUserDefaults plist (Library>Preferences)
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
@@ -779,7 +821,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
     // Defines actions for a dragged touch
         
-        if gameState.currentState is Playing {
+		if gameState.currentState is Playing && paddleControlSetting! {
             // Only executes code below when game state is playing
         
             let touch = touches.first
@@ -810,7 +852,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ball.position.x = paddle.position.x + ballRelativePositionOnPaddle				
 				ball.position.y = ballStartingPositionY
 				paddleMoved = true
-				
 			}
 			// Ball matches paddle position
         }
@@ -924,11 +965,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
         // Launches ball
 
-        lightHaptic.impactOccurred()
+		if hapticsSetting! {
+			lightHaptic.impactOccurred()
+		}
     }
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+		
+		let xRangeBall = SKRange(lowerLimit:-gameWidth/2 + ballSize/2,upperLimit:gameWidth/2 - ballSize/2)
+        ball.constraints = [SKConstraint.positionX(xRangeBall)]
+		// Set ball range
+		
+		let xRangePaddle = SKRange(lowerLimit:-gameWidth/2 + paddle.size.width/2,upperLimit:gameWidth/2 - paddle.size.width/2)
+        paddle.constraints = [SKConstraint.positionX(xRangePaddle)]
+		// Set paddle range
+		
+		if paddleControlSetting == false && scene!.isPaused == false && gameState.currentState is Playing {
+			if let accelerometerData = motionManager.accelerometerData {
+				
+				let tilt = CGFloat(accelerometerData.acceleration.x)
+				
+				var tiltMagnitude = ((abs(tilt)-minTilt)/(maxTilt-minTilt))
+				
+				if tiltMagnitude > 1 {
+					tiltMagnitude = 1
+				}
+				
+				if tilt > minTilt {
+					paddle.physicsBody?.velocity = CGVector(dx: paddleTiltMagnitude * tiltMagnitude, dy: 0)
+				} else if tilt < -minTilt {
+					paddle.physicsBody?.velocity = CGVector(dx: -paddleTiltMagnitude * tiltMagnitude, dy: 0)
+				}
+				if ballIsOnPaddle {
+					if tilt > minTilt {
+						ball.physicsBody?.velocity = CGVector(dx: paddleTiltMagnitude * tiltMagnitude, dy: 0)
+					} else if tilt < -minTilt {
+						ball.physicsBody?.velocity = CGVector(dx: -paddleTiltMagnitude * tiltMagnitude, dy: 0)
+					}
+					ball.position.x = paddle.position.x + ballRelativePositionOnPaddle
+					ball.position.y = ballStartingPositionY
+				}
+			}
+		}
+		// Setup tilt controls
+		
+		
+		if ballIsOnPaddle && paddleMovedDistance != 0 {
+			
+		}
+		// Ball matches paddle position
 		
 		recentreBall()
 		
@@ -1092,7 +1178,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballLost() {
-		softHaptic.impactOccurred()
+		if hapticsSetting! {
+			softHaptic.impactOccurred()
+		}
         self.ball.isHidden = true
 		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = 0
@@ -1323,7 +1411,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
 		
-        lightHaptic.impactOccurred()
+        if hapticsSetting! {
+			lightHaptic.impactOccurred()
+		}
 
 		if  laserSprite?.texture == laserNormalTexture {
             laserNode?.removeFromParent()
@@ -1460,7 +1550,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func paddleHit() {
-        lightHaptic.impactOccurred()
+        if hapticsSetting! {
+			lightHaptic.impactOccurred()
+		}
         
 		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
@@ -1727,8 +1819,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if ballLostBool {
 			return
 		}
-        
-		rigidHaptic.impactOccurred()
+        if hapticsSetting! {
+			rigidHaptic.impactOccurred()
+		}
 		
         switch sprite.texture {
             
@@ -1976,7 +2069,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
 				self.paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
 				self.paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
-                self.rigidHaptic.impactOccurred()
+				if self.hapticsSetting! {
+					self.rigidHaptic.impactOccurred()
+				}
 				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
 					self.recentreBall()
 				})
@@ -2041,7 +2136,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
 				self.paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
 				self.paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
-                self.rigidHaptic.impactOccurred()
+                if self.hapticsSetting! {
+					self.rigidHaptic.impactOccurred()
+				}
                 self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
@@ -2478,6 +2575,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Set the new angle of the ball
 	}
     // Ensure ball angle when hitting off of wals
+	
+	func userSettings() {
+		adsSetting = defaults.bool(forKey: "adsSetting")
+		soundsSetting = defaults.bool(forKey: "soundsSetting")
+		musicSetting = defaults.bool(forKey: "musicSetting")
+		hapticsSetting = defaults.bool(forKey: "hapticsSetting")
+		parallaxSetting = defaults.bool(forKey: "parallaxSetting")
+		paddleControlSetting = defaults.bool(forKey: "paddleControlSetting")
+		paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+		if ballIsOnPaddle {
+			ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+		}
+	}
+	// Set user settings
 	
     @objc func laserGenerator() {
 		

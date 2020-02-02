@@ -20,6 +20,9 @@ class Paused: GKState {
 
     override func didEnter(from previousState: GKState?) {
         
+        scene.userSettings()
+        // Set user settings
+        
         if scene.ballIsOnPaddle == false && scene.pauseBallVelocityX == 0 && (scene.ball.position.x >= (scene.frame.size.width/2 - scene.ball.size.width/2) || scene.ball.position.x <= -(scene.frame.size.width/2 - scene.ball.size.width/2)) {
         // The the ball is not on the paddle, on the edge or top of the frame and its x velocity is 0, then give it some x velocity
             
@@ -41,7 +44,10 @@ class Paused: GKState {
         scene.isPaused = true
         // Pause game, pause all nodes and scene
         
-        scene.mediumHaptic.impactOccurred()
+        if scene.hapticsSetting! {
+            scene.mediumHaptic.impactOccurred()
+        }
+
         scene.showPauseMenu()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.killBallNotificationKeyReceived), name: .killBallNotification, object: nil)
@@ -180,7 +186,9 @@ class Paused: GKState {
                             self.scene.unpauseCountdownLabel.run(animationIn2, completion: {
                                 self.scene.gameState.enter(Playing.self)
                                 // Restart playing
-                                self.scene.lightHaptic.impactOccurred()
+                                if self.scene.hapticsSetting! {
+                                    self.scene.lightHaptic.impactOccurred()
+                                }
                                 self.scene.unpauseCountdownLabel.run(animationOut, completion: {
                                     self.scene.unpauseCountdownLabel.isHidden = true
                                 })

@@ -35,7 +35,7 @@ class InbetweenLevels: GKState {
         scene.powerUpsReset()
         // Reset any power ups
         
-        if scene.showAd {
+        if scene.adsSetting! {
             scene.createInterstitial()
         }
         // Only load next ad if user has ads enabled
@@ -106,7 +106,7 @@ class InbetweenLevels: GKState {
         
         if scene.levelScore > scene.levelScoreArray[scene.levelNumber-1] {
             scene.levelScoreArray[scene.levelNumber-1] = scene.levelScore
-            scene.dataStore.set(scene.levelScoreArray, forKey: "LevelScoreStore")
+            scene.defaults.set(scene.levelScoreArray, forKey: "LevelScoreStore")
             scene.newLevelHighScore = true
         }
         scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
@@ -115,7 +115,7 @@ class InbetweenLevels: GKState {
         if scene.gameoverStatus {
             if scene.totalScore >= scene.totalScoreArray.max()! {
                 scene.totalScoreArray[scene.levelNumber-1] = scene.totalScore
-                scene.dataStore.set(scene.totalScoreArray, forKey: "TotalScoreStore")
+                scene.defaults.set(scene.totalScoreArray, forKey: "TotalScoreStore")
                 scene.newTotalHighScore = true
             }
             scene.totalHighscore = scene.totalScoreArray.max()!
@@ -128,7 +128,7 @@ class InbetweenLevels: GKState {
         } else {
             let waitScene = SKAction.wait(forDuration: 1)
             self.scene.run(waitScene, completion: {
-                if self.scene.showAd {
+                if self.scene.adsSetting! {
                     self.scene.gameState.enter(Ad.self)
                     self.scene.loadInterstitial()
                 } else {

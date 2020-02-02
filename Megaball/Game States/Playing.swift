@@ -19,6 +19,9 @@ class Playing: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
+        scene.userSettings()
+        // Set user settings
+        
         if previousState is InbetweenLevels && (scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber) {
             scene.gameState.enter(GameOver.self)
         }
@@ -66,10 +69,35 @@ class Playing: GKState {
             scene.ball.physicsBody!.affectedByGravity = true
             // Enusre the ball is affected by gravity
             
-            if scene.killBall {
-                scene.ballLost()
-                scene.killBall = false
+            if let musicPlaying = scene.backgroundMusic {
+                print("llama music pause")
+                musicPlaying.run(SKAction.stop())
             }
+            
+            if scene.musicSetting! {
+                if let musicPlaying = scene.backgroundMusic {
+                    print("llama music play")
+                    musicPlaying.run(SKAction.play())
+                } else {
+                    print("llama music setup")
+                    if let musicURL = Bundle.main.url(forResource: "BrendanBlockTitleMusic", withExtension: "mp3") {
+                        scene.backgroundMusic = SKAudioNode(url: musicURL)
+                        scene.addChild(scene.backgroundMusic)
+                    }
+                }
+            }
+            // Background music setup
+
+            if scene.killBall {
+                if scene.numberOfLives == 0 {
+                    scene.numberOfLives = 1
+                }
+                scene.ballLost()
+                scene.levelScore = scene.levelScore - scene.lifeLostScore
+                scene.scoreLabel.text = String(scene.totalScore + scene.levelScore)
+                // Score isn't reduced when killing ball
+            }
+            scene.killBall = false
         }
     }
     // This function runs when this state is entered.

@@ -24,6 +24,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     var selectedLevel: Int?
     // Property to store the correct level to load
     
+    let defaults = UserDefaults.standard
+    
     var interstitial: GADInterstitial!
     // Define interstitial ad
     
@@ -84,34 +86,34 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     // Segue to MenuViewController
     
     func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool) {
-        let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
-        popoverVC.levelNumber = levelNumber
-        popoverVC.levelScore = levelScore
-        popoverVC.levelHighscore = levelHighscore
-        popoverVC.totalScore = totalScore
-        popoverVC.totalHighscore = totalHighscore
-        popoverVC.gameoverStatus = gameoverStatus
+        let inbetweenLevelsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
+        inbetweenLevelsVC.levelNumber = levelNumber
+        inbetweenLevelsVC.levelScore = levelScore
+        inbetweenLevelsVC.levelHighscore = levelHighscore
+        inbetweenLevelsVC.totalScore = totalScore
+        inbetweenLevelsVC.totalHighscore = totalHighscore
+        inbetweenLevelsVC.gameoverStatus = gameoverStatus
         // Update popup view controller properties with function input values
 
-        self.addChild(popoverVC)
-        popoverVC.view.frame = self.view.frame
-        self.view.addSubview(popoverVC.view)
-        popoverVC.didMove(toParent: self)
+        self.addChild(inbetweenLevelsVC)
+        inbetweenLevelsVC.view.frame = self.view.frame
+        self.view.addSubview(inbetweenLevelsVC.view)
+        inbetweenLevelsVC.didMove(toParent: self)
     }
     // Show InbetweenLevelsViewController as popup
     
     func showPauseMenu(levelNumber: Int, score: Int, highscore: Int) {
-        let popoverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
-        popoverVC.levelNumber = levelNumber
-        popoverVC.score = score
-        popoverVC.highscore = highscore
+        let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
+        pauseMenuVC.levelNumber = levelNumber
+        pauseMenuVC.score = score
+        pauseMenuVC.highscore = highscore
         
         // Update pause menu view controller properties with function input values
 
-        self.addChild(popoverVC)
-        popoverVC.view.frame = self.view.frame
-        self.view.addSubview(popoverVC.view)
-        popoverVC.didMove(toParent: self)
+        self.addChild(pauseMenuVC)
+        pauseMenuVC.view.frame = self.view.frame
+        self.view.addSubview(pauseMenuVC.view)
+        pauseMenuVC.didMove(toParent: self)
     }
     // Show PauseMenuViewController as popup
 

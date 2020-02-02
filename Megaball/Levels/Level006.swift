@@ -130,6 +130,8 @@ extension GameScene {
             }
             // Remove null bricks & discount indestructible bricks
         }
-        mediumHaptic.impactOccurred()
+        if hapticsSetting! {
+            mediumHaptic.impactOccurred()
+        }
     }
 }
