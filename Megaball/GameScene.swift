@@ -6,7 +6,6 @@
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
-import CoreMotion
 import SpriteKit
 import GameplayKit
 
@@ -16,7 +15,6 @@ let BrickCategoryName = "brick"
 let BrickRemovalCategoryName = "brickRemoval"
 let PowerUpCategoryName = "powerUp"
 let LaserCategoryName = "laser"
-let ScreenBlockCategoryName = "screenBlock"
 let powerIconCategoryName = "powerUpIcon"
 // Set up for categoryNames
 
@@ -28,6 +26,7 @@ enum CollisionTypes: UInt32 {
     case powerUpCategory = 16
     case laserCategory = 32
 	case boarderCategory = 64
+	case bottomScreenBlockCategory = 128
 }
 // Setup for collisionBitMask
 
@@ -39,19 +38,19 @@ enum CollisionTypes: UInt32 {
 //If you give a node contact test but not collision bitmask it means they won't bounce off each other but you will be told when they overlap.
 
 protocol GameViewControllerDelegate: class {
-	func moveToMainMenu(currentHighscore: Int)
-    func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool)
-	func showPauseMenu(levelNumber: Int, score: Int, highscore: Int)
+	func moveToMainMenu()
+	func showEndLevelStats(levelNumber: Int, score: Int, highScore: Int, gameoverStatus: Bool, startLevel: Int, numberOfLevels: Int, scoresArray: [Int])
+	func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int)
 	func createInterstitial()
 	func loadInterstitial()
 	var selectedLevel: Int? { get }
+	var numberOfLevels: Int? { get }
+	var levelSender: String? { get }
+	var levelPack: Int? { get }
 }
 // Setup the protocol to return to the main menu from GameViewController
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
-	
-	var motionManager: CMMotionManager!
-	// Setup motion manager for tilt control
 	
 	var backgroundMusic: SKAudioNode!
 	// Setup game music
@@ -66,6 +65,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
+	var bottomScreenBlock = SKSpriteNode()
 	var sideScreenBlockLeft = SKSpriteNode()
 	var sideScreenBlockRight = SKSpriteNode()
 	var background = SKSpriteNode()
@@ -131,8 +131,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var ballStartingPositionY: CGFloat = 0
     var ballLaunchSpeed: Double = 0
     var ballLaunchAngleRad: Double = 0
-    var ballLostHeight: CGFloat = 0
-	var ballLostAnimationHeight: CGFloat = 0
 	var brickHeight: CGFloat = 0
     var brickWidth: CGFloat = 0
     var numberOfBrickRows: Int = 0
@@ -154,9 +152,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var numberOfLives: Int = 0
     var collisionLocation: Double = 0
     var minAngleDeg: Double = 0
-    var maxAngleDeg: Double = 0
     var angleAdjustmentK: Double = 0
         // Effect of paddle position hit on ball angle. Larger number means more effect
+	var xSpeedLive: CGFloat = 0
+	var ySpeedLive: CGFloat = 0
     var bricksLeft: Int = 0
     var ballLinearDampening: CGFloat = 0
 	var ballSpeedSlow: CGFloat = 0
@@ -165,14 +164,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballSpeedFast: CGFloat = 0
 	var ballSpeedFastest: CGFloat = 0
 	var ballSpeedLimit: CGFloat = 0
-    var xSpeed: CGFloat = 0
-    var ySpeed: CGFloat = 0
-    var currentSpeed: CGFloat = 0
 	var paddleMovementFactor: CGFloat = 0
 	var paddleTiltMagnitude: CGFloat = 0
 	var minTilt: CGFloat = 0
 	var maxTilt: CGFloat = 0
 	var levelNumber: Int = 0
+	var startLevelNumber: Int = 0
+	var numberOfLevels: Int = 0
+	var levelSender: String = ""
+	var packNumber: Int = 0
 	var powerUpProbFactor: Int = 0
 	var brickRemovalCounter: Int = 0
 	var gravityActivated: Bool = false
@@ -200,8 +200,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var musicSetting: Bool?
 	var hapticsSetting: Bool?
 	var parallaxSetting: Bool?
-	var paddleControlSetting: Bool?
 	var paddleSensitivitySetting: Int?
+	// Settings
     
     let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
 	
@@ -314,7 +314,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballLostBool: Bool = true
 	var powerUpsOnScreen: Int = 0
 	var powerUpLimit: Int = 0
-	var brickBounceCounter: Int = 0
+	var brickBounceCounter: Int = 0 {
+		didSet {
+			if brickBounceCounter > 100 {
+				ballStuck()
+			}
+		}
+		// Property observer to release stuck ball
+	}
+	
 	var killBall: Bool = false
     // Game trackers
 	
@@ -327,6 +335,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var fontSize: CGFloat = 0
     var labelSpacing: CGFloat = 0
     // Label metrics
+	
+	var totalStatsArray: [TotalStats] = []
+	var packStatsArray: [PackStats] = []
+	var levelStatsArray: [LevelStats] = []
+	var cumulativeScore: Int = 0
+    var levelsPlayed: Int = 0
+    var levelsCompleted: Int = 0
+	var ballHits: Int = 0
+	var ballsLost: Int = 0
+	var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var playTime: Int = 0
+	var bricksHit: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
+	var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
+	var lasersFired: Int = 0
+	var lasersHit: Int = 0
+	// Stats trackers
 	
 	var countdownStarted: Bool = false
 	
@@ -343,12 +368,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //MARK: - Sound and Haptic Definition
     
     var lightHaptic = UIImpactFeedbackGenerator(style: .light)
-	// use for UI interactions
 	// use for ball hitting bricks and paddle
-    var mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
-	//
+    var interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
+	// use for UI interactions
+	var mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
     var heavyHaptic = UIImpactFeedbackGenerator(style: .heavy)
-	//
 	var softHaptic = UIImpactFeedbackGenerator(style: .heavy)
 	// use for lost ball
 	var rigidHaptic = UIImpactFeedbackGenerator(style: .heavy)
@@ -370,16 +394,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     weak var gameViewControllerDelegate:GameViewControllerDelegate?
     // Create the delegate property for the GameViewController
 	
-//MARK: - NSCoder Data Store Setup
+//MARK: - User Defaults & NSCoder Setup
 	
 	var defaults = UserDefaults.standard
+	// User settings  setup
 	
-	var levelScoreArray: [Int] = [1]
-    // Creates arrays to store level highscores from NSUserDefauls
+	let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+	let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+	let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+	let encoder = PropertyListEncoder()
+	let decoder = PropertyListDecoder()
+	// NSCoder data store & encoder setup
 	
-	var totalScoreArray: [Int] = [1]
-    // Creates arrays to store total highscores from NSUserDefauls
-    
     override func didMove(to view: SKView) {
 		
 //MARK: - Scene Setup
@@ -407,10 +433,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
 		// Setup gravity
 		
-		motionManager = CMMotionManager()
-		motionManager.startAccelerometerUpdates()
-		// Core motion setup
-		
 		userSettings()
 		// Load user settings
 		
@@ -424,6 +446,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
 		topScreenBlock = self.childNode(withName: "topScreenBlock") as! SKSpriteNode
+		bottomScreenBlock = self.childNode(withName: "bottomScreenBlock") as! SKSpriteNode
 		sideScreenBlockLeft = self.childNode(withName: "sideScreenBlockLeft") as! SKSpriteNode
 		sideScreenBlockRight = self.childNode(withName: "sideScreenBlockRight") as! SKSpriteNode
 		background = self.childNode(withName: "background") as! SKSpriteNode
@@ -492,7 +515,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if screenSize == "X" {
 			screenBlockTopHeight = layoutUnit*7.4
 		} else if screenSize == "Pad" {
-			screenBlockSideWidth = frame.size.width/10
+			screenBlockSideWidth = frame.size.width/8
 			gameWidth = frame.size.width - screenBlockSideWidth*2
 			layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
 			sideScreenBlockLeft.isHidden = false
@@ -515,8 +538,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		labelSpacing = fontSize/1.5
 		minPaddleGap = brickHeight*4
-		ballLostAnimationHeight = paddle.size.height
-		ballLostHeight = ballLostAnimationHeight*4
 		
 		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth)
 		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight)
@@ -564,6 +585,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		directionMarker.zPosition = 10
 		// Object positioning definition
 		
+		bottomScreenBlock.size.height = frame.size.height/8
+		bottomScreenBlock.size.width = frame.size.width
+		bottomScreenBlock.position.x = 0
+		bottomScreenBlock.position.y = paddlePositionY - paddle.size.height/2 - brickWidth*0.85
+		
 		background.texture = plainBackgroundTexture
 		background.size.height = frame.size.height - screenBlockTopHeight
 		background.size.width = gameWidth
@@ -580,7 +606,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.name = BallCategoryName
         ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
         ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
-		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+		ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
         ball.zPosition = 2
 		ball.physicsBody!.usesPreciseCollisionDetection = true
 		ball.physicsBody!.linearDamping = ballLinearDampening
@@ -624,12 +650,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			screenBlockArray[index].physicsBody!.affectedByGravity = false
 			screenBlockArray[index].physicsBody!.isDynamic = false
 			screenBlockArray[index].zPosition = 7
-			screenBlockArray[index].name = ScreenBlockCategoryName
 			screenBlockArray[index].physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
 			screenBlockArray[index].physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 			screenBlockArray[index].physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 		}
 		// Define all screen block properties
+		
+		
+		let centerPoint = CGPoint(x:bottomScreenBlock.size.width / 2 - (bottomScreenBlock.size.width * bottomScreenBlock.anchorPoint.x), y:bottomScreenBlock.size.height / 2 - (bottomScreenBlock.size.height * bottomScreenBlock.anchorPoint.y))
+		bottomScreenBlock.physicsBody = SKPhysicsBody(rectangleOf: bottomScreenBlock.frame.size, center: centerPoint)
+		bottomScreenBlock.physicsBody!.allowsRotation = false
+		bottomScreenBlock.physicsBody!.friction = 0.0
+		bottomScreenBlock.physicsBody!.affectedByGravity = false
+		bottomScreenBlock.physicsBody!.isDynamic = true
+		bottomScreenBlock.physicsBody!.pinned = true
+		bottomScreenBlock.zPosition = 1
+		
+		bottomScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.bottomScreenBlockCategory.rawValue
+		bottomScreenBlock.physicsBody!.collisionBitMask = 0
+		bottomScreenBlock.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
 		
 //MARK: - Label & UI Initialisation
 		
@@ -694,7 +733,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "#, 02022020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
+		buildLabel.text = "da704eb, 02022020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
         // Label size & position definition
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
@@ -749,8 +788,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSpeedLimit = ballSpeedNominal
 		// Ball speed parameters
 		
-		minAngleDeg = 7.5
-		maxAngleDeg = 180-minAngleDeg
+		minAngleDeg = 10
 		angleAdjustmentK = 45
 		// Ball angle parameters
 		
@@ -763,51 +801,55 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		levelCompleteScore = 100
 		multiplier = 1.0
 		// Score properties
-        
-        endLevelNumber = 10
-		// Define number of levels
-		
-		brickBounceCounter = 0
-		
-		if paddleSensitivitySetting == 0 {
-			paddleMovementFactor = 1.5
-			paddleTiltMagnitude = 750
-			minTilt = 0.01
-			maxTilt = 0.2
-		} else if paddleSensitivitySetting == 1 {
-			paddleMovementFactor = 1.25
-			paddleTiltMagnitude = 500
-			minTilt = 0.05
-			maxTilt = 0.3
-		} else if paddleSensitivitySetting == 2 {
-			paddleMovementFactor = 1
-			paddleTiltMagnitude = 350
-			minTilt = 0.05
-			maxTilt = 0.4
-		}
-		
-		if musicSetting! {
-			if let musicURL = Bundle.main.url(forResource: "BrendanBlockTitleMusic", withExtension: "mp3") {
-				backgroundMusic = SKAudioNode(url: musicURL)
-				addChild(backgroundMusic)
-			}
-		}
-		// Background music setup
 		
 //MARK: - Score Database Setup
-        
-        if let levelScoreStore = defaults.array(forKey: "LevelScoreStore") as? [Int] {
-            levelScoreArray = levelScoreStore
-        }
-        // Setup array to store level highscores
 		
-		if let totalScoreStore = defaults.array(forKey: "TotalScoreStore") as? [Int] {
-            totalScoreArray = totalScoreStore
-        }
-        // Setup array to store total highscores
-        
+		if let totalData = try? Data(contentsOf: totalStatsStore!) {
+			do {
+				totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+			} catch {
+				print("Error decoding total stats array, \(error)")
+			}
+		}
+		// Load the total stats array from the NSCoder data store
+		
+		if let packData = try? Data(contentsOf: packStatsStore!) {
+			do {
+				packStatsArray = try decoder.decode([PackStats].self, from: packData)
+			} catch {
+				print("Error decoding pack stats array, \(error)")
+			}
+		}
+		// Load the pack stats array from the NSCoder data store
+		
+		if let levelData = try? Data(contentsOf: levelStatsStore!) {
+			do {
+				levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+			} catch {
+				print("Error decoding level stats array, \(error)")
+			}
+		}
+		// Load the level stats array from the NSCoder data store
+		
+		cumulativeScore = totalStatsArray[0].cumulativeScore
+		levelsPlayed = totalStatsArray[0].levelsPlayed
+		levelsCompleted = totalStatsArray[0].levelsCompleted
+		ballHits = totalStatsArray[0].ballHits
+		ballsLost = totalStatsArray[0].ballsLost
+		powerupsCollected = totalStatsArray[0].powerupsCollected
+		powerupsGenerated = totalStatsArray[0].powerupsGenerated
+		playTime = totalStatsArray[0].playTime
+		bricksHit = totalStatsArray[0].bricksHit
+		bricksDestroyed = totalStatsArray[0].bricksDestroyed
+		lasersFired = totalStatsArray[0].lasersFired
+		lasersHit = totalStatsArray[0].lasersHit
+		// Update stats trackers with saved values
+		
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
+		
+		NotificationCenter.default.addObserver(self, selector: #selector(self.restartGameNotificiationKeyReceived), name: .restartGameNotificiation, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has restarted the game
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
 		swipeUp.direction = .up
@@ -821,7 +863,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
     // Defines actions for a dragged touch
         
-		if gameState.currentState is Playing && paddleControlSetting! {
+		if gameState.currentState is Playing {
             // Only executes code below when game state is playing
         
             let touch = touches.first
@@ -854,6 +896,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleMoved = true
 			}
 			// Ball matches paddle position
+			
+			paddleLaser.position.x = paddle.position.x
+			paddleLaser.position.y = paddle.position.y - paddle.size.height/2
+			paddleSticky.position.x = paddle.position.x
+			paddleSticky.position.y = paddle.position.y - paddle.size.height/2
+			// Keep the different paddle textures together
         }
     }
 
@@ -973,216 +1021,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
 		
-		let xRangeBall = SKRange(lowerLimit:-gameWidth/2 + ballSize/2,upperLimit:gameWidth/2 - ballSize/2)
-        ball.constraints = [SKConstraint.positionX(xRangeBall)]
-		// Set ball range
-		
-		let xRangePaddle = SKRange(lowerLimit:-gameWidth/2 + paddle.size.width/2,upperLimit:gameWidth/2 - paddle.size.width/2)
-        paddle.constraints = [SKConstraint.positionX(xRangePaddle)]
-		// Set paddle range
-		
-		if paddleControlSetting == false && scene!.isPaused == false && gameState.currentState is Playing {
-			if let accelerometerData = motionManager.accelerometerData {
-				
-				let tilt = CGFloat(accelerometerData.acceleration.x)
-				
-				var tiltMagnitude = ((abs(tilt)-minTilt)/(maxTilt-minTilt))
-				
-				if tiltMagnitude > 1 {
-					tiltMagnitude = 1
-				}
-				
-				if tilt > minTilt {
-					paddle.physicsBody?.velocity = CGVector(dx: paddleTiltMagnitude * tiltMagnitude, dy: 0)
-				} else if tilt < -minTilt {
-					paddle.physicsBody?.velocity = CGVector(dx: -paddleTiltMagnitude * tiltMagnitude, dy: 0)
-				}
-				if ballIsOnPaddle {
-					if tilt > minTilt {
-						ball.physicsBody?.velocity = CGVector(dx: paddleTiltMagnitude * tiltMagnitude, dy: 0)
-					} else if tilt < -minTilt {
-						ball.physicsBody?.velocity = CGVector(dx: -paddleTiltMagnitude * tiltMagnitude, dy: 0)
-					}
-					ball.position.x = paddle.position.x + ballRelativePositionOnPaddle
-					ball.position.y = ballStartingPositionY
-				}
+		if gameState.currentState is Paused {
+			if self.isPaused == false && countdownStarted == false {
+				self.isPaused = true
 			}
-		}
-		// Setup tilt controls
-		
-		
-		if ballIsOnPaddle && paddleMovedDistance != 0 {
-			
-		}
-		// Ball matches paddle position
-		
-		recentreBall()
-		
-		if gameState.currentState is Paused && self.isPaused == false && countdownStarted == false {
-			self.isPaused = true
 		}
 		// Ensures game is paused when returning from background
 
         if gameState.currentState is Playing {
 			
-			powerUpsOnScreen = 0
-
-			enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
-				
-				self.powerUpsOnScreen+=1
-				// Track number of power-ups to limit number on screen
-				
-				if node.position.y < self.paddle.position.y - self.paddle.size.height - self.brickWidth/2 {
-					let sprite = node as! SKSpriteNode
-					if sprite.texture == self.powerUpMystery {
-						self.powerUpsOnScreen-=1
-						self.powerUpGenerator (sprite: sprite)
-						node.removeFromParent()
-					}
-				}
-				// If mystery power-up, replace with another power-up
-				
-				if node.position.y < self.paddle.position.y - self.paddle.size.height - self.brickWidth {
-					let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
-					let fadeOut = SKAction.fadeOut(withDuration: 0.2)
-					let removeItemGroup = SKAction.group([scaleDown, fadeOut])
-					// Setup power-up removal animation
-					node.run(removeItemGroup, completion: {
-						node.removeFromParent()
-					})
+			xSpeedLive = ball.physicsBody!.velocity.dx
+			ySpeedLive = ball.physicsBody!.velocity.dy
+		
+			if gravityActivated {
+				if ball.position.y < paddle.position.y + ballSize*4 {
+					ball.physicsBody?.affectedByGravity = false
+				} else {
+					ball.physicsBody?.affectedByGravity = true
+					// Stop the ball being effected by gravity near the paddle
 				}
 			}
-			// Remove power-ups once they reach the bottom
-			
-			paddle.position.y = paddlePositionY
-			// Ensure paddle remains at its set height
-			
-			paddleLaser.position.x = paddle.position.x
-			paddleLaser.position.y = paddle.position.y - paddle.size.height/2
-			paddleSticky.position.x = paddle.position.x
-			paddleSticky.position.y = paddle.position.y - paddle.size.height/2
-			// Keep the different paddle textures together
-			
+			// Sets the ball's gravity control
+
 			if ballIsOnPaddle {
 				ball.position.y = ballStartingPositionY
-			}
-			// Ensure ball remains on paddle
-		}
-		// Code to run continuously whilst playing
-		
-		if gameState.currentState is Playing && ballIsOnPaddle == false {
-			
-			xSpeed = ball.physicsBody!.velocity.dx
-			ySpeed = ball.physicsBody!.velocity.dy
-			currentSpeed = sqrt(ball.physicsBody!.velocity.dx * ball.physicsBody!.velocity.dx + ball.physicsBody!.velocity.dy * ball.physicsBody!.velocity.dy)
-			// Calculate ball speed
-			
-            if ball.position.y <= paddle.position.y - ballLostAnimationHeight {
-                ballLostAnimation()
-            }
-            if ball.position.y <= paddle.position.y - ballLostHeight {
-                ballLost()
-            }
-			// Determine if ball has been lost below paddle
-			
-			if brickBounceCounter == 100 {
-				enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-					let temporarySprite = node as! SKSpriteNode
-					if temporarySprite.texture == self.brickIndestructible1Texture || temporarySprite.texture == self.brickIndestructible2Texture {
-						node.removeFromParent()
-					}
-				}
-			}
-			// Remove indestructible bricks if the ball hits them a certain number of times consecutively
-			
-        }
-		// Code to run continuously whilst playing when the ball is off the paddle
-        
-        if gameState.currentState is Playing && ballIsOnPaddle == false && gravityActivated == false {
-            
-			var angleRad = Double(atan2(ySpeed, xSpeed))
-			var angleDeg = Double(angleRad)/Double.pi*180
-				
-			if ball.position.x >= 0 {
-				// ball is on right side of screen
-
-				if angleDeg > 85 && angleDeg < 90 {
-					angleDeg = 85
-				}
-				else if angleDeg < 95 && angleDeg >= 90 {
-					angleDeg = 95
-				}
-				else if angleDeg > -95 && angleDeg <= -90 {
-					angleDeg = -95
-				}
-				else if angleDeg < -85 && angleDeg > -90 {
-					angleDeg = -85
-				}
-				
+				// Ensure ball remains on paddle
 			} else {
-				// ball is on left side of screen
-				if angleDeg > 85 && angleDeg <= 90 {
-					angleDeg = 85
-				}
-				else if angleDeg < 95 && angleDeg > 90 {
-					angleDeg = 95
-				}
-				else if angleDeg > -95 && angleDeg < -90 {
-					angleDeg = -95
-				}
-				else if angleDeg < -85 && angleDeg >= -90 {
-					angleDeg = -85
-				}
+				ballSpeedControl()
+				// Ensure ball speed remains within limits
 			}
-			
-			angleRad = (angleDeg*Double.pi/180)
-			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-			// Set the new angle of the ball
-
-			// check y-angle - stops the ball getting trapped on the wall
-			
-			if (angleDeg <= minAngleDeg/2 && angleDeg >= -minAngleDeg/2) || (angleDeg > 180-minAngleDeg/2 && angleDeg <= 180) || (angleDeg < -180+minAngleDeg/2 && angleDeg >= -180) {
-				correctBallAngle(correctedAngle: minAngleDeg/2)
-			}
-			
-			if currentSpeed > ballSpeedLimit + currentSpeed/10 {
-				ball.physicsBody!.linearDamping = 0.5
-            } else if currentSpeed < ballSpeedLimit {
-				ball.physicsBody!.linearDamping = -0.5
-            } else {
-                ball.physicsBody!.linearDamping = ballLinearDampening
-            }
-			// Set the new speed of the ball and ensure it stays within the boundary
-        }
-		// Code to run continuously whilst playing when the ball is off the paddle and gravity power-up is off
-		
-		if gameState.currentState is Playing && gravityActivated == true {
-			
-			if ball.position.y < paddle.position.y + ballSize*4 {
-				ball.physicsBody?.affectedByGravity = false
-			} else {
-				ball.physicsBody?.affectedByGravity = true
-			}
-			
-			if currentSpeed > ballSpeedLimit + currentSpeed/10 {
-				ball.physicsBody!.linearDamping = 0.5
-            } else {
-                ball.physicsBody!.linearDamping = ballLinearDampening
-            }
-			// Set the new speed of the ball and ensure it stays within the boundary
-			
 		}
-		// Code to run coninuously when gravity is acitvated
     }
     
     func ballLost() {
 		if hapticsSetting! {
 			softHaptic.impactOccurred()
 		}
+		ballsLost+=1
         self.ball.isHidden = true
-		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = 0
         ball.position.x = paddle.position.x
         ball.position.y = ballStartingPositionY
@@ -1217,7 +1093,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 node.removeFromParent()
             })
         }
-        // Remove any remaining power-ups
+        // Remove any remaining lasers
 		
 		levelScore = levelScore + lifeLostScore
         scoreLabel.text = String(totalScore + levelScore)
@@ -1279,10 +1155,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballLostAnimation() {
-        let scaleDown = SKAction.scale(to: 0, duration: 0.2)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
+		ballLostBool = true
+        let scaleDown = SKAction.scale(to: 0, duration: 0.1)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.1)
         let ballLostGroup = SKAction.group([scaleDown, fadeOut])
-        ball.run(ballLostGroup)
+		ball.run(ballLostGroup, completion: {
+			self.ballLost()
+		})
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -1303,58 +1182,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Stores the 2 bodies, with the body with the lower category being first
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
-				
-				if ball.position.x < 0 && xSpeed < 0 {
-					xSpeed = -xSpeed
-				}
-				if ball.position.x > 0 && xSpeed > 0 {
-					xSpeed = -xSpeed
-				}
-				// Ensure the xSpeed is calculated in the correct direction based on the ball position
-				
-				ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-				// Set the new speed in the x direction
-				
-				correctBallAngle(correctedAngle: minAngleDeg)
-				
+				frameBallControl(xSpeed: -xSpeedLive)
 			}
-			// Ball hits Frame - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
+			// Ball hits Frame
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.screenBlockCategory.rawValue {
 				
 				let frameBlockNode = secondBody.node
 				let frameBlockSprite = frameBlockNode as! SKSpriteNode
 				
-				if frameBlockSprite.size.width > frameBlockSprite.size.height {
-				// Ball hits top block
-					if ySpeed > 0 {
-						ySpeed = -ySpeed
-					}
-					// Ensure the ySpeed is downwards
-
-					ball.physicsBody!.velocity.dy = ySpeed
-					// Set the new speed in the y direction
+				if frameBlockSprite.size.width < frameBlockSprite.size.height {
+				// Ball hits side block
+					frameBallControl(xSpeed: -xSpeedLive)
 				} else {
-				// Ball hits side blocks
-					if ball.position.x < 0 && xSpeed < 0 {
-						xSpeed = -xSpeed
+				// Ball hits top block
+					if ySpeedLive < 0 {
+						ball.physicsBody!.velocity = CGVector(dx: xSpeedLive, dy: ySpeedLive)
+					} else {
+						ball.physicsBody!.velocity = CGVector(dx: xSpeedLive, dy: -ySpeedLive)
 					}
-					if ball.position.x > 0 && xSpeed > 0 {
-						xSpeed = -xSpeed
-					}
-					// Ensure the xSpeed is calculated in the correct direction based on the ball position
-					ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-					// Set the new speed in the x direction
-					correctBallAngle(correctedAngle: minAngleDeg)
+					ballAngleControl(controlAngle: minAngleDeg/2)
+					// Ensure the ySpeed is downwards
 				}
-				
 			}
-		   // Ball hits screenblock - ensure proper bounce angle (SpriteKit bug means ball slides rather than bounces at shallow angle)
+		   // Ball hits screenblock
 
             if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.brickCategory.rawValue {
                 if let brickNode = secondBody.node {
                     hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode)
                 }
+				ballAngleControl(controlAngle: minAngleDeg/2)
             }
             // Ball hits Brick
             
@@ -1365,6 +1222,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if firstBody.categoryBitMask == CollisionTypes.brickCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
                 if let brickNode = firstBody.node {
+					lasersHit+=1
 					hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode))
                 }
             }
@@ -1387,7 +1245,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let scaleDown = SKAction.scale(to: 0.5, duration: 0.1)
 				let fadeOut = SKAction.fadeOut(withDuration: 0.15)
 				let mysteryWait = SKAction.wait(forDuration: 0.1)
-				
 				var powerupSequence = SKAction.sequence([scaleUp, scaleDown])
 				let powerupGroup = SKAction.group([fadeOut, powerupSequence])
 				if mysteryPowerUp && sprite.texture != powerUpMystery {
@@ -1406,6 +1263,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
             }
             // Power-up hits Paddle
+			
+			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
+				ballLostAnimation()
+			}
+			// Ball hits bottom screen block
+		
+			if firstBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
+				
+				powerUpsOnScreen-=1
+				let powerUpSprite = firstBody.node as! SKSpriteNode
+				
+				if powerUpSprite.texture == self.powerUpMystery {
+					let fadeOut = SKAction.fadeOut(withDuration: 0.1)
+					firstBody.node!.run(fadeOut, completion: {
+						firstBody.node!.removeFromParent()
+					})
+					self.powerUpGenerator (sprite: powerUpSprite)
+				// If mystery power-up, remove and generate a new power-up in its position
+				} else {
+					let scaleDown = SKAction.scale(to: 0.25, duration: 1)
+					let fadeOut = SKAction.fadeOut(withDuration: 1)
+					let removeItemGroup = SKAction.group([scaleDown, fadeOut])
+					firstBody.node!.run(removeItemGroup, completion: {
+						firstBody.node!.removeFromParent()
+					})
+				}
+				// Otherwise animate the power-up out
+			}
+			// Power-up hits bottom screen block
         }
     }
     
@@ -1421,6 +1307,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove laser if super-ball power up isn't activated
 		
 		if sprite.texture == brickIndestructible2Texture {
+			bricksHit[6]+=1
 			brickBounceCounter+=1
 		} else {
 			brickBounceCounter = 0
@@ -1428,6 +1315,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         switch sprite.texture {
         case brickNormalTexture:
+			bricksHit[0]+=1
 			if sprite.isHidden {
 				let scaleDown = SKAction.scale(to: 1, duration: 0)
                 let fadeOut = SKAction.fadeOut(withDuration: 0)
@@ -1444,22 +1332,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
             break
         case brickMultiHit1Texture:
+			bricksHit[1]+=1
             sprite.texture = brickMultiHit2Texture
             break
         case brickMultiHit2Texture:
+			bricksHit[2]+=1
             sprite.texture = brickMultiHit3Texture
             break
 		case brickMultiHit3Texture:
+			bricksHit[3]+=1
             sprite.texture = brickMultiHit4Texture
             break
         case brickMultiHit4Texture:
+			bricksHit[4]+=1
             removeBrick(node: node, sprite: sprite)
             break
 		case brickIndestructible1Texture:
+			bricksHit[5]+=1
 			removeBrick(node: node, sprite: sprite)
 			sprite.texture = brickIndestructible2Texture
             break
         case brickInvisibleTexture:
+			bricksHit[7]+=1
             if sprite.isHidden {
                 let scaleDown = SKAction.scale(to: 1, duration: 0)
                 let fadeOut = SKAction.fadeOut(withDuration: 0)
@@ -1521,6 +1415,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
 		}
 		
+		switch sprite.texture {
+		case brickNormalTexture:
+			bricksDestroyed[0]+=1
+			break
+		case brickMultiHit1Texture:
+			bricksDestroyed[1]+=1
+			break
+		case brickMultiHit2Texture:
+			bricksDestroyed[2]+=1
+			break
+		case brickMultiHit3Texture:
+			bricksDestroyed[3]+=1
+			break
+		case brickMultiHit4Texture:
+			bricksDestroyed[4]+=1
+			break
+		case brickIndestructible1Texture:
+			bricksDestroyed[5]+=1
+			break
+		case brickIndestructible2Texture:
+			bricksDestroyed[6]+=1
+			break
+		case brickInvisibleTexture:
+			bricksDestroyed[7]+=1
+			break
+		default:
+			break
+		}
+		
 		if brickRemovalCounter == 9 {
 			if multiplier < 10.0 {
 				multiplier = multiplier + 0.1
@@ -1540,9 +1463,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if bricksLeft == 0 {
 			levelScore = levelScore + levelCompleteScore
 			scoreLabel.text = String(totalScore + levelScore)
-            if levelNumber == endLevelNumber {
-                gameoverStatus = true
-            }
             gameState.enter(InbetweenLevels.self)
 			return
         }
@@ -1553,55 +1473,59 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if hapticsSetting! {
 			lightHaptic.impactOccurred()
 		}
-        
+        ballHits+=1
 		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
         
+		let xSpeed = ball.physicsBody!.velocity.dx
+		let ySpeed = ball.physicsBody!.velocity.dy
+		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
 		let paddleRightEdgePosition = paddle.position.x + paddle.size.width/2
+		let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
+		// Define collision position between the ball and paddle
+		let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
+		// Assumes the ball's ySpeed is always positive
+		var angleRad = atan2(Double(ySpeedCorrected), Double(xSpeed))
+		// Angle of the ball
 		
-		if ball.position.x > paddleLeftEdgePosition + ball.size.width/2 && ball.position.x < paddleRightEdgePosition - ball.size.width/2 && stickyPaddleCatches != 0 {
-			// Catch the ball if the sticky paddle power up is applied and the ball hits the centre of the paddle
-            ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
-			// Reposition ball within boundries of paddle
-            ballIsOnPaddle = true
-            paddleMoved = true
-            ball.position.y = ballStartingPositionY
-            
-        } else if ball.position.y - ball.size.width/3 >= paddle.position.y + paddle.size.height/3 && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
-            // Only apply if the ball hits the paddles top flat surface
+		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && ball.position.y >= paddle.position.y + paddle.size.height/2 + ball.size.height/2 - ball.size.height/20 {
+		// Only apply if the ball hits the centre of the paddle on the top surface
+
+			if stickyPaddleCatches != 0 {
+				ballIsOnPaddle = true
+				ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
+				paddleMoved = true
+				ball.position.y = ballStartingPositionY
+			// Catch the ball
+			} else if ballIsOnPaddle == false {
 				
-			let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
-			// Define collision position between the ball and paddle
-			let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
-			// Assumes the ball's ySpeed is always positive
-			var angleRad = atan2(Double(ySpeedCorrected), Double(xSpeed))
-			// Angle of the ball
+				angleRad = angleRad - ((angleAdjustmentK*Double.pi/180)*collisionPercentage) + Double.random(in: (-5*Double.pi/180)...5*Double.pi/180)
+				// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
+				// Adds a small element of randomness into the ball's angle - between -5 and 5 degrees
+				
+				if angleRad <= (minAngleDeg*2 * Double.pi / 180) && angleRad >= -(minAngleDeg*2 * Double.pi / 180) {
+					angleRad = (minAngleDeg*2 * Double.pi / 180)
+				}
+				if angleRad >= (180 - minAngleDeg*2 * Double.pi / 180) && angleRad <= -(180 - minAngleDeg*2 * Double.pi / 180) {
+					angleRad = (180 - minAngleDeg*2 * Double.pi / 180)
+				}
+				// Limits the angle off of the paddle
 			
-			angleRad = angleRad - ((angleAdjustmentK*Double.pi/180)*collisionPercentage)
-			// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
- 
-			angleRad = angleRad + Double.random(in: (-5*Double.pi/180)...5*Double.pi/180)
-			// Adds a small element of randomness into the ball's angle - between -5 and 5 degrees
-			
-			if angleRad < (minAngleDeg*2 * Double.pi / 180) {
-				angleRad = (minAngleDeg*2 * Double.pi / 180)
+				let newXSpeed = CGFloat(cos(angleRad)) * currentSpeed
+				let newYSpeed = CGFloat(sin(angleRad)) * currentSpeed
+				ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: newYSpeed)
+				// Set the new speed and angle of the ball
 			}
-			if angleRad > (maxAngleDeg*2 * Double.pi / 180) {
-				angleRad = (maxAngleDeg*2 * Double.pi / 180)
-			}
-			// Limits the angle off of the paddle to 2* the min & max ball angles
-						   
-			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-			// Set the new speed and angle of the ball
-        }
+		}
     }
     
     func powerUpGenerator (sprite: SKSpriteNode) {
 		
-		if powerUpsOnScreen >= powerUpLimit {
+		powerUpsOnScreen+=1
+		
+		if powerUpsOnScreen > powerUpLimit {
+			powerUpsOnScreen-=1
 			return
 		}
 		// Limit number of power-ups available at once
@@ -1619,8 +1543,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUp.physicsBody!.mass = 0
         powerUp.name = PowerUpCategoryName
         powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
-		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
-		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
+		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
+		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
         powerUp.zPosition = 2
         addChild(powerUp)
         
@@ -1629,21 +1553,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 0:
 		// Get a life			
             powerUp.texture = powerUpGetALife
+			powerupsGenerated[0]+=1
         case 1:
 		// Decrease ball speed
             powerUp.texture = powerUpDecreaseBallSpeed
+			powerupsGenerated[2]+=1
         case 2:
 		// Superball
             powerUp.texture = powerUpSuperBall
+			powerupsGenerated[4]+=1
         case 3:
 		// Sticky paddle
             powerUp.texture = powerUpStickyPaddle
+			powerupsGenerated[6]+=1
         case 4:
 		// Next level
             powerUp.texture = powerUpNextLevel
+			powerupsGenerated[7]+=1
         case 5:
 		// Increase paddle size
             powerUp.texture = powerUpIncreasePaddleSize
+			powerupsGenerated[8]+=1
         case 6:
 		// Invisible bricks become visible
 			powerUp.texture = self.powerUpShowInvisibleBricks
@@ -1654,16 +1584,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
+			powerupsGenerated[11]+=1
 			if hiddenNodeFound == false {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
+				powerupsGenerated[11]-=1
 			}
 			// Don't show if no invisible/hidden bricks
         case 7:
 			// Lasers
             powerUp.texture = powerUpLasers
-			
+			powerupsGenerated[10]+=1
 		case 8:
 		// Remove indestructible bricks
 			powerUp.texture = powerUpRemoveIndestructibleBricks
@@ -1675,10 +1607,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
+			powerupsGenerated[12]+=1
 			if indestructibleNodeFound == false {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
+				powerupsGenerated[12]-=1
 			}
 			// Don't show if no indestructible bricks
 		case 9:
@@ -1692,16 +1626,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
+			powerupsGenerated[13]+=1
 			if multiNodeFound == false {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
+				powerupsGenerated[13]-=1
 			}
 			// Don't show if no multi-hit bricks
         case 10:
 		// Lose a life
 			if numberOfLives > 0 {
 				powerUp.texture = powerUpLoseALife
+				powerupsGenerated[1]+=1
 			} else {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
@@ -1711,16 +1648,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 11:
 		// Increase ball speed
             powerUp.texture = powerUpIncreaseBallSpeed
+			powerupsGenerated[3]+=1
         case 12:
 		// Undestructi-ball
             powerUp.texture = powerUpUndestructiBall
+			powerupsGenerated[5]+=1
 		case 13:
 		// Decrease paddle size
 			powerUp.texture = powerUpDecreasePaddleSize
+			powerupsGenerated[9]+=1
 		case 14:
 		// x2 multiplier
 			if multiplier < 10 {
 				powerUp.texture = powerUpMultiplier
+				powerupsGenerated[14]+=1
 			} else {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
@@ -1730,10 +1671,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case 15:
 		// Bonus points
 			powerUp.texture = powerUpPointsBonus
+			powerupsGenerated[15]+=1
 		case 16:
 		// Penalty points
-			if levelScore >= 0 {
+			if levelScore >= Int(1000*multiplier) {
 				powerUp.texture = powerUpPointsPenalty
+				powerupsGenerated[16]+=1
 			} else {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
@@ -1751,10 +1694,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
+			powerupsGenerated[17]+=1
 			if normalNodeFound == false {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
+				powerupsGenerated[17]-=1
 			}
 			// Don't show if no normal bricks
 		case 18:
@@ -1768,18 +1713,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
+			powerupsGenerated[18]+=1
 			if multiHitBrickFound == false {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
+				powerupsGenerated[18]-=1
 			}
 			// Don't show if no multi-hit bricks that have been hit
 		case 19:
 		// Gravity ball
 			powerUp.texture = powerUpGravityBall
+			powerupsGenerated[19]+=1
 		case 20:
 		// Mystery power-up
 			powerUp.texture = powerUpMystery
+			powerupsGenerated[20]+=1
 		case 21:
 		// Multiplier reset
 			if multiplier <= 1 {
@@ -1788,6 +1737,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUp.removeFromParent()
 			} else {
 				powerUp.texture = powerUpMultiplierReset
+				powerupsGenerated[21]+=1
+				
 			}
 			// Don't show if multiplier is 1
 		case 22:
@@ -1800,10 +1751,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					stop.initialize(to: true)
 				}
 			}
+			powerupsGenerated[22]+=1
 			if bricksAtBottom {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
+				powerupsGenerated[22]-=1
 			}
 			// Don't show if bricks are already at lowest point
         default:
@@ -1819,9 +1772,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if ballLostBool {
 			return
 		}
+		// Don't apply the power up if the ball has been lost
+		
         if hapticsSetting! {
 			rigidHaptic.impactOccurred()
 		}
+		
+		powerUpsOnScreen-=1
+		// Remove the power up from the power-up on screen tracker
 		
         switch sprite.texture {
             
@@ -1838,16 +1796,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			life.run(newLifeSequence)
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[0]+=1
             
         case powerUpLoseALife:
         // Lose a life
 			ball.physicsBody!.linearDamping = 2
             ballLostAnimation()
-            self.run(SKAction.wait(forDuration: 0.2), completion: {
-                self.ballLost()
-            })
             powerUpScore = 0
 			powerUpMultiplierScore = 0
+			powerupsCollected[1]+=1
             
         case powerUpDecreaseBallSpeed:
         // Decrease ball speed
@@ -1870,6 +1827,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[2]+=1
 			// Power up set
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -1909,6 +1867,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			powerupsCollected[3]+=1
             // Power up set
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -1943,6 +1902,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[4]+=1
 			powerUpLimit = 4
             // Power up set
             let timer: Double = 10 * multiplier
@@ -1981,6 +1941,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 			powerUpLimit = 2
             powerUpScore = -50
+			powerupsCollected[5]+=1
 			powerUpMultiplierScore = -0.1
             // Power up set
             let timer: Double = 10 * multiplier
@@ -2011,6 +1972,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			stickyPaddleCatchesTotal = stickyPaddleCatches
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[6]+=1
 			paddleSticky.isHidden = false
             // Power up set and limit number of catches per power up
             
@@ -2018,11 +1980,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Next level
             powerUpScore = 50
 			powerUpMultiplierScore = 0
+			powerupsCollected[7]+=1
 			levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
 			scoreLabel.text = String(totalScore + levelScore)
-            if levelNumber == endLevelNumber {
-                gameoverStatus = true
-            }
             gameState.enter(InbetweenLevels.self)
 			return
 
@@ -2062,6 +2022,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Resize paddle based on its current size
             powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[8]+=1
             // Power up set
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -2129,6 +2090,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
             powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			powerupsCollected[9]+=1
             // Power up set
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
@@ -2170,6 +2132,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             laserTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[10]+=1
 			powerUpLimit = 4
             // Power up set - lasers will fire every 0.1s
             let timer: Double = 10 * multiplier
@@ -2216,6 +2179,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[11]+=1
 			// Power up set
 			
 		case powerUpRemoveIndestructibleBricks:
@@ -2228,6 +2192,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[12]+=1
 			// Power up set
 			bricksLeft = 0
 			enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
@@ -2239,9 +2204,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if bricksLeft == 0 {
 				levelScore = levelScore + levelCompleteScore
 				scoreLabel.text = String(totalScore + levelScore)
-				if levelNumber == endLevelNumber {
-					gameoverStatus = true
-				}
 				gameState.enter(InbetweenLevels.self)
 				return
 			}
@@ -2257,6 +2219,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[13]+=1
 			// Power up set
 		
 		case powerUpMultiplier:
@@ -2265,22 +2228,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			multiplier = multiplier*2
 			powerUpScore = 50
 			powerUpMultiplierScore = 0
+			powerupsCollected[14]+=1
 			multiplierLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "multiplierAnimation")
 			// Power up set
 			
 		case powerUpPointsBonus:
-		// 100 points
+		// 1k points
 			removeAction(forKey: "pointsAnimation")
 			powerUpScore = 1000
 			powerUpMultiplierScore = 0.1
+			powerupsCollected[15]+=1
 			scoreLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "pointsAnimation")
 			// Power up set
 			
 		case powerUpPointsPenalty:
-		// -100 points
+		// -1k points
 			removeAction(forKey: "pointsAnimation")
 			powerUpScore = -1000
 			powerUpMultiplierScore = -0.1
+			powerupsCollected[16]+=1
 			scoreLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "pointsAnimation")
 			// Power up set
 			
@@ -2301,6 +2267,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			powerupsCollected[17]+=1
 			// Power up set
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
@@ -2342,6 +2309,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			powerupsCollected[18]+=1
 			// Power up set
 			
 		case powerUpGravityBall:
@@ -2358,6 +2326,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gravityActivated = true
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
+			powerupsCollected[19]+=1
 			// Power up set
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
@@ -2382,7 +2351,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Mystery power-up
 			powerUpScore = 0
 			powerUpMultiplierScore = 0
-			powerUpsOnScreen-=1
+			powerupsCollected[20]+=1
 			mysteryPowerUp = true
 			powerUpGenerator (sprite: sprite)
 			
@@ -2393,6 +2362,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			brickRemovalCounter = 0
 			powerUpScore = -50
 			powerUpMultiplierScore = 0
+			powerupsCollected[21]+=1
 			multiplierLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "multiplierAnimation")
 			
 		case powerUpBricksDown:
@@ -2405,7 +2375,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-
+			powerupsCollected[22]+=1
         default:
             break
         }
@@ -2429,6 +2399,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.removeAllActions()
         // Stop all timers and animations
        
+		powerUpsOnScreen = 0
         
 		ball.physicsBody!.linearDamping = ballLinearDampening
 		powerUpLimit = 2
@@ -2501,18 +2472,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func moveToMainMenu() {
-		gameViewControllerDelegate?.moveToMainMenu(currentHighscore: totalScoreArray.max()!)
+		gameViewControllerDelegate?.moveToMainMenu()
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
     
     func showEndLevelStats() {
-        gameViewControllerDelegate?.showEndLevelStats(levelNumber: levelNumber, levelScore: levelScore, levelHighscore: levelHighscore, totalScore: totalScore, totalHighscore: totalHighscore, gameoverStatus: gameoverStatus)
+		
+		if packStatsArray[packNumber].scores.count != 0 {
+			totalHighscore = packStatsArray[packNumber].scores.max()!
+		} else {
+			totalHighscore = 0
+		}
+		
+		gameViewControllerDelegate?.showEndLevelStats(levelNumber: levelNumber, score: totalScore, highScore: totalHighscore, gameoverStatus: gameoverStatus, startLevel: startLevelNumber, numberOfLevels: numberOfLevels, scoresArray: packStatsArray[packNumber].scores)
     }
 	
 	func showPauseMenu() {
 		let pauseMenuScore = totalScore + levelScore
-		totalHighscore = totalScoreArray.max()!
-		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highscore: totalHighscore)
+		
+		if packStatsArray[packNumber].scores.count != 0 {
+			totalHighscore = packStatsArray[packNumber].scores.max()!
+		} else {
+			totalHighscore = 0
+		}
+		
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highScore: totalHighscore, packNumber: packNumber)
+		// Pass over highscore data to pause menu
     }
 	
 	func createInterstitial() {
@@ -2536,60 +2521,173 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Recentre ball if it isn't on smaller paddle
 	
-	func correctBallAngle(correctedAngle: Double) {
-		
-		var angleRad = Double(atan2(ySpeed, xSpeed))
-		var angleDeg = Double(angleRad)/Double.pi*180
-		
-		if correctedAngle < minAngleDeg {
-			if angleDeg < correctedAngle && angleDeg > -correctedAngle {
-				angleDeg = -correctedAngle
-			}
-			else if angleDeg > 180-correctedAngle || angleDeg < -180+correctedAngle {
-				angleDeg = -180+correctedAngle
-			}
-		} else {
-			if angleDeg < correctedAngle && angleDeg > 0 {
-				angleDeg = correctedAngle
-			}
-			else if angleDeg > 180-correctedAngle && angleDeg <= 180 {
-				angleDeg = 180-correctedAngle
-			}
-			else if angleDeg < -180+correctedAngle && angleDeg >= -180 {
-				angleDeg = -180+correctedAngle
-			}
-			else if angleDeg > -correctedAngle && angleDeg <= 0 {
-				angleDeg = -correctedAngle
-			}
-		}
-		
-		if ((angleDeg <= correctedAngle && angleDeg >= -correctedAngle) || (angleDeg > 180-correctedAngle && angleDeg <= 180) || (angleDeg < -180+correctedAngle && angleDeg >= -180)) && ball.position.y < paddle.position.y + ballSize*2 {
-			angleDeg = minAngleDeg
-		}
-		
-		// check ball x-angle
-		angleRad = (angleDeg*Double.pi/180)
-		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-		ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-		ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-		// Set the new angle of the ball
-	}
-    // Ensure ball angle when hitting off of wals
-	
 	func userSettings() {
 		adsSetting = defaults.bool(forKey: "adsSetting")
 		soundsSetting = defaults.bool(forKey: "soundsSetting")
 		musicSetting = defaults.bool(forKey: "musicSetting")
 		hapticsSetting = defaults.bool(forKey: "hapticsSetting")
 		parallaxSetting = defaults.bool(forKey: "parallaxSetting")
-		paddleControlSetting = defaults.bool(forKey: "paddleControlSetting")
 		paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+		// Redeclare user settings
+		
 		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
 		if ballIsOnPaddle {
 			ball.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
 		}
+		// Stop paddle and ball tilt
+		
+		if paddleSensitivitySetting == 0 {
+		// Low
+			paddleMovementFactor = 1
+		} else if paddleSensitivitySetting == 1 {
+		// Medium
+			paddleMovementFactor = 1.25
+		} else if paddleSensitivitySetting == 2 {
+		// High
+			paddleMovementFactor = 1.5
+		} else if paddleSensitivitySetting == 3 {
+		// Extreme
+			paddleMovementFactor = 2
+		} else if paddleSensitivitySetting == 4 {
+		// Mega
+			paddleMovementFactor = 3
+		}
+		// Reset paddle sensitivity
 	}
 	// Set user settings
+	
+	func musicHandler() {
+		if musicSetting! && backgroundMusic == nil {
+			if let musicURL = Bundle.main.url(forResource: "BrendanBlockTitleMusic", withExtension: "mp3") {
+				backgroundMusic = SKAudioNode(url: musicURL)
+				addChild(backgroundMusic)
+			}
+		}
+        if musicSetting! {
+			backgroundMusic.run(SKAction.play())
+		} else if backgroundMusic != nil {
+			backgroundMusic.run(SKAction.stop())
+		}
+    }
+    // Background music setup
+
+	func ballStuck() {
+		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+			let temporarySprite = node as! SKSpriteNode
+			if temporarySprite.texture == self.brickIndestructible1Texture || temporarySprite.texture == self.brickIndestructible2Texture {
+					node.removeFromParent()
+			}
+		}
+		brickBounceCounter = 0
+	}
+	
+	func ballAngleControl(controlAngle: Double) {
+		
+		if gravityActivated {
+			return
+		}
+		// Do not try to control the ball's angle whilst gravity is activated
+		
+		let xSpeed = ball.physicsBody!.velocity.dx
+		let ySpeed = ball.physicsBody!.velocity.dy
+		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
+		let angleRad = Double(atan2(ySpeed, xSpeed))
+		var angleDeg = Double(angleRad)/Double.pi*180
+		let verticalAngleControl: Double = 5.0
+		
+		// Horizontal Control
+		if angleDeg <= controlAngle && angleDeg > 0 {
+			angleDeg = controlAngle
+		}
+		// Travelling up and right
+		else if angleDeg >= -controlAngle && angleDeg <= 0 {
+			angleDeg = -controlAngle
+		}
+		// Travelling down and right
+		else if angleDeg < 180 && angleDeg >= 180-controlAngle {
+			angleDeg = 180-controlAngle
+		}
+		// Travelling up and left
+		else if angleDeg >= -180 && angleDeg <= -180+controlAngle {
+			angleDeg = -180+controlAngle
+		}
+		// Travelling down and left
+		
+		// Vertical Control
+		if ball.position.x >= 0 {
+			// ball is on right side of screen
+			if angleDeg > 90-verticalAngleControl && angleDeg <= 90 {
+				angleDeg = 90-verticalAngleControl
+			}
+			// Travelling up and right
+			else if angleDeg <= 90+verticalAngleControl && angleDeg > 90 {
+				angleDeg = 90+verticalAngleControl
+			}
+			// Travelling up and left
+			else if angleDeg >= -90 && angleDeg < -90+verticalAngleControl {
+				angleDeg = -90+verticalAngleControl
+			}
+			// Travelling down and right
+			else if angleDeg < -90 && angleDeg >= -90-verticalAngleControl {
+				angleDeg = -90-verticalAngleControl
+			}
+			// Travelling down and left
+		} else {
+			// ball is on left side of screen
+			if angleDeg >= 90-verticalAngleControl && angleDeg < 90 {
+				angleDeg = 90-verticalAngleControl
+			}
+			// Travelling up and right
+			else if angleDeg < 90+verticalAngleControl && angleDeg >= 90 {
+				angleDeg = 90+verticalAngleControl
+			}
+			// Travelling up and left
+			else if angleDeg > -90 && angleDeg <= -90+verticalAngleControl {
+				angleDeg = -90+verticalAngleControl
+			}
+			// Travelling down and right
+			else if angleDeg <= -90 && angleDeg > -90-verticalAngleControl {
+				angleDeg = -90-verticalAngleControl
+			}
+			// Travelling down and left
+		}
+		
+		let newAngleRad = (angleDeg*Double.pi/180)
+		if newAngleRad != angleRad {
+			let newXSpeed = CGFloat(cos(newAngleRad)) * currentSpeed
+			let newYSpeed = CGFloat(sin(newAngleRad)) * currentSpeed
+			ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: newYSpeed)
+			// Set the new vertical angle of the ball
+		}
+	}
+	// Ensure ball angle is good horizontally and vertically
+	
+	func ballSpeedControl() {
+		let xSpeed = ball.physicsBody!.velocity.dx
+		let ySpeed = ball.physicsBody!.velocity.dy
+		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
+		if currentSpeed > ballSpeedLimit + currentSpeed/10 {
+			ball.physicsBody!.linearDamping = 0.5
+		} else if currentSpeed < ballSpeedLimit {
+			if gravityActivated == false {
+				ball.physicsBody!.linearDamping = -0.5
+			}
+		} else {
+			ball.physicsBody!.linearDamping = ballLinearDampening
+		}
+	}
+	// Set the new speed of the ball and ensure it stays within the boundary
+	
+	func frameBallControl(xSpeed: CGFloat) {
+		let ySpeed = ball.physicsBody!.velocity.dy
+		var newXSpeed = xSpeed
+		if (ball.position.x > 0 && xSpeed > 0) || (ball.position.x < 0 && xSpeed < 0) {
+			newXSpeed = -xSpeed
+		}
+		ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: ySpeed)
+		// Ensure the ball bounces off the wall correctly]
+		ballAngleControl(controlAngle: minAngleDeg)
+	}
 	
     @objc func laserGenerator() {
 		
@@ -2632,6 +2730,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// if super-ball power up is activated, allow laser to pass through bricks
 			
 			addChild(laser)
+			lasersFired+=1
 			
 			let move = SKAction.moveBy(x: 0, y: frame.height, duration: 2)
 			laser.run(move, completion: {
@@ -2646,10 +2745,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
-//	@objc func doubleTapped() {
-//		gameState.enter(Paused.self)
-//	}
-//	// Function to perform when double tap gesture recognised
+	@objc func restartGameNotificiationKeyReceived() {
+        gameState.enter(PreGame.self)
+    }
+    // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
 		gameState.enter(Paused.self)
@@ -2659,20 +2758,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 extension Notification.Name {
     public static let pauseNotificationKey = Notification.Name(rawValue: "pauseNotificationKey")
+	public static let restartGameNotificiation = Notification.Name(rawValue: "restartGameNotificiation")
 }
-// Setup for notifcation from AppDelegate
-
-//MARK: - Action List
-/***************************************************************/
-
-//TODO: - [Name Of To Do]
-
-//FIXME: - [Name Of Fix Me]
-
-//ERROR: [Name Of Error]
-
-//!!!: - [Name Of Issue]
-
-//???: - [Name Of Issue]
-
+// Setup for notifcations from AppDelegate
 

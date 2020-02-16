@@ -10,99 +10,91 @@ import UIKit
 
 class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
-    let defaults = UserDefaults.standard
-    
     var navigatedFrom: String?
     
-    @IBOutlet var settingsView: UIView!
+    let defaults = UserDefaults.standard
     var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
-    var paddleControlSetting: Bool?
     var paddleSensitivitySetting: Int?
+    // User settings
     
-    var levelNumber: Int = 0
-    var score: Int = 0
-    var highscore: Int = 0
-    // Properties to store passed over data
-    
-    let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
+    let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
     var group: UIMotionEffectGroup?
+    var blurView: UIVisualEffectView?
     
+    @IBOutlet var settingsView: UIView!
+    @IBOutlet var backgroundView: UIView!
     @IBOutlet weak var settingsTableView: UITableView!
+    
+    @IBOutlet var backgroundViewLeading: NSLayoutConstraint!
+    @IBOutlet var backgroundViewTop: NSLayoutConstraint!
     
     @IBAction func backButton(_ sender: Any) {
         if hapticsSetting! {
-            mediumHaptic.impactOccurred()
+            interfaceHaptic.impactOccurred()
         }
+        removeAnimate()
         if navigatedFrom! == "PauseMenu" {
-            removeAnimate()
-            NotificationCenter.default.post(name: .returnNotification, object: nil)
-        } else {
-            navigationController?.popViewController(animated: true)
+            NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
+        } else if navigatedFrom! == "MainMenu" {
+            NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
         }
-        
     }
     
-    @IBOutlet var viewObject: UIView!
+    @IBAction func settingsTitleButton(_ sender: Any) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        settingsTableView.setContentOffset(.zero, animated: true)
+    }
+    // UIViewController actions
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
-        swipeRight.direction = .right
-        view.addGestureRecognizer(swipeRight)
-        // Setup swipe gesture to return to main menu
-        
         settingsTableView.delegate = self
         settingsTableView.dataSource = self
-        // Setup table view delegates
-        
         settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         settingsTableView.separatorStyle = .none
-        // Setup custom cell
-        
         settingsTableView.rowHeight = 70.0
+        // TableView setup
+        
+        if view.frame.size.width > 700 {
+            ipadCompatibility()
+        }
         
         adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
-        paddleControlSetting = defaults.bool(forKey: "paddleControlSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         // Load show ads status
-        
-        if navigatedFrom! == "PauseMenu" {
-        // Custom setup for settings screen
-            showAnimate()
-            settingsView.backgroundColor? = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.0)
-            settingsTableView.backgroundColor? = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.0)
-            if parallaxSetting! {
-                addParallaxToView(vw: settingsView)
-            }
+
+        if parallaxSetting! {
+            addParallaxToView()
         }
+        if navigatedFrom! == "MainMenu" {
+            setBlur()
+        }
+        showAnimate()
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if navigatedFrom! == "PauseMenu" {
-            return 8
+            return 7
         } else {
-            return 9
+            return 8
         }
     }
     // Set number of cells in table view
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
-        
-        if navigatedFrom! == "PauseMenu" {
-            cell.viewBackground.backgroundColor? = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.0)
-            cell.layer.backgroundColor = UIColor.clear.cgColor
-        }
         
         switch indexPath.row {
         case 0:
@@ -111,8 +103,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.centreLabel.text = ""
             if adsSetting! {
                 cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
             } else {
                 cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
         case 1:
         // Sounds
@@ -120,19 +114,24 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.centreLabel.text = ""
             if soundsSetting! {
                 cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
             } else {
                 cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
             }
             cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            
         case 2:
         // Music
             cell.settingDescription.text = "Music"
             cell.centreLabel.text = ""
             if musicSetting! {
                 cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
             } else {
                 cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
         case 3:
         // Haptics
@@ -140,8 +139,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.centreLabel.text = ""
             if hapticsSetting! {
                 cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
             } else {
                 cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
         case 4:
         // Parallax
@@ -149,41 +150,45 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.centreLabel.text = ""
             if parallaxSetting! {
                 cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
             } else {
                 cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
         case 5:
-        // Paddle control
-            cell.settingDescription.text = "Paddle Control"
-            cell.centreLabel.text = ""
-            if paddleControlSetting! {
-                cell.settingState.text = "touch"
-            } else {
-                cell.settingState.text = "tilt"
-            }
-        case 6:
         // Paddle sensitivity
             cell.settingDescription.text = "Paddle Sensitivity"
             cell.centreLabel.text = ""
             if paddleSensitivitySetting == 0 {
-                cell.settingState.text = "high"
+                cell.settingState.text = "low"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             } else if paddleSensitivitySetting == 1 {
                 cell.settingState.text = "medium"
+                cell.settingState.textColor = #colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1)
             } else if paddleSensitivitySetting == 2 {
-                cell.settingState.text = "low"
+                cell.settingState.text = "high"
+                cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
+            } else if paddleSensitivitySetting == 3 {
+                cell.settingState.text = "extreme"
+                cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
+            } else if paddleSensitivitySetting == 4 {
+                cell.settingState.text = "mega"
+                cell.settingState.textColor = #colorLiteral(red: 0.4392156899, green: 0.01176470611, blue: 0.1921568662, alpha: 1)
             }
-        case 7:
+
+        case 6:
         // Reset game data or kill ball
             cell.settingDescription.text = ""
             cell.centreLabel.text = "Reset Game Data"
             cell.settingState.text = ""
             if navigatedFrom! == "PauseMenu" {
                 cell.centreLabel.text = "Reset Ball"
+                cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             } else {
                 cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 
             }
-        case 8:
+        case 7:
         // Restore purchases
             cell.settingDescription.text = ""
             cell.centreLabel.text = "Restore Purchases"
@@ -194,6 +199,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             break
         }
         tableView.showsVerticalScrollIndicator = false
+        
+        UIView.animate(withDuration: 0.2) {
+            cell.cellView.transform = .identity
+            cell.settingDescription.transform = .identity
+            cell.settingState.transform = .identity
+            cell.centreLabel.transform = .identity
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+        
         return cell
     }
     // Add content to cells
@@ -221,23 +235,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Parallax
             parallaxSetting = !parallaxSetting!
             defaults.set(parallaxSetting!, forKey: "parallaxSetting")
-            if parallaxSetting! && navigatedFrom! == "PauseMenu" {
-                addParallaxToView(vw: settingsView)
-            } else if parallaxSetting! == false && navigatedFrom! == "PauseMenu" {
-                settingsView.removeMotionEffect(group!)
+            if parallaxSetting! {
+                addParallaxToView()
+            } else if parallaxSetting! == false {
+                backgroundView.removeMotionEffect(group!)
             }
         case 5:
-        // Paddle control
-            paddleControlSetting = !paddleControlSetting!
-            defaults.set(paddleControlSetting!, forKey: "paddleControlSetting")
-        case 6:
         // Paddle sensitivity
             paddleSensitivitySetting = paddleSensitivitySetting!+1
-            if paddleSensitivitySetting! > 2 {
+            if paddleSensitivitySetting! > 4 {
                 paddleSensitivitySetting = 0
             }
             defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
-        case 7:
+        case 6:
         // Reset game data or kill ball
             if navigatedFrom! == "PauseMenu" {
                 removeAnimate()
@@ -245,7 +255,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             } else {
                 print("Reset game data")
             }
-        case 8:
+        case 7:
         // Restore purchases
             print("Restore purchases")
         default:
@@ -253,13 +263,43 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             break
         }
         
+        UIView.animate(withDuration: 0.2) {
+            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView.transform = .init(scaleX: 0.99, y: 0.99)
+            cell.settingState.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.centreLabel.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+        }
+        
         if hapticsSetting! {
-            mediumHaptic.impactOccurred()
+            interfaceHaptic.impactOccurred()
         }
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
         // Update table view
+    }
+    
+    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView.transform = .identity
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
     }
     
     func showAnimate() {
@@ -281,22 +321,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
         }
     }
-    
-    func showPauseMenu() {
-        let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
-        pauseMenuVC.levelNumber = levelNumber
-        pauseMenuVC.score = score
-        pauseMenuVC.highscore = highscore
-        // Update pause menu view controller properties with function input values
 
-        self.addChild(pauseMenuVC)
-        pauseMenuVC.view.frame = self.view.frame
-        self.view.addSubview(pauseMenuVC.view)
-        pauseMenuVC.didMove(toParent: self)
-    }
-    // Show PauseMenuViewController as popup
-    
-    func addParallaxToView(vw: UIView) {
+    func addParallaxToView() {
         let amount = 25
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
@@ -309,19 +335,38 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
-        vw.addMotionEffect(group!)
+        backgroundView.addMotionEffect(group!)
     }
     
-    @objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-        if navigatedFrom! == "PauseMenu" {
-            return
-        } else {
-            if hapticsSetting! {
-                mediumHaptic.impactOccurred()
-            }
-            navigationController?.popViewController(animated: true)
-        }
+    func setBlur() {
+        settingsView.backgroundColor = .clear
+        // 1: change the superview transparent
+        let blurEffect = UIBlurEffect(style: .dark)
+        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
+        blurView = UIVisualEffectView(effect: blurEffect)
+        // 3 Create a UIVisualEffectView with the new blur
+        blurView!.translatesAutoresizingMaskIntoConstraints = false
+        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
+        view.insertSubview(blurView!, at: 0)
+
+        NSLayoutConstraint.activate([
+        blurView!.heightAnchor.constraint(equalTo: settingsView.heightAnchor),
+        blurView!.widthAnchor.constraint(equalTo: settingsView.widthAnchor),
+        blurView!.leadingAnchor.constraint(equalTo: settingsView.leadingAnchor),
+        blurView!.trailingAnchor.constraint(equalTo: settingsView.trailingAnchor),
+        blurView!.topAnchor.constraint(equalTo: settingsView.topAnchor),
+        blurView!.bottomAnchor.constraint(equalTo: settingsView.bottomAnchor)
+        ])
+        // Keep the frame of the blurView consistent with that of the associated view.
     }
-    // Setup swipe gesture to return to main menu
+    
+    func ipadCompatibility() {
+        
+        backgroundViewLeading.isActive = false
+        backgroundViewTop.isActive = false
+        backgroundView.frame.size.height = 896
+        backgroundView.frame.size.width = 414
+        
+    }
     
 }

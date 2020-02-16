@@ -102,29 +102,75 @@ class InbetweenLevels: GKState {
         // Remove any remaining lasers
         
         scene.totalScore = scene.totalScore + scene.levelScore
-        // Update level and total scores with level complete bonus
+        // Update level and total scores
         
-        if scene.levelScore > scene.levelScoreArray[scene.levelNumber-1] {
-            scene.levelScoreArray[scene.levelNumber-1] = scene.levelScore
-            scene.defaults.set(scene.levelScoreArray, forKey: "LevelScoreStore")
-            scene.newLevelHighScore = true
+        scene.totalStatsArray[0].cumulativeScore = scene.cumulativeScore + scene.levelScore
+        scene.levelsPlayed+=1
+        scene.totalStatsArray[0].levelsPlayed = scene.levelsPlayed
+        if scene.gameoverStatus == false {
+            scene.levelsCompleted+=1
+            scene.totalStatsArray[0].levelsCompleted = scene.levelsCompleted
         }
-        scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
-        // Save level score if its the highscore and update NSUserDefaults
+        scene.totalStatsArray[0].ballHits = scene.ballHits
+        scene.totalStatsArray[0].ballsLost = scene.ballsLost
+        scene.totalStatsArray[0].powerupsCollected = scene.powerupsCollected
+        scene.totalStatsArray[0].powerupsGenerated = scene.powerupsGenerated
+        scene.totalStatsArray[0].playTime = scene.playTime
+        scene.totalStatsArray[0].bricksHit = scene.bricksHit
+        scene.totalStatsArray[0].bricksDestroyed = scene.bricksDestroyed
+        scene.totalStatsArray[0].lasersFired = scene.lasersFired
+        scene.totalStatsArray[0].lasersHit = scene.lasersHit
+        // Update total stats
         
-        if scene.gameoverStatus {
-            if scene.totalScore >= scene.totalScoreArray.max()! {
-                scene.totalScoreArray[scene.levelNumber-1] = scene.totalScore
-                scene.defaults.set(scene.totalScoreArray, forKey: "TotalScoreStore")
-                scene.newTotalHighScore = true
+        do {
+            let data = try scene.encoder.encode(self.scene.totalStatsArray)
+            try data.write(to: scene.totalStatsStore!)
+        } catch {
+            print("Error encoding total stats, \(error)")
+        }
+        // Save total stats only at the end of the game
+        
+        scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore)
+        scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
+        if scene.gameoverStatus == false {
+            scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1
+        }
+        // Update level stats
+        
+        do {
+            let data = try scene.encoder.encode(self.scene.levelStatsArray)
+            try data.write(to: scene.levelStatsStore!)
+        } catch {
+            print("Error encoding level stats array, \(error)")
+        }
+        // Save level stats after each level
+        
+        if scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus {
+            scene.packStatsArray[scene.packNumber].scores.append(scene.totalScore)
+            scene.packStatsArray[scene.packNumber].scoreDates.append(Date())
+            if scene.gameoverStatus == false {
+                scene.packStatsArray[scene.packNumber].numberOfCompletes+=1
             }
-            scene.totalHighscore = scene.totalScoreArray.max()!
-            // Save score if its the highscore and update NSUserDefaults
+            do {
+                let data = try scene.encoder.encode(self.scene.packStatsArray)
+                try data.write(to: scene.packStatsStore!)
+            } catch {
+                print("Error encoding pack stats array, \(error)")
+            }
+            // Save pack stats only at the end of the game
+            
+            scene.gameoverStatus = true
+        }
+        // Save total stats only at the end of the game
+
+        if scene.gameoverStatus {
+            
             let waitScene = SKAction.wait(forDuration: 1)
             self.scene.run(waitScene, completion: {
                 self.scene.showEndLevelStats()
             })
             // Show game over pop-up
+            
         } else {
             let waitScene = SKAction.wait(forDuration: 1)
             self.scene.run(waitScene, completion: {

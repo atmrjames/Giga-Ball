@@ -12,7 +12,7 @@ import GameplayKit
 import GoogleMobileAds
 
 protocol MenuViewControllerDelegate: class {
-    func moveToGame(selectedLevel: Int)
+    func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int)
 }
 // Setup the protocol to return to the main menu from GameViewController
 
@@ -22,7 +22,10 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     // Create the delegate property for the MenuViewController
     
     var selectedLevel: Int?
-    // Property to store the correct level to load
+    var numberOfLevels: Int?
+    var levelSender: String?
+    var levelPack: Int?
+    // Properties to store the correct level to load and the number of levels within the selection passed from the menu
     
     let defaults = UserDefaults.standard
     
@@ -78,36 +81,38 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         // Send notification to move to Playing game state
     }
     
-    func moveToMainMenu(currentHighscore: Int) {
-        let mainMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "menuView") as! MenuViewController
-        mainMenuVC.currentHighscore = currentHighscore
+    func moveToMainMenu() {
+        NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+        NotificationCenter.default.post(name: .returnLevelSelectNotification, object: nil)
+        NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
         navigationController?.popToRootViewController(animated: true)
     }
     // Segue to MenuViewController
     
-    func showEndLevelStats(levelNumber: Int, levelScore: Int, levelHighscore: Int, totalScore: Int, totalHighscore: Int, gameoverStatus: Bool) {
-        let inbetweenLevelsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
-        inbetweenLevelsVC.levelNumber = levelNumber
-        inbetweenLevelsVC.levelScore = levelScore
-        inbetweenLevelsVC.levelHighscore = levelHighscore
-        inbetweenLevelsVC.totalScore = totalScore
-        inbetweenLevelsVC.totalHighscore = totalHighscore
-        inbetweenLevelsVC.gameoverStatus = gameoverStatus
+    func showEndLevelStats(levelNumber: Int, score: Int, highScore: Int, gameoverStatus: Bool, startLevel: Int, numberOfLevels: Int, scoresArray: [Int]) {
+        let endLevelVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
+        endLevelVC.levelNumber = levelNumber
+        endLevelVC.score = score
+        endLevelVC.highScore = highScore
+        endLevelVC.gameoverStatus = gameoverStatus
+        endLevelVC.startLevel = selectedLevel!
+        endLevelVC.numberOfLevels = numberOfLevels
+        endLevelVC.scoresArray = scoresArray
         // Update popup view controller properties with function input values
 
-        self.addChild(inbetweenLevelsVC)
-        inbetweenLevelsVC.view.frame = self.view.frame
-        self.view.addSubview(inbetweenLevelsVC.view)
-        inbetweenLevelsVC.didMove(toParent: self)
+        self.addChild(endLevelVC)
+        endLevelVC.view.frame = self.view.frame
+        self.view.addSubview(endLevelVC.view)
+        endLevelVC.didMove(toParent: self)
     }
     // Show InbetweenLevelsViewController as popup
     
-    func showPauseMenu(levelNumber: Int, score: Int, highscore: Int) {
+    func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
         pauseMenuVC.score = score
-        pauseMenuVC.highscore = highscore
-        
+        pauseMenuVC.highScore = highScore
+        pauseMenuVC.packNumber = packNumber
         // Update pause menu view controller properties with function input values
 
         self.addChild(pauseMenuVC)

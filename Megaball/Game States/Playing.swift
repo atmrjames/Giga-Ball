@@ -22,13 +22,15 @@ class Playing: GKState {
         scene.userSettings()
         // Set user settings
         
+        scene.musicHandler()
+        
         if previousState is InbetweenLevels && (scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber) {
             scene.gameState.enter(GameOver.self)
         }
         
         if previousState is InbetweenLevels || previousState is Ad {
             scene.levelNumber+=1
-        // Increment level number
+            // Increment level number
         }
         
         if previousState is PreGame || previousState is InbetweenLevels || previousState is Ad {
@@ -69,25 +71,6 @@ class Playing: GKState {
             scene.ball.physicsBody!.affectedByGravity = true
             // Enusre the ball is affected by gravity
             
-            if let musicPlaying = scene.backgroundMusic {
-                print("llama music pause")
-                musicPlaying.run(SKAction.stop())
-            }
-            
-            if scene.musicSetting! {
-                if let musicPlaying = scene.backgroundMusic {
-                    print("llama music play")
-                    musicPlaying.run(SKAction.play())
-                } else {
-                    print("llama music setup")
-                    if let musicURL = Bundle.main.url(forResource: "BrendanBlockTitleMusic", withExtension: "mp3") {
-                        scene.backgroundMusic = SKAudioNode(url: musicURL)
-                        scene.addChild(scene.backgroundMusic)
-                    }
-                }
-            }
-            // Background music setup
-
             if scene.killBall {
                 if scene.numberOfLives == 0 {
                     scene.numberOfLives = 1
@@ -102,7 +85,6 @@ class Playing: GKState {
     }
     // This function runs when this state is entered.
 
-    
     func reloadUI() {
         scene.scoreLabel.isHidden = false
         scene.multiplierLabel.isHidden = false
@@ -128,28 +110,28 @@ class Playing: GKState {
         scene.newTotalHighScore = false
         // Reset level and total highscore booleans
 
-        if scene.totalScoreArray.count < scene.levelNumber {
-            var totalNumberDiff = scene.levelNumber - scene.totalScoreArray.count
-            while totalNumberDiff >= 1 {
-                scene.totalScoreArray.append(1)
-                totalNumberDiff-=1
-            }
-        }
-        // Add new totalScorearry entry for the level
-        
-        if scene.levelScoreArray.count < scene.levelNumber {
-            var levelNumberDiff = scene.levelNumber - scene.levelScoreArray.count
-            while levelNumberDiff >= 1 {
-                scene.levelScoreArray.append(1)
-                levelNumberDiff-=1
-            }
-        }
-        // Add new levelScoreArray entry for the level
-        
-        if scene.levelScoreArray[scene.levelNumber-1] != 1 {
-            scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
-        }
-        // Add level highscore to level highscore label, if no highscore exists (value = 1) show nothing
+//        if scene.totalScoreArray.count < scene.levelNumber {
+//            var totalNumberDiff = scene.levelNumber - scene.totalScoreArray.count
+//            while totalNumberDiff >= 1 {
+//                scene.totalScoreArray.append(1)
+//                totalNumberDiff-=1
+//            }
+//        }
+//        // Add new totalScorearry entry for the level
+//
+//        if scene.levelScoreArray.count < scene.levelNumber {
+//            var levelNumberDiff = scene.levelNumber - scene.levelScoreArray.count
+//            while levelNumberDiff >= 1 {
+//                scene.levelScoreArray.append(1)
+//                levelNumberDiff-=1
+//            }
+//        }
+//        // Add new levelScoreArray entry for the level
+//
+//        if scene.levelScoreArray[scene.levelNumber-1] != 1 {
+//            scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
+//        }
+//        // Add level highscore to level highscore label, if no highscore exists (value = 1) show nothing
         
         scene.levelScore = 0
         scene.multiplier = 1
@@ -193,6 +175,7 @@ class Playing: GKState {
         // Animate paddle and ball in
         
         switch scene.levelNumber {
+        // Starter Pack
         case 1:
             scene.loadLevel1()
         case 2:
@@ -213,6 +196,28 @@ class Playing: GKState {
             scene.loadLevel9()
         case 10:
             scene.loadLevel10()
+        // Space Pack
+        case 11:
+            scene.loadLevel11()
+        case 12:
+            scene.loadLevel12()
+//        case 13:
+//            scene.loadLevel13()
+//        case 14:
+//            scene.loadLevel14()
+//        case 15:
+//            scene.loadLevel15()
+//        case 16:
+//            scene.loadLevel16()
+//        case 17:
+//            scene.loadLevel17()
+//        case 18:
+//            scene.loadLevel18()
+//        case 19:
+//            scene.loadLevel19()
+//        case 20:
+//            scene.loadLevel20()
+            
         default:
             break
         }

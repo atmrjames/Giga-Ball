@@ -18,8 +18,20 @@ class PreGame: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        resetGame()
-        scene.gameState.enter(Playing.self)
+        
+        self.resetGame()
+        
+        if scene.musicSetting! {
+            scene.musicHandler()
+        }
+        // First time music setup
+        
+        let wait = SKAction.wait(forDuration: 1.0)
+        // Add slight delay when moving in from main menu
+        scene.self.run(wait, completion: {
+            self.scene.gameState.enter(Playing.self)
+        })
+        
     }
     // This function runs when this state is entered.
     
@@ -36,7 +48,22 @@ class PreGame: GKState {
         scene.life.isHidden = true
         // Hide labels
         
-        scene.levelNumber = scene.gameViewControllerDelegate!.selectedLevel!
+        if let startingLevelNumber = scene.gameViewControllerDelegate?.selectedLevel {
+            scene.startLevelNumber = startingLevelNumber
+            scene.levelNumber = scene.startLevelNumber
+        }
+        if let endingingLevelNumber = scene.gameViewControllerDelegate?.numberOfLevels {
+            scene.numberOfLevels = endingingLevelNumber
+            scene.endLevelNumber = scene.levelNumber + endingingLevelNumber - 1
+        }
+        if let levelSender = scene.gameViewControllerDelegate?.levelSender {
+            scene.levelSender = levelSender
+        }
+        if let levelPack = scene.gameViewControllerDelegate?.levelPack {
+            scene.packNumber = levelPack
+        }
+        // Redeclare the game scene properties as passed in
+        
         scene.totalScore = 0
         scene.numberOfLives = 3
         scene.gameoverStatus = false

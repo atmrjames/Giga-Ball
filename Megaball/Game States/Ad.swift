@@ -19,11 +19,11 @@ class Ad: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        
+        if let musicPlaying = scene.backgroundMusic {
+            musicPlaying.run(SKAction.stop())
+        }
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToCloseAd(_:)), name: .closeAd, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
-        
-//        scene.showAdVC()
 
     }
     // This function runs when this state is entered.

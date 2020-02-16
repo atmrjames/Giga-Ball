@@ -23,6 +23,10 @@ class Paused: GKState {
         scene.userSettings()
         // Set user settings
         
+        if let musicPlaying = scene.backgroundMusic {
+            musicPlaying.run(SKAction.pause())
+        }
+        
         if scene.ballIsOnPaddle == false && scene.pauseBallVelocityX == 0 && (scene.ball.position.x >= (scene.frame.size.width/2 - scene.ball.size.width/2) || scene.ball.position.x <= -(scene.frame.size.width/2 - scene.ball.size.width/2)) {
         // The the ball is not on the paddle, on the edge or top of the frame and its x velocity is 0, then give it some x velocity
             
@@ -45,7 +49,7 @@ class Paused: GKState {
         // Pause game, pause all nodes and scene
         
         if scene.hapticsSetting! {
-            scene.mediumHaptic.impactOccurred()
+            scene.interfaceHaptic.impactOccurred()
         }
 
         scene.showPauseMenu()
@@ -85,7 +89,7 @@ class Paused: GKState {
         scene.ball.physicsBody!.affectedByGravity = false
         // Ensure the ball won't fall under gravity if the gameScene is unpaused
         
-        if scene.ballIsOnPaddle == false && scene.ball.position.y >= scene.paddle.position.y - scene.ballLostAnimationHeight {
+        if scene.ballIsOnPaddle == false && scene.ballLostBool == false {
             
             let angleRad = atan2(Double(self.scene.pauseBallVelocityY), Double(self.scene.pauseBallVelocityX))
             let angleDeg = Double(angleRad)/Double.pi*180
@@ -143,6 +147,12 @@ class Paused: GKState {
     }
     
     @objc func unpauseNotificationKeyReceived(_ notification: Notification) {
+        
+        scene.userSettings()
+        // Set user settings
+        
+        scene.musicHandler()
+        // Background music setup
         
         if scene.ballIsOnPaddle || scene.killBall || scene.ball.position.y + scene.ballSize/2 < scene.paddle.position.y - scene.paddle.size.height/2 {
             scene.isPaused = false
