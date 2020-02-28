@@ -1,9 +1,8 @@
 //
-//  StatsViewController.swift
-//  Megaball
+//  ItemsViewController.swift
+//  
 //
-//  Created by James Harding on 13/02/2020.
-//  Copyright © 2020 James Harding. All rights reserved.
+//  Created by James Harding on 27/02/2020.
 //
 
 import UIKit
@@ -19,47 +18,36 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var paddleSensitivitySetting: Int?
     // User settings
     
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
-    let encoder = PropertyListEncoder()
-    let decoder = PropertyListDecoder()
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
-    // NSCoder data store & encoder setup
-    
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     var group: UIMotionEffectGroup?
     var blurView: UIVisualEffectView?
     // UI property setup
-    
+
     @IBOutlet var backgroundView: UIView!
-    @IBOutlet var itemsTableView: UITableView!
     @IBOutlet var itemsView: UIView!
-    // UIViewController outlets
+    @IBOutlet var itemsTableView: UITableView!
     
-    @IBAction func itemsTitleButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        itemsTableView.setContentOffset(.zero, animated: true)
-    }
     @IBAction func backButton(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
     }
-    // UIViewController actions
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.returnItemDetailsNotificationKeyReceived), name: .returnItemDetailsNotification, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has returned from another view
+        
         itemsTableView.delegate = self
         itemsTableView.dataSource = self
-        itemsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
+        itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         // TableView setup
         
+        itemsTableView.rowHeight = 70.0
+        
         userSettings()
-        loadData()
         if parallaxSetting! {
             addParallax()
         }
@@ -69,14 +57,92 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
+        return 4
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+        
+        cell.centreLabel.text = ""
+        cell.settingState.text = ""
+        
+        switch indexPath.row {
+        case 0:
+            cell.settingDescription.text = "Paddles"
+            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
+        case 1:
+            cell.settingDescription.text = "Balls"
+            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
+        case 2:
+            cell.settingDescription.text = "Power-Ups"
+        case 3:
+            cell.settingDescription.text = "App Icons"
+            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
+        default:
+            break
+        }
+        
+        UIView.animate(withDuration: 0.2) {
+            cell.cellView.transform = .identity
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+        
         return cell
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        UIView.animate(withDuration: 0.2) {
+            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+        }
+        
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        
+        if indexPath.row == 2 {
+            hideAnimate()
+            moveToItemDetails(senderID: indexPath.row)
+        }
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+        tableView.reloadData()
+        // Update table view
+    }
+    
+    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView.transform = .identity
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+    }
+    
+    func moveToItemDetails(senderID: Int) {
+        let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
+        itemsDetailView.senderID = senderID
+        self.addChild(itemsDetailView)
+        itemsDetailView.view.frame = self.view.frame
+        self.view.addSubview(itemsDetailView.view)
+        itemsDetailView.didMove(toParent: self)
+    }
+        
     func userSettings() {
         adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
@@ -85,26 +151,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         // Load user settings
-    }
-    
-    func loadData() {
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
     }
     
     func setBlur() {
@@ -139,6 +185,11 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            itemsView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
@@ -164,5 +215,33 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             }
         }
     }
-
+    
+    func hideAnimate() {
+        UIView.animate(withDuration: 0.25, animations: {
+            self.itemsView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+            self.itemsView.alpha = 0.0
+        })
+    }
+    
+    func revealAnimate() {
+        self.itemsView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        self.itemsView.alpha = 0.0
+        UIView.animate(withDuration: 0.25, animations: {
+            self.itemsView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            self.itemsView.alpha = 1.0
+        })
+    }
+    
+    @objc func returnItemDetailsNotificationKeyReceived(_ notification: Notification) {
+        userSettings()
+        itemsTableView.reloadData()
+        revealAnimate()
+    }
+    // Runs when returning from item stats view
 }
+
+extension Notification.Name {
+    public static let returnItemDetailsNotification = Notification.Name(rawValue: "returnItemDetailsNotification")
+}
+// Notification setup
+

@@ -21,5 +21,4 @@ class SettingsTableViewCell: UITableViewCell {
         super.awakeFromNib()
         // Initialization code goes here
     }
-    
 }

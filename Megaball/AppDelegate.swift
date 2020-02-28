@@ -20,7 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         GADMobileAds.sharedInstance().start(completionHandler: nil)
         // Initialize Google Mobile Ads SDK
-
+        
         return true
     }
 
@@ -36,10 +36,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        
+//        NotificationCenter.default.post(name: .saveGameProgressNotificationKey, object: nil)
+        // Send notification to ensure game is paused when app is quit
+        
+        
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+        
+        // LOAD GAME DATA HERE IF THERE WAS A GAME IN PROGRESS
+        
+        
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {

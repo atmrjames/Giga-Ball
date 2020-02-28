@@ -8,6 +8,13 @@
 
 import UIKit
 
+enum device {
+    case Pad
+    case X
+    case Eight
+    case SE
+}
+
 class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     var navigatedFrom: String?
@@ -20,6 +27,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     // User settings
+    
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+    let encoder = PropertyListEncoder()
+    let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
+    var packStatsArray: [PackStats] = []
+    var levelStatsArray: [LevelStats] = []
+    // NSCoder data store & encoder setup
+    
+    var screenSize: device?
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
@@ -56,6 +75,28 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.resetNotificiationKeyReceived), name: .resetNotificiation, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.returnNotificiationKeyReceived), name: .returnNotificiation, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has returned from the warning pop-up
+        
+
+        let screenRatio = self.view.frame.size.height/self.view.frame.size.width
+        
+        if screenRatio > 2 {
+            screenSize = .X
+        } else if screenRatio < 1.7  {
+            screenSize = .Pad
+            ipadCompatibility()
+        } else if self.view.frame.size.width <= 320 {
+            screenSize = .SE
+        }
+        else {
+            screenSize = .Eight
+        }
+        // Screen size and device detected
+        
         settingsTableView.delegate = self
         settingsTableView.dataSource = self
         settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
@@ -63,18 +104,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         settingsTableView.rowHeight = 70.0
         // TableView setup
         
-        if view.frame.size.width > 700 {
-            ipadCompatibility()
-        }
-        
-        adsSetting = defaults.bool(forKey: "adsSetting")
-        soundsSetting = defaults.bool(forKey: "soundsSetting")
-        musicSetting = defaults.bool(forKey: "musicSetting")
-        hapticsSetting = defaults.bool(forKey: "hapticsSetting")
-        parallaxSetting = defaults.bool(forKey: "parallaxSetting")
-        paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
-        // Load show ads status
-
+        userSettings()
+        loadData()
         if parallaxSetting! {
             addParallaxToView()
         }
@@ -85,16 +116,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if navigatedFrom! == "PauseMenu" {
-            return 7
-        } else {
-            return 8
-        }
+        return 9
     }
     // Set number of cells in table view
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+        
+        settingsTableView.rowHeight = 70.0
         
         switch indexPath.row {
         case 0:
@@ -121,7 +150,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
             cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            
         case 2:
         // Music
             cell.settingDescription.text = "Music"
@@ -135,14 +163,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
         case 3:
         // Haptics
-            cell.settingDescription.text = "Haptics"
-            cell.centreLabel.text = ""
-            if hapticsSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
+            if screenSize == .Pad || screenSize == .SE {
+            // No haptics' engine
+                hideCell(cell: cell)
             } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                cell.settingDescription.text = "Haptics"
+                cell.centreLabel.text = ""
+                if hapticsSetting! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
             }
         case 4:
         // Parallax
@@ -173,27 +206,38 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
             } else if paddleSensitivitySetting == 4 {
                 cell.settingState.text = "mega"
-                cell.settingState.textColor = #colorLiteral(red: 0.4392156899, green: 0.01176470611, blue: 0.1921568662, alpha: 1)
+                cell.settingState.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             }
-
         case 6:
-        // Reset game data or kill ball
-            cell.settingDescription.text = ""
-            cell.centreLabel.text = "Reset Game Data"
-            cell.settingState.text = ""
-            if navigatedFrom! == "PauseMenu" {
-                cell.centreLabel.text = "Reset Ball"
+        // Reset game data
+            if navigatedFrom! != "PauseMenu" {
+                cell.settingDescription.text = ""
+                cell.centreLabel.text = "Reset Game Data"
+                cell.settingState.text = ""
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             } else {
-                cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-                
+                hideCell(cell: cell)
             }
         case 7:
         // Restore purchases
-            cell.settingDescription.text = ""
-            cell.centreLabel.text = "Restore Purchases"
-            cell.settingState.text = ""
-            cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            if navigatedFrom! != "PauseMenu" {
+                cell.settingDescription.text = ""
+                cell.centreLabel.text = "Restore Purchases"
+                cell.settingState.text = ""
+                cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            } else {
+                hideCell(cell: cell)
+            }
+        case 8:
+        // Kill ball
+            if navigatedFrom! == "PauseMenu" {
+                cell.settingDescription.text = ""
+                cell.settingState.text = ""
+                cell.centreLabel.text = "Reset Ball"
+                cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+            } else {
+                hideCell(cell: cell)
+            }
         default:
             print("Error: Out of range")
             break
@@ -202,15 +246,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         UIView.animate(withDuration: 0.2) {
             cell.cellView.transform = .identity
-            cell.settingDescription.transform = .identity
-            cell.settingState.transform = .identity
-            cell.centreLabel.transform = .identity
             cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
         
         return cell
     }
     // Add content to cells
+    
+    func hideCell(cell: SettingsTableViewCell) {
+        cell.settingDescription.text = ""
+        cell.centreLabel.text = ""
+        cell.settingState.text = ""
+        settingsTableView.rowHeight = 0.0
+    }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
@@ -248,16 +296,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
             defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
         case 6:
-        // Reset game data or kill ball
-            if navigatedFrom! == "PauseMenu" {
-                removeAnimate()
-                NotificationCenter.default.post(name: .killBallRemoveVC, object: nil)
-            } else {
-                print("Reset game data")
-            }
+        // Reset game data
+            showWarning(senderID: "resetData")
         case 7:
         // Restore purchases
             print("Restore purchases")
+        case 8:
+        // Reset ball
+            showWarning(senderID: "killBall")
         default:
             print("out of range")
             break
@@ -265,9 +311,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         UIView.animate(withDuration: 0.2) {
             let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.99, y: 0.99)
-            cell.settingState.transform = .init(scaleX: 0.95, y: 0.95)
-            cell.centreLabel.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
             cell.cellView.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
         
@@ -321,7 +365,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
         }
     }
-
+    
     func addParallaxToView() {
         let amount = 25
         
@@ -332,6 +376,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            backgroundView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
@@ -360,6 +409,45 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Keep the frame of the blurView consistent with that of the associated view.
     }
     
+    func userSettings() {
+        adsSetting = defaults.bool(forKey: "adsSetting")
+        soundsSetting = defaults.bool(forKey: "soundsSetting")
+        musicSetting = defaults.bool(forKey: "musicSetting")
+        hapticsSetting = defaults.bool(forKey: "hapticsSetting")
+        parallaxSetting = defaults.bool(forKey: "parallaxSetting")
+        paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        // Load user settings
+    }
+    
+    func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
+        if let packData = try? Data(contentsOf: packStatsStore!) {
+            do {
+                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+            } catch {
+                print("Error decoding pack stats array, \(error)")
+            }
+        }
+        // Load the pack stats array from the NSCoder data store
+        
+        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+            do {
+                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+            } catch {
+                print("Error decoding level stats array, \(error)")
+            }
+        }
+        // Load the level stats array from the NSCoder data store
+    }
+    
     func ipadCompatibility() {
         
         backgroundViewLeading.isActive = false
@@ -369,4 +457,110 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
     }
     
+    func showWarning(senderID: String) {
+        
+        backgroundView.removeMotionEffect(group!)
+        // Remove parallax to prevent a double parallax in the layered views
+        
+        let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
+        warningView.senderID = senderID
+        self.addChild(warningView)
+        warningView.view.frame = self.view.frame
+        self.view.addSubview(warningView.view)
+        warningView.didMove(toParent: self)
+    }
+    
+    func resetData() {
+        adsSetting = true
+        defaults.set(adsSetting!, forKey: "adsSetting")
+        soundsSetting = true
+        defaults.set(soundsSetting!, forKey: "soundsSetting")
+        musicSetting = true
+        defaults.set(musicSetting!, forKey: "musicSetting")
+        hapticsSetting = true
+        defaults.set(hapticsSetting!, forKey: "hapticsSetting")
+        parallaxSetting = true
+        defaults.set(parallaxSetting!, forKey: "parallaxSetting")
+        paddleSensitivitySetting = 2
+        defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
+        // Reset user settings to defaults
+        
+        for i in 1...totalStatsArray.count {
+            let index = i-1
+            totalStatsArray[index].cumulativeScore = 0
+            totalStatsArray[index].levelsPlayed = 0
+            totalStatsArray[index].levelsCompleted = 0
+            totalStatsArray[index].ballHits = 0
+            totalStatsArray[index].ballsLost = 0
+            totalStatsArray[index].powerupsCollected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            totalStatsArray[index].powerupsGenerated = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            totalStatsArray[index].playTime = 0
+            totalStatsArray[index].bricksHit = [0, 0, 0, 0, 0, 0, 0, 0]
+            totalStatsArray[index].bricksDestroyed = [0, 0, 0, 0, 0, 0, 0, 0]
+            totalStatsArray[index].lasersFired = 0
+            totalStatsArray[index].lasersHit = 0
+            
+            totalStatsArray[index].endlessModeDepth = []
+            totalStatsArray[index].endlessModeDepthDate = []
+        }
+        do {
+            let data = try encoder.encode(self.totalStatsArray)
+            try data.write(to: totalStatsStore!)
+        } catch {
+            print("Error encoding total stats, \(error)")
+        }
+        
+        for i in 1...packStatsArray.count {
+            let index = i-1
+            packStatsArray[index].scores = []
+            packStatsArray[index].scoreDates = []
+            packStatsArray[index].numberOfCompletes = 0
+        }
+        do {
+            let data = try encoder.encode(self.packStatsArray)
+            try data.write(to: packStatsStore!)
+        } catch {
+            print("Error encoding pack stats array, \(error)")
+        }
+        
+        for i in 1...levelStatsArray.count {
+            let index = i-1
+            levelStatsArray[index].scores = []
+            levelStatsArray[index].scoreDates = []
+            levelStatsArray[index].numberOfCompletes = 0
+        }
+        do {
+            let data = try encoder.encode(self.levelStatsArray)
+            try data.write(to: levelStatsStore!)
+        } catch {
+            print("Error encoding level stats array, \(error)")
+        }
+        // Reset game data
+    }
+    
+    @objc func resetNotificiationKeyReceived(_ notification: Notification) {
+        resetData()
+        userSettings()
+        loadData()
+        if parallaxSetting! {
+            addParallaxToView()
+        }
+        settingsTableView.reloadData()
+    }
+    
+    @objc func returnNotificiationKeyReceived(_ notification: Notification) {
+        userSettings()
+        loadData()
+        if parallaxSetting! {
+            addParallaxToView()
+        }
+        settingsTableView.reloadData()
+    }
+    
 }
+
+extension Notification.Name {
+    public static let resetNotificiation = Notification.Name(rawValue: "resetNotificiation")
+    public static let returnNotificiation = Notification.Name(rawValue: "returnNotificiation")
+}
+// Notification setup for sending information from the pause menu popup to unpause the game

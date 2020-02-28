@@ -42,6 +42,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     @IBOutlet var levelPackCollectionView: UICollectionView!
     // Collection view
     
+    var firstLaunch: Bool = false
+    // Check if this is the first opening of the app since closing to know if to run splash screen
+    
     var cellSize: CGFloat?
     var cellSpacing: CGFloat?
     var layout: UICollectionViewFlowLayout?
@@ -59,12 +62,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         }
         moveToSettings()
     }
-    @IBAction func aboutButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        moveToAbout()
-    }
     @IBAction func megaballLogoButton(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
@@ -75,7 +72,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-//        moveToItems()
+        moveToItems()
     }
     @IBAction func statsButton(_ sender: Any) {
         if hapticsSetting! {
@@ -120,6 +117,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         userSettings()
         updateAds()
         // Update user settings
+        
+        showSplashScreen()
+        // Show splashscreen when first opening the app
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -130,6 +130,17 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         userSettings()
         updateAds()
         // Update user settings
+    }
+    
+    func showSplashScreen() {
+        if firstLaunch == false {
+            firstLaunch = true
+            let splashView = self.storyboard?.instantiateViewController(withIdentifier: "splashView") as! SplashViewController
+            self.addChild(splashView)
+            splashView.view.frame = self.view.frame
+            self.view.addSubview(splashView.view)
+            splashView.didMove(toParent: self)
+        }
     }
     
     func collectionViewCellSetup() {
@@ -166,7 +177,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 3
+        return 6
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -183,25 +194,32 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
             cell.purchaseLabel.isHidden = true
         case 2:
             cell.purchaseLabel.isHidden = true
+        case 3:
+            cell.purchaseLabel.isHidden = true
+        case 4:
+            cell.purchaseLabel.isHidden = true
+        case 5:
+            if totalStatsArray[0].endlessModeDepth.count > 0 {
+                cell.purchaseLabel.text = "Depth: " + String(totalStatsArray[0].endlessModeDepth.max()!) + " m"
+            } else {
+                cell.purchaseLabel.text = "Depth: 0 m"
+            }
+
         default:
             print("Error: Out of range")
             break
         }
         
         cell.cellLabel.text = LevelPackSetup().packTitles[indexPath.row]
-        cell.playButton.tag = indexPath.row
         cell.subView.tag = indexPath.row
         // Identify the cells
         
-        if packStatsArray[cell.playButton.tag].scores.count != 0 {
-            cell.highscoreLabel.text = String(packStatsArray[cell.playButton.tag].scores.max()!)
+        if packStatsArray[indexPath.row].scores.count != 0 {
+            cell.highscoreLabel.text = String(packStatsArray[indexPath.row].scores.max()!)
         } else {
             cell.highscoreLabel.text = "0"
         }
         // Display the corresponding highscore
-        
-        cell.playButton.addTarget(self, action:#selector(playButtonClicked(sender:)), for: UIControl.Event.touchUpInside)
-        // Detect which cell play button has been clicked
         
         UIView.animate(withDuration: 0.1) {
             cell.subView.transform = .identity
@@ -221,7 +239,21 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
             cell.subView.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
         }
         
-        moveToLevelSelector(packNumber: indexPath.row, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row], startLevel: LevelPackSetup().startLevelNumber[indexPath.row])
+        if indexPath.row == 0 {
+        // Tutorial
+            levelSender = "MainMenu"
+            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[indexPath.row], numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row], sender: levelSender!, levelPack: indexPath.row)
+        }
+        
+        if indexPath.row > 0 && indexPath.row <= 2 {
+        // Level packs
+            moveToLevelSelector(packNumber: indexPath.row, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row], startLevel: LevelPackSetup().startLevelNumber[indexPath.row])
+        }
+        
+        if indexPath.row == 5 {
+        // Endless mode
+            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[indexPath.row], levelNumber: LevelPackSetup().startLevelNumber[indexPath.row], packNumber: indexPath.row)
+        }
         
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -250,28 +282,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         }
     }
     
-    
-    @objc func playButtonClicked(sender:UIButton) {
-
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        
-        selectedLevel = LevelPackSetup().startLevelNumber[sender.tag]
-        numberOfLevels = LevelPackSetup().numberOfLevels[sender.tag]
-        levelSender = "main"
-        levelPack = Int(sender.tag)
-        
-        moveToGame(selectedLevel: selectedLevel!, numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: levelPack!)
-    }
-    
     func defaultSettings() {
         defaults.register(defaults: ["adsSetting" : true])
         defaults.register(defaults: ["soundsSetting" : true])
         defaults.register(defaults: ["musicSetting" : true])
         defaults.register(defaults: ["hapticsSetting" : true])
         defaults.register(defaults: ["parallaxSetting" : true])
-        defaults.register(defaults: ["paddleSensitivitySetting" : 1])
+        defaults.register(defaults: ["paddleSensitivitySetting" : 2])
     }
     // Set default settings
 
@@ -297,6 +314,18 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         levelSelectorView.didMove(toParent: self)
     }
     // Segue to LevelSelectorViewController
+    
+    func moveToLevelStats(startLevel: Int, levelNumber: Int, packNumber: Int) {
+        let levelStatsView = self.storyboard?.instantiateViewController(withIdentifier: "levelStatsView") as! LevelStatsViewController
+        levelStatsView.startLevel = startLevel
+        levelStatsView.levelNumber = levelNumber
+        levelStatsView.packNumber = packNumber
+        self.addChild(levelStatsView)
+        levelStatsView.view.frame = self.view.frame
+        self.view.addSubview(levelStatsView.view)
+        levelStatsView.didMove(toParent: self)
+    }
+    // Segue to LevelStatsViewController
     
     func moveToSettings() {
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
@@ -333,7 +362,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     }
     
     func loadData() {
-        
         
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {
@@ -435,6 +463,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
         userSettings()
+        loadData()
         updateAds()
         levelPackCollectionView.reloadData()
     }

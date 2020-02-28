@@ -21,4 +21,7 @@ class TotalStats: Codable {
     var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var lasersFired: Int = 0
     var lasersHit: Int = 0
+    
+    var endlessModeDepth: [Int] = []
+    var endlessModeDepthDate: [Date] = []
 }

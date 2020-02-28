@@ -79,6 +79,14 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         userSettings()
         loadData()
+        
+        if levelNumber == 0 {
+            setBlur()
+        } else if blurView != nil {
+            blurView = nil
+        }
+        // Only set blur when entering from endless mode otherwise, remove it
+        
         if parallaxSetting! {
             addParallax()
         }
@@ -233,6 +241,28 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         // Load the level stats array from the NSCoder data store
     }
     
+    func setBlur() {
+        backgroundView.backgroundColor = .clear
+        // 1: change the superview transparent
+        let blurEffect = UIBlurEffect(style: .dark)
+        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
+        blurView = UIVisualEffectView(effect: blurEffect)
+        // 3 Create a UIVisualEffectView with the new blur
+        blurView!.translatesAutoresizingMaskIntoConstraints = false
+        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
+        view.insertSubview(blurView!, at: 0)
+
+        NSLayoutConstraint.activate([
+        blurView!.heightAnchor.constraint(equalTo: backgroundView.heightAnchor),
+        blurView!.widthAnchor.constraint(equalTo: backgroundView.widthAnchor),
+        blurView!.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor),
+        blurView!.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor),
+        blurView!.topAnchor.constraint(equalTo: backgroundView.topAnchor),
+        blurView!.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor)
+        ])
+        // Keep the frame of the blurView consistent with that of the associated view.
+    }
+    
     func addParallax() {
         let amount = 25
         
@@ -243,6 +273,11 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            levelStatsView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
@@ -270,16 +305,23 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func updateLabels() {
-        levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber!-1]
-        packNameAndLevelNumberLabel.text = LevelPackSetup().packTitles[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
-        levelImageView.image = LevelPackSetup().levelImageArray[levelNumber!-1]
+        levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber!]
+        if levelNumber == 0 {
+            packNameAndLevelNumberLabel.text = ""
+            playButtonLabel.setTitle("Play Endless Mode", for: .normal)
+            // No sub-heading in endless mode
+        } else {
+            packNameAndLevelNumberLabel.text = LevelPackSetup().packTitles[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
+            playButtonLabel.setTitle("Play Level " + String(levelNumber!-startLevel!+1), for: .normal)
+        }
+        levelImageView.image = LevelPackSetup().levelImageArray[levelNumber!]
         //        levelImageView.layer.cornerRadius = 10.0
         levelImageView.layer.masksToBounds = false
         levelImageView.layer.shadowColor = UIColor.black.cgColor
         levelImageView.layer.shadowOffset = CGSize(width: 0.0, height: 0.0)
         levelImageView.layer.shadowRadius = 10.0
-        levelImageView.layer.shadowOpacity = 0.5
-        playButtonLabel.setTitle("Play Level " + String(levelNumber!-startLevel!+1), for: .normal)
+        levelImageView.layer.shadowOpacity = 0.75
+        
     }
     
     @objc func returnLevelStatsNotificationKeyReceived(_ notification: Notification) {

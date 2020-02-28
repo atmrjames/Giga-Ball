@@ -76,13 +76,13 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 13
+        return 14
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         
-        let numberOfAttempts = totalStatsArray[0].levelsPlayed
+        let numberOfAttempts = totalStatsArray[0].levelsPlayed + totalStatsArray[0].endlessModeDepth.count
         
         statsTableView.rowHeight = 35.0
         
@@ -116,8 +116,11 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Completion rate"
-                let completionRate: Double = Double(totalStatsArray[0].levelsCompleted)/Double(totalStatsArray[0].levelsPlayed)*100.0
+                cell.statDescription.text = "Level completion rate"
+                var completionRate: Double = Double(totalStatsArray[0].levelsCompleted)/Double(totalStatsArray[0].levelsPlayed)*100.0
+                if completionRate.isNaN || completionRate.isInfinite {
+                    completionRate = 0.0
+                }
                 let completionRateString = String(format:"%.1f", completionRate)
                 // Double to string conversion to 1 decimal place
                 cell.statValue.text = String(completionRateString)+"%"
@@ -194,6 +197,14 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             } else {
                 cell.statDescription.text = "Lasers hit"
                 cell.statValue.text = String(totalStatsArray[0].lasersHit)
+            }
+            return cell
+        case 13:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Cumulative depth"
+                cell.statValue.text = String(totalStatsArray[0].endlessModeDepth.reduce(0, +))+" m"
             }
             return cell
         default:
@@ -278,6 +289,11 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            statsView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]

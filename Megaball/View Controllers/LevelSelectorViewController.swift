@@ -233,11 +233,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "levelSelectorCell", for: indexPath) as! LevelSelectorTableViewCell
             cell.levelLabel.text = "Level "+String(indexPath.row+1)
-            cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row-1]
+            cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row]
             cell.highScoreTitleLabel.text = "Highscore"
             cell.statsButton.tag = indexPath.row+1
             cell.cellView.tag = indexPath.row+1
-            cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row-1]
+            cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
             cell.statsButton.addTarget(self, action:#selector(cellStatsButtonClicked(sender:)), for: UIControl.Event.touchUpInside)
             // Setup cell buttons
             let levelNumber = startLevel!+indexPath.row
@@ -406,6 +406,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            levelSelectView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
@@ -434,7 +439,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func moveToLevelStatsSetup(sender: Int) {
         hideAnimate()
-        let levelNumber = startLevel!-1 + Int(sender)
+        let levelNumber = startLevel! + Int(sender)
         moveToLevelStats(startLevel: startLevel!, levelNumber: levelNumber, packNumber: packNumber!)
     }
     
@@ -463,11 +468,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func statsTableOpenClose() {
-        
-        
-        
-        
-        
         if statsTableView.frame.size.height > 0 {
             statsTableViewHeight.isActive = false
             collapsedStatsTableViewHeight.isActive = true
@@ -491,7 +491,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        moveToLevelStatsSetup(sender: sender.tag)
+        moveToLevelStatsSetup(sender: sender.tag-1)
     }
     
     @objc func returnLevelSelectNotificationKeyReceived(_ notification: Notification) {

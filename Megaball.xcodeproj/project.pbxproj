@@ -10,6 +10,7 @@
 		1A04BEFA238FE42700EB6150 /* Level003.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A04BEF9238FE42700EB6150 /* Level003.swift */; };
 		1A05BF4D23ED9DD9003E668F /* LevelSelectorTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A05BF4B23ED9DD9003E668F /* LevelSelectorTableViewCell.swift */; };
 		1A05BF4E23ED9DD9003E668F /* LevelSelectorTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */; };
+		1A18819524083DF800D5ED3A /* ItemsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A18819424083DF800D5ED3A /* ItemsViewController.swift */; };
 		1A2086B723E767EB00A6CC55 /* BrendanBlockTitleMusic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1A2086B623E767EB00A6CC55 /* BrendanBlockTitleMusic.mp3 */; };
 		1A2A387C23DDEEDF001BD200 /* SettingsTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2A387A23DDEEDF001BD200 /* SettingsTableViewCell.swift */; };
 		1A2A387D23DDEEDF001BD200 /* SettingsTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1A2A387B23DDEEDF001BD200 /* SettingsTableViewCell.xib */; };
@@ -33,7 +34,7 @@
 		1A661D2223DDEC340063CE5A /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A661D2123DDEC340063CE5A /* SettingsViewController.swift */; };
 		1A6673792358F62800EE8F7E /* PauseMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */; };
 		1A6E15EF23F58A5F002F8D8B /* StatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6E15EE23F58A5F002F8D8B /* StatsViewController.swift */; };
-		1A6E15F123F58A7C002F8D8B /* ItemsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6E15F023F58A7C002F8D8B /* ItemsViewController.swift */; };
+		1A6E15F123F58A7C002F8D8B /* ItemsDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6E15F023F58A7C002F8D8B /* ItemsDetailViewController.swift */; };
 		1A7D6529231B0E980091CA58 /* Paused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7D6528231B0E980091CA58 /* Paused.swift */; };
 		1ABA8F4C23EDA89C000CEF4A /* Level001.png in Resources */ = {isa = PBXBuildFile; fileRef = 1ABA8F4023EDA897000CEF4A /* Level001.png */; };
 		1ABA8F4D23EDA89C000CEF4A /* Level007.png in Resources */ = {isa = PBXBuildFile; fileRef = 1ABA8F4123EDA898000CEF4A /* Level007.png */; };
@@ -47,11 +48,19 @@
 		1ABA8F5523EDA89C000CEF4A /* Level005.png in Resources */ = {isa = PBXBuildFile; fileRef = 1ABA8F4923EDA89B000CEF4A /* Level005.png */; };
 		1ABA8F5623EDA89C000CEF4A /* Level004.png in Resources */ = {isa = PBXBuildFile; fileRef = 1ABA8F4A23EDA89C000CEF4A /* Level004.png */; };
 		1ABA8F5723EDA89C000CEF4A /* Level011.png in Resources */ = {isa = PBXBuildFile; fileRef = 1ABA8F4B23EDA89C000CEF4A /* Level011.png */; };
+		1AC08ADA23FC25FC00B4BC32 /* WarningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */; };
+		1AC08ADC23FC417A00B4BC32 /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */; };
 		1AC8782B23E9DD24006105CC /* Level012.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC8782A23E9DD24006105CC /* Level012.swift */; };
+		1ACC0F3C23FD59EE00B7EFE9 /* Level000.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACC0F3923FD56F200B7EFE9 /* Level000.swift */; };
+		1ACC0F3E23FDA3B000B7EFE9 /* EndlessRowCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */; };
 		1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1AD2BDCE23A2A5C100F2463F /* FoundryGridnik Medium.otf */; };
 		1AD4686723ED6BC6004EF873 /* LevelPackSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */; };
 		1AD4686A23ED800A004EF873 /* StatsTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AD4686823ED800A004EF873 /* StatsTableViewCell.swift */; };
 		1AD4686B23ED800A004EF873 /* StatsTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AD4686923ED800A004EF873 /* StatsTableViewCell.xib */; };
+		1AE2922C240190AE009D3C4E /* ItemsStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2922B240190AE009D3C4E /* ItemsStatsViewController.swift */; };
+		1AE92C26240177AF00F25A84 /* BrickCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE92C25240177AF00F25A84 /* BrickCreation.swift */; };
+		1AE92C292401831E00F25A84 /* PowerUpTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE92C272401831E00F25A84 /* PowerUpTableViewCell.swift */; };
+		1AE92C2A2401831E00F25A84 /* PowerUpTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AE92C282401831E00F25A84 /* PowerUpTableViewCell.xib */; };
 		1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE9573A2321A74700E5618A /* InbewteenLevels.swift */; };
 		1AE957442324523800E5618A /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957432324523800E5618A /* MenuViewController.swift */; };
 		1AE957462324EC2A00E5618A /* Level001.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957452324EC2A00E5618A /* Level001.swift */; };
@@ -84,6 +93,7 @@
 		1A04BEF9238FE42700EB6150 /* Level003.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level003.swift; sourceTree = "<group>"; };
 		1A05BF4B23ED9DD9003E668F /* LevelSelectorTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelSelectorTableViewCell.swift; sourceTree = "<group>"; };
 		1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LevelSelectorTableViewCell.xib; sourceTree = "<group>"; };
+		1A18819424083DF800D5ED3A /* ItemsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ItemsViewController.swift; path = "/Users/James/Megaball/Megaball/View Controllers/ItemsViewController.swift"; sourceTree = "<absolute>"; };
 		1A2086B623E767EB00A6CC55 /* BrendanBlockTitleMusic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = BrendanBlockTitleMusic.mp3; path = "Music Files/BrendanBlockTitleMusic.mp3"; sourceTree = SOURCE_ROOT; };
 		1A2A387A23DDEEDF001BD200 /* SettingsTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTableViewCell.swift; sourceTree = "<group>"; };
 		1A2A387B23DDEEDF001BD200 /* SettingsTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SettingsTableViewCell.xib; sourceTree = "<group>"; };
@@ -109,7 +119,7 @@
 		1A661D2123DDEC340063CE5A /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseMenuViewController.swift; sourceTree = "<group>"; };
 		1A6E15EE23F58A5F002F8D8B /* StatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsViewController.swift; sourceTree = "<group>"; };
-		1A6E15F023F58A7C002F8D8B /* ItemsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ItemsViewController.swift; path = "/Users/James/Megaball/Megaball/View Controllers/ItemsViewController.swift"; sourceTree = "<absolute>"; };
+		1A6E15F023F58A7C002F8D8B /* ItemsDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ItemsDetailViewController.swift; path = "/Users/James/Megaball/Megaball/View Controllers/ItemsDetailViewController.swift"; sourceTree = "<absolute>"; };
 		1A7D6528231B0E980091CA58 /* Paused.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paused.swift; sourceTree = "<group>"; };
 		1A7DFC6723F2B18000D7CD1B /* SF-Pro-Rounded-Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SF-Pro-Rounded-Medium.otf"; sourceTree = "<group>"; };
 		1A7DFC6823F2B18000D7CD1B /* SF-Pro-Rounded-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SF-Pro-Rounded-Regular.otf"; sourceTree = "<group>"; };
@@ -132,11 +142,19 @@
 		1ABA8F4923EDA89B000CEF4A /* Level005.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Level005.png; sourceTree = "<group>"; };
 		1ABA8F4A23EDA89C000CEF4A /* Level004.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Level004.png; sourceTree = "<group>"; };
 		1ABA8F4B23EDA89C000CEF4A /* Level011.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Level011.png; sourceTree = "<group>"; };
+		1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WarningViewController.swift; path = Megaball/WarningViewController.swift; sourceTree = SOURCE_ROOT; };
+		1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
 		1AC8782A23E9DD24006105CC /* Level012.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level012.swift; sourceTree = "<group>"; };
+		1ACC0F3923FD56F200B7EFE9 /* Level000.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level000.swift; sourceTree = "<group>"; };
+		1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessRowCreation.swift; sourceTree = "<group>"; };
 		1AD2BDCE23A2A5C100F2463F /* FoundryGridnik Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FoundryGridnik Medium.otf"; sourceTree = "<group>"; };
 		1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelPackSetup.swift; sourceTree = "<group>"; };
 		1AD4686823ED800A004EF873 /* StatsTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTableViewCell.swift; sourceTree = "<group>"; };
 		1AD4686923ED800A004EF873 /* StatsTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = StatsTableViewCell.xib; sourceTree = "<group>"; };
+		1AE2922B240190AE009D3C4E /* ItemsStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemsStatsViewController.swift; sourceTree = "<group>"; };
+		1AE92C25240177AF00F25A84 /* BrickCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickCreation.swift; sourceTree = "<group>"; };
+		1AE92C272401831E00F25A84 /* PowerUpTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpTableViewCell.swift; sourceTree = "<group>"; };
+		1AE92C282401831E00F25A84 /* PowerUpTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = PowerUpTableViewCell.xib; sourceTree = "<group>"; };
 		1AE9573A2321A74700E5618A /* InbewteenLevels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbewteenLevels.swift; sourceTree = "<group>"; };
 		1AE957432324523800E5618A /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		1AE957452324EC2A00E5618A /* Level001.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level001.swift; sourceTree = "<group>"; };
@@ -213,10 +231,10 @@
 				1A5A94862309E4F30076D635 /* GameScene.sks */,
 				1A5A94882309E4F30076D635 /* Actions.sks */,
 				1A5A948A2309E4F30076D635 /* GameScene.swift */,
+				1ACC0F4023FDA3C400B7EFE9 /* GameScene Extensions */,
 				1AFF33C623EC42CB0033F485 /* Data Model */,
 				1AE9574C23257BC200E5618A /* View Controllers */,
 				1A5A94A2230F089A0076D635 /* Game States */,
-				1AE957492324ECF900E5618A /* Levels */,
 				1A5A948E2309E4F30076D635 /* Main.storyboard */,
 				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
 				1A5D804723E9A33F00F50BE0 /* Custom Cells */,
@@ -284,6 +302,7 @@
 				1A2A387E23DDF00C001BD200 /* SettingsCustomCell */,
 				1AD4686C23ED800E004EF873 /* StatsCustomCell */,
 				1A05BF4F23ED9DDD003E668F /* LevelSelectorCustomCell */,
+				1AE92C2B2401832200F25A84 /* PowerUpCustomCell */,
 			);
 			path = "Custom Cells";
 			sourceTree = "<group>";
@@ -324,6 +343,16 @@
 			path = LevelImages;
 			sourceTree = "<group>";
 		};
+		1ACC0F4023FDA3C400B7EFE9 /* GameScene Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */,
+				1AE92C25240177AF00F25A84 /* BrickCreation.swift */,
+				1AE957492324ECF900E5618A /* Levels */,
+			);
+			path = "GameScene Extensions";
+			sourceTree = "<group>";
+		};
 		1AD4686C23ED800E004EF873 /* StatsCustomCell */ = {
 			isa = PBXGroup;
 			children = (
@@ -333,9 +362,19 @@
 			path = StatsCustomCell;
 			sourceTree = "<group>";
 		};
+		1AE92C2B2401832200F25A84 /* PowerUpCustomCell */ = {
+			isa = PBXGroup;
+			children = (
+				1AE92C272401831E00F25A84 /* PowerUpTableViewCell.swift */,
+				1AE92C282401831E00F25A84 /* PowerUpTableViewCell.xib */,
+			);
+			path = PowerUpCustomCell;
+			sourceTree = "<group>";
+		};
 		1AE957492324ECF900E5618A /* Levels */ = {
 			isa = PBXGroup;
 			children = (
+				1ACC0F3923FD56F200B7EFE9 /* Level000.swift */,
 				1A5D803A23E8B36300F50BE0 /* Starter Pack */,
 				1A5D803D23E8B38700F50BE0 /* Space Pack */,
 			);
@@ -345,7 +384,10 @@
 		1AE9574C23257BC200E5618A /* View Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				1A6E15F023F58A7C002F8D8B /* ItemsViewController.swift */,
+				1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */,
+				1AE2922B240190AE009D3C4E /* ItemsStatsViewController.swift */,
+				1A6E15F023F58A7C002F8D8B /* ItemsDetailViewController.swift */,
+				1A18819424083DF800D5ED3A /* ItemsViewController.swift */,
 				1A6E15EE23F58A5F002F8D8B /* StatsViewController.swift */,
 				1A63018523EDCC3C005DA2F2 /* LevelStatsViewController.swift */,
 				1AF31EEC23CB424D00848F63 /* LevelSelectorViewController.swift */,
@@ -355,6 +397,7 @@
 				1AE957432324523800E5618A /* MenuViewController.swift */,
 				1AE9574A23257BB600E5618A /* EndGameViewController.swift */,
 				1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */,
+				1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */,
 			);
 			path = "View Controllers";
 			sourceTree = "<group>";
@@ -451,6 +494,7 @@
 				1ABA8F4C23EDA89C000CEF4A /* Level001.png in Resources */,
 				1ABA8F5723EDA89C000CEF4A /* Level011.png in Resources */,
 				1ABA8F5123EDA89C000CEF4A /* Level008.png in Resources */,
+				1AE92C2A2401831E00F25A84 /* PowerUpTableViewCell.xib in Resources */,
 				1AF0F66123F2B59F001AE748 /* SF-Pro-Rounded-Regular.otf in Resources */,
 				1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */,
 				1ABA8F4D23EDA89C000CEF4A /* Level007.png in Resources */,
@@ -539,16 +583,20 @@
 				1A5D804423E9A32400F50BE0 /* MainMenuCollectionViewCell.swift in Sources */,
 				1A04BEFA238FE42700EB6150 /* Level003.swift in Sources */,
 				1AE957442324523800E5618A /* MenuViewController.swift in Sources */,
+				1ACC0F3E23FDA3B000B7EFE9 /* EndlessRowCreation.swift in Sources */,
 				1A5A948D2309E4F30076D635 /* GameViewController.swift in Sources */,
 				1A05BF4D23ED9DD9003E668F /* LevelSelectorTableViewCell.swift in Sources */,
 				1AE9574B23257BB600E5618A /* EndGameViewController.swift in Sources */,
 				1AF5749223AA3F4D00DCBAE5 /* Level004.swift in Sources */,
+				1AC08ADA23FC25FC00B4BC32 /* WarningViewController.swift in Sources */,
+				1AE92C26240177AF00F25A84 /* BrickCreation.swift in Sources */,
 				1AF5749423AA53B400DCBAE5 /* Level005.swift in Sources */,
 				1A6673792358F62800EE8F7E /* PauseMenuViewController.swift in Sources */,
 				1AF5749C23AA6DC300DCBAE5 /* Level009.swift in Sources */,
 				1A5D803C23E8B38000F50BE0 /* Level011.swift in Sources */,
 				1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */,
-				1A6E15F123F58A7C002F8D8B /* ItemsViewController.swift in Sources */,
+				1A6E15F123F58A7C002F8D8B /* ItemsDetailViewController.swift in Sources */,
+				1A18819524083DF800D5ED3A /* ItemsViewController.swift in Sources */,
 				1AF5749823AA646900DCBAE5 /* Level007.swift in Sources */,
 				1A5A94A1230F088F0076D635 /* GameOver.swift in Sources */,
 				1A5A949D230F08770076D635 /* PreGame.swift in Sources */,
@@ -562,6 +610,8 @@
 				1AE957462324EC2A00E5618A /* Level001.swift in Sources */,
 				1AF31EED23CB424D00848F63 /* LevelSelectorViewController.swift in Sources */,
 				1A5A949F230F08840076D635 /* Playing.swift in Sources */,
+				1AE2922C240190AE009D3C4E /* ItemsStatsViewController.swift in Sources */,
+				1ACC0F3C23FD59EE00B7EFE9 /* Level000.swift in Sources */,
 				1AC8782B23E9DD24006105CC /* Level012.swift in Sources */,
 				1A661D2223DDEC340063CE5A /* SettingsViewController.swift in Sources */,
 				1AD4686A23ED800A004EF873 /* StatsTableViewCell.swift in Sources */,
@@ -569,6 +619,8 @@
 				1A7D6529231B0E980091CA58 /* Paused.swift in Sources */,
 				1A6E15EF23F58A5F002F8D8B /* StatsViewController.swift in Sources */,
 				1A63018623EDCC3C005DA2F2 /* LevelStatsViewController.swift in Sources */,
+				1AE92C292401831E00F25A84 /* PowerUpTableViewCell.swift in Sources */,
+				1AC08ADC23FC417A00B4BC32 /* SplashViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

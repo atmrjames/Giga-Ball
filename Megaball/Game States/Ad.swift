@@ -29,7 +29,12 @@ class Ad: GKState {
     // This function runs when this state is entered.
     
     @objc func notificationToCloseAd(_ notification: Notification) {
-        scene.gameState.enter(Playing.self)
+        if scene.endlessMode {
+            scene.gameState.enter(InbetweenLevels.self)
+            // Show game over pop-up
+        } else {
+            scene.gameState.enter(Playing.self)
+        }
     }
     // Call the function to load the next level if a notification from the end level popup is received
     
@@ -41,6 +46,8 @@ class Ad: GKState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
         switch stateClass {
         case is Playing.Type:
+            return true
+        case is InbetweenLevels.Type:
             return true
         default:
             return false

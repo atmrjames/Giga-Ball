@@ -35,6 +35,9 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     override func viewDidLoad() {
         super.viewDidLoad()
         
+//        NotificationCenter.default.addObserver(self, selector: #selector(self.saveGameProgressNotificationKeyNotificationReceived), name: .saveGameProgressNotificationKey, object: nil)
+//        // Setup notification to check if the app has been quit
+        
         if let view = self.view as! SKView? {
             // Load the SKScene from 'GameScene.sks'
             if let scene = SKScene(fileNamed: "GameScene") {
@@ -55,6 +58,17 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
             view.showsNodeCount = true
         }
     }
+    
+//    @objc func saveGameProgressNotificationKeyNotificationReceived() {
+//    // Save Scene
+//        do {
+//            let sceneData = try NSKeyedArchiver.archivedData(withRootObject: self, requiringSecureCoding: false)
+//            UserDefaults.standard.set(sceneData, forKey: "currentScene")
+//        }
+//        catch {
+//            print("Error saving game data on app quit, \(error)")
+//        }
+//    }
     
     func createInterstitial() {
         print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
@@ -89,15 +103,16 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Segue to MenuViewController
     
-    func showEndLevelStats(levelNumber: Int, score: Int, highScore: Int, gameoverStatus: Bool, startLevel: Int, numberOfLevels: Int, scoresArray: [Int]) {
+    func showEndLevelStats(levelNumber: Int, score: Int, gameoverStatus: Bool, startLevel: Int, numberOfLevels: Int, scoresArray: [Int], depth: Int, depthArray: [Int]) {
         let endLevelVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
         endLevelVC.levelNumber = levelNumber
         endLevelVC.score = score
-        endLevelVC.highScore = highScore
         endLevelVC.gameoverStatus = gameoverStatus
         endLevelVC.startLevel = selectedLevel!
         endLevelVC.numberOfLevels = numberOfLevels
         endLevelVC.scoresArray = scoresArray
+        endLevelVC.depth = depth
+        endLevelVC.depthArray = depthArray
         // Update popup view controller properties with function input values
 
         self.addChild(endLevelVC)
@@ -107,12 +122,14 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Show InbetweenLevelsViewController as popup
     
-    func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int) {
+    func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
         pauseMenuVC.score = score
         pauseMenuVC.highScore = highScore
         pauseMenuVC.packNumber = packNumber
+        pauseMenuVC.depth = depth
+        pauseMenuVC.depthBest = depthBest
         // Update pause menu view controller properties with function input values
 
         self.addChild(pauseMenuVC)
@@ -154,3 +171,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
 //    // Allow re-enabling of home bar on 1st swipe in child view controllers
     
 }
+
+//extension Notification.Name {
+//    public static let saveGameProgressNotificationKey = Notification.Name(rawValue: "saveGameProgressNotificationKey")
+//}
+//// Setup for notifcations from AppDelegate

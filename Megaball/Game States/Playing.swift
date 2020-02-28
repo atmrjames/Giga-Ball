@@ -72,6 +72,7 @@ class Playing: GKState {
             // Enusre the ball is affected by gravity
             
             if scene.killBall {
+                
                 if scene.numberOfLives == 0 {
                     scene.numberOfLives = 1
                 }
@@ -109,32 +110,8 @@ class Playing: GKState {
         scene.newLevelHighScore = false
         scene.newTotalHighScore = false
         // Reset level and total highscore booleans
-
-//        if scene.totalScoreArray.count < scene.levelNumber {
-//            var totalNumberDiff = scene.levelNumber - scene.totalScoreArray.count
-//            while totalNumberDiff >= 1 {
-//                scene.totalScoreArray.append(1)
-//                totalNumberDiff-=1
-//            }
-//        }
-//        // Add new totalScorearry entry for the level
-//
-//        if scene.levelScoreArray.count < scene.levelNumber {
-//            var levelNumberDiff = scene.levelNumber - scene.levelScoreArray.count
-//            while levelNumberDiff >= 1 {
-//                scene.levelScoreArray.append(1)
-//                levelNumberDiff-=1
-//            }
-//        }
-//        // Add new levelScoreArray entry for the level
-//
-//        if scene.levelScoreArray[scene.levelNumber-1] != 1 {
-//            scene.levelHighscore = scene.levelScoreArray[scene.levelNumber-1]
-//        }
-//        // Add level highscore to level highscore label, if no highscore exists (value = 1) show nothing
         
         scene.levelScore = 0
-        scene.multiplier = 1
         scene.scoreLabel.text = String(scene.totalScore)
         scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
         scene.multiplierLabel.text = "x\(scene.scoreFactorString)"
@@ -175,6 +152,11 @@ class Playing: GKState {
         // Animate paddle and ball in
         
         switch scene.levelNumber {
+        
+        // Endless mode
+        case 0:
+            scene.loadLevel0()
+            
         // Starter Pack
         case 1:
             scene.loadLevel1()
@@ -196,6 +178,7 @@ class Playing: GKState {
             scene.loadLevel9()
         case 10:
             scene.loadLevel10()
+            
         // Space Pack
         case 11:
             scene.loadLevel11()

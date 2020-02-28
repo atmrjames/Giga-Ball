@@ -14,7 +14,6 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     @IBOutlet var cellLabel: UILabel!
     @IBOutlet var highscoreLabel: UILabel!
     @IBOutlet var purchaseLabel: UILabel!
-    @IBOutlet var playButton: UIButton!
     
     override func awakeFromNib() {
         super.awakeFromNib()

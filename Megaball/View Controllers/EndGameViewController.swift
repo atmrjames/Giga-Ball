@@ -12,11 +12,12 @@ class EndGameViewController: UIViewController {
     
     var levelNumber: Int = 0
     var score: Int = 0
-    var highScore: Int = 0
     var gameoverStatus: Bool = false
     var startLevel: Int = 0
     var numberOfLevels: Int = 0
     var scoresArray: [Int] = []
+    var depthArray: [Int] = []
+    var depth: Int = 0
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
@@ -32,6 +33,10 @@ class EndGameViewController: UIViewController {
     
     var group: UIMotionEffectGroup?
     var blurView: UIVisualEffectView?
+    
+    var endlessMode: Bool = false
+    var highscore: Int = 0
+    var depthBest: Int = 0
 
     @IBOutlet var backgroundView: UIView!
     @IBOutlet weak var popupView: UIView!
@@ -54,16 +59,28 @@ class EndGameViewController: UIViewController {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
-        
-//        gameState.enter(PreGame.self)
-        
-//        navigationController?.popViewController(animated: true)
-        
-//        moveToGame(selectedLevel: startLevel, numberOfLevels: numberOfLevels)
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        if levelNumber == 0 {
+            endlessMode = true
+        } else {
+            endlessMode = false
+        }
+        
+        if scoresArray.count != 0 {
+            highscore = scoresArray.max()!
+        } else {
+            highscore = 0
+        }
+        
+        if depthArray.count != 0 {
+            depthBest = depthArray.max()!
+        } else {
+            depthBest = 0
+        }
         
         userSettings()
         setBlur()
@@ -107,6 +124,11 @@ class EndGameViewController: UIViewController {
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            popupView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
@@ -143,25 +165,42 @@ class EndGameViewController: UIViewController {
     func updateLabels() {
         
         if gameoverStatus {
-            endGameTitle.text = "G A M E  O V E R"
+            endGameTitle.text = "G A M E   O V E R"
         } else {
             endGameTitle.text = "C O M P L E T E"
         }
         
         scoreLabelTitle.text = "Score"
-        scoreLabel.text = String(score)
         highscoreLabelTitle.text = "Highscore"
-        highscoreLabel.text = String(highScore)
         
-        if score >= highScore {
+        if endlessMode {
+            scoreLabel.text = "\(score), \(depth) m"
+            highscoreLabel.text = "\(highscore), \(depthBest) m"
+        } else {
+            scoreLabel.text = String(score)
+            highscoreLabel.text = String(highscore)
+        }
+        
+        if score >= highscore {
             if scoresArray.count > 1 {
                 var highScoreArraySort = scoresArray
                 highScoreArraySort.sort(by: >)
                 let previousHighScore = highScoreArraySort[1]
+                var depthArraySort = depthArray
+                depthArraySort.sort(by: >)
+                let previousBestDepth = depthArraySort[1]
                 // Get second highest score in array
-                highscoreLabel.text = String(previousHighScore)
+                if endlessMode {
+                    highscoreLabel.text = "\(previousHighScore), \(previousBestDepth) m"
+                } else {
+                    highscoreLabel.text = String(previousHighScore)
+                }
             } else {
-                highscoreLabel.text = "0"
+                if endlessMode {
+                    highscoreLabel.text = "0, 0 m"
+                } else {
+                    highscoreLabel.text = "0"
+                }
             }
             scoreLabelTitle.text = "New Highscore"
             highscoreLabelTitle.text = "Previous Highscore"

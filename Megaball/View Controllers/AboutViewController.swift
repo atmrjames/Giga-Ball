@@ -154,6 +154,11 @@ class AboutViewController: UIViewController {
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            aboutView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
@@ -164,103 +169,104 @@ class AboutViewController: UIViewController {
         
         let delay = 0.1
         var delayFactor: Double = 1.0
+        let distance: CGFloat = 30
         
         createdByLabel.alpha = 0.0
         createdByLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        createdByLabel.center.y += 20
+        createdByLabel.center.y += distance
         
         creatorLabel.alpha = 0.0
         creatorLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        creatorLabel.center.y += 20
+        creatorLabel.center.y += distance
         
         musicByLabel.alpha = 0.0
         musicByLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        musicByLabel.center.y += 20
+        musicByLabel.center.y += distance
         
         composerLabel.alpha = 0.0
         composerLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        composerLabel.center.y += 20
+        composerLabel.center.y += distance
         
         imageView.alpha = 0.0
         imageView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        imageView.center.y += 20
+        imageView.center.y += distance
         
         descriptionLabel.alpha = 0.0
         descriptionLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        descriptionLabel.center.y += 20
+        descriptionLabel.center.y += distance
         
         websiteButtonLabel.alpha = 0.0
         websiteButtonLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        websiteButtonLabel.center.y += 20
+        websiteButtonLabel.center.y += distance
         
         reviewButtonLabel.alpha = 0.0
         reviewButtonLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        reviewButtonLabel.center.y += 20
+        reviewButtonLabel.center.y += distance
         
         supportButtonLabel.alpha = 0.0
         supportButtonLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        supportButtonLabel.center.y += 20
+        supportButtonLabel.center.y += distance
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.createdByLabel.alpha = 1.0
             self.createdByLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.createdByLabel.center.y -= 20
+            self.createdByLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.creatorLabel.alpha = 1.0
             self.creatorLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.creatorLabel.center.y -= 20
+            self.creatorLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.musicByLabel.alpha = 1.0
             self.musicByLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.musicByLabel.center.y -= 20
+            self.musicByLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.composerLabel.alpha = 1.0
             self.composerLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.composerLabel.center.y -= 20
+            self.composerLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.imageView.alpha = 1.0
             self.imageView.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.imageView.center.y -= 20
+            self.imageView.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.descriptionLabel.alpha = 1.0
             self.descriptionLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.descriptionLabel.center.y -= 20
+            self.descriptionLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.websiteButtonLabel.alpha = 1.0
             self.websiteButtonLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.websiteButtonLabel.center.y -= 20
+            self.websiteButtonLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.reviewButtonLabel.alpha = 1.0
             self.reviewButtonLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.reviewButtonLabel.center.y -= 20
+            self.reviewButtonLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.supportButtonLabel.alpha = 1.0
             self.supportButtonLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.supportButtonLabel.center.y -= 20
+            self.supportButtonLabel.center.y -= distance
             delayFactor+=1
         })
     }

@@ -25,7 +25,12 @@ class InbetweenLevels: GKState {
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToRestartReceived(_:)), name: .restart, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed restart on the end level, gameover popup
         
-        inbetweenLevels()
+        if previousState is Playing {
+            inbetweenLevels()
+        }
+        if previousState is Ad {
+            scene.showEndLevelStats()
+        }
     }
     // This function runs when this state is entered.
     
@@ -105,8 +110,14 @@ class InbetweenLevels: GKState {
         // Update level and total scores
         
         scene.totalStatsArray[0].cumulativeScore = scene.cumulativeScore + scene.levelScore
-        scene.levelsPlayed+=1
-        scene.totalStatsArray[0].levelsPlayed = scene.levelsPlayed
+        if scene.endlessMode {
+            scene.totalStatsArray[0].endlessModeDepth.append(scene.endlessDepth)
+            scene.totalStatsArray[0].endlessModeDepthDate.append(Date())
+        } else {
+            scene.levelsPlayed+=1
+            scene.totalStatsArray[0].levelsPlayed = scene.levelsPlayed
+        }
+        
         if scene.gameoverStatus == false {
             scene.levelsCompleted+=1
             scene.totalStatsArray[0].levelsCompleted = scene.levelsCompleted
@@ -159,30 +170,39 @@ class InbetweenLevels: GKState {
             }
             // Save pack stats only at the end of the game
             
-            scene.gameoverStatus = true
-        }
-        // Save total stats only at the end of the game
-
-        if scene.gameoverStatus {
-            
-            let waitScene = SKAction.wait(forDuration: 1)
-            self.scene.run(waitScene, completion: {
-                self.scene.showEndLevelStats()
-            })
-            // Show game over pop-up
+            if scene.endlessMode == false {
+                let waitScene = SKAction.wait(forDuration: 1)
+                self.scene.run(waitScene, completion: {
+                    self.scene.showEndLevelStats()
+                })
+                // Show game over pop-up
+            }
             
         } else {
-            let waitScene = SKAction.wait(forDuration: 1)
-            self.scene.run(waitScene, completion: {
-                if self.scene.adsSetting! {
-                    self.scene.gameState.enter(Ad.self)
-                    self.scene.loadInterstitial()
+            showAd()
+        }
+        if scene.endlessMode {
+            showAd()
+        }
+    }
+    
+    func showAd() {
+        let waitScene = SKAction.wait(forDuration: 1)
+        self.scene.run(waitScene, completion: {
+            if self.scene.adsSetting! {
+                self.scene.gameState.enter(Ad.self)
+                self.scene.loadInterstitial()
+            } else {
+                if self.scene.endlessMode {
+                    self.scene.showEndLevelStats()
+                    // Show game over pop-up
                 } else {
                     self.scene.gameState.enter(Playing.self)
+                    // Move to the next level after a delay
                 }
-            })
-            // Move to the next level after a delay
-        }
+            }
+        })
+        
     }
     
     @objc func notificationToContinueReceived(_ notification: Notification) {

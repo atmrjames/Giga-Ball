@@ -14,6 +14,8 @@ class PauseMenuViewController: UIViewController {
     var score: Int = 0
     var highScore: Int = 0
     var packNumber: Int = 0
+    var depth: Int = 0
+    var depthBest: Int = 0
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
@@ -25,19 +27,13 @@ class PauseMenuViewController: UIViewController {
     var paddleSensitivitySetting: Int?
     // User settings
     
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
-    let encoder = PropertyListEncoder()
-    let decoder = PropertyListDecoder()
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
-    // NSCoder data store & encoder setup
-    
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
     var group: UIMotionEffectGroup?
     var blurView: UIVisualEffectView?
-
+    
+    var endlessMode: Bool = false
+    
     @IBOutlet var backgroundView: UIView!
     @IBOutlet weak var pauseView: UIView!
     @IBOutlet weak var levelNumberLabel: UILabel!
@@ -49,7 +45,7 @@ class PauseMenuViewController: UIViewController {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        moveToMainMenu()
+        showWarning(senderID: "pauseMenu")
     }
     
     @IBAction func playButtonPressed(_ sender: UIButton) {        
@@ -66,7 +62,7 @@ class PauseMenuViewController: UIViewController {
         hideAnimate()
         moveToSettings()
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -80,8 +76,13 @@ class PauseMenuViewController: UIViewController {
 //        view.addGestureRecognizer(swipeDown)
 //        // Setup swipe gesture
         
+        if levelNumber == 0 {
+            endlessMode = true
+        } else {
+            endlessMode = false
+        }
+        
         userSettings()
-        loadData()
         setBlur()
         if parallaxSetting! {
             addParallaxToView()
@@ -132,10 +133,16 @@ class PauseMenuViewController: UIViewController {
     }
     
     func updateLabels() {
-        let startLevel = LevelPackSetup().startLevelNumber[packNumber]
-        levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-startLevel+1) \n \(LevelPackSetup().levelNameArray[levelNumber-1])"
-        scoreLabel.text = String(score)
-        highscoreLabel.text = String(highScore)
+        if endlessMode {
+            levelNumberLabel.text = String(LevelPackSetup().levelNameArray[levelNumber])
+            scoreLabel.text = "\(score), \(depth) m"
+            highscoreLabel.text = "\(highScore), \(depthBest) m"
+        } else {
+            let startLevel = LevelPackSetup().startLevelNumber[packNumber]
+            levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-startLevel+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+            scoreLabel.text = String(score)
+            highscoreLabel.text = String(highScore)
+        }
     }
     
     func removeAnimate(nextAction: Notification.Name) {
@@ -160,8 +167,6 @@ class PauseMenuViewController: UIViewController {
     }
     
     func revealAnimate() {
-        self.pauseView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        self.pauseView.alpha = 0.0
         UIView.animate(withDuration: 0.25, animations: {
             self.pauseView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
             self.pauseView.alpha = 1.0
@@ -178,17 +183,15 @@ class PauseMenuViewController: UIViewController {
         let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
         vertical.minimumRelativeValue = -amount
         vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            pauseView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
         pauseView.addMotionEffect(group!)
-    }
-    
-    func moveToMainMenu() {
-        NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
-        NotificationCenter.default.post(name: .returnLevelSelectNotification, object: nil)
-        NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
-        navigationController?.popToRootViewController(animated: true)
     }
     
     func moveToSettings() {
@@ -200,32 +203,19 @@ class PauseMenuViewController: UIViewController {
         settingsView.didMove(toParent: self)
     }
     
-    func loadData() {
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+    func showWarning(senderID: String) {
+        let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
+        warningView.senderID = senderID
+        self.addChild(warningView)
+        warningView.view.frame = self.view.frame
+        self.view.addSubview(warningView.view)
+        warningView.didMove(toParent: self)
     }
     
     @objc func returnPauseNotificationKeyReceived(_ notification: Notification) {
         revealAnimate()
         userSettings()
-        if group != nil {
-            pauseView.removeMotionEffect(group!)
-        }
+        updateLabels()
         if parallaxSetting! {
             addParallaxToView()
         }
