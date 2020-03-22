@@ -1,13 +1,15 @@
+
 //
 //  ItemsViewController.swift
-//  
+//  Megaball
 //
 //  Created by James Harding on 27/02/2020.
+//  Copyright © 2020 James Harding. All rights reserved.
 //
 
 import UIKit
 
-class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -27,12 +29,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     @IBOutlet var itemsView: UIView!
     @IBOutlet var itemsTableView: UITableView!
     
-    @IBAction func backButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        removeAnimate()
-    }
+    @IBOutlet var backButtonCollectionView: UICollectionView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -45,6 +42,11 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         // TableView setup
         
+        backButtonCollectionView.delegate = self
+        backButtonCollectionView.dataSource = self
+        backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Collection view setup
+        
         itemsTableView.rowHeight = 70.0
         
         userSettings()
@@ -53,11 +55,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         setBlur()
         itemsTableView.reloadData()
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 4
+        return 5
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -68,14 +71,17 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         switch indexPath.row {
         case 0:
-            cell.settingDescription.text = "Paddles"
+            cell.settingDescription.text = "Game Center Challenges"
             cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
         case 1:
-            cell.settingDescription.text = "Balls"
+            cell.settingDescription.text = "Paddles"
             cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
         case 2:
-            cell.settingDescription.text = "Power-Ups"
+            cell.settingDescription.text = "Balls"
+            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
         case 3:
+            cell.settingDescription.text = "Power-Ups"
+        case 4:
             cell.settingDescription.text = "App Icons"
             cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
         default:
@@ -83,8 +89,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         
         UIView.animate(withDuration: 0.2) {
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
         
         return cell
@@ -94,15 +100,15 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         UIView.animate(withDuration: 0.2) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
         
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
         
-        if indexPath.row == 2 {
+        if indexPath.row == 3 {
             hideAnimate()
             moveToItemDetails(senderID: indexPath.row)
         }
@@ -118,8 +124,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         UIView.animate(withDuration: 0.1) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
@@ -129,8 +135,58 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         UIView.animate(withDuration: 0.1) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
         }
     }
     

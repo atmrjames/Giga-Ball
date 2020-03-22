@@ -14,7 +14,7 @@ class SettingsTableViewCell: UITableViewCell {
     @IBOutlet var settingState: UILabel!
     @IBOutlet var centreLabel: UILabel!
     @IBOutlet var viewBackground: UIView!
-    @IBOutlet var cellView: UIView!
+    @IBOutlet var cellView2: UIView!
     // Settings cell properties
     
     override func awakeFromNib() {

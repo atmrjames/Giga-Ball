@@ -64,6 +64,16 @@ class PreGame: GKState {
         }
         // Redeclare the game scene properties as passed in
         
+        switch scene.packNumber {
+        case 1:
+            scene.background.texture = scene.starterBackgroundTexture
+        case 2:
+            scene.background.texture = scene.spaceBackgroundTexture
+        default:
+            scene.background.texture = scene.starterBackgroundTexture
+        }
+        // Set the background texture
+        
         scene.totalScore = 0
         if scene.startLevelNumber == 0 {
             scene.numberOfLives = 0

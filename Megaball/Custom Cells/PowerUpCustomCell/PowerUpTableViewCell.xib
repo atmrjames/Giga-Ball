@@ -8,6 +8,9 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <customFonts key="customFonts">
+        <array key="SF-Pro-Rounded-Bold.otf">
+            <string>SFProRounded-Bold</string>
+        </array>
         <array key="SF-Pro-Rounded-Semibold.otf">
             <string>SFProRounded-Semibold</string>
         </array>
@@ -15,7 +18,7 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
         <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
-        <tableViewCell contentMode="scaleToFill" selectionStyle="none" indentationWidth="10" reuseIdentifier="powerUpCell" id="KGk-i7-Jjw" customClass="PowerUpTableViewCell" customModule="Megaball" customModuleProvider="target">
+        <tableViewCell contentMode="scaleToFill" selectionStyle="none" indentationWidth="10" reuseIdentifier="powerUpCell" id="KGk-i7-Jjw" customClass="PowerUpTableViewCell" customModule="Gigaball" customModuleProvider="target">
             <rect key="frame" x="0.0" y="0.0" width="380" height="75"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
             <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
@@ -31,8 +34,11 @@
                                     <constraint firstAttribute="width" secondItem="dy0-1k-MfT" secondAttribute="height" multiplier="1:1" id="sDN-yq-Osh"/>
                                 </constraints>
                             </imageView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Power-Up Name" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jbO-bZ-stB">
-                                <rect key="frame" x="60" y="17" width="245" height="21.5"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Power-Up Name" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumFontSize="12" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jbO-bZ-stB">
+                                <rect key="frame" x="60" y="6" width="205" height="43"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="43" id="g8t-Ks-cD6"/>
+                                </constraints>
                                 <fontDescription key="fontDescription" name="SFProRounded-Semibold" family="SF Pro Rounded" pointSize="18"/>
                                 <color key="textColor" red="0.14901960780000001" green="0.14901960780000001" blue="0.14901960780000001" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <nil key="highlightedColor"/>
@@ -48,15 +54,26 @@
                                     <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="20" scale="default" weight="semibold"/>
                                 </state>
                             </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="100%" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="9Yu-Dc-Exc">
+                                <rect key="frame" x="265" y="17.5" width="50" height="20.5"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="50" id="8gK-AI-ust"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="SFProRounded-Bold" family="SF Pro Rounded" pointSize="17"/>
+                                <color key="textColor" systemColor="secondaryLabelColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" red="0.87058823529999996" green="0.87058823529999996" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
+                            <constraint firstItem="9Yu-Dc-Exc" firstAttribute="leading" secondItem="jbO-bZ-stB" secondAttribute="trailing" id="AO5-21-x4j"/>
                             <constraint firstItem="PMS-ge-47P" firstAttribute="centerY" secondItem="yhH-l0-G5G" secondAttribute="centerY" id="Jyb-Hl-9xA"/>
                             <constraint firstAttribute="trailing" secondItem="PMS-ge-47P" secondAttribute="trailing" id="Otx-uJ-JgA"/>
                             <constraint firstItem="jbO-bZ-stB" firstAttribute="leading" secondItem="dy0-1k-MfT" secondAttribute="trailing" constant="10" id="W63-wA-Pbh"/>
-                            <constraint firstItem="PMS-ge-47P" firstAttribute="leading" secondItem="jbO-bZ-stB" secondAttribute="trailing" constant="10" id="amn-vJ-8Cb"/>
+                            <constraint firstItem="9Yu-Dc-Exc" firstAttribute="centerY" secondItem="yhH-l0-G5G" secondAttribute="centerY" id="YTO-4i-KjY"/>
                             <constraint firstItem="dy0-1k-MfT" firstAttribute="centerY" secondItem="yhH-l0-G5G" secondAttribute="centerY" id="jXI-Oo-Aec"/>
                             <constraint firstItem="jbO-bZ-stB" firstAttribute="centerY" secondItem="yhH-l0-G5G" secondAttribute="centerY" id="rjq-L0-t5g"/>
+                            <constraint firstItem="PMS-ge-47P" firstAttribute="leading" secondItem="9Yu-Dc-Exc" secondAttribute="trailing" id="wtS-eF-AIv"/>
                             <constraint firstItem="dy0-1k-MfT" firstAttribute="top" secondItem="yhH-l0-G5G" secondAttribute="top" constant="5" id="ySx-jS-CWL"/>
                             <constraint firstItem="dy0-1k-MfT" firstAttribute="leading" secondItem="yhH-l0-G5G" secondAttribute="leading" constant="5" id="zg9-VV-WrT"/>
                         </constraints>
@@ -72,8 +89,9 @@
             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
             <viewLayoutGuide key="safeArea" id="njF-e1-oar"/>
             <connections>
-                <outlet property="cellView" destination="yhH-l0-G5G" id="4gj-aY-D1V"/>
+                <outlet property="cellView4" destination="yhH-l0-G5G" id="4gj-aY-D1V"/>
                 <outlet property="chevronButton" destination="PMS-ge-47P" id="LNN-6a-Tf7"/>
+                <outlet property="detailLabel" destination="9Yu-Dc-Exc" id="8N3-l1-CkD"/>
                 <outlet property="powerUpImageView" destination="dy0-1k-MfT" id="GSh-Ar-ZB3"/>
                 <outlet property="titleLabel" destination="jbO-bZ-stB" id="xba-C5-I8H"/>
             </connections>

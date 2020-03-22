@@ -29,7 +29,7 @@ class Ad: GKState {
     // This function runs when this state is entered.
     
     @objc func notificationToCloseAd(_ notification: Notification) {
-        if scene.endlessMode {
+        if scene.endlessMode || scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber {
             scene.gameState.enter(InbetweenLevels.self)
             // Show game over pop-up
         } else {

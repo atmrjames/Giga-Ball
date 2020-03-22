@@ -8,7 +8,7 @@
 
 import UIKit
 
-class AboutViewController: UIViewController {
+class AboutViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -51,13 +51,8 @@ class AboutViewController: UIViewController {
     @IBAction func supportButton(_ sender: Any) {
         // Support link
     }
-    @IBAction func backButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        removeAnimate()
-    }
-    // Button action setup
+    
+    @IBOutlet var backButtonCollectionView: UICollectionView!
     
     @IBAction func tapGesture(_ sender: Any) {
         if hapticsSetting! {
@@ -75,6 +70,11 @@ class AboutViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        backButtonCollectionView.delegate = self
+        backButtonCollectionView.dataSource = self
+        backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Levels tableView setup
+        
         let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
         swipeDown.direction = .down
         view.addGestureRecognizer(swipeDown)
@@ -85,11 +85,63 @@ class AboutViewController: UIViewController {
         if parallaxSetting! {
             addParallax()
         }
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
     
     override func viewDidAppear(_ animated: Bool) {
+        backButtonCollectionView.reloadData()
         fadeObjectsIn()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        }
     }
     
     func setBlur() {

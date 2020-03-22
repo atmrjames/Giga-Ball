@@ -155,7 +155,7 @@ class WarningViewController: UIViewController {
     
     func moveToMainMenu() {
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
-        NotificationCenter.default.post(name: .returnLevelSelectNotification, object: nil)
+        NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
         navigationController?.popToRootViewController(animated: true)
     }

@@ -11,9 +11,13 @@ import UIKit
 class SplashViewController: UIViewController {
     
    
-    @IBOutlet var shadowLogo: UIImageView!
-    @IBOutlet var glowLogo: UIImageView!
-    @IBOutlet var megaballLogo: UIImageView!
+    @IBOutlet var splashScreenLogo1: UIImageView!
+    @IBOutlet var splashScreenLogo2: UIImageView!
+    @IBOutlet var splashScreenLogo3: UIImageView!
+    @IBOutlet var splashScreenLogo4: UIImageView!
+    @IBOutlet var splashScreenLogo5: UIImageView!
+    @IBOutlet var splashScreenLogo6: UIImageView!
+    
     @IBOutlet var creatorLabel: UILabel!
     
     @IBAction func tapGesture(_ sender: Any) {
@@ -22,12 +26,21 @@ class SplashViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        shadowLogo.image = UIImage(named:"MegaballShadow.png")!
-        glowLogo.image = UIImage(named:"MegaballGlow.png")!
-        megaballLogo.image = UIImage(named:"MegaballLogo.png")!
-        shadowLogo.alpha = 1.0
-        glowLogo.alpha = 0.0
-        megaballLogo.alpha = 0.0
+        
+        
+        splashScreenLogo1.image = UIImage(named: "SplashScreenLogo1")!
+        splashScreenLogo2.image = UIImage(named: "SplashScreenLogo2")!
+        splashScreenLogo3.image = UIImage(named: "SplashScreenLogo3")!
+        splashScreenLogo4.image = UIImage(named: "SplashScreenLogo4")!
+        splashScreenLogo5.image = UIImage(named: "SplashScreenLogo5")!
+        splashScreenLogo6.image = UIImage(named: "SplashScreenLogo6")!
+        
+        splashScreenLogo1.alpha = 1.0
+        splashScreenLogo2.alpha = 0.0
+        splashScreenLogo3.alpha = 0.0
+        splashScreenLogo4.alpha = 0.0
+        splashScreenLogo5.alpha = 0.0
+        splashScreenLogo6.alpha = 0.0
         creatorLabel.alpha = 0.0
         creatorLabel.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         // Pre animation setup
@@ -44,16 +57,36 @@ class SplashViewController: UIViewController {
         
         UIView.animateKeyframes(withDuration: totalDuration, delay: 0, options: [.calculationModeLinear], animations: {
             // Add animations
-            UIView.addKeyframe(withRelativeStartTime: 0.0/totalDuration, relativeDuration: 0.5/totalDuration, animations: {
-                self.glowLogo.alpha = 1.0
+            UIView.addKeyframe(withRelativeStartTime: 0.0/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo2.alpha = 1.0
             })
             UIView.addKeyframe(withRelativeStartTime: 1.0/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
-                self.megaballLogo.alpha = 1.0
-            })
-            UIView.addKeyframe(withRelativeStartTime: 1.0/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
-                self.glowLogo.alpha = 0.0
+                self.splashScreenLogo3.alpha = 1.0
             })
             UIView.addKeyframe(withRelativeStartTime: 1.5/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo4.alpha = 1.0
+            })
+            UIView.addKeyframe(withRelativeStartTime: 2.5/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo5.alpha = 1.0
+            })
+            UIView.addKeyframe(withRelativeStartTime: 3.5/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo6.alpha = 1.0
+            })
+            
+            UIView.addKeyframe(withRelativeStartTime: 3.5/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo2.alpha = 0.0
+            })
+            UIView.addKeyframe(withRelativeStartTime: 3.5/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo3.alpha = 0.0
+            })
+            UIView.addKeyframe(withRelativeStartTime: 3.5/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo4.alpha = 0.0
+            })
+            UIView.addKeyframe(withRelativeStartTime: 4.0/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
+                self.splashScreenLogo5.alpha = 0.0
+            })
+            
+            UIView.addKeyframe(withRelativeStartTime: 4.5/totalDuration, relativeDuration: 0.5/totalDuration, animations: {
                 self.creatorLabel.alpha = 1.0
                 self.creatorLabel.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
             })

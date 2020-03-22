@@ -34,30 +34,36 @@ extension GameScene {
                 
                 if i == 0 || i == 1 || i == 5 || i == 16 || i == 20 || i == 21 {
                     brick.texture = brickNormalTexture
+                    brick.color = brickWhite
                 }
                 if i == 6 || i == 15 {
                     if j == 0 || j == 1 || j == 4 || j == 5 || j == 6 || j == 9 || j == 10 {
                         brick.texture = brickNormalTexture
+                        brick.color = brickWhite
                     }
                 }
                 if i == 7 || i == 14 {
                     if j == 0 || j == 2 || j == 4 || j == 5 || j == 6 || j == 8 || j == 10 {
                         brick.texture = brickNormalTexture
+                        brick.color = brickWhite
                     }
                 }
                 if i == 8 || i == 13 {
                     if j == 0 || j == 2 || j == 3 || j == 5 || j == 7 || j == 8 || j == 10 {
                         brick.texture = brickNormalTexture
+                        brick.color = brickWhite
                     }
                 }
                 if i == 9 || i == 12 {
                     if j == 1 || j == 2 || j == 3 || j == 5 || j == 7 || j == 8 || j == 9 {
                         brick.texture = brickNormalTexture
+                        brick.color = brickWhite
                     }
                 }
                 if i == 10 || i == 11 {
                     if j == 1 || j == 2 || j == 3 || j == 4 || j == 6 || j == 7 || j == 8 || j == 9 {
                         brick.texture = brickNormalTexture
+                        brick.color = brickWhite
                     }
                 }
                 // Normal bricks
@@ -79,6 +85,9 @@ extension GameScene {
                 }
                 // Indestructible bricks
 
+                if brick.texture == brickNormalTexture {
+                    brick.colorBlendFactor = 1.0
+                }
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brickArray.append(brick)
             }

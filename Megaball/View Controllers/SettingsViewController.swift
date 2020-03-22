@@ -15,7 +15,7 @@ enum device {
     case SE
 }
 
-class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     var navigatedFrom: String?
     
@@ -52,25 +52,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     @IBOutlet var backgroundViewLeading: NSLayoutConstraint!
     @IBOutlet var backgroundViewTop: NSLayoutConstraint!
     
-    @IBAction func backButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        removeAnimate()
-        if navigatedFrom! == "PauseMenu" {
-            NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
-        } else if navigatedFrom! == "MainMenu" {
-            NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
-        }
-    }
-    
-    @IBAction func settingsTitleButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        settingsTableView.setContentOffset(.zero, animated: true)
-    }
-    // UIViewController actions
+    @IBOutlet var backButtonCollectionView: UICollectionView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -81,6 +63,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnNotificiationKeyReceived), name: .returnNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the warning pop-up
         
+        backButtonCollectionView.delegate = self
+        backButtonCollectionView.dataSource = self
+        backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Levels tableView setup
 
         let screenRatio = self.view.frame.size.height/self.view.frame.size.width
         
@@ -112,6 +98,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if navigatedFrom! == "MainMenu" {
             setBlur()
         }
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
     
@@ -193,19 +180,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.settingDescription.text = "Paddle Sensitivity"
             cell.centreLabel.text = ""
             if paddleSensitivitySetting == 0 {
-                cell.settingState.text = "low"
+                cell.settingState.text = "micro"
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             } else if paddleSensitivitySetting == 1 {
-                cell.settingState.text = "medium"
+                cell.settingState.text = "base"
                 cell.settingState.textColor = #colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1)
             } else if paddleSensitivitySetting == 2 {
-                cell.settingState.text = "high"
+                cell.settingState.text = "kila"
                 cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
             } else if paddleSensitivitySetting == 3 {
-                cell.settingState.text = "extreme"
+                cell.settingState.text = "mega"
                 cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
             } else if paddleSensitivitySetting == 4 {
-                cell.settingState.text = "mega"
+                cell.settingState.text = "giga"
                 cell.settingState.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             }
         case 6:
@@ -245,8 +232,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         tableView.showsVerticalScrollIndicator = false
         
         UIView.animate(withDuration: 0.2) {
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
         
         return cell
@@ -311,8 +298,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         UIView.animate(withDuration: 0.2) {
             let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
         
         if hapticsSetting! {
@@ -330,8 +317,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         UIView.animate(withDuration: 0.1) {
             let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
@@ -341,8 +328,63 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         UIView.animate(withDuration: 0.1) {
             let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+        if navigatedFrom! == "PauseMenu" {
+            NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
+        } else if navigatedFrom! == "MainMenu" {
+            NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+        }
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
         }
     }
     

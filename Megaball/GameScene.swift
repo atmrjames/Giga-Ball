@@ -39,8 +39,7 @@ enum CollisionTypes: UInt32 {
 
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
-	func showEndLevelStats(levelNumber: Int, score: Int, gameoverStatus: Bool, startLevel: Int, numberOfLevels: Int, scoresArray: [Int], depth: Int, depthArray: [Int])
-	func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int)
+	func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int, sender: String)
 	func createInterstitial()
 	func loadInterstitial()
 	var selectedLevel: Int? { get }
@@ -60,9 +59,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var paddleSticky = SKSpriteNode()
     var ball = SKSpriteNode()
     var brick = SKSpriteNode()
-    var brickMultiHit = SKSpriteNode()
-    var brickInvisible = SKSpriteNode()
-    var brickNull = SKSpriteNode()
     var life = SKSpriteNode()
 	var topScreenBlock = SKSpriteNode()
 	var bottomScreenBlock = SKSpriteNode()
@@ -71,6 +67,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var background = SKSpriteNode()
 	var directionMarker = SKSpriteNode()
     // Define objects
+	
+	let brickBlue: UIColor = #colorLiteral(red: 0.3137254902, green: 0.8352941176, blue: 0.8901960784, alpha: 1)
+	let brickBlueDark: UIColor = #colorLiteral(red: 0, green: 0.462745098, blue: 1, alpha: 1)
+	let brickBlueDarkExtra: UIColor = #colorLiteral(red: 0, green: 0.2274509804, blue: 0.4901960784, alpha: 1)
+	let brickBlueLight: UIColor = #colorLiteral(red: 0.4941176471, green: 0.7254901961, blue: 1, alpha: 1)
+	let brickGreenGigaball: UIColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+	let brickGreenSI: UIColor = #colorLiteral(red: 0.02352941176, green: 1, blue: 0, alpha: 1)
+	let brickGrey: UIColor = #colorLiteral(red: 0.4196078431, green: 0.4196078431, blue: 0.4196078431, alpha: 1)
+	let brickGreyDark: UIColor = #colorLiteral(red: 0.2431372549, green: 0.2431372549, blue: 0.2431372549, alpha: 1)
+	let brickGreyLight: UIColor = #colorLiteral(red: 0.6901960784, green: 0.6862745098, blue: 0.6862745098, alpha: 1)
+	let brickOrange: UIColor = #colorLiteral(red: 0.9725490196, green: 0.4274509804, blue: 0.1098039216, alpha: 1)
+	let brickOrangeDark: UIColor = #colorLiteral(red: 0.7764705882, green: 0.3098039216, blue: 0.03529411765, alpha: 1)
+	let brickOrangeLight: UIColor = #colorLiteral(red: 1, green: 0.6392156863, blue: 0.4274509804, alpha: 1)
+	let brickPink: UIColor = #colorLiteral(red: 1, green: 0.3921568627, blue: 0.5960784314, alpha: 1)
+	let brickPurple: UIColor = #colorLiteral(red: 0.6156862745, green: 0.2352941176, blue: 0.8274509804, alpha: 1)
+	let brickWhite: UIColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+	let brickYellow: UIColor = #colorLiteral(red: 0.9725490196, green: 0.9058823529, blue: 0.1098039216, alpha: 1)
+	let brickYellowLight: UIColor = #colorLiteral(red: 1, green: 0.968627451, blue: 0.5725490196, alpha: 1)
+	// Brick colours
     
     var livesLabel = SKLabelNode()
     var scoreLabel = SKLabelNode()
@@ -266,7 +281,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let superLaserTexture: SKTexture = SKTexture(imageNamed: "LaserSuper")
     // Laser textures
 	
-	let plainBackgroundTexture: SKTexture = SKTexture(imageNamed: "plainBackground")
+	let starterBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundStarterPack")
+	let spaceBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundSpacePack")
     
     var stickyPaddleCatches: Int = 0
 	var stickyPaddleCatchesTotal: Int = 0
@@ -510,46 +526,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Screen size and device detected
 		
-		screenBlockSideWidth = 1
-		gameWidth = frame.size.width - screenBlockSideWidth*2
+		if screenSize == "X" {
+			gameWidth = frame.size.height/2.16
+		} else {
+			gameWidth = (frame.size.height/2.16) * 1.1
+		}
+
+		//
+		screenBlockSideWidth = (frame.size.width - gameWidth)/2
+		// Same aspect ratio as the iPhone X size phones
 		
 		sideScreenBlockLeft.isHidden = true
 		sideScreenBlockRight.isHidden = true
-		sideScreenBlockLeft.position.x = -frame.size.width
-		sideScreenBlockRight.position.x = frame.size.width
+		sideScreenBlockLeft.size.width = screenBlockSideWidth
+		sideScreenBlockRight.size.width = screenBlockSideWidth
+		sideScreenBlockLeft.position.x = -gameWidth/2-screenBlockSideWidth/2
+		sideScreenBlockRight.position.x = gameWidth/2+screenBlockSideWidth/2
+		
 		numberOfBrickRows = 22
         numberOfBrickColumns = numberOfBrickRows/2
 		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
-		pauseButtonSize = layoutUnit*2
-		iconSize = layoutUnit*1.5
 		brickWidth = layoutUnit*2
 		brickHeight = layoutUnit
 		paddleGap = layoutUnit*7
+		
+		pauseButtonSize = layoutUnit*2
+		iconSize = layoutUnit*1.5
 		fontSize = 16
+		
+		screenBlockTopHeight = layoutUnit*3
 		
 		if screenSize == "X" {
 			screenBlockTopHeight = layoutUnit*7.4
 		} else if screenSize == "Pad" {
-			screenBlockSideWidth = frame.size.width/8
-			gameWidth = frame.size.width - screenBlockSideWidth*2
-			layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
-			sideScreenBlockLeft.isHidden = false
-			sideScreenBlockRight.isHidden = false
 			pauseButtonSize = layoutUnit*1.5
-			brickWidth = layoutUnit*2
-			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
-			paddleGap = layoutUnit*7
-			iconSize = layoutUnit
-			screenBlockTopHeight = iconSize*2
-			sideScreenBlockLeft.position.x = -frame.size.width/2+screenBlockSideWidth/2
-			sideScreenBlockRight.position.x = frame.size.width/2-screenBlockSideWidth/2
-		} else {
-			screenBlockTopHeight = layoutUnit*3
-			brickHeight = (gameWidth*0.87)/CGFloat(numberOfBrickRows-1)
 		}
-		
-		sideScreenBlockLeft.size.width = screenBlockSideWidth
-		sideScreenBlockRight.size.width = screenBlockSideWidth
 		
 		labelSpacing = fontSize/1.5
 		minPaddleGap = brickHeight*4
@@ -604,8 +615,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		bottomScreenBlock.size.width = frame.size.width
 		bottomScreenBlock.position.x = 0
 		bottomScreenBlock.position.y = paddlePositionY - paddle.size.height/2 - brickWidth*0.85
-		
-		background.texture = plainBackgroundTexture
+	
 		background.size.height = frame.size.height - screenBlockTopHeight
 		background.size.width = gameWidth
 		background.position.x = 0
@@ -768,8 +778,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
-		buildLabel.text = "a73214e, 29022020, \(frame.size.height)x\(frame.size.width)" //GitHub ID, Date & Time, Frame Height x Frame Width
-        // Label size & position definition
+		// Label size & position definition
+		
+		buildLabel.text = "Pre-Alpha Build 0.1.8(1) - tbc - 22/03/2020, \(frame.size.height)x\(frame.size.width), \(screenSize)"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1108,6 +1119,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		brickRemovalCounter = 0
 		// Reset brick removal counter
+		
+		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+			let sprite = node as! SKSpriteNode
+			if sprite.texture == self.brickInvisibleTexture {
+				node.isHidden = true
+			}
+			node.removeAllActions()
+			node.alpha = 1.0
+		}
+		// Reset bricks and re-hide invisible bricks
 
         powerUpsReset()
 		// Reset any gained power-ups
@@ -1379,8 +1400,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gravityActivated = false
 	}
 	
-	
-    
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
 		
         if hapticsSetting! && endlessMoveInProgress == false {
@@ -1393,30 +1412,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove laser if super-ball power up isn't activated
 		
 		if sprite.texture == brickIndestructible2Texture {
-			bricksHit[6]+=1
 			brickBounceCounter+=1
 		} else {
 			brickBounceCounter = 0
 		}
         
         switch sprite.texture {
-        case brickNormalTexture:
-			bricksHit[0]+=1
-			if sprite.isHidden {
-				let scaleDown = SKAction.scale(to: 1, duration: 0)
-                let fadeOut = SKAction.fadeOut(withDuration: 0)
-                let resetGroup = SKAction.group([scaleDown, fadeOut])
-                let scaleUp = SKAction.scale(to: 1, duration: 0)
-                let fadeIn = SKAction.fadeIn(withDuration: 0.2)
-                let brickHitGroup = SKAction.group([scaleUp, fadeIn])
-                sprite.run(resetGroup, completion: {
-                    sprite.isHidden = false
-                    sprite.run(brickHitGroup)
-                })
-			} else {
-				removeBrick(node: node, sprite: sprite)
-			}
-            break
         case brickMultiHit1Texture:
 			bricksHit[1]+=1
             sprite.texture = brickMultiHit2Texture
@@ -1438,6 +1439,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeBrick(node: node, sprite: sprite)
 			sprite.texture = brickIndestructible2Texture
             break
+		case brickIndestructible2Texture:
+			bricksHit[6]+=1
+            break
         case brickInvisibleTexture:
 			bricksHit[7]+=1
             if sprite.isHidden {
@@ -1458,6 +1462,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
             break
         default:
+		// Normal bricks
+            bricksHit[0]+=1
+			if sprite.isHidden {
+				let scaleDown = SKAction.scale(to: 1, duration: 0)
+                let fadeOut = SKAction.fadeOut(withDuration: 0)
+                let resetGroup = SKAction.group([scaleDown, fadeOut])
+                let scaleUp = SKAction.scale(to: 1, duration: 0)
+                let fadeIn = SKAction.fadeIn(withDuration: 0.2)
+                let brickHitGroup = SKAction.group([scaleUp, fadeIn])
+                sprite.run(resetGroup, completion: {
+                    sprite.isHidden = false
+                    sprite.run(brickHitGroup)
+                })
+			} else {
+				removeBrick(node: node, sprite: sprite)
+			}
             break
         }
     }
@@ -1525,7 +1545,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
 			let spriteBrick = nodeBrick as! SKSpriteNode
-			if spriteBrick.texture == self.brickNormalTexture || spriteBrick.texture == self.brickInvisibleTexture || spriteBrick.texture == self.brickMultiHit1Texture || spriteBrick.texture == self.brickMultiHit2Texture || spriteBrick.texture == self.brickMultiHit3Texture || spriteBrick.texture == self.brickMultiHit4Texture || spriteBrick.texture == self.brickIndestructible1Texture {
+			
+			if spriteBrick.texture != self.brickIndestructible2Texture {
 				
 				self.bricksLeft+=1
 				// Count the number of active bricks remaining
@@ -1583,10 +1604,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
 		}
 		
+		print("llama bricks left: ", bricksLeft)
+		
 		switch sprite.texture {
-		case brickNormalTexture:
-			bricksDestroyed[0]+=1
-			break
 		case brickMultiHit1Texture:
 			bricksDestroyed[1]+=1
 			break
@@ -1609,6 +1629,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			bricksDestroyed[7]+=1
 			break
 		default:
+		// Normal bricks
+			bricksDestroyed[0]+=1
 			break
 		}
 		
@@ -1702,6 +1724,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Only control the ball's angle if it is above the centre of the paddle
 			ballHorizontalControl(angleDegInput: angleDeg)
 		}
+		
+		var nonHiddenNodeFound = false
+		enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+			let sprite = node as! SKSpriteNode
+			if node.isHidden == false && (sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture) {
+				nonHiddenNodeFound = true
+				stop.initialize(to: true)
+			}
+		}
+		if nonHiddenNodeFound == false {
+			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+				let sprite = node as! SKSpriteNode
+				if sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
+					if sprite.texture == self.brickNormalTexture {
+						node.alpha = 0.25
+					} else {
+						node.alpha = 0.75
+					}
+					node.isHidden = false
+				}
+			}
+			let waitDuration = SKAction.wait(forDuration: 0.1)
+			let completionBlock = SKAction.run {
+				self.enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
+					let sprite = node as! SKSpriteNode
+					if sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
+						node.isHidden = true
+						node.alpha = 1.0
+					}
+				}
+			}
+			let sequence = SKAction.sequence([waitDuration, completionBlock])
+			self.run(sequence, withKey: "invisibleBrickFlash")
+		}
+		// Show hidden bricks if there are no noraml or invisible bricks showing
+		
     }
     
     func powerUpGenerator (sprite: SKSpriteNode) {
@@ -1915,7 +1973,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			var normalNodeFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickNormalTexture {
+				if sprite.texture != self.brickMultiHit1Texture && sprite.texture != self.brickMultiHit2Texture && sprite.texture != self.brickMultiHit3Texture && sprite.texture != self.brickMultiHit4Texture && sprite.texture != self.brickInvisibleTexture && sprite.texture != self.brickIndestructible1Texture && sprite.texture != self.brickIndestructible2Texture {
 					normalNodeFound = true
 					stop.initialize(to: true)
 				}
@@ -2468,7 +2526,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if temporarySprite.texture == self.brickNormalTexture || temporarySprite.texture == self.brickInvisibleTexture {
+				if temporarySprite.texture != self.brickMultiHit1Texture && temporarySprite.texture != self.brickMultiHit2Texture && temporarySprite.texture != self.brickMultiHit3Texture && temporarySprite.texture != self.brickMultiHit4Texture && temporarySprite.texture != self.brickIndestructible1Texture && temporarySprite.texture != self.brickIndestructible2Texture {
 					temporarySprite.isHidden = true
 				}
 			}
@@ -2481,7 +2539,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let completionBlock = SKAction.run {
 				self.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 					let temporarySprite = node as! SKSpriteNode
-					if node.isHidden == true && temporarySprite.texture == self.brickNormalTexture {
+					if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
 						let startingScale = SKAction.scale(to: 1, duration: 0)
 						let startingFade = SKAction.fadeOut(withDuration: 0)
 						let scaleUp = SKAction.scale(to: 1, duration: 0)
@@ -2768,7 +2826,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			let temporarySprite = node as! SKSpriteNode
-			if node.isHidden == true && temporarySprite.texture == self.brickNormalTexture {
+			if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
 				let startingScale = SKAction.scale(to: 1, duration: 0)
 				let startingFade = SKAction.fadeOut(withDuration: 0)
 				let scaleUp = SKAction.scale(to: 1, duration: 0)
@@ -2792,13 +2850,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gameViewControllerDelegate?.moveToMainMenu()
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
-    
-    func showEndLevelStats() {
-		
-		gameViewControllerDelegate?.showEndLevelStats(levelNumber: levelNumber, score: totalScore, gameoverStatus: gameoverStatus, startLevel: startLevelNumber, numberOfLevels: numberOfLevels, scoresArray: packStatsArray[packNumber].scores, depth: endlessDepth, depthArray: totalStatsArray[0].endlessModeDepth)
-    }
 	
-	func showPauseMenu() {
+	func showPauseMenu(sender: String) {
 		let pauseMenuScore = totalScore + levelScore
 		
 		if packStatsArray[packNumber].scores.count != 0 {
@@ -2812,7 +2865,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessDepthBest = totalStatsArray[0].endlessModeDepth.max()!
 		}
 		
-		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highScore: totalHighscore, packNumber: packNumber, depth: endlessDepth, depthBest: endlessDepthBest)
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highScore: totalHighscore, packNumber: packNumber, depth: endlessDepth, depthBest: endlessDepthBest, sender: sender)
 		// Pass over highscore data to pause menu
     }
 	
@@ -2853,19 +2906,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Stop paddle and ball tilt
 		
 		if paddleSensitivitySetting == 0 {
-		// Low
+		// Micro
 			paddleMovementFactor = 1
 		} else if paddleSensitivitySetting == 1 {
-		// Medium
+		// Base
 			paddleMovementFactor = 1.25
 		} else if paddleSensitivitySetting == 2 {
-		// High
+		// Kila
 			paddleMovementFactor = 1.5
 		} else if paddleSensitivitySetting == 3 {
-		// Extreme
+		// Mega
 			paddleMovementFactor = 2
 		} else if paddleSensitivitySetting == 4 {
-		// Mega
+		// Giga
 			paddleMovementFactor = 3
 		}
 		// Reset paddle sensitivity

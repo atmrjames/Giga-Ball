@@ -10,45 +10,65 @@ import Foundation
 import UIKit
 
 class LevelPackSetup {
-    let numberOfLevels: [Int] = [1, 10, 2, 0, 0 ,1]
-    let startLevelNumber: [Int] = [1, 1, 11, 21, 31, 0]
+    let numberOfLevels: [Int] = [1, 10, 10, 0, 0 ,1]
+    let startLevelNumber: [Int] = [100, 1, 11, 21, 31, 0]
     let packTitles: [String] = [
         "Tutorial",
-        "Starter Pack",
-        "Space Pack",
-        "Level Pack 3",
-        "Level Pack 4",
+        "Classic",
+        "Space",
+        "WIP",
+        "WIP",
         "Endless Mode"
     ]
     let levelImageArray: [UIImage] = [
         UIImage(named:"Level000.png")!,
-        UIImage(named:"Level001.png")!,
-        UIImage(named: "Level002.png")!,
-        UIImage(named: "Level003.png")!,
-        UIImage(named: "Level004.png")!,
-        UIImage(named: "Level005.png")!,
-        UIImage(named: "Level006.png")!,
-        UIImage(named: "Level007.png")!,
-        UIImage(named: "Level008.png")!,
-        UIImage(named: "Level009.png")!,
-        UIImage(named: "Level010.png")!,
-        UIImage(named: "Level011.png")!,
-        UIImage(named: "Level012.png")!
+        UIImage(named:"Level01Image.png")!,
+        UIImage(named: "Level02Image.png")!,
+        UIImage(named: "Level03Image.png")!,
+        UIImage(named: "Level04Image.png")!,
+        UIImage(named: "Level05Image.png")!,
+        UIImage(named: "Level06Image.png")!,
+        UIImage(named: "Level07Image.png")!,
+        UIImage(named: "Level08Image.png")!,
+        UIImage(named: "Level09Image.png")!,
+        UIImage(named: "Level10Image.png")!,
+        UIImage(named: "Level11Image.png")!,
+        UIImage(named: "Level12Image.png")!,
+        UIImage(named: "Level13Image.png")!,
+        UIImage(named: "Level14Image.png")!,
+        UIImage(named: "Level15Image.png")!,
+        UIImage(named: "Level16Image.png")!,
+        UIImage(named: "Level17Image.png")!,
+        UIImage(named: "Level18Image.png")!,
+        UIImage(named: "Level19Image.png")!,
+        UIImage(named: "Level20Image.png")!
     ]
     let levelNameArray: [String] = [
         "Endless Mode",
-        "Beginner",
-        "Block Test Vertical",
-        "Block Test Horizontal",
+        
+        // Starter Pack
+        "Checkers",
         "Electric Fence",
-        "Surfer's Paradise",
         "Gateway",
-        "MegaBall",
-        "Sundae",
+        "Surfer's Paradise",
+        "Chevron",
+        "Vignette",
+        "Cluster",
+        "Vertical Challenge",
+        "Horizontal Challenge",
         "X Marks The Spot",
-        "Comet",
+        
+        // Space Pack
         "Cresent Moon",
-        "Space Invader"
+        "Invader",
+        "Constellation",
+        "Star",
+        "Rocket",
+        "Galaxy",
+        "Meteor Shower",
+        "Neptune",
+        "Saturn",
+        "Meteorite"
     ]
     
     let powerUpImageArray: [UIImage] = [

@@ -8,7 +8,7 @@
 
 import UIKit
 
-class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource  {
+class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -42,19 +42,15 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     @IBOutlet var statsTableView: UITableView!
     // UIViewController outlets
     
+    @IBOutlet var backButtonCollectionView: UICollectionView!
+    
+    
     @IBAction func statsTitleButton(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
         statsTableView.setContentOffset(.zero, animated: true)
     }
-    @IBAction func backButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        removeAnimate()
-    }
-    // UIViewController actions
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,13 +61,20 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         statsTableView.delegate = self
         statsTableView.dataSource = self
         statsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
+        statsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         // TableView setup
+        
+        backButtonCollectionView.delegate = self
+        backButtonCollectionView.dataSource = self
+        backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Collection view setup
         
         if parallaxSetting! {
             addParallax()
         }
         setBlur()
         statsTableView.reloadData()
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
     
@@ -81,6 +84,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
+        let settingsCell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
         let numberOfAttempts = totalStatsArray[0].levelsPlayed + totalStatsArray[0].endlessModeDepth.count
         
@@ -88,6 +92,13 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         switch indexPath.row {
         case 0:
+            statsTableView.rowHeight = 70.0
+            settingsCell.centreLabel.text = ""
+            settingsCell.settingState.text = ""
+            settingsCell.settingDescription.text = "Game Center Leaderboards"
+            settingsCell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
+            return settingsCell
+        case 1:
             if numberOfAttempts == 0 {
                 cell.statDescription.text = "No statistics available"
                 cell.statValue.text = ""
@@ -96,7 +107,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].cumulativeScore)
             }
             return cell
-        case 1:
+        case 2:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -104,7 +115,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].levelsPlayed)
             }
             return cell
-        case 2:
+        case 3:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -112,7 +123,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].levelsCompleted)
             }
             return cell
-        case 3:
+        case 4:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -126,7 +137,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(completionRateString)+"%"
             }
             return cell
-        case 4:
+        case 5:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -134,7 +145,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = "00:00:00"
             }
             return cell
-        case 5:
+        case 6:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -142,7 +153,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].ballHits)
             }
             return cell
-        case 6:
+        case 7:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -150,7 +161,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].ballsLost)
             }
             return cell
-        case 7:
+        case 8:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -158,7 +169,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].bricksHit.reduce(0, +))
             }
             return cell
-        case 8:
+        case 9:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -166,7 +177,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].bricksDestroyed.reduce(0, +))
             }
             return cell
-        case 9:
+        case 10:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -174,7 +185,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].powerupsCollected.reduce(0, +))
             }
             return cell
-        case 10:
+        case 11:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -183,7 +194,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(powerupsMissed)
             }
             return cell
-        case 11:
+        case 12:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -191,7 +202,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].lasersFired)
             }
             return cell
-        case 12:
+        case 13:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -199,7 +210,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].lasersHit)
             }
             return cell
-        case 13:
+        case 14:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -212,10 +223,101 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if indexPath.row == 0 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
+            UIView.animate(withDuration: 0.1) {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.99, y: 0.99)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+            }
+            
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
+        if indexPath.row == 0 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.statsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
+        if indexPath.row == 0 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.statsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
+        }
+    }
+    
     func hideCell(cell: StatsTableViewCell) {
         cell.statValue.text = ""
         cell.statDescription.text = ""
         statsTableView.rowHeight = 0.0
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        }
     }
     
     func userSettings() {

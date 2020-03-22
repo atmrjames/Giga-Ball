@@ -9,7 +9,7 @@
 import UIKit
 import GoogleMobileAds
 
-class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     // Haptics setup
@@ -39,52 +39,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
-    @IBOutlet var levelPackCollectionView: UICollectionView!
-    // Collection view
+    @IBOutlet var modeSelectTableView: UITableView!
+    @IBOutlet var iconCollectionView: UICollectionView!
+    @IBOutlet var logoButton: UIButton!
     
     var firstLaunch: Bool = false
     // Check if this is the first opening of the app since closing to know if to run splash screen
     
-    var cellSize: CGFloat?
-    var cellSpacing: CGFloat?
-    var layout: UICollectionViewFlowLayout?
-    var currentPage: Float = 0
-    // Collection view handlers
-
-    var tutorialImage: UIImage?
-    var starterImage: UIImage?
-    var spaceImage: UIImage?
-    // Collection view images
-    
-    @IBAction func settingsButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        moveToSettings()
-    }
-    @IBAction func megaballLogoButton(_ sender: Any) {
+    @IBAction func logoButton(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
         moveToAbout()
     }
-    @IBAction func itemsButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        moveToItems()
-    }
-    @IBAction func statsButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        moveToStats()
-    }
-    // Button setup
-    
-    @IBOutlet var settingsButtonNoAds: NSLayoutConstraint!
-    @IBOutlet var settingsButtonAds: NSLayoutConstraint!
-    // Constraints
     
     @IBOutlet var bannerView: GADBannerView!
     // Ad banner view
@@ -92,26 +59,31 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        levelPackCollectionView.delegate = self
-        levelPackCollectionView.dataSource = self
-        // Setup collection view delegates
+        modeSelectTableView.delegate = self
+        modeSelectTableView.dataSource = self
+        modeSelectTableView.register(UINib(nibName: "ModeSelectTableViewCell", bundle: nil), forCellReuseIdentifier: "modeSelectCell")
+        // Levels tableView setup
+        
+        iconCollectionView.delegate = self
+        iconCollectionView.dataSource = self
+        iconCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Levels tableView setup
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnMenuNotificationKeyReceived), name: .returnMenuNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the settings menu
         
-        levelPackCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "customMainCell")
-        cellSize = view.frame.width*0.67
-        cellSpacing = 0
-        collectionViewCellSetup()
-        // Setup custom cells
-        
         print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
+        
+        logoButton.titleLabel?.adjustsFontSizeToFitWidth = true
+        
+        collectionViewLayout()
         
         defaultSettings()
         
         loadData()
-        levelPackCollectionView.reloadData()
+        modeSelectTableView.reloadData()
+        iconCollectionView.reloadData()
         // Load in NSCoder data stores
         
         userSettings()
@@ -124,7 +96,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
 
     override func viewWillAppear(_ animated: Bool) {
         loadData()
-        levelPackCollectionView.reloadData()
+        modeSelectTableView.reloadData()
+        iconCollectionView.reloadData()
         // Load in NSCoder data stores
         
         userSettings()
@@ -143,90 +116,136 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         }
     }
     
-    func collectionViewCellSetup() {
-        layout = levelPackCollectionView.collectionViewLayout as? UICollectionViewFlowLayout
-        layout!.itemSize = CGSize(width: cellSize!, height: cellSize!)
-        layout!.minimumLineSpacing = cellSpacing!
-        layout!.scrollDirection = .horizontal
-        layout!.headerReferenceSize = CGSize(width: view.frame.width * 0.33/2, height: 0)
-        layout!.footerReferenceSize = CGSize(width: view.frame.width * 0.33/2, height: 0)
-        levelPackCollectionView!.collectionViewLayout = layout!
-        levelPackCollectionView?.decelerationRate = UIScrollView.DecelerationRate.fast
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 3
     }
     
-    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        let pageWidth = Float(levelPackCollectionView!.frame.size.width)
-        let xCurrentOffset = Float(levelPackCollectionView!.contentOffset.x)
-        currentPage = floor((xCurrentOffset - pageWidth / 2) / pageWidth) + 1
-    }
-    
-    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        let pageWidth = Float(cellSize! + cellSpacing!)
-        let targetXContentOffset = Float(targetContentOffset.pointee.x)
-        let newPage = roundf(targetXContentOffset / pageWidth)
-        let targetOffsetX = CGFloat(newPage * pageWidth)
-        let point = CGPoint (x: targetOffsetX, y: targetContentOffset.pointee.y)
-        targetContentOffset.pointee = point
-    }
-    
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return 1
-    }
-
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 6
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "customMainCell", for: indexPath) as! MainMenuCollectionViewCell
-        
-        cell.highscoreLabel.isHidden = false
-        cell.purchaseLabel.isHidden = false
-        
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "modeSelectCell", for: indexPath) as! ModeSelectTableViewCell
+                
         switch indexPath.row {
         case 0:
-            cell.purchaseLabel.isHidden = true
+            cell.modeImageIcon.image = UIImage(named:"TutorialIcon.png")
+            cell.modeTextLabel.text = "Tutorial"
             
         case 1:
-            cell.purchaseLabel.isHidden = true
+            cell.modeImageIcon.image = UIImage(named:"ClassicIcon.png")
+            cell.modeTextLabel.text = "Classic Mode"
+            
         case 2:
-            cell.purchaseLabel.isHidden = true
-        case 3:
-            cell.purchaseLabel.isHidden = true
-        case 4:
-            cell.purchaseLabel.isHidden = true
-        case 5:
-            if totalStatsArray[0].endlessModeDepth.count > 0 {
-                cell.purchaseLabel.text = "Depth: " + String(totalStatsArray[0].endlessModeDepth.max()!) + " m"
-            } else {
-                cell.purchaseLabel.text = "Depth: 0 m"
-            }
+            cell.modeImageIcon.image = UIImage(named:"EndlessIcon.png")
+            cell.modeTextLabel.text = "Endless Mode"
 
         default:
             print("Error: Out of range")
             break
         }
         
-        cell.cellLabel.text = LevelPackSetup().packTitles[indexPath.row]
-        cell.subView.tag = indexPath.row
-        // Identify the cells
-        
-        if packStatsArray[indexPath.row].scores.count != 0 {
-            cell.highscoreLabel.text = String(packStatsArray[indexPath.row].scores.max()!)
-        } else {
-            cell.highscoreLabel.text = "0"
-        }
-        // Display the corresponding highscore
-        
         UIView.animate(withDuration: 0.1) {
-            cell.subView.transform = .identity
-            cell.subView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView1.transform = .identity
+            cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
         
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
+            cell.cellView1.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+        }
+        
+        if indexPath.row == 0 {
+        // Tutorial
+            levelSender = "MainMenu"
+            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[0], numberOfLevels: LevelPackSetup().numberOfLevels[0], sender: levelSender!, levelPack: 0)
+        }
+        
+        if indexPath.row == 1 {
+        // Level packs
+            moveToPackSelector()
+        }
+        
+        if indexPath.row == 2 {
+        // Endless mode
+            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[5], levelNumber: LevelPackSetup().startLevelNumber[5], packNumber: 5)
+        }
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+        tableView.reloadData()
+        // Update collection view
+    }
+    
+    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
+            cell.cellView1.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.cellView1.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
+            cell.cellView1.transform = .identity
+            cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+    }
+    
+    func collectionViewLayout() {
+        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+        
+        if view.frame.size.width <= 414 && iconCollectionView.frame.size.width != view.frame.size.width-100 {
+            iconCollectionView.frame.size.width = view.frame.size.width-100
+        }
+        // Ensures the collection view is the correct size
+        
+        let spacing = (iconCollectionView.frame.size.width-(50*3))/2
+        layout.minimumInteritemSpacing = spacing
+        layout.minimumLineSpacing = spacing
+
+        iconCollectionView!.collectionViewLayout = layout
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        3
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        
+        cell.widthConstraint.constant = 50
+        
+        switch indexPath.row {
+        case 0:
+            cell.iconImage.image = UIImage(named:"ButtonStats.png")
+        case 1:
+            cell.iconImage.image = UIImage(named:"ButtonRewards.png")
+        case 2:
+            cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+        default:
+            print("Error: Out of range")
+            break
+        }
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell        
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -234,30 +253,18 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
             interfaceHaptic.impactOccurred()
         }
         
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.levelPackCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.subView.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
-        }
-        
         if indexPath.row == 0 {
-        // Tutorial
-            levelSender = "MainMenu"
-            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[indexPath.row], numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row], sender: levelSender!, levelPack: indexPath.row)
+            moveToStats()
         }
-        
-        if indexPath.row > 0 && indexPath.row <= 2 {
-        // Level packs
-            moveToLevelSelector(packNumber: indexPath.row, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row], startLevel: LevelPackSetup().startLevelNumber[indexPath.row])
+        if indexPath.row == 1 {
+            moveToItems()
         }
-        
-        if indexPath.row == 5 {
-        // Endless mode
-            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[indexPath.row], levelNumber: LevelPackSetup().startLevelNumber[indexPath.row], packNumber: indexPath.row)
+        if indexPath.row == 2 {
+            moveToSettings()
         }
         
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
-        // Update collection view
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
@@ -265,9 +272,20 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
-            let cell = self.levelPackCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.subView.transform = .init(scaleX: 0.95, y: 0.95)
-            cell.subView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            let cell = self.iconCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            
+            switch indexPath.row {
+            case 0:
+                cell.iconImage.image = UIImage(named:"ButtonStatsHighlighted.png")
+            case 1:
+                cell.iconImage.image = UIImage(named:"ButtonRewardsHighlighted.png")
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+            default:
+                print("Error: Out of range")
+                break
+            }
         }
     }
     
@@ -276,9 +294,20 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
-            let cell = self.levelPackCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.subView.transform = .identity
-            cell.subView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            let cell = self.iconCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            
+            switch indexPath.row {
+            case 0:
+                cell.iconImage.image = UIImage(named:"ButtonStats.png")
+            case 1:
+                cell.iconImage.image = UIImage(named:"ButtonRewards.png")
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+            default:
+                print("Error: Out of range")
+                break
+            }
         }
     }
     
@@ -303,17 +332,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
     }
     // Segue to GameViewController
     
-    func moveToLevelSelector(packNumber: Int, numberOfLevels: Int, startLevel: Int) {
-        let levelSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "levelSelectorView") as! LevelSelectorViewController
-        levelSelectorView.packNumber = packNumber
-        levelSelectorView.numberOfLevels = numberOfLevels
-        levelSelectorView.startLevel = startLevel
-        self.addChild(levelSelectorView)
-        levelSelectorView.view.frame = self.view.frame
-        self.view.addSubview(levelSelectorView.view)
-        levelSelectorView.didMove(toParent: self)
+    func moveToPackSelector() {
+        let packSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "packSelectorView") as! PackSelectViewController
+        self.addChild(packSelectorView)
+        packSelectorView.view.frame = self.view.frame
+        self.view.addSubview(packSelectorView.view)
+        packSelectorView.didMove(toParent: self)
     }
-    // Segue to LevelSelectorViewController
     
     func moveToLevelStats(startLevel: Int, levelNumber: Int, packNumber: Int) {
         let levelStatsView = self.storyboard?.instantiateViewController(withIdentifier: "levelStatsView") as! LevelStatsViewController
@@ -444,19 +469,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
             bannerView.rootViewController = self
             // Configure banner ad
             
-            settingsButtonNoAds.priority = UILayoutPriority(rawValue: 250)
-            settingsButtonAds.priority = UILayoutPriority(rawValue: 999)
-            settingsButtonNoAds.isActive = false
-            settingsButtonAds.isActive = true
+//            settingsButtonNoAds.priority = UILayoutPriority(rawValue: 250)
+//            settingsButtonAds.priority = UILayoutPriority(rawValue: 999)
+//            settingsButtonNoAds.isActive = false
+//            settingsButtonAds.isActive = true
             bannerView.load(GADRequest())
             // Load banner ad
         } else {
             bannerView.isHidden = true
             
-            settingsButtonAds.priority = UILayoutPriority(rawValue: 250)
-            settingsButtonNoAds.priority = UILayoutPriority(rawValue: 999)
-            settingsButtonAds.isActive = false
-            settingsButtonNoAds.isActive = true
+//            settingsButtonAds.priority = UILayoutPriority(rawValue: 250)
+//            settingsButtonNoAds.priority = UILayoutPriority(rawValue: 999)
+//            settingsButtonAds.isActive = false
+//            settingsButtonNoAds.isActive = true
         }
     }
     // Show or hide banner ad depending on setting
@@ -465,7 +490,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UICollec
         userSettings()
         loadData()
         updateAds()
-        levelPackCollectionView.reloadData()
+        modeSelectTableView.reloadData()
+        iconCollectionView.reloadData()
     }
 }
 

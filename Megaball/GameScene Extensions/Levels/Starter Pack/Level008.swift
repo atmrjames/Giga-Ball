@@ -2,7 +2,7 @@
 //  Level008.swift
 //  Megaball
 //
-//  Created by James Harding on 18/12/2019.
+//  Created by James Harding on 08/09/2019.
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
@@ -11,7 +11,7 @@ import GameplayKit
 
 extension GameScene {
     func loadLevel8() {
-
+        
         var brickArray: [SKNode] = []
         // Array to store all bricks
 
@@ -20,67 +20,26 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if i == 21 {
-                    if j >= 3 && j <= 7 {
-                        brick.texture = brickIndestructible2Texture
-                    }
+                if j == 0 || j == 10 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickWhite
                 }
-                if i == 20 || i == 15 {
-                    if j >= 4 && j <= 6 {
-                        brick.texture = brickIndestructible2Texture
-                    }
-                }
-                if i >= 16 && i <= 19 {
-                    if j == 5 {
-                        brick.texture = brickIndestructible2Texture
-                    }
-                }
-                if i == 13 || i == 14 {
-                    if j >= 3 && j <= 7 {
-                        brick.texture = brickIndestructible2Texture
-                    }
-                }
-                if i >= 10 && i <= 12 {
-                    if j >= 2 && j <= 8 {
-                        brick.texture = brickIndestructible2Texture
-                    }
-                }
-                if i >= 5 && i <= 9 {
-                    if j >= 1 && j <= 9 {
-                        brick.texture = brickIndestructible2Texture
-                    }
-                }
-                // Indestructible bricks
                 
-                if i == 1 || i == 13 {
-                    if j == 4 || j == 5 || j == 6 {
-                        brick.texture = brickNormalTexture
-                    }
+                if j == 1 || j == 9 {
+                    brick.texture = brickInvisibleTexture
                 }
-                if i == 2 || i == 3 || (i >= 10 && i <= 12) {
-                    if j >= 3 && j <= 7 {
-                        brick.texture = brickNormalTexture
-                    }
-                }
-                if i >= 4 && i <= 9 {
-                    if j >= 2 && j <= 8 {
-                        brick.texture = brickNormalTexture
-                    }
-                }
-                // Normal bricks
                 
-                if i == 0 {
-                    if j == 5 {
-                        brick.texture = brickMultiHit1Texture
-                    }
+                if j == 3 || j == 7 {
+                    brick.texture = brickMultiHit1Texture
                 }
-                if i == 14 {
-                    if j >= 4 && j <= 6 {
-                        brick.texture = brickMultiHit1Texture
-                    }
-                }
-                // Multi-hit bricks (1)
                 
+                if j == 5 && (i == 0 || i == 1 || i == 5 || i == 6 || i == 10 || i == 11 || i == 15 || i == 16 || i == 20 || i == 21) {
+                        brick.texture = brickIndestructible1Texture
+                }
+                
+                if brick.texture == brickNormalTexture {
+                    brick.colorBlendFactor = 1.0
+                }
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brickArray.append(brick)
             }

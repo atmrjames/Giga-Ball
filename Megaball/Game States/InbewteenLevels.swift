@@ -28,9 +28,9 @@ class InbetweenLevels: GKState {
         if previousState is Playing {
             inbetweenLevels()
         }
-        if previousState is Ad {
-            scene.showEndLevelStats()
-        }
+//        if previousState is Ad {
+//            scene.showPauseMenu()
+//        }
     }
     // This function runs when this state is entered.
     
@@ -169,21 +169,8 @@ class InbetweenLevels: GKState {
                 print("Error encoding pack stats array, \(error)")
             }
             // Save pack stats only at the end of the game
-            
-            if scene.endlessMode == false {
-                let waitScene = SKAction.wait(forDuration: 1)
-                self.scene.run(waitScene, completion: {
-                    self.scene.showEndLevelStats()
-                })
-                // Show game over pop-up
-            }
-            
-        } else {
-            showAd()
         }
-        if scene.endlessMode {
-            showAd()
-        }
+        showAd()
     }
     
     func showAd() {
@@ -193,16 +180,18 @@ class InbetweenLevels: GKState {
                 self.scene.gameState.enter(Ad.self)
                 self.scene.loadInterstitial()
             } else {
-                if self.scene.endlessMode {
-                    self.scene.showEndLevelStats()
+                if self.scene.endlessMode || self.scene.gameoverStatus == true  {
+                    self.scene.showPauseMenu(sender: "Game Over")
                     // Show game over pop-up
+                } else if self.scene.levelNumber == self.scene.endLevelNumber {
+                    self.scene.showPauseMenu(sender: "Complete")
+                    // Show game complete
                 } else {
                     self.scene.gameState.enter(Playing.self)
                     // Move to the next level after a delay
                 }
             }
         })
-        
     }
     
     @objc func notificationToContinueReceived(_ notification: Notification) {

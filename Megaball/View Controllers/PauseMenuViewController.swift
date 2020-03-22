@@ -8,7 +8,7 @@
 
 import UIKit
 
-class PauseMenuViewController: UIViewController {
+class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
     
     var levelNumber: Int = 0
     var score: Int = 0
@@ -16,6 +16,7 @@ class PauseMenuViewController: UIViewController {
     var packNumber: Int = 0
     var depth: Int = 0
     var depthBest: Int = 0
+    var sender: String = ""
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
@@ -27,6 +28,16 @@ class PauseMenuViewController: UIViewController {
     var paddleSensitivitySetting: Int?
     // User settings
     
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+    let encoder = PropertyListEncoder()
+    let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
+    var packStatsArray: [PackStats] = []
+    var levelStatsArray: [LevelStats] = []
+    // NSCoder data store & encoder setup
+    
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
     var group: UIMotionEffectGroup?
@@ -35,34 +46,15 @@ class PauseMenuViewController: UIViewController {
     var endlessMode: Bool = false
     
     @IBOutlet var backgroundView: UIView!
-    @IBOutlet weak var pauseView: UIView!
+    @IBOutlet var containterView: UIView!
     @IBOutlet weak var levelNumberLabel: UILabel!
     @IBOutlet weak var scoreLabel: UILabel!
+    @IBOutlet var scoreLabelTitle: UILabel!
     @IBOutlet weak var highscoreLabel: UILabel!
     @IBOutlet weak var highscoreLabelTitle: UILabel!
+    @IBOutlet var buttonCollectionView: UICollectionView!
+    @IBOutlet var titleLabel: UILabel!
     
-    @IBAction func returnToMainMenuButton(_ sender: UIButton) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        showWarning(senderID: "pauseMenu")
-    }
-    
-    @IBAction func playButtonPressed(_ sender: UIButton) {        
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        removeAnimate(nextAction: .unpause)
-    }
-    
-    @IBAction func settingsButton(_ sender: UIButton) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        hideAnimate()
-        moveToSettings()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -71,10 +63,10 @@ class PauseMenuViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(self.killBallRemoveVCKeyReceived), name: .killBallRemoveVC, object: nil)
         // Sets up an observer to watch for notifications to check if the user has killed the ball from the settings menu to then remove the pause menu
         
-//        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
-//        swipeDown.direction = .down
-//        view.addGestureRecognizer(swipeDown)
-//        // Setup swipe gesture
+        buttonCollectionView.delegate = self
+        buttonCollectionView.dataSource = self
+        buttonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Levels tableView setup
         
         if levelNumber == 0 {
             endlessMode = true
@@ -87,10 +79,151 @@ class PauseMenuViewController: UIViewController {
         if parallaxSetting! {
             addParallaxToView()
         }
+        loadData()
         updateLabels()
+        buttonCollectionView.reloadData()
         showAnimate()
     }
     
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        3
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 75
+        cell.frame.size.width = cell.frame.size.height
+        
+        switch indexPath.row {
+        case 0:
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            cell.widthConstraint.constant = 40
+        case 1:
+            if self.sender == "Pause" {
+                cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            }
+            cell.widthConstraint.constant = 75
+        case 2:
+            if self.sender == "Pause" {
+                cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonRestart.png")
+            }
+            cell.widthConstraint.constant = 40
+        default:
+            print("Error: Out of range")
+            break
+        }
+
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if indexPath.row == 0 {
+            if self.hapticsSetting! {
+                self.interfaceHaptic.impactOccurred()
+            }
+            showWarning(senderID: "pauseMenu")
+        }
+        if indexPath.row == 1 {
+            if self.sender == "Pause" {
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
+                removeAnimate(nextAction: .unpause)
+            }
+        }
+        if indexPath.row == 2 {
+            if self.hapticsSetting! {
+                self.interfaceHaptic.impactOccurred()
+            }
+            if self.sender == "Pause" {
+                hideAnimate()
+                moveToSettings()
+            } else {
+                removeAnimate(nextAction: .restartGameNotificiation)
+            }
+        }
+        
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.buttonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            
+            switch indexPath.row {
+            case 0:
+                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+            case 1:
+                if self.sender == "Pause" {
+                    cell.iconImage.image = UIImage(named:"ButtonPauseHighlighted.png")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                }
+            case 2:
+                if self.sender == "Pause" {
+                    cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonRestartHighlighted.png")
+                }
+            default:
+                print("Error: Out of range")
+                break
+            }
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.buttonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            
+            
+            switch indexPath.row {
+            case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
+                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            case 1:
+                if self.sender == "Pause" {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                }
+            case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
+                if self.sender == "Pause" {
+                    cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonRestart.png")
+                }
+            default:
+                print("Error: Out of range")
+                break
+            }
+        }
+    }
+
     func setBlur() {
         backgroundView.backgroundColor = .clear
         // 1: change the superview transparent
@@ -133,15 +266,54 @@ class PauseMenuViewController: UIViewController {
     }
     
     func updateLabels() {
+        if sender == "Pause" {
+            titleLabel.text = "P A U S E D"
+        } else if sender == "Game Over" {
+            titleLabel.text = "G A M E   O V E R"
+        } else if sender == "Complete" {
+            titleLabel.text = "C O M P L E T E"
+        }
+    
         if endlessMode {
             levelNumberLabel.text = String(LevelPackSetup().levelNameArray[levelNumber])
-            scoreLabel.text = "\(score), \(depth) m"
-            highscoreLabel.text = "\(highScore), \(depthBest) m"
+            
+            scoreLabelTitle.text = "Height"
+            scoreLabel.text = "\(depth) m"
+            highscoreLabelTitle.text = "Best"
+            highscoreLabel.text = "\(depthBest) m"
+            
+            if depth > depthBest {
+                scoreLabelTitle.text = "New Best Height"
+                highscoreLabelTitle.text = "Previous Best Height"
+                
+                var previousBestHeight = 0
+                if totalStatsArray[0].endlessModeDepth.count > 1 {
+                    var heightsArray = totalStatsArray[0].endlessModeDepth
+                    heightsArray.sort(by: >)
+                    previousBestHeight = heightsArray[1]
+                }
+                highscoreLabel.text = "\(previousBestHeight) m"
+            }
+
         } else {
-            let startLevel = LevelPackSetup().startLevelNumber[packNumber]
-            levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-startLevel+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+            if levelNumber == 100 {
+                levelNumberLabel.text = "Tutorial"
+            } else {
+                levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+            }
+            scoreLabelTitle.text = "Score"
             scoreLabel.text = String(score)
+            highscoreLabelTitle.text = "Highscore"
             highscoreLabel.text = String(highScore)
+            
+            if score > highScore {
+                scoreLabelTitle.text = "New Highscore"
+                highscoreLabelTitle.text = "Previous Highscore"
+                
+                var previousHighscore = 0
+//              get previous highscore of current pack or level being played
+                highscoreLabel.text = "\(previousHighscore)"
+            }
         }
     }
     
@@ -161,15 +333,15 @@ class PauseMenuViewController: UIViewController {
     
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
-            self.pauseView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-            self.pauseView.alpha = 0.0
+            self.containterView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+            self.containterView.alpha = 0.0
         })
     }
     
     func revealAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
-            self.pauseView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-            self.pauseView.alpha = 1.0
+            self.containterView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            self.containterView.alpha = 1.0
         })
     }
     
@@ -185,13 +357,13 @@ class PauseMenuViewController: UIViewController {
         vertical.maximumRelativeValue = amount
         
         if group != nil {
-            pauseView.removeMotionEffect(group!)
+            containterView.removeMotionEffect(group!)
         }
         // Remove parallax before reapplying
 
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
-        pauseView.addMotionEffect(group!)
+        containterView.addMotionEffect(group!)
     }
     
     func moveToSettings() {
@@ -210,6 +382,35 @@ class PauseMenuViewController: UIViewController {
         warningView.view.frame = self.view.frame
         self.view.addSubview(warningView.view)
         warningView.didMove(toParent: self)
+    }
+    
+    func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
+        if let packData = try? Data(contentsOf: packStatsStore!) {
+            do {
+                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+            } catch {
+                print("Error decoding pack stats array, \(error)")
+            }
+        }
+        // Load the pack stats array from the NSCoder data store
+        
+        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+            do {
+                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+            } catch {
+                print("Error decoding level stats array, \(error)")
+            }
+        }
+        // Load the level stats array from the NSCoder data store
     }
     
     @objc func returnPauseNotificationKeyReceived(_ notification: Notification) {

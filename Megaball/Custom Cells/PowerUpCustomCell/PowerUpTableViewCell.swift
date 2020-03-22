@@ -10,10 +10,11 @@ import UIKit
 
 class PowerUpTableViewCell: UITableViewCell {
     
-    @IBOutlet var cellView: UIView!
+    @IBOutlet var cellView4: UIView!
     @IBOutlet var powerUpImageView: UIImageView!
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var chevronButton: UIButton!
+    @IBOutlet var detailLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()

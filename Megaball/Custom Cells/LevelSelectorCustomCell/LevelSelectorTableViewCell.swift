@@ -10,7 +10,7 @@ import UIKit
 
 class LevelSelectorTableViewCell: UITableViewCell {
     
-    @IBOutlet var cellView: UIView!
+    @IBOutlet var cellView3: UIView!
     @IBOutlet var levelImage: UIImageView!
     @IBOutlet var levelLabel: UILabel!
     @IBOutlet var levelNameLabel: UILabel!

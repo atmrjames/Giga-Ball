@@ -2,7 +2,7 @@
 //  Level007.swift
 //  Megaball
 //
-//  Created by James Harding on 18/12/2019.
+//  Created by James Harding on 05/03/2020.
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
@@ -18,74 +18,60 @@ extension GameScene {
         for i in 0..<numberOfBrickRows {
             for j in 0..<numberOfBrickColumns {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
-                brick.texture = brickNormalTexture
+                brick.texture = brickNullTexture
                 
-                if i == 0 || i == 21 {
-                    if j <= 3 || j >= 7 {
-                        brick.texture = brickNullTexture
-                    }
+                if j == 5 && i >= 0 && i <= 9 {
+                    brick.texture = brickIndestructible1Texture
                 }
-                if i == 1 || i == 20 {
-                    if j <= 2 || j >= 8 {
-                        brick.texture = brickNullTexture
-                    }
+                if (j == 4 || j == 6) && i >= 2 && i <= 7 {
+                    brick.texture = brickIndestructible1Texture
                 }
-                if i == 2 || i == 19 || i == 3 || i == 18 {
-                    if j <= 1 || j >= 9 {
-                        brick.texture = brickNullTexture
-                    }
+                if (j == 3 || j == 7) && (i == 4 || i == 5) {
+                    brick.texture = brickIndestructible1Texture
                 }
-                if (i >= 4 && i <= 7) || (i >= 14 && i <= 17)  {
-                    if j == 0 || j == 10 {
-                        brick.texture = brickNullTexture
-                    }
+                if (j == 2 || j == 8) && (i == 12 || i == 14) {
+                    brick.texture = brickIndestructible1Texture
                 }
-                // Null bricks
+                if (j == 1 || j == 3 || j == 7 || j == 9) && i == 13 {
+                    brick.texture = brickIndestructible1Texture
+                }
                 
-                if i == 5 || i == 16 {
-                    if j == 5 {
-                        brick.texture = brickInvisibleTexture
-                    }
+                if j == 5 && i >= 2 && i <= 7 {
+                    brick.texture = brickIndestructible2Texture
                 }
-                if i == 6 || i == 15 {
-                    if j >= 4 && j <= 6 {
-                        brick.texture = brickInvisibleTexture
-                    }
+                if (j == 4 || j == 6) && i >= 3 && i <= 6 {
+                    brick.texture = brickIndestructible2Texture
                 }
-                if i == 7 || i == 14 {
-                    if j >= 3 && j <= 7 {
-                        brick.texture = brickInvisibleTexture
-                    }
+                if (j == 2 || j == 8) && i == 13 {
+                    brick.texture = brickIndestructible2Texture
                 }
-                if i == 8 || i == 13 || i == 9 || i == 12 {
-                    if j >= 2 && j <= 8 {
-                        brick.texture = brickInvisibleTexture
-                    }
-                }
-                if i == 10 || i == 11 {
-                    if j >= 1 && j <= 9 {
-                        brick.texture = brickInvisibleTexture
-                    }
-                }
-                // Invisible bricks
                 
-                if j >= 3 && j <= 7 {
-                    if i == 8 {
-                        brick.texture = brickIndestructible2Texture
-                    }
+                if j == 5 && i >= 16 && i <= 21 {
+                    brick.texture = brickMultiHit2Texture
                 }
-                if j == 3 || j == 5 || j == 7 {
-                    if i >= 9 && i <= 11 {
-                        brick.texture = brickIndestructible2Texture
-                    }
+                if j >= 4 && j <= 6 && i >= 18 && i <= 19 {
+                    brick.texture = brickMultiHit2Texture
                 }
-                if j == 3 || j == 7 {
-                    if i >= 12 && i <= 13 {
-                        brick.texture = brickIndestructible2Texture
-                    }
-                }
-                // Indestructible bricks
                 
+                if j == 5 && (i == 18 || i == 19) {
+                    brick.texture = brickMultiHit1Texture
+                }
+                
+                if (j == 1 || j == 9) && (i == 0 || i == 2 || i == 7 || i == 9) {
+                    brick.texture = brickInvisibleTexture
+                }
+                if (j == 0 || j == 2 || j == 8 || j == 10) && (i == 1 || i == 8) {
+                    brick.texture = brickInvisibleTexture
+                }
+                
+                if (j == 1 || j == 9) && (i == 1 || i == 8) {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGreenGigaball
+                }
+                
+                if brick.texture == brickNormalTexture {
+                    brick.colorBlendFactor = 1.0
+                }
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brickArray.append(brick)
             }

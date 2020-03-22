@@ -36,27 +36,37 @@ extension GameScene {
                 
                 if j == 4 && (i == 0 || i == 21) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 if j == 5 && ((i >= 0 && i <= 1) || (i >= 20 && i <= 21)) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 if j == 6 && ((i >= 0 && i <= 3) || (i >= 18 && i <= 21)) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 if j == 7 && ((i >= 1 && i <= 6) || (i >= 15 && i <= 20)) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 if j == 8 && (i >= 2 && i <= 19) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 if j == 9 && (i >= 4 && i <= 17) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 if j == 10 && (i >= 7 && i <= 14) {
                     brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
                 }
                 // Normal bricks
                 
+                if brick.texture == brickNormalTexture {
+                    brick.colorBlendFactor = 1.0
+                }
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brickArray.append(brick)
             }

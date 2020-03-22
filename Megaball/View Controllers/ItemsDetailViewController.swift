@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -19,10 +19,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var paddleSensitivitySetting: Int?
     // User settings
     
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
     let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
     var packStatsArray: [PackStats] = []
     var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
@@ -41,20 +43,15 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     @IBOutlet var unlockedLabel: UILabel!
     // UIViewController outlets
     
-    @IBAction func itemsTitleButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        itemsTableView.setContentOffset(.zero, animated: true)
-    }
-    @IBAction func backButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
-        removeAnimate()
-    }
-    // UIViewController actions
+    @IBOutlet var backButtonCollectionView: UICollectionView!
+    
+    
+//    @IBAction func itemsTitleButton(_ sender: Any) {
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
+//        itemsTableView.setContentOffset(.zero, animated: true)
+//    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -67,15 +64,22 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         itemsTableView.register(UINib(nibName: "PowerUpTableViewCell", bundle: nil), forCellReuseIdentifier: "powerUpCell")
         // TableView setup
         
+        backButtonCollectionView.delegate = self
+        backButtonCollectionView.dataSource = self
+        backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Collection view setup
+        
         switch senderID {
         case 0:
-            titleLabel.text = "Paddles"
+            titleLabel.text = "GAME CENTER CHALLENGES"
         case 1:
-            titleLabel.text = "Balls"
+            titleLabel.text = "PADDLES"
         case 2:
-            titleLabel.text = "Power-Ups"
+            titleLabel.text = "BALLS"
         case 3:
-            titleLabel.text = "App Icons"
+            titleLabel.text = "POWER-UPS"
+        case 4:
+            titleLabel.text = "APP ICONS"
         default:
             break
         }
@@ -88,6 +92,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             addParallax()
         }
         itemsTableView.reloadData()
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
     
@@ -100,10 +105,19 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         cell.powerUpImageView.image = LevelPackSetup().powerUpImageArray[indexPath.row]
         cell.titleLabel.text = LevelPackSetup().powerUpNameArray[indexPath.row]
+
+        if totalStatsArray[0].powerupsGenerated[indexPath.row] > 0 {
+            
+            let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[indexPath.row]) / Double(totalStatsArray[0].powerupsGenerated[indexPath.row])
+            cell.detailLabel.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
+            
+        } else {
+            cell.detailLabel.text = ""
+        }
         
         UIView.animate(withDuration: 0.2) {
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView4.transform = .identity
+            cell.cellView4.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
         
         return cell
@@ -113,8 +127,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         UIView.animate(withDuration: 0.2) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! PowerUpTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            cell.cellView4.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView4.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
         
         if hapticsSetting! {
@@ -135,8 +149,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         UIView.animate(withDuration: 0.1) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! PowerUpTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            cell.cellView4.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView4.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
@@ -146,8 +160,59 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         UIView.animate(withDuration: 0.1) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! PowerUpTableViewCell
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView4.transform = .identity
+            cell.cellView4.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+        NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
         }
     }
     
@@ -171,6 +236,16 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func loadData() {
+        
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
         if let packData = try? Data(contentsOf: packStatsStore!) {
             do {
                 packStatsArray = try decoder.decode([PackStats].self, from: packData)

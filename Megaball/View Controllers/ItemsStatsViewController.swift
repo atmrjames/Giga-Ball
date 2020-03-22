@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -43,13 +43,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var descriptionLabel: UILabel!
     @IBOutlet var statsTableView: UITableView!
     
-    @IBAction func backButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        NotificationCenter.default.post(name: .returnItemStatsNotification, object: nil)
-        removeAnimate()
-    }
+    @IBOutlet var backButtonCollectionView: UICollectionView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -59,6 +53,11 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         statsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
         // TableView setup
         
+        backButtonCollectionView.delegate = self
+        backButtonCollectionView.dataSource = self
+        backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
+        // Collection view setup
+        
         userSettings()
         loadData()
         
@@ -67,6 +66,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         }
         updateLabels()
         statsTableView.reloadData()
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
 
@@ -121,6 +121,57 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             return cell
         default:
             return cell
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
+        
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+        NotificationCenter.default.post(name: .returnItemStatsNotification, object: nil)
+        collectionView.deselectItem(at: indexPath, animated: true)
+        collectionView.reloadData()
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
+            cell.view.transform = .identity
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
         }
     }
     
@@ -213,7 +264,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     
     func updateLabels() {
 
-        titleLabel.text = LevelPackSetup().powerUpNameArray[powerUpIndex!]
+        titleLabel.text = LevelPackSetup().powerUpNameArray[powerUpIndex!].uppercased()
         powerUpImage.image = LevelPackSetup().powerUpImageArray[powerUpIndex!]
 //        powerUpActionImage.image = ""
         descriptionLabel.text = LevelPackSetup().powerUpDescriptionArray[powerUpIndex!]

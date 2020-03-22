@@ -2,7 +2,7 @@
 //  Level005.swift
 //  Megaball
 //
-//  Created by James Harding on 18/12/2019.
+//  Created by James Harding on 05/03/2020.
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
@@ -20,66 +20,60 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if i == 20 || i == 21 {
+                if (i == 15 || i == 14) && j == 5 {
+                    brick.texture = brickIndestructible2Texture
+                }
+                if (i == 12 || i == 13) && j >= 4 && j <= 6  {
+                    brick.texture = brickIndestructible2Texture
+                }
+                if (i == 10 || i == 11) && j >= 3 && j <= 7  {
+                    brick.texture = brickIndestructible2Texture
+                }
+                if (i == 8 || i == 9) && j >= 2 && j <= 8  {
+                    brick.texture = brickIndestructible2Texture
+                }
+                if (i == 6 || i == 7) && j >= 1 && j <= 9  {
+                    brick.texture = brickIndestructible2Texture
+                }
+                
+                if i == 8 && j >= 3 && j <= 7 {
+                    brick.texture = brickIndestructible1Texture
+                }
+                
+                if i == 2 || i == 3 {
                     brick.texture = brickNormalTexture
+                    brick.color = brickPink
                 }
-                if i == 18 || i == 19 {
-                    if j <= 7 {
-                        brick.texture = brickNormalTexture
-                    }
+                
+                if (i == 4 || i == 5) && j >= 1 && j <= 9 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
                 }
-                if i == 16 || i == 17 {
-                    if j <= 5 {
-                        brick.texture = brickNormalTexture
-                    }
+                
+                if (i == 6 || i == 7) && j >= 2 && j <= 8 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickPurple
                 }
-                if i == 14 || i == 15 {
-                    if j <= 4 {
-                        brick.texture = brickNormalTexture
-                    }
+                
+                if i == 8 && (j == 1 || j == 9) {
+                    brick.texture = brickInvisibleTexture
                 }
-                if i == 13 {
-                    if j >= 1 && j <= 4 {
-                        brick.texture = brickNormalTexture
-                    }
+                if i == 10 && (j == 2 || j == 8) {
+                    brick.texture = brickInvisibleTexture
                 }
-                if i == 11 || i == 12 {
-                    if j >= 1 && j <= 3 {
-                        brick.texture = brickNormalTexture
-                    }
+                if i == 12 && (j == 3 || j == 7) {
+                    brick.texture = brickInvisibleTexture
                 }
-                if i == 10 {
-                    if j >= 2 && j <= 3 {
-                        brick.texture = brickNormalTexture
-                    }
+                if i == 14 && (j == 4 || j == 6) {
+                    brick.texture = brickInvisibleTexture
                 }
-                if i == 8 || i == 9 {
-                    if j >= 2 && j <= 4 {
-                        brick.texture = brickNormalTexture
-                    }
+                if i == 16 && j == 5 {
+                    brick.texture = brickInvisibleTexture
                 }
-                if i == 7 {
-                    if (j >= 3 && j <= 6) || j == 10 {
-                        brick.texture = brickNormalTexture
-                    }
-                }
-                if i == 6 {
-                    if (j >= 3 && j <= 6) || (j >= 8 && j <= 9) {
-                        brick.texture = brickNormalTexture
-                    }
-                }
-                if i == 5 {
-                    if j >= 4 && j <= 8 {
-                        brick.texture = brickNormalTexture
-                    }
-                }
-                if i == 4 {
-                    if j >= 5 && j <= 7 {
-                        brick.texture = brickNormalTexture
-                    }
-                }
-                // Normal bricks
 
+                if brick.texture == brickNormalTexture {
+                    brick.colorBlendFactor = 1.0
+                }
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 brickArray.append(brick)
             }

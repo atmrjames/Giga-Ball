@@ -52,7 +52,7 @@ class Paused: GKState {
             scene.interfaceHaptic.impactOccurred()
         }
 
-        scene.showPauseMenu()
+        scene.showPauseMenu(sender: "Pause")
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.killBallNotificationKeyReceived), name: .killBallNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu

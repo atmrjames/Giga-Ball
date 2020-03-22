@@ -21,6 +21,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     weak var menuViewControllerDelegate:MenuViewControllerDelegate?
     // Create the delegate property for the MenuViewController
     
+    @IBOutlet var gameView: UIView!
+    
     var selectedLevel: Int?
     var numberOfLevels: Int?
     var levelSender: String?
@@ -97,32 +99,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     
     func moveToMainMenu() {
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
-        NotificationCenter.default.post(name: .returnLevelSelectNotification, object: nil)
+        NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
         navigationController?.popToRootViewController(animated: true)
     }
     // Segue to MenuViewController
     
-    func showEndLevelStats(levelNumber: Int, score: Int, gameoverStatus: Bool, startLevel: Int, numberOfLevels: Int, scoresArray: [Int], depth: Int, depthArray: [Int]) {
-        let endLevelVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenLevelsVC") as! EndGameViewController
-        endLevelVC.levelNumber = levelNumber
-        endLevelVC.score = score
-        endLevelVC.gameoverStatus = gameoverStatus
-        endLevelVC.startLevel = selectedLevel!
-        endLevelVC.numberOfLevels = numberOfLevels
-        endLevelVC.scoresArray = scoresArray
-        endLevelVC.depth = depth
-        endLevelVC.depthArray = depthArray
-        // Update popup view controller properties with function input values
-
-        self.addChild(endLevelVC)
-        endLevelVC.view.frame = self.view.frame
-        self.view.addSubview(endLevelVC.view)
-        endLevelVC.didMove(toParent: self)
-    }
-    // Show InbetweenLevelsViewController as popup
-    
-    func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int) {
+    func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int, sender: String) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
         pauseMenuVC.score = score
@@ -130,6 +113,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         pauseMenuVC.packNumber = packNumber
         pauseMenuVC.depth = depth
         pauseMenuVC.depthBest = depthBest
+        pauseMenuVC.sender = sender
         // Update pause menu view controller properties with function input values
 
         self.addChild(pauseMenuVC)

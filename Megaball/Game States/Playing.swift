@@ -153,11 +153,15 @@ class Playing: GKState {
         
         switch scene.levelNumber {
         
+        // Tutorial
+        case 100:
+            scene.loadLevel100()
+            
         // Endless mode
         case 0:
             scene.loadLevel0()
             
-        // Starter Pack
+        // Classic
         case 1:
             scene.loadLevel1()
         case 2:
@@ -179,27 +183,27 @@ class Playing: GKState {
         case 10:
             scene.loadLevel10()
             
-        // Space Pack
+        // Space
         case 11:
             scene.loadLevel11()
         case 12:
             scene.loadLevel12()
-//        case 13:
-//            scene.loadLevel13()
-//        case 14:
-//            scene.loadLevel14()
-//        case 15:
-//            scene.loadLevel15()
-//        case 16:
-//            scene.loadLevel16()
-//        case 17:
-//            scene.loadLevel17()
-//        case 18:
-//            scene.loadLevel18()
-//        case 19:
-//            scene.loadLevel19()
-//        case 20:
-//            scene.loadLevel20()
+        case 13:
+            scene.loadLevel13()
+        case 14:
+            scene.loadLevel14()
+        case 15:
+            scene.loadLevel15()
+        case 16:
+            scene.loadLevel16()
+        case 17:
+            scene.loadLevel17()
+        case 18:
+            scene.loadLevel18()
+        case 19:
+            scene.loadLevel19()
+        case 20:
+            scene.loadLevel20()
             
         default:
             break
