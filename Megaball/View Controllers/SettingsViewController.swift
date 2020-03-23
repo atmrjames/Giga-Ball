@@ -180,21 +180,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.settingDescription.text = "Paddle Sensitivity"
             cell.centreLabel.text = ""
             if paddleSensitivitySetting == 0 {
-                cell.settingState.text = "micro"
+                cell.settingState.text = "x1.00"
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             } else if paddleSensitivitySetting == 1 {
-                cell.settingState.text = "base"
+                cell.settingState.text = "x1.25"
                 cell.settingState.textColor = #colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1)
             } else if paddleSensitivitySetting == 2 {
-                cell.settingState.text = "kila"
+                cell.settingState.text = "x1.50"
                 cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
             } else if paddleSensitivitySetting == 3 {
-                cell.settingState.text = "mega"
+                cell.settingState.text = "x2.00"
                 cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
             } else if paddleSensitivitySetting == 4 {
-                cell.settingState.text = "giga"
-                cell.settingState.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                cell.settingState.text = "x3.00"
+                cell.settingState.textColor = #colorLiteral(red: 0.3098039329, green: 0.01568627544, blue: 0.1294117719, alpha: 1)
             }
+            
         case 6:
         // Reset game data
             if navigatedFrom! != "PauseMenu" {
@@ -541,9 +542,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             totalStatsArray[index].bricksDestroyed = [0, 0, 0, 0, 0, 0, 0, 0]
             totalStatsArray[index].lasersFired = 0
             totalStatsArray[index].lasersHit = 0
-            
-            totalStatsArray[index].endlessModeDepth = []
-            totalStatsArray[index].endlessModeDepthDate = []
+            totalStatsArray[index].endlessModeHeight.removeAll()
+            totalStatsArray[index].endlessModeHeightDate.removeAll()
         }
         do {
             let data = try encoder.encode(self.totalStatsArray)
@@ -554,8 +554,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         for i in 1...packStatsArray.count {
             let index = i-1
-            packStatsArray[index].scores = []
-            packStatsArray[index].scoreDates = []
+            packStatsArray[index].scores.removeAll()
+            packStatsArray[index].scoreDates.removeAll()
             packStatsArray[index].numberOfCompletes = 0
         }
         do {
@@ -567,8 +567,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         for i in 1...levelStatsArray.count {
             let index = i-1
-            levelStatsArray[index].scores = []
-            levelStatsArray[index].scoreDates = []
+            levelStatsArray[index].scores.removeAll()
+            levelStatsArray[index].scoreDates.removeAll()
             levelStatsArray[index].numberOfCompletes = 0
         }
         do {

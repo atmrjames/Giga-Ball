@@ -76,8 +76,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         
         cell.centreLabel.text = ""
         cell.settingState.text = ""
-        
         cell.settingDescription.text = LevelPackSetup().packTitles[indexPath.row+1]
+        
+        if indexPath.row > 1 {
+            cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+        }
         
         UIView.animate(withDuration: 0.2) {
             cell.cellView2.transform = .identity
@@ -99,8 +102,10 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             interfaceHaptic.impactOccurred()
         }
         
-        hideAnimate()
-        moveToLevelSelector(packNumber: indexPath.row+1, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+1], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+1])
+        if indexPath.row < 2 {
+            hideAnimate()
+            moveToLevelSelector(packNumber: indexPath.row+1, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+1], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+1])
+        }
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()

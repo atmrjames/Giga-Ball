@@ -27,6 +27,7 @@ extension GameScene {
             for j in 0..<numberOfBrickColumns {
                 
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
+                brick.texture = brickNullTexture
                 brick.alpha = 0.0
                 
                 if randomRow >= 0 && randomRow <= 90 {
@@ -103,9 +104,6 @@ extension GameScene {
                 
                 brick.size.width = brickWidth
                 brick.size.height = brickHeight
-//                brick.centerRect = CGRect(x: 6.0/16.0, y: 6.0/16.0, width: 4.0/16.0, height: 4.0/16.0)
-//                brick.scale(to:CGSize(width: brickWidth, height: brickHeight))
-//                // Set brick size without stretching edges
                 brick.anchorPoint.x = 0.5
                 brick.anchorPoint.y = 0.5
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))

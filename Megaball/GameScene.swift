@@ -39,7 +39,7 @@ enum CollisionTypes: UInt32 {
 
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
-	func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int, sender: String)
+	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String)
 	func createInterstitial()
 	func loadInterstitial()
 	var selectedLevel: Int? { get }
@@ -364,7 +364,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var cumulativeScore: Int = 0
     var levelsPlayed: Int = 0
     var levelsCompleted: Int = 0
-	var endlessModeDepth: [Int] = []
 	var ballHits: Int = 0
 	var ballsLost: Int = 0
 	var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -377,7 +376,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Stats trackers
 	
 	var finalBrickRowHeight: CGFloat = 0
-	var endlessDepth: Int = 0
+	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
 	// Endless mode
 	
@@ -780,7 +779,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Pre-Alpha Build 0.1.8(1) - tbc - 22/03/2020, \(frame.size.height)x\(frame.size.width), \(screenSize)"
+		buildLabel.text = "Alpha Build 0.2.0(1) - TBC - 23/03/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1163,7 +1162,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplier = 1.0
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			livesLabel.text = "\(endlessDepth) m"
+			scoreLabel.text = "\(endlessHeight) m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Reset score multiplier
@@ -1248,29 +1247,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 				
 				frameBallControl(xSpeed: -xSpeedLive)
-				
-				if superballDeactivate {
-					deactivateSuperball()
-				}
-				// Deactivate superball power-up
-				if gravityDeactivate {
-					deactivateGravity()
-				}
-				// Deactivate gravity power-up
 
 			}
 			// Ball hits Frame
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.screenBlockCategory.rawValue {
-				
-				if superballDeactivate {
-					deactivateSuperball()
-				}
-				// Deactivate superball power-up
-				if gravityDeactivate {
-					deactivateGravity()
-				}
-				// Deactivate gravity power-up
 				
 				let frameBlockNode = secondBody.node
 				let frameBlockSprite = frameBlockNode as! SKSpriteNode
@@ -1280,6 +1261,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					frameBallControl(xSpeed: -xSpeedLive)
 				} else {
 				// Ball hits top block
+					if superballDeactivate {
+						deactivateSuperball()
+					}
+					// Deactivate superball power-up
+					if gravityDeactivate {
+						deactivateGravity()
+					}
+					// Deactivate gravity power-up
+					
 					if ySpeedLive < 0 {
 						ball.physicsBody!.velocity = CGVector(dx: xSpeedLive, dy: ySpeedLive)
 					} else {
@@ -1512,8 +1502,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		buildNewEndlessRow(numberOfRows: numberOfCyclesRounded, duration: duration)
 		
-		endlessDepth+=1*numberOfCyclesRounded
-		// Keep track of depth travelled. 1 = 1 row of bricks
+		endlessHeight+=1*numberOfCyclesRounded
+		// Keep track of height travelled. 1 = 1 row of bricks
 		
 		if multiplier < 2.0 {
 			multiplier = multiplier + 0.1 * Double(numberOfCyclesRounded)
@@ -1522,10 +1512,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		levelScore = levelScore + Int(100 * multiplier) * numberOfCyclesRounded
-        scoreLabel.text = String(totalScore + levelScore)
+		if endlessMode == false {
+			scoreLabel.text = String(totalScore + levelScore)
+		}
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			livesLabel.text = "\(endlessDepth) m"
+			scoreLabel.text = "\(endlessHeight) m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Update multiplier & score
@@ -1645,10 +1637,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Update multiplier
 		
         levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
-        scoreLabel.text = String(totalScore + levelScore)
+		if endlessMode == false {
+			scoreLabel.text = String(totalScore + levelScore)
+		}
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			livesLabel.text = "\(endlessDepth) m"
+			scoreLabel.text = "\(endlessHeight) m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Update score
@@ -1693,14 +1687,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 				paddleMoved = true
 				ball.position.y = ballStartingPositionY
+				invisibleBrickFlash()
 				return
 				// Don't try to adjust the ball's angle if it is on the paddle
 			
 			} else if ballIsOnPaddle == false && ball.position.y >= paddle.position.y + paddle.size.height/2 {
 			// Only applies if the ball hits the top surface of the paddle
-				
-				
-				
+
 				angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
 				// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
 				
@@ -1725,6 +1718,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballHorizontalControl(angleDegInput: angleDeg)
 		}
 		
+		invisibleBrickFlash()
+		
+    }
+	
+	func invisibleBrickFlash() {
 		var nonHiddenNodeFound = false
 		enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 			let sprite = node as! SKSpriteNode
@@ -1745,7 +1743,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					node.isHidden = false
 				}
 			}
-			let waitDuration = SKAction.wait(forDuration: 0.1)
+			let waitDuration = SKAction.wait(forDuration: 0.2)
 			let completionBlock = SKAction.run {
 				self.enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 					let sprite = node as! SKSpriteNode
@@ -1759,8 +1757,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.run(sequence, withKey: "invisibleBrickFlash")
 		}
 		// Show hidden bricks if there are no noraml or invisible bricks showing
-		
-    }
+	}
     
     func powerUpGenerator (sprite: SKSpriteNode) {
 		
@@ -1896,7 +1893,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Don't show if power-up already falling
 		case 8:
 		// Bonus points
-			if powerUpIdentityArray.contains(8) {
+			if powerUpIdentityArray.contains(8) || endlessMode {
 				powerUpsOnScreen-=1
 				self.powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
@@ -1904,10 +1901,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUp.texture = powerUpPointsBonus
 				powerupsGenerated[8]+=1
 			}
-			// Don't show if power-up already falling
+			// Don't show if power-up already falling or in endless mode
 		case 9:
 		// Penalty points
-			if levelScore <= Int(1000*multiplier) || mysteryPowerUp || powerUpIdentityArray.contains(9) {
+			if levelScore <= Int(1000*multiplier) || mysteryPowerUp || powerUpIdentityArray.contains(9) || endlessMode {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
@@ -1915,10 +1912,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUp.texture = powerUpPointsPenalty
 				powerupsGenerated[9]+=1
 			}
-			// Don't show if score is less than penalty points amount or in place of mystery power-up or power-up already falling
+			// Don't show if score is less than penalty points amount or in place of mystery power-up or power-up already falling or in endless mode
 		case 10:
 		// x2 multiplier
-			if multiplier >= 2.0 || powerUpIdentityArray.contains(10) {
+			if multiplier >= 2.0 || powerUpIdentityArray.contains(10) || endlessMode {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
@@ -1926,10 +1923,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUp.texture = powerUpMultiplier
 				powerupsGenerated[10]+=1
 			}
-			// Don't show if multiplier at 2.5 or above or power-up already falling
+			// Don't show if multiplier at 2.5 or above or power-up already falling or in endless mode
 		case 11:
 		// Multiplier reset
-			if multiplier <= 1.1 || mysteryPowerUp || powerUpIdentityArray.contains(11) {
+			if multiplier <= 1.1 || mysteryPowerUp || powerUpIdentityArray.contains(11) || endlessMode {
 				powerUpsOnScreen-=1
 				powerUpGenerator (sprite: sprite)
 				powerUp.removeFromParent()
@@ -1937,7 +1934,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUp.texture = powerUpMultiplierReset
 				powerupsGenerated[11]+=1
 			}
-			// Don't show if multiplier is 1.5 or in place of mystery power-up or power-up already falling
+			// Don't show if multiplier is 1.5 or in place of mystery power-up or power-up already falling or in endless mode
         case 12:
 		// Next level
 			if mysteryPowerUp || powerUpIdentityArray.contains(12) || endlessMode {
@@ -2427,7 +2424,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
-				self.gravityDeactivate = true
+				if self.ballIsOnPaddle {
+					self.deactivateGravity()
+				} else {
+					self.gravityDeactivate = true
+				}
 				self.gravityIconBar.isHidden = true
 				// Hide power-up icons
 			}
@@ -2606,7 +2607,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Power up set
 			if bricksLeft == 0 && endlessMode == false {
 				levelScore = levelScore + levelCompleteScore
-				scoreLabel.text = String(totalScore + levelScore)
+				if endlessMode == false {
+					scoreLabel.text = String(totalScore + levelScore)
+				}
 				gameState.enter(InbetweenLevels.self)
 				return
 			}
@@ -2635,7 +2638,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
-				self.superballDeactivate = true
+				if self.ballIsOnPaddle {
+					self.deactivateSuperball()
+				} else {
+					self.superballDeactivate = true
+				}
 				self.superballIconBar.isHidden = true
 				// Hide power-up icons
             }
@@ -2698,7 +2705,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
             laserPowerUpIsOn = true
 			paddleLaser.isHidden = false
-            laserTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
+            laserTimer = Timer.scheduledTimer(timeInterval: 0.25, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerupsCollected[20]+=1
@@ -2757,10 +2764,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			multiplier = 2.0
 		}
 //		 Ensure multiplier never goes below 1 or above 2
-        scoreLabel.text = String(totalScore + levelScore)
+		if endlessMode == false {
+			scoreLabel.text = String(totalScore + levelScore)
+		}
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			livesLabel.text = "\(endlessDepth) m"
+			scoreLabel.text = "\(endlessHeight) m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
         // Update score
@@ -2852,20 +2861,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
 	func showPauseMenu(sender: String) {
-		let pauseMenuScore = totalScore + levelScore
 		
-		if packStatsArray[packNumber].scores.count != 0 {
-			totalHighscore = packStatsArray[packNumber].scores.max()!
-		} else {
-			totalHighscore = 0
+		var score = totalScore
+		if sender == "Pause" {
+			score = totalScore + levelScore
 		}
 		
-		var endlessDepthBest = 0
-		if totalStatsArray[0].endlessModeDepth.count != 0 {
-			endlessDepthBest = totalStatsArray[0].endlessModeDepth.max()!
-		}
-		
-		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, score: pauseMenuScore, highScore: totalHighscore, packNumber: packNumber, depth: endlessDepth, depthBest: endlessDepthBest, sender: sender)
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender)
 		// Pass over highscore data to pause menu
     }
 	
@@ -2906,20 +2908,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Stop paddle and ball tilt
 		
 		if paddleSensitivitySetting == 0 {
-		// Micro
-			paddleMovementFactor = 1
+			paddleMovementFactor = 1.00
 		} else if paddleSensitivitySetting == 1 {
-		// Base
 			paddleMovementFactor = 1.25
 		} else if paddleSensitivitySetting == 2 {
-		// Kila
-			paddleMovementFactor = 1.5
+			paddleMovementFactor = 1.50
 		} else if paddleSensitivitySetting == 3 {
-		// Mega
-			paddleMovementFactor = 2
+			paddleMovementFactor = 2.00
 		} else if paddleSensitivitySetting == 4 {
-		// Giga
-			paddleMovementFactor = 3
+			paddleMovementFactor = 3.00
 		}
 		// Reset paddle sensitivity
 	}

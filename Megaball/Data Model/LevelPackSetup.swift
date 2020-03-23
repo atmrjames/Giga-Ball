@@ -14,14 +14,14 @@ class LevelPackSetup {
     let startLevelNumber: [Int] = [100, 1, 11, 21, 31, 0]
     let packTitles: [String] = [
         "Tutorial",
-        "Classic",
-        "Space",
-        "WIP",
-        "WIP",
+        "Classic Pack",
+        "Space Pack",
+        "Pack 3 (WIP)",
+        "Pack 4 (WIP)",
         "Endless Mode"
     ]
     let levelImageArray: [UIImage] = [
-        UIImage(named:"Level000.png")!,
+        UIImage(named:"Level00Image.png")!,
         UIImage(named:"Level01Image.png")!,
         UIImage(named: "Level02Image.png")!,
         UIImage(named: "Level03Image.png")!,

@@ -16,7 +16,6 @@ class LevelSelectorTableViewCell: UITableViewCell {
     @IBOutlet var levelNameLabel: UILabel!
     @IBOutlet var highScoreTitleLabel: UILabel!
     @IBOutlet var highScoreLabel: UILabel!
-    @IBOutlet var statsButton: UIButton!
     
     override func awakeFromNib() {
         super.awakeFromNib()

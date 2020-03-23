@@ -122,11 +122,18 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "modeSelectCell", for: indexPath) as! ModeSelectTableViewCell
+        
+        modeSelectTableView.rowHeight = 100.0
+        
+        if view.frame.size.height > 1000 {
+            modeSelectTableView.rowHeight = 125.0
+        }
                 
         switch indexPath.row {
         case 0:
             cell.modeImageIcon.image = UIImage(named:"TutorialIcon.png")
-            cell.modeTextLabel.text = "Tutorial"
+            cell.modeTextLabel.text = "Tutorial (WIP)"
+            cell.modeTextLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             
         case 1:
             cell.modeImageIcon.image = UIImage(named:"ClassicIcon.png")
@@ -161,8 +168,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         if indexPath.row == 0 {
         // Tutorial
-            levelSender = "MainMenu"
-            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[0], numberOfLevels: LevelPackSetup().numberOfLevels[0], sender: levelSender!, levelPack: 0)
+//            levelSender = "MainMenu"
+//            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[0], numberOfLevels: LevelPackSetup().numberOfLevels[0], sender: levelSender!, levelPack: 0)
         }
         
         if indexPath.row == 1 {

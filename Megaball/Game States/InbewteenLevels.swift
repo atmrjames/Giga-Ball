@@ -28,9 +28,13 @@ class InbetweenLevels: GKState {
         if previousState is Playing {
             inbetweenLevels()
         }
-//        if previousState is Ad {
-//            scene.showPauseMenu()
-//        }
+        if previousState is Ad {
+            if scene.endlessMode || scene.gameoverStatus == true {
+                scene.showPauseMenu(sender: "Game Over")
+            } else {
+                scene.showPauseMenu(sender: "Complete")
+            }
+        }
     }
     // This function runs when this state is entered.
     
@@ -111,8 +115,8 @@ class InbetweenLevels: GKState {
         
         scene.totalStatsArray[0].cumulativeScore = scene.cumulativeScore + scene.levelScore
         if scene.endlessMode {
-            scene.totalStatsArray[0].endlessModeDepth.append(scene.endlessDepth)
-            scene.totalStatsArray[0].endlessModeDepthDate.append(Date())
+            scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
+            scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
         } else {
             scene.levelsPlayed+=1
             scene.totalStatsArray[0].levelsPlayed = scene.levelsPlayed
@@ -156,7 +160,7 @@ class InbetweenLevels: GKState {
         }
         // Save level stats after each level
         
-        if scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus {
+        if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 {
             scene.packStatsArray[scene.packNumber].scores.append(scene.totalScore)
             scene.packStatsArray[scene.packNumber].scoreDates.append(Date())
             if scene.gameoverStatus == false {

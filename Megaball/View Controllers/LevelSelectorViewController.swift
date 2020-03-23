@@ -224,10 +224,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.levelLabel.text = "Level "+String(indexPath.row+1)
             cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row]
             cell.highScoreTitleLabel.text = "Highscore"
-            cell.statsButton.tag = indexPath.row+1
             cell.cellView3.tag = indexPath.row+1
             cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
-            cell.statsButton.addTarget(self, action:#selector(cellStatsButtonClicked(sender:)), for: UIControl.Event.touchUpInside)
             // Setup cell buttons
             let levelNumber = startLevel!+indexPath.row
             if levelStatsArray[levelNumber].scores.isEmpty == false {
@@ -257,9 +255,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
             }
             
-            let levelNumber = startLevel!-1 + Int(indexPath.row+1)
-            moveToGame(selectedLevel: levelNumber, numberOfLevels: 1, sender: levelSender, levelPack: packNumber!)
-            tableView.deselectRow(at: indexPath, animated: true)
+            moveToLevelStatsSetup(sender: indexPath.row)
+            
         }
     }
     
@@ -572,13 +569,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         UIView.animate(withDuration: 0.25) {
             self.view.layoutIfNeeded()
         }
-    }
-    
-    @objc func cellStatsButtonClicked(sender:UIButton) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        moveToLevelStatsSetup(sender: sender.tag-1)
     }
     
     @objc func returnFromGameNotificationKeyReceived(_ notification: Notification) {

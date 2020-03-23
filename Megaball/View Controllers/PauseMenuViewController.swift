@@ -11,11 +11,10 @@ import UIKit
 class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
     
     var levelNumber: Int = 0
+    var numberOfLevels: Int = 0
     var score: Int = 0
-    var highScore: Int = 0
     var packNumber: Int = 0
-    var depth: Int = 0
-    var depthBest: Int = 0
+    var height: Int = 0
     var sender: String = ""
     // Properties to store passed over data
     
@@ -157,23 +156,29 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.buttonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
             case 1:
                 if self.sender == "Pause" {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonPauseHighlighted.png")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 }
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 if self.sender == "Pause" {
                     cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
                 } else {
@@ -278,21 +283,35 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             levelNumberLabel.text = String(LevelPackSetup().levelNameArray[levelNumber])
             
             scoreLabelTitle.text = "Height"
-            scoreLabel.text = "\(depth) m"
+            scoreLabel.text = "\(height) m"
             highscoreLabelTitle.text = "Best"
-            highscoreLabel.text = "\(depthBest) m"
             
-            if depth > depthBest {
-                scoreLabelTitle.text = "New Best Height"
-                highscoreLabelTitle.text = "Previous Best Height"
-                
-                var previousBestHeight = 0
-                if totalStatsArray[0].endlessModeDepth.count > 1 {
-                    var heightsArray = totalStatsArray[0].endlessModeDepth
-                    heightsArray.sort(by: >)
-                    previousBestHeight = heightsArray[1]
+            var heightBest = 0
+            if totalStatsArray[0].endlessModeHeight.count > 0 {
+                heightBest = totalStatsArray[0].endlessModeHeight.max()!
+            }
+            
+            if sender == "Pause" {
+                if height > heightBest {
+                    scoreLabelTitle.text = "New Best Height"
+                    highscoreLabelTitle.text = "Previous Best Height"
                 }
-                highscoreLabel.text = "\(previousBestHeight) m"
+                highscoreLabel.text = "\(heightBest) m"
+            } else {
+                if totalStatsArray[0].endlessModeHeight.count <= 1 {
+                    scoreLabelTitle.text = "New Best Height"
+                    highscoreLabelTitle.text = "Previous Best Height"
+                    highscoreLabel.text = "0 m"
+                } else {
+                    var heightsArray = totalStatsArray[0].endlessModeHeight
+                    heightsArray.sort(by: >)
+                    let previousBestHeight = heightsArray[1]
+                    if height > previousBestHeight {
+                        scoreLabelTitle.text = "New Best Height"
+                        highscoreLabelTitle.text = "Previous Best Height"
+                    }
+                    highscoreLabel.text = "\(previousBestHeight) m"
+                }
             }
 
         } else {
@@ -301,18 +320,50 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             } else {
                 levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
             }
-            scoreLabelTitle.text = "Score"
-            scoreLabel.text = String(score)
-            highscoreLabelTitle.text = "Highscore"
-            highscoreLabel.text = String(highScore)
             
-            if score > highScore {
-                scoreLabelTitle.text = "New Highscore"
-                highscoreLabelTitle.text = "Previous Highscore"
+            scoreLabelTitle.text = "Score"
+            scoreLabel.text = "\(score)"
+            highscoreLabelTitle.text = "Highscore"
+            
+            print("llama number of levels 0: ", numberOfLevels, score)
+
+            var currentHighscore = score
+            if numberOfLevels == 1 {
+                if levelStatsArray[levelNumber].scores.count > 0 {
+                    currentHighscore = levelStatsArray[levelNumber].scores.max()!
+                }
+            } else {
+                if packStatsArray[packNumber].scores.count > 0 {
+                    currentHighscore = packStatsArray[packNumber].scores.max()!
+                }
+            }
+            // Get current highscore from level or pack
+            
+            highscoreLabel.text = String(currentHighscore)
+            
+            if sender == "Pause" {
+                if score > currentHighscore {
+                    scoreLabelTitle.text = "New Highscore"
+                    highscoreLabelTitle.text = "Previous Highscore"
+                }
+            } else {
                 
-                var previousHighscore = 0
-//              get previous highscore of current pack or level being played
-                highscoreLabel.text = "\(previousHighscore)"
+                if score == currentHighscore {
+                // If the current score is the top score
+                    scoreLabelTitle.text = "New Highscore"
+                    highscoreLabelTitle.text = "Previous Highscore"
+                    var previousHighscore = 0
+                    if numberOfLevels == 1 && levelStatsArray[levelNumber].scores.count > 1 {
+                        var scoresArray = levelStatsArray[levelNumber].scores
+                        scoresArray.sort(by: >)
+                        previousHighscore = scoresArray[1]
+                    } else if packStatsArray[packNumber].scores.count > 1 {
+                        var scoresArray = packStatsArray[packNumber].scores
+                        scoresArray.sort(by: >)
+                        previousHighscore = scoresArray[1]
+                    }
+                    highscoreLabel.text = String(previousHighscore)
+                }
             }
         }
     }

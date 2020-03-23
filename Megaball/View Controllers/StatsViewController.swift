@@ -86,7 +86,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         let settingsCell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
-        let numberOfAttempts = totalStatsArray[0].levelsPlayed + totalStatsArray[0].endlessModeDepth.count
+        let numberOfAttempts = totalStatsArray[0].levelsPlayed + totalStatsArray[0].endlessModeHeight.count
         
         statsTableView.rowHeight = 35.0
         
@@ -143,6 +143,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             } else {
                 cell.statDescription.text = "Time playing"
                 cell.statValue.text = "00:00:00"
+                cell.statDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                cell.statValue.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
             return cell
         case 6:
@@ -214,8 +216,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Cumulative depth"
-                cell.statValue.text = String(totalStatsArray[0].endlessModeDepth.reduce(0, +))+" m"
+                cell.statDescription.text = "Cumulative height"
+                cell.statValue.text = String(totalStatsArray[0].endlessModeHeight.reduce(0, +))+" m"
             }
             return cell
         default:

@@ -19,10 +19,12 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     var paddleSensitivitySetting: Int?
     // User settings
     
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
     let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
     var packStatsArray: [PackStats] = []
     var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
@@ -99,19 +101,31 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         let numberOfAttempts = levelStatsArray[levelNumber!].scores.count
         let scoreArraySum = levelStatsArray[levelNumber!].scores.reduce(0, +)
+        let heightArraySum = totalStatsArray[0].endlessModeHeight.reduce(0, +)
         
         switch indexPath.row {
         case 0:
+            
+            
             
             if numberOfAttempts == 0 {
                 cell.statDescription.text = "No statistics available"
                 cell.statValue.text = ""
             } else {
-                cell.statDescription.text = "Highscore"
-                if let highScore = levelStatsArray[levelNumber!].scores.max() {
-                    cell.statValue.text = String(highScore)
+                if levelNumber == 0 {
+                    cell.statDescription.text = "Best height"
+                    if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
+                        cell.statValue.text = String(bestHeight) + " m"
+                    } else {
+                        cell.statValue.text = ""
+                    }
                 } else {
-                    cell.statValue.text = ""
+                    cell.statDescription.text = "Highscore"
+                    if let highScore = levelStatsArray[levelNumber!].scores.max() {
+                        cell.statValue.text = String(highScore)
+                    } else {
+                        cell.statValue.text = ""
+                    }
                 }
             }
             return cell
@@ -119,23 +133,45 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Highscore date"
-                
-                if let highScore = levelStatsArray[levelNumber!].scores.max() {
-                    let highScoreIndex = levelStatsArray[levelNumber!].scores.firstIndex(of: highScore)
-                    let highScoreDate = levelStatsArray[levelNumber!].scoreDates[highScoreIndex!]
-                    // Find date of highscore
+                if levelNumber == 0 {
+                    cell.statDescription.text = "Best height date"
                     
-                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                    let inputDate = formatter.string(from: highScoreDate)
-                    let outputDate = formatter.date(from: inputDate)
-                    formatter.dateFormat = "dd/MM/yyyy"
-                    let convertedDate = formatter.string(from: outputDate!)
-                    // Date to string conversion
+                    if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
+                        let bestHeightIndex = totalStatsArray[0].endlessModeHeight.firstIndex(of: bestHeight)
+                        let bestHeightDate = levelStatsArray[levelNumber!].scoreDates[bestHeightIndex!]
+                        // Find date of highscore
                     
-                    cell.statValue.text = convertedDate
+                        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                        let inputDate = formatter.string(from: bestHeightDate)
+                        let outputDate = formatter.date(from: inputDate)
+                        formatter.dateFormat = "dd/MM/yyyy"
+                        let convertedDate = formatter.string(from: outputDate!)
+                        // Date to string conversion
+                        
+                        cell.statValue.text = convertedDate
+                    } else {
+                        cell.statValue.text = ""
+                    }
+                    
                 } else {
-                    cell.statValue.text = ""
+                    cell.statDescription.text = "Highscore date"
+                    
+                    if let highScore = levelStatsArray[levelNumber!].scores.max() {
+                        let highScoreIndex = levelStatsArray[levelNumber!].scores.firstIndex(of: highScore)
+                        let highScoreDate = levelStatsArray[levelNumber!].scoreDates[highScoreIndex!]
+                        // Find date of highscore
+                        
+                        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                        let inputDate = formatter.string(from: highScoreDate)
+                        let outputDate = formatter.date(from: inputDate)
+                        formatter.dateFormat = "dd/MM/yyyy"
+                        let convertedDate = formatter.string(from: outputDate!)
+                        // Date to string conversion
+                        
+                        cell.statValue.text = convertedDate
+                    } else {
+                        cell.statValue.text = ""
+                    }
                 }
             }
             return cell
@@ -148,7 +184,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             }
             return cell
         case 3:
-            if numberOfAttempts == 0 {
+            if numberOfAttempts == 0 || levelNumber == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Completion rate"
@@ -164,8 +200,13 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Cumulative score"
-                cell.statValue.text = String(scoreArraySum)
+                if levelNumber == 0 {
+                    cell.statDescription.text = "Cumulative height"
+                    cell.statValue.text = String(heightArraySum)+" m"
+                } else {
+                    cell.statDescription.text = "Cumulative score"
+                    cell.statValue.text = String(scoreArraySum)
+                }
             }
             return cell
         
@@ -173,9 +214,15 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Average score"
-                let averageScore = scoreArraySum/numberOfAttempts
-                cell.statValue.text = String(averageScore)
+                if levelNumber == 0 {
+                    cell.statDescription.text = "Average height"
+                    let averageScore = heightArraySum/numberOfAttempts
+                    cell.statValue.text = String(averageScore)+" m"
+                } else {
+                    cell.statDescription.text = "Average score"
+                    let averageScore = scoreArraySum/numberOfAttempts
+                    cell.statValue.text = String(averageScore)
+                }
             }
             return cell
         default:
@@ -312,6 +359,15 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
         if let packData = try? Data(contentsOf: packStatsStore!) {
             do {
                 packStatsArray = try decoder.decode([PackStats].self, from: packData)

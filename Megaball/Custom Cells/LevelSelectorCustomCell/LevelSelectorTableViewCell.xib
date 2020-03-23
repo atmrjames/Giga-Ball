@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="15705" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
+        <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15706"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <customFonts key="customFonts">
+        <array key="FugazOne-Regular.ttf">
+            <string>FugazOne-Regular</string>
+        </array>
         <array key="SF-Pro-Rounded-Bold.otf">
             <string>SFProRounded-Bold</string>
         </array>
@@ -16,7 +21,7 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
         <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
-        <tableViewCell contentMode="scaleToFill" selectionStyle="none" indentationWidth="10" reuseIdentifier="levelSelectorCell" id="KGk-i7-Jjw" customClass="LevelSelectorTableViewCell" customModule="Megaball" customModuleProvider="target">
+        <tableViewCell contentMode="scaleToFill" selectionStyle="none" indentationWidth="10" reuseIdentifier="levelSelectorCell" id="KGk-i7-Jjw" customClass="LevelSelectorTableViewCell" customModule="Gigaball" customModuleProvider="target">
             <rect key="frame" x="0.0" y="0.0" width="442" height="150"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
             <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
@@ -35,17 +40,6 @@
                                     <constraint firstAttribute="width" secondItem="Pmp-f5-HmM" secondAttribute="height" multiplier="1:1" id="YJ8-yi-dUn"/>
                                 </constraints>
                             </imageView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="trailing" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="npP-nk-pWy">
-                                <rect key="frame" x="352" y="45" width="40" height="40"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="40" id="aju-1B-lth"/>
-                                    <constraint firstAttribute="width" constant="40" id="bhJ-p3-K92"/>
-                                </constraints>
-                                <color key="tintColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
-                                <state key="normal" image="info.circle" catalog="system">
-                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="32" scale="default" weight="semibold"/>
-                                </state>
-                            </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Level 0" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nvj-sL-XLj" userLabel="Level Number Label">
                                 <rect key="frame" x="130" y="10" width="262" height="18"/>
                                 <fontDescription key="fontDescription" name="SFProRounded-Semibold" family="SF Pro Rounded" pointSize="15"/>
@@ -53,38 +47,40 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Level name is much too long for this text box" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bPw-R3-x5s" userLabel="Level Name Label">
-                                <rect key="frame" x="130" y="28" width="202" height="35"/>
+                                <rect key="frame" x="130" y="28" width="262" height="36"/>
                                 <fontDescription key="fontDescription" name="SFProRounded-Bold" family="SF Pro Rounded" pointSize="15"/>
                                 <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Highscore" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5rL-Ou-s7l" userLabel="High Score Title Label">
-                                <rect key="frame" x="130" y="74" width="68.5" height="18"/>
+                                <rect key="frame" x="130" y="77" width="68.5" height="18"/>
                                 <fontDescription key="fontDescription" name="SFProRounded-Semibold" family="SF Pro Rounded" pointSize="15"/>
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0000000" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="RIJ-Bw-nLc">
-                                <rect key="frame" x="130" y="92" width="93.5" height="28"/>
-                                <fontDescription key="fontDescription" name="SFProRounded-Bold" family="SF Pro Rounded" pointSize="24"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0000000" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RIJ-Bw-nLc">
+                                <rect key="frame" x="130" y="95" width="262" height="25"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="25" id="Pbe-JJ-LIq"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="FugazOne-Regular" family="Fugaz One" pointSize="24"/>
                                 <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
                         <color key="backgroundColor" red="0.87058823529411766" green="0.87058823529411766" blue="0.87058823529411766" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
+                            <constraint firstAttribute="trailing" secondItem="RIJ-Bw-nLc" secondAttribute="trailing" constant="10" id="5qu-2F-rhl"/>
                             <constraint firstItem="bPw-R3-x5s" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="8cn-n7-mRk"/>
                             <constraint firstItem="nvj-sL-XLj" firstAttribute="top" secondItem="RhW-RY-HFw" secondAttribute="top" constant="10" id="MdW-WC-pFs"/>
                             <constraint firstItem="bPw-R3-x5s" firstAttribute="top" secondItem="nvj-sL-XLj" secondAttribute="bottom" id="ToF-hH-l7W"/>
                             <constraint firstItem="RIJ-Bw-nLc" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="YgD-cF-5Ce"/>
                             <constraint firstItem="RIJ-Bw-nLc" firstAttribute="top" secondItem="5rL-Ou-s7l" secondAttribute="bottom" id="aIf-9q-P7y"/>
                             <constraint firstItem="nvj-sL-XLj" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="fEJ-m1-YfH"/>
-                            <constraint firstAttribute="trailing" secondItem="npP-nk-pWy" secondAttribute="trailing" constant="10" id="flc-Pm-wdG"/>
                             <constraint firstItem="Pmp-f5-HmM" firstAttribute="centerY" secondItem="RhW-RY-HFw" secondAttribute="centerY" id="gnH-m9-Jac"/>
-                            <constraint firstItem="npP-nk-pWy" firstAttribute="leading" secondItem="bPw-R3-x5s" secondAttribute="trailing" constant="20" id="gww-Sv-Z8n"/>
                             <constraint firstAttribute="bottom" secondItem="RIJ-Bw-nLc" secondAttribute="bottom" constant="10" id="gzL-OS-SbL"/>
-                            <constraint firstItem="npP-nk-pWy" firstAttribute="centerY" secondItem="RhW-RY-HFw" secondAttribute="centerY" id="i2q-dn-yPc"/>
                             <constraint firstAttribute="trailing" secondItem="nvj-sL-XLj" secondAttribute="trailing" constant="10" id="m5V-5o-tLd"/>
+                            <constraint firstAttribute="trailing" secondItem="bPw-R3-x5s" secondAttribute="trailing" constant="10" id="su2-cS-2Ld"/>
                             <constraint firstItem="Pmp-f5-HmM" firstAttribute="leading" secondItem="RhW-RY-HFw" secondAttribute="leading" constant="10" id="uD6-tM-Aaf"/>
                             <constraint firstItem="5rL-Ou-s7l" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="vw9-Rr-oeH"/>
                         </constraints>
@@ -108,12 +104,8 @@
                 <outlet property="levelImage" destination="Pmp-f5-HmM" id="WmA-Io-Onh"/>
                 <outlet property="levelLabel" destination="nvj-sL-XLj" id="vvq-0y-7tJ"/>
                 <outlet property="levelNameLabel" destination="bPw-R3-x5s" id="Ono-CR-TKW"/>
-                <outlet property="statsButton" destination="npP-nk-pWy" id="ZL6-zO-H9R"/>
             </connections>
             <point key="canvasLocation" x="49.275362318840585" y="143.97321428571428"/>
         </tableViewCell>
     </objects>
-    <resources>
-        <image name="info.circle" catalog="system" width="64" height="60"/>
-    </resources>
 </document>

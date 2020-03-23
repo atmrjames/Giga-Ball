@@ -105,14 +105,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Segue to MenuViewController
     
-    func showPauseMenu(levelNumber: Int, score: Int, highScore: Int, packNumber: Int, depth: Int, depthBest: Int, sender: String) {
+    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
+        pauseMenuVC.numberOfLevels = numberOfLevels
         pauseMenuVC.score = score
-        pauseMenuVC.highScore = highScore
         pauseMenuVC.packNumber = packNumber
-        pauseMenuVC.depth = depth
-        pauseMenuVC.depthBest = depthBest
+        pauseMenuVC.height = height
         pauseMenuVC.sender = sender
         // Update pause menu view controller properties with function input values
 
