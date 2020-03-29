@@ -110,14 +110,13 @@ class InbetweenLevels: GKState {
         }
         // Remove any remaining lasers
         
-        scene.totalScore = scene.totalScore + scene.levelScore
-        // Update level and total scores
-        
-        scene.totalStatsArray[0].cumulativeScore = scene.cumulativeScore + scene.levelScore
         if scene.endlessMode {
             scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
             scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
         } else {
+            scene.totalScore = scene.totalScore + scene.levelScore
+            scene.totalStatsArray[0].cumulativeScore = scene.totalStatsArray[0].cumulativeScore + scene.levelScore
+            // Update total and cumulative scores
             scene.levelsPlayed+=1
             scene.totalStatsArray[0].levelsPlayed = scene.levelsPlayed
         }
@@ -145,10 +144,12 @@ class InbetweenLevels: GKState {
         }
         // Save total stats only at the end of the game
         
-        scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore)
-        scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
-        if scene.gameoverStatus == false {
-            scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1
+        if scene.endlessMode == false {
+            scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore)
+            scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
+            if scene.gameoverStatus == false {
+                scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1
+            }
         }
         // Update level stats
         
@@ -160,7 +161,7 @@ class InbetweenLevels: GKState {
         }
         // Save level stats after each level
         
-        if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 {
+        if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 && scene.endlessMode == false {
             scene.packStatsArray[scene.packNumber].scores.append(scene.totalScore)
             scene.packStatsArray[scene.packNumber].scoreDates.append(Date())
             if scene.gameoverStatus == false {
@@ -174,6 +175,12 @@ class InbetweenLevels: GKState {
             }
             // Save pack stats only at the end of the game
         }
+        
+        if scene.gameCenterSetting! {
+            GameCenterHandler().gameCenterSave()
+        }
+        // Save scores to game center
+        
         showAd()
     }
     

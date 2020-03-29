@@ -61,7 +61,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         itemsTableView.delegate = self
         itemsTableView.dataSource = self
-        itemsTableView.register(UINib(nibName: "PowerUpTableViewCell", bundle: nil), forCellReuseIdentifier: "powerUpCell")
+        itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         // TableView setup
         
         backButtonCollectionView.delegate = self
@@ -71,20 +71,18 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         switch senderID {
         case 0:
-            titleLabel.text = "GAME CENTER CHALLENGES"
-        case 1:
             titleLabel.text = "PADDLES"
-        case 2:
+        case 1:
             titleLabel.text = "BALLS"
-        case 3:
+        case 2:
             titleLabel.text = "POWER-UPS"
-        case 4:
+        case 3:
             titleLabel.text = "APP ICONS"
         default:
             break
         }
         
-        itemsTableView.rowHeight = 75.0
+        itemsTableView.rowHeight = 70.0
         
         userSettings()
         loadData()
@@ -101,23 +99,25 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "powerUpCell", for: indexPath) as! PowerUpTableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
-        cell.powerUpImageView.image = LevelPackSetup().powerUpImageArray[indexPath.row]
-        cell.titleLabel.text = LevelPackSetup().powerUpNameArray[indexPath.row]
+        cell.iconImage.image = LevelPackSetup().powerUpImageArray[indexPath.row]
+        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+        cell.settingDescription.text = LevelPackSetup().powerUpNameArray[indexPath.row]
+        cell.centreLabel.text = ""
 
         if totalStatsArray[0].powerupsGenerated[indexPath.row] > 0 {
             
             let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[indexPath.row]) / Double(totalStatsArray[0].powerupsGenerated[indexPath.row])
-            cell.detailLabel.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
-            
+            cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
+            cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
         } else {
-            cell.detailLabel.text = ""
+            cell.settingState.text = ""
         }
         
         UIView.animate(withDuration: 0.2) {
-            cell.cellView4.transform = .identity
-            cell.cellView4.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
         
         return cell
@@ -126,9 +126,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         UIView.animate(withDuration: 0.2) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! PowerUpTableViewCell
-            cell.cellView4.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView4.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
         
         if hapticsSetting! {
@@ -148,9 +148,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! PowerUpTableViewCell
-            cell.cellView4.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView4.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
@@ -159,9 +159,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! PowerUpTableViewCell
-            cell.cellView4.transform = .identity
-            cell.cellView4.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
     }
     

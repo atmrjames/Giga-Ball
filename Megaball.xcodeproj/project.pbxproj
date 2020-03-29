@@ -48,6 +48,8 @@
 		1A7A34D8240E902100044C87 /* Level019.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7A34D7240E902100044C87 /* Level019.swift */; };
 		1A7A34DA240E902300044C87 /* Level020.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7A34D9240E902300044C87 /* Level020.swift */; };
 		1A7D6529231B0E980091CA58 /* Paused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7D6528231B0E980091CA58 /* Paused.swift */; };
+		1A82B52024299A2000694B67 /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A82B51F24299A2000694B67 /* GameKit.framework */; };
+		1A82B52224299C8100694B67 /* GameCenterHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A82B52124299C8100694B67 /* GameCenterHandler.swift */; };
 		1AC08ADA23FC25FC00B4BC32 /* WarningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */; };
 		1AC08ADC23FC417A00B4BC32 /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */; };
 		1AC8782B23E9DD24006105CC /* Level012.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC8782A23E9DD24006105CC /* Level012.swift */; };
@@ -59,8 +61,6 @@
 		1AD4686B23ED800A004EF873 /* StatsTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AD4686923ED800A004EF873 /* StatsTableViewCell.xib */; };
 		1AE2922C240190AE009D3C4E /* ItemsStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2922B240190AE009D3C4E /* ItemsStatsViewController.swift */; };
 		1AE92C26240177AF00F25A84 /* BrickCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE92C25240177AF00F25A84 /* BrickCreation.swift */; };
-		1AE92C292401831E00F25A84 /* PowerUpTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE92C272401831E00F25A84 /* PowerUpTableViewCell.swift */; };
-		1AE92C2A2401831E00F25A84 /* PowerUpTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AE92C282401831E00F25A84 /* PowerUpTableViewCell.xib */; };
 		1AE9573B2321A74700E5618A /* InbewteenLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE9573A2321A74700E5618A /* InbewteenLevels.swift */; };
 		1AE957442324523800E5618A /* MenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957432324523800E5618A /* MenuViewController.swift */; };
 		1AE957462324EC2A00E5618A /* Level001.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE957452324EC2A00E5618A /* Level001.swift */; };
@@ -100,7 +100,7 @@
 		1A53E0F8241806E600DCA3B9 /* MainMenuCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuCollectionViewCell.swift; sourceTree = "<group>"; };
 		1A53E0F9241806E600DCA3B9 /* MainMenuCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainMenuCollectionViewCell.xib; sourceTree = "<group>"; };
 		1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalStats.swift; sourceTree = "<group>"; };
-		1A5A94812309E4F30076D635 /* Gigaball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gigaball.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A5A94812309E4F30076D635 /* Giga-Ball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Giga-Ball.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A5A94842309E4F30076D635 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A5A94862309E4F30076D635 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
 		1A5A94882309E4F30076D635 /* Actions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Actions.sks; sourceTree = "<group>"; };
@@ -142,6 +142,8 @@
 		1A7DFC6D23F2B18100D7CD1B /* SF-Pro-Rounded-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SF-Pro-Rounded-Black.otf"; sourceTree = "<group>"; };
 		1A7DFC6E23F2B18200D7CD1B /* SF-Pro-Rounded-Ultralight.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SF-Pro-Rounded-Ultralight.otf"; sourceTree = "<group>"; };
 		1A7DFC6F23F2B18200D7CD1B /* SF-Pro-Rounded-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SF-Pro-Rounded-Bold.otf"; sourceTree = "<group>"; };
+		1A82B51F24299A2000694B67 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
+		1A82B52124299C8100694B67 /* GameCenterHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterHandler.swift; sourceTree = "<group>"; };
 		1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WarningViewController.swift; path = Megaball/WarningViewController.swift; sourceTree = SOURCE_ROOT; };
 		1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
 		1AC8782A23E9DD24006105CC /* Level012.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level012.swift; sourceTree = "<group>"; };
@@ -153,8 +155,6 @@
 		1AD4686923ED800A004EF873 /* StatsTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = StatsTableViewCell.xib; sourceTree = "<group>"; };
 		1AE2922B240190AE009D3C4E /* ItemsStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemsStatsViewController.swift; sourceTree = "<group>"; };
 		1AE92C25240177AF00F25A84 /* BrickCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickCreation.swift; sourceTree = "<group>"; };
-		1AE92C272401831E00F25A84 /* PowerUpTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpTableViewCell.swift; sourceTree = "<group>"; };
-		1AE92C282401831E00F25A84 /* PowerUpTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = PowerUpTableViewCell.xib; sourceTree = "<group>"; };
 		1AE9573A2321A74700E5618A /* InbewteenLevels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbewteenLevels.swift; sourceTree = "<group>"; };
 		1AE957432324523800E5618A /* MenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewController.swift; sourceTree = "<group>"; };
 		1AE957452324EC2A00E5618A /* Level001.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level001.swift; sourceTree = "<group>"; };
@@ -182,6 +182,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2502B01B0C928E896886F6F8 /* Pods_Megaball.framework in Frameworks */,
+				1A82B52024299A2000694B67 /* GameKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -228,7 +229,7 @@
 		1A5A94822309E4F30076D635 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1A5A94812309E4F30076D635 /* Gigaball.app */,
+				1A5A94812309E4F30076D635 /* Giga-Ball.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -236,6 +237,7 @@
 		1A5A94832309E4F30076D635 /* Megaball */ = {
 			isa = PBXGroup;
 			children = (
+				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
 				1A5A94842309E4F30076D635 /* AppDelegate.swift */,
 				1A5A94862309E4F30076D635 /* GameScene.sks */,
 				1A5A94882309E4F30076D635 /* Actions.sks */,
@@ -319,7 +321,6 @@
 				1A2A387E23DDF00C001BD200 /* SettingsCustomCell */,
 				1AD4686C23ED800E004EF873 /* StatsCustomCell */,
 				1A05BF4F23ED9DDD003E668F /* LevelSelectorCustomCell */,
-				1AE92C2B2401832200F25A84 /* PowerUpCustomCell */,
 			);
 			path = "Custom Cells";
 			sourceTree = "<group>";
@@ -367,15 +368,6 @@
 				1AD4686923ED800A004EF873 /* StatsTableViewCell.xib */,
 			);
 			path = StatsCustomCell;
-			sourceTree = "<group>";
-		};
-		1AE92C2B2401832200F25A84 /* PowerUpCustomCell */ = {
-			isa = PBXGroup;
-			children = (
-				1AE92C272401831E00F25A84 /* PowerUpTableViewCell.swift */,
-				1AE92C282401831E00F25A84 /* PowerUpTableViewCell.xib */,
-			);
-			path = PowerUpCustomCell;
 			sourceTree = "<group>";
 		};
 		1AE957492324ECF900E5618A /* Levels */ = {
@@ -433,6 +425,7 @@
 		574CE7D6FC78ECBFB980A8C3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1A82B51F24299A2000694B67 /* GameKit.framework */,
 				88B48EF8C02FF4C9CD3C7E46 /* Pods_Megaball.framework */,
 			);
 			name = Frameworks;
@@ -457,7 +450,7 @@
 			);
 			name = Megaball;
 			productName = Megaball;
-			productReference = 1A5A94812309E4F30076D635 /* Gigaball.app */;
+			productReference = 1A5A94812309E4F30076D635 /* Giga-Ball.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -499,7 +492,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A2086B723E767EB00A6CC55 /* BrendanBlockTitleMusic.mp3 in Resources */,
-				1AE92C2A2401831E00F25A84 /* PowerUpTableViewCell.xib in Resources */,
 				1A53E0FB241806E600DCA3B9 /* MainMenuCollectionViewCell.xib in Resources */,
 				1AF0F66123F2B59F001AE748 /* SF-Pro-Rounded-Regular.otf in Resources */,
 				1AD2BDCF23A2A5C100F2463F /* FoundryGridnik Medium.otf in Resources */,
@@ -609,6 +601,7 @@
 				1A7A34CC240E901500044C87 /* Level013.swift in Sources */,
 				1AE957462324EC2A00E5618A /* Level001.swift in Sources */,
 				1AF31EED23CB424D00848F63 /* LevelSelectorViewController.swift in Sources */,
+				1A82B52224299C8100694B67 /* GameCenterHandler.swift in Sources */,
 				1A5A949F230F08840076D635 /* Playing.swift in Sources */,
 				1AE2922C240190AE009D3C4E /* ItemsStatsViewController.swift in Sources */,
 				1A624F712417FE7C00479B6D /* PackSelectViewController.swift in Sources */,
@@ -626,7 +619,6 @@
 				1AF335EA24113451007DC048 /* Level006.swift in Sources */,
 				1AF335DE24112695007DC048 /* Level100.swift in Sources */,
 				1A63018623EDCC3C005DA2F2 /* LevelStatsViewController.swift in Sources */,
-				1AE92C292401831E00F25A84 /* PowerUpTableViewCell.swift in Sources */,
 				1AF335EC24113453007DC048 /* Level007.swift in Sources */,
 				1AC08ADC23FC417A00B4BC32 /* SplashViewController.swift in Sources */,
 			);
@@ -784,9 +776,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
-				PRODUCT_NAME = Gigaball;
+				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -806,9 +798,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
-				PRODUCT_NAME = Gigaball;
+				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

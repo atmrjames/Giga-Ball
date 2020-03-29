@@ -8,8 +8,9 @@
 //
 
 import UIKit
+import GameKit
 
-class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
+class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -18,7 +19,18 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var gameCenterSetting: Bool?
     // User settings
+    
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+    let encoder = PropertyListEncoder()
+    let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
+    var packStatsArray: [PackStats] = []
+    var levelStatsArray: [LevelStats] = []
+    // NSCoder data store & encoder setup
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     var group: UIMotionEffectGroup?
@@ -47,9 +59,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
+        collectionViewLayout()
+        
         itemsTableView.rowHeight = 70.0
         
         userSettings()
+        loadData()
         if parallaxSetting! {
             addParallax()
         }
@@ -60,28 +75,27 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 5
+        return 4
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+        
+        itemsTableView.rowHeight = 70.0
         
         cell.centreLabel.text = ""
         cell.settingState.text = ""
         
         switch indexPath.row {
         case 0:
-            cell.settingDescription.text = "Game Center Challenges"
-            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
-        case 1:
             cell.settingDescription.text = "Paddles"
             cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
-        case 2:
+        case 1:
             cell.settingDescription.text = "Balls"
             cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
-        case 3:
+        case 2:
             cell.settingDescription.text = "Power-Ups"
-        case 4:
+        case 3:
             cell.settingDescription.text = "App Icons"
             cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
         default:
@@ -108,7 +122,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             interfaceHaptic.impactOccurred()
         }
         
-        if indexPath.row == 3 {
+        if indexPath.row == 2 {
             hideAnimate()
             moveToItemDetails(senderID: indexPath.row)
         }
@@ -140,8 +154,19 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
     }
     
+    func collectionViewLayout() {
+        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+        let viewWidth = backButtonCollectionView.frame.size.width
+        let cellWidth: CGFloat = 50
+        let cellSpacing = (viewWidth - cellWidth*3)/3
+        layout.minimumInteritemSpacing = cellSpacing
+        layout.minimumLineSpacing = cellSpacing
+        backButtonCollectionView!.collectionViewLayout = layout
+    }
+    // Set the spacing between collection view cells
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        1
+        3
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -149,8 +174,24 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         cell.frame.size.height = 50
         cell.frame.size.width = cell.frame.size.height
+        
         cell.widthConstraint.constant = 40
-        cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        
+        switch indexPath.row {
+        case 0:
+            cell.iconImage.image = UIImage(named:"ButtonClose")
+        case 1:
+            if gameCenterSetting! {
+                cell.iconImage.image = UIImage(named:"ButtonAchievements")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonNull")
+            }
+        case 2:
+            cell.iconImage.image = UIImage(named:"ButtonNull")
+        default:
+            print("Error: Out of range")
+            break
+        }
         
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
@@ -163,7 +204,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        removeAnimate()
+        
+        if indexPath.row == 0 {
+            removeAnimate()
+        }
+        if indexPath.row == 1 && gameCenterSetting! {
+            showGameCenterAchievements()
+        }
+        
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }
@@ -175,7 +223,22 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+            
+            switch indexPath.row {
+            case 0:
+                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
+            case 1:
+                if self.gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonAchievementsHighlighted")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonNull")
+            default:
+                print("Error: Out of range")
+                break
+            }
         }
     }
     
@@ -186,7 +249,22 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .identity
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            
+            switch indexPath.row {
+            case 0:
+                cell.iconImage.image = UIImage(named:"ButtonClose")
+            case 1:
+                if self.gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonAchievements")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonNull")
+            default:
+                print("Error: Out of range")
+                break
+            }
         }
     }
     
@@ -206,7 +284,37 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         // Load user settings
+    }
+    
+    func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
+        if let packData = try? Data(contentsOf: packStatsStore!) {
+            do {
+                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+            } catch {
+                print("Error decoding high score array, \(error)")
+            }
+        }
+        // Load the pack stats array from the NSCoder data store
+        
+        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+            do {
+                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+            } catch {
+                print("Error decoding level stats array, \(error)")
+            }
+        }
+        // Load the level stats array from the NSCoder data store
     }
     
     func setBlur() {
@@ -287,6 +395,27 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             self.itemsView.alpha = 1.0
         })
     }
+    
+    func showGameCenterAchievements() {
+        if gameCenterSetting! {
+            GameCenterHandler().gameCenterSave()
+        }
+        // Save scores to game center
+        let viewController = self.view.window?.rootViewController
+        let gcViewController = GKGameCenterViewController()
+        gcViewController.gameCenterDelegate = self
+        gcViewController.viewState = GKGameCenterViewControllerState.achievements
+        viewController?.present(gcViewController, animated: true, completion: nil)
+    }
+    // Show game center view controller
+    
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true, completion: nil)
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+    }
+    // Remove game center view contoller once dismissed
     
     @objc func returnItemDetailsNotificationKeyReceived(_ notification: Notification) {
         userSettings()

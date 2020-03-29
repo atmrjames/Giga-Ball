@@ -8,6 +8,8 @@
 
 import SpriteKit
 import GameplayKit
+import GameKit
+//import GameKit
 
 let PaddleCategoryName = "paddle"
 let BallCategoryName = "ball"
@@ -216,6 +218,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var hapticsSetting: Bool?
 	var parallaxSetting: Bool?
 	var paddleSensitivitySetting: Int?
+	var gameCenterSetting: Bool?
 	// Settings
     
     let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
@@ -283,6 +286,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	let starterBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundStarterPack")
 	let spaceBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundSpacePack")
+	let endlessBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundEndlessMode")
     
     var stickyPaddleCatches: Int = 0
 	var stickyPaddleCatchesTotal: Int = 0
@@ -294,8 +298,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var ballPositionOnPaddle: Double = 0
     
-    let playTexture: SKTexture = SKTexture(imageNamed: "PlayButton")
-    let pauseTexture: SKTexture = SKTexture(imageNamed: "PauseButton")
+    let pauseHighlightedTexture: SKTexture = SKTexture(imageNamed: "ButtonPauseHighlighted")
+    let pauseTexture: SKTexture = SKTexture(imageNamed: "ButtonPause")
     // Play/pause button textures
 	
 	let iconIncreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "ExpandPaddleIcon")
@@ -333,6 +337,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballLostBool: Bool = true
 	var powerUpsOnScreen: Int = 0
 	var powerUpLimit: Int = 0
+	
 	var brickBounceCounter: Int = 0 {
 		didSet {
 			if brickBounceCounter > 100 {
@@ -361,7 +366,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var totalStatsArray: [TotalStats] = []
 	var packStatsArray: [PackStats] = []
 	var levelStatsArray: [LevelStats] = []
-	var cumulativeScore: Int = 0
     var levelsPlayed: Int = 0
     var levelsCompleted: Int = 0
 	var ballHits: Int = 0
@@ -601,6 +605,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = frame.height/2 - screenBlockTopHeight/2
 		yBrickOffset = frame.height/2 - topScreenBlock.size.height - topGap - brickHeight/2
+		finalBrickRowHeight = yBrickOffset - (brickHeight*(CGFloat(numberOfBrickRows)-1))
 		paddle.position.x = 0
 		paddlePositionY = frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
 		paddle.position.y = paddlePositionY
@@ -779,7 +784,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.0(1) - TBC - 23/03/2020"
+		buildLabel.text = "Alpha Build 0.2.1(1) - TBC - 29/03/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -875,7 +880,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Load the level stats array from the NSCoder data store
 		
-		cumulativeScore = totalStatsArray[0].cumulativeScore
 		levelsPlayed = totalStatsArray[0].levelsPlayed
 		levelsCompleted = totalStatsArray[0].levelsCompleted
 		ballHits = totalStatsArray[0].ballHits
@@ -1392,7 +1396,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
 		
-        if hapticsSetting! && endlessMoveInProgress == false {
+        if hapticsSetting! {
 			lightHaptic.impactOccurred()
 		}
 
@@ -1431,6 +1435,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
 		case brickIndestructible2Texture:
 			bricksHit[6]+=1
+			removeBrick(node: node, sprite: sprite)
             break
         case brickInvisibleTexture:
 			bricksHit[7]+=1
@@ -1471,98 +1476,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         }
     }
-	
-	func newEndlessModeRow(lowestBrick: CGFloat) {
-		
-		let numberOfCycles: Double = Double((lowestBrick - finalBrickRowHeight) / brickHeight)
-		let numberOfCyclesRounded: Int = Int(numberOfCycles.rounded(.toNearestOrAwayFromZero))
-		let duration = 0.05 + Double(numberOfCyclesRounded) * 0.05
-		endlessMoveInProgress = true
-		
-		print("llama new row: ", finalBrickRowHeight, lowestBrick, brickHeight, numberOfCycles, numberOfCyclesRounded)
-				
-		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-			let brickSprite = node as! SKSpriteNode
-			
-			if brickSprite.texture == self.brickIndestructible2Texture && brickSprite.position.y <= lowestBrick - self.brickHeight/2 {
-				node.removeFromParent()
-			}
-			// Remove indestructible bricks below bottom threshold
-
-			let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height*CGFloat(numberOfCyclesRounded), duration: duration)
-			moveBricksDown.timingMode = .easeInEaseOut
-			
-			node.run(moveBricksDown, completion: {
-				if node.position.y < self.finalBrickRowHeight - self.brickHeight/2 {
-					node.removeFromParent()
-				}
-			})
-			// Move bricks down
-		}
-		
-		buildNewEndlessRow(numberOfRows: numberOfCyclesRounded, duration: duration)
-		
-		endlessHeight+=1*numberOfCyclesRounded
-		// Keep track of height travelled. 1 = 1 row of bricks
-		
-		if multiplier < 2.0 {
-			multiplier = multiplier + 0.1 * Double(numberOfCyclesRounded)
-			if multiplier > 2.0 {
-				multiplier = 2.0
-			}
-		}
-		levelScore = levelScore + Int(100 * multiplier) * numberOfCyclesRounded
-		if endlessMode == false {
-			scoreLabel.text = String(totalScore + levelScore)
-		}
-		scoreFactorString = String(format:"%.1f", multiplier)
-		if endlessMode {
-			scoreLabel.text = "\(endlessHeight) m"
-		}
-		multiplierLabel.text = "x\(scoreFactorString)"
-		// Update multiplier & score
-	}
     
     func removeBrick(node: SKNode, sprite: SKSpriteNode) {
-		
-		if endlessMoveInProgress {
-			return
-		}
-		// Don't allow bricks to be removed whilst bricks are moving downwards in endless mode
-		
-		bricksLeft = 0
-		var brickPositionYArray: [CGFloat] = []
-		var endlessModeBricks = 0
-		finalBrickRowHeight = yBrickOffset - (brickHeight*(CGFloat(numberOfBrickRows)-1))
-		
-		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
-			let spriteBrick = nodeBrick as! SKSpriteNode
-			
-			if spriteBrick.texture != self.brickIndestructible2Texture {
-				
-				self.bricksLeft+=1
-				// Count the number of active bricks remaining
-				
-				if self.endlessMode {
-					if spriteBrick.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
-						endlessModeBricks+=1
-						// Count number of active bricks in bottom row of bricks
-					} else {
-						brickPositionYArray.append(spriteBrick.position.y)
-						// Record position of lowest brick that isn't in the final row
-					}
-				}
-			}
-		}
-		
-		bricksLeft-=1
-		// Don't count this brick as it hasn't been removed yet
-		
-		if endlessMode && endlessMoveInProgress == false && ((sprite.position.y <= finalBrickRowHeight + brickHeight/2 && endlessModeBricks <= 1) || (endlessMode && endlessModeBricks == 0 && brickPositionYArray.min()! >= finalBrickRowHeight + brickHeight)) {
-			print("llama remove brick: ", sprite.position.y, finalBrickRowHeight, brickHeight, endlessModeBricks, brickPositionYArray.min()!)
-			newEndlessModeRow(lowestBrick: brickPositionYArray.min()!)
-		}
-		// If there's no other bricks in the bottom row and a move isn't currently in progress, move to the row with the next lowest bricks
 		
 		if sprite.texture == brickNullTexture {
 			node.removeFromParent()
@@ -1586,7 +1501,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// probability of getting a power up if brick is removed
 		}
 
-		if sprite.texture != brickIndestructible1Texture {
+		if sprite.texture != brickIndestructible1Texture && sprite.texture != brickIndestructible2Texture  {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 			node.name = BrickRemovalCategoryName
 			node.isHidden = true
@@ -1596,7 +1511,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
 		}
 		
-		print("llama bricks left: ", bricksLeft)
+		countBricks()
 		
 		switch sprite.texture {
 		case brickMultiHit1Texture:
@@ -1646,6 +1561,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Update score
+		
+		print("llama bricks left: ", bricksLeft, sprite.texture!)
+		
+		if sprite.texture == brickIndestructible1Texture {
+			bricksLeft-=1
+		}
         
         if bricksLeft == 0 && endlessMode == false {
 			levelScore = levelScore + levelCompleteScore
@@ -1655,6 +1576,139 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         // Loads the next level or ends the game if all bricks have been removed
     }
+	
+	func countBricks() {
+				
+		bricksLeft = 0
+		var endlessModeBricks = 0
+		
+		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
+			let spriteBrick = nodeBrick as! SKSpriteNode
+			if spriteBrick.texture != self.brickIndestructible2Texture {
+				self.bricksLeft+=1
+				// Count the number of active bricks remaining
+				
+				if self.endlessMode && spriteBrick.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
+					endlessModeBricks+=1
+				}
+				// Count number of active bricks in bottom row of bricks in endless mode
+				
+				if self.endlessMode && spriteBrick.hasActions() {
+					self.endlessMoveInProgress = true
+				} else {
+					self.endlessMoveInProgress = false
+				}
+				// Checks if brick move is already in progress in endless mode
+			}
+		}
+		
+		print("llama count bricks: ", bricksLeft)
+		
+		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0 {
+			moveEndlessModeRowDown()
+		}
+		// If there's no other bricks in the bottom row and a move isn't currently in progress, move to the row with the next lowest bricks
+	}
+	
+	func moveEndlessModeRowDown() {
+		
+		endlessMoveInProgress = true
+						
+		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+			let brickSprite = node as! SKSpriteNode
+			
+			if node.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
+				node.removeFromParent()
+			}
+			// Count number of active bricks in bottom row of bricks in endless mode
+			
+			let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height, duration: 0.05)
+			node.run(moveBricksDown)
+		}
+		// Move bricks down
+		
+		if gameState.currentState is Playing {
+			buildNewEndlessRow()
+		}
+
+		endlessHeight+=1
+		
+		if endlessHeight <= 10 {
+			let achievement = GKAchievement(identifier: "achievementEndlessTen")
+			if achievement.isCompleted == false {
+				let height = Double(endlessHeight)
+				let percentComplete = height/10.0*100.0
+				achievement.percentComplete = percentComplete
+				achievement.showsCompletionBanner = true
+				GKAchievement.report([achievement]) { (error) in
+					print(error?.localizedDescription ?? "Error reporting achievementEndlessTen achievement")
+				}
+			}
+		}
+		if endlessHeight <= 100 {
+			let achievement = GKAchievement(identifier: "achievementEndlessHundred")
+			if achievement.isCompleted == false {
+				let height = Double(endlessHeight)
+				let percentComplete = height/100.0*100.0
+				achievement.percentComplete = percentComplete
+				achievement.showsCompletionBanner = true
+				GKAchievement.report([achievement]) { (error) in
+					print(error?.localizedDescription ?? "Error reporting achievementEndlessHundred achievement")
+				}
+			}
+		}
+		if endlessHeight <= 1000 {
+			let achievement = GKAchievement(identifier: "achievementEndlessOneK")
+			if achievement.isCompleted == false {
+				let height = Double(endlessHeight)
+				let percentComplete = height/1000.0*100.0
+				achievement.percentComplete = percentComplete
+				achievement.showsCompletionBanner = true
+				GKAchievement.report([achievement]) { (error) in
+					print(error?.localizedDescription ?? "Error reporting achievementEndlessOneK achievement")
+				}
+			}
+		}
+		if endlessHeight <= 10000 {
+			let achievement = GKAchievement(identifier: "achievementEndlessTenK")
+			if achievement.isCompleted == false {
+				let height = Double(endlessHeight)
+				let percentComplete = height/10000.0*100.0
+				achievement.percentComplete = percentComplete
+				achievement.showsCompletionBanner = true
+				GKAchievement.report([achievement]) { (error) in
+					print(error?.localizedDescription ?? "Error reporting achievementEndlessTenK achievement")
+				}
+			}
+		}
+		// Check for endless mode achivements
+		
+		if multiplier < 2.0 {
+			multiplier = multiplier + 0.1
+			if multiplier > 2.0 {
+				multiplier = 2.0
+			}
+		}
+		
+		levelScore = levelScore + Int(100 * multiplier)
+		if endlessMode == false {
+			scoreLabel.text = String(totalScore + levelScore)
+		}
+		
+		scoreFactorString = String(format:"%.1f", multiplier)
+		if endlessMode {
+			scoreLabel.text = "\(endlessHeight) m"
+		}
+		
+		multiplierLabel.text = "x\(scoreFactorString)"
+		// Update multiplier & score
+
+		let wait = SKAction.wait(forDuration: 0.075)
+        self.run(wait, completion: {
+            self.countBricks()
+        })
+        // To run once the new row is inserted - slight delay to allow frame to move forward before executing
+	}
     
     func paddleHit() {
         if hapticsSetting! {
@@ -1675,7 +1729,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var angleDeg = Double(atan2(Double(ySpeedCorrected), Double(xSpeed)))/Double.pi*180
 		// Angle of the ball
 		
-		print("Llama collision: ", collisionPercentage, angleDeg, (ball.position.x-paddle.position.x))
+//		print("Llama collision: ", collisionPercentage, angleDeg, (ball.position.x-paddle.position.x))
 		
 		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3  {
 		// Only apply if the ball hits the centre of the paddle
@@ -1697,15 +1751,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
 				// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
 				
-				print("Angle correction: ", angleDeg)
+//				print("Angle correction: ", angleDeg)
 				
 				if angleDeg < 0+minAngleDeg {
-					print("Angle correction 5")
+//					print("Angle correction 5")
 					angleDeg = minAngleDeg
 				}
 				// Travelling up and right alternative
 				if angleDeg > 180-minAngleDeg {
-					print("Angle correction 6")
+//					print("Angle correction 6")
 					angleDeg = 180-minAngleDeg
 				}
 				// Travelling up and left alternative
@@ -1726,23 +1780,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var nonHiddenNodeFound = false
 		enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 			let sprite = node as! SKSpriteNode
-			if node.isHidden == false && (sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture) {
+			if node.isHidden == false && (sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture || sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture) {
 				nonHiddenNodeFound = true
 				stop.initialize(to: true)
 			}
 		}
+		// Check to see if there are any non-hidden destructible bricks left
+		
 		if nonHiddenNodeFound == false {
+		// Only run if there are only hidden destructible and indestructible bricks left
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				if sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
 					if sprite.texture == self.brickNormalTexture {
-						node.alpha = 0.25
+						node.alpha = 0.75
 					} else {
 						node.alpha = 0.75
 					}
 					node.isHidden = false
 				}
 			}
+			// Flash bricks on
 			let waitDuration = SKAction.wait(forDuration: 0.2)
 			let completionBlock = SKAction.run {
 				self.enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -1753,6 +1811,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 				}
 			}
+			// Flash bricks off
 			let sequence = SKAction.sequence([waitDuration, completionBlock])
 			self.run(sequence, withKey: "invisibleBrickFlash")
 		}
@@ -2865,6 +2924,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var score = totalScore
 		if sender == "Pause" {
 			score = totalScore + levelScore
+			// Update score for pause menu
+		} else {
+            scoreLabel.isHidden = true
+            multiplierLabel.isHidden = true
+            pauseButton.isHidden = true
+            livesLabel.isHidden = true
+            life.isHidden = true
+			// Hide UI
 		}
 		
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender)
@@ -2899,6 +2966,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		hapticsSetting = defaults.bool(forKey: "hapticsSetting")
 		parallaxSetting = defaults.bool(forKey: "parallaxSetting")
 		paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+		gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
 		// Redeclare user settings
 		
 		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
@@ -2959,30 +3027,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
 		var angleDeg = angleDegInput
 		
-		print("Llama start horizontal angle: ", angleDeg)
+//		print("Llama start horizontal angle: ", angleDeg)
 		
 		if angleDeg <= minAngleDeg && angleDeg > 0 {
-			print("Horizontal correction 1")
+//			print("Horizontal correction 1")
 			angleDeg = minAngleDeg
 		}
 		// Up and right
 		if angleDeg >= -minAngleDeg && angleDeg <= 0 {
-			print("Horizontal correction 2")
+//			print("Horizontal correction 2")
 			angleDeg = -minAngleDeg
 		}
 		// Down and right
 		if angleDeg <= 180+minAngleDeg && angleDeg >= 180-minAngleDeg {
-			print("Horizontal correction 3")
+//			print("Horizontal correction 3")
 			angleDeg = 180-minAngleDeg
 		}
 		// Up and left
 		if angleDeg >= -180-minAngleDeg && angleDeg <= -180+minAngleDeg {
-			print("Horizontal correction 4")
+//			print("Horizontal correction 4")
 			angleDeg = -180+minAngleDeg
 		}
 		// Down and left
 
-		print("Llama new horizontal angle: ", angleDeg)
+//		print("Llama new horizontal angle: ", angleDeg)
 		
 		let angleRad = (angleDeg*Double.pi/180)
 		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
@@ -3004,56 +3072,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var angleDeg = Double(atan2(ySpeed, xSpeed))/Double.pi*180
 		let verticalMinAngle = minAngleDeg/2
 		
-		print("Llama start vertical angle: ", angleDeg)
+//		print("Llama start vertical angle: ", angleDeg)
 		
 		// Vertical Control
 		if ball.position.x >= 0 {
 			// ball is on right side of screen
 			if angleDeg > 90-verticalMinAngle && angleDeg <= 90 {
-				print("Vertical correction R1")
+//				print("Vertical correction R1")
 				angleDeg = 90-verticalMinAngle
 			}
 			// Travelling up and right
 			if angleDeg <= 90+verticalMinAngle && angleDeg > 90 {
-				print("Vertical correction R2")
+//				print("Vertical correction R2")
 				angleDeg = 90+verticalMinAngle
 			}
 			// Travelling up and left
 			if angleDeg >= -90 && angleDeg < -90+verticalMinAngle {
-				print("Vertical correction R3")
+//				print("Vertical correction R3")
 				angleDeg = -90+verticalMinAngle
 			}
 			// Travelling down and right
 			if angleDeg < -90 && angleDeg >= -90-verticalMinAngle {
-				print("Vertical correction R4")
+//				print("Vertical correction R4")
 				angleDeg = -90-verticalMinAngle
 			}
 			// Travelling down and left
 		} else {
 			// ball is on left side of screen
 			if angleDeg >= 90-verticalMinAngle && angleDeg < 90 {
-				print("Vertical correction L1")
+//				print("Vertical correction L1")
 				angleDeg = 90-verticalMinAngle
 			}
 			// Travelling up and right
 			if angleDeg < 90+verticalMinAngle && angleDeg >= 90 {
-				print("Vertical correction L2")
+//				print("Vertical correction L2")
 				angleDeg = 90+verticalMinAngle
 			}
 			// Travelling up and left
 			if angleDeg > -90 && angleDeg <= -90+verticalMinAngle {
-				print("Vertical correction L3")
+//				print("Vertical correction L3")
 				angleDeg = -90+verticalMinAngle
 			}
 			// Travelling down and right
 			if angleDeg <= -90 && angleDeg > -90-verticalMinAngle {
-				print("Vertical correction L4")
+//				print("Vertical correction L4")
 				angleDeg = -90-verticalMinAngle
 			}
 			// Travelling down and left
 		}
 		
-		print("Llama new vertical angle: ", angleDeg)
+//		print("Llama new vertical angle: ", angleDeg)
 		
 		let angleRad = (angleDeg*Double.pi/180)
 		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
@@ -3086,7 +3154,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: ySpeed)
 		// Ensure the ball bounces off the wall correctly]
-		print("Frame control")
+//		print("Frame control")
 		
 		let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
 		ballHorizontalControl(angleDegInput: angleDeg)

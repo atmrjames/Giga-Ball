@@ -1,23 +1,23 @@
 {
   "images" : [
     {
+      "filename" : "ProgressBarFull.png",
       "idiom" : "universal",
-      "filename" : "ButtonRewardsHighlighted.png",
       "scale" : "1x"
     },
     {
+      "filename" : "ProgressBarFull@2x.png",
       "idiom" : "universal",
-      "filename" : "ButtonRewardsHighlighted@2x.png",
       "scale" : "2x"
     },
     {
+      "filename" : "ProgressBarFull@3x.png",
       "idiom" : "universal",
-      "filename" : "ButtonRewardsHighlighted@3x.png",
       "scale" : "3x"
     }
   ],
   "info" : {
-    "version" : 1,
-    "author" : "xcode"
+    "author" : "xcode",
+    "version" : 1
   }
 }

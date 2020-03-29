@@ -46,7 +46,7 @@ class LevelPackSetup {
     let levelNameArray: [String] = [
         "Endless Mode",
         
-        // Starter Pack
+        // Classic Pack
         "Checkers",
         "Electric Fence",
         "Gateway",
@@ -69,6 +69,36 @@ class LevelPackSetup {
         "Neptune",
         "Saturn",
         "Meteorite"
+    ]
+    
+    let levelLeaderboardsArray: [String] = [
+        
+        // Endless Mode
+        "leaderboardBestHeight",
+    
+        // Classic Pack
+        "leaderboardLevel01Score",
+        "leaderboardLevel02Score",
+        "leaderboardLevel03Score",
+        "leaderboardLevel04Score",
+        "leaderboardLevel05Score",
+        "leaderboardLevel06Score",
+        "leaderboardLevel07Score",
+        "leaderboardLevel08Score",
+        "leaderboardLevel09Score",
+        "leaderboardLevel10Score",
+        
+        // Space Pack
+        "leaderboardLevel11Score",
+        "leaderboardLevel12Score",
+        "leaderboardLevel13Score",
+        "leaderboardLevel14Score",
+        "leaderboardLevel15Score",
+        "leaderboardLevel16Score",
+        "leaderboardLevel17Score",
+        "leaderboardLevel18Score",
+        "leaderboardLevel19Score",
+        "leaderboardLevel20Score"
     ]
     
     let powerUpImageArray: [UIImage] = [

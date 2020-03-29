@@ -10,7 +10,6 @@ import UIKit
 
 class SplashViewController: UIViewController {
     
-   
     @IBOutlet var splashScreenLogo1: UIImageView!
     @IBOutlet var splashScreenLogo2: UIImageView!
     @IBOutlet var splashScreenLogo3: UIImageView!
@@ -18,15 +17,31 @@ class SplashViewController: UIViewController {
     @IBOutlet var splashScreenLogo5: UIImageView!
     @IBOutlet var splashScreenLogo6: UIImageView!
     
+    @IBOutlet var progressBarEmpty: UIImageView!
+    @IBOutlet var progressBarFull: UIImageView!
+    
+    @IBOutlet var progressWidth: NSLayoutConstraint!
+    
     @IBOutlet var creatorLabel: UILabel!
     
     @IBAction func tapGesture(_ sender: Any) {
         removeAnimate(duration: 0.1)
     }
+    // Remove this function in final release
+    
+    var progressBarWidth: CGFloat = 0
+    var progressBarHeight: CGFloat = 0
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        progressBarEmpty.image = UIImage(named: "ProgressBarEmpty")!
+        progressBarFull.image = UIImage(named: "ProgressBarFull")!
+        
+        progressBarWidth = progressBarEmpty.frame.size.width
+        progressBarHeight = progressBarEmpty.frame.size.height
+        
+        progressWidth.constant = progressBarHeight
         
         splashScreenLogo1.image = UIImage(named: "SplashScreenLogo1")!
         splashScreenLogo2.image = UIImage(named: "SplashScreenLogo2")!
@@ -34,7 +49,7 @@ class SplashViewController: UIViewController {
         splashScreenLogo4.image = UIImage(named: "SplashScreenLogo4")!
         splashScreenLogo5.image = UIImage(named: "SplashScreenLogo5")!
         splashScreenLogo6.image = UIImage(named: "SplashScreenLogo6")!
-        
+
         splashScreenLogo1.alpha = 1.0
         splashScreenLogo2.alpha = 0.0
         splashScreenLogo3.alpha = 0.0
@@ -57,6 +72,11 @@ class SplashViewController: UIViewController {
         
         UIView.animateKeyframes(withDuration: totalDuration, delay: 0, options: [.calculationModeLinear], animations: {
             // Add animations
+            UIView.addKeyframe(withRelativeStartTime: 0.0/totalDuration, relativeDuration: 5.0/totalDuration, animations: {
+                self.progressWidth.constant = self.progressBarEmpty.frame.size.width
+//                 Not animating for some reason
+            })
+
             UIView.addKeyframe(withRelativeStartTime: 0.0/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
                 self.splashScreenLogo2.alpha = 1.0
             })
@@ -95,13 +115,17 @@ class SplashViewController: UIViewController {
         })
     }
 
-    
     func removeAnimate(duration: Double) {
         UIView.animate(withDuration: duration, animations: {
             self.view.alpha = 0.0})
         { (finished: Bool) in
             if (finished) {
                 self.view.removeFromSuperview()
+                
+                NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
+                
+//                GameCenterHandler.helper.viewController = self
+                // show game center after view removed
             }
         }
     }

@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import GameKit
 
-class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
+class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -17,12 +18,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var gameCenterSetting: Bool?
     // User settings
     
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
     let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
     var packStatsArray: [PackStats] = []
     var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
@@ -39,7 +43,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var numberOfLevels: Int?
     var startLevel: Int?
     var levelSender: String = "MainMenu"
-    var statRows: Int = 6
     var numberOfAttempts = 0
     // Key properties
     
@@ -104,6 +107,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if parallaxSetting! {
             addParallax()
         }
+        collapsedStatsTableViewHeight.isActive = false
         updateLabels()
         showAnimate()
         reloadData()
@@ -111,7 +115,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tableView == self.statsTableView {
-            return statRows
+            return 6
         } else {
             return numberOfLevels!
         }
@@ -127,9 +131,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         levelsTableView.rowHeight = 150.0
         
         if tableView == self.statsTableView {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
+            
             switch indexPath.row {
             case 0:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 if numberOfAttempts == 0 {
                     cell.statDescription.text = "No statistics available"
                     cell.statValue.text = ""
@@ -143,7 +148,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
                 return cell
             case 1:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 if numberOfAttempts == 0 {
                     hideCell(cell: cell)
                 } else {
@@ -169,7 +173,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
                 return cell
             case 2:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 if numberOfAttempts == 0 {
                     hideCell(cell: cell)
                 } else {
@@ -179,7 +182,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
                 return cell
             case 3:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 if numberOfAttempts == 0 {
                     hideCell(cell: cell)
                 } else {
@@ -195,17 +197,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
                 return cell
             case 4:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 if numberOfAttempts == 0 {
                     hideCell(cell: cell)
                 } else {
                     statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Cumulative score"
+                    cell.statDescription.text = "Total score"
                     cell.statValue.text = String(scoreArraySum)
                 }
                 return cell
             case 5:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 if numberOfAttempts == 0 {
                     hideCell(cell: cell)
                 } else {
@@ -216,7 +216,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
                 return cell
             default:
-                let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
                 return cell
             }
         } else {
@@ -256,7 +255,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             }
             
             moveToLevelStatsSetup(sender: indexPath.row)
-            
         }
     }
     
@@ -264,10 +262,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
-            cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView3.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+
+        if tableView == self.levelsTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
+                cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView3.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -275,10 +276,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
-            cell.cellView3.transform = .identity
-            cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if tableView == self.levelsTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
+                cell.cellView3.transform = .identity
+                cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     
@@ -292,7 +295,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         let viewWidth = backButtonCollectionView.frame.size.width
         let cellWidth: CGFloat = 50
-        let cellSpacing = (viewWidth - cellWidth*2)/2
+        let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
         backButtonCollectionView!.collectionViewLayout = layout
@@ -300,7 +303,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     // Set the spacing between collection view cells
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        2
+        3
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -313,9 +316,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+            if gameCenterSetting! {
+                cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonNull")
+            }
+        case 2:
+            cell.iconImage.image = UIImage(named:"ButtonPlay")
         default:
             print("Error: Out of range")
             break
@@ -338,6 +347,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             NotificationCenter.default.post(name: .returnPackSelectNotification, object: nil)
         }
         if indexPath.row == 1 {
+            if gameCenterSetting! {
+                showGameCenterLeaderboards()
+            }
+        }
+        if indexPath.row == 2 {
             moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
         }
         
@@ -355,9 +369,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
+                if self.gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
             default:
                 print("Error: Out of range")
                 break
@@ -375,9 +395,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                if self.gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonPlay")
             default:
                 print("Error: Out of range")
                 break
@@ -440,6 +466,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         // Load user settings
     }
     
@@ -501,6 +528,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
         if let packData = try? Data(contentsOf: packStatsStore!) {
             do {
                 packStatsArray = try decoder.decode([PackStats].self, from: packData)
@@ -529,12 +565,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func updateLabels() {
         titleLabel.text = LevelPackSetup().packTitles[packNumber!].uppercased()
         numberOfAttempts = packStatsArray[packNumber!].scores.count
-        if numberOfAttempts == 0 {
-            statsTableViewHeight.isActive = false
-            noStatsTableViewHeight.isActive = true
-        } else {
-            noStatsTableViewHeight.isActive = false
-            statsTableViewHeight.isActive = true
+        if collapsedStatsTableViewHeight.isActive == false {
+            if numberOfAttempts == 0 {
+                statsTableViewHeight.isActive = false
+                noStatsTableViewHeight.isActive = true
+                collapsedStatsTableViewHeight.isActive = false
+            } else {
+                noStatsTableViewHeight.isActive = false
+                statsTableViewHeight.isActive = true
+                collapsedStatsTableViewHeight.isActive = false
+            }
         }
         if numberOfLevels! == 1 {
             levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Level", for: .normal)
@@ -552,9 +592,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func statsTableOpenClose() {
-        if statsTableView.frame.size.height > 0 {
-            statsTableViewHeight.isActive = false
+        if collapsedStatsTableViewHeight.isActive == false {
             collapsedStatsTableViewHeight.isActive = true
+            statsTableViewHeight.isActive = false
+            noStatsTableViewHeight.isActive = false
             UIView.animate(withDuration: 0.25, animations: {
                 self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi/2)
             })
@@ -564,12 +605,41 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: 0)
             })
             updateLabels()
-            
         }
         UIView.animate(withDuration: 0.25) {
             self.view.layoutIfNeeded()
         }
     }
+    
+    func showGameCenterLeaderboards() {
+        if gameCenterSetting! {
+            GameCenterHandler().gameCenterSave()
+        }
+        // Save scores to game center
+        let viewController = self.view.window?.rootViewController
+        let gcViewController = GKGameCenterViewController()
+        gcViewController.gameCenterDelegate = self
+        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
+        
+        if packNumber == 1 {
+            gcViewController.leaderboardIdentifier = "leaderboardClassicPackScore"
+        }
+        if packNumber == 2 {
+            gcViewController.leaderboardIdentifier = "leaderboardSpacePackScore"
+        }
+        // Show corresponding leaderboard for the current level pack
+        
+        viewController?.present(gcViewController, animated: true, completion: nil)
+    }
+    // Show game center view controller
+    
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true, completion: nil)
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+    }
+    // Remove game center view contoller once dismissed
     
     @objc func returnFromGameNotificationKeyReceived(_ notification: Notification) {
         userSettings()

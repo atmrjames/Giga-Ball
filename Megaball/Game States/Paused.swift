@@ -43,7 +43,7 @@ class Paused: GKState {
         self.scene.pauseBallVelocityY = self.scene.ball.physicsBody!.velocity.dy
         // Record the speed of the ball so it can be reapplied later
         
-        scene.pauseButton.texture = scene.playTexture
+        scene.pauseButton.texture = scene.pauseHighlightedTexture
         pauseAllNodes()
         scene.isPaused = true
         // Pause game, pause all nodes and scene

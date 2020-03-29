@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import GameKit
 
 class TotalStats: Codable {
     var cumulativeScore: Int = 0
@@ -23,5 +24,6 @@ class TotalStats: Codable {
     var lasersHit: Int = 0
     
     var endlessModeHeight: [Int] = []
-    var endlessModeHeightDate: [Date] = []
+    var endlessModeHeightDate: [Date] = [] 
+    
 }

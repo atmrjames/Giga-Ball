@@ -82,6 +82,10 @@ class Playing: GKState {
                 // Score isn't reduced when killing ball
             }
             scene.killBall = false
+            
+            if scene.endlessMode {
+                scene.countBricks()
+            }
         }
     }
     // This function runs when this state is entered.

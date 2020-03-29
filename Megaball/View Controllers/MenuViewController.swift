@@ -8,6 +8,7 @@
 
 import UIKit
 import GoogleMobileAds
+import GameKit
 
 class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
@@ -27,6 +28,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var gameCenterSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -42,6 +44,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @IBOutlet var modeSelectTableView: UITableView!
     @IBOutlet var iconCollectionView: UICollectionView!
     @IBOutlet var logoButton: UIButton!
+    
+    @IBOutlet var bannerAdCollapsed: NSLayoutConstraint!
+    @IBOutlet var bannerAdOpenSmall: NSLayoutConstraint!
+    @IBOutlet var bannerAdOpenLarge: NSLayoutConstraint!
     
     var firstLaunch: Bool = false
     // Check if this is the first opening of the app since closing to know if to run splash screen
@@ -72,37 +78,28 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnMenuNotificationKeyReceived), name: .returnMenuNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the settings menu
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.splashScreenEndedNotificationKeyReceived), name: .splashScreenEndedNotification, object: nil)
+        // Sets up an observer to watch for the end of the splash screen in order to load game center authentification
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.foregroundNotificationKeyReceived), name: .foregroundNotification, object: nil)
+        // Sets up an observer to watch for the app returning from the background
+        
         print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
         
         logoButton.titleLabel?.adjustsFontSizeToFitWidth = true
         
         collectionViewLayout()
-        
         defaultSettings()
-        
-        loadData()
-        modeSelectTableView.reloadData()
-        iconCollectionView.reloadData()
-        // Load in NSCoder data stores
-        
-        userSettings()
-        updateAds()
-        // Update user settings
-        
+        refreshView()
+        authGCPlayer()
+        // Game Center authorisation
         showSplashScreen()
         // Show splashscreen when first opening the app
     }
 
     override func viewWillAppear(_ animated: Bool) {
-        loadData()
-        modeSelectTableView.reloadData()
-        iconCollectionView.reloadData()
-        // Load in NSCoder data stores
-        
-        userSettings()
-        updateAds()
-        // Update user settings
+        refreshView()
     }
     
     func showSplashScreen() {
@@ -240,7 +237,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonStats.png")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonRewards.png")
+            cell.iconImage.image = UIImage(named:"ButtonItems.png")
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonSettings.png")
         default:
@@ -286,7 +283,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             case 0:
                 cell.iconImage.image = UIImage(named:"ButtonStatsHighlighted.png")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonRewardsHighlighted.png")
+                cell.iconImage.image = UIImage(named:"ButtonItemsHighlighted.png")
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
             default:
@@ -308,7 +305,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             case 0:
                 cell.iconImage.image = UIImage(named:"ButtonStats.png")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonRewards.png")
+                cell.iconImage.image = UIImage(named:"ButtonItems.png")
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
             default:
@@ -319,12 +316,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func defaultSettings() {
-        defaults.register(defaults: ["adsSetting" : true])
-        defaults.register(defaults: ["soundsSetting" : true])
-        defaults.register(defaults: ["musicSetting" : true])
-        defaults.register(defaults: ["hapticsSetting" : true])
-        defaults.register(defaults: ["parallaxSetting" : true])
-        defaults.register(defaults: ["paddleSensitivitySetting" : 2])
+        defaults.register(defaults: ["adsSetting": true])
+        defaults.register(defaults: ["soundsSetting": true])
+        defaults.register(defaults: ["musicSetting": true])
+        defaults.register(defaults: ["hapticsSetting": true])
+        defaults.register(defaults: ["parallaxSetting": true])
+        defaults.register(defaults: ["paddleSensitivitySetting": 2])
+        defaults.register(defaults: ["gameCenterSetting": false])
     }
     // Set default settings
 
@@ -466,8 +464,36 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         // Load user settings
     }
+    
+    func authGCPlayer() {
+        print("llama GC sign in")
+        let localPlayer = GKLocalPlayer.local
+        localPlayer.authenticateHandler = { (view, error) in
+            if view != nil {
+                self.present(view!, animated: true, completion: {
+                    self.updateGCAuth()
+                })
+            } else {
+                self.updateGCAuth()
+            }
+        }
+    }
+    // Sets up game center
+    
+    func updateGCAuth() {
+//      TODO: check user is the same user as signed in the previous session
+        if GKLocalPlayer.local.isAuthenticated {
+            gameCenterSetting = true
+        } else {
+            gameCenterSetting = false
+        }
+        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        print("llama checked and updated GC auth: ", gameCenterSetting!)
+    }
+    // Sets up game center
     
     func updateAds() {
         if defaults.bool(forKey: "adsSetting") {
@@ -476,33 +502,51 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             bannerView.rootViewController = self
             // Configure banner ad
             
-//            settingsButtonNoAds.priority = UILayoutPriority(rawValue: 250)
-//            settingsButtonAds.priority = UILayoutPriority(rawValue: 999)
-//            settingsButtonNoAds.isActive = false
-//            settingsButtonAds.isActive = true
+            bannerAdCollapsed.isActive = false
+            bannerAdOpenSmall.isActive = true
+            bannerAdOpenLarge.isActive = true
+
             bannerView.load(GADRequest())
             // Load banner ad
         } else {
             bannerView.isHidden = true
             
-//            settingsButtonAds.priority = UILayoutPriority(rawValue: 250)
-//            settingsButtonNoAds.priority = UILayoutPriority(rawValue: 999)
-//            settingsButtonAds.isActive = false
-//            settingsButtonNoAds.isActive = true
+            bannerAdOpenSmall.isActive = false
+            bannerAdOpenLarge.isActive = false
+            bannerAdCollapsed.isActive = true
         }
     }
     // Show or hide banner ad depending on setting
     
-    @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
-        userSettings()
+    func refreshView() {
         loadData()
+        userSettings()
         updateAds()
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()
     }
+    
+    @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
+        refreshView()
+    }
+    
+    @objc private func splashScreenEndedNotificationKeyReceived(_ notification: Notification) {
+        updateGCAuth()
+        refreshView()
+    }
+    // Runs when the splash screen has ended
+    
+    @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
+        authGCPlayer()
+        refreshView()
+    }
+    // Runs when the splash screen has ended
+    
 }
 
 extension Notification.Name {
     public static let returnMenuNotification = Notification.Name(rawValue: "returnMenuNotification")
+    public static let splashScreenEndedNotification = Notification.Name(rawValue: "splashScreenEndedNotification")
+    public static let foregroundNotification = Notification.Name(rawValue: "foregroundNotification")
 }
 // Notification setup

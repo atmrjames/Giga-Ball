@@ -13,6 +13,7 @@ class StatsTableViewCell: UITableViewCell {
     @IBOutlet var viewBackground: UIView!
     @IBOutlet var statDescription: UILabel!
     @IBOutlet var statValue: UILabel!
+    @IBOutlet var statsIcon: UIImageView!
     
     override func awakeFromNib() {
         super.awakeFromNib()

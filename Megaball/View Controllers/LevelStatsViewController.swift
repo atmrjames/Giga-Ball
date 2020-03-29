@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import GameKit
 
-class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
+class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
     var adsSetting: Bool?
@@ -17,6 +18,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var gameCenterSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -41,7 +43,6 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     var levelNumber: Int?
     var packNumber: Int?
     var levelSender: String = "MainMenu"
-    var statRows: Int = 6
     // Key properties
     
     @IBOutlet var backgroundView: UIView!
@@ -63,6 +64,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         levelTableView.delegate = self
         levelTableView.dataSource = self
         levelTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
+        levelTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         // TableView setup
         
         backButtonCollectionView.delegate = self
@@ -92,11 +94,12 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return statRows
+        return 6
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
+        
         levelTableView.rowHeight = 35.0
         
         let numberOfAttempts = levelStatsArray[levelNumber!].scores.count
@@ -105,9 +108,6 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         switch indexPath.row {
         case 0:
-            
-            
-            
             if numberOfAttempts == 0 {
                 cell.statDescription.text = "No statistics available"
                 cell.statValue.text = ""
@@ -201,10 +201,10 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 hideCell(cell: cell)
             } else {
                 if levelNumber == 0 {
-                    cell.statDescription.text = "Cumulative height"
+                    cell.statDescription.text = "Total height"
                     cell.statValue.text = String(heightArraySum)+" m"
                 } else {
-                    cell.statDescription.text = "Cumulative score"
+                    cell.statDescription.text = "Total score"
                     cell.statValue.text = String(scoreArraySum)
                 }
             }
@@ -230,10 +230,6 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
-    
     func hideCell(cell: StatsTableViewCell) {
         cell.statValue.text = ""
         cell.statDescription.text = ""
@@ -244,7 +240,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         let viewWidth = backButtonCollectionView.frame.size.width
         let cellWidth: CGFloat = 50
-        let cellSpacing = (viewWidth - cellWidth*2)/2
+        let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
         backButtonCollectionView!.collectionViewLayout = layout
@@ -252,7 +248,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     // Set the spacing between collection view cells
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        2
+        3
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -265,9 +261,15 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+            if gameCenterSetting! {
+                cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonNull")
+            }
+        case 2:
+            cell.iconImage.image = UIImage(named:"ButtonPlay")
         default:
             print("Error: Out of range")
             break
@@ -290,6 +292,11 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             NotificationCenter.default.post(name: .returnLevelSelectFromStatsNotification, object: nil)
         }
         if indexPath.row == 1 {
+            if gameCenterSetting! {
+                showGameCenterLeaderboards()
+            }
+        }
+        if indexPath.row == 2 {
             moveToGame(selectedLevel: levelNumber!, numberOfLevels: 1, sender: levelSender, levelPack: packNumber!)
         }
         
@@ -307,9 +314,15 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             
             switch indexPath.row {
             case 0:
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
+                if self.gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
             default:
                 print("Error: Out of range")
                 break
@@ -327,9 +340,15 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             
             switch indexPath.row {
             case 0:
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                if self.gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
+            case 2:
+                cell.iconImage.image = UIImage(named:"ButtonPlay")
             default:
                 print("Error: Out of range")
                 break
@@ -355,6 +374,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         // Load user settings
     }
     
@@ -465,6 +485,31 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         levelImageView.layer.shadowRadius = 10.0
         levelImageView.layer.shadowOpacity = 0.75
     }
+    
+    func showGameCenterLeaderboards() {
+        if gameCenterSetting! {
+            GameCenterHandler().gameCenterSave()
+        }
+        // Save scores to game center
+        let viewController = self.view.window?.rootViewController
+        let gcViewController = GKGameCenterViewController()
+        gcViewController.gameCenterDelegate = self
+        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
+        
+        gcViewController.leaderboardIdentifier = LevelPackSetup().levelLeaderboardsArray[levelNumber!]
+        // Show corresponding leaderboard for the current level
+            
+        viewController?.present(gcViewController, animated: true, completion: nil)
+    }
+    // Show game center view controller
+    
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true, completion: nil)
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+    }
+    // Remove game center view contoller once dismissed
     
     @objc func returnLevelStatsNotificationKeyReceived(_ notification: Notification) {
             userSettings()

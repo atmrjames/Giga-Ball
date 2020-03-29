@@ -26,6 +26,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var gameCenterSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -226,6 +227,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             } else {
                 hideCell(cell: cell)
             }
+            
         default:
             print("Error: Out of range")
             break
@@ -274,7 +276,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             if parallaxSetting! {
                 addParallaxToView()
             } else if parallaxSetting! == false {
-                backgroundView.removeMotionEffect(group!)
+                if group != nil {
+                    backgroundView.removeMotionEffect(group!)
+                }
             }
         case 5:
         // Paddle sensitivity
@@ -459,6 +463,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         // Load user settings
     }
     

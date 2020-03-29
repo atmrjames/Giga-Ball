@@ -171,7 +171,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     if self.hapticsSetting! {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonPauseHighlighted.png")
+                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 }
@@ -289,6 +289,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             var heightBest = 0
             if totalStatsArray[0].endlessModeHeight.count > 0 {
                 heightBest = totalStatsArray[0].endlessModeHeight.max()!
+                highscoreLabel.text = "\(heightBest) m"
             }
             
             if sender == "Pause" {
@@ -309,8 +310,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     if height > previousBestHeight {
                         scoreLabelTitle.text = "New Best Height"
                         highscoreLabelTitle.text = "Previous Best Height"
+                        highscoreLabel.text = "\(previousBestHeight) m"
                     }
-                    highscoreLabel.text = "\(previousBestHeight) m"
                 }
             }
 
@@ -325,8 +326,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             scoreLabel.text = "\(score)"
             highscoreLabelTitle.text = "Highscore"
             
-            print("llama number of levels 0: ", numberOfLevels, score)
-
             var currentHighscore = score
             if numberOfLevels == 1 {
                 if levelStatsArray[levelNumber].scores.count > 0 {
@@ -470,6 +469,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         updateLabels()
         if parallaxSetting! {
             addParallaxToView()
+        } else if group != nil {
+            containterView.removeMotionEffect(group!)
         }
     }
     
