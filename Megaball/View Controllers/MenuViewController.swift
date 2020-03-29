@@ -120,10 +120,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "modeSelectCell", for: indexPath) as! ModeSelectTableViewCell
         
-        modeSelectTableView.rowHeight = 100.0
+        modeSelectTableView.rowHeight = 150.0
         
         if view.frame.size.height > 1000 {
-            modeSelectTableView.rowHeight = 125.0
+            modeSelectTableView.rowHeight = 150.0
         }
                 
         switch indexPath.row {
@@ -131,7 +131,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             cell.modeImageIcon.image = UIImage(named:"TutorialIcon.png")
             cell.modeTextLabel.text = "Tutorial (WIP)"
             cell.modeTextLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            
+            hideCell(cell: cell)
         case 1:
             cell.modeImageIcon.image = UIImage(named:"ClassicIcon.png")
             cell.modeTextLabel.text = "Classic Mode"
@@ -151,6 +151,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
         
         return cell
+    }
+    
+    func hideCell(cell: ModeSelectTableViewCell) {
+        modeSelectTableView.rowHeight = 0.0
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

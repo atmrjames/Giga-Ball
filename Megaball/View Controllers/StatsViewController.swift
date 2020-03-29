@@ -81,7 +81,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         
         let numberOfAttempts = totalStatsArray[0].levelsPlayed + totalStatsArray[0].endlessModeHeight.count
-        
+            
         statsTableView.rowHeight = 35.0
         
         switch indexPath.row {

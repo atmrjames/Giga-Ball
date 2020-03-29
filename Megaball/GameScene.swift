@@ -366,7 +366,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var totalStatsArray: [TotalStats] = []
 	var packStatsArray: [PackStats] = []
 	var levelStatsArray: [LevelStats] = []
-    var levelsPlayed: Int = 0
     var levelsCompleted: Int = 0
 	var ballHits: Int = 0
 	var ballsLost: Int = 0
@@ -784,7 +783,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.1(1) - TBC - 29/03/2020"
+		buildLabel.text = "Alpha Build 0.2.1(2) - TBC - 29/03/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -880,7 +879,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Load the level stats array from the NSCoder data store
 		
-		levelsPlayed = totalStatsArray[0].levelsPlayed
 		levelsCompleted = totalStatsArray[0].levelsCompleted
 		ballHits = totalStatsArray[0].ballHits
 		ballsLost = totalStatsArray[0].ballsLost
@@ -1410,6 +1408,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		} else {
 			brickBounceCounter = 0
 		}
+		
+		if sprite.texture == brickMultiHit1Texture || sprite.texture == brickMultiHit2Texture || sprite.texture == brickMultiHit3Texture || sprite.isHidden {
+			levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
+			if endlessMode == false {
+				scoreLabel.text = String(totalScore + levelScore)
+			}
+		}
         
         switch sprite.texture {
         case brickMultiHit1Texture:
@@ -1485,7 +1490,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		
 		powerUpProximity = false
-		
 		enumerateChildNodes(withName: PowerUpCategoryName) { (nodePowerUp, stop) in
 			if sprite.position.y > nodePowerUp.position.y-self.brickWidth*2 && sprite.position.y < nodePowerUp.position.y+self.brickWidth*2 {
 				self.powerUpProximity = true
@@ -1493,13 +1497,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		
-		if powerUpProximity == false {
+		if powerUpProximity == false && sprite.texture != brickIndestructible2Texture {
 			let powerUpProb = Int.random(in: 1...powerUpProbFactor)
 			if powerUpProb == 1 && bricksLeft > 1 {
 				powerUpGenerator(sprite: sprite)
 			}
 			// probability of getting a power up if brick is removed
 		}
+		// Generate power-up only if not too close to another power-up or if hitting an indestructible 2 brick
 
 		if sprite.texture != brickIndestructible1Texture && sprite.texture != brickIndestructible2Texture  {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
@@ -1541,17 +1546,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			break
 		}
 		
-		if brickRemovalCounter == 9 && endlessMode == false {
-			if multiplier < 2.0 {
-				multiplier = multiplier + 0.1
+		if sprite.texture != brickIndestructible2Texture {
+			
+			if brickRemovalCounter == 9 && endlessMode == false {
+				if multiplier < 2.0 {
+					multiplier = multiplier + 0.1
+				}
+				brickRemovalCounter = 0
+			} else {
+				brickRemovalCounter+=1
 			}
-			brickRemovalCounter = 0
-		} else {
-			brickRemovalCounter+=1
+			// Update multiplier
+			
+			levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
 		}
-		// Update multiplier
 		
-        levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
 		if endlessMode == false {
 			scoreLabel.text = String(totalScore + levelScore)
 		}
@@ -3217,6 +3226,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func restartGameNotificiationKeyReceived() {
+		print("llama reset 3")
         gameState.enter(PreGame.self)
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit

@@ -24,11 +24,13 @@ class Playing: GKState {
         
         scene.musicHandler()
         
-        if previousState is InbetweenLevels && (scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber) {
-            scene.gameState.enter(GameOver.self)
-        }
+//        if previousState is InbetweenLevels && (scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber) {
+//            print("llama last level: ", scene.levelNumber, scene.endLevelNumber)
+//            scene.gameState.enter(GameOver.self)
+//        }
         
         if previousState is InbetweenLevels || previousState is Ad {
+            print("llama last level: ", scene.levelNumber, scene.endLevelNumber)
             scene.levelNumber+=1
             // Increment level number
         }

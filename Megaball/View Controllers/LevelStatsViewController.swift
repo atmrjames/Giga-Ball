@@ -102,7 +102,13 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         levelTableView.rowHeight = 35.0
         
-        let numberOfAttempts = levelStatsArray[levelNumber!].scores.count
+        var numberOfAttempts = 0
+        if levelNumber == 0 {
+            numberOfAttempts = totalStatsArray[0].endlessModeHeight.count
+        } else {
+            numberOfAttempts = levelStatsArray[levelNumber!].scores.count
+        }
+        
         let scoreArraySum = levelStatsArray[levelNumber!].scores.reduce(0, +)
         let heightArraySum = totalStatsArray[0].endlessModeHeight.reduce(0, +)
         
@@ -138,8 +144,8 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                     
                     if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
                         let bestHeightIndex = totalStatsArray[0].endlessModeHeight.firstIndex(of: bestHeight)
-                        let bestHeightDate = levelStatsArray[levelNumber!].scoreDates[bestHeightIndex!]
-                        // Find date of highscore
+                        let bestHeightDate = totalStatsArray[levelNumber!].endlessModeHeightDate[bestHeightIndex!]
+                        // Find date of best height
                     
                         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
                         let inputDate = formatter.string(from: bestHeightDate)

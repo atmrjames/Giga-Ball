@@ -117,7 +117,6 @@ final class GameCenterHandler: NSObject {
         }
         // Leaderboard Level 03
         
-        
         if levelStatsArray[4].scores.count > 0 {
             let level04ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel04Score")
             level04ScoreReporter.value = Int64(levelStatsArray[4].scores.max()!)
@@ -128,9 +127,9 @@ final class GameCenterHandler: NSObject {
         
         if levelStatsArray[5].scores.count > 0 {
             let level05ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel05Score")
+            level05ScoreReporter.value = Int64(levelStatsArray[5].scores.max()!)
             let level05ScoreArray: [GKScore] = [level05ScoreReporter]
             GKScore.report(level05ScoreArray, withCompletionHandler: nil)
-            level05ScoreReporter.value = Int64(levelStatsArray[5].scores.max()!)
         }
         // Leaderboard Level 05
         
