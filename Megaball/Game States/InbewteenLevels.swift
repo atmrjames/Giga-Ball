@@ -19,6 +19,8 @@ class InbetweenLevels: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
+        print("llama llama entered inbetween levels")
+        
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToContinueReceived(_:)), name: .continueToNextLevel, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
         
@@ -26,17 +28,14 @@ class InbetweenLevels: GKState {
         // Sets up an observer to watch for notifications to check if the user has pressed restart on the end level, gameover popup
         
         if previousState is Playing {
-            print("previous state playing")
+            scene.saveCurrentGame()
             inbetweenLevels()
         }
         
         if previousState is Ad {
-            print("previous state ad")
             if scene.endlessMode || scene.gameoverStatus == true {
-                print("previous state ad 0")
                 scene.showPauseMenu(sender: "Game Over")
             } else {
-                print("previous state ad 2")
                 scene.showPauseMenu(sender: "Complete")
             }
         }

@@ -11,23 +11,26 @@ import GameplayKit
 
 extension GameScene {
     
-    func loadLevel0() {
+    func prepEndlessMode(height: Int) {
         endlessMode = true
         endlessMoveInProgress = false
-        endlessHeight = 0
+        endlessHeight = height
 
         life.isHidden = true
         livesLabel.isHidden = true
         multiplierLabel.isHidden = true
         // Remove classic mode labels
         
-        
         scoreLabel.fontSize = fontSize*1.25
         scoreLabel.horizontalAlignmentMode = .right
-//        livesLabel.position.x = 0
         scoreLabel.position.y = life.position.y-2
-        scoreLabel.text = "0 m"
+        scoreLabel.text = "\(endlessHeight) m"
         // Setup score label for endless mode
+    }
+    
+    func loadLevel0() {
+        
+        prepEndlessMode(height: 0)
         
         var brickArray: [SKNode] = []
         // Array to store all bricks
@@ -79,11 +82,13 @@ extension GameScene {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
-                
-                if brick.texture == brickNormalTexture {
-                    brick.colorBlendFactor = 1.0
-                }
+
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
+                
+                if brick.texture == brickInvisibleTexture {
+                    brick.isHidden = true
+                }
+                
                 brickArray.append(brick)
             }
         }

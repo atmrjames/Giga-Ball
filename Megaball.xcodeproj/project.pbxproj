@@ -31,6 +31,7 @@
 		1A5D803C23E8B38000F50BE0 /* Level011.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5D803B23E8B38000F50BE0 /* Level011.swift */; };
 		1A5F63B92417F0FE0072EC61 /* ModeSelectTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5F63B72417F0FE0072EC61 /* ModeSelectTableViewCell.swift */; };
 		1A5F63BA2417F0FE0072EC61 /* ModeSelectTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1A5F63B82417F0FE0072EC61 /* ModeSelectTableViewCell.xib */; };
+		1A601CA42433566B000A4616 /* ResumeBrickCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A601CA32433566B000A4616 /* ResumeBrickCreation.swift */; };
 		1A624F712417FE7C00479B6D /* PackSelectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A624F702417FE7C00479B6D /* PackSelectViewController.swift */; };
 		1A63018623EDCC3C005DA2F2 /* LevelStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A63018523EDCC3C005DA2F2 /* LevelStatsViewController.swift */; };
 		1A661D2023DDCF4F0063CE5A /* Ad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A661D1F23DDCF4F0063CE5A /* Ad.swift */; };
@@ -117,6 +118,7 @@
 		1A5D803B23E8B38000F50BE0 /* Level011.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level011.swift; sourceTree = "<group>"; };
 		1A5F63B72417F0FE0072EC61 /* ModeSelectTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSelectTableViewCell.swift; sourceTree = "<group>"; };
 		1A5F63B82417F0FE0072EC61 /* ModeSelectTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ModeSelectTableViewCell.xib; sourceTree = "<group>"; };
+		1A601CA32433566B000A4616 /* ResumeBrickCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeBrickCreation.swift; sourceTree = "<group>"; };
 		1A624F702417FE7C00479B6D /* PackSelectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackSelectViewController.swift; sourceTree = "<group>"; };
 		1A63018523EDCC3C005DA2F2 /* LevelStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelStatsViewController.swift; sourceTree = "<group>"; };
 		1A661D1F23DDCF4F0063CE5A /* Ad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ad.swift; sourceTree = "<group>"; };
@@ -262,10 +264,10 @@
 			children = (
 				1A5A949C230F08770076D635 /* PreGame.swift */,
 				1A5A949E230F08840076D635 /* Playing.swift */,
-				1AE9573A2321A74700E5618A /* InbewteenLevels.swift */,
-				1A5A94A0230F088F0076D635 /* GameOver.swift */,
 				1A7D6528231B0E980091CA58 /* Paused.swift */,
+				1AE9573A2321A74700E5618A /* InbewteenLevels.swift */,
 				1A661D1F23DDCF4F0063CE5A /* Ad.swift */,
+				1A5A94A0230F088F0076D635 /* GameOver.swift */,
 			);
 			path = "Game States";
 			sourceTree = "<group>";
@@ -275,6 +277,7 @@
 			children = (
 				1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */,
 				1AE92C25240177AF00F25A84 /* BrickCreation.swift */,
+				1A601CA32433566B000A4616 /* ResumeBrickCreation.swift */,
 			);
 			path = BrickCreation;
 			sourceTree = "<group>";
@@ -570,6 +573,7 @@
 				1AFF33C823EC43030033F485 /* PackStats.swift in Sources */,
 				1AF5749623AA5F4200DCBAE5 /* Level003.swift in Sources */,
 				1A7A34CE240E901900044C87 /* Level014.swift in Sources */,
+				1A601CA42433566B000A4616 /* ResumeBrickCreation.swift in Sources */,
 				1A04BEFA238FE42700EB6150 /* Level009.swift in Sources */,
 				1A7A34DA240E902300044C87 /* Level020.swift in Sources */,
 				1AF335E82411344F007DC048 /* Level005.swift in Sources */,
@@ -776,7 +780,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2.1;
+				MARKETING_VERSION = 0.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;
@@ -798,7 +802,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2.1;
+				MARKETING_VERSION = 0.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;

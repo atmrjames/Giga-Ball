@@ -21,7 +21,6 @@ extension GameScene {
         for j in 0..<numberOfBrickColumns {
             
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
-            brick.texture = brickNullTexture
             brick.alpha = 0.0
             
             if randomRow >= 0 && randomRow <= 90 {
@@ -91,10 +90,14 @@ extension GameScene {
                 }
             }
             
-            if brick.texture == brickInvisibleTexture || brick.texture == brickNullTexture {
+            if brick.texture == brickInvisibleTexture {
                 brick.isHidden = true
             }
             // Hide invisible and null bricks
+            
+            if brick.texture == brickNormalTexture {
+                brick.color = brickWhite
+            }
             
             brick.size.width = brickWidth
             brick.size.height = brickHeight
@@ -127,6 +130,10 @@ extension GameScene {
         
         for brick in brickArray {
             let brickCurrent = brick as! SKSpriteNode
+            
+            if brickCurrent.texture == brickNormalTexture {
+                brickCurrent.colorBlendFactor = 1.0
+            }
             
             brick.run(startingGroup)
             brick.alpha = 1.0

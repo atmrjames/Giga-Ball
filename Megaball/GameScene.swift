@@ -44,10 +44,10 @@ protocol GameViewControllerDelegate: class {
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String)
 	func createInterstitial()
 	func loadInterstitial()
-	var selectedLevel: Int? { get }
-	var numberOfLevels: Int? { get }
-	var levelSender: String? { get }
-	var levelPack: Int? { get }
+	var selectedLevel: Int? { get set }
+	var numberOfLevels: Int? { get set }
+	var levelSender: String? { get set }
+	var levelPack: Int? { get set }
 }
 // Setup the protocol to return to the main menu from GameViewController
 
@@ -208,8 +208,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var totalHighscore: Int = 0
 	var multiplier: Double = 0
 	var scoreFactorString: String = ""
-	var newLevelHighScore: Bool = false
-	var newTotalHighScore: Bool = false
     // Setup score properties
 	
 	var adsSetting: Bool?
@@ -219,20 +217,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var parallaxSetting: Bool?
 	var paddleSensitivitySetting: Int?
 	var gameCenterSetting: Bool?
-	// Settings
+	// User settings
+	var saveGameSaveArray: [Int]?
+    var saveMultiplier: Double?
+    var saveBrickTextureArray: [Int]?
+    var saveBrickColourArray: [Int]?
+    var saveBrickXPositionArray: [Int]?
+    var saveBrickYPositionArray: [Int]?
+	var saveBallPropertiesArray: [Double]?
+    // Game save settings
     
     let brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
-	
 	let brickInvisibleTexture: SKTexture = SKTexture(imageNamed: "BrickInvisible")
-	
     let brickMultiHit1Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit1")
     let brickMultiHit2Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit2")
     let brickMultiHit3Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit3")
 	let brickMultiHit4Texture: SKTexture = SKTexture(imageNamed: "BrickMultiHit4")
-	
 	let brickIndestructible1Texture: SKTexture = SKTexture(imageNamed: "BrickIndestructible1")
     let brickIndestructible2Texture: SKTexture = SKTexture(imageNamed: "BrickIndestructible2")
-	
 	let brickNullTexture: SKTexture = SKTexture(imageNamed: "BrickNull")
     // Brick textures
     
@@ -783,7 +785,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.1(2) - TBC - 29/03/2020"
+		buildLabel.text = "Alpha Build 0.2.2(1) - TBC - 05/04/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -974,6 +976,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let name = touchedNode.name {
                 if name == "pauseButton" || name == "pauseButtonTouch" && gameState.currentState is Playing {
 					if endlessMoveInProgress == false {
+						clearSavedGame()
+						// Clear current saved game before re-saving
 						gameState.enter(Paused.self)
 					}
 					// Don't allow pause if brick down animation is in progress
@@ -1216,11 +1220,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             gameoverStatus = true
             gameState.enter(InbetweenLevels.self)
             return
-        }
+		} else {
+			saveCurrentGame()
+		}
     }
     
     func ballLostAnimation() {
 		ballLostBool = true
+		saveCurrentGame()
         let scaleDown = SKAction.scale(to: 0, duration: 0.1)
         let fadeOut = SKAction.fadeOut(withDuration: 0.1)
         let ballLostGroup = SKAction.group([scaleDown, fadeOut])
@@ -1570,14 +1577,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Update score
-		
-		print("llama bricks left: ", bricksLeft, sprite.texture!)
-		
+				
 		if sprite.texture == brickIndestructible1Texture {
 			bricksLeft-=1
 		}
         
         if bricksLeft == 0 && endlessMode == false {
+			clearSavedGame()
 			levelScore = levelScore + levelCompleteScore
 			scoreLabel.text = String(totalScore + levelScore)
             gameState.enter(InbetweenLevels.self)
@@ -1610,9 +1616,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// Checks if brick move is already in progress in endless mode
 			}
 		}
-		
-		print("llama count bricks: ", bricksLeft)
-		
+				
 		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0 {
 			moveEndlessModeRowDown()
 		}
@@ -1782,6 +1786,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		
 		invisibleBrickFlash()
+		
+		let waitPaddleHitSave = SKAction.wait(forDuration: 0.1)
+		paddle.run(waitPaddleHitSave, completion: {
+			self.saveCurrentGame()
+		})
 		
     }
 	
@@ -2175,7 +2184,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
 		let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 7.5)
-		powerUp.run(move)
+		powerUp.run(move, withKey: "PowerUpDrop")
     }
     
 	func applyPowerUp (node: SKNode) {
@@ -2554,6 +2563,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerupsCollected[12]+=1
 			levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
 			scoreLabel.text = String(totalScore + levelScore)
+			clearSavedGame()
             gameState.enter(InbetweenLevels.self)
 			return
 			
@@ -2929,7 +2939,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
 	func showPauseMenu(sender: String) {
-		
+						
 		var score = totalScore
 		if sender == "Pause" {
 			score = totalScore + levelScore
@@ -2976,7 +2986,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		parallaxSetting = defaults.bool(forKey: "parallaxSetting")
 		paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
 		gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
-		// Redeclare user settings
+		// User settings
+		
+		saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
+        saveMultiplier = defaults.double(forKey: "saveMultiplier")
+        saveBrickTextureArray = defaults.object(forKey: "saveBrickTextureArray") as! [Int]?
+        saveBrickColourArray = defaults.object(forKey: "saveBrickColourArray") as! [Int]?
+        saveBrickXPositionArray = defaults.object(forKey: "saveBrickXPositionArray") as! [Int]?
+        saveBrickYPositionArray = defaults.object(forKey: "saveBrickYPositionArray") as! [Int]?
+		saveBallPropertiesArray = defaults.object(forKey: "saveBallPropertiesArray") as! [Double]?
+        // Game save settings
 		
 		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
 		if ballIsOnPaddle {
@@ -3221,23 +3240,436 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     @objc func pauseNotificationKeyReceived() {
-		self.gameState.enter(Paused.self)
+		
+		if self.gameState.currentState is Paused {
+			// do nothing
+		} else {
+			clearSavedGame()
+			// Clear current saved game before re-saving
+			self.gameState.enter(Paused.self)
+		}
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func restartGameNotificiationKeyReceived() {
-		print("llama reset 3")
+				
+		if numberOfLevels > 1 {
+			startLevelNumber = LevelPackSetup().startLevelNumber[packNumber]
+			numberOfLevels = LevelPackSetup().numberOfLevels[packNumber]
+
+			gameViewControllerDelegate?.selectedLevel = startLevelNumber
+			gameViewControllerDelegate?.numberOfLevels = numberOfLevels
+			gameViewControllerDelegate?.levelSender = levelSender
+			gameViewControllerDelegate?.levelPack = packNumber
+		}
+		
+		clearSavedGame()
+		// If restarting after resuming, make sure the correct level is selected
+		
         gameState.enter(PreGame.self)
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-		if endlessMoveInProgress == false {
+		if endlessMoveInProgress == false && gameState.currentState is Playing {
+			clearSavedGame()
 			gameState.enter(Paused.self)
 		}
 		// Don't allow pause if brick down animation is in progress
 	}
+	
+	func saveCurrentGame() {
+		print("llama llama save current game")
+		if numberOfLives == 0 && ballLostBool && ballIsOnPaddle == false {
+			clearSavedGame()
+			return
+		}
+		// If number of lives is 0 and ball lost animtion has started, don't save current game
+				
+		var currentLevelNumber = levelNumber
+		let currentEndLevelNumber = endLevelNumber
+		let currentPackNumber = packNumber
+		var currentLevelScore = levelScore
+		let currentTotalScore = totalScore + levelScore
+		var currentNumberOfLives = numberOfLives
+		let currentHeight = endlessHeight
+		let currentNumberOfLevels = numberOfLevels
+		
+		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && numberOfLevels > 1 && gameoverStatus == false {
+			if numberOfLevels > 1 {
+				currentLevelNumber+=1
+			} else {
+				clearSavedGame()
+				return
+			}
+		}
+		// If inbetween levels but only playing 1 level at a time don't save
+		
+		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels]
+		
+		var currentMultiplier = multiplier
+		
+		if ballLostBool {
+			currentLevelScore = currentLevelScore + lifeLostScore
+			currentNumberOfLives-=1
+		}
+		// If ball is lost on pause, update properties to reflect that when reloading the game
+		
+		if ballLostBool || gameState.currentState is InbetweenLevels || gameState.currentState is Ad {
+			currentMultiplier = 1.0
+		}
+		// If ball is lost or inbetween levels or ads, reset the multiplier
+		
+		var brickTextureArray: [Int]? = []
+		var brickColourArray: [Int]? = []
+		var brickXPositionArray: [Int]? = []
+		var brickYPositionArray: [Int]? = []
+		var ballPropertiesArray: [Double]? = []
+		
+		if gameState.currentState is Playing || gameState.currentState is Paused {
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+				let sprite = node as! SKSpriteNode
+				var spriteTextureIndex: Int?
+				switch sprite.texture {
+				case self.brickNormalTexture:
+					if sprite.isHidden == false {
+						spriteTextureIndex = 0
+					} else {
+						spriteTextureIndex = 1
+					}
+				case self.brickInvisibleTexture:
+					if sprite.isHidden == false {
+						spriteTextureIndex = 2
+					} else {
+						spriteTextureIndex = 3
+					}
+				case self.brickMultiHit1Texture:
+					spriteTextureIndex = 4
+				case self.brickMultiHit2Texture:
+					spriteTextureIndex = 5
+				case self.brickMultiHit3Texture:
+					spriteTextureIndex = 6
+				case self.brickMultiHit4Texture:
+					spriteTextureIndex = 7
+				case self.brickIndestructible1Texture:
+					spriteTextureIndex = 8
+				case self.brickIndestructible2Texture:
+					spriteTextureIndex = 9
+				case self.brickNullTexture:
+					spriteTextureIndex = 10
+				default:
+					spriteTextureIndex = 0
+				}
+				
+				var spriteColourIndex: Int?
+				switch sprite.color {
+				case self.brickBlue:
+					spriteColourIndex = 0
+				case self.brickBlueDark:
+					spriteColourIndex = 1
+				case self.brickBlueDarkExtra:
+					spriteColourIndex = 2
+				case self.brickBlueLight:
+					spriteColourIndex = 3
+				case self.brickGreenGigaball:
+					spriteColourIndex = 4
+				case self.brickGreenSI:
+					spriteColourIndex = 5
+				case self.brickGrey:
+					spriteColourIndex = 6
+				case self.brickGreyDark:
+					spriteColourIndex = 7
+				case self.brickGreyLight:
+					spriteColourIndex = 8
+				case self.brickOrange:
+					spriteColourIndex = 9
+				case self.brickOrangeDark:
+					spriteColourIndex = 10
+				case self.brickOrangeLight:
+					spriteColourIndex = 11
+				case self.brickPink:
+					spriteColourIndex = 12
+				case self.brickPurple:
+					spriteColourIndex = 13
+				case self.brickWhite:
+					spriteColourIndex = 14
+				case self.brickYellow:
+					spriteColourIndex = 15
+				case self.brickYellowLight:
+					spriteColourIndex = 16
+				default:
+					spriteColourIndex = 100
+				}
+				
+				let currentBrickTexture = spriteTextureIndex
+				let currentBrickColour = spriteColourIndex
+				brickTextureArray!.append(currentBrickTexture!)
+				brickColourArray!.append(currentBrickColour!)
+				
+				var currentBrickXIndex = Double((self.gameWidth/2 - self.brickWidth/2 - sprite.position.x)/self.brickWidth)
+				var currentBrickYIndex = Double((self.yBrickOffset - sprite.position.y)/self.brickHeight)
+				
+				currentBrickXIndex = round(currentBrickXIndex)
+				currentBrickYIndex = round(currentBrickYIndex)
+				// Round to the nearest integer
+				
+				brickXPositionArray!.append(Int(currentBrickXIndex))
+				brickYPositionArray!.append(Int(currentBrickYIndex))
+			}
+			// Brick save
+				
+			if ballIsOnPaddle == false && self.ballLostBool == false && (gameState.currentState is Playing || gameState.currentState is Paused) {
+				let ballXPosition = Double(ball.position.x)
+				let ballYPosition = Double(ball.position.y)
+				let ballDXVelocity = Double(pauseBallVelocityX)
+				let ballDYVelocity = Double(pauseBallVelocityY)
+				let paddleXPosition = Double(paddle.position.x)
+				ballPropertiesArray = [ballXPosition, ballYPosition, ballDXVelocity, ballDYVelocity, paddleXPosition]
+			}
+			// Only save ball properties if ball is in play and not on paddle
+		}
+		// Save bricks, ball and power-up if playing or paused
 
+		saveGameSaveArray! = gameSaveArray
+		saveMultiplier! = currentMultiplier
+		
+		if brickXPositionArray != [] {
+			saveBrickTextureArray! = brickTextureArray!
+			saveBrickColourArray! = brickColourArray!
+			saveBrickXPositionArray! = brickXPositionArray!
+			saveBrickYPositionArray! = brickYPositionArray!
+		}
+		
+		if ballPropertiesArray != [] {
+			saveBallPropertiesArray! = ballPropertiesArray!
+		}
+		
+		defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
+		defaults.set(saveMultiplier!, forKey: "saveMultiplier")
+		defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
+		defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
+		defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
+		defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
+		defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
+		
+		print("llama saved game log: ", saveGameSaveArray!, saveMultiplier!, saveBrickTextureArray!, saveBrickColourArray!, saveBrickXPositionArray!, saveBrickYPositionArray!, saveBallPropertiesArray!)
+	}
+	
+	func clearSavedGame() {
+		userSettings()
+		saveGameSaveArray! = []
+		saveMultiplier! = 1.0
+		saveBrickTextureArray! = []
+		saveBrickColourArray! = []
+		saveBrickXPositionArray! = []
+		saveBrickYPositionArray! = []
+		saveBallPropertiesArray! = []
+		defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
+		defaults.set(saveMultiplier!, forKey: "saveMultiplier")
+		defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
+		defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
+		defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
+		defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
+		defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
+		print("llama llama save game data cleared GS: ", saveGameSaveArray!)
+	}
+	
+	func resumeGame() {
+		if saveBallPropertiesArray != [] {
+			ballIsOnPaddle = false
+			ballLostBool = false
+			ball.position.x = CGFloat(saveBallPropertiesArray![0])
+			ball.position.y = CGFloat(saveBallPropertiesArray![1])
+			paddle.position.x = CGFloat(saveBallPropertiesArray![4])
+			numberOfLevels = saveGameSaveArray![7]
+			self.gameState.enter(Paused.self)
+		} else {
+			saveCurrentGame()
+		}
+		// Load ball position and velocity if it has been saved
+	}
+	
+	func resumeFromPauseCountdown() {
+			
+		countdownStarted = true
+		isPaused = false
+		pauseAllNodes()
+		pauseButton.texture = pauseHighlightedTexture
+		// Unpause scene to allow for animation ensuring all other nodes remain paused for now
+		
+		let startScale = SKAction.scale(to: 2, duration: 0)
+		let startFade = SKAction.fadeOut(withDuration: 0)
+		let scaleIn = SKAction.scale(to: 1, duration: 0.25)
+		let scaleOut = SKAction.scale(to: 0.5, duration: 0.25)
+		let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+		let fadeOut = SKAction.fadeOut(withDuration: 0.25)
+		let wait = SKAction.wait(forDuration: 0.75)
+		unpauseCountdownLabel.removeAllActions()
+		// Setup animation properties
+
+		let startGroup = SKAction.group([startScale, startFade])
+		// Prep label ahead of animation
+		let animationIn1 = SKAction.group([scaleIn, fadeIn, wait])
+		// Animate in with pause
+		let animationIn2 = SKAction.group([scaleIn, fadeIn])
+		// Animate in
+		let animationOut = SKAction.group([scaleOut, fadeOut])
+		// Animate out
+		
+		var unpauseCountdownText = "R E A D Y"
+		unpauseCountdownLabel.text = String(unpauseCountdownText)
+		unpauseCountdownLabel.run(startGroup, completion: {
+			self.unpauseCountdownLabel.isHidden = false
+			self.unpauseCountdownLabel.run(animationIn1, completion: {
+				self.unpauseCountdownLabel.run(animationOut, completion: {
+					unpauseCountdownText = "G O"
+					self.unpauseCountdownLabel.text = String(unpauseCountdownText)
+					self.unpauseCountdownLabel.run(startGroup, completion: {
+						self.unpauseCountdownLabel.run(animationIn2, completion: {
+							self.gameState.enter(Playing.self)
+							// Restart playing
+							if self.hapticsSetting! {
+								self.lightHaptic.impactOccurred()
+							}
+							self.unpauseCountdownLabel.run(animationOut, completion: {
+								self.unpauseCountdownLabel.isHidden = true
+							})
+						})
+					})
+				})
+			})
+		})
+		// Animate countdown
+	}
+	
+	func pauseAllNodes() {
+        enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
+            node.isPaused = true
+        }
+        enumerateChildNodes(withName: BallCategoryName) { (node, _) in
+            self.ball.physicsBody!.velocity.dx = 0
+            self.ball.physicsBody!.velocity.dy = 0
+            node.isPaused = true
+        }
+        enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+            node.isPaused = true
+        }
+        enumerateChildNodes(withName: BrickRemovalCategoryName) { (node, _) in
+            node.isPaused = true
+        }
+        enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
+			node.removeAction(forKey: "PowerUpDrop")
+        }
+        enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
+            node.isPaused = true
+        }
+        // Pause all nodes individually
+        
+        ball.physicsBody!.affectedByGravity = false
+        // Ensure the ball won't fall under gravity if the gameScene is unpaused
+        
+        if ballIsOnPaddle == false && ballLostBool == false {
+            
+            let angleRad = atan2(Double(self.pauseBallVelocityY), Double(self.pauseBallVelocityX))
+            let angleDeg = Double(angleRad)/Double.pi*180
+            let rotationAngle = CGFloat(angleRad)
+            directionMarker.zRotation = rotationAngle
+            directionMarker.size.width = ball.size.width*3.5
+            directionMarker.size.height = ball.size.height*3.5
+            directionMarker.position.x = ball.position.x
+            directionMarker.position.y = ball.position.y
+            // Set direction marker rotation to match the ball's direction of travel and position
+            
+            if ball.texture == superballTexture {
+                directionMarker.texture = directionMarkerOuterSuperTexture
+            } else if ball.texture == undestructiballTexture {
+                directionMarker.texture = directionMarkerOuterUndestructiTexture
+            } else {
+                directionMarker.texture = directionMarkerOuterTexture
+            }
+            // Set direction marker outer texture if the ball is near either edge of frame
+            
+            if directionMarker.position.x > 0 + frame.size.width/2 - directionMarker.size.width/2 {
+                if angleDeg > -90 && angleDeg < 90 {
+                    if ball.texture == superballTexture {
+                        directionMarker.texture = directionMarkerInnerSuperTexture
+                    } else if ball.texture == undestructiballTexture {
+                        directionMarker.texture = directionMarkerInnerUndestructiTexture
+                    } else {
+                        directionMarker.texture = directionMarkerInnerTexture
+                    }
+                    // Set texture of direction marker based on ball texture
+                }
+            }
+            else if directionMarker.position.x < 0 - frame.size.width/2 + directionMarker.size.width/2 {
+                if angleDeg < -90 || angleDeg > 90 {
+                    if ball.texture == superballTexture {
+                        directionMarker.texture = directionMarkerInnerSuperTexture
+                    } else if ball.texture == undestructiballTexture {
+                        directionMarker.texture = directionMarkerInnerUndestructiTexture
+                    } else {
+                        directionMarker.texture = directionMarkerInnerTexture
+                    }
+                    // Set texture of direction marker based on ball texture
+                }
+            }
+            // Set direction marker inner texture if the ball is near either edge of frame
+    
+            directionMarker.isHidden = false
+            // Show ball direction marker
+        }
+    }
+    // Pause all nodes
+	
+	func playFromPause() {
+		
+		clearSavedGame()
+		countdownStarted = false
+		pauseButton.texture = pauseTexture
+		directionMarker.isHidden = true
+		isPaused = false
+		
+		enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
+			node.isPaused = false
+		}
+		enumerateChildNodes(withName: BallCategoryName) { (node, _) in
+			self.ball.physicsBody!.velocity = CGVector(dx: self.pauseBallVelocityX, dy: self.pauseBallVelocityY)
+			node.isPaused = false
+		}
+		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+			node.isPaused = false
+		}
+		enumerateChildNodes(withName: BrickRemovalCategoryName) { (node, _) in
+			node.isPaused = false
+		}
+		enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
+			let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 7.5)
+			node.run(move, withKey: "PowerUpDrop")
+		}
+		enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
+			node.isPaused = false
+		}
+		// Restart game, unpause all nodes
+		
+		ball.physicsBody!.affectedByGravity = true
+		// Enusre the ball is affected by gravity
+		
+		if killBall {
+			
+			if numberOfLives == 0 {
+				numberOfLives = 1
+			}
+			ballLost()
+			levelScore = levelScore - lifeLostScore
+			scoreLabel.text = String(totalScore + levelScore)
+			// Score isn't reduced when killing ball
+		}
+		killBall = false
+		
+		if endlessMode {
+			countBricks()
+		}
+	}
 }
 
 extension Notification.Name {

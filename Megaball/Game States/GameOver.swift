@@ -18,6 +18,9 @@ class GameOver: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
+        
+        print("llama llama entered game over")
+        
         scene.moveToMainMenu()
     }
     // This function runs when this state is entered.

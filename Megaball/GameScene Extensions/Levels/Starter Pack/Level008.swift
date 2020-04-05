@@ -36,11 +36,13 @@ extension GameScene {
                 if j == 5 && (i == 0 || i == 1 || i == 5 || i == 6 || i == 10 || i == 11 || i == 15 || i == 16 || i == 20 || i == 21) {
                         brick.texture = brickIndestructible1Texture
                 }
-                
-                if brick.texture == brickNormalTexture {
-                    brick.colorBlendFactor = 1.0
-                }
+
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
+                
+                if brick.texture == brickInvisibleTexture {
+                    brick.isHidden = true
+                }
+                
                 brickArray.append(brick)
             }
         }

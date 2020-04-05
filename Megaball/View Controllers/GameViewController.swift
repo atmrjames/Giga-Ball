@@ -61,17 +61,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         }
     }
     
-//    @objc func saveGameProgressNotificationKeyNotificationReceived() {
-//    // Save Scene
-//        do {
-//            let sceneData = try NSKeyedArchiver.archivedData(withRootObject: self, requiringSecureCoding: false)
-//            UserDefaults.standard.set(sceneData, forKey: "currentScene")
-//        }
-//        catch {
-//            print("Error saving game data on app quit, \(error)")
-//        }
-//    }
-    
     func createInterstitial() {
         print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
         interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")

@@ -22,6 +22,8 @@ class Ad: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
+        print("llama llama entered ad")
+        
         notificationCounter = 0
         
         if let musicPlaying = scene.backgroundMusic {
@@ -34,33 +36,17 @@ class Ad: GKState {
     // This function runs when this state is entered.
     
     @objc func notificationToCloseAd(_ notification: Notification) {
-        print("ad to playing: ", notificationCounter)
-        
         notificationCounter+=1
         
         if notificationCounter <= 1 {
             if scene.endlessMode || scene.gameoverStatus == true {
-                print("ad 0")
                 scene.gameState.enter(InbetweenLevels.self)
-            } else if scene.levelNumber != scene.endLevelNumber {
-                print("ad 1")
+            } else if scene.levelNumber < scene.endLevelNumber {
                 scene.gameState.enter(Playing.self)
             } else {
-                print("ad 2")
                 scene.gameState.enter(InbetweenLevels.self)
             }
         }
-        
-        
-        
-//        scene.gameState.enter(InbetweenLevels.self)
-//        print("llama ad end level: ", scene.levelNumber, scene.endLevelNumber)
-//        if scene.endlessMode || scene.gameoverStatus == true || scene.levelNumber == scene.endLevelNumber {
-//            scene.gameState.enter(InbetweenLevels.self)
-//            // Show game over pop-up
-//        } else {
-//            scene.gameState.enter(Playing.self)
-//        }
     }
     // Call the function to load the next level if a notification from the end level popup is received
     

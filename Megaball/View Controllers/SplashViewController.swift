@@ -23,14 +23,22 @@ class SplashViewController: UIViewController {
     @IBOutlet var progressWidth: NSLayoutConstraint!
     
     @IBOutlet var creatorLabel: UILabel!
+    @IBOutlet var resumingLabel: UILabel!
+    
     
     @IBAction func tapGesture(_ sender: Any) {
-        removeAnimate(duration: 0.1)
+        if self.resumeInProgress == false {
+            removeAnimate(duration: 0.1)
+        }
     }
     // Remove this function in final release
     
     var progressBarWidth: CGFloat = 0
     var progressBarHeight: CGFloat = 0
+    
+    var gameToResume: Bool?
+    
+    var resumeInProgress: Bool = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -59,6 +67,13 @@ class SplashViewController: UIViewController {
         creatorLabel.alpha = 0.0
         creatorLabel.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         // Pre animation setup
+        
+        if gameToResume! {
+            resumingLabel.isHidden = false
+        } else {
+            resumingLabel.isHidden = true
+        }
+        // Show or hide resume label to reflect if a previous saved game is being loaded
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -111,23 +126,36 @@ class SplashViewController: UIViewController {
                 self.creatorLabel.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
             })
         }, completion:{ _ in
-            self.removeAnimate(duration: 0.25)
+            if self.resumeInProgress == false {
+                self.removeAnimate(duration: 0.25)
+            }
         })
     }
 
     func removeAnimate(duration: Double) {
-        UIView.animate(withDuration: duration, animations: {
-            self.view.alpha = 0.0})
-        { (finished: Bool) in
-            if (finished) {
-                self.view.removeFromSuperview()
-                
-                NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
-                
-//                GameCenterHandler.helper.viewController = self
-                // show game center after view removed
+        
+        resumeInProgress = true
+        
+        if self.gameToResume == false {
+            UIView.animate(withDuration: duration, animations: {
+                self.view.alpha = 0.0})
+            { (finished: Bool) in
+                if (finished) {
+                    self.view.removeFromSuperview()
+                    NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
+                }
             }
+        } else {
+            NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
+            
+            UIView.animate(withDuration: duration, animations: {
+                self.view.alpha = 100.0})
+            { (finished: Bool) in
+                if (finished) {
+                    self.view.removeFromSuperview()
+                }
+            }
+            // Delay removal of splash screen when resuming game
         }
     }
-    
 }

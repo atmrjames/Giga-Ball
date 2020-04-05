@@ -40,7 +40,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 //        NotificationCenter.default.post(name: .saveGameProgressNotificationKey, object: nil)
         // Send notification to ensure game is paused when app is quit
         
-        print("llama going to background")
+        print("llama going from foreground to background - AD")
+        NotificationCenter.default.post(name: .backgroundNotification, object: nil)
 //        save game state
         
     }
@@ -50,7 +51,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // LOAD GAME DATA HERE IF THERE WAS A GAME IN PROGRESS
         
-        print("llama returning from background to foreground")
+        print("llama returning from background to foreground - ADs")
         NotificationCenter.default.post(name: .foregroundNotification, object: nil)
         // Send notification to check game center auth
         

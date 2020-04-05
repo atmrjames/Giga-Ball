@@ -44,8 +44,12 @@ extension GameScene {
             
             bricksLeft += 1
             
-            if brickCurrent.texture == brickInvisibleTexture {
+            if brickCurrent.texture == brickInvisibleTexture && saveGameSaveArray! == [] {
                 brick.isHidden = true
+            }
+            
+            if brickCurrent.texture == brickNormalTexture {
+                brickCurrent.colorBlendFactor = 1.0
             }
 
             if brickCurrent.texture == brickNullTexture || brickCurrent.texture == brickIndestructible2Texture {
@@ -56,23 +60,28 @@ extension GameScene {
             }
             // Remove null bricks & discount indestructible bricks
             
-            let startingScale = SKAction.scale(to: 0.8, duration: 0)
-            let startingFade = SKAction.fadeOut(withDuration: 0)
-            let scaleUp = SKAction.scale(to: 1, duration: 0.25)
-            let fadeIn = SKAction.fadeIn(withDuration: 0.25)
-            let wait = SKAction.wait(forDuration: 0.25)
-            let startingGroup = SKAction.group([startingScale, startingFade])
-            let brickGroup = SKAction.group([scaleUp, fadeIn])
-            let brickSequence = SKAction.sequence([wait, brickGroup])
-            // Setup brick animation
-            
-            brick.run(startingGroup)
-            brick.run(brickSequence)
-            // Run animation for each brick
+            if saveGameSaveArray! == [] {
+                let startingScale = SKAction.scale(to: 0.8, duration: 0)
+                let startingFade = SKAction.fadeOut(withDuration: 0)
+                let scaleUp = SKAction.scale(to: 1, duration: 0.25)
+                let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+                let wait = SKAction.wait(forDuration: 0.25)
+                let startingGroup = SKAction.group([startingScale, startingFade])
+                let brickGroup = SKAction.group([scaleUp, fadeIn])
+                let brickSequence = SKAction.sequence([wait, brickGroup])
+                // Setup brick animation
+                
+                brick.run(startingGroup)
+                brick.run(brickSequence)
+                // Run animation for each brick
+            }
+            // Don't animate if resuming game
             
         }
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
+        
+        resumeGame()
     }
 }

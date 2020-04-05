@@ -51,6 +51,7 @@ class WarningViewController: UIViewController {
             NotificationCenter.default.post(name: .resetNotificiation, object: nil)
         }
         if senderID == "pauseMenu" {
+            MenuViewController().clearSavedGame()
             moveToMainMenu()
         }
     }

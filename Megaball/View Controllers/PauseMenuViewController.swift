@@ -147,7 +147,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 hideAnimate()
                 moveToSettings()
             } else {
-                print("llama reset 2")
                 removeAnimate(nextAction: .restartGameNotificiation)
             }
         }

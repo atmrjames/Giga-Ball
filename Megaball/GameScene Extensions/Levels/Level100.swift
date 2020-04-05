@@ -21,11 +21,13 @@ extension GameScene {
                 
                 brick.texture = brickNormalTexture
                 brick.color = brickBlue
-                
-                if brick.texture == brickNormalTexture {
-                    brick.colorBlendFactor = 1.0
-                }
+
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
+                
+                if brick.texture == brickInvisibleTexture {
+                    brick.isHidden = true
+                }
+                
                 brickArray.append(brick)
             }
         }

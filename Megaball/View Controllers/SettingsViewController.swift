@@ -497,12 +497,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func ipadCompatibility() {
-        
         backgroundViewLeading.isActive = false
         backgroundViewTop.isActive = false
         backgroundView.frame.size.height = 896
         backgroundView.frame.size.width = 414
-        
     }
     
     func showWarning(senderID: String) {

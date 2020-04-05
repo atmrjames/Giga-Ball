@@ -30,6 +30,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
     // User settings
+    var saveGameSaveArray: [Int]?
+    var saveMultiplier: Double?
+    var saveBrickTextureArray: [Int]?
+    var saveBrickColourArray: [Int]?
+    var saveBrickXPositionArray: [Int]?
+    var saveBrickYPositionArray: [Int]?
+    var saveBallPropertiesArray: [Double]?
+    // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
@@ -84,6 +92,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.foregroundNotificationKeyReceived), name: .foregroundNotification, object: nil)
         // Sets up an observer to watch for the app returning from the background
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundNotificationKeyReceived), name: .backgroundNotification, object: nil)
+        // Sets up an observer to watch for the app going into the background
+        
         print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
         
@@ -94,8 +105,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         refreshView()
         authGCPlayer()
         // Game Center authorisation
+        
+        print("llama game save array: ", saveGameSaveArray!)
+
         showSplashScreen()
-        // Show splashscreen when first opening the app
+        // Show splashscreen when first opening the app if there is no game to resume
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -106,6 +120,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if firstLaunch == false {
             firstLaunch = true
             let splashView = self.storyboard?.instantiateViewController(withIdentifier: "splashView") as! SplashViewController
+            
+            if saveGameSaveArray!.count > 0 {
+                splashView.gameToResume = true
+            } else {
+                splashView.gameToResume = false
+            }
+            
             self.addChild(splashView)
             splashView.view.frame = self.view.frame
             self.view.addSubview(splashView.view)
@@ -327,6 +348,16 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["parallaxSetting": true])
         defaults.register(defaults: ["paddleSensitivitySetting": 2])
         defaults.register(defaults: ["gameCenterSetting": false])
+        // User settings
+        
+        defaults.register(defaults: ["saveGameSaveArray": []])
+        defaults.register(defaults: ["saveMultiplier": 1.0])
+        defaults.register(defaults: ["saveBrickTextureArray": []])
+        defaults.register(defaults: ["saveBrickColourArray": []])
+        defaults.register(defaults: ["saveBrickXPositionArray": []])
+        defaults.register(defaults: ["saveBrickYPositionArray": []])
+        defaults.register(defaults: ["saveBallPropertiesArray": []])
+        // Game save settings
     }
     // Set default settings
 
@@ -469,11 +500,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
-        // Load user settings
+        // User settings
+        
+        saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
+        saveMultiplier = defaults.double(forKey: "saveMultiplier")
+        saveBrickTextureArray = defaults.object(forKey: "saveBrickTextureArray") as! [Int]?
+        saveBrickColourArray = defaults.object(forKey: "saveBrickColourArray") as! [Int]?
+        saveBrickXPositionArray = defaults.object(forKey: "saveBrickXPositionArray") as! [Int]?
+        saveBrickYPositionArray = defaults.object(forKey: "saveBrickYPositionArray") as! [Int]?
+        saveBallPropertiesArray = defaults.object(forKey: "saveBallPropertiesArray") as! [Double]?
+        // Game save settings
     }
     
     func authGCPlayer() {
-        print("llama GC sign in")
         let localPlayer = GKLocalPlayer.local
         localPlayer.authenticateHandler = { (view, error) in
             if view != nil {
@@ -495,7 +534,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             gameCenterSetting = false
         }
         defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
-        print("llama checked and updated GC auth: ", gameCenterSetting!)
     }
     // Sets up game center
     
@@ -537,20 +575,57 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @objc private func splashScreenEndedNotificationKeyReceived(_ notification: Notification) {
         updateGCAuth()
         refreshView()
+        
+        if saveGameSaveArray!.count > 0 {
+            loadSavedGame()
+        }
     }
     // Runs when the splash screen has ended
     
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
+        print("llama llama menu foreground")
         authGCPlayer()
         refreshView()
     }
     // Runs when the splash screen has ended
     
+    @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
+        print("llama llama menu background")
+    }
+    // Runs when the splash screen has ended
+    
+    func clearSavedGame() {
+        userSettings()
+        saveGameSaveArray! = []
+        saveMultiplier! = 1.0
+        saveBrickTextureArray! = []
+        saveBrickColourArray! = []
+        saveBrickXPositionArray! = []
+        saveBrickYPositionArray! = []
+        saveBallPropertiesArray! = []
+        defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
+        defaults.set(saveMultiplier!, forKey: "saveMultiplier")
+        defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
+        defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
+        defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
+        defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
+        defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
+        print("llama llama save game data cleared MM: ", saveGameSaveArray!)
+    }
+    
+    func loadSavedGame() {
+        levelSender = "MainMenu"
+        numberOfLevels = saveGameSaveArray![1] - saveGameSaveArray![0] + 1
+        moveToGame(selectedLevel: saveGameSaveArray![0], numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: saveGameSaveArray![2])
+        print("llama resume game: ", saveGameSaveArray![0], numberOfLevels!, levelSender!, saveGameSaveArray![2])
+// TODO: Show specific loading splashscreen - delay for some time to load data, login to game center, etc
+    }
 }
 
 extension Notification.Name {
     public static let returnMenuNotification = Notification.Name(rawValue: "returnMenuNotification")
     public static let splashScreenEndedNotification = Notification.Name(rawValue: "splashScreenEndedNotification")
     public static let foregroundNotification = Notification.Name(rawValue: "foregroundNotification")
+    public static let backgroundNotification = Notification.Name(rawValue: "backgroundNotification")
 }
 // Notification setup

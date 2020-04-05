@@ -19,8 +19,8 @@ class PreGame: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        print("llama reset 4")
-        
+        print("llama llama entered pre game")
+                
         self.resetGame()
         
         if scene.musicSetting! {
@@ -48,10 +48,12 @@ class PreGame: GKState {
         scene.pauseButton.isHidden = true
         scene.livesLabel.isHidden = true
         scene.life.isHidden = true
+        scene.ballIsOnPaddle = true
         // Hide labels
         
-        print("llama reset 5")
-        
+        scene.ballStartingPositionY = scene.paddlePositionY + scene.paddle.size.height/2 + scene.ballSize/2 + 1
+        // Redeclare ballStartingPositionY
+                
         if let startingLevelNumber = scene.gameViewControllerDelegate?.selectedLevel {
             scene.startLevelNumber = startingLevelNumber
             scene.levelNumber = scene.startLevelNumber
