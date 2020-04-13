@@ -10,15 +10,17 @@ import Foundation
 import UIKit
 
 class LevelPackSetup {
-    let numberOfLevels: [Int] = [1, 10, 10, 0, 0 ,1]
-    let startLevelNumber: [Int] = [100, 1, 11, 21, 31, 0]
+    let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10]
+    let startLevelNumber: [Int] = [100, 0, 1, 11, 21, 31, 41, 51]
     let packTitles: [String] = [
         "Tutorial",
+        "Endless Mode",
         "Classic Pack",
         "Space Pack",
-        "Pack 3 (WIP)",
-        "Pack 4 (WIP)",
-        "Endless Mode"
+        "Nature Pack",
+        "Urban Pack",
+        "Food Pack",
+        "Numbers Pack"
     ]
     let levelImageArray: [UIImage] = [
         UIImage(named:"Level00Image.png")!,
@@ -41,7 +43,47 @@ class LevelPackSetup {
         UIImage(named: "Level17Image.png")!,
         UIImage(named: "Level18Image.png")!,
         UIImage(named: "Level19Image.png")!,
-        UIImage(named: "Level20Image.png")!
+        UIImage(named: "Level20Image.png")!,
+        UIImage(named: "Level21Image.png")!,
+        UIImage(named: "Level22Image.png")!,
+        UIImage(named: "Level23Image.png")!,
+        UIImage(named: "Level24Image.png")!,
+        UIImage(named: "Level25Image.png")!,
+        UIImage(named: "Level26Image.png")!,
+        UIImage(named: "Level27Image.png")!,
+        UIImage(named: "Level28Image.png")!,
+        UIImage(named: "Level29Image.png")!,
+        UIImage(named: "Level30Image.png")!,
+        UIImage(named: "Level31Image.png")!,
+        UIImage(named: "Level32Image.png")!,
+        UIImage(named: "Level33Image.png")!,
+        UIImage(named: "Level34Image.png")!,
+        UIImage(named: "Level35Image.png")!,
+        UIImage(named: "Level36Image.png")!,
+        UIImage(named: "Level37Image.png")!,
+        UIImage(named: "Level38Image.png")!,
+        UIImage(named: "Level39Image.png")!,
+        UIImage(named: "Level40Image.png")!,
+        UIImage(named: "Level41Image.png")!,
+        UIImage(named: "Level42Image.png")!,
+        UIImage(named: "Level43Image.png")!,
+        UIImage(named: "Level44Image.png")!,
+        UIImage(named: "Level45Image.png")!,
+        UIImage(named: "Level46Image.png")!,
+        UIImage(named: "Level47Image.png")!,
+        UIImage(named: "Level48Image.png")!,
+        UIImage(named: "Level49Image.png")!,
+        UIImage(named: "Level50Image.png")!,
+        UIImage(named: "Level51Image.png")!,
+        UIImage(named: "Level52Image.png")!,
+        UIImage(named: "Level53Image.png")!,
+        UIImage(named: "Level54Image.png")!,
+        UIImage(named: "Level55Image.png")!,
+        UIImage(named: "Level56Image.png")!,
+        UIImage(named: "Level57Image.png")!,
+        UIImage(named: "Level58Image.png")!,
+        UIImage(named: "Level59Image.png")!,
+        UIImage(named: "Level60Image.png")!
     ]
     let levelNameArray: [String] = [
         "Endless Mode",
@@ -68,7 +110,55 @@ class LevelPackSetup {
         "Meteor Shower",
         "Neptune",
         "Saturn",
-        "Meteorite"
+        "Meteorite",
+        
+        // Nature Pack
+        "Leaf",
+        "Rainbow",
+        "Egg",
+        "Tree",
+        "Sunset",
+        "Apple",
+        "Flower",
+        "Birds",
+        "Germ",
+        "Butterfly",
+        
+        // Urban Pack
+        "City Map",
+        "Skyscraper",
+        "Subway",
+        "Cottage",
+        "Traffic Light",
+        "Finance",
+        "Apartments",
+        "City Hall",
+        "Bridge",
+        "Cityscape Reflection",
+        
+        // Food Pack
+        "Hotdog",
+        "Piece of Cake",
+        "Wine Glass",
+        "Fried Egg",
+        "BBQ",
+        "Kebab",
+        "Ice Cream",
+        "Burger",
+        "Dessert",
+        "Chocolate Bar",
+        
+        // Number Pack
+        "Zero",
+        "One",
+        "Two",
+        "Three",
+        "Four",
+        "Five",
+        "Six",
+        "Seven",
+        "Eight",
+        "Nine"
     ]
     
     let levelLeaderboardsArray: [String] = [
@@ -98,7 +188,55 @@ class LevelPackSetup {
         "leaderboardLevel17Score",
         "leaderboardLevel18Score",
         "leaderboardLevel19Score",
-        "leaderboardLevel20Score"
+        "leaderboardLevel20Score",
+        
+        // Nature Pack
+        "leaderboardLevel21Score",
+        "leaderboardLevel22Score",
+        "leaderboardLevel23Score",
+        "leaderboardLevel24Score",
+        "leaderboardLevel25Score",
+        "leaderboardLevel26Score",
+        "leaderboardLevel27Score",
+        "leaderboardLevel28Score",
+        "leaderboardLevel29Score",
+        "leaderboardLevel30Score",
+        
+        // Urban Pack
+        "leaderboardLevel31Score",
+        "leaderboardLevel32Score",
+        "leaderboardLevel33Score",
+        "leaderboardLevel34Score",
+        "leaderboardLevel35Score",
+        "leaderboardLevel36Score",
+        "leaderboardLevel37Score",
+        "leaderboardLevel38Score",
+        "leaderboardLevel39Score",
+        "leaderboardLevel40Score",
+        
+        // Food Pack
+        "leaderboardLevel41Score",
+        "leaderboardLevel42Score",
+        "leaderboardLevel43Score",
+        "leaderboardLevel44Score",
+        "leaderboardLevel45Score",
+        "leaderboardLevel46Score",
+        "leaderboardLevel47Score",
+        "leaderboardLevel48Score",
+        "leaderboardLevel49Score",
+        "leaderboardLevel50Score",
+        
+        // Numbers Pack
+        "leaderboardLevel51Score",
+        "leaderboardLevel52Score",
+        "leaderboardLevel53Score",
+        "leaderboardLevel54Score",
+        "leaderboardLevel55Score",
+        "leaderboardLevel56Score",
+        "leaderboardLevel57Score",
+        "leaderboardLevel58Score",
+        "leaderboardLevel59Score",
+        "leaderboardLevel60Score"
     ]
     
     let powerUpImageArray: [UIImage] = [

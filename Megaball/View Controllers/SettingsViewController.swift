@@ -414,7 +414,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func addParallaxToView() {
-        let amount = 25
+        var amount = 25
+        if view.frame.width > 450 {
+            print("frame width: ", view.frame.width)
+            amount = 50
+            // iPad
+        }
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount

@@ -201,7 +201,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         if indexPath.row == 2 {
         // Endless mode
-            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[5], levelNumber: LevelPackSetup().startLevelNumber[5], packNumber: 5)
+            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1], levelNumber: LevelPackSetup().startLevelNumber[1], packNumber: 1)
         }
         
         tableView.deselectRow(at: indexPath, animated: true)

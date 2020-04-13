@@ -26,17 +26,16 @@
 	<true/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>FoundryGridnik Medium.otf</string>
-		<string>SF-Pro-Rounded-Black.otf</string>
-		<string>SF-Pro-Rounded-Bold.otf</string>
-		<string>SF-Pro-Rounded-Heavy.otf</string>
-		<string>SF-Pro-Rounded-Light.otf</string>
-		<string>SF-Pro-Rounded-Medium.otf</string>
-		<string>SF-Pro-Rounded-Regular.otf</string>
-		<string>SF-Pro-Rounded-Semibold.otf</string>
-		<string>SF-Pro-Rounded-Thin.otf</string>
-		<string>SF-Pro-Rounded-Ultralight.otf</string>
 		<string>FugazOne-Regular</string>
+		<string>SF-Pro-Rounded-Black</string>
+		<string>SF-Pro-Rounded-Bold</string>
+		<string>SF-Pro-Rounded-Heavy</string>
+		<string>SF-Pro-Rounded-Light</string>
+		<string>SF-Pro-Rounded-Medium</string>
+		<string>SF-Pro-Rounded-Regular</string>
+		<string>SF-Pro-Rounded-Semibold</string>
+		<string>SF-Pro-Rounded-Thin</string>
+		<string>SF-Pro-Rounded-Ultralight</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

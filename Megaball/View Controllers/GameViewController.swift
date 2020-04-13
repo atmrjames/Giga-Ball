@@ -37,9 +37,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        NotificationCenter.default.addObserver(self, selector: #selector(self.saveGameProgressNotificationKeyNotificationReceived), name: .saveGameProgressNotificationKey, object: nil)
-//        // Setup notification to check if the app has been quit
-        
         if let view = self.view as! SKView? {
             // Load the SKScene from 'GameScene.sks'
             if let scene = SKScene(fileNamed: "GameScene") {
@@ -90,7 +87,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
         NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
-        navigationController?.popToRootViewController(animated: true)
+        self.view.removeFromSuperview()
     }
     // Segue to MenuViewController
     
@@ -103,13 +100,24 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         pauseMenuVC.height = height
         pauseMenuVC.sender = sender
         // Update pause menu view controller properties with function input values
-
         self.addChild(pauseMenuVC)
         pauseMenuVC.view.frame = self.view.frame
         self.view.addSubview(pauseMenuVC.view)
         pauseMenuVC.didMove(toParent: self)
     }
     // Show PauseMenuViewController as popup
+    
+    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int) {
+        let inbetweenView = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenView") as! InbetweenViewController
+        inbetweenView.levelNumber = levelNumber
+        inbetweenView.packNumber = packNumber
+        inbetweenView.totalScore = score
+        // Update pause menu view controller properties with function input values
+        self.addChild(inbetweenView)
+        inbetweenView.view.frame = self.view.frame
+        self.view.addSubview(inbetweenView.view)
+        inbetweenView.didMove(toParent: self)
+    }
 
     override var shouldAutorotate: Bool {
         return true

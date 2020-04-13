@@ -42,7 +42,9 @@ class Ad: GKState {
             if scene.endlessMode || scene.gameoverStatus == true {
                 scene.gameState.enter(InbetweenLevels.self)
             } else if scene.levelNumber < scene.endLevelNumber {
-                scene.gameState.enter(Playing.self)
+//                scene.gameState.enter(Playing.self)
+                scene.showInbetweenView()
+                // SHOW INBETWEEN LEVELS VC
             } else {
                 scene.gameState.enter(InbetweenLevels.self)
             }

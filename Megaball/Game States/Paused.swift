@@ -50,20 +50,17 @@ class Paused: GKState {
         }
         
         scene.pauseButton.texture = scene.pauseHighlightedTexture
+        scene.pauseButton.size.width = scene.pauseButtonSize*0.9
+        scene.pauseButton.size.height = scene.pauseButtonSize*0.9
         scene.pauseAllNodes()
         scene.isPaused = true
         // Pause game, pause all nodes and scene
         
-        if scene.saveBallPropertiesArray == [] {
-            if scene.hapticsSetting! {
-                scene.interfaceHaptic.impactOccurred()
-            }
-            scene.saveCurrentGame()
-            scene.showPauseMenu(sender: "Pause")
-        } else {
-            NotificationCenter.default.post(name: .unpause, object: nil)
+        if scene.hapticsSetting! {
+            scene.interfaceHaptic.impactOccurred()
         }
-        // Resume game if loading in
+        scene.saveCurrentGame()
+        scene.showPauseMenu(sender: "Pause")
     }
     // This function runs when this state is entered.
     

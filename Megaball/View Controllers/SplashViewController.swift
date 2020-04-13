@@ -17,10 +17,7 @@ class SplashViewController: UIViewController {
     @IBOutlet var splashScreenLogo5: UIImageView!
     @IBOutlet var splashScreenLogo6: UIImageView!
     
-    @IBOutlet var progressBarEmpty: UIImageView!
-    @IBOutlet var progressBarFull: UIImageView!
-    
-    @IBOutlet var progressWidth: NSLayoutConstraint!
+    @IBOutlet var progressBar: UIImageView!
     
     @IBOutlet var creatorLabel: UILabel!
     @IBOutlet var resumingLabel: UILabel!
@@ -43,13 +40,7 @@ class SplashViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        progressBarEmpty.image = UIImage(named: "ProgressBarEmpty")!
-        progressBarFull.image = UIImage(named: "ProgressBarFull")!
-        
-        progressBarWidth = progressBarEmpty.frame.size.width
-        progressBarHeight = progressBarEmpty.frame.size.height
-        
-        progressWidth.constant = progressBarHeight
+        progressBar.image = UIImage(named: "ProgressBarFull")!
         
         splashScreenLogo1.image = UIImage(named: "SplashScreenLogo1")!
         splashScreenLogo2.image = UIImage(named: "SplashScreenLogo2")!
@@ -70,8 +61,10 @@ class SplashViewController: UIViewController {
         
         if gameToResume! {
             resumingLabel.isHidden = false
+            progressBar.isHidden = false
         } else {
             resumingLabel.isHidden = true
+            progressBar.isHidden = true
         }
         // Show or hide resume label to reflect if a previous saved game is being loaded
     }
@@ -87,10 +80,6 @@ class SplashViewController: UIViewController {
         
         UIView.animateKeyframes(withDuration: totalDuration, delay: 0, options: [.calculationModeLinear], animations: {
             // Add animations
-            UIView.addKeyframe(withRelativeStartTime: 0.0/totalDuration, relativeDuration: 5.0/totalDuration, animations: {
-                self.progressWidth.constant = self.progressBarEmpty.frame.size.width
-//                 Not animating for some reason
-            })
 
             UIView.addKeyframe(withRelativeStartTime: 0.0/totalDuration, relativeDuration: 1.0/totalDuration, animations: {
                 self.splashScreenLogo2.alpha = 1.0

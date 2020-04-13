@@ -319,7 +319,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if levelNumber == 100 {
                 levelNumberLabel.text = "Tutorial"
             } else {
-                levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                if numberOfLevels > 1 {
+                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber]) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                } else {
+                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                }
             }
             
             scoreLabelTitle.text = "Score"
@@ -396,7 +400,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func addParallaxToView() {
-        let amount = 25
+        
+        var amount = 25
+        if view.frame.width > 450 {
+            print("frame width: ", view.frame.width)
+            amount = 50
+            // iPad
+        }
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount

@@ -137,13 +137,16 @@ class Playing: GKState {
             // Load saved level
         } else {
             switch scene.levelNumber {
+                
             // Tutorial
             case 100:
                 scene.loadLevel100()
+                
             // Endless mode
             case 0:
                 scene.loadLevel0()
-            // Classic
+                
+            // Classic Pack
             case 1:
                 scene.loadLevel1()
             case 2:
@@ -164,7 +167,8 @@ class Playing: GKState {
                 scene.loadLevel9()
             case 10:
                 scene.loadLevel10()
-            // Space
+                
+            // Space Pack
             case 11:
                 scene.loadLevel11()
             case 12:
@@ -185,6 +189,51 @@ class Playing: GKState {
                 scene.loadLevel19()
             case 20:
                 scene.loadLevel20()
+                
+            // Nature Pack
+            case 21:
+                scene.loadLevel21()
+            case 22:
+                scene.loadLevel22()
+            case 23:
+                scene.loadLevel23()
+            case 24:
+                scene.loadLevel24()
+            case 25:
+                scene.loadLevel25()
+            case 26:
+                scene.loadLevel26()
+            case 27:
+                scene.loadLevel27()
+            case 28:
+                scene.loadLevel28()
+            case 29:
+                scene.loadLevel29()
+            case 30:
+                scene.loadLevel30()
+                
+            // Nature Pack
+            case 31:
+                scene.loadLevel31()
+            case 32:
+                scene.loadLevel32()
+            case 33:
+                scene.loadLevel33()
+            case 34:
+                scene.loadLevel34()
+            case 35:
+                scene.loadLevel35()
+            case 36:
+                scene.loadLevel36()
+            case 37:
+                scene.loadLevel37()
+            case 38:
+                scene.loadLevel38()
+            case 39:
+                scene.loadLevel39()
+            case 40:
+                scene.loadLevel40()
+                
             default:
                 break
             }

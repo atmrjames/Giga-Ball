@@ -67,7 +67,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        4
+        4 //6
     }
     // Set number of cells in table views
     
@@ -76,12 +76,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         
         cell.centreLabel.text = ""
         cell.settingState.text = ""
-        cell.settingDescription.text = LevelPackSetup().packTitles[indexPath.row+1]
-        
-        if indexPath.row > 1 {
-            cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-        }
-        
+        cell.settingDescription.text = LevelPackSetup().packTitles[indexPath.row+2]
+
         UIView.animate(withDuration: 0.2) {
             cell.cellView2.transform = .identity
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
@@ -102,10 +98,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             interfaceHaptic.impactOccurred()
         }
         
-        if indexPath.row < 2 {
-            hideAnimate()
-            moveToLevelSelector(packNumber: indexPath.row+1, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+1], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+1])
-        }
+        hideAnimate()
+        moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
@@ -229,7 +223,12 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func addParallax() {
-        let amount = 25
+        var amount = 25
+        if view.frame.width > 450 {
+            print("frame width: ", view.frame.width)
+            amount = 50
+            // iPad
+        }
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount

@@ -42,6 +42,7 @@ enum CollisionTypes: UInt32 {
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String)
+	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int)
 	func createInterstitial()
 	func loadInterstitial()
 	var selectedLevel: Int? { get set }
@@ -74,7 +75,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let brickBlueDark: UIColor = #colorLiteral(red: 0, green: 0.462745098, blue: 1, alpha: 1)
 	let brickBlueDarkExtra: UIColor = #colorLiteral(red: 0, green: 0.2274509804, blue: 0.4901960784, alpha: 1)
 	let brickBlueLight: UIColor = #colorLiteral(red: 0.4941176471, green: 0.7254901961, blue: 1, alpha: 1)
+	let brickBrown: UIColor = #colorLiteral(red: 0.6078431373, green: 0.2274509804, blue: 0, alpha: 1)
+	let brickBrownLight: UIColor = #colorLiteral(red: 0.8509803922, green: 0.4784313725, blue: 0.2588235294, alpha: 1)
+	let brickGreen: UIColor = #colorLiteral(red: 0.1137254902, green: 0.6156862745, blue: 0.1058823529, alpha: 1)
+	let brickGreenDark: UIColor = #colorLiteral(red: 0.007843137255, green: 0.3843137255, blue: 0, alpha: 1)
 	let brickGreenGigaball: UIColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+	let brickGreenLight: UIColor = #colorLiteral(red: 0.5215686275, green: 1, blue: 0.5137254902, alpha: 1)
 	let brickGreenSI: UIColor = #colorLiteral(red: 0.02352941176, green: 1, blue: 0, alpha: 1)
 	let brickGrey: UIColor = #colorLiteral(red: 0.4196078431, green: 0.4196078431, blue: 0.4196078431, alpha: 1)
 	let brickGreyDark: UIColor = #colorLiteral(red: 0.2431372549, green: 0.2431372549, blue: 0.2431372549, alpha: 1)
@@ -84,6 +90,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let brickOrangeLight: UIColor = #colorLiteral(red: 1, green: 0.6392156863, blue: 0.4274509804, alpha: 1)
 	let brickPink: UIColor = #colorLiteral(red: 1, green: 0.3921568627, blue: 0.5960784314, alpha: 1)
 	let brickPurple: UIColor = #colorLiteral(red: 0.6156862745, green: 0.2352941176, blue: 0.8274509804, alpha: 1)
+	let brickPurpleDark: UIColor = #colorLiteral(red: 0.3568627451, green: 0.03529411765, blue: 0.5333333333, alpha: 1)
 	let brickWhite: UIColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 	let brickYellow: UIColor = #colorLiteral(red: 0.9725490196, green: 0.9058823529, blue: 0.1098039216, alpha: 1)
 	let brickYellowLight: UIColor = #colorLiteral(red: 1, green: 0.968627451, blue: 0.5725490196, alpha: 1)
@@ -92,7 +99,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var livesLabel = SKLabelNode()
     var scoreLabel = SKLabelNode()
 	var multiplierLabel = SKLabelNode()
-	var unpauseCountdownLabel = SKLabelNode()
+	var readyCountdown = SKSpriteNode()
+	var goCountdown = SKSpriteNode()
+	
 	var buildLabel = SKLabelNode()
     // Define labels
     
@@ -722,17 +731,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         livesLabel = self.childNode(withName: "livesLabel") as! SKLabelNode
         scoreLabel = self.childNode(withName: "scoreLabel") as! SKLabelNode
 		multiplierLabel = self.childNode(withName: "multiplierLabel") as! SKLabelNode
-		unpauseCountdownLabel = self.childNode(withName: "unpauseCountdownLabel") as! SKLabelNode
+		readyCountdown = self.childNode(withName: "readyCountdown") as! SKSpriteNode
+		goCountdown = self.childNode(withName: "goCountdown") as! SKSpriteNode
 		buildLabel = self.childNode(withName: "buildLabel") as! SKLabelNode
         // Links objects to label
 		
-		unpauseCountdownLabel.position.x = 0
-		unpauseCountdownLabel.position.y = 0
-		unpauseCountdownLabel.fontSize = fontSize*4
-		unpauseCountdownLabel.isHidden = true
-		unpauseCountdownLabel.zPosition = 10
-		unpauseCountdownLabel.alpha = 0.75
+		readyCountdown.size.height = 58
+		readyCountdown.size.width = 248
+		readyCountdown.position.x = 0
+		readyCountdown.position.y = 0
+		readyCountdown.isHidden = true
+		readyCountdown.zPosition = 10
 		
+		goCountdown.size.height = 58
+		goCountdown.size.width = 123
+		goCountdown.position.x = 0
+		goCountdown.position.y = 0
+		goCountdown.isHidden = true
+		goCountdown.zPosition = 10
+
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
         pauseButton.texture = pauseTexture
@@ -785,7 +802,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.2(1) - TBC - 05/04/2020"
+		buildLabel.text = "Alpha Build 0.2.3(1) - TBC - 13/04/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1126,10 +1143,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Reset brick removal counter
 		
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-			let sprite = node as! SKSpriteNode
-			if sprite.texture == self.brickInvisibleTexture {
-				node.isHidden = true
-			}
 			node.removeAllActions()
 			node.alpha = 1.0
 		}
@@ -2939,7 +2952,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
 	func showPauseMenu(sender: String) {
-						
 		var score = totalScore
 		if sender == "Pause" {
 			score = totalScore + levelScore
@@ -2952,10 +2964,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             life.isHidden = true
 			// Hide UI
 		}
-		
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender)
 		// Pass over highscore data to pause menu
     }
+	
+	func showInbetweenView() {
+		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber)
+		// Pass over data to inbetween view
+	}
 	
 	func createInterstitial() {
 		gameViewControllerDelegate?.createInterstitial()
@@ -3243,7 +3259,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if self.gameState.currentState is Paused {
 			// do nothing
-		} else {
+		} else if self.gameState.currentState is Playing {
 			clearSavedGame()
 			// Clear current saved game before re-saving
 			self.gameState.enter(Paused.self)
@@ -3295,7 +3311,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let currentHeight = endlessHeight
 		let currentNumberOfLevels = numberOfLevels
 		
-		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && numberOfLevels > 1 && gameoverStatus == false {
+		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && gameoverStatus == false {
 			if numberOfLevels > 1 {
 				currentLevelNumber+=1
 			} else {
@@ -3475,18 +3491,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func resumeGame() {
-		if saveBallPropertiesArray != [] {
-			ballIsOnPaddle = false
-			ballLostBool = false
-			ball.position.x = CGFloat(saveBallPropertiesArray![0])
-			ball.position.y = CGFloat(saveBallPropertiesArray![1])
-			paddle.position.x = CGFloat(saveBallPropertiesArray![4])
-			numberOfLevels = saveGameSaveArray![7]
+		if saveGameSaveArray! != [] {
+			if saveBallPropertiesArray != [] {
+				ballIsOnPaddle = false
+				ballLostBool = false
+				ball.position.x = CGFloat(saveBallPropertiesArray![0])
+				ball.position.y = CGFloat(saveBallPropertiesArray![1])
+				paddle.position.x = CGFloat(saveBallPropertiesArray![4])
+				numberOfLevels = saveGameSaveArray![7]
+			} else {
+				saveCurrentGame()
+			}
+			// Load ball position and velocity if it has been saved
 			self.gameState.enter(Paused.self)
-		} else {
-			saveCurrentGame()
 		}
-		// Load ball position and velocity if it has been saved
 	}
 	
 	func resumeFromPauseCountdown() {
@@ -3495,6 +3513,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		isPaused = false
 		pauseAllNodes()
 		pauseButton.texture = pauseHighlightedTexture
+		pauseButton.size.width = pauseButtonSize*0.9
+		pauseButton.size.height = pauseButtonSize*0.9
 		// Unpause scene to allow for animation ensuring all other nodes remain paused for now
 		
 		let startScale = SKAction.scale(to: 2, duration: 0)
@@ -3504,7 +3524,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let fadeIn = SKAction.fadeIn(withDuration: 0.25)
 		let fadeOut = SKAction.fadeOut(withDuration: 0.25)
 		let wait = SKAction.wait(forDuration: 0.75)
-		unpauseCountdownLabel.removeAllActions()
+		readyCountdown.removeAllActions()
+		goCountdown.removeAllActions()
 		// Setup animation properties
 
 		let startGroup = SKAction.group([startScale, startFade])
@@ -3516,23 +3537,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let animationOut = SKAction.group([scaleOut, fadeOut])
 		// Animate out
 		
-		var unpauseCountdownText = "R E A D Y"
-		unpauseCountdownLabel.text = String(unpauseCountdownText)
-		unpauseCountdownLabel.run(startGroup, completion: {
-			self.unpauseCountdownLabel.isHidden = false
-			self.unpauseCountdownLabel.run(animationIn1, completion: {
-				self.unpauseCountdownLabel.run(animationOut, completion: {
-					unpauseCountdownText = "G O"
-					self.unpauseCountdownLabel.text = String(unpauseCountdownText)
-					self.unpauseCountdownLabel.run(startGroup, completion: {
-						self.unpauseCountdownLabel.run(animationIn2, completion: {
+		readyCountdown.run(startGroup, completion: {
+			self.readyCountdown.isHidden = false
+			self.readyCountdown.run(animationIn1, completion: {
+				self.readyCountdown.run(animationOut, completion: {
+					self.readyCountdown.isHidden = true
+					self.goCountdown.run(startGroup, completion: {
+						self.goCountdown.isHidden = false
+						self.goCountdown.run(animationIn2, completion: {
 							self.gameState.enter(Playing.self)
 							// Restart playing
 							if self.hapticsSetting! {
 								self.lightHaptic.impactOccurred()
 							}
-							self.unpauseCountdownLabel.run(animationOut, completion: {
-								self.unpauseCountdownLabel.isHidden = true
+							self.goCountdown.run(animationOut, completion: {
+								self.goCountdown.isHidden = true
 							})
 						})
 					})
@@ -3626,6 +3645,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		clearSavedGame()
 		countdownStarted = false
 		pauseButton.texture = pauseTexture
+		pauseButton.size.width = pauseButtonSize
+        pauseButton.size.height = pauseButtonSize
 		directionMarker.isHidden = true
 		isPaused = false
 		

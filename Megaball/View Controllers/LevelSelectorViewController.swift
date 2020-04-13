@@ -507,7 +507,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func addParallax() {
-        let amount = 25
+        var amount = 25
+        if view.frame.width > 450 {
+            print("frame width: ", view.frame.width)
+            amount = 50
+            // iPad
+        }
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount
@@ -621,10 +626,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         gcViewController.gameCenterDelegate = self
         gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
         
-        if packNumber == 1 {
+        if packNumber == 2 {
             gcViewController.leaderboardIdentifier = "leaderboardClassicPackScore"
         }
-        if packNumber == 2 {
+        if packNumber == 3 {
             gcViewController.leaderboardIdentifier = "leaderboardSpacePackScore"
         }
         // Show corresponding leaderboard for the current level pack

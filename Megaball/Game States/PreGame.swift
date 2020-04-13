@@ -72,11 +72,12 @@ class PreGame: GKState {
         
         switch scene.packNumber {
         case 1:
-            scene.background.texture = scene.starterBackgroundTexture
-        case 2:
-            scene.background.texture = scene.spaceBackgroundTexture
-        case 5:
             scene.background.texture = scene.endlessBackgroundTexture
+        case 2:
+            scene.background.texture = scene.starterBackgroundTexture
+        case 3:
+            scene.background.texture = scene.spaceBackgroundTexture
+        
         default:
             scene.background.texture = scene.starterBackgroundTexture
         }

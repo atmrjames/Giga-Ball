@@ -188,7 +188,7 @@ class InbetweenLevels: GKState {
     }
     
     func showAd() {
-        let waitScene = SKAction.wait(forDuration: 1)
+        let waitScene = SKAction.wait(forDuration: 0.5)
         self.scene.run(waitScene, completion: {
             if self.scene.adsSetting! {
                 self.scene.gameState.enter(Ad.self)
@@ -201,7 +201,9 @@ class InbetweenLevels: GKState {
                     self.scene.showPauseMenu(sender: "Complete")
                     // Show game complete
                 } else {
-                    self.scene.gameState.enter(Playing.self)
+//                    self.scene.gameState.enter(Playing.self)
+                    self.scene.showInbetweenView()
+                    // SHOW INBETWEEN LEVELS VC
                     // Move to the next level after a delay
                 }
             }
@@ -216,7 +218,7 @@ class InbetweenLevels: GKState {
     @objc func notificationToRestartReceived(_ notification: Notification) {
         scene.gameState.enter(PreGame.self)
     }
-    // Call the function to load the next level if a notification from the end level popup is received
+    // Call the function...
     
     override func willExit(to nextState: GKState) {
     }
