@@ -20,11 +20,91 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if (j == 0 || j == 7) && i >= 7 && i <= 14 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
+                if i == 3 || i == 8 || i == 13 || i == 18 {
+                    brick.texture = brickIndestructible2Texture
                 }
-
+                
+                if j == 1 && i >= 2 && i <= 4 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
+                }
+                if j == 5 && i >= 7 && i <= 9 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
+                }
+                if j == 4 && i >= 12 && i <= 14 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
+                }
+                if j == 2 && i >= 17 && i <= 19 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
+                }
+                
+                if j == 2 && i >= 2 && i <= 4 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
+                }
+                if j == 3 && i >= 7 && i <= 9 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
+                }
+                if j == 5 && i >= 12 && i <= 14 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
+                }
+                if j == 4 && i >= 17 && i <= 19 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellowLight
+                }
+                
+                if j == 3 && i >= 2 && i <= 4 {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if j == 4 && i >= 7 && i <= 9 {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if j == 3 && i >= 12 && i <= 14 {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if j == 1 && i >= 17 && i <= 19 {
+                    brick.texture = brickMultiHit1Texture
+                }
+                
+                if j == 4 && i >= 2 && i <= 4 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellow
+                }
+                if j == 2 && i >= 7 && i <= 9 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellow
+                }
+                if j == 1 && i >= 12 && i <= 14 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellow
+                }
+                if j == 5 && i >= 17 && i <= 19 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickYellow
+                }
+                
+                if j == 5 && i >= 2 && i <= 4 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGreenDark
+                }
+                if j == 1 && i >= 7 && i <= 9 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGreenDark
+                }
+                if j == 2 && i >= 12 && i <= 14 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGreenDark
+                }
+                if j == 3 && i >= 17 && i <= 19 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGreenDark
+                }
+                
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 
                 if brick.texture == brickInvisibleTexture {

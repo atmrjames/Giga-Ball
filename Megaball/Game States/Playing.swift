@@ -234,6 +234,94 @@ class Playing: GKState {
             case 40:
                 scene.loadLevel40()
                 
+            // Food Pack
+            case 41:
+                scene.loadLevel41()
+            case 42:
+                scene.loadLevel42()
+            case 43:
+                scene.loadLevel43()
+            case 44:
+                scene.loadLevel44()
+            case 45:
+                scene.loadLevel45()
+            case 46:
+                scene.loadLevel46()
+            case 47:
+                scene.loadLevel47()
+            case 48:
+                scene.loadLevel48()
+            case 49:
+                scene.loadLevel49()
+            case 50:
+                scene.loadLevel50()
+                
+            // Computer Pack
+            case 51:
+                scene.loadLevel51()
+            case 52:
+                scene.loadLevel52()
+            case 53:
+                scene.loadLevel53()
+            case 54:
+                scene.loadLevel54()
+            case 55:
+                scene.loadLevel55()
+            case 56:
+                scene.loadLevel56()
+            case 57:
+                scene.loadLevel57()
+            case 58:
+                scene.loadLevel58()
+            case 59:
+                scene.loadLevel59()
+            case 60:
+                scene.loadLevel60()
+            
+            // Body Pack
+            case 61:
+                scene.loadLevel61()
+            case 62:
+                scene.loadLevel62()
+            case 63:
+                scene.loadLevel63()
+            case 64:
+                scene.loadLevel64()
+            case 65:
+                scene.loadLevel65()
+            case 66:
+                scene.loadLevel66()
+            case 67:
+                scene.loadLevel67()
+            case 68:
+                scene.loadLevel68()
+            case 69:
+                scene.loadLevel69()
+            case 70:
+                scene.loadLevel70()
+            
+            // Geography Pack
+            case 71:
+                scene.loadLevel71()
+            case 72:
+                scene.loadLevel72()
+            case 73:
+                scene.loadLevel73()
+            case 74:
+                scene.loadLevel74()
+            case 75:
+                scene.loadLevel75()
+            case 76:
+                scene.loadLevel76()
+            case 77:
+                scene.loadLevel77()
+            case 78:
+                scene.loadLevel78()
+            case 79:
+                scene.loadLevel79()
+            case 80:
+                scene.loadLevel80()
+                
             default:
                 break
             }

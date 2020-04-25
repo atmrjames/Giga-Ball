@@ -20,9 +20,38 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if (j == 0 || j == 7) && i >= 7 && i <= 14 {
+                if (j == 2 || j == 8) && i >= 3 && i <= 18 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickWhite
+                    brick.color = brickOrangeLight
+                }
+                if (j == 3 || j == 7) && i >= 2 && i <= 19 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickOrangeLight
+                }
+                
+                if (j == 4 || j == 6) && i >= 1 && i <= 20 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickOrangeDark
+                }
+                if j == 5 && i >= 0 && i <= 21 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickOrangeDark
+                }
+                
+                if (j == 5 || j == 6) && (i == 2 || i == 10 || i == 14) {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if j == 4 && (i == 3 || i == 7 || i == 11 || i == 15 || i == 19) {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if (j == 4 || j == 5) && (i == 4 || i == 8 || i == 16) {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if j == 6 && (i == 5 || i == 9 || i == 13 || i == 17) {
+                    brick.texture = brickMultiHit1Texture
+                }
+                if j == 5 && (i == 6 || i == 12 || i == 18) {
+                    brick.texture = brickMultiHit1Texture
                 }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))

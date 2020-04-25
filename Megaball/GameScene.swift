@@ -93,6 +93,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let brickPurpleDark: UIColor = #colorLiteral(red: 0.3568627451, green: 0.03529411765, blue: 0.5333333333, alpha: 1)
 	let brickWhite: UIColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 	let brickYellow: UIColor = #colorLiteral(red: 0.9725490196, green: 0.9058823529, blue: 0.1098039216, alpha: 1)
+	let brickYellowDark: UIColor = #colorLiteral(red: 0.8901960784, green: 0.7411764706, blue: 0.05098039216, alpha: 1)
 	let brickYellowLight: UIColor = #colorLiteral(red: 1, green: 0.968627451, blue: 0.5725490196, alpha: 1)
 	// Brick colours
     
@@ -802,7 +803,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.3(1) - TBC - 13/04/2020"
+		buildLabel.text = "Alpha Build 0.2.4(1) - TBC - 25/04/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -3413,6 +3414,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					spriteColourIndex = 15
 				case self.brickYellowLight:
 					spriteColourIndex = 16
+					
+				case self.brickBrown:
+					spriteColourIndex = 17
+				case self.brickBrownLight:
+					spriteColourIndex = 18
+				case self.brickGreen:
+					spriteColourIndex = 19
+				case self.brickGreenDark:
+					spriteColourIndex = 20
+				case self.brickGreenLight:
+					spriteColourIndex = 21
+				case self.brickPurpleDark:
+					spriteColourIndex = 22
+				case self.brickYellowDark:
+					spriteColourIndex = 23
+					
 				default:
 					spriteColourIndex = 100
 				}

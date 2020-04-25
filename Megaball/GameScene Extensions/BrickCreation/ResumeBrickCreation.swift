@@ -93,6 +93,21 @@ extension GameScene {
                     brickColour = brickYellow
                 case 16:
                     brickColour = brickYellowLight
+                
+                case 17:
+                    brickColour = brickBrown
+                case 18:
+                    brickColour = brickBrownLight
+                case 19:
+                    brickColour = brickGreen
+                case 20:
+                    brickColour = brickGreenDark
+                case 21:
+                    brickColour = brickGreenLight
+                case 22:
+                    brickColour = brickPurpleDark
+                case 23:
+                    brickColour = brickYellowDark
                 default:
                     print("no brick colour")
                     brickColour = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)

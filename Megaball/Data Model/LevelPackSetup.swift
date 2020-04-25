@@ -10,8 +10,8 @@ import Foundation
 import UIKit
 
 class LevelPackSetup {
-    let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10]
-    let startLevelNumber: [Int] = [100, 0, 1, 11, 21, 31, 41, 51]
+    let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10, 10, 10]
+    let startLevelNumber: [Int] = [100, 0, 1, 11, 21, 31, 41, 51, 61, 71]
     let packTitles: [String] = [
         "Tutorial",
         "Endless Mode",
@@ -20,7 +20,9 @@ class LevelPackSetup {
         "Nature Pack",
         "Urban Pack",
         "Food Pack",
-        "Numbers Pack"
+        "Computer Pack",
+        "Body Pack",
+        "World Pack"
     ]
     let levelImageArray: [UIImage] = [
         UIImage(named:"Level00Image.png")!,
@@ -83,7 +85,27 @@ class LevelPackSetup {
         UIImage(named: "Level57Image.png")!,
         UIImage(named: "Level58Image.png")!,
         UIImage(named: "Level59Image.png")!,
-        UIImage(named: "Level60Image.png")!
+        UIImage(named: "Level60Image.png")!,
+        UIImage(named: "Level61Image.png")!,
+        UIImage(named: "Level62Image.png")!,
+        UIImage(named: "Level63Image.png")!,
+        UIImage(named: "Level64Image.png")!,
+        UIImage(named: "Level65Image.png")!,
+        UIImage(named: "Level66Image.png")!,
+        UIImage(named: "Level67Image.png")!,
+        UIImage(named: "Level68Image.png")!,
+        UIImage(named: "Level69Image.png")!,
+        UIImage(named: "Level70Image.png")!,
+        UIImage(named: "Level71Image.png")!,
+        UIImage(named: "Level72Image.png")!,
+        UIImage(named: "Level73Image.png")!,
+        UIImage(named: "Level74Image.png")!,
+        UIImage(named: "Level75Image.png")!,
+        UIImage(named: "Level76Image.png")!,
+        UIImage(named: "Level77Image.png")!,
+        UIImage(named: "Level78Image.png")!,
+        UIImage(named: "Level79Image.png")!,
+        UIImage(named: "Level80Image.png")!
     ]
     let levelNameArray: [String] = [
         "Endless Mode",
@@ -142,23 +164,47 @@ class LevelPackSetup {
         "Wine Glass",
         "Fried Egg",
         "BBQ",
-        "Kebab",
+        "Kebabs",
         "Ice Cream",
         "Burger",
-        "Dessert",
+        "Pudding",
         "Chocolate Bar",
         
-        // Number Pack
-        "Zero",
-        "One",
-        "Two",
-        "Three",
-        "Four",
-        "Five",
-        "Six",
-        "Seven",
-        "Eight",
-        "Nine"
+        // Computer Pack
+        "Command",
+        "Save",
+        "@",
+        "Mail",
+        "Watch",
+        "Trash",
+        "Bug",
+        "Zoom",
+        "Battery",
+        "Hour Glass",
+        
+        // Body Pack
+        "Heart",
+        "Brain",
+        "Skull",
+        "Intestine",
+        "Lips",
+        "Eye",
+        "Kidney",
+        "Tooth",
+        "Lungs",
+        "Face",
+        
+        // Geography Pack
+        "Globe",
+        "Pyramid",
+        "Union Jack",
+        "Compass",
+        "Mountain",
+        "Africa",
+        "Island",
+        "Partly Cloudy",
+        "Maple Leaf",
+        "Volcano"
     ]
     
     let levelLeaderboardsArray: [String] = [
