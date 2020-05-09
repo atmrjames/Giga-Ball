@@ -21,13 +21,17 @@ class LevelSelectorTableViewCell: UITableViewCell {
         super.awakeFromNib()
         // Initialization code
         
-//        levelImage.layer.cornerRadius = 10.0
         levelImage.layer.masksToBounds = false
+        levelImage.layer.shadowOffset = CGSize(width: 0, height: 0)
         levelImage.layer.shadowColor = UIColor.black.cgColor
-        levelImage.layer.shadowOffset = CGSize(width: 0.0, height: 0.0)
-        levelImage.layer.shadowRadius = 5.0
-        levelImage.layer.shadowOpacity = 0.25
+        levelImage.layer.shadowOpacity = 0.5
+        levelImage.layer.shadowRadius = 4
         
+        cellView3.layer.masksToBounds = false
+        cellView3.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cellView3.layer.shadowColor = UIColor.black.cgColor
+        cellView3.layer.shadowOpacity = 0.5
+        cellView3.layer.shadowRadius = 4
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {

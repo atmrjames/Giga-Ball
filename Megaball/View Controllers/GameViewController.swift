@@ -67,8 +67,10 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     
     func loadInterstitial() {
         if self.interstitial.isReady {
+//            print("llama llama ad ready")
             self.interstitial.present(fromRootViewController: self)
         } else {
+//            print("llama llama ad not ready")
             createInterstitial()
             // Setup next ad when the current one is closed
             NotificationCenter.default.post(name: .closeAd, object: nil)
@@ -77,6 +79,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     
     func interstitialDidDismissScreen(_ ad: GADInterstitial) {
+//        print("llama llama ad dismissed")
         createInterstitial()
         // Setup next ad when the current one is closed
         NotificationCenter.default.post(name: .closeAd, object: nil)
@@ -91,7 +94,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Segue to MenuViewController
     
-    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String) {
+    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
         pauseMenuVC.numberOfLevels = numberOfLevels
@@ -99,6 +102,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         pauseMenuVC.packNumber = packNumber
         pauseMenuVC.height = height
         pauseMenuVC.sender = sender
+        pauseMenuVC.gameoverBool = gameoverBool
         // Update pause menu view controller properties with function input values
         self.addChild(pauseMenuVC)
         pauseMenuVC.view.frame = self.view.frame

@@ -17,7 +17,11 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         
-//        view.layer.cornerRadius = 25
+        iconImage.layer.masksToBounds = false
+        iconImage.layer.shadowOffset = CGSize(width: 0, height: 2)
+        iconImage.layer.shadowColor = UIColor.black.cgColor
+        iconImage.layer.shadowOpacity = 0.5
+        iconImage.layer.shadowRadius = 4
     }
 
 }

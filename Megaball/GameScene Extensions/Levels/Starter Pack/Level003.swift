@@ -20,7 +20,7 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if j == 0 || j == 3 {
+                if j == 3 {
                     brick.texture = brickIndestructible1Texture
                 }
                 

@@ -60,6 +60,11 @@ extension GameScene {
                 if j == 5 && i >= 4 && i <= 7 {
                     brick.texture = brickIndestructible1Texture
                 }
+                
+                if j == 5 && i >= 8 && i <= 11 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGrey
+                }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 

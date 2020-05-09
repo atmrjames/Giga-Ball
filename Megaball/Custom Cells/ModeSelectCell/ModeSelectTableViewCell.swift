@@ -18,6 +18,12 @@ class ModeSelectTableViewCell: UITableViewCell {
         super.awakeFromNib()
         
         cellView1.layer.cornerRadius = 37.5
+        
+        cellView1.layer.masksToBounds = false
+        cellView1.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cellView1.layer.shadowColor = UIColor.black.cgColor
+        cellView1.layer.shadowOpacity = 0.5
+        cellView1.layer.shadowRadius = 4
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {

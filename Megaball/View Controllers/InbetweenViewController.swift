@@ -35,6 +35,8 @@ class InbetweenViewController: UIViewController {
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var contentView: UIView!
     
+    
+    @IBOutlet var packNameLabel: UILabel!
     @IBOutlet var scoreLabel: UILabel!
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var levelNameLabel: UILabel!
@@ -89,6 +91,7 @@ class InbetweenViewController: UIViewController {
                 self.contentView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
                 self.levelNumberLabel.text = "Level \(self.levelNumberCorrected+1) of \(self.numberOfLevels)"
                 self.levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber+1]
+                self.packNameLabel.text = LevelPackSetup().packTitles[self.packNumber]
                 self.scoreLabel.text = ""
                 self.completeLabel.text = ""
                 self.scoreAmountLabel.text = ""
@@ -123,11 +126,11 @@ class InbetweenViewController: UIViewController {
     
     func updateLabels() {
         scoreLabel.text = String(totalScore)
-        
         levelNumberCorrected = levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1
         numberOfLevels = LevelPackSetup().numberOfLevels[packNumber]
         levelNumberLabel.text = "Level \(levelNumberCorrected) of \(numberOfLevels)"
         levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber]
+        packNameLabel.text = LevelPackSetup().packTitles[packNumber]
     }
     
     func setBlur() {

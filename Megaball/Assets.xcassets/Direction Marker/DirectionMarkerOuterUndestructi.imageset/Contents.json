@@ -1,23 +1,23 @@
 {
   "images" : [
     {
+      "filename" : "directionMarkerOuterUndestructi.png",
       "idiom" : "universal",
-      "filename" : "DirectionMarkerOuterUndestructi.png",
       "scale" : "1x"
     },
     {
+      "filename" : "directionMarkerOuterUndestructi@2x.png",
       "idiom" : "universal",
-      "filename" : "DirectionMarkerOuterUndestructi@2x.png",
       "scale" : "2x"
     },
     {
+      "filename" : "directionMarkerOuterUndestructi@3x.png",
       "idiom" : "universal",
-      "filename" : "DirectionMarkerOuterUndestructi@3x.png",
       "scale" : "3x"
     }
   ],
   "info" : {
-    "version" : 1,
-    "author" : "xcode"
+    "author" : "xcode",
+    "version" : 1
   }
 }

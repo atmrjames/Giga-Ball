@@ -29,6 +29,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
+    var ballSetting: Int?
+    var paddleSetting: Int?
+    var brickSetting: Int?
+    var appIconSetting: Int?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -348,6 +352,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["parallaxSetting": true])
         defaults.register(defaults: ["paddleSensitivitySetting": 2])
         defaults.register(defaults: ["gameCenterSetting": false])
+        defaults.register(defaults: ["ballSetting": 0])
+        defaults.register(defaults: ["paddleSetting": 0])
+        defaults.register(defaults: ["brickSetting": 0])
+        defaults.register(defaults: ["appIconSetting": 0])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -500,6 +508,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
+        ballSetting = defaults.integer(forKey: "ballSetting")
+        paddleSetting = defaults.integer(forKey: "paddleSetting")
+        brickSetting = defaults.integer(forKey: "brickSetting")
+        appIconSetting = defaults.integer(forKey: "appIconSetting")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?

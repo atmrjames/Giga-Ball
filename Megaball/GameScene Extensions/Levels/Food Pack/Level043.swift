@@ -20,11 +20,57 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if (j == 0 || j == 7) && i >= 7 && i <= 14 {
+                if (j == 1 || j == 9) && i >= 0 && i <= 7 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickWhite
+                    brick.color = brickBlueDarkExtra
                 }
-
+                
+                if (j == 2 || j == 8) && i >= 8 && i <= 9 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlueDark
+                }
+                if (j == 3 || j == 7) && i >= 10 && i <= 11 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlueDark
+                }
+                if (j == 3 || j == 7) && i == 21 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlueDark
+                }
+                
+                if (j == 4 || j == 6) && i >= 12 && i <= 13 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlueLight
+                }
+                if (j == 4 || j == 6) && i >= 20 && i <= 21 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlueLight
+                }
+                if j == 5 && i >= 12 && i <= 21 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlueLight
+                }
+                
+                if j >= 2 && j <= 8 && (i == 0 || i == 1) {
+                    brick.texture = brickInvisibleTexture
+                }
+                
+                if (j == 2 || j == 8) && i >= 2 && i <= 7 {
+                    brick.texture = brickMultiHit1Texture
+                }
+                
+                if (j == 3 || j == 7) && i >= 2 && i <= 9 {
+                    brick.texture = brickMultiHit2Texture
+                }
+                
+                if (j == 4 || j == 6) && i >= 2 && i <= 11 {
+                    brick.texture = brickMultiHit3Texture
+                }
+                
+                if j == 5 && i >= 2 && i <= 11 {
+                    brick.texture = brickMultiHit4Texture
+                }
+                
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 
                 if brick.texture == brickInvisibleTexture {

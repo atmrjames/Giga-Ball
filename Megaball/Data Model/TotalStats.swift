@@ -15,8 +15,8 @@ class TotalStats: Codable {
     var levelsCompleted: Int = 0
     var ballHits: Int = 0
     var ballsLost: Int = 0
-    var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     var playTime: Int = 0
     var bricksHit: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]

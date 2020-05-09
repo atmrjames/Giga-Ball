@@ -67,7 +67,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        8
+        11
     }
     // Set number of cells in table views
     

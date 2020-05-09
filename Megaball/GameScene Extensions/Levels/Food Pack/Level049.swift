@@ -54,14 +54,14 @@ extension GameScene {
                     brick.texture = brickMultiHit1Texture
                 }
                 
-                if (j == 1 || j == 9) && i == 8 {
-                    brick.texture = brickIndestructible1Texture
+                if (j == 1 || j == 9) && (i == 8 || i == 9) {
+                    brick.texture = brickIndestructible2Texture
                 }
-                if (j == 3 || j == 7) && (i == 7 || i == 9) {
-                    brick.texture = brickIndestructible1Texture
+                if (j == 3 || j == 7) && (i == 6 || i == 7) {
+                    brick.texture = brickIndestructible2Texture
                 }
-                if j == 5 && (i == 4 || i == 6 || i == 8) {
-                    brick.texture = brickIndestructible1Texture
+                if j == 5 && (i == 4 || i == 5 || i == 8 || i == 9) {
+                    brick.texture = brickIndestructible2Texture
                 }
                 
                 if j >= 7 && j <= 8 && i >= 8 && i <= 9 {

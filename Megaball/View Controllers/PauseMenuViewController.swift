@@ -16,6 +16,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     var packNumber: Int = 0
     var height: Int = 0
     var sender: String = ""
+    var gameoverBool: Bool = false
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
@@ -129,7 +130,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if self.hapticsSetting! {
                 self.interfaceHaptic.impactOccurred()
             }
-            showWarning(senderID: "pauseMenu")
+            if gameoverBool == false {
+                showWarning(senderID: "pauseMenu")
+            } else {
+                MenuViewController().clearSavedGame()
+                moveToMainMenu()
+                // return to main menu
+            }
+            // Don't show warning if game over or complete
         }
         if indexPath.row == 1 {
             if self.sender == "Pause" {
@@ -320,9 +328,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 levelNumberLabel.text = "Tutorial"
             } else {
                 if numberOfLevels > 1 {
-                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber]) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber]) \n \(LevelPackSetup().levelNameArray[levelNumber])"
                 } else {
-                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) - Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
                 }
             }
             
@@ -442,6 +450,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         warningView.view.frame = self.view.frame
         self.view.addSubview(warningView.view)
         warningView.didMove(toParent: self)
+    }
+    
+    func moveToMainMenu() {
+        NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+        NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
+        NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
+        navigationController?.popToRootViewController(animated: true)
     }
     
     func loadData() {

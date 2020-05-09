@@ -58,31 +58,13 @@ extension GameScene {
                     brick.texture = brickMultiHit1Texture
                 }
                 
-                if (j == 7 || j == 9) && i == 4 {
+                if (j == 7 || j == 9) && (i == 4 || i == 5) {
                     brick.texture = brickIndestructible1Texture
                 }
-                if (j == 7 || j == 9) && i == 6 {
+                if (j == 3 || j == 7 || j == 9) && (i == 8 || i == 9) {
                     brick.texture = brickIndestructible1Texture
                 }
-                if (j == 7 || j == 9) && i == 8 {
-                    brick.texture = brickIndestructible1Texture
-                }
-                if (j == 3 || j == 7 || j == 9) && i == 10 {
-                    brick.texture = brickIndestructible1Texture
-                }
-                if (j == 1 || j == 3 || j == 7 || j == 9) && i == 12 {
-                    brick.texture = brickIndestructible1Texture
-                }
-                if (j == 1 || j == 3 || j == 7 || j == 9) && i == 14 {
-                    brick.texture = brickIndestructible1Texture
-                }
-                if (j == 1 || j == 3 || j == 7 || j == 9) && i == 16 {
-                    brick.texture = brickIndestructible1Texture
-                }
-                if (j == 1 || j == 3 || j == 7 || j == 9) && i == 18 {
-                    brick.texture = brickIndestructible1Texture
-                }
-                if (j == 1 || j == 3 || j == 7 || j == 9) && i == 20 {
+                if (j == 1 || j == 3 || j == 7 || j == 9) && (i == 12 || i == 13 || i == 16 || i == 17 || i == 20 || i == 21) {
                     brick.texture = brickIndestructible1Texture
                 }
 

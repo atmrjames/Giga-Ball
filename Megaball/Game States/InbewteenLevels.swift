@@ -45,8 +45,6 @@ class InbetweenLevels: GKState {
     func inbetweenLevels() {
         self.scene.removeAllActions()
         // Stop all actions
-        scene.powerUpsReset()
-        // Reset any power ups
         
         if scene.adsSetting! {
             scene.createInterstitial()
@@ -76,6 +74,9 @@ class InbetweenLevels: GKState {
             self.scene.paddle.run(resetGroup)
         })
         // Animate paddle and ball out after level is won
+        
+        scene.powerUpsReset()
+        // Reset any power ups
         
         let scaleDown2 = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut2 = SKAction.fadeOut(withDuration: 0.2)

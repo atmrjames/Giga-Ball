@@ -10,8 +10,9 @@ import Foundation
 import UIKit
 
 class LevelPackSetup {
-    let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10, 10, 10]
-    let startLevelNumber: [Int] = [100, 0, 1, 11, 21, 31, 41, 51, 61, 71]
+    let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+    let startLevelNumber: [Int] = [0, 0, 1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101]
+    
     let packTitles: [String] = [
         "Tutorial",
         "Endless Mode",
@@ -22,10 +23,148 @@ class LevelPackSetup {
         "Food Pack",
         "Computer Pack",
         "Body Pack",
-        "World Pack"
+        "World Pack",
+        "Emoji Pack",
+        "Numbers Pack",
+        "Challenge Pack"
     ]
+    
+    let ballImageArray: [UIImage] = [
+        UIImage(named:"ball.png")!,
+        UIImage(named:"3DBall.png")!,
+        UIImage(named:"outlineBall.png")!,
+        UIImage(named:"diamondBall.png")!,
+        UIImage(named:"beachBall.png")!,
+        UIImage(named:"concentricBall.png")!,
+        UIImage(named:"reuleauxBall.png")!,
+        UIImage(named:"dotBall.png")!,
+        UIImage(named:"hobBall.png")!,
+        UIImage(named:"spiralBall.png")!,
+        UIImage(named:"pixelBall.png")!,
+        UIImage(named:"loadingBall.png")!,
+        UIImage(named:"retroBall.png")!,
+    ]
+    
+    let ballNameArray: [String] = [
+        "Classic",
+        "3D",
+        "Outline",
+        "Diamond",
+        "Beach Ball",
+        "Concentric",
+        "Reuleaux",
+        "Dots",
+        "Spokes",
+        "Spiral",
+        "Pixel",
+        "Rainbow",
+        "Retro"
+    ]
+    
+    let ballIconArray: [UIImage] = [
+        UIImage(named:"ballIcon.png")!,
+        UIImage(named:"3DBallIcon.png")!,
+        UIImage(named:"outlineBallIcon.png")!,
+        UIImage(named:"diamondBallIcon.png")!,
+        UIImage(named:"beachBallIcon.png")!,
+        UIImage(named:"concentricBallIcon.png")!,
+        UIImage(named:"reuleauxBallIcon.png")!,
+        UIImage(named:"dotBallIcon.png")!,
+        UIImage(named:"hobBallIcon.png")!,
+        UIImage(named:"spiralBallIcon.png")!,
+        UIImage(named:"pixelBallIcon.png")!,
+        UIImage(named:"loadingBallIcon.png")!,
+        UIImage(named:"retroBallIcon.png")!,
+    ]
+    
+    let paddleImageArray: [UIImage] = [
+        UIImage(named:"regularPaddle.png")!,
+        UIImage(named:"3DPaddle.png")!,
+        UIImage(named:"outlinePaddle.png")!,
+        UIImage(named:"squarePaddle.png")!,
+        UIImage(named:"icePaddle.png")!,
+        UIImage(named:"glassPaddle.png")!,
+        UIImage(named:"pixelPaddle.png")!,
+        UIImage(named:"gigaPaddle.png")!,
+        UIImage(named:"stripyPaddle.png")!,
+        UIImage(named:"splitPaddle.png")!,
+        UIImage(named:"rainbowPaddle.png")!,
+        UIImage(named:"retroPaddle.png")!,
+    ]
+    
+    let paddleNameArray: [String] = [
+        "Classic",
+        "3D",
+        "Outline",
+        "Square",
+        "Ice",
+        "Glass",
+        "Pixel",
+        "Giga",
+        "Candy Cane",
+        "Split",
+        "Rainbow",
+        "Retro"
+    ]
+    
+    let paddleIconArray: [UIImage] = [
+        UIImage(named:"regularPaddleIcon.png")!,
+        UIImage(named:"3DPaddleIcon.png")!,
+        UIImage(named:"outlinePaddleIcon.png")!,
+        UIImage(named:"squarePaddleIcon.png")!,
+        UIImage(named:"icePaddleIcon.png")!,
+        UIImage(named:"glassPaddleIcon.png")!,
+        UIImage(named:"pixelPaddleIcon.png")!,
+        UIImage(named:"gigaPaddleIcon.png")!,
+        UIImage(named:"stripyPaddleIcon.png")!,
+        UIImage(named:"splitPaddleIcon.png")!,
+        UIImage(named:"rainbowPaddleIcon.png")!,
+        UIImage(named:"retroPaddleIcon.png")!,
+    ]
+    
+    let appIconImageArray: [UIImage] = [
+        UIImage(named:"White.png")!,
+        UIImage(named:"Yellow.png")!,
+        UIImage(named:"Orange.png")!,
+        UIImage(named:"Green.png")!,
+        UIImage(named:"Blue.png")!,
+        UIImage(named:"Brown.png")!,
+        UIImage(named:"Black.png")!,
+        UIImage(named:"GigaBall.png")!,
+        UIImage(named:"Rainbow.png")!,
+        UIImage(named:"Retro.png")!
+    ]
+    
+    let appIconNameArray: [String] = [
+        "White",
+        "Yellow",
+        "Orange",
+        "Green",
+        "Blue",
+        "Brown",
+        "Black",
+        "GigaBall",
+        "Rainbow",
+        "Retro"        
+    ]
+    
+    let brickImageArray: [UIImage] = [
+        UIImage(named:"BrickNormal.png")!,
+        UIImage(named:"retroBrickNormal.png")!
+    ]
+    
+    let brickNameArray: [String] = [
+        "Classic",
+        "Retro"
+    ]
+    
+    let brickIconArray: [UIImage] = [
+        UIImage(named:"classicBrickIcon.png")!,
+        UIImage(named:"retroBrickIcon.png")!
+    ]
+    
     let levelImageArray: [UIImage] = [
-        UIImage(named:"Level00Image.png")!,
+        UIImage(named:"Level999Image.png")!,
         UIImage(named:"Level01Image.png")!,
         UIImage(named: "Level02Image.png")!,
         UIImage(named: "Level03Image.png")!,
@@ -105,7 +244,37 @@ class LevelPackSetup {
         UIImage(named: "Level77Image.png")!,
         UIImage(named: "Level78Image.png")!,
         UIImage(named: "Level79Image.png")!,
-        UIImage(named: "Level80Image.png")!
+        UIImage(named: "Level80Image.png")!,
+        UIImage(named: "Level81Image.png")!,
+        UIImage(named: "Level82Image.png")!,
+        UIImage(named: "Level83Image.png")!,
+        UIImage(named: "Level84Image.png")!,
+        UIImage(named: "Level85Image.png")!,
+        UIImage(named: "Level86Image.png")!,
+        UIImage(named: "Level87Image.png")!,
+        UIImage(named: "Level88Image.png")!,
+        UIImage(named: "Level89Image.png")!,
+        UIImage(named: "Level90Image.png")!,
+        UIImage(named: "Level91Image.png")!,
+        UIImage(named: "Level92Image.png")!,
+        UIImage(named: "Level93Image.png")!,
+        UIImage(named: "Level94Image.png")!,
+        UIImage(named: "Level95Image.png")!,
+        UIImage(named: "Level96Image.png")!,
+        UIImage(named: "Level97Image.png")!,
+        UIImage(named: "Level98Image.png")!,
+        UIImage(named: "Level99Image.png")!,
+        UIImage(named: "Level100Image.png")!,
+        UIImage(named: "Level101Image.png")!,
+        UIImage(named: "Level102Image.png")!,
+        UIImage(named: "Level103Image.png")!,
+        UIImage(named: "Level104Image.png")!,
+        UIImage(named: "Level105Image.png")!,
+        UIImage(named: "Level106Image.png")!,
+        UIImage(named: "Level107Image.png")!,
+        UIImage(named: "Level108Image.png")!,
+        UIImage(named: "Level109Image.png")!,
+        UIImage(named: "Level110Image.png")!,
     ]
     let levelNameArray: [String] = [
         "Endless Mode",
@@ -194,7 +363,7 @@ class LevelPackSetup {
         "Lungs",
         "Face",
         
-        // Geography Pack
+        // World Pack
         "Globe",
         "Pyramid",
         "Union Jack",
@@ -204,7 +373,43 @@ class LevelPackSetup {
         "Island",
         "Partly Cloudy",
         "Maple Leaf",
-        "Volcano"
+        "Volcano",
+        
+        // Emoji Pack
+        "Smiling Face",
+        "Eyes",
+        "Fire",
+        "Weird Fish",
+        "Winking Face",
+        "Peach",
+        "Ghost",
+        "Augerbene / Eggplant",
+        "Crying Face",
+        "Poo",
+        
+        // Numbers Pack
+        "One",
+        "Two",
+        "Three",
+        "Four",
+        "Five",
+        "Six",
+        "Seven",
+        "Eight",
+        "Nine",
+        "Zero",
+        
+        // Challenge Pack
+        "Lonesome Brick",
+        "Kerplunk",
+        "Gradient",
+        "Restriction",
+        "Barricade",
+        "Minefield",
+        "Split Screen",
+        "Pimple",
+        "Ringfence",
+        "Finish Line"
     ]
     
     let levelLeaderboardsArray: [String] = [
@@ -272,7 +477,7 @@ class LevelPackSetup {
         "leaderboardLevel49Score",
         "leaderboardLevel50Score",
         
-        // Numbers Pack
+        // Computer Pack
         "leaderboardLevel51Score",
         "leaderboardLevel52Score",
         "leaderboardLevel53Score",
@@ -304,11 +509,14 @@ class LevelPackSetup {
         UIImage(named:"PowerUpMultiHitToNormalBricks.png")!,
         UIImage(named:"PowerUpMultiHitBricksReset.png")!,
         UIImage(named:"PowerUpRemoveIndestructibleBricks.png")!,
-        UIImage(named:"PowerUpSuperBall.png")!,
+        UIImage(named:"PowerUpGigaBall.png")!,
         UIImage(named:"PowerUpUndestructiBall.png")!,
         UIImage(named:"PowerUpLasers.png")!,
         UIImage(named:"PowerUpBricksDown.png")!,
-        UIImage(named:"PowerUpMystery.png")!
+        UIImage(named:"PowerUpMystery.png")!,
+        UIImage(named:"PowerUpBackstop.png")!,
+        UIImage(named:"PowerUpIncreaseBallSize.png")!,
+        UIImage(named:"PowerUpDecreaseBallSize.png")!
     ]
     
     let powerUpNameArray: [String] = [
@@ -330,11 +538,14 @@ class LevelPackSetup {
         "Clear Multi-Hit Bricks",
         "Reset Multi-Hit Bricks",
         "Remove Indestructible Bricks",
-        "Superball",
+        "Giga-Ball",
         "Undestructi-Ball",
         "Lasers",
         "Quicksand",
-        "Mystery"
+        "Mystery",
+        "Backstop",
+        "Increase Ball Size",
+        "Decrease Ball Size"
     ]
     
     let powerUpDescriptionArray: [String] = [
@@ -361,6 +572,9 @@ class LevelPackSetup {
         "Lasers fire from either side of the paddle",
         "Moves the bricks down towards the paddle",
         "Randomly generates a mystery power-up when collected",
+        "Adds a backstop below the paddle to save a missed ball",
+        "Increases the size of the ball",
+        "Decreases the size of the ball"
     ]
     
     let powerUpPointsArray: [String] = [
@@ -386,7 +600,10 @@ class LevelPackSetup {
         "-50",
         "+50",
         "-50",
-        ""
+        "",
+        "+50",
+        "+50",
+        "-50"
     ]
     
     let powerUpMultiplierArray: [String] = [
@@ -412,7 +629,10 @@ class LevelPackSetup {
         "-0.1x",
         "+0.1x",
         "-0.1x",
-        ""
+        "",
+        "+0.1x",
+        "+0.1x",
+        "-0.1x"
     ]
     
     let powerUpTimerArray: [String] = [
@@ -438,6 +658,9 @@ class LevelPackSetup {
         "10",
         "10",
         "",
-        ""
+        "",
+        "10",
+        "10",
+        "10"
     ]
 }
