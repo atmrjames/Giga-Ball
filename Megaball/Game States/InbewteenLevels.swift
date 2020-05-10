@@ -71,9 +71,15 @@ class InbetweenLevels: GKState {
         })
         scene.paddle.run(paddleSequence, completion: {
             self.scene.paddle.isHidden = true
-            self.scene.paddle.run(resetGroup)
+            self.scene.paddle.run(resetGroup, completion: {
+                self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+            })
         })
-        // Animate paddle and ball out after level is won
+        scene.paddleRetroTexture.run(paddleSequence, completion: {
+            self.scene.paddleRetroTexture.isHidden = true
+            self.scene.paddleRetroTexture.run(resetGroup)
+        })
+        // Animate retro paddle and ball out after level is won
         
         scene.powerUpsReset()
         // Reset any power ups

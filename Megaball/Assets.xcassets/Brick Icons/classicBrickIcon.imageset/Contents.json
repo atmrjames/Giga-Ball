@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "retroBrickIcon.png",
+      "filename" : "classicBrickIcon.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "retroBrickIcon@2x.png",
+      "filename" : "classicBrickIcon@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "retroBrickIcon@3x.png",
+      "filename" : "classicBrickIcon@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

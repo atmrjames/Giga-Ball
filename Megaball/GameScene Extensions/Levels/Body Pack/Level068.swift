@@ -90,6 +90,39 @@ extension GameScene {
                     brick.color =  brickGreyLight
                 }
                 
+                if i < 2 {
+                    brick.texture = brickMultiHit4Texture
+                }
+                if (j == 0 || j == 10) && i == 2 {
+                    brick.texture = brickMultiHit4Texture
+                }
+                
+                if (j == 0 || j == 10) && i == 3 {
+                    brick.texture = brickMultiHit3Texture
+                }
+                if (j == 1 || j == 9 || j == 5) && i == 2 {
+                    brick.texture = brickMultiHit3Texture
+                }
+                if (j == 2 || j == 8 || j == 4 || j == 6) && i == 1 {
+                    brick.texture = brickMultiHit3Texture
+                }
+                if (j == 3 || j == 7) && i == 0 {
+                    brick.texture = brickMultiHit3Texture
+                }
+                
+                if (j == 0 || j == 10) && (i == 4 || i == 5) {
+                    brick.texture = brickMultiHit2Texture
+                }
+                if (j == 1 || j == 9 || j == 5) && i == 3 {
+                    brick.texture = brickMultiHit2Texture
+                }
+                if (j == 2 || j == 8 || j == 4 || j == 6) && i == 2 {
+                    brick.texture = brickMultiHit2Texture
+                }
+                if (j == 3 || j == 7) && i == 1 {
+                    brick.texture = brickMultiHit2Texture
+                }
+                
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 
                 if brick.texture == brickInvisibleTexture {

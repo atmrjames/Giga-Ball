@@ -88,6 +88,16 @@ class Playing: GKState {
         scene.ballIsOnPaddle = true
         scene.paddle.position.x = 0
         scene.paddle.position.y = scene.paddlePositionY
+        scene.paddleLaser.position.x = scene.paddle.position.x
+        scene.paddleLaser.position.y = scene.paddle.position.y - scene.paddleHeight/2
+        scene.paddleSticky.position.x = scene.paddle.position.x
+        scene.paddleSticky.position.y = scene.paddle.position.y - scene.paddleHeight/2
+        scene.paddleRetroTexture.position.x = scene.paddle.position.x
+        scene.paddleRetroTexture.position.y = scene.paddle.position.y
+        scene.paddleRetroLaserTexture.position.x = scene.paddle.position.x
+        scene.paddleRetroLaserTexture.position.y = scene.paddle.position.y
+        scene.paddleRetroStickyTexture.position.x = scene.paddle.position.x
+        scene.paddleRetroStickyTexture.position.y = scene.paddle.position.y + scene.paddleRetroStickyTexture.size.height/2 - scene.paddle.size.height/2
         scene.ball.position.x = 0
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
@@ -110,12 +120,23 @@ class Playing: GKState {
             })
             scene.paddle.run(startingGroup)
             scene.paddle.isHidden = false
-            scene.paddle.run(animationSequence)
+            scene.paddle.run(animationSequence, completion: {
+                self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+            })
+            
+            if scene.paddleTexture == scene.retroPaddle {
+                scene.paddleRetroTexture.run(startingGroup)
+                scene.paddleRetroTexture.isHidden = false
+                scene.paddleRetroTexture.run(animationSequence)
+            }
             // Animate paddle and ball in
         // Don't animate if resuming from save
         } else if scene.saveGameSaveArray!.count > 0 {
             scene.ball.isHidden = false
             scene.paddle.isHidden = false
+            if scene.paddleTexture == scene.retroPaddle {
+                scene.paddleRetroTexture.isHidden = false
+            }
             scene.totalScore = scene.totalScore - scene.levelScore
             
             if scene.saveBallPropertiesArray != [] {

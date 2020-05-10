@@ -62,6 +62,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var paddle = SKSpriteNode()
 	var paddleLaser = SKSpriteNode()
 	var paddleSticky = SKSpriteNode()
+	var paddleRetroTexture = SKSpriteNode()
+	var paddleRetroLaserTexture = SKSpriteNode()
+	var paddleRetroStickyTexture = SKSpriteNode()
+
     var ball = SKSpriteNode()
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
@@ -158,6 +162,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var layoutUnit: CGFloat = 0
     var paddleWidth: CGFloat = 0
+	var paddleHeight: CGFloat = 0
     var paddleGap: CGFloat = 0
 	var minPaddleGap: CGFloat = 0
     var ballSize: CGFloat = 0
@@ -665,6 +670,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle = self.childNode(withName: "paddle") as! SKSpriteNode
 		paddleLaser = self.childNode(withName: "paddleLaser") as! SKSpriteNode
 		paddleSticky = self.childNode(withName: "paddleSticky") as! SKSpriteNode
+		paddleRetroTexture = self.childNode(withName: "retroPaddleTexture") as! SKSpriteNode
+		paddleRetroLaserTexture = self.childNode(withName: "retroLasersTexture") as! SKSpriteNode
+		paddleRetroStickyTexture = self.childNode(withName: "retroStickyTexture") as! SKSpriteNode
         pauseButton = self.childNode(withName: "pauseButton") as! SKSpriteNode
 		pauseButtonTouch = self.childNode(withName: "pauseButtonTouch") as! SKSpriteNode
         life = self.childNode(withName: "life") as! SKSpriteNode
@@ -735,8 +743,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		screenBlockSideWidth = (frame.size.width - gameWidth)/2
 		// Same aspect ratio as the iPhone X size phones
 		
-		sideScreenBlockLeft.isHidden = true
-		sideScreenBlockRight.isHidden = true
+		sideScreenBlockLeft.isHidden = false
+		sideScreenBlockRight.isHidden = false
 		sideScreenBlockLeft.size.width = screenBlockSideWidth
 		sideScreenBlockRight.size.width = screenBlockSideWidth
 		sideScreenBlockLeft.position.x = -gameWidth/2-screenBlockSideWidth/2
@@ -775,8 +783,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		life.size.height = ballSize*1.5
 		
 		paddleWidth = ballSize*7.5
+		paddleHeight = ballSize
 		paddle.size.width = paddleWidth
-		paddle.size.height = ballSize
+		paddle.size.height = paddleHeight
 		paddleLaser.texture = laserPaddleTexture
 		paddleLaser.size.width = paddleWidth
 		paddleLaser.size.height = ballSize*1.6
@@ -786,15 +795,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.centerRect = CGRect(x: 0.0/80.0, y: 0.0/10.0, width: 80.0/80.0, height: 10.0/10.0)
 		paddleLaser.centerRect = CGRect(x: 0.0/80.0, y: 0.0/16.0, width: 80.0/80.0, height: 16.0/16.0)
 		paddleSticky.centerRect = CGRect(x: 0.0/80.0, y: 0.0/11.0, width: 80.0/80.0, height: 11.0/11.0)
+		paddleRetroTexture.isHidden = true
+		paddleRetroLaserTexture.isHidden = true
+		paddleRetroStickyTexture.isHidden = true
+		
+		if paddleTexture == retroPaddle {
+			paddleRetroTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/26.0, width: 91.0/91.0, height: 26.0/26.0)
+			paddleRetroTexture.size.width = paddleWidth*1.22
+			paddleRetroTexture.size.height = paddleHeight*2.6
+			
+			paddleRetroLaserTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/26.0, width: 91.0/91.0, height: 26.0/26.0)
+			paddleRetroLaserTexture.size.width = paddleRetroTexture.size.width
+			paddleRetroLaserTexture.size.height = paddleRetroTexture.size.height
+			
+			paddleRetroStickyTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/24.0, width: 91.0/91.0, height: 24.0/24.0)
+			paddleRetroStickyTexture.size.width = paddleRetroTexture.size.width
+			paddleRetroStickyTexture.size.height = paddleRetroTexture.size.width/3.8
+		}
+		// Size paddle, lasers and sticky for retro paddle
+		
+		
 		
 		topScreenBlock.size.height = screenBlockTopHeight
 		topScreenBlock.size.width = frame.size.width
 		sideScreenBlockLeft.size.height = frame.size.height - screenBlockTopHeight
 		sideScreenBlockRight.size.height = frame.size.height - screenBlockTopHeight
 		sideScreenBlockLeft.position.y = -frame.size.height/2+sideScreenBlockLeft.size.height/2
-		sideScreenBlockLeft.zPosition = 1
+		sideScreenBlockLeft.zPosition = 9
 		sideScreenBlockRight.position.y = -frame.size.height/2+sideScreenBlockRight.size.height/2
-		sideScreenBlockRight.zPosition = 1
+		sideScreenBlockRight.zPosition = 9
 		
 		topGap = brickHeight*2
 		// Object size definition
@@ -807,10 +836,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		yBrickOffsetEndless = frame.height/2 - topScreenBlock.size.height - brickHeight/2
 		finalBrickRowHeight = yBrickOffsetEndless - (brickHeight*(CGFloat(numberOfBrickRows)-1))
 		paddle.position.x = 0
-		paddlePositionY = frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddle.size.height/2
+		paddlePositionY = frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddleHeight/2
 		paddle.position.y = paddlePositionY
+		paddleRetroTexture.position.x = paddle.position.x
+		paddleRetroTexture.position.y = paddle.position.y
+		paddleRetroLaserTexture.position.x = paddle.position.x
+		paddleRetroLaserTexture.position.y = paddle.position.y
+		paddleRetroStickyTexture.position.x = paddle.position.x
+		paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 		ball.position.x = 0
-		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ball.size.height/2 + 1
+		ballStartingPositionY = paddlePositionY + paddleHeight/2 + ball.size.height/2 + 1
 		ball.position.y = ballStartingPositionY
 		directionMarker.zPosition = 10
 		// Object positioning definition
@@ -818,7 +853,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		bottomScreenBlock.size.height = frame.size.height/8
 		bottomScreenBlock.size.width = frame.size.width
 		bottomScreenBlock.position.x = 0
-		bottomScreenBlock.position.y = paddlePositionY - paddle.size.height/2 - brickWidth*0.85
+		bottomScreenBlock.position.y = paddlePositionY - paddleHeight/2 - brickWidth*0.85
 	
 		background.size.height = frame.size.height - screenBlockTopHeight
 		background.size.width = gameWidth
@@ -871,18 +906,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.physicsBody!.isDynamic = true
         paddle.name = PaddleCategoryName
         paddle.physicsBody!.categoryBitMask = CollisionTypes.paddleCategory.rawValue
-		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
         paddle.zPosition = 3
 		paddleLaser.zPosition = 2
 		paddleSticky.zPosition = 4
+		paddleRetroTexture.zPosition = 4
+		paddleRetroLaserTexture.zPosition = 5
+		paddleRetroStickyTexture.zPosition = 1
 		paddle.physicsBody!.usesPreciseCollisionDetection = true
 		paddle.physicsBody!.restitution = 1
 		// Define paddle properties
 		
-		backstop.size.height = paddle.size.height
+		backstop.size.height = paddleHeight
 		backstop.size.width = gameWidth-2
 		backstop.position.x = 0
-		backstop.position.y = paddle.position.y - paddle.size.height - backstop.size.height/2
+		backstop.position.y = paddle.position.y - paddleHeight - backstop.size.height/2
 		backstop.texture = backStopTexture
 		
 		backstop.physicsBody = SKPhysicsBody(rectangleOf: backstop.frame.size)
@@ -1014,7 +1052,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.zPosition = 10
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.5(1) - TBC - 00/00/2020"
+		buildLabel.text = "Alpha Build 0.2.5(1) - TBC - 10/05/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1079,7 +1117,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		angleAdjustmentK = 45
 		// Ball angle parameters
 		
-		powerUpProbFactor = 2//10
+		powerUpProbFactor = 10
 		powerUpLimit = 2
 		// Power-up parameters
 		
@@ -1182,9 +1220,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Ball matches paddle position
 			
 			paddleLaser.position.x = paddle.position.x
-			paddleLaser.position.y = paddle.position.y - paddle.size.height/2
+			paddleLaser.position.y = paddle.position.y - paddleHeight/2
 			paddleSticky.position.x = paddle.position.x
-			paddleSticky.position.y = paddle.position.y - paddle.size.height/2
+			paddleSticky.position.y = paddle.position.y - paddleHeight/2
+			paddleRetroTexture.position.x = paddle.position.x
+			paddleRetroTexture.position.y = paddle.position.y
+			paddleRetroLaserTexture.position.x = paddle.position.x
+			paddleRetroLaserTexture.position.y = paddle.position.y
+			paddleRetroStickyTexture.position.x = paddle.position.x
+			paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 			// Keep the different paddle textures together
         }
     }
@@ -1257,8 +1301,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let iconBarLength: CGFloat = (CGFloat(stickyPaddleCatches)/CGFloat(stickyPaddleCatchesTotal))
 			stickyPaddleIconBar.run(SKAction.scaleX(to: iconBarLength, duration: 0.05))
 			// Size icon timer based on number of catches remaining
+			if paddleTexture == retroPaddle {
+				paddleRetroStickyTexture.isHidden = true
+			}
+			// show retro sticky paddle
             if stickyPaddleCatches == 0 {
 				paddleSticky.isHidden = true
+				paddleRetroStickyTexture.isHidden = true
 				stickyPaddleCatchesTotal = 0
 				stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
 				stickyPaddleIconBar.isHidden = true
@@ -1318,6 +1367,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Ensures game is paused when returning from background
 
         if gameState.currentState is Playing {
+			
+			paddleLaser.position.x = paddle.position.x
+			paddleLaser.position.y = paddle.position.y - paddleHeight/2
+			paddleSticky.position.x = paddle.position.x
+			paddleSticky.position.y = paddle.position.y - paddleHeight/2
+			paddleRetroTexture.position.x = paddle.position.x
+			paddleRetroTexture.position.y = paddle.position.y
+			paddleRetroLaserTexture.position.x = paddle.position.x
+			paddleRetroLaserTexture.position.y = paddle.position.y
+			paddleRetroStickyTexture.position.x = paddle.position.x
+			paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
+			// Keep the different paddle textures together
 			
 			xSpeedLive = ball.physicsBody!.velocity.dx
 			ySpeedLive = ball.physicsBody!.velocity.dy
@@ -2019,6 +2080,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if stickyPaddleCatches != 0 {
 			// Catch the ball
 				
+				if paddleTexture == retroPaddle {
+					paddleRetroStickyTexture.isHidden = false
+				}
+				// show retro sticky paddle
+				
 				ballIsOnPaddle = true
 				ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 				paddleMoved = true
@@ -2027,7 +2093,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				return
 				// Don't try to adjust the ball's angle if it is on the paddle
 			
-			} else if ballIsOnPaddle == false && ball.position.y >= paddle.position.y + paddle.size.height/2 {
+			} else if ballIsOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 {
 			// Only applies if the ball hits the top surface of the paddle
 
 				angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
@@ -2147,7 +2213,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
         
-		let powerUpProb = Int.random(in: 15...23)
+		let powerUpProb = Int.random(in: 0...25)
         switch powerUpProb {
         case 0:
 		// Get a life
@@ -2193,7 +2259,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[3]+=1
 			}
 			// Don't show if power-up already falling
-        case 15:
+        case 4:
 		// Increase paddle size
 			if powerUpIdentityArray.contains(4) {
 				powerUpsOnScreen-=1
@@ -2204,7 +2270,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[4]+=1
 			}
 			// Don't show if power-up already falling
-		case 16:
+		case 5:
 		// Decrease paddle size
 			if powerUpIdentityArray.contains(5) {
 				powerUpsOnScreen-=1
@@ -2215,7 +2281,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[5]+=1
 			}
 			// Don't show if power-up already falling
-		case 17:
+		case 6:
 		// Sticky paddle
 			if powerUpIdentityArray.contains(6) {
 				powerUpsOnScreen-=1
@@ -2329,7 +2395,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[14]-=1
 			}
 			// Don't show if no normal bricks or power-up already falling
-		case 4:
+		case 15:
 		// Multi-hit bricks become normal bricks
 			powerUp.texture = powerUpMultiHitToNormalBricks
 			var multiNodeFound = false
@@ -2348,7 +2414,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[15]-=1
 			}
 			// Don't show if no multi-hit bricks or power-up already falling
-		case 5:
+		case 16:
 		// Multi-hit bricks reset
 			powerUp.texture = powerUpMultiHitBricksReset
 			var multiHitBrickFound = false
@@ -2367,7 +2433,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[16]-=1
 			}
 			// Don't show if no multi-hit bricks that have been hit or power-up already falling
-		case 6:
+		case 17:
 		// Remove indestructible bricks
 			powerUp.texture = powerUpRemoveIndestructibleBricks
 			var indestructibleNodeFound = false
@@ -2419,7 +2485,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[20]+=1
 			}
 			// Don't show if power-up already falling
-		case 24:
+		case 21:
 		// Move all bricks down 2 rows
 			powerUp.texture = powerUpBricksDown
 			var bricksAtBottom = false
@@ -2437,7 +2503,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[21]-=1
 			}
 			// Don't show if bricks are already at lowest point or power-up already falling or endless mode
-		case 25:
+		case 22:
 		// Mystery power-up
 			if mysteryPowerUp || powerUpIdentityArray.contains(22) {
 				powerUpsOnScreen-=1
@@ -2462,7 +2528,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[23]+=1
 			}
 			// Don't show power-up if already falling or in action
-		case 21:
+		case 24:
 		// Increase ball size
 			if powerUpIdentityArray.contains(24) {
 				powerUpsOnScreen-=1
@@ -2473,7 +2539,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerupsGenerated[24]+=1
 			}
 			// Don't show if power-up already falling
-		case 22:
+		case 25:
 		// Decrease ball size
 			if powerUpIdentityArray.contains(25) {
 				powerUpsOnScreen-=1
@@ -2647,25 +2713,48 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
 			paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
 			paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+			paddleRetroTexture.centerRect = CGRect(x: 15.0/91.0, y: 0.0/26.0, width: 61.0/91.0, height: 26.0/26.0)
+			paddleRetroLaserTexture.centerRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
+			paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 			// Ensure good scaling of paddles
 			if paddle.xScale < 1.0 {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
-				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+				})
 				paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 			} else if paddle.xScale == 1.0 {
-				paddle.run(SKAction.scaleX(to: 1.5, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 1.5, duration: 0.2), completion: {
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+				})
 				paddleLaser.run(SKAction.scaleX(to: 1.5, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 1.5, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 1.42, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.42, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.42, duration: 0.2))
 			} else if paddle.xScale == 1.5 {
-				paddle.run(SKAction.scaleX(to: 2.0, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 2.0, duration: 0.2), completion: {
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+				})
 				paddleLaser.run(SKAction.scaleX(to: 2.0, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 2.0, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 1.82, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.82, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.82, duration: 0.2))
 			} else if paddle.xScale == 2.0 || paddle.xScale == 2.5 {
-				paddle.run(SKAction.scaleX(to: 2.5, duration: 0.2))
+				paddle.run(SKAction.scaleX(to: 2.5, duration: 0.2), completion: {
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+				})
 				paddleLaser.run(SKAction.scaleX(to: 2.5, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 2.5, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 2.24, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 2.24, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 2.24, duration: 0.2))
 			}
 			// Resize paddle based on its current size
 			if paddle.position.x + paddle.size.width/2 > gameWidth/2 {
@@ -2685,14 +2774,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
 				self.paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
 				self.paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+				self.paddleRetroTexture.centerRect = CGRect(x: 15.0/91.0, y: 0.0/26.0, width: 61.0/91.0, height: 26.0/26.0)
+				self.paddleRetroLaserTexture.centerRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
+				self.paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 				if self.hapticsSetting! {
 					self.rigidHaptic.impactOccurred()
 				}
 				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
 					self.recentreBall()
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
 				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleRetroTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleRetroLaserTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleRetroStickyTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -2719,27 +2815,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
 			paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
 			paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+			paddleRetroTexture.centerRect = CGRect(x: 15.0/91.0, y: 0.0/26.0, width: 61.0/91.0, height: 26.0/26.0)
+			paddleRetroLaserTexture.centerRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
+			paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 			// Ensure good scaling of paddles
 			if paddle.xScale < 1.0 {
 				paddle.run(SKAction.scaleX(to: 0.5, duration: 0.2), completion: {
 					self.recentreBall()
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+
 				})
 				paddleLaser.run(SKAction.scaleX(to: 0.5, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 0.5, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 0.59, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 0.59, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 0.59, duration: 0.2))
 			} else if paddle.xScale == 1.0 {
 				paddle.run(SKAction.scaleX(to: 0.75, duration: 0.2), completion: {
 					self.recentreBall()
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+
 				})
 				paddleLaser.run(SKAction.scaleX(to: 0.75, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 0.75, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 0.79, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 0.79, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 0.79, duration: 0.2))
 			} else if paddle.xScale > 1.0 {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
 				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
 					self.recentreBall()
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+
 				})
 				paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 				paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 			}
 			// Resize paddle based on its current size
 			
@@ -2753,12 +2867,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
 				self.paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
 				self.paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+				self.paddleRetroTexture.centerRect = CGRect(x: 15.0/91.0, y: 0.0/26.0, width: 61.0/91.0, height: 26.0/26.0)
+				self.paddleRetroLaserTexture.centerRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
+				self.paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
                 if self.hapticsSetting! {
 					self.rigidHaptic.impactOccurred()
 				}
-                self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+				})
 				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleRetroTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleRetroLaserTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.paddleRetroStickyTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -2784,6 +2906,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = 0.1
 			powerupsCollected[6]+=1
 			paddleSticky.isHidden = false
+			if paddleTexture == retroPaddle {
+				paddleSticky.isHidden = true
+			}
             // Power up set and limit number of catches per power up
 			
 		case powerUpGravityBall:
@@ -3084,6 +3209,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
             laserPowerUpIsOn = true
 			paddleLaser.isHidden = false
+			if paddleTexture == retroPaddle {
+				paddleRetroLaserTexture.isHidden = false
+				paddleRetroTexture.isHidden = true
+				paddleLaser.isHidden = true
+			}
+			// retro lasers
             laserTimer = Timer.scheduledTimer(timeInterval: 0.33, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
@@ -3095,10 +3226,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let completionBlock = SKAction.run {
                 self.laserTimer?.invalidate()
 				self.paddleLaser.isHidden = true
+				self.paddleRetroLaserTexture.isHidden = true
+				if self.paddleTexture == self.retroPaddle {
+					self.paddleRetroTexture.isHidden = false
+				}
 				self.laserPowerUpIsOn = false
 				self.powerUpLimit = 2
 				self.lasersIcon.texture = self.iconLasersDisabledTexture
 				self.lasersIconBar.isHidden = true
+				self.paddle.isHidden = false
 				// Hide power-up icons
             }
 			lasersIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
@@ -3133,7 +3269,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case powerUpBackstop:
 		// Backstop power
 			if backstopCatches == 0 {
-				backstop.size.height = self.paddle.size.height
+				backstop.size.height = self.paddleHeight
 				backstop.size.width = self.gameWidth-2
 				backstop.run(SKAction.scale(by: 0.25, duration: 0.0), completion: {
 					self.backstop.isHidden = false
@@ -3288,7 +3424,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 	
 	func setBallStartingPositionY() {
-		ballStartingPositionY = paddlePositionY + paddle.size.height/2 + ball.size.height/2 + 1
+		ballStartingPositionY = paddlePositionY + paddleHeight/2 + ball.size.height/2 + 1
 		if ballIsOnPaddle {
 			ball.position.y = ballStartingPositionY
 			// Ensure ball remains on paddle
@@ -3315,10 +3451,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.centerRect = CGRect(x: 0.0/80.0, y: 0.0/10.0, width: 80.0/80.0, height: 10.0/10.0)
 		paddleLaser.centerRect = CGRect(x: 0.0/80.0, y: 0.0/16.0, width: 80.0/80.0, height: 16.0/16.0)
 		paddleSticky.centerRect = CGRect(x: 0.0/80.0, y: 0.0/11.0, width: 80.0/80.0, height: 11.0/11.0)
+		paddleRetroTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/26.0, width: 91.0/91.0, height: 26.0/26.0)
+		paddleRetroLaserTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/26.0, width: 91.0/91.0, height: 26.0/26.0)
+		paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 		// Ensure good scaling of paddles
-		paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+		paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+			self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+		})
 		paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 		paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+		paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+		paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+		paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 		paddleSizeIcon.texture = iconPaddleSizeDisabledTexture
 		paddleSizeIconBar.isHidden = true
 		// Paddle size reset
@@ -3331,8 +3475,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		laserTimer?.invalidate()
 		lasersIcon.texture = iconLasersDisabledTexture
 		paddleLaser.isHidden = true
+		paddleRetroLaserTexture.isHidden = true
+		if paddleTexture == retroPaddle {
+			paddleRetroTexture.isHidden = false
+		}
 		lasersIconBar.isHidden = true
 		laserPowerUpIsOn = false
+		paddle.isHidden = false
 		// Laser reset
 		
 		deactivateGravity()
@@ -3344,6 +3493,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Gravity reset
 		
 		paddleSticky.isHidden = true
+		paddleRetroStickyTexture.isHidden = true
 		stickyPaddleCatches = 0
 		stickyPaddleCatchesTotal = 0
 		stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
@@ -3394,20 +3544,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func ballPhysicsBodySet() {
 		if ball.texture == gigaBallTexture {
 		// Giga-Ball power-up
-			print("llama llama giga-ball set")
 			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Reset undestructi-ball power-up
 			ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Set giga-ball power-up
 		} else if ball.texture == undestructiballTexture {
 		// Undestructible power-up
-			print("llama llama undestructible set")
 			ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Reset giga-ball power-up
 			ball.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Set undestructible power-up
 		} else {
-			print("llama llama ball set")
 			ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Set ball physics body
@@ -3718,11 +3865,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			if laserSideLeft {
 				laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2 + laser.size.width, y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
+				
+				if paddleTexture == retroPaddle {
+					laser.position = CGPoint(x: paddleRetroLaserTexture.position.x - paddleRetroLaserTexture.size.width/2 + laser.size.width, y: paddleRetroLaserTexture.position.y + paddleRetroLaserTexture.size.height/2 + laser.size.height/2)
+				}
+				// adjust laser position when using retro paddle
+				
 				laser.texture = laserNormalTexture
 				laserSideLeft = false
 				// Left position
 			} else {
 				laser.position = CGPoint(x: paddle.position.x + paddle.size.width/2  - laser.size.width, y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
+				
+				if paddleTexture == retroPaddle {
+					laser.position = CGPoint(x: paddleRetroLaserTexture.position.x + paddleRetroLaserTexture.size.width/2 - laser.size.width, y: paddleRetroLaserTexture.position.y + paddleRetroLaserTexture.size.height/2 + laser.size.height/2)
+				}
+				// adjust laser position when using retro paddle
+				
 				laser.texture = laserNormalTexture
 				laserSideLeft = true
 				// Right position
@@ -4020,6 +4179,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ball.position.x = CGFloat(saveBallPropertiesArray![0])
 				ball.position.y = CGFloat(saveBallPropertiesArray![1])
 				paddle.position.x = CGFloat(saveBallPropertiesArray![4])
+				paddleLaser.position.x = paddle.position.x
+				paddleLaser.position.y = paddle.position.y - paddleHeight/2
+				paddleSticky.position.x = paddle.position.x
+				paddleSticky.position.y = paddle.position.y - paddleHeight/2
+				paddleRetroTexture.position.x = paddle.position.x
+				paddleRetroTexture.position.y = paddle.position.y
+				paddleRetroLaserTexture.position.x = paddle.position.x
+				paddleRetroLaserTexture.position.y = paddle.position.y
+				paddleRetroStickyTexture.position.x = paddle.position.x
+				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 				numberOfLevels = saveGameSaveArray![7]
 			} else {
 				saveCurrentGame()
