@@ -17,6 +17,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var ballSetting: Int?
+    var paddleSetting: Int?
+    var brickSetting: Int?
+    var appIconSetting: Int?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -71,13 +75,23 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         switch senderID {
         case 0:
-            titleLabel.text = "PADDLES"
-        case 1:
-            titleLabel.text = "BALLS"
-        case 2:
-            titleLabel.text = "POWER-UPS"
-        case 3:
             titleLabel.text = "APP ICONS"
+            unlockedLabel.text = "UNLOCKED: 10/10"
+        case 1:
+            titleLabel.text = "POWER-UPS"
+            unlockedLabel.text = "UNLOCKED: 26/26"
+        case 2:
+            titleLabel.text = "BALLS"
+            unlockedLabel.text = "UNLOCKED: 13/13"
+        case 3:
+            titleLabel.text = "PADDLES"
+            unlockedLabel.text = "UNLOCKED: 12/12"
+        case 4:
+            titleLabel.text = "BRICKS"
+            unlockedLabel.text = "UNLOCKED: 2/2"
+        case 5:
+            titleLabel.text = "ACHIEVEMENTS"
+            unlockedLabel.text = "COMPLETE: 0/0"
         default:
             break
         }
@@ -95,29 +109,116 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 23
+        
+        if senderID == 0 {
+        // App icons
+            return 10
+        } else if senderID == 1 {
+        // Power-ups
+            return 26
+        } else if senderID == 2 {
+        // Balls
+            return 13
+        } else if senderID == 3 {
+        // Paddles
+            return 12
+        } else if senderID == 4 {
+        // Bricks
+            return 2
+        } else if senderID == 4 {
+        // Achievements
+            return 2
+        } else {
+        // default
+            return 1
+        }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
-        cell.iconImage.image = LevelPackSetup().powerUpImageArray[indexPath.row]
-        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-        cell.settingDescription.text = LevelPackSetup().powerUpNameArray[indexPath.row]
-        cell.centreLabel.text = ""
-
-        if totalStatsArray[0].powerupsGenerated[indexPath.row] > 0 {
-            
-            let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[indexPath.row]) / Double(totalStatsArray[0].powerupsGenerated[indexPath.row])
-            cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
-            cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
-        } else {
+        if senderID == 0 {
+        // App icons
+            cell.iconImage.image = LevelPackSetup().appIconImageArray[indexPath.row]
+            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+            cell.iconImage.layer.cornerRadius = 10
+            cell.settingDescription.text = LevelPackSetup().appIconNameArray[indexPath.row]
+            cell.centreLabel.text = ""
             cell.settingState.text = ""
+            cell.tickImage.isHidden = true
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            if appIconSetting == indexPath.row {
+                cell.tickImage.isHidden = false
+            }
+        }
+        
+        if senderID == 1 {
+        // Power-ups
+            cell.iconImage.image = LevelPackSetup().powerUpImageArray[indexPath.row]
+            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+            cell.settingDescription.text = LevelPackSetup().powerUpNameArray[indexPath.row]
+            cell.centreLabel.text = ""
+
+            if totalStatsArray[0].powerupsGenerated[indexPath.row] > 0 {
+                let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[indexPath.row]) / Double(totalStatsArray[0].powerupsGenerated[indexPath.row])
+                cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
+                cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
+            } else {
+                cell.settingState.text = ""
+            }
+        }
+        
+        if senderID == 2 {
+        // Balls
+            cell.iconImage.image = LevelPackSetup().ballIconArray[indexPath.row]
+            cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
+            cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
+            cell.settingDescription.text = LevelPackSetup().ballNameArray[indexPath.row]
+            cell.centreLabel.text = ""
+            cell.settingState.text = ""
+            cell.tickImage.isHidden = true
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            if ballSetting == indexPath.row {
+                cell.tickImage.isHidden = false
+            }
+        }
+        
+        if senderID == 3 {
+        // Paddles
+            cell.iconImage.image = LevelPackSetup().paddleIconArray[indexPath.row]
+            cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
+            cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
+            cell.settingDescription.text = LevelPackSetup().paddleNameArray[indexPath.row]
+            cell.centreLabel.text = ""
+            cell.settingState.text = ""
+            cell.tickImage.isHidden = true
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            if paddleSetting == indexPath.row {
+                cell.tickImage.isHidden = false
+            }
+        }
+        
+        if senderID == 4 {
+        // Bricks
+            cell.iconImage.image = LevelPackSetup().brickIconArray[indexPath.row]
+            cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
+            cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
+            cell.settingDescription.text = LevelPackSetup().brickNameArray[indexPath.row]
+            cell.centreLabel.text = ""
+            cell.settingState.text = ""
+            cell.tickImage.isHidden = true
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            if brickSetting == indexPath.row {
+                cell.tickImage.isHidden = false
+            }
         }
         
         UIView.animate(withDuration: 0.2) {
             cell.cellView2.transform = .identity
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+//            if cell.tickImage.isHidden == false {
+//                cell.cellView2.backgroundColor = #colorLiteral(red: 0.7702723742, green: 1, blue: 0, alpha: 1)
+//            }
         }
         
         return cell
@@ -135,9 +236,37 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             interfaceHaptic.impactOccurred()
         }
         
-        hideAnimate()
-        moveToItemStats(powerUpIndex: indexPath.row)
+        if senderID == 0 {
+        // App icon
+            appIconSetting = indexPath.row
+            defaults.set(appIconSetting!, forKey: "appIconSetting")
+            changeIcon(to: LevelPackSetup().appIconNameArray[indexPath.row])
+        }
         
+        if senderID == 1 {
+        // Power-ups
+            hideAnimate()
+            moveToItemStats(powerUpIndex: indexPath.row)
+        }
+        
+        if senderID == 2 {
+        // Ball selection
+            ballSetting = indexPath.row
+            defaults.set(ballSetting!, forKey: "ballSetting")
+        }
+        
+        if senderID == 3 {
+        // Paddle selection
+            paddleSetting = indexPath.row
+            defaults.set(paddleSetting!, forKey: "paddleSetting")
+        }
+        
+        if senderID == 4 {
+        // Paddle selection
+            brickSetting = indexPath.row
+            defaults.set(brickSetting!, forKey: "brickSetting")
+        }
+
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
         // Update table view
@@ -163,6 +292,23 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.cellView2.transform = .identity
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
+    }
+    
+    func changeIcon(to iconName: String) {
+        guard UIApplication.shared.supportsAlternateIcons else {
+            return
+        }
+        // Check app supports alternate icons
+
+        UIApplication.shared.setAlternateIconName(iconName, completionHandler: { (error) in
+        // Change the icon to an image with specific name
+            if let error = error {
+            print("App icon failed to change due to \(error.localizedDescription)")
+            } else {
+            print("App icon changed successfully")
+            }
+            // Print success or error
+        })
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -232,6 +378,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        ballSetting = defaults.integer(forKey: "ballSetting")
+        paddleSetting = defaults.integer(forKey: "paddleSetting")
+        brickSetting = defaults.integer(forKey: "brickSetting")
+        appIconSetting = defaults.integer(forKey: "appIconSetting")
         // Load user settings
     }
     
@@ -266,7 +416,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func addParallax() {
-        let amount = 25
+        var amount = 25
+        if view.frame.width > 450 {
+            print("frame width: ", view.frame.width)
+            amount = 50
+            // iPad
+        }
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount

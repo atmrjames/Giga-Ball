@@ -20,6 +20,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
+    var ballSetting: Int?
+    var paddleSetting: Int?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -75,7 +77,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 4
+        return 6
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -88,16 +90,18 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         switch indexPath.row {
         case 0:
-            cell.settingDescription.text = "Paddles"
-            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
-        case 1:
-            cell.settingDescription.text = "Balls"
-            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
-        case 2:
-            cell.settingDescription.text = "Power-Ups"
-        case 3:
             cell.settingDescription.text = "App Icons"
-            cell.settingDescription.textColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
+        case 1:
+            cell.settingDescription.text = "Power-Ups"
+        case 2:
+            cell.settingDescription.text = "Balls"
+        case 3:
+            cell.settingDescription.text = "Paddles"
+        case 4:
+            cell.settingDescription.text = "Bricks"
+        case 5:
+            cell.settingDescription.text = "Achievements"
+            cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
         default:
             break
         }
@@ -121,8 +125,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        
-        if indexPath.row == 2 {
+        if indexPath.row != 5 {
             hideAnimate()
             moveToItemDetails(senderID: indexPath.row)
         }
@@ -285,6 +288,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
+        ballSetting = defaults.integer(forKey: "ballSetting")
+        paddleSetting = defaults.integer(forKey: "paddleSetting")
         // Load user settings
     }
     
@@ -340,7 +345,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func addParallax() {
-        let amount = 25
+        var amount = 25
+        if view.frame.width > 450 {
+            print("frame width: ", view.frame.width)
+            amount = 50
+            // iPad
+        }
         
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
         horizontal.minimumRelativeValue = -amount
