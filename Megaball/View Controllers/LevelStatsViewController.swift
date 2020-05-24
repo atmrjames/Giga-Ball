@@ -487,7 +487,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             packNameAndLevelNumberLabel.text = ""
             // No sub-heading in endless mode
         } else {
-            packNameAndLevelNumberLabel.text = LevelPackSetup().packTitles[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
+            packNameAndLevelNumberLabel.text = LevelPackSetup().levelPackNameArray[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
         }
         levelImageView.image = LevelPackSetup().levelImageArray[levelNumber!]
         levelImageView.layer.masksToBounds = false

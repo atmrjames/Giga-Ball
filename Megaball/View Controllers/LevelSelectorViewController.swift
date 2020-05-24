@@ -223,6 +223,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.levelLabel.text = "Level "+String(indexPath.row+1)
             cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row]
             cell.highScoreTitleLabel.text = "Highscore"
+            cell.blurView.isHidden = true
+            cell.lockedImageView.isHidden = true
             cell.cellView3.tag = indexPath.row+1
             cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
             // Setup cell buttons
@@ -233,6 +235,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
             }
+            
+            if LevelPackSetup().levelUnlockedArray[startLevel!+indexPath.row] == false {
+                cell.levelNameLabel.text = "Unlocked by completing Level "+String(indexPath.row)
+                cell.highScoreTitleLabel.text = ""
+                cell.highScoreLabel.text = ""
+                cell.blurView.isHidden = false
+                cell.lockedImageView.isHidden = false
+            }
+            // Locked levels until unlocked
+            
             UIView.animate(withDuration: 0.1) {
                 cell.cellView3.transform = .identity
                 cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
@@ -254,7 +266,14 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
             }
             
-            moveToLevelStatsSetup(sender: indexPath.row)
+            if LevelPackSetup().levelUnlockedArray[startLevel!+indexPath.row] {
+                moveToLevelStatsSetup(sender: indexPath.row)
+            }
+            // Don't allow selection if level is locked
+            
+            tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
+            // Update table view
         }
     }
     
@@ -568,7 +587,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func updateLabels() {
-        titleLabel.text = LevelPackSetup().packTitles[packNumber!].uppercased()
+        titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
         numberOfAttempts = packStatsArray[packNumber!].scores.count
         if collapsedStatsTableViewHeight.isActive == false {
             if numberOfAttempts == 0 {

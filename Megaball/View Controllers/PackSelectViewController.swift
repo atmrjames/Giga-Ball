@@ -74,9 +74,21 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
+        cell.blurView.isHidden = true
+        cell.lockedImageView.isHidden = true
+        
         cell.centreLabel.text = ""
         cell.settingState.text = ""
-        cell.settingDescription.text = LevelPackSetup().packTitles[indexPath.row+2]
+        cell.settingDescription.text = LevelPackSetup().levelPackNameArray[indexPath.row+2]
+        cell.iconImage.image = nil
+        
+        if LevelPackSetup().levelPackUnlockedArray[indexPath.row+2] == false {          
+            cell.settingDescription.text = "Locked"
+            cell.settingState.text = ""
+            cell.blurView.isHidden = false
+            cell.lockedImageView.isHidden = false
+        }
+        // Locked level packs until unlocked
 
         UIView.animate(withDuration: 0.2) {
             cell.cellView2.transform = .identity
@@ -98,8 +110,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             interfaceHaptic.impactOccurred()
         }
         
-        hideAnimate()
-        moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
+        if LevelPackSetup().levelPackUnlockedArray[indexPath.row+2] {
+            hideAnimate()
+            moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
+        }
+        // Don't allow selection if level pack is locked
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()

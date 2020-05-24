@@ -350,7 +350,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["musicSetting": true])
         defaults.register(defaults: ["hapticsSetting": true])
         defaults.register(defaults: ["parallaxSetting": true])
-        defaults.register(defaults: ["paddleSensitivitySetting": 2])
+        if view.frame.size.width > 450 {
+        // iPad
+            print("llama llama size ipad: ", view.frame.size.width)
+            defaults.register(defaults: ["paddleSensitivitySetting": 3])
+        } else {
+            print("llama llama size non ipad: ", view.frame.size.width)
+            defaults.register(defaults: ["paddleSensitivitySetting": 2])
+        }
         defaults.register(defaults: ["gameCenterSetting": false])
         defaults.register(defaults: ["ballSetting": 0])
         defaults.register(defaults: ["paddleSetting": 0])

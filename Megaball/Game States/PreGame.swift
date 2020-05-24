@@ -53,19 +53,19 @@ class PreGame: GKState {
         
         scene.ballStartingPositionY = scene.paddlePositionY + scene.paddle.size.height/2 + scene.ballSize/2 + 1
         // Redeclare ballStartingPositionY
-                
-        if let startingLevelNumber = scene.gameViewControllerDelegate?.selectedLevel {
+            
+        if let startingLevelNumber = scene.gameViewControllerDelegate!.selectedLevel {
             scene.startLevelNumber = startingLevelNumber
             scene.levelNumber = scene.startLevelNumber
         }
-        if let endingingLevelNumber = scene.gameViewControllerDelegate?.numberOfLevels {
+        if let endingingLevelNumber = scene.gameViewControllerDelegate!.numberOfLevels {
             scene.numberOfLevels = endingingLevelNumber
             scene.endLevelNumber = scene.levelNumber + endingingLevelNumber - 1
         }
-        if let levelSender = scene.gameViewControllerDelegate?.levelSender {
+        if let levelSender = scene.gameViewControllerDelegate!.levelSender {
             scene.levelSender = levelSender
         }
-        if let levelPack = scene.gameViewControllerDelegate?.levelPack {
+        if let levelPack = scene.gameViewControllerDelegate!.levelPack {
             scene.packNumber = levelPack
         }
         // Redeclare the game scene properties as passed in

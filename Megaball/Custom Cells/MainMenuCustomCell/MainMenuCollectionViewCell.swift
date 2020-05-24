@@ -20,7 +20,7 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         iconImage.layer.masksToBounds = false
         iconImage.layer.shadowOffset = CGSize(width: 0, height: 2)
         iconImage.layer.shadowColor = UIColor.black.cgColor
-        iconImage.layer.shadowOpacity = 0.5
+        iconImage.layer.shadowOpacity = 0.33
         iconImage.layer.shadowRadius = 4
     }
 

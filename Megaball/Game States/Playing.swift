@@ -85,6 +85,7 @@ class Playing: GKState {
 
         scene.ball.removeAllActions()
         scene.paddle.removeAllActions()
+        scene.paddleRetroTexture.removeAllActions()
         scene.ballIsOnPaddle = true
         scene.paddle.position.x = 0
         scene.paddle.position.y = scene.paddlePositionY
@@ -157,6 +158,7 @@ class Playing: GKState {
             scene.resumeBrickCreation()
             // Load saved level
         } else {
+            
             switch scene.levelNumber {
                 
             // Endless mode

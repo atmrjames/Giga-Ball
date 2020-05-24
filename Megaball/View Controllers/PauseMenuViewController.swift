@@ -328,9 +328,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 levelNumberLabel.text = "Tutorial"
             } else {
                 if numberOfLevels > 1 {
-                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber]) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber]) \n \(LevelPackSetup().levelNameArray[levelNumber])"
                 } else {
-                    levelNumberLabel.text = "\(LevelPackSetup().packTitles[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) \n \(LevelPackSetup().levelNameArray[levelNumber])"
                 }
             }
             

@@ -13,7 +13,7 @@ class LevelPackSetup {
     let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
     let startLevelNumber: [Int] = [0, 0, 1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101]
     
-    let packTitles: [String] = [
+    let levelPackNameArray: [String] = [
         "Tutorial",
         "Endless Mode",
         "Classic Pack",
@@ -29,8 +29,24 @@ class LevelPackSetup {
         "Challenge Pack"
     ]
     
+    let levelPackUnlockedArray: [Bool] = [
+        true, // Tutorial
+        true, // Endless Mode
+        true, // Classic
+        false, // Space
+        true, // Nature
+        true, // Urban
+        true, // Food
+        true, // Computer
+        true, // Body
+        true, // World
+        true, // Emoji
+        true, // Numbers
+        true // Challenge
+    ]
+    
     let ballImageArray: [UIImage] = [
-        UIImage(named:"ball.png")!,
+        UIImage(named:"ballNormal.png")!,
         UIImage(named:"3DBall.png")!,
         UIImage(named:"outlineBall.png")!,
         UIImage(named:"diamondBall.png")!,
@@ -42,7 +58,7 @@ class LevelPackSetup {
         UIImage(named:"spiralBall.png")!,
         UIImage(named:"pixelBall.png")!,
         UIImage(named:"loadingBall.png")!,
-        UIImage(named:"retroBall.png")!,
+        UIImage(named:"retroBall.png")!
     ]
     
     let ballNameArray: [String] = [
@@ -61,6 +77,22 @@ class LevelPackSetup {
         "Retro"
     ]
     
+    let ballUnlockedArray: [Bool] = [
+        true, // Classic
+        false, // 3D
+        true, // Outline
+        true, // Diamond
+        true, // Beach ball
+        true, // Concentric
+        true, // Reuleaux
+        true, // Dots
+        true, // Spokes
+        true, // Spiral
+        true, // Pixel
+        true, // Rainbow
+        true // Retro
+    ]
+    
     let ballIconArray: [UIImage] = [
         UIImage(named:"ballIcon.png")!,
         UIImage(named:"3DBallIcon.png")!,
@@ -74,7 +106,7 @@ class LevelPackSetup {
         UIImage(named:"spiralBallIcon.png")!,
         UIImage(named:"pixelBallIcon.png")!,
         UIImage(named:"loadingBallIcon.png")!,
-        UIImage(named:"retroBallIcon.png")!,
+        UIImage(named:"retroBallIcon.png")!
     ]
     
     let paddleImageArray: [UIImage] = [
@@ -89,7 +121,7 @@ class LevelPackSetup {
         UIImage(named:"stripyPaddle.png")!,
         UIImage(named:"splitPaddle.png")!,
         UIImage(named:"rainbowPaddle.png")!,
-        UIImage(named:"retroPaddle.png")!,
+        UIImage(named:"retroPaddle.png")!
     ]
     
     let paddleNameArray: [String] = [
@@ -107,6 +139,21 @@ class LevelPackSetup {
         "Retro"
     ]
     
+    let paddleUnlockedArray: [Bool] = [
+        true, // Classic
+        false, // 3D
+        true, // Outline
+        true, // Square
+        true, // Ice
+        true, // Glass
+        true, // Pixel
+        true, // Giga
+        true, // Candy Cane
+        true, // Split
+        true, // Rainbow
+        true // Retro
+    ]
+    
     let paddleIconArray: [UIImage] = [
         UIImage(named:"regularPaddleIcon.png")!,
         UIImage(named:"3DPaddleIcon.png")!,
@@ -119,7 +166,7 @@ class LevelPackSetup {
         UIImage(named:"stripyPaddleIcon.png")!,
         UIImage(named:"splitPaddleIcon.png")!,
         UIImage(named:"rainbowPaddleIcon.png")!,
-        UIImage(named:"retroPaddleIcon.png")!,
+        UIImage(named:"retroPaddleIcon.png")!
     ]
     
     let appIconImageArray: [UIImage] = [
@@ -148,6 +195,19 @@ class LevelPackSetup {
         "Retro"        
     ]
     
+    let appIconUnlockedArray: [Bool] = [
+        true, // White
+        false, // Yellow
+        true, // Orange
+        true, // Green
+        true, // Blue
+        true, // Brown
+        true, // Black
+        true, // GigaBall
+        true, // Rainbow
+        true // Retro
+    ]
+    
     let brickImageArray: [UIImage] = [
         UIImage(named:"BrickNormal.png")!,
         UIImage(named:"retroBrickNormal.png")!
@@ -156,6 +216,11 @@ class LevelPackSetup {
     let brickNameArray: [String] = [
         "Classic",
         "Retro"
+    ]
+    
+    let brickUnlockedArray: [Bool] = [
+        true, // Classic
+        false // Retro
     ]
     
     let brickIconArray: [UIImage] = [
@@ -274,7 +339,7 @@ class LevelPackSetup {
         UIImage(named: "Level107Image.png")!,
         UIImage(named: "Level108Image.png")!,
         UIImage(named: "Level109Image.png")!,
-        UIImage(named: "Level110Image.png")!,
+        UIImage(named: "Level110Image.png")!
     ]
     let levelNameArray: [String] = [
         "Endless Mode",
@@ -412,6 +477,143 @@ class LevelPackSetup {
         "Finish Line"
     ]
     
+    let levelUnlockedArray: [Bool] = [
+        
+        true, // Endless mode
+        
+        // Classic Pack
+        true, // Checkers
+        true, // Electric Fence
+        true, // Gateway
+        true, // Surfer's Paradise
+        true, // Chevron
+        true, // Vignette
+        true, // Cluster
+        true, // Vertical Challenge
+        true, // Horizontal Challenge
+        true, // X Marks The Spot
+        
+        // Space Pack
+        true, // Cresent Moon
+        true, // Invader
+        true, // Constellation
+        true, // Star
+        true, // Rocket
+        true, // Galaxy
+        true, // Meteor Shower
+        true, // Neptune
+        true, // Saturn
+        true, // Meteorite
+
+        // Nature Pack
+        true, // Leaf
+        true, // Rainbow
+        true, // Egg
+        true, // Tree
+        true, // Sunset
+        true, // Apple
+        true, // Flower
+        true, // Birds
+        true, // Germ
+        true, // Butterfly
+        
+        // Urban Pack
+        true, // City Map
+        true, // Skyscraper
+        true, // Subway
+        true, // Cottage
+        true, // Traffic Light
+        true, // Finance
+        true, // Apartments
+        true, // City Hall
+        true, // Bridge
+        true, // Cityscape Reflection
+        
+        // Food Pack
+        true, // Hotdog
+        true, // Piece of Cake
+        true, // Wine Glass
+        true, // Fried Egg
+        true, // BBQ
+        true, // Kebabs
+        true, // Ice Cream
+        true, // Burger
+        true, // Pudding
+        true, // Chocolate Bar
+        
+        // Computer Pack
+        true, // Command
+        true, // Save
+        true, // @
+        true, // Mail
+        true, // Watch
+        true, // Trash
+        true, // Bug
+        true, // Zoom
+        true, // Battery
+        true, // Hour Glass
+        
+        // Body Pack
+        true, // Heart
+        true, // Brain
+        true, // Skull
+        true, // Intestine
+        true, // Lips
+        true, // Eye
+        true, // Kidney
+        true, // Tooth
+        true, // Lungs
+        true, // Face
+        
+        // World Pack
+        true, // Globe
+        true, // Pyramid
+        true, // Union Jack
+        true, // Compass
+        true, // Mountain
+        true, // Africa
+        true, // Island
+        true, // Partly Cloudy
+        true, // Maple Leaf
+        true, // Volcano
+        
+        // Emoji Pack
+        true, // Smiling Face
+        true, // Eyes
+        true, // Fire
+        true, // Weird Fish
+        true, // Winking Face
+        true, // Peach
+        true, // Ghost
+        true, // Augerbene / Eggplant
+        true, // Crying Face
+        true, // Poo
+        
+        // Numbers Pack
+        true, // One
+        true, // Two
+        true, // Three
+        true, // Four
+        true, // Five
+        true, // Six
+        true, // Seven
+        true, // Eight
+        true, // Nine
+        true, // Zero
+        
+        // Challenge Pack
+        true, // Lonesome Brick
+        true, // Kerplunk
+        true, // Gradient
+        true, // Restriction
+        true, // Barricade
+        true, // Minefield
+        true, // Split Screen
+        false, // Pimple
+        false, // Ringfence
+        false // Finish Line
+    ]
+    
     let levelLeaderboardsArray: [String] = [
         
         // Endless Mode
@@ -547,6 +749,36 @@ class LevelPackSetup {
         "Increase Ball Size",
         "Decrease Ball Size"
     ]
+    
+    let powerUpUnlockedArray: [Bool] = [
+        true, // Get a Life
+        false, // Lose a Life
+        true, // Decrease Ball Speed
+        true, // Increase Ball Speed
+        true, // Increase Paddle Size
+        true, // Decrease Paddle Size
+        true, //false, // Sticky Paddle
+        true, //false, // Gravity
+        true, // Bonus Points
+        true, // Penalty Points
+        true, //false, // x2 Multiplier
+        true, //false, // Reset Multiplier
+        true, // Next Level
+        true, // Show All Bricks
+        true, // Hide Bricks
+        true, // Clear Multi-Hit Bricks
+        true, // Reset Multi-Hit Bricks
+        true, // Remove Indestructible Bricks
+        true, //false, // Giga-Ball
+        true, //false, // Undestructi-Ball
+        true, //false, // Lasers
+        true, //false, // Quicksand
+        true, //false, // Mystery
+        true, //false, // Backstop
+        true, //false, // Increase Ball Size
+        true //false // Decrease Ball Size
+    ]
+    // true == unlocked, false = locked
     
     let powerUpDescriptionArray: [String] = [
         "Gives you an extra life",

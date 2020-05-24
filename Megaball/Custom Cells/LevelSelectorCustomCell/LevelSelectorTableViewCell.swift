@@ -16,10 +16,20 @@ class LevelSelectorTableViewCell: UITableViewCell {
     @IBOutlet var levelNameLabel: UILabel!
     @IBOutlet var highScoreTitleLabel: UILabel!
     @IBOutlet var highScoreLabel: UILabel!
+    @IBOutlet var blurView: UIView!
+    @IBOutlet var lockedImageView: UIImageView!
+    
+    var blurViewLayer: UIVisualEffectView?
     
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code
+        
+        setBlur()
+        blurView.isHidden = true
+        lockedImageView.image = UIImage(named:"LockedIcon.png")!
+        lockedImageView.isHidden = true
+        // Setup blur and lock icon for when item is locked
         
         levelImage.layer.masksToBounds = false
         levelImage.layer.shadowOffset = CGSize(width: 0, height: 0)
@@ -38,6 +48,28 @@ class LevelSelectorTableViewCell: UITableViewCell {
         super.setSelected(selected, animated: animated)
 
         // Configure the view for the selected state
+    }
+    
+    func setBlur() {
+        blurView.backgroundColor = .clear
+        // 1: change the superview transparent
+        let blurEffect = UIBlurEffect(style: .dark)
+        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
+        blurViewLayer = UIVisualEffectView(effect: blurEffect)
+        // 3 Create a UIVisualEffectView with the new blur
+        blurViewLayer!.translatesAutoresizingMaskIntoConstraints = false
+        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
+        blurView.insertSubview(blurViewLayer!, at: 0)
+
+        NSLayoutConstraint.activate([
+        blurViewLayer!.heightAnchor.constraint(equalTo: blurView.heightAnchor),
+        blurViewLayer!.widthAnchor.constraint(equalTo: blurView.widthAnchor),
+        blurViewLayer!.leadingAnchor.constraint(equalTo: blurView.leadingAnchor),
+        blurViewLayer!.trailingAnchor.constraint(equalTo: blurView.trailingAnchor),
+        blurViewLayer!.topAnchor.constraint(equalTo: blurView.topAnchor),
+        blurViewLayer!.bottomAnchor.constraint(equalTo: blurView.bottomAnchor)
+        ])
+        // Keep the frame of the blurView consistent with that of the associated view.
     }
     
 }

@@ -27,7 +27,7 @@ extension GameScene {
                     brick.texture = brickInvisibleTexture
                 }
                 
-                if j >= 6 && j <= 6 && i >= 8 && i <= 13 {
+                if j >= 4 && j <= 6 && i >= 8 && i <= 13 {
                     brick.texture = brickInvisibleTexture
                 }
                 

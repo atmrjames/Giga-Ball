@@ -11,6 +11,8 @@ import GameplayKit
 
 extension GameScene {
     func brickCreation(brickArray: [SKNode]) {
+                
+        powerUpProbAllocation(levelNumber: levelNumber)
         
         var brickBuildArray: [SKNode] = []
         // Array to store all bricks
