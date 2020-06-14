@@ -77,7 +77,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 6
+        return 5
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -87,21 +87,24 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         cell.centreLabel.text = ""
         cell.settingState.text = ""
+        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         
         switch indexPath.row {
         case 0:
             cell.settingDescription.text = "App Icons"
+            cell.iconImage.image = UIImage(named:"iconAppIcon.png")!
         case 1:
             cell.settingDescription.text = "Power-Ups"
+            cell.iconImage.image = UIImage(named:"iconPowerUp.png")!
         case 2:
             cell.settingDescription.text = "Balls"
+            cell.iconImage.image = UIImage(named:"iconBalls.png")!
         case 3:
             cell.settingDescription.text = "Paddles"
+            cell.iconImage.image = UIImage(named:"iconPaddles.png")!
         case 4:
             cell.settingDescription.text = "Bricks"
-        case 5:
-            cell.settingDescription.text = "Achievements"
-            cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            cell.iconImage.image = UIImage(named:"iconBricks.png")!
         default:
             break
         }
@@ -125,10 +128,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        if indexPath.row != 5 {
-            hideAnimate()
-            moveToItemDetails(senderID: indexPath.row)
-        }
+        
+        hideAnimate()
+        moveToItemDetails(senderID: indexPath.row)
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
@@ -323,7 +325,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func setBlur() {
-        backgroundView.backgroundColor = .clear
+        backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.

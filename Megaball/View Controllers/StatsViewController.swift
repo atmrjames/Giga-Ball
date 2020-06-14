@@ -74,7 +74,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 13
+        return 12
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -128,21 +128,11 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Time playing"
-                cell.statValue.text = "00:00:00"
-                cell.statDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-                cell.statValue.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            }
-            return cell
-        case 5:
-            if numberOfAttempts == 0 {
-                hideCell(cell: cell)
-            } else {
                 cell.statDescription.text = "Ball hits"
                 cell.statValue.text = String(totalStatsArray[0].ballHits)
             }
             return cell
-        case 6:
+        case 5:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -150,7 +140,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].ballsLost)
             }
             return cell
-        case 7:
+        case 6:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -158,7 +148,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].bricksHit.reduce(0, +))
             }
             return cell
-        case 8:
+        case 7:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -166,7 +156,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].bricksDestroyed.reduce(0, +))
             }
             return cell
-        case 9:
+        case 8:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -174,7 +164,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].powerupsCollected.reduce(0, +))
             }
             return cell
-        case 10:
+        case 9:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -183,7 +173,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(powerupsMissed)
             }
             return cell
-        case 11:
+        case 10:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -191,7 +181,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].lasersFired)
             }
             return cell
-        case 12:
+        case 11:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -199,7 +189,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].lasersHit)
             }
             return cell
-        case 13:
+        case 12:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -373,7 +363,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func setBlur() {
-        backgroundView.backgroundColor = .clear
+        backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.

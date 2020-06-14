@@ -62,8 +62,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         showAnimate()
         packTableView.reloadData()
         backButtonCollectionView.reloadData()
-
-
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -79,8 +77,36 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         
         cell.centreLabel.text = ""
         cell.settingState.text = ""
+        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         cell.settingDescription.text = LevelPackSetup().levelPackNameArray[indexPath.row+2]
-        cell.iconImage.image = nil
+        
+        switch indexPath.row+2 {
+        case 2:
+            cell.iconImage.image = UIImage(named:"iconClassicPack.png")!
+        case 3:
+            cell.iconImage.image = UIImage(named:"iconSpacePack.png")!
+        case 4:
+            cell.iconImage.image = UIImage(named:"iconNaturePack.png")!
+        case 5:
+            cell.iconImage.image = UIImage(named:"iconUrbanPack.png")!
+        case 6:
+            cell.iconImage.image = UIImage(named:"iconFoodPack.png")!
+        case 7:
+            cell.iconImage.image = UIImage(named:"iconComputerPack.png")!
+        case 8:
+            cell.iconImage.image = UIImage(named:"iconBodyPack.png")!
+        case 9:
+            cell.iconImage.image = UIImage(named:"iconWorldPack.png")!
+        case 10:
+            cell.iconImage.image = UIImage(named:"iconEmojiPack.png")!
+        case 11:
+            cell.iconImage.image = UIImage(named:"iconNumbersPack.png")!
+        case 12:
+            cell.iconImage.image = UIImage(named:"iconChallengePack.png")!
+        default:
+            cell.iconImage.image = nil
+            break
+        }
         
         if LevelPackSetup().levelPackUnlockedArray[indexPath.row+2] == false {          
             cell.settingDescription.text = "Locked"
@@ -216,7 +242,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func setBlur() {
-        backgroundView.backgroundColor = .clear
+        backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.

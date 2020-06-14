@@ -37,16 +37,17 @@ extension GameScene {
                     brick.color = brickYellow
                 }
                 
-                if (j == 3 || j == 7) && i >= 6 && i <= 9 {
+                
+                if j >= 2 && j <= 8 && (i == 14 || i == 15) {
                     brick.texture = brickNullTexture
                 }
-                if (j == 2 || j == 8) && i == 15 {
-                    brick.texture = brickNullTexture
-                }
-                if (j == 3 || j == 7) && i == 16 {
+                if j >= 3 && j <= 7 && i == 16 {
                     brick.texture = brickNullTexture
                 }
                 if j >= 4 && j <= 6 && i == 17 {
+                    brick.texture = brickNullTexture
+                }
+                if (j == 3 || j == 7) && i >= 6 && i <= 9 {
                     brick.texture = brickNullTexture
                 }
                                 

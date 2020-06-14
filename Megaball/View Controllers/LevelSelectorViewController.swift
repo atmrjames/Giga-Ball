@@ -19,6 +19,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
+    var statsCollapseSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -73,6 +74,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
+        statsCollapseSetting = !statsCollapseSetting!
+        defaults.set(statsCollapseSetting!, forKey: "statsCollapseSetting")
         statsTableOpenClose()
     }
     
@@ -107,8 +110,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if parallaxSetting! {
             addParallax()
         }
-        collapsedStatsTableViewHeight.isActive = false
         updateLabels()
+        statsTableOpenClose()
         showAnimate()
         reloadData()
     }
@@ -457,7 +460,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func setBlur() {
-        backgroundView.backgroundColor = .clear
+        backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
@@ -486,6 +489,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
+        statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         // Load user settings
     }
     
@@ -589,17 +593,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func updateLabels() {
         titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
         numberOfAttempts = packStatsArray[packNumber!].scores.count
-        if collapsedStatsTableViewHeight.isActive == false {
-            if numberOfAttempts == 0 {
-                statsTableViewHeight.isActive = false
-                noStatsTableViewHeight.isActive = true
-                collapsedStatsTableViewHeight.isActive = false
-            } else {
-                noStatsTableViewHeight.isActive = false
-                statsTableViewHeight.isActive = true
-                collapsedStatsTableViewHeight.isActive = false
-            }
-        }
         if numberOfLevels! == 1 {
             levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Level", for: .normal)
         } else {
@@ -616,20 +609,27 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func statsTableOpenClose() {
-        if collapsedStatsTableViewHeight.isActive == false {
+        if statsCollapseSetting == false {
+            collapsedStatsTableViewHeight.isActive = false
+            if numberOfAttempts == 0 {
+                statsTableViewHeight.isActive = false
+                noStatsTableViewHeight.isActive = true
+            } else {
+                noStatsTableViewHeight.isActive = false
+                statsTableViewHeight.isActive = true
+            }
+            UIView.animate(withDuration: 0.25, animations: {
+                self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: 0)
+            })
+        } else if statsCollapseSetting! {
             collapsedStatsTableViewHeight.isActive = true
             statsTableViewHeight.isActive = false
             noStatsTableViewHeight.isActive = false
             UIView.animate(withDuration: 0.25, animations: {
                 self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi/2)
             })
-        } else {
-            collapsedStatsTableViewHeight.isActive = false
-            UIView.animate(withDuration: 0.25, animations: {
-                self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: 0)
-            })
-            updateLabels()
         }
+        updateLabels()
         UIView.animate(withDuration: 0.25) {
             self.view.layoutIfNeeded()
         }
@@ -651,6 +651,33 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if packNumber == 3 {
             gcViewController.leaderboardIdentifier = "leaderboardSpacePackScore"
         }
+        if packNumber == 4 {
+            gcViewController.leaderboardIdentifier = "leaderboardNaturePackScore"
+        }
+        if packNumber == 5 {
+            gcViewController.leaderboardIdentifier = "leaderboardUrbanPackScore"
+        }
+        if packNumber == 6 {
+            gcViewController.leaderboardIdentifier = "leaderboardFoodPackScore"
+        }
+        if packNumber == 7 {
+            gcViewController.leaderboardIdentifier = "leaderboardComputerPackScore"
+        }
+        if packNumber == 8 {
+            gcViewController.leaderboardIdentifier = "leaderboardBodyPackScore"
+        }
+        if packNumber == 9 {
+            gcViewController.leaderboardIdentifier = "leaderboardWorldPackScore"
+        }
+        if packNumber == 10 {
+            gcViewController.leaderboardIdentifier = "leaderboardEmojiPackScore"
+        }
+        if packNumber == 11 {
+            gcViewController.leaderboardIdentifier = "leaderboardNumbersPackScore"
+        }
+        if packNumber == 12 {
+            gcViewController.leaderboardIdentifier = "leaderboardChallengePackScore"
+        }
         // Show corresponding leaderboard for the current level pack
         
         viewController?.present(gcViewController, animated: true, completion: nil)
@@ -670,6 +697,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         loadData()
         reloadData()
         updateLabels()
+        statsTableOpenClose()
     }
     // Runs when returning from game
     

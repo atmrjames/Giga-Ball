@@ -39,6 +39,9 @@ class Playing: GKState {
         
         if previousState is Paused {
         // Unpause game
+            if scene.ballIsOnPaddle == false {
+                scene.startLevelTimer()
+            }
             scene.playFromPause()            
         }
     }
@@ -158,6 +161,16 @@ class Playing: GKState {
             scene.resumeBrickCreation()
             // Load saved level
         } else {
+            scene.levelTimerBonus = 500
+            scene.levelTimerValue = 0
+            // reset level timer bonus
+            
+            if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] && scene.levelNumber != 0 {
+                scene.firstLevel = true
+                scene.showInbetweenView()
+                scene.firstLevel = false
+            }
+            // Show the level intro screen if the first level of the pack
             
             switch scene.levelNumber {
                 

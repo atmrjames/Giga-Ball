@@ -243,18 +243,32 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionViewLayout() {
-        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = backButtonCollectionView.frame.size.width
-        let cellWidth: CGFloat = 50
-        let cellSpacing = (viewWidth - cellWidth*3)/3
-        layout.minimumInteritemSpacing = cellSpacing
-        layout.minimumLineSpacing = cellSpacing
-        backButtonCollectionView!.collectionViewLayout = layout
+        if packNumber == 1 {
+            let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+            let viewWidth = backButtonCollectionView.frame.size.width
+            let cellWidth: CGFloat = 50
+            let cellSpacing = (viewWidth - cellWidth*3)/3
+            layout.minimumInteritemSpacing = cellSpacing
+            layout.minimumLineSpacing = cellSpacing
+            backButtonCollectionView!.collectionViewLayout = layout
+        } else {
+            let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+            let viewWidth = backButtonCollectionView.frame.size.width
+            let cellWidth: CGFloat = 50
+            let cellSpacing = (viewWidth - cellWidth*2)/2
+            layout.minimumInteritemSpacing = cellSpacing
+            layout.minimumLineSpacing = cellSpacing
+            backButtonCollectionView!.collectionViewLayout = layout
+        }
     }
     // Set the spacing between collection view cells
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        3
+        if packNumber == 1 {
+            return 3
+        } else {
+            return 1
+        }
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -414,7 +428,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func setBlur() {
-        backgroundView.backgroundColor = .clear
+        backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.

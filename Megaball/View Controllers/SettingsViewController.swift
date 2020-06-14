@@ -20,6 +20,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var navigatedFrom: String?
     
     let defaults = UserDefaults.standard
+    var premiumSetting: Bool?
     var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
@@ -104,7 +105,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 9
+        if navigatedFrom! == "PauseMenu" {
+            return 8
+        } else {
+            return 9
+        }
     }
     // Set number of cells in table view
     
@@ -112,44 +117,58 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
         settingsTableView.rowHeight = 70.0
+        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         
         switch indexPath.row {
         case 0:
-        // Ads
-            cell.settingDescription.text = "Ads"
+        // Premium
+            cell.settingDescription.text = "Premium"
             cell.centreLabel.text = ""
-            if adsSetting! {
+            cell.iconImage.image = UIImage(named:"iconPremium.png")!
+            if premiumSetting! {
                 cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             } else {
                 cell.settingState.text = "off"
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
         case 1:
+        // Ads
+            cell.settingDescription.text = "Ads"
+            cell.centreLabel.text = ""
+            cell.iconImage.image = UIImage(named:"iconAd.png")!
+            if adsSetting! {
+                cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            } else {
+                cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            }
+        case 2:
         // Sounds
             cell.settingDescription.text = "Sounds"
             cell.centreLabel.text = ""
+            cell.iconImage.image = UIImage(named:"iconSound.png")!
             if soundsSetting! {
                 cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
-            }
-            cell.settingDescription.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-        case 2:
-        // Music
-            cell.settingDescription.text = "Music"
-            cell.centreLabel.text = ""
-            if musicSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             } else {
                 cell.settingState.text = "off"
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
         case 3:
+        // Music
+            cell.settingDescription.text = "Music"
+            cell.centreLabel.text = ""
+            cell.iconImage.image = UIImage(named:"iconMusic.png")!
+            if musicSetting! {
+                cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            } else {
+                cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            }
+        case 4:
         // Haptics
             if screenSize == .Pad || screenSize == .SE {
             // No haptics' engine
@@ -157,29 +176,32 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             } else {
                 cell.settingDescription.text = "Haptics"
                 cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconHaptics.png")!
                 if hapticsSetting! {
                     cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 } else {
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
             }
-        case 4:
+        case 5:
         // Parallax
             cell.settingDescription.text = "Parallax"
             cell.centreLabel.text = ""
+            cell.iconImage.image = UIImage(named:"iconParallax.png")!
             if parallaxSetting! {
                 cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1215686275, green: 0.1294117647, blue: 0.1411764706, alpha: 1)
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             } else {
                 cell.settingState.text = "off"
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
-        case 5:
+        case 6:
         // Paddle sensitivity
             cell.settingDescription.text = "Paddle Sensitivity"
             cell.centreLabel.text = ""
+            cell.iconImage.image = UIImage(named:"iconPaddleSensitivity.png")!
             if paddleSensitivitySetting == 0 {
                 cell.settingState.text = "x1.00"
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
@@ -191,42 +213,35 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
             } else if paddleSensitivitySetting == 3 {
                 cell.settingState.text = "x2.00"
-                cell.settingState.textColor = #colorLiteral(red:0.12, green:0.13, blue:0.14, alpha:1.0)
+                cell.settingState.textColor = #colorLiteral(red: 0.12, green: 0.13, blue: 0.14, alpha: 1)
             } else if paddleSensitivitySetting == 4 {
                 cell.settingState.text = "x3.00"
-                cell.settingState.textColor = #colorLiteral(red: 0.3098039329, green: 0.01568627544, blue: 0.1294117719, alpha: 1)
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             }
             
-        case 6:
-        // Reset game data
+        case 7:
             if navigatedFrom! != "PauseMenu" {
+            // Reset game data
                 cell.settingDescription.text = ""
                 cell.centreLabel.text = "Reset Game Data"
                 cell.settingState.text = ""
+                cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             } else {
-                hideCell(cell: cell)
-            }
-        case 7:
-        // Restore purchases
-            if navigatedFrom! != "PauseMenu" {
-                cell.settingDescription.text = ""
-                cell.centreLabel.text = "Restore Purchases"
-                cell.settingState.text = ""
-                cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            } else {
-                hideCell(cell: cell)
-            }
-        case 8:
-        // Kill ball
-            if navigatedFrom! == "PauseMenu" {
+            // Kill ball
                 cell.settingDescription.text = ""
                 cell.settingState.text = ""
                 cell.centreLabel.text = "Reset Ball"
+                cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
-            } else {
-                hideCell(cell: cell)
             }
+        case 8:
+        // Restore purchases
+            cell.settingDescription.text = ""
+            cell.centreLabel.text = "Restore Purchases"
+            cell.settingState.text = ""
+            cell.iconImage.isHidden = true
+            cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             
         default:
             print("Error: Out of range")
@@ -254,22 +269,32 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         switch indexPath.row {
         case 0:
+        // Premium
+            premiumSetting = !premiumSetting!
+            defaults.set(adsSetting!, forKey: "premiumSetting")
+            if premiumSetting == true {
+                adsSetting = false
+            } else {
+                adsSetting = true
+            }
+            defaults.set(adsSetting!, forKey: "adsSetting")
+        case 1:
         // Ads
             adsSetting = !adsSetting!
             defaults.set(adsSetting!, forKey: "adsSetting")
-        case 1:
+        case 2:
         // Sounds
             soundsSetting = !soundsSetting!
             defaults.set(soundsSetting!, forKey: "soundsSetting")
-        case 2:
+        case 3:
         // Music
             musicSetting = !musicSetting!
             defaults.set(musicSetting!, forKey: "musicSetting")
-        case 3:
+        case 4:
         // Haptics
             hapticsSetting = !hapticsSetting!
             defaults.set(hapticsSetting!, forKey: "hapticsSetting")
-        case 4:
+        case 5:
         // Parallax
             parallaxSetting = !parallaxSetting!
             defaults.set(parallaxSetting!, forKey: "parallaxSetting")
@@ -280,22 +305,24 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     backgroundView.removeMotionEffect(group!)
                 }
             }
-        case 5:
+        case 6:
         // Paddle sensitivity
             paddleSensitivitySetting = paddleSensitivitySetting!+1
             if paddleSensitivitySetting! > 4 {
                 paddleSensitivitySetting = 0
             }
             defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
-        case 6:
-        // Reset game data
-            showWarning(senderID: "resetData")
         case 7:
+            if navigatedFrom! != "PauseMenu" {
+            // Reset game data
+                showWarning(senderID: "resetData")
+            } else {
+            // Kill ball
+                showWarning(senderID: "killBall")
+            }
+        case 8:
         // Restore purchases
             print("Restore purchases")
-        case 8:
-        // Reset ball
-            showWarning(senderID: "killBall")
         default:
             print("out of range")
             break
@@ -440,7 +467,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func setBlur() {
-        settingsView.backgroundColor = .clear
+        settingsView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
@@ -462,6 +489,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func userSettings() {
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
@@ -510,7 +538,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func showWarning(senderID: String) {
         
-        backgroundView.removeMotionEffect(group!)
+        if group != nil {
+            backgroundView.removeMotionEffect(group!)
+        }
         // Remove parallax to prevent a double parallax in the layered views
         
         let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
@@ -522,6 +552,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func resetData() {
+        premiumSetting = false
+        defaults.set(adsSetting!, forKey: "premiumSetting")
         adsSetting = true
         defaults.set(adsSetting!, forKey: "adsSetting")
         soundsSetting = true
@@ -543,8 +575,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             totalStatsArray[index].levelsCompleted = 0
             totalStatsArray[index].ballHits = 0
             totalStatsArray[index].ballsLost = 0
-            totalStatsArray[index].powerupsCollected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            totalStatsArray[index].powerupsGenerated = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            totalStatsArray[index].powerupsCollected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            totalStatsArray[index].powerupsGenerated = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             totalStatsArray[index].playTime = 0
             totalStatsArray[index].bricksHit = [0, 0, 0, 0, 0, 0, 0, 0]
             totalStatsArray[index].bricksDestroyed = [0, 0, 0, 0, 0, 0, 0, 0]

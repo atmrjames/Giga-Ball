@@ -33,7 +33,7 @@ class LevelPackSetup {
         true, // Tutorial
         true, // Endless Mode
         true, // Classic
-        false, // Space
+        true, // Space
         true, // Nature
         true, // Urban
         true, // Food
@@ -79,7 +79,7 @@ class LevelPackSetup {
     
     let ballUnlockedArray: [Bool] = [
         true, // Classic
-        false, // 3D
+        true, // 3D
         true, // Outline
         true, // Diamond
         true, // Beach ball
@@ -141,7 +141,7 @@ class LevelPackSetup {
     
     let paddleUnlockedArray: [Bool] = [
         true, // Classic
-        false, // 3D
+        true, // 3D
         true, // Outline
         true, // Square
         true, // Ice
@@ -177,6 +177,8 @@ class LevelPackSetup {
         UIImage(named:"Blue.png")!,
         UIImage(named:"Brown.png")!,
         UIImage(named:"Black.png")!,
+        UIImage(named:"Pink.png")!,
+        UIImage(named:"Purple.png")!,
         UIImage(named:"GigaBall.png")!,
         UIImage(named:"Rainbow.png")!,
         UIImage(named:"Retro.png")!
@@ -190,20 +192,24 @@ class LevelPackSetup {
         "Blue",
         "Brown",
         "Black",
-        "GigaBall",
+        "Pink",
+        "Purple",
+        "Giga-Ball",
         "Rainbow",
         "Retro"        
     ]
     
     let appIconUnlockedArray: [Bool] = [
         true, // White
-        false, // Yellow
+        true, // Yellow
         true, // Orange
         true, // Green
         true, // Blue
         true, // Brown
         true, // Black
-        true, // GigaBall
+        true, // Pink
+        true, // Purple
+        true, // Giga-Ball
         true, // Rainbow
         true // Retro
     ]
@@ -220,7 +226,7 @@ class LevelPackSetup {
     
     let brickUnlockedArray: [Bool] = [
         true, // Classic
-        false // Retro
+        true // Retro
     ]
     
     let brickIconArray: [UIImage] = [
@@ -609,9 +615,9 @@ class LevelPackSetup {
         true, // Barricade
         true, // Minefield
         true, // Split Screen
-        false, // Pimple
-        false, // Ringfence
-        false // Finish Line
+        true, // Pimple
+        true, // Ringfence
+        true // Finish Line
     ]
     
     let levelLeaderboardsArray: [String] = [
@@ -701,6 +707,8 @@ class LevelPackSetup {
         UIImage(named:"PowerUpDecreasePaddleSize.png")!,
         UIImage(named:"PowerUpStickyPaddle.png")!,
         UIImage(named:"PowerUpGravityBall.png")!,
+        UIImage(named:"PowerUpPointsBonusSmall.png")!,
+        UIImage(named:"PowerUpPointsPenaltySmall.png")!,
         UIImage(named:"PowerUpPointsBonus.png")!,
         UIImage(named:"PowerUpPointsPenalty.png")!,
         UIImage(named:"PowerUpMultiplier.png")!,
@@ -730,8 +738,10 @@ class LevelPackSetup {
         "Decrease Paddle Size",
         "Sticky Paddle",
         "Gravity",
-        "Bonus Points",
-        "Penalty Points",
+        "+100 Points",
+        "-100 Points",
+        "+1000 Points",
+        "-1000 Points",
         "x2 Multiplier",
         "Reset Multiplier",
         "Next Level",
@@ -752,15 +762,17 @@ class LevelPackSetup {
     
     let powerUpUnlockedArray: [Bool] = [
         true, // Get a Life
-        false, // Lose a Life
+        true, // Lose a Life
         true, // Decrease Ball Speed
         true, // Increase Ball Speed
         true, // Increase Paddle Size
         true, // Decrease Paddle Size
         true, //false, // Sticky Paddle
         true, //false, // Gravity
-        true, // Bonus Points
-        true, // Penalty Points
+        true, // +100 Points
+        true, // -100 Points Small
+        true, //false +1000 Points
+        true, //false -1000 Points
         true, //false, // x2 Multiplier
         true, //false, // Reset Multiplier
         true, // Next Level
@@ -788,7 +800,9 @@ class LevelPackSetup {
         "Makes the paddle wider",
         "Makes the paddle shorter",
         "Retains the ball on the paddle",
-        "Makes the ball suseptible to gravitation forces",
+        "Makes the ball suseptible to gravity",
+        "Adds 100 points to your score",
+        "Takes 100 points away from your score",
         "Adds 1000 points to your score",
         "Takes 1000 points away from your score",
         "Sets the multiplier to the maximum of x2",
@@ -800,7 +814,7 @@ class LevelPackSetup {
         "Resets all multi-hit bricks to their maximum hit setting",
         "Removes all indestructible bricks",
         "Allows the ball to pass uninterrupted through all brick types",
-        "Prevents the ball from having any action when hitting bricks",
+        "Prevents the ball from removing bricks",
         "Lasers fire from either side of the paddle",
         "Moves the bricks down towards the paddle",
         "Randomly generates a mystery power-up when collected",
@@ -809,38 +823,11 @@ class LevelPackSetup {
         "Decreases the size of the ball"
     ]
     
-    let powerUpPointsArray: [String] = [
-        "+50",
-        "",
-        "+50",
-        "-50",
-        "+50",
-        "-50",
-        "+50",
-        "-50",
-        "+1000",
-        "-1000",
-        "+50",
-        "-50",
-        "+50",
-        "+50",
-        "-50",
-        "+50",
-        "-50",
-        "+50",
-        "+50",
-        "-50",
-        "+50",
-        "-50",
-        "",
-        "+50",
-        "+50",
-        "-50"
-    ]
-    
     let powerUpMultiplierArray: [String] = [
         "+0.1x",
         "",
+        "+0.1x",
+        "-0.1x",
         "+0.1x",
         "-0.1x",
         "+0.1x",
@@ -876,6 +863,8 @@ class LevelPackSetup {
         "10",
         "5",
         "10",
+        "",
+        "",
         "",
         "",
         "",

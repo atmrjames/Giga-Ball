@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "Level67mage.png",
+      "filename" : "Level67Image.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "Level67mage@2x.png",
+      "filename" : "Level67Image@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "Level67mage@3x.png",
+      "filename" : "Level67Image@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

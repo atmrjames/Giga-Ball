@@ -130,7 +130,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if self.hapticsSetting! {
                 self.interfaceHaptic.impactOccurred()
             }
-            if gameoverBool == false {
+            if sender == "Pause" {
                 showWarning(senderID: "pauseMenu")
             } else {
                 MenuViewController().clearSavedGame()
@@ -238,7 +238,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
 
     func setBlur() {
-        backgroundView.backgroundColor = .clear
+        backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.33)
         // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
         // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.

@@ -67,192 +67,20 @@ final class GameCenterHandler: NSObject {
             GKScore.report(endlessTotalArray, withCompletionHandler: nil)
         }
         // Leaderboard Endless Total Height
+        // Endless mode leaderboards
         
-//        if  {
-//            let endlessDurationReporter = GKScore(leaderboardIdentifier: "leaderboardEndlessDuration")
-//            endlessDurationReporter.value =
-//            let endlessDurationArray: [GKScore] = [endlessDurationReporter]
-//            GKScore.report(endlessDurationArray, withCompletionHandler: nil)
-//        }
-//        // Leaderboard Endless Mode Duration TBC
-        
-        if packStatsArray[1].scores.count > 0 {
-            let classicScoreReporter = GKScore(leaderboardIdentifier: "leaderboardClassicPackScore")
-            classicScoreReporter.value = Int64(packStatsArray[1].scores.max()!)
-            let classicScoreArray: [GKScore] = [classicScoreReporter]
-            GKScore.report(classicScoreArray, withCompletionHandler: nil)
+        var arrayIndex = 0
+        let leaderboardIdentifierArray = ["leaderboardClassicPackScore", "leaderboardSpacePackScore", "leaderboardNaturePackScore", "leaderboardUrbanPackScore", "leaderboardFoodPackScore", "leaderboardComputerPackScore", "leaderboardBodyPackScore", "leaderboardWorldPackScore", "leaderboardEmojiPackScore", "leaderboardNumbersPackScore", "leaderboardChallengePackScore"]
+        while arrayIndex <= 10 {
+            if packStatsArray[arrayIndex+2].scores.count > 0 {
+                let scoreReporter = GKScore(leaderboardIdentifier: leaderboardIdentifierArray[arrayIndex])
+                scoreReporter.value = Int64(packStatsArray[arrayIndex+2].scores.max()!)
+                let scoreArray: [GKScore] = [scoreReporter]
+                GKScore.report(scoreArray, withCompletionHandler: nil)
+            }
+            arrayIndex+=1
         }
-        // Leaderboard Classic Pack
-        
-        if packStatsArray[2].scores.count > 0 {
-            let spaceScoreReporter = GKScore(leaderboardIdentifier: "leaderboardSpacePackScore")
-            spaceScoreReporter.value = Int64(packStatsArray[2].scores.max()!)
-            let spaceScoreArray: [GKScore] = [spaceScoreReporter]
-            GKScore.report(spaceScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Space Pack
-        
-        if levelStatsArray[1].scores.count > 0 {
-            let level01ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel01Score")
-            level01ScoreReporter.value = Int64(levelStatsArray[1].scores.max()!)
-            let level01ScoreArray: [GKScore] = [level01ScoreReporter]
-            GKScore.report(level01ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 01
-        
-        if levelStatsArray[2].scores.count > 0 {
-            let level02ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel02Score")
-            level02ScoreReporter.value = Int64(levelStatsArray[2].scores.max()!)
-            let level02ScoreArray: [GKScore] = [level02ScoreReporter]
-            GKScore.report(level02ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 02
-        
-        
-        if levelStatsArray[3].scores.count > 0 {
-            let level03ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel03Score")
-            level03ScoreReporter.value = Int64(levelStatsArray[3].scores.max()!)
-            let level03ScoreArray: [GKScore] = [level03ScoreReporter]
-            GKScore.report(level03ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 03
-        
-        if levelStatsArray[4].scores.count > 0 {
-            let level04ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel04Score")
-            level04ScoreReporter.value = Int64(levelStatsArray[4].scores.max()!)
-            let level04ScoreArray: [GKScore] = [level04ScoreReporter]
-            GKScore.report(level04ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 04
-        
-        if levelStatsArray[5].scores.count > 0 {
-            let level05ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel05Score")
-            level05ScoreReporter.value = Int64(levelStatsArray[5].scores.max()!)
-            let level05ScoreArray: [GKScore] = [level05ScoreReporter]
-            GKScore.report(level05ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 05
-        
-        if levelStatsArray[6].scores.count > 0 {
-            let level06ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel06Score")
-            level06ScoreReporter.value = Int64(levelStatsArray[6].scores.max()!)
-            let level06ScoreArray: [GKScore] = [level06ScoreReporter]
-            GKScore.report(level06ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 06
-        
-        if levelStatsArray[7].scores.count > 0 {
-            let level07ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel07Score")
-            level07ScoreReporter.value = Int64(levelStatsArray[7].scores.max()!)
-            let level07ScoreArray: [GKScore] = [level07ScoreReporter]
-            GKScore.report(level07ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 07
-        
-        if levelStatsArray[8].scores.count > 0 {
-            let level08ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel08Score")
-            level08ScoreReporter.value = Int64(levelStatsArray[8].scores.max()!)
-            let level08ScoreArray: [GKScore] = [level08ScoreReporter]
-            GKScore.report(level08ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 08
-        
-        if levelStatsArray[9].scores.count > 0 {
-            let level09ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel09Score")
-            level09ScoreReporter.value = Int64(levelStatsArray[9].scores.max()!)
-            let level09ScoreArray: [GKScore] = [level09ScoreReporter]
-            GKScore.report(level09ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 09
-        
-        if levelStatsArray[10].scores.count > 0 {
-            let level10ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel10Score")
-            level10ScoreReporter.value = Int64(levelStatsArray[10].scores.max()!)
-            let level10ScoreArray: [GKScore] = [level10ScoreReporter]
-            GKScore.report(level10ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 10
-        
-        if levelStatsArray[11].scores.count > 0 {
-            let level11ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel11Score")
-            level11ScoreReporter.value = Int64(levelStatsArray[11].scores.max()!)
-            let level11ScoreArray: [GKScore] = [level11ScoreReporter]
-            GKScore.report(level11ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 11
-        
-        if levelStatsArray[12].scores.count > 0 {
-            let level12ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel12Score")
-            level12ScoreReporter.value = Int64(levelStatsArray[12].scores.max()!)
-            let level12ScoreArray: [GKScore] = [level12ScoreReporter]
-            GKScore.report(level12ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 12
-        
-        if levelStatsArray[13].scores.count > 0 {
-            let level13ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel13Score")
-            level13ScoreReporter.value = Int64(levelStatsArray[13].scores.max()!)
-            let level13ScoreArray: [GKScore] = [level13ScoreReporter]
-            GKScore.report(level13ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 13
-        
-        if levelStatsArray[14].scores.count > 0 {
-            let level14ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel14Score")
-            level14ScoreReporter.value = Int64(levelStatsArray[14].scores.max()!)
-            let level14ScoreArray: [GKScore] = [level14ScoreReporter]
-            GKScore.report(level14ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 14
-        
-        if levelStatsArray[15].scores.count > 0 {
-            let level15ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel15Score")
-            level15ScoreReporter.value = Int64(levelStatsArray[15].scores.max()!)
-            let level15ScoreArray: [GKScore] = [level15ScoreReporter]
-            GKScore.report(level15ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 15
-        
-        if levelStatsArray[16].scores.count > 0 {
-            let level16ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel16Score")
-            level16ScoreReporter.value = Int64(levelStatsArray[16].scores.max()!)
-            let level16ScoreArray: [GKScore] = [level16ScoreReporter]
-            GKScore.report(level16ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 16
-        
-        if levelStatsArray[17].scores.count > 0 {
-            let level17ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel17Score")
-            level17ScoreReporter.value = Int64(levelStatsArray[17].scores.max()!)
-            let level17ScoreArray: [GKScore] = [level17ScoreReporter]
-            GKScore.report(level17ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 17
-        
-        if levelStatsArray[18].scores.count > 0 {
-            let level18ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel18Score")
-            level18ScoreReporter.value = Int64(levelStatsArray[18].scores.max()!)
-            let level18ScoreArray: [GKScore] = [level18ScoreReporter]
-            GKScore.report(level18ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 18
-        
-        if levelStatsArray[19].scores.count > 0 {
-            let level19ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel19Score")
-            level19ScoreReporter.value = Int64(levelStatsArray[19].scores.max()!)
-            let level19ScoreArray: [GKScore] = [level19ScoreReporter]
-            GKScore.report(level19ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 19
-        
-        if levelStatsArray[20].scores.count > 0 {
-            let level20ScoreReporter = GKScore(leaderboardIdentifier: "leaderboardLevel20Score")
-            level20ScoreReporter.value = Int64(levelStatsArray[20].scores.max()!)
-            let level20ScoreArray: [GKScore] = [level20ScoreReporter]
-            GKScore.report(level20ScoreArray, withCompletionHandler: nil)
-        }
-        // Leaderboard Level 20
-        
+        // Level pack total leaderboards
     }
     
     func loadData() {

@@ -70,17 +70,7 @@ class PreGame: GKState {
         }
         // Redeclare the game scene properties as passed in
         
-        switch scene.packNumber {
-        case 1:
-            scene.background.texture = scene.endlessBackgroundTexture
-        case 2:
-            scene.background.texture = scene.starterBackgroundTexture
-        case 3:
-            scene.background.texture = scene.spaceBackgroundTexture
-        
-        default:
-            scene.background.texture = scene.starterBackgroundTexture
-        }
+        scene.background.texture = scene.gameBackground
         // Set the background texture
         
         scene.totalScore = 0

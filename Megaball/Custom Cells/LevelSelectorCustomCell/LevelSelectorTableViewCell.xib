@@ -11,11 +11,8 @@
         <array key="FugazOne-Regular.ttf">
             <string>FugazOne-Regular</string>
         </array>
-        <array key="SF-Pro-Rounded-Bold.otf">
-            <string>SFProRounded-Bold</string>
-        </array>
-        <array key="SF-Pro-Rounded-Semibold.otf">
-            <string>SFProRounded-Semibold</string>
+        <array key="Nunito-Bold.ttf">
+            <string>Nunito-Bold</string>
         </array>
     </customFonts>
     <objects>
@@ -42,26 +39,34 @@
                             </imageView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="EBo-bc-1F7">
                                 <rect key="frame" x="10" y="10" width="110" height="110"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="vSA-Ni-aEV">
+                                        <rect key="frame" x="0.0" y="0.0" width="110" height="110"/>
+                                    </imageView>
+                                </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstItem="vSA-Ni-aEV" firstAttribute="top" secondItem="EBo-bc-1F7" secondAttribute="top" id="7qL-6l-aKC"/>
+                                    <constraint firstItem="vSA-Ni-aEV" firstAttribute="centerY" secondItem="EBo-bc-1F7" secondAttribute="centerY" id="Esz-cE-ETe"/>
+                                    <constraint firstItem="vSA-Ni-aEV" firstAttribute="centerX" secondItem="EBo-bc-1F7" secondAttribute="centerX" id="XvM-Vv-Prk"/>
+                                    <constraint firstItem="vSA-Ni-aEV" firstAttribute="leading" secondItem="EBo-bc-1F7" secondAttribute="leading" id="lNN-lO-ynD"/>
+                                </constraints>
                             </view>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="vSA-Ni-aEV">
-                                <rect key="frame" x="10" y="10" width="110" height="110"/>
-                            </imageView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Level 0" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nvj-sL-XLj" userLabel="Level Number Label">
-                                <rect key="frame" x="130" y="10" width="262" height="18"/>
-                                <fontDescription key="fontDescription" name="SFProRounded-Semibold" family="SF Pro Rounded" pointSize="15"/>
+                                <rect key="frame" x="130" y="10" width="262" height="20.5"/>
+                                <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="15"/>
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Level name is much too long for this text box" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bPw-R3-x5s" userLabel="Level Name Label">
-                                <rect key="frame" x="130" y="28" width="262" height="36"/>
-                                <fontDescription key="fontDescription" name="SFProRounded-Bold" family="SF Pro Rounded" pointSize="15"/>
-                                <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                <rect key="frame" x="130" y="30.5" width="262" height="41"/>
+                                <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="15"/>
+                                <color key="textColor" red="0.16078431372549018" green="0.0" blue="0.23529411764705882" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Highscore" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5rL-Ou-s7l" userLabel="High Score Title Label">
-                                <rect key="frame" x="130" y="77" width="68.5" height="18"/>
-                                <fontDescription key="fontDescription" name="SFProRounded-Semibold" family="SF Pro Rounded" pointSize="15"/>
+                                <rect key="frame" x="130" y="74.5" width="70" height="20.5"/>
+                                <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="15"/>
                                 <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -71,7 +76,7 @@
                                     <constraint firstAttribute="height" constant="25" id="Pbe-JJ-LIq"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="FugazOne-Regular" family="Fugaz One" pointSize="24"/>
-                                <color key="textColor" cocoaTouchSystemColor="viewFlipsideBackgroundColor"/>
+                                <color key="textColor" red="0.16078431372549018" green="0.0" blue="0.23529411764705882" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
@@ -79,24 +84,20 @@
                         <constraints>
                             <constraint firstItem="EBo-bc-1F7" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="leading" id="5Lw-eI-e6T"/>
                             <constraint firstAttribute="trailing" secondItem="RIJ-Bw-nLc" secondAttribute="trailing" constant="10" id="5qu-2F-rhl"/>
-                            <constraint firstItem="vSA-Ni-aEV" firstAttribute="top" secondItem="Pmp-f5-HmM" secondAttribute="top" id="7J2-bv-f3a"/>
                             <constraint firstItem="bPw-R3-x5s" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="8cn-n7-mRk"/>
                             <constraint firstItem="Pmp-f5-HmM" firstAttribute="trailing" secondItem="EBo-bc-1F7" secondAttribute="trailing" id="Juo-iN-FeW"/>
                             <constraint firstItem="nvj-sL-XLj" firstAttribute="top" secondItem="RhW-RY-HFw" secondAttribute="top" constant="10" id="MdW-WC-pFs"/>
                             <constraint firstItem="bPw-R3-x5s" firstAttribute="top" secondItem="nvj-sL-XLj" secondAttribute="bottom" id="ToF-hH-l7W"/>
                             <constraint firstItem="EBo-bc-1F7" firstAttribute="top" secondItem="Pmp-f5-HmM" secondAttribute="top" id="UXs-Sz-F0U"/>
-                            <constraint firstItem="Pmp-f5-HmM" firstAttribute="bottom" secondItem="vSA-Ni-aEV" secondAttribute="bottom" id="VPH-cD-ZmP"/>
                             <constraint firstItem="RIJ-Bw-nLc" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="YgD-cF-5Ce"/>
                             <constraint firstItem="RIJ-Bw-nLc" firstAttribute="top" secondItem="5rL-Ou-s7l" secondAttribute="bottom" id="aIf-9q-P7y"/>
                             <constraint firstItem="nvj-sL-XLj" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="fEJ-m1-YfH"/>
                             <constraint firstItem="Pmp-f5-HmM" firstAttribute="centerY" secondItem="RhW-RY-HFw" secondAttribute="centerY" id="gnH-m9-Jac"/>
                             <constraint firstAttribute="bottom" secondItem="RIJ-Bw-nLc" secondAttribute="bottom" constant="10" id="gzL-OS-SbL"/>
                             <constraint firstItem="Pmp-f5-HmM" firstAttribute="bottom" secondItem="EBo-bc-1F7" secondAttribute="bottom" id="kZr-1T-kU5"/>
-                            <constraint firstItem="Pmp-f5-HmM" firstAttribute="trailing" secondItem="vSA-Ni-aEV" secondAttribute="trailing" id="kez-um-aUi"/>
                             <constraint firstAttribute="trailing" secondItem="nvj-sL-XLj" secondAttribute="trailing" constant="10" id="m5V-5o-tLd"/>
                             <constraint firstAttribute="trailing" secondItem="bPw-R3-x5s" secondAttribute="trailing" constant="10" id="su2-cS-2Ld"/>
                             <constraint firstItem="Pmp-f5-HmM" firstAttribute="leading" secondItem="RhW-RY-HFw" secondAttribute="leading" constant="10" id="uD6-tM-Aaf"/>
-                            <constraint firstItem="vSA-Ni-aEV" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="leading" id="uLf-Sy-17r"/>
                             <constraint firstItem="5rL-Ou-s7l" firstAttribute="leading" secondItem="Pmp-f5-HmM" secondAttribute="trailing" constant="10" id="vw9-Rr-oeH"/>
                         </constraints>
                     </view>

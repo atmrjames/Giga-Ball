@@ -44,7 +44,7 @@ enum CollisionTypes: UInt32 {
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool)
-	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int)
+	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool)
 	func createInterstitial()
 	func loadInterstitial()
 	var selectedLevel: Int? { get set }
@@ -97,7 +97,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let brickOrangeLight: UIColor = #colorLiteral(red: 1, green: 0.6392156863, blue: 0.4274509804, alpha: 1)
 	let brickPink: UIColor = #colorLiteral(red: 1, green: 0.3921568627, blue: 0.5960784314, alpha: 1)
 	let brickPurple: UIColor = #colorLiteral(red: 0.6156862745, green: 0.2352941176, blue: 0.8274509804, alpha: 1)
-	let brickPurpleDark: UIColor = #colorLiteral(red: 0.3568627451, green: 0.03529411765, blue: 0.5333333333, alpha: 1)
+	let brickPurpleDark: UIColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
 	let brickWhite: UIColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 	let brickYellow: UIColor = #colorLiteral(red: 0.9725490196, green: 0.9058823529, blue: 0.1098039216, alpha: 1)
 	let brickYellowDark: UIColor = #colorLiteral(red: 0.8901960784, green: 0.7411764706, blue: 0.05098039216, alpha: 1)
@@ -109,6 +109,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var multiplierLabel = SKLabelNode()
 	var readyCountdown = SKSpriteNode()
 	var goCountdown = SKSpriteNode()
+	var timerLabel = SKLabelNode()
 	
 	var buildLabel = SKLabelNode()
     // Define labels
@@ -225,13 +226,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var powerUpProbArray: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	var powerUpProbSum: Int = 0
 	var powerUpGeneratorCycles: Int = 0
 	var backstopHit: Bool = false
 	// Power-up probabilities
     
-    var lifeLostScore: Int = 0
     var brickDestroyScore: Int = 0
     var powerUpScore: Int = 0
 	var powerUpMultiplierScore: Double = 0
@@ -242,6 +242,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var totalHighscore: Int = 0
 	var multiplier: Double = 0
 	var scoreFactorString: String = ""
+	var levelTimerBonus: Int = 0
+	var levelTimerValue: Int = 0
+	var firstLevel: Bool = false
     // Setup score properties
 	
 	var adsSetting: Bool?
@@ -300,6 +303,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let powerUpUndestructiBall: SKTexture = SKTexture(imageNamed: "PowerUpUndestructiBall")
     let powerUpDecreasePaddleSize: SKTexture = SKTexture(imageNamed: "PowerUpDecreasePaddleSize")
     let powerUpMultiplier: SKTexture = SKTexture(imageNamed: "PowerUpMultiplier")
+	let powerUpPointsBonusSmall: SKTexture = SKTexture(imageNamed: "PowerUpPointsBonusSmall")
+    let powerUpPointsPenaltySmall: SKTexture = SKTexture(imageNamed: "PowerUpPointsPenaltySmall")
     let powerUpPointsBonus: SKTexture = SKTexture(imageNamed: "PowerUpPointsBonus")
     let powerUpPointsPenalty: SKTexture = SKTexture(imageNamed: "PowerUpPointsPenalty")
     let powerUpNormalToInvisibleBricks: SKTexture = SKTexture(imageNamed: "PowerUpNormalToInvisibleBricks")
@@ -443,9 +448,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var retroLaserArray: [SKTexture] = []
 	var retroLaserIndex = 0
 	
-	let starterBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundStarterPack")
-	let spaceBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundSpacePack")
-	let endlessBackgroundTexture: SKTexture = SKTexture(imageNamed: "BackgroundEndlessMode")
+	let gameBackground: SKTexture = SKTexture(imageNamed: "gameBackground")
     
     var stickyPaddleCatches: Int = 0
 	var stickyPaddleCatchesTotal: Int = 0
@@ -533,8 +536,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var levelsCompleted: Int = 0
 	var ballHits: Int = 0
 	var ballsLost: Int = 0
-	var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-	var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	var playTime: Int = 0
 	var bricksHit: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
 	var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -560,6 +563,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Setup timer icon animation
 	
 //MARK: - Sound and Haptic Definition
+
+	let laserFiredSound = SKAction.playSoundFileNamed("laserFired", waitForCompletion: false)
+	let ballPaddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit", waitForCompletion: false)
+	let ballLostSound = SKAction.playSoundFileNamed("ballLostSound", waitForCompletion: false)
+	let gameOverSound = SKAction.playSoundFileNamed("gameOverSound", waitForCompletion: false)
+	let brickHitSound = SKAction.playSoundFileNamed("brickHit", waitForCompletion: false)
+	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound", waitForCompletion: false)
+	
+//	if self.soundsSetting! {
+//		self.run(wallHitSound)
+//	}
+//	// ... sound
+
+	// Sounds defined - pre-loaded to prevent game lag
     
     var lightHaptic = UIImpactFeedbackGenerator(style: .light)
 	// use for ball hitting bricks and paddle
@@ -815,8 +832,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		topScreenBlock.size.height = screenBlockTopHeight
 		topScreenBlock.size.width = frame.size.width
-		sideScreenBlockLeft.size.height = frame.size.height - screenBlockTopHeight
-		sideScreenBlockRight.size.height = frame.size.height - screenBlockTopHeight
+		sideScreenBlockLeft.size.height = frame.size.height
+		sideScreenBlockRight.size.height = frame.size.height
 		sideScreenBlockLeft.position.y = -frame.size.height/2+sideScreenBlockLeft.size.height/2
 		sideScreenBlockLeft.zPosition = 9
 		sideScreenBlockRight.position.y = -frame.size.height/2+sideScreenBlockRight.size.height/2
@@ -881,20 +898,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
 			
 		} else {
-			print("llama created paddle physics body on the 1st attempt")
+//			print("llama created paddle physics body on the 1st attempt")
 		}
 		if paddle.physicsBody == nil {
 			paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 		} else {
-			print("llama created paddle physics body on or before the 2nd attempt")
+//			print("llama created paddle physics body on or before the 2nd attempt")
 		}
 		if paddle.physicsBody == nil {
 			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
 		} else {
-			print("llama created paddle physics body on or before the 3rd attempt")
+//			print("llama created paddle physics body on or before the 3rd attempt")
 		}
 		if paddle.physicsBody == nil {
-			print("llama failed to created the paddle physics body")
+//			print("llama failed to created the paddle physics body")
 		}
 		// Ensure paddle physics body is created - try 4 times
         paddle.physicsBody!.allowsRotation = false
@@ -981,6 +998,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		readyCountdown = self.childNode(withName: "readyCountdown") as! SKSpriteNode
 		goCountdown = self.childNode(withName: "goCountdown") as! SKSpriteNode
 		buildLabel = self.childNode(withName: "buildLabel") as! SKLabelNode
+		timerLabel = self.childNode(withName: "timerLabel") as! SKLabelNode
         // Links objects to label
 		
 		readyCountdown.size.height = 58
@@ -1009,8 +1027,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpTray.zPosition = 8
 		powerUpTray.size.width = gameWidth
 		powerUpTray.size.height = iconSize*2
-		powerUpTray.centerRect = CGRect(x: 5.0/40.0, y: 5.0/40.0, width: 30.0/40.0, height: 30.0/40.0)
-		powerUpTray.scale(to:CGSize(width: gameWidth, height: iconSize*2))
 		powerUpTray.position.x = 0
 		
 		if screenSize == "X" {
@@ -1047,9 +1063,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
 		buildLabel.zPosition = 10
+		timerLabel.position.x = -gameWidth/2 + labelSpacing
+		timerLabel.position.y = buildLabel.position.y + buildLabel.fontSize + labelSpacing
+		timerLabel.fontSize = fontSize/3*2
+		timerLabel.zPosition = 10
+		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.2.6(1) - TBC - 24/05/2020"
+		buildLabel.text = "Alpha Build 0.2.7(1) - TBC - 14/06/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1108,7 +1129,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Ball angle parameters
 		
 		powerUpLimit = 2
-		powerUpProbFactor = 10
+		powerUpProbFactor = 15
 		
 		powerUpProbArray[0] = 3 // Get a Life
 		powerUpProbArray[1] = 3 // Lose a Life
@@ -1118,30 +1139,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpProbArray[5] = 10 // Decrease Paddle Size
 		powerUpProbArray[6] = 7 // Sticky Paddle
 		powerUpProbArray[7] = 7 // Gravity
-		powerUpProbArray[8] = 7 // Bonus Points
-		powerUpProbArray[9] = 7 // Penalty Points
-		powerUpProbArray[10] = 7 // x2 Multiplier
-		powerUpProbArray[11] = 7 // Reset Multiplier
-		powerUpProbArray[12] = 1 // Next Level
-		powerUpProbArray[13] = 5 // Show All Bricks
-		powerUpProbArray[14] = 5 // Hide Bricks
-		powerUpProbArray[15] = 5 // Clear Multi-Hit Bricks
-		powerUpProbArray[16] = 5 // Reset Multi-Hit Bricks
-		powerUpProbArray[17] = 5 // Remove Indestructible Bricks
-		powerUpProbArray[18] = 3 // Giga-Ball
-		powerUpProbArray[19] = 3 // Undestructi-Ball
-		powerUpProbArray[20] = 3 // Lasers
-		powerUpProbArray[21] = 7 // Quicksand
-		powerUpProbArray[22] = 7 // Mystery
-		powerUpProbArray[23] = 7 // Backstop
-		powerUpProbArray[24] = 10 // Increase Ball Size
-		powerUpProbArray[25] = 10 // Decrease Ball Size
+		powerUpProbArray[8] = 7 // +100 Points
+		powerUpProbArray[9] = 7 // -100 Points
+		powerUpProbArray[10] = 3 // +1000 Points
+		powerUpProbArray[11] = 3 // -1000 Points
+		powerUpProbArray[12] = 7 // x2 Multiplier
+		powerUpProbArray[13] = 7 // Reset Multiplier
+		powerUpProbArray[14] = 1 // Next Level
+		powerUpProbArray[15] = 5 // Show All Bricks
+		powerUpProbArray[16] = 5 // Hide Bricks
+		powerUpProbArray[17] = 5 // Clear Multi-Hit Bricks
+		powerUpProbArray[18] = 5 // Reset Multi-Hit Bricks
+		powerUpProbArray[19] = 5 // Remove Indestructible Bricks
+		powerUpProbArray[20] = 3 // Giga-Ball
+		powerUpProbArray[21] = 3 // Undestructi-Ball
+		powerUpProbArray[22] = 3 // Lasers
+		powerUpProbArray[23] = 7 // Quicksand
+		powerUpProbArray[24] = 7 // Mystery
+		powerUpProbArray[25] = 7 // Backstop
+		powerUpProbArray[26] = 10 // Increase Ball Size
+		powerUpProbArray[27] = 10 // Decrease Ball Size
 		// Set default probabilities
 		powerUpProbSum = powerUpProbArray.reduce(0, +)
 		// Power-up parameters
 		
 		brickDestroyScore = 10
-		lifeLostScore = -100
 		levelCompleteScore = 100
 		// Score properties
 		
@@ -1200,6 +1222,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
     }
+	
+	func startLevelTimer() {
+		if endlessMode == false {
+			let timerInterval = SKAction.wait(forDuration: 1.0)
+			let timerAction = SKAction.run({
+				[unowned self] in
+				self.levelTimerValue+=1
+			})
+			let timerSequence = SKAction.sequence([timerInterval, timerAction])
+			run(SKAction.repeatForever(timerSequence), withKey: "gameTimer")
+		}
+	}
+	// Setup game timer
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
     // Defines actions for a dragged touch
@@ -1369,6 +1404,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)
 		ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
         // Launches ball
+		
+		startLevelTimer()
+		// restart timer
 
 		if hapticsSetting! {
 			lightHaptic.impactOccurred()
@@ -1386,6 +1424,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Ensures game is paused when returning from background
 
         if gameState.currentState is Playing {
+			
+			timerLabel.text = String(levelTimerValue)
 			
 			paddleLaser.position.x = paddle.position.x
 			paddleLaser.position.y = paddle.position.y - paddleHeight/2
@@ -1473,10 +1513,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove any remaining lasers
 		
 		if endlessMode == false {
-			levelScore = levelScore + lifeLostScore
 			scoreLabel.text = String(totalScore + levelScore)
 		}
-		// Update score - no points for dying in endless mode
+		// Update score
 
 		multiplier = 1.0
 		scoreFactorString = String(format:"%.1f", multiplier)
@@ -1531,6 +1570,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
         if numberOfLives == 0 {
             gameoverStatus = true
+			self.removeAction(forKey: "gameTimer")
+			// Stop the level timer
+			levelTimerBonus = 0
             gameState.enter(InbetweenLevels.self)
             return
 		} else {
@@ -1539,6 +1581,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballLostAnimation() {
+		if self.soundsSetting! {
+			if numberOfLives > 0 {
+				self.run(ballLostSound)
+			} else {
+				self.run(gameOverSound)
+			}
+		}
+		// Ball lost sound
 		ballLostBool = true
 		saveCurrentGame()
         let scaleDown = SKAction.scale(to: 0, duration: 0.1)
@@ -1622,20 +1672,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// Paddle cannot hit ball for some time after ball hits backstop
 			}
 			// Ball hits backstop
-			
-			if firstBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.backstopCategory.rawValue {
-				let powerUpNode = firstBody.node
-				powerUpNode!.removeAllActions()
-				let wait = SKAction.wait(forDuration: 0.05)
-				let scaleDown = SKAction.scale(to: 0.25, duration: 0.5)
-				let fadeOut = SKAction.fadeOut(withDuration: 0.5)
-				let powerupGroup = SKAction.group([scaleDown, fadeOut])
-				let powerupSequence = SKAction.sequence([wait, powerupGroup])
-				powerUpNode!.run(powerupSequence, completion: {
-					powerUpNode!.removeFromParent()
-				})
-			}
-			// Power-up hits backstop
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.screenBlockCategory.rawValue {
 				
@@ -1715,9 +1751,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if firstBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue {
 
 				let powerUpNode = secondBody.node
-				powerUpNode?.removeAllActions()
-				if powerUpNode?.zPosition == 2 {
-					powerUpNode?.zPosition = 1
+				powerUpNode!.removeAllActions()
+				if powerUpNode!.zPosition == 2 {
+					powerUpNode!.zPosition = 1
+					powerUpNode!.physicsBody!.collisionBitMask = 0
+					powerUpNode!.physicsBody!.contactTestBitMask = 0
 					applyPowerUp(node: secondBody.node!)
 				} else {
 					return
@@ -1780,6 +1818,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if hapticsSetting! {
 			lightHaptic.impactOccurred()
 		}
+		
+		if self.soundsSetting! {
+			self.run(brickHitSound)
+		}
+		// Brick hit sound
 
 		if  laserSprite?.texture != laserGigaTexture {
             laserNode?.removeFromParent()
@@ -1940,9 +1983,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if sprite.texture != brickIndestructible2Texture {
 			
-			if brickRemovalCounter == 9 && endlessMode == false {
+			if brickRemovalCounter == 19 && endlessMode == false {
 				if multiplier < 2.0 {
-					multiplier = multiplier + 0.1
+					multiplier+=0.1
 				}
 				brickRemovalCounter = 0
 			} else {
@@ -1969,6 +2012,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if bricksLeft == 0 && endlessMode == false {
 			clearSavedGame()
+			self.removeAction(forKey: "gameTimer")
+			// Stop the level timer
+			levelTimerBonus = levelTimerBonus - levelTimerValue
+			if levelTimerBonus < 0 {
+				levelTimerBonus = 0
+			}
+			levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
 			levelScore = levelScore + levelCompleteScore
 			scoreLabel.text = String(totalScore + levelScore)
             gameState.enter(InbetweenLevels.self)
@@ -2109,6 +2159,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func ballBackstopHit() {
+		if self.soundsSetting! {
+			self.run(ballPaddleHitSound)
+		}
+		// Play paddle hit sound
 		let xSpeed = ball.physicsBody!.velocity.dx
 		let ySpeed = ball.physicsBody!.velocity.dy
 		let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
@@ -2132,6 +2186,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if hapticsSetting! {
 			lightHaptic.impactOccurred()
 		}
+		
+		if stickyPaddleCatches != 0 {
+			if paddleTexture == retroPaddle {
+				// Play retro sticky paddle sound
+			} else {
+				// Play sticky paddle sound
+			}
+		} else {
+			if self.soundsSetting! {
+				self.run(ballPaddleHitSound)
+			}
+			// Play paddle hit sound
+		}
+		
         ballHits+=1
 		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
@@ -2154,6 +2222,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 			if stickyPaddleCatches != 0 {
 			// Catch the ball
+				
+				self.removeAction(forKey: "gameTimer")
+				// Stop the level timer
 				
 				if paddleTexture == retroPaddle {
 					paddleRetroStickyTexture.isHidden = false
@@ -2248,10 +2319,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func powerUpGenerator (sprite: SKSpriteNode) {
 		
-		powerUpsOnScreen+=1
-		
-		if powerUpsOnScreen > powerUpLimit {
-			powerUpsOnScreen-=1
+		if powerUpsOnScreen >= powerUpLimit {
 			return
 		}
 		// Limit number of power-ups available at once
@@ -2269,9 +2337,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUp.physicsBody!.mass = 0
         powerUp.name = PowerUpCategoryName
         powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
-		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
-		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
+		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
         powerUp.zPosition = 2
+		
         addChild(powerUp)
 		
 		var powerUpOnScreenArray: [SKTexture] = []
@@ -2279,10 +2348,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let sprite = node as! SKSpriteNode
 			powerUpOnScreenArray.append(sprite.texture!)
 		}
-		// Put all textures from current power-ups in an array
+		// Put all textures from current on-screen power-ups in an array
 		
 		let powerUpProb = Int.random(in: 0...powerUpProbSum-1)
-		// Randomly generated power-up allocation
+		// Select power-up at random based on weighting
 
 		var powerUpSelection: Int = 0
 		var lowerRange: Int = 0
@@ -2291,42 +2360,46 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		powerUpGeneratorCycles+=1
 		print("llama llama power-up return value: ", powerUpGeneratorCycles)
+		// Keep track of how many times the power-up generator has run to generate a valid power-up
+		
 		if powerUpGeneratorCycles > 10 {
 			print("llama llama power-up returned")
 			powerUp.removeFromParent()
-			powerUpsOnScreen-=1
-			powerupsGenerated[powerUpSelection]-=1
 			return
 		}
-		// prevent the power-up generator cycling too many times when not many power-ups are available
+		// Prevent the power-up generator cycling too many times when not many power-ups are available
 		
 		while selectionComplete == false {
+			print("llama llama finding power up: ", powerUpProb, lowerRange, upperRange, powerUpProbSum-powerUpProbArray[lowerRange...].reduce(0, +), powerUpProbSum-powerUpProbArray[upperRange...].reduce(0, +))
 			if powerUpProb > powerUpProbSum-powerUpProbArray[lowerRange...].reduce(0, +) && powerUpProb <= powerUpProbSum-powerUpProbArray[upperRange...].reduce(0, +) {
 				powerUpSelection = lowerRange
 				selectionComplete = true
 				if LevelPackSetup().powerUpUnlockedArray[powerUpSelection] == false {
+					print("llama llama power up locked")
 					removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 					return
 				}
 				// Remove power-up if locked
 			} else {
+				print("llama llama power up next range")
 				lowerRange+=1
 				upperRange+=1
-				if lowerRange > 25 {
-					break
+				if lowerRange > powerUpProbArray.count-1 {
+					print("llama llama power-up upper range reached")
+					removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+					return
 				}
+				// Stop once range reaches the end of powerUpProbArray
 			}
 		}
 		// Power-up selection based on probability
-
-		powerupsGenerated[powerUpSelection]+=1
-		// Add power-up on screen count
 		
         switch powerUpSelection {
         case 0:
 		// 0 - Get a life
 			if numberOfLives >= 5 || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpGetALife
 			}
@@ -2335,6 +2408,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// 1 - Lose a life
 			if numberOfLives <= 0 || mysteryPowerUp || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpLoseALife
 			}
@@ -2358,47 +2432,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// 7 - Gravity ball
 			powerUp.texture = powerUpGravityBall
 		case 8:
-		// 8 - Bonus points
+		// 8 - +100 points
 			if endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
+			} else {
+				powerUp.texture = powerUpPointsBonusSmall
+			}
+			// Don't show if power-up already falling or in endless mode or locked
+		case 9:
+		// 9 - -100 points
+			if levelScore <= Int(100*multiplier) || mysteryPowerUp || endlessMode {
+				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
+			} else {
+				powerUp.texture = powerUpPointsPenaltySmall
+			}
+			// Don't show if score is less than penalty points amount or in place of mystery power-up or power-up already falling or in endless mode or locked
+		case 10:
+		// 10 - +1000 points
+			if endlessMode {
+				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpPointsBonus
 			}
 			// Don't show if power-up already falling or in endless mode or locked
-		case 9:
-		// 9 - Penalty points
+		case 11:
+		// 11 - -1000 points
 			if levelScore <= Int(1000*multiplier) || mysteryPowerUp || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpPointsPenalty
 			}
 			// Don't show if score is less than penalty points amount or in place of mystery power-up or power-up already falling or in endless mode or locked
-		case 10:
-		// 10 - x2 multiplier
+		case 12:
+		// 12 - x2 multiplier
 			if multiplier >= 2.0 || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpMultiplier
 			}
 			// Don't show if multiplier at 2.5 or above or power-up already falling or in endless mode or locked
-		case 11:
-		// 11 - Multiplier reset
+		case 13:
+		// 13 - Multiplier reset
 			if multiplier <= 1.1 || mysteryPowerUp || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpMultiplierReset
 			}
 			// Don't show if multiplier is 1.5 or in place of mystery power-up or power-up already falling or in endless mode or locked
-        case 12:
-		// 12 - Next level
+        case 14:
+		// 14 - Next level
 			if mysteryPowerUp || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpNextLevel
 			}
 			// Don't show in place of mystery power-up or power-up already falling or endless mode or locked
-        case 13:
-		// 13 - Invisible bricks become visible
+        case 15:
+		// 15 - Invisible bricks become visible
 			powerUp.texture = self.powerUpShowInvisibleBricks
 			var hiddenNodeFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -2409,10 +2506,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			if hiddenNodeFound == false {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			}
 			// Don't show if no invisible/hidden bricks or power-up already falling or locked
-        case 14:
-		// 14 - Normal bricks become invisble bricks
+        case 16:
+		// 16 - Normal bricks become invisble bricks
 			powerUp.texture = powerUpNormalToInvisibleBricks
 			var normalNodeFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -2424,10 +2522,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			if normalNodeFound == false {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			}
 			// Don't show if no normal bricks or power-up already falling or locked
-		case 15:
-		// 15 - Multi-hit bricks become normal bricks
+		case 17:
+		// 17 - Multi-hit bricks become normal bricks
 			powerUp.texture = powerUpMultiHitToNormalBricks
 			var multiNodeFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -2439,10 +2538,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			if multiNodeFound == false {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			}
 			// Don't show if no multi-hit bricks or power-up already falling or locked
-		case 16:
-		// 16 - Multi-hit bricks reset
+		case 18:
+		// 18 - Multi-hit bricks reset
 			powerUp.texture = powerUpMultiHitBricksReset
 			var multiHitBrickFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -2454,10 +2554,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			if multiHitBrickFound == false {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			}
 			// Don't show if no multi-hit bricks that have been hit or power-up already falling or locked
-		case 17:
-		// 17 - Remove indestructible bricks
+		case 19:
+		// 19 - Remove indestructible bricks
 			powerUp.texture = powerUpRemoveIndestructibleBricks
 			var indestructibleNodeFound = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -2469,19 +2570,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			if indestructibleNodeFound == false {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			}
 			// Don't show if no indestructible bricks or power-up already falling or locked
-		case 18:
-		// 18 - Giga-ball
-			powerUp.texture = powerUpGigaBall
-        case 19:
-		// 19 - Undestructi-ball
-			powerUp.texture = powerUpUndestructiBall
 		case 20:
-		// 20 - Lasers
+		// 20 - Giga-ball
+			powerUp.texture = powerUpGigaBall
+        case 21:
+		// 21 - Undestructi-ball
+			powerUp.texture = powerUpUndestructiBall
+		case 22:
+		// 22 - Lasers
 			powerUp.texture = powerUpLasers
-		case 21:
-		// 21 - Move all bricks down 2 rows
+		case 23:
+		// 23 - Move all bricks down 2 rows
 			powerUp.texture = powerUpBricksDown
 			var bricksAtBottom = false
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -2492,20 +2594,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			if bricksAtBottom || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			}
 			// Don't show if bricks are already at lowest point or power-up already falling or endless mode or locked
-		case 22:
-		// 22 - Mystery power-up
+		case 24:
+		// 24 - Mystery power-up
 			if mysteryPowerUp {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpMystery
 			}
 			// Don't show in place of mystery power-up or power-up already falling or locked
-		case 23:
-		// 23 - Backstop power-up
+		case 25:
+		// 25 - Backstop power-up
 			if backstopCatches > 0 {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+				return
 			} else {
 				powerUp.texture = powerUpBackstop
 				if powerupsGenerated.count < 24 {
@@ -2513,23 +2618,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 			}
 			// Don't show power-up if already falling or in action or locked
-		case 24:
-		// 24 - Increase ball size
+		case 26:
+		// 26 - Increase ball size
 			powerUp.texture = powerUpIncreaseBallSize
-		case 25:
-		// 25 - Decrease ball size
+		case 27:
+		// 27 - Decrease ball size
 			powerUp.texture = powerUpDecreaseBallSize
         default:
             break
         }
-		
+
 		if powerUpOnScreenArray.contains(powerUp.texture!) {
 			removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+			return
 		}
-		// check if new power-up is already falling and remove if so
+		// Check if new power-up is already falling and remove if so
         
 		let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
 		powerUp.run(move, withKey: "PowerUpDrop")
+		print("llama llama power up generated: ", powerUpSelection)
+		powerUpsOnScreen+=1
+		powerupsGenerated[powerUpSelection]+=1
     }
     
 	func applyPowerUp (node: SKNode) {
@@ -2544,6 +2653,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if hapticsSetting! {
 			rigidHaptic.impactOccurred()
 		}
+		
+		if self.soundsSetting! {
+			self.run(powerUpSound)
+		}
+		// Power-up applied sound
 		
 		powerUpsOnScreen-=1
 		// Remove the power up from the power-up on screen tracker
@@ -2569,6 +2683,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Power-up collection animation
 		
+		powerUpScore = 0
+		
         switch sprite.texture {
             
         case powerUpGetALife:
@@ -2582,7 +2698,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let scaleDown = SKAction.scale(to: 1, duration: 0.15)
 			let newLifeSequence = SKAction.sequence([scaleUp, scaleDown])
 			life.run(newLifeSequence)
-            powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerupsCollected[0]+=1
             
@@ -2590,7 +2705,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Lose a life
 			ball.physicsBody!.linearDamping = 2
             ballLostAnimation()
-            powerUpScore = 0
 			powerUpMultiplierScore = 0
 			powerupsCollected[1]+=1
             
@@ -2613,7 +2727,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				ballSpeedIconBar.isHidden = true
 			}
-            powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerupsCollected[2]+=1
 			// Power up set
@@ -2653,7 +2766,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				ballSpeedIconBar.isHidden = true
 			}
-            powerUpScore = -50
 			powerUpMultiplierScore = -0.1
 			powerupsCollected[3]+=1
             // Power up set
@@ -2734,7 +2846,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddle.position.x = -gameWidth/2 + paddle.size.width/2
 			}
 			// Ensure the paddle stays within the game's bounds
-            powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerupsCollected[4]+=1
             // Power up set
@@ -2826,7 +2937,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddle.position.x = -gameWidth/2 + paddle.size.width/2
 			}
 			// Ensure the paddle stays within the game's bounds
-            powerUpScore = -50
 			powerUpMultiplierScore = -0.1
 			powerupsCollected[5]+=1
             // Power up set
@@ -2867,7 +2977,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			stickyPaddleIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05))
             stickyPaddleCatches = 4 + Int(Double(multiplier))
 			stickyPaddleCatchesTotal = stickyPaddleCatches
-            powerUpScore = 50
 			powerUpMultiplierScore = 0.1
 			powerupsCollected[6]+=1
 			paddleSticky.isHidden = false
@@ -2889,7 +2998,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ball.physicsBody!.affectedByGravity = true
 			gravityActivated = true
 			gravityDeactivate = false
-			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
 			powerupsCollected[7]+=1
 			// Power up set
@@ -2913,12 +3021,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.run(sequence, withKey: "powerUpGravityBall")
 			// Power up reverted
 			
+		case powerUpPointsBonusSmall:
+		// 100 points
+			removeAction(forKey: "pointsAnimation")
+			powerUpScore = 100
+			powerUpMultiplierScore = 0.1
+			powerupsCollected[8]+=1
+			scoreLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "pointsAnimation")
+			// Power up set
+			
+		case powerUpPointsPenaltySmall:
+		// -100 points
+			removeAction(forKey: "pointsAnimation")
+			powerUpScore = -100
+			powerUpMultiplierScore = -0.1
+			powerupsCollected[9]+=1
+			scoreLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "pointsAnimation")
+			// Power up set
+			
 		case powerUpPointsBonus:
 		// 1k points
 			removeAction(forKey: "pointsAnimation")
 			powerUpScore = 1000
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[8]+=1
+			powerupsCollected[10]+=1
 			scoreLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "pointsAnimation")
 			// Power up set
 			
@@ -2927,7 +3053,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeAction(forKey: "pointsAnimation")
 			powerUpScore = -1000
 			powerUpMultiplierScore = -0.1
-			powerupsCollected[9]+=1
+			powerupsCollected[11]+=1
 			scoreLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "pointsAnimation")
 			// Power up set
 			
@@ -2935,9 +3061,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Multiplier
 			removeAction(forKey: "multiplierAnimation")
 			multiplier = 2.0
-			powerUpScore = 50
 			powerUpMultiplierScore = 0
-			powerupsCollected[10]+=1
+			powerupsCollected[12]+=1
 			multiplierLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "multiplierAnimation")
 			// Power up set
 			
@@ -2946,19 +3071,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeAction(forKey: "multiplierAnimation")
 			multiplier = 1.0
 			brickRemovalCounter = 0
-			powerUpScore = -50
 			powerUpMultiplierScore = 0
-			powerupsCollected[11]+=1
+			powerupsCollected[13]+=1
 			multiplierLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "multiplierAnimation")
 			
 		case powerUpNextLevel:
         // Next level
-            powerUpScore = 50
 			powerUpMultiplierScore = 0
-			powerupsCollected[12]+=1
-			levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
-			scoreLabel.text = String(totalScore + levelScore)
+			powerupsCollected[14]+=1
 			clearSavedGame()
+			self.removeAction(forKey: "gameTimer")
+			// Stop the level timer
+			levelTimerBonus = levelTimerBonus - levelTimerValue
+			if levelTimerBonus < 0 {
+				levelTimerBonus = 0
+			}
+			levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
             gameState.enter(InbetweenLevels.self)
 			return
 			
@@ -2984,9 +3112,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					})
 				}
 			}
-			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[13]+=1
+			powerupsCollected[15]+=1
 			// Power up set
 			
 		case powerUpNormalToInvisibleBricks:
@@ -3004,9 +3131,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					temporarySprite.isHidden = true
 				}
 			}
-			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-			powerupsCollected[14]+=1
+			powerupsCollected[16]+=1
 			// Power up set
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
@@ -3046,9 +3172,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					temporarySprite.texture = self.brickMultiHit4Texture
 				}
 			}
-			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[15]+=1
+			powerupsCollected[17]+=1
 			// Power up set
 			
 		case powerUpMultiHitBricksReset:
@@ -3059,9 +3184,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					temporarySprite.texture = self.brickMultiHit1Texture
 				}
 			}
-			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-			powerupsCollected[16]+=1
+			powerupsCollected[18]+=1
 			// Power up set
 			
 		case powerUpRemoveIndestructibleBricks:
@@ -3074,15 +3198,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					self.removeBrick(node: node, sprite: temporarySprite)
 				}
 			}
-			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[17]+=1
+			powerupsCollected[19]+=1
 			// Power up set
 			if bricksLeft == 0 && endlessMode == false {
 				levelScore = levelScore + levelCompleteScore
 				if endlessMode == false {
 					scoreLabel.text = String(totalScore + levelScore)
 				}
+				self.removeAction(forKey: "gameTimer")
+				// Stop the level timer
+				levelTimerBonus = levelTimerBonus - levelTimerValue
+				if levelTimerBonus < 0 {
+					levelTimerBonus = 0
+				}
+				levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
 				gameState.enter(InbetweenLevels.self)
 				return
 			}
@@ -3101,9 +3231,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gigaBallDeactivate = false
             ball.texture = gigaBallTexture
             ballPhysicsBodySet()
-            powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[18]+=1
+			powerupsCollected[20]+=1
 			powerUpLimit = 4
             // Power up set
             let timer: Double = 10 * multiplier
@@ -3140,8 +3269,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ball.texture = undestructiballTexture
 			ballPhysicsBodySet()
 			powerUpLimit = 2
-            powerUpScore = -50
-			powerupsCollected[19]+=1
+			powerupsCollected[21]+=1
 			powerUpMultiplierScore = -0.1
             // Power up set
             let timer: Double = 10 * multiplier
@@ -3181,9 +3309,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// retro lasers
             laserTimer = Timer.scheduledTimer(timeInterval: 0.33, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
-			powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[20]+=1
+			powerupsCollected[22]+=1
 			powerUpLimit = 4
             // Power up set - lasers will fire every 0.1s
             let timer: Double = 10 * multiplier
@@ -3219,15 +3346,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				moveBricksDown.timingMode = .easeInEaseOut
 				node.run(moveBricksDown)
 			}
-			powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-			powerupsCollected[21]+=1
+			powerupsCollected[23]+=1
 			
 		case powerUpMystery:
 		// Mystery power-up
-			powerUpScore = 0
 			powerUpMultiplierScore = 0
-			powerupsCollected[22]+=1
+			powerupsCollected[24]+=1
 			mysteryPowerUp = true
 			powerUpGenerator (sprite: sprite)
 			
@@ -3241,9 +3366,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					self.backstop.run(SKAction.scale(by: 4, duration: 0.1), completion: {
 						self.backstopCatches = 1
 						self.backstopCatchesTotal = self.backstopCatches
-						self.powerUpScore = 50
 						self.powerUpMultiplierScore = 0.1
-						self.powerupsCollected[23]+=1
+						self.powerupsCollected[25]+=1
 						self.backstop.physicsBody!.categoryBitMask = CollisionTypes.backstopCategory.rawValue
 						self.backstop.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
 						self.backstop.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
@@ -3282,9 +3406,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballSizeIconBar.isHidden = true
 			}
 
-            powerUpScore = 50
 			powerUpMultiplierScore = 0.1
-			powerupsCollected[24]+=1
+			powerupsCollected[26]+=1
 			// Power up set
 
             let timer: Double = 10 * multiplier
@@ -3337,9 +3460,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballSizeIconBar.isHidden = true
 			}
 			
-            powerUpScore = -50
 			powerUpMultiplierScore = -0.1
-			powerupsCollected[25]+=1
+			powerupsCollected[27]+=1
             // Power up set
 			
             let timer: Double = 10 * multiplier
@@ -3389,9 +3511,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 	
 	func removePowerUp(sprite: SKSpriteNode, powerUp: SKSpriteNode, powerUpSelection: Int) {
+		print("llama llama remove power-up function")
 		powerUp.removeFromParent()
-		powerUpsOnScreen-=1
-		powerupsGenerated[powerUpSelection]-=1
 		self.powerUpGenerator (sprite: sprite)
 	}
 	
@@ -3555,6 +3676,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
 	func showPauseMenu(sender: String) {
+		
+		self.removeAction(forKey: "gameTimer")
+		// Stop the level timer
+		
 		var score = totalScore
 		if sender == "Pause" {
 			score = totalScore + levelScore
@@ -3572,7 +3697,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 	
 	func showInbetweenView() {
-		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber)
+		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber, levelTimerBonus: levelTimerBonus, firstLevel: firstLevel)
 		// Pass over data to inbetween view
 	}
 	
@@ -3896,6 +4021,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			addChild(laser)
 			lasersFired+=1
 			
+			if self.soundsSetting! {
+				self.run(laserFiredSound)
+			}
+			// Laser fired sound
+			
 			let move = SKAction.moveBy(x: 0, y: frame.height, duration: 2)
 			laser.run(move, completion: {
 				laser.removeFromParent()
@@ -3944,7 +4074,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func saveCurrentGame() {
-		print("llama llama save current game")
+//		print("llama llama save current game")
 		if numberOfLives == 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
 			return
@@ -3954,11 +4084,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var currentLevelNumber = levelNumber
 		let currentEndLevelNumber = endLevelNumber
 		let currentPackNumber = packNumber
-		var currentLevelScore = levelScore
+		let currentLevelScore = levelScore
 		let currentTotalScore = totalScore + levelScore
 		var currentNumberOfLives = numberOfLives
 		let currentHeight = endlessHeight
 		let currentNumberOfLevels = numberOfLevels
+		let currentlevelTimerValue = levelTimerValue
 		
 		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && gameoverStatus == false {
 			if numberOfLevels > 1 {
@@ -3970,12 +4101,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// If inbetween levels but only playing 1 level at a time don't save
 		
-		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels]
+		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentlevelTimerValue]
 		
 		var currentMultiplier = multiplier
 		
 		if ballLostBool {
-			currentLevelScore = currentLevelScore + lifeLostScore
 			currentNumberOfLives-=1
 		}
 		// If ball is lost on pause, update properties to reflect that when reloading the game
@@ -4136,7 +4266,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
 		defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
 		
-		print("llama saved game log: ", saveGameSaveArray!, saveMultiplier!, saveBrickTextureArray!, saveBrickColourArray!, saveBrickXPositionArray!, saveBrickYPositionArray!, saveBallPropertiesArray!)
+//		print("llama saved game log: ", saveGameSaveArray!, saveMultiplier!, saveBrickTextureArray!, saveBrickColourArray!, saveBrickXPositionArray!, saveBrickYPositionArray!, saveBallPropertiesArray!)
 	}
 	
 	func clearSavedGame() {
@@ -4155,7 +4285,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
 		defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
 		defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
-		print("llama llama save game data cleared GS: ", saveGameSaveArray!)
+//		print("llama llama save game data cleared GS: ", saveGameSaveArray!)
 	}
 	
 	func resumeGame() {
@@ -4177,6 +4307,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleRetroStickyTexture.position.x = paddle.position.x
 				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 				numberOfLevels = saveGameSaveArray![7]
+				levelTimerValue = saveGameSaveArray![8]
 			} else {
 				saveCurrentGame()
 			}
@@ -4358,9 +4489,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				numberOfLives = 1
 			}
 			ballLost()
-			levelScore = levelScore - lifeLostScore
-			scoreLabel.text = String(totalScore + levelScore)
-			// Score isn't reduced when killing ball
 		}
 		killBall = false
 		

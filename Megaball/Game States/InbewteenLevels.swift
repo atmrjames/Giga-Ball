@@ -20,7 +20,7 @@ class InbetweenLevels: GKState {
     override func didEnter(from previousState: GKState?) {
         
         print("llama llama entered inbetween levels")
-        
+                
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToContinueReceived(_:)), name: .continueToNextLevel, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
         
@@ -51,7 +51,7 @@ class InbetweenLevels: GKState {
         }
         // Only load next ad if user has ads enabled
         
-        let scaleUp = SKAction.scale(to: 1.5, duration: 0.1)
+        let scaleUp = SKAction.scale(by: 1.5, duration: 0.1)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut = SKAction.fadeOut(withDuration: 0.2)
         let wait = SKAction.wait(forDuration: 0.1)
@@ -125,8 +125,8 @@ class InbetweenLevels: GKState {
             scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
             scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
         } else {
-            scene.totalScore = scene.totalScore + scene.levelScore
-            scene.totalStatsArray[0].cumulativeScore = scene.totalStatsArray[0].cumulativeScore + scene.levelScore
+            scene.totalScore = scene.totalScore + scene.levelScore + scene.levelTimerBonus
+            scene.totalStatsArray[0].cumulativeScore = scene.totalStatsArray[0].cumulativeScore + scene.levelScore + scene.levelTimerBonus
             // Update total and cumulative scores
             scene.totalStatsArray[0].levelsPlayed+=1
         }
@@ -155,7 +155,7 @@ class InbetweenLevels: GKState {
         // Save total stats only at the end of the game
         
         if scene.endlessMode == false {
-            scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore)
+            scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore + scene.levelTimerBonus)
             scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
             if scene.gameoverStatus == false {
                 scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1

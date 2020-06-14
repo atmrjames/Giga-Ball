@@ -71,7 +71,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 5
+        return 4
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -81,15 +81,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         switch indexPath.row {
         case 0:
-            cell.statDescription.text = "Points"
-            if LevelPackSetup().powerUpPointsArray[powerUpIndex!] == "" {
-                hideCell(cell: cell)
-                return cell
-            } else {
-                cell.statValue.text = LevelPackSetup().powerUpPointsArray[powerUpIndex!]
-            }
-            return cell
-        case 1:
             cell.statDescription.text = "Mutliplier"
             if LevelPackSetup().powerUpMultiplierArray[powerUpIndex!] == "" {
                 hideCell(cell: cell)
@@ -98,7 +89,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 cell.statValue.text = LevelPackSetup().powerUpMultiplierArray[powerUpIndex!]
             }
             return cell
-        case 2:
+        case 1:
             cell.statDescription.text = "Duration"
             if LevelPackSetup().powerUpTimerArray[powerUpIndex!] == "" {
                 hideCell(cell: cell)
@@ -111,11 +102,11 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 cell.statValue.text = LevelPackSetup().powerUpTimerArray[powerUpIndex!]+" s"
             }
             return cell
-        case 3:
+        case 2:
             cell.statDescription.text = "Collected"
             cell.statValue.text = String(totalStatsArray[0].powerupsCollected[powerUpIndex!])
             return cell
-        case 4:
+        case 3:
             cell.statDescription.text = "Left"
             cell.statValue.text = String(totalStatsArray[0].powerupsGenerated[powerUpIndex!] - totalStatsArray[0].powerupsCollected[powerUpIndex!])
             return cell

@@ -22,6 +22,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Game view properties
     
     let defaults = UserDefaults.standard
+    var premiumSetting: Bool?
     var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
@@ -33,6 +34,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var paddleSetting: Int?
     var brickSetting: Int?
     var appIconSetting: Int?
+    var statsCollapseSetting: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -60,6 +62,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @IBOutlet var bannerAdCollapsed: NSLayoutConstraint!
     @IBOutlet var bannerAdOpenSmall: NSLayoutConstraint!
     @IBOutlet var bannerAdOpenLarge: NSLayoutConstraint!
+    
+    @IBOutlet var backgroundImageView: UIImageView!
+    @IBOutlet var backgroundBlurView: UIView!
+    
+    var group: UIMotionEffectGroup?
+    var blurViewLayer: UIVisualEffectView?
     
     var firstLaunch: Bool = false
     // Check if this is the first opening of the app since closing to know if to run splash screen
@@ -104,6 +112,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         logoButton.titleLabel?.adjustsFontSizeToFitWidth = true
         
+        backgroundImageView.image = UIImage(named:"mainMenuBackground.png")!
+        
         collectionViewLayout()
         defaultSettings()
         refreshView()
@@ -118,6 +128,53 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
     override func viewWillAppear(_ animated: Bool) {
         refreshView()
+    }
+    
+    func setBlur() {
+        backgroundBlurView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0)
+        // 1: change the superview transparent
+        let blurEffect = UIBlurEffect(style: .dark)
+        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
+        blurViewLayer = UIVisualEffectView(effect: blurEffect)
+        // 3 Create a UIVisualEffectView with the new blur
+        blurViewLayer!.translatesAutoresizingMaskIntoConstraints = false
+        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
+        backgroundBlurView.insertSubview(blurViewLayer!, at: 0)
+
+        NSLayoutConstraint.activate([
+        blurViewLayer!.heightAnchor.constraint(equalTo: backgroundBlurView.heightAnchor),
+        blurViewLayer!.widthAnchor.constraint(equalTo: backgroundBlurView.widthAnchor),
+        blurViewLayer!.leadingAnchor.constraint(equalTo: backgroundBlurView.leadingAnchor),
+        blurViewLayer!.trailingAnchor.constraint(equalTo: backgroundBlurView.trailingAnchor),
+        blurViewLayer!.topAnchor.constraint(equalTo: backgroundBlurView.topAnchor),
+        blurViewLayer!.bottomAnchor.constraint(equalTo: backgroundBlurView.bottomAnchor)
+        ])
+        // Keep the frame of the blurView consistent with that of the associated view.
+    }
+    
+    func addParallaxToView() {
+        var amount = 12
+        if view.frame.width > 450 {
+            amount = 25
+            // iPad
+        }
+        
+        let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x", type: .tiltAlongHorizontalAxis)
+        horizontal.minimumRelativeValue = -amount
+        horizontal.maximumRelativeValue = amount
+
+        let vertical = UIInterpolatingMotionEffect(keyPath: "center.y", type: .tiltAlongVerticalAxis)
+        vertical.minimumRelativeValue = -amount
+        vertical.maximumRelativeValue = amount
+        
+        if group != nil {
+            backgroundImageView.removeMotionEffect(group!)
+        }
+        // Remove parallax before reapplying
+
+        group = UIMotionEffectGroup()
+        group!.motionEffects = [horizontal, vertical]
+        backgroundImageView.addMotionEffect(group!)
     }
     
     func showSplashScreen() {
@@ -139,7 +196,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 3
+        return 2
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -153,15 +210,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 
         switch indexPath.row {
         case 0:
-            cell.modeImageIcon.image = UIImage(named:"TutorialIcon.png")
-            cell.modeTextLabel.text = "Tutorial (WIP)"
-            cell.modeTextLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            hideCell(cell: cell)
-        case 1:
             cell.modeImageIcon.image = UIImage(named:"ClassicIcon.png")
             cell.modeTextLabel.text = "Classic Mode"
             
-        case 2:
+        case 1:
             cell.modeImageIcon.image = UIImage(named:"EndlessIcon.png")
             cell.modeTextLabel.text = "Endless Mode"
 
@@ -178,10 +230,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         return cell
     }
     
-    func hideCell(cell: ModeSelectTableViewCell) {
-        modeSelectTableView.rowHeight = 0.0
-    }
-    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
@@ -191,19 +239,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
             cell.cellView1.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
         }
-        
+
         if indexPath.row == 0 {
-        // Tutorial
-//            levelSender = "MainMenu"
-//            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[0], numberOfLevels: LevelPackSetup().numberOfLevels[0], sender: levelSender!, levelPack: 0)
-        }
-        
-        if indexPath.row == 1 {
-        // Level packs
+        // Classic mode
             moveToPackSelector()
         }
         
-        if indexPath.row == 2 {
+        if indexPath.row == 1 {
         // Endless mode
             moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1], levelNumber: LevelPackSetup().startLevelNumber[1], packNumber: 1)
         }
@@ -345,6 +387,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func defaultSettings() {
+        defaults.register(defaults: ["premiumSetting": false])
         defaults.register(defaults: ["adsSetting": true])
         defaults.register(defaults: ["soundsSetting": true])
         defaults.register(defaults: ["musicSetting": true])
@@ -352,10 +395,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["parallaxSetting": true])
         if view.frame.size.width > 450 {
         // iPad
-            print("llama llama size ipad: ", view.frame.size.width)
             defaults.register(defaults: ["paddleSensitivitySetting": 3])
         } else {
-            print("llama llama size non ipad: ", view.frame.size.width)
             defaults.register(defaults: ["paddleSensitivitySetting": 2])
         }
         defaults.register(defaults: ["gameCenterSetting": false])
@@ -363,6 +404,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["paddleSetting": 0])
         defaults.register(defaults: ["brickSetting": 0])
         defaults.register(defaults: ["appIconSetting": 0])
+        defaults.register(defaults: ["statsCollapseSetting": false])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -508,6 +550,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func userSettings() {
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
@@ -519,6 +562,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         paddleSetting = defaults.integer(forKey: "paddleSetting")
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
+        statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -582,6 +626,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func refreshView() {
         loadData()
         userSettings()
+        if blurViewLayer == nil {
+            setBlur()
+        }
+        if parallaxSetting! {
+            addParallaxToView()
+        }
         updateAds()
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()

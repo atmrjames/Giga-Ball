@@ -111,11 +111,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Show PauseMenuViewController as popup
     
-    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int) {
+    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool) {
         let inbetweenView = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenView") as! InbetweenViewController
         inbetweenView.levelNumber = levelNumber
         inbetweenView.packNumber = packNumber
         inbetweenView.totalScore = score
+        inbetweenView.levelScoreBonus = levelTimerBonus
+        inbetweenView.firstLevel = firstLevel
         // Update pause menu view controller properties with function input values
         self.addChild(inbetweenView)
         inbetweenView.view.frame = self.view.frame

@@ -169,6 +169,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = 10
                 cell.lockedImageView.layer.cornerRadius = 10
+                cell.blurView.layer.masksToBounds = true
+                cell.lockedImageView.layer.masksToBounds = true
                 cell.blurView.isHidden = false
                 cell.lockedImageView.isHidden = false
             }
@@ -182,6 +184,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.settingDescription.text = LevelPackSetup().powerUpNameArray[indexPath.row]
             cell.centreLabel.text = ""
+                        
+            if totalStatsArray[0].powerupsGenerated.count < indexPath.row-1 {
+                totalStatsArray[0].powerupsGenerated.append(0)
+            }
+            if totalStatsArray[0].powerupsCollected.count < indexPath.row-1 {
+                totalStatsArray[0].powerupsCollected.append(0)
+            }
 
             if totalStatsArray[0].powerupsGenerated[indexPath.row] > 0 {
                 let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[indexPath.row]) / Double(totalStatsArray[0].powerupsGenerated[indexPath.row])
@@ -195,8 +204,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if LevelPackSetup().powerUpUnlockedArray[indexPath.row] == false {
                 cell.settingDescription.text = "Locked"
                 cell.settingState.text = ""
-                cell.blurView.layer.cornerRadius = 10
-                cell.lockedImageView.layer.cornerRadius = 10
+                cell.blurView.layer.cornerRadius = 8
+                cell.lockedImageView.layer.cornerRadius = 8
+                cell.blurView.layer.masksToBounds = true
+                cell.lockedImageView.layer.masksToBounds = true
                 cell.blurView.isHidden = false
                 cell.lockedImageView.isHidden = false
             }
@@ -222,6 +233,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
                 cell.lockedImageView.layer.cornerRadius = cell.iconImage.frame.size.height/2
+                cell.blurView.layer.masksToBounds = true
+                cell.lockedImageView.layer.masksToBounds = true
                 cell.blurView.isHidden = false
                 cell.lockedImageView.isHidden = false
             }
@@ -247,6 +260,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
                 cell.lockedImageView.layer.cornerRadius = cell.iconImage.frame.size.height/2
+                cell.blurView.layer.masksToBounds = true
+                cell.lockedImageView.layer.masksToBounds = true
                 cell.blurView.isHidden = false
                 cell.lockedImageView.isHidden = false
             }
@@ -264,6 +279,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.settingState.text = ""
             cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
             cell.lockedImageView.layer.cornerRadius = cell.iconImage.frame.size.height/2
+            cell.blurView.layer.masksToBounds = true
+            cell.lockedImageView.layer.masksToBounds = true
             cell.tickImage.isHidden = true
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
             if brickSetting == indexPath.row {
