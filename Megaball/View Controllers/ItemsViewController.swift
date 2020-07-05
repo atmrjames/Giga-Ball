@@ -77,7 +77,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 5
+        return 6
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -105,6 +105,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 4:
             cell.settingDescription.text = "Bricks"
             cell.iconImage.image = UIImage(named:"iconBricks.png")!
+        case 5:
+            cell.settingDescription.text = "Achievements"
+            cell.iconImage.image = UIImage(named:"iconAchievements.png")!
         default:
             break
         }
@@ -206,14 +209,17 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         
         if indexPath.row == 0 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             removeAnimate()
         }
         if indexPath.row == 1 && gameCenterSetting! {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             showGameCenterAchievements()
         }
         
@@ -222,18 +228,21 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
                 if self.gameCenterSetting! {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonAchievementsHighlighted")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
@@ -248,18 +257,21 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .identity
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
                 if self.gameCenterSetting! {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonAchievements")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")

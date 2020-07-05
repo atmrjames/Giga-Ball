@@ -66,6 +66,24 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
+			<key>Pink</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>Pink</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<string>NO</string>
+			</dict>
+			<key>Purple</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>Purple</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<string>NO</string>
+			</dict>
 			<key>Rainbow</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -102,24 +120,6 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Purple</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Purple</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Pink</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Pink</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 		</dict>
 		<key>CFBundlePrimaryIcon</key>
 		<dict>
@@ -135,15 +135,6 @@
 	<dict>
 		<key>CFBundleAlternateIcons</key>
 		<dict>
-			<key>Pink</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Pink</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Black</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -198,6 +189,24 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
+			<key>Pink</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>Pink</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<string>NO</string>
+			</dict>
+			<key>Purple</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>Purple</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<string>NO</string>
+			</dict>
 			<key>Rainbow</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -234,15 +243,6 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Purple</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Purple</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 		</dict>
 		<key>CFBundlePrimaryIcon</key>
 		<dict>
@@ -268,6 +268,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3110131406973822~9938707579</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIAppFonts</key>

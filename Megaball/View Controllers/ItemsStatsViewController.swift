@@ -29,11 +29,15 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
+    let formatter = DateFormatter()
+    // Setup date formatter
+    
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     var group: UIMotionEffectGroup?
     // UI property setup
     
-    var powerUpIndex: Int?
+    var passedIndex: Int?
+    var sender: String?
     // Key properties
     
     @IBOutlet var backgroundView: UIView!
@@ -44,6 +48,10 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var statsTableView: UITableView!
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
+    
+    @IBOutlet var powerUpActionImageAspectRatio: NSLayoutConstraint!
+    @IBOutlet var powerUpActionImageHeight: NSLayoutConstraint!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -67,11 +75,24 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         updateLabels()
         statsTableView.reloadData()
         backButtonCollectionView.reloadData()
+        
+        if sender == "Power-Ups" {
+            powerUpActionImageAspectRatio.isActive = true
+            powerUpActionImageHeight.isActive = false
+        } else {
+            powerUpActionImageHeight.isActive = true
+            powerUpActionImageAspectRatio.isActive = false
+        }
+
         showAnimate()
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 4
+        if sender == "Power-Ups" {
+            return 5
+        } else {
+            return 1
+        }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -79,38 +100,72 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         statsTableView.rowHeight = 35.0
         
-        switch indexPath.row {
-        case 0:
-            cell.statDescription.text = "Mutliplier"
-            if LevelPackSetup().powerUpMultiplierArray[powerUpIndex!] == "" {
-                hideCell(cell: cell)
+        if sender == "Power-Ups" {
+            switch indexPath.row {
+            case 0:
+                cell.statDescription.text = "Mutliplier"
+                if LevelPackSetup().powerUpMultiplierArray[passedIndex!] == "" {
+                    hideCell(cell: cell)
+                    return cell
+                } else {
+                    cell.statValue.text = LevelPackSetup().powerUpMultiplierArray[passedIndex!]
+                }
                 return cell
-            } else {
-                cell.statValue.text = LevelPackSetup().powerUpMultiplierArray[powerUpIndex!]
-            }
-            return cell
-        case 1:
-            cell.statDescription.text = "Duration"
-            if LevelPackSetup().powerUpTimerArray[powerUpIndex!] == "" {
-                hideCell(cell: cell)
+            case 1:
+                cell.statDescription.text = "Duration"
+                if LevelPackSetup().powerUpTimerArray[passedIndex!] == "" {
+                    hideCell(cell: cell)
+                    return cell
+                }
+                if LevelPackSetup().powerUpTimerArray[passedIndex!] == "5" {
+                    cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+" catches"
+                }
+                if LevelPackSetup().powerUpTimerArray[passedIndex!] == "10" {
+                    cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+" s"
+                }
+                return cell
+            case 2:
+                cell.statDescription.text = "Collected"
+                cell.statValue.text = String(totalStatsArray[0].powerupsCollected[passedIndex!])
+                return cell
+            case 3:
+                cell.statDescription.text = "Left"
+                cell.statValue.text = String(totalStatsArray[0].powerupsGenerated[passedIndex!] - totalStatsArray[0].powerupsCollected[passedIndex!])
+                return cell
+            case 4:
+                if totalStatsArray[0].powerupsGenerated[passedIndex!] == 0 {
+                    hideCell(cell: cell)
+                }
+                // Only show if power-up has been seen
+                cell.statDescription.text = "Collection rate"
+                var collectionRate: Double = Double(totalStatsArray[0].powerupsCollected[passedIndex!])/Double(totalStatsArray[0].powerupsGenerated[passedIndex!])*100.0
+                if collectionRate.isNaN || collectionRate.isInfinite {
+                    collectionRate = 0.0
+                }
+                let collectionRateString = String(format:"%.0f", collectionRate)
+                // Double to string conversion to 1 decimal place
+                cell.statValue.text = String(collectionRateString)+"%"
+                return cell
+            default:
                 return cell
             }
-            if LevelPackSetup().powerUpTimerArray[powerUpIndex!] == "5" {
-                cell.statValue.text = LevelPackSetup().powerUpTimerArray[powerUpIndex!]+" catches"
+        } else {
+            cell.statDescription.text = "Incomplete"
+            cell.statValue.text = ""
+            if totalStatsArray[0].achievementsPercentageCompleteArray[passedIndex!] != "" {
+                cell.statDescription.text = "Percentage complete"
+                cell.statValue.text = totalStatsArray[0].achievementsPercentageCompleteArray[passedIndex!]
             }
-            if LevelPackSetup().powerUpTimerArray[powerUpIndex!] == "10" {
-                cell.statValue.text = LevelPackSetup().powerUpTimerArray[powerUpIndex!]+" s"
+            if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
+                cell.statDescription.text = "Date completed"
+                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                let inputDate = formatter.string(from: totalStatsArray[0].achievementDates[passedIndex!])
+                let outputDate = formatter.date(from: inputDate)
+                formatter.dateFormat = "dd/MM/yyyy"
+                let convertedDate = formatter.string(from: outputDate!)
+                // Date to string conversion
+                cell.statValue.text = convertedDate
             }
-            return cell
-        case 2:
-            cell.statDescription.text = "Collected"
-            cell.statValue.text = String(totalStatsArray[0].powerupsCollected[powerUpIndex!])
-            return cell
-        case 3:
-            cell.statDescription.text = "Left"
-            cell.statValue.text = String(totalStatsArray[0].powerupsGenerated[powerUpIndex!] - totalStatsArray[0].powerupsCollected[powerUpIndex!])
-            return cell
-        default:
             return cell
         }
     }
@@ -259,11 +314,25 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func updateLabels() {
-
-        titleLabel.text = LevelPackSetup().powerUpNameArray[powerUpIndex!].uppercased()
-        powerUpImage.image = LevelPackSetup().powerUpImageArray[powerUpIndex!]
-//        powerUpActionImage.image = ""
-        descriptionLabel.text = LevelPackSetup().powerUpDescriptionArray[powerUpIndex!]
+        
+        if sender == "Power-Ups" {
+            titleLabel.text = LevelPackSetup().powerUpNameArray[passedIndex!].uppercased()
+            powerUpImage.image = LevelPackSetup().powerUpImageArray[passedIndex!]
+    //        powerUpActionImage.image = ""
+            descriptionLabel.text = LevelPackSetup().powerUpDescriptionArray[passedIndex!]
+        } else {
+            titleLabel.text = LevelPackSetup().achievementsNameArray[passedIndex!].uppercased()
+            if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
+                powerUpImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[passedIndex!])!
+            } else {
+                powerUpImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
+            }
+            powerUpActionImage.isHidden = true
+            descriptionLabel.text = LevelPackSetup().achievementsPreEarnedDescriptionArray[passedIndex!]
+            if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
+                descriptionLabel.text = LevelPackSetup().achievementsEarnedDescriptionArray[passedIndex!]
+            }
+        }
         
         powerUpImage.layer.masksToBounds = false
         powerUpImage.layer.shadowColor = UIColor.black.cgColor

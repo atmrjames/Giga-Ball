@@ -12,4 +12,5 @@ class PackStats: Codable {
     var scores: [Int] = []
     var scoreDates: [Date] = []
     var numberOfCompletes: Int = 0
+    var bestTime: Int = 0
 }

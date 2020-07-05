@@ -20,16 +20,6 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if i >= 19 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickBlueDarkExtra
-                }
-                
-                if i >= 16 && i <= 18 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickBlueDark
-                }
-                
                 if i >= 12 && i <= 15 {
                     brick.texture = brickNormalTexture
                     brick.color = brickBlueLight
@@ -79,12 +69,10 @@ extension GameScene {
                     brick.texture = brickIndestructible1Texture
                 }
                 if j == 8 && (i == 21 || i == 17) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickYellowLight
+                    brick.texture = brickIndestructible1Texture
                 }
                 if j == 9 && (i >= 18 && i <= 20) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickYellowLight
+                    brick.texture = brickIndestructible1Texture
                 }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))

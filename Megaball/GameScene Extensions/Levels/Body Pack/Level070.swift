@@ -33,11 +33,11 @@ extension GameScene {
                     brick.color = brickGreyDark
                 }
                 
-                if j >= 1 && j <= 9 && i >= 20 && i <= 21 {
+                if j >= 2 && j <= 8 && i >= 20 && i <= 21 {
                     brick.texture = brickNormalTexture
                     brick.color = brickGreenDark
                 }
-                if (j == 0 || j == 10) && i == 21 {
+                if (j == 1 || j == 9) && i == 21 {
                     brick.texture = brickNormalTexture
                     brick.color = brickGreenDark
                 }

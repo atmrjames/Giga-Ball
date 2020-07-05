@@ -82,6 +82,16 @@ class PreGame: GKState {
         // 0 lives for endless mode, 3 for all other levels
         scene.multiplier = 1.0
         scene.gameoverStatus = false
+        
+        scene.deathsPerLevel = 0
+        scene.deathsPerPack = 0
+        scene.powerUpsCollectedPerLevel = 0
+        scene.powerUpsGeneratedPerLevel = 0
+        scene.paddleHitsPerLevel = 0
+        scene.powerUpsCollectedPerPack = 0
+        scene.powerUpsGeneratedPerPack = 0
+        scene.packTimerValue = 0
+        // Reset trackers
     }
 
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {

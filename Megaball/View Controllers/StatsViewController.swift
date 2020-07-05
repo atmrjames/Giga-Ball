@@ -74,27 +74,117 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 12
+        return 25
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         
-        let numberOfAttempts = totalStatsArray[0].levelsPlayed + totalStatsArray[0].endlessModeHeight.count
+        let numberOfAttempts = totalStatsArray[0].levelsPlayed
+        let numberOfEndlessModeAttempts = totalStatsArray[0].endlessModeHeight.count
+        let heightArraySum = totalStatsArray[0].endlessModeHeight.reduce(0, +)
+        let unlockedItemCount = totalStatsArray[0].appIconUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].powerUpUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].ballUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].paddleUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].brickUnlockedArray.filter{$0 == true}.count
+        let lockedItemCount = totalStatsArray[0].appIconUnlockedArray.count + totalStatsArray[0].powerUpUnlockedArray.count + totalStatsArray[0].ballUnlockedArray.count + totalStatsArray[0].paddleUnlockedArray.count
+        let unlockedLevelCount = totalStatsArray[0].levelUnlockedArray.filter{$0 == true}.count-1
+        let lockedLevelCount = totalStatsArray[0].levelUnlockedArray.count-1
+        let unlockedPackCount = totalStatsArray[0].levelPackUnlockedArray.filter{$0 == true}.count-2
+        let lockedPackCount = totalStatsArray[0].levelPackUnlockedArray.count-2
+        let unlockedAchievementCount = totalStatsArray[0].achievementsUnlockedArray.filter{$0 == true}.count
+        let lockedAchievementCount = totalStatsArray[0].achievementsUnlockedArray.count
             
         statsTableView.rowHeight = 35.0
         
         switch indexPath.row {
         case 0:
-            if numberOfAttempts == 0 {
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 cell.statDescription.text = "No statistics available"
                 cell.statValue.text = ""
+            } else {
+                cell.statDescription.text = "Total play time"
+                if totalStatsArray[0].playTimeSecs <= 120 {
+                    cell.statValue.text = "1 minute"
+                } else if totalStatsArray[0].playTimeSecs <= 3600 {
+                    let numberMinutes = Int(totalStatsArray[0].playTimeSecs/60)
+                    cell.statValue.text = String(numberMinutes)+" minutes"
+                } else {
+                    let numberHours = Double(totalStatsArray[0].playTimeSecs/3600)
+                    let numberHoursString = String(format:"%.1f", numberHours)
+                    // Double to string conversion to 1 decimal place
+                    cell.statValue.text = String(numberHoursString)+" hours"
+                }
+            }
+            return cell
+        case 1:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Total score"
                 cell.statValue.text = String(totalStatsArray[0].cumulativeScore)
             }
             return cell
-        case 1:
+        case 2:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Items unlocked"
+                cell.statValue.text = String(unlockedItemCount)+"/"+String(lockedItemCount)
+            }
+            return cell
+        case 3:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Achievements completed"
+                cell.statValue.text = String(unlockedAchievementCount)+"/"+String(lockedAchievementCount)
+            }
+            return cell
+        case 4:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Packs unlocked"
+                cell.statValue.text = String(unlockedPackCount)+"/"+String(lockedPackCount)
+            }
+            return cell
+        case 5:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Packs played"
+                cell.statValue.text = String(totalStatsArray[0].packsPlayed)
+            }
+            return cell
+        case 6:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Packs completed"
+                cell.statValue.text = String(totalStatsArray[0].packsCompleted)
+            }
+            return cell
+        case 7:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Pack completion rate"
+                var completionRate: Double = Double(totalStatsArray[0].packsCompleted)/Double(totalStatsArray[0].packsPlayed)*100.0
+                if completionRate.isNaN || completionRate.isInfinite {
+                    completionRate = 0.0
+                }
+                let completionRateString = String(format:"%.1f", completionRate)
+                // Double to string conversion to 1 decimal place
+                cell.statValue.text = String(completionRateString)+"%"
+            }
+            return cell
+        case 8:
+            if numberOfAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Levels unlocked"
+                cell.statValue.text = String(unlockedLevelCount)+"/"+String(lockedLevelCount)
+            }
+            return cell
+        case 9:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -102,7 +192,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].levelsPlayed)
             }
             return cell
-        case 2:
+        case 10:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -110,7 +200,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(totalStatsArray[0].levelsCompleted)
             }
             return cell
-        case 3:
+        case 11:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
             } else {
@@ -124,48 +214,85 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(completionRateString)+"%"
             }
             return cell
-        case 4:
-            if numberOfAttempts == 0 {
+        case 12:
+            if numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Endless mode plays"
+                cell.statValue.text = String(numberOfEndlessModeAttempts)
+            }
+            return cell
+        case 13:
+            if numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Endless mode best height"
+                if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
+                    cell.statValue.text = String(bestHeight) + " m"
+                } else {
+                    cell.statValue.text = ""
+                }
+            }
+            return cell
+        case 14:
+            if numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Endless mode total height"
+                cell.statValue.text = String(heightArraySum)+" m"
+            }
+            return cell
+        case 15:
+            if numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Endless mode average height"
+                let averageScore = heightArraySum/numberOfEndlessModeAttempts
+                cell.statValue.text = String(averageScore)+" m"
+            }
+            return cell
+        case 16:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Ball hits"
                 cell.statValue.text = String(totalStatsArray[0].ballHits)
             }
             return cell
-        case 5:
-            if numberOfAttempts == 0 {
+        case 17:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Balls lost"
                 cell.statValue.text = String(totalStatsArray[0].ballsLost)
             }
             return cell
-        case 6:
-            if numberOfAttempts == 0 {
+        case 18:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Bricks hit"
                 cell.statValue.text = String(totalStatsArray[0].bricksHit.reduce(0, +))
             }
             return cell
-        case 7:
-            if numberOfAttempts == 0 {
+        case 19:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Bricks destroyed"
                 cell.statValue.text = String(totalStatsArray[0].bricksDestroyed.reduce(0, +))
             }
             return cell
-        case 8:
-            if numberOfAttempts == 0 {
+        case 20:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Power-ups collected"
                 cell.statValue.text = String(totalStatsArray[0].powerupsCollected.reduce(0, +))
             }
             return cell
-        case 9:
-            if numberOfAttempts == 0 {
+        case 21:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Power-ups left"
@@ -173,28 +300,34 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.statValue.text = String(powerupsMissed)
             }
             return cell
-        case 10:
-            if numberOfAttempts == 0 {
+        case 22:
+            if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
+                hideCell(cell: cell)
+            } else {
+                cell.statDescription.text = "Power-ups collection rate"
+                var collectionRate: Double = Double(totalStatsArray[0].powerupsCollected.reduce(0, +))/Double(totalStatsArray[0].powerupsGenerated.reduce(0, +))*100.0
+                if collectionRate.isNaN || collectionRate.isInfinite {
+                    collectionRate = 0.0
+                }
+                let collectionRateString = String(format:"%.1f", collectionRate)
+                // Double to string conversion to 1 decimal place
+                cell.statValue.text = String(collectionRateString)+"%"
+            }
+            return cell
+        case 23:
+            if (numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0) || totalStatsArray[0].lasersFired == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Lasers fired"
                 cell.statValue.text = String(totalStatsArray[0].lasersFired)
             }
             return cell
-        case 11:
-            if numberOfAttempts == 0 {
+        case 24:
+            if (numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0) || totalStatsArray[0].lasersFired == 0 {
                 hideCell(cell: cell)
             } else {
                 cell.statDescription.text = "Lasers hit"
                 cell.statValue.text = String(totalStatsArray[0].lasersHit)
-            }
-            return cell
-        case 12:
-            if numberOfAttempts == 0 {
-                hideCell(cell: cell)
-            } else {
-                cell.statDescription.text = "Cumulative height"
-                cell.statValue.text = String(totalStatsArray[0].endlessModeHeight.reduce(0, +))+" m"
             }
             return cell
         default:
@@ -255,14 +388,17 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        
+
         if indexPath.row == 0 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             removeAnimate()
         }
         if indexPath.row == 1 && gameCenterSetting! {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             showGameCenterLeaderboards()
         }
         
@@ -271,18 +407,21 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
                 if self.gameCenterSetting! {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
@@ -297,18 +436,21 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .identity
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
                 if self.gameCenterSetting! {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")

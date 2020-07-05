@@ -58,6 +58,9 @@ extension GameScene {
                 if (j == 3 || j == 7) && i == 12 {
                     brick.texture = brickIndestructible2Texture
                 }
+                if j >= 4 && j <= 6 && i >= 6 && i <= 11 {
+                    brick.texture = brickIndestructible2Texture
+                }
                 
                 if (j == 4 || j == 6) && i >= 0 && i <= 1 {
                     brick.texture = brickMultiHit1Texture

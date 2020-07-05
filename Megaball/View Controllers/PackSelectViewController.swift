@@ -19,10 +19,14 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     var paddleSensitivitySetting: Int?
     // User settings
     
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
     var packStatsArray: [PackStats] = []
+    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -35,6 +39,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var packTableView: UITableView!
     @IBOutlet var backButtonCollectionView: UICollectionView!
+    @IBOutlet var unlockedLabel: UILabel!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,6 +48,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         // Sets up an observer to watch for notifications to check if the user has returned from another view
         
         userSettings()
+        loadData()
         
         packTableView.delegate = self
         packTableView.dataSource = self
@@ -108,7 +114,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             break
         }
         
-        if LevelPackSetup().levelPackUnlockedArray[indexPath.row+2] == false {          
+        if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
             cell.settingDescription.text = "Locked"
             cell.settingState.text = ""
             cell.blurView.isHidden = false
@@ -136,7 +142,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             interfaceHaptic.impactOccurred()
         }
         
-        if LevelPackSetup().levelPackUnlockedArray[indexPath.row+2] {
+        if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] {
             hideAnimate()
             moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
         }
@@ -325,8 +331,42 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         })
     }
     
+    func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+        
+        if let packData = try? Data(contentsOf: packStatsStore!) {
+            do {
+                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+            } catch {
+                print("Error decoding pack stats array, \(error)")
+            }
+        }
+        // Load the pack stats array from the NSCoder data store
+        
+        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+            do {
+                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+            } catch {
+                print("Error decoding level stats array, \(error)")
+            }
+        }
+        // Load the level stats array from the NSCoder data store
+        
+        let unlockedPackCount = totalStatsArray[0].levelPackUnlockedArray.filter{$0 == true}.count-2
+        let lockedPackCount = totalStatsArray[0].levelPackUnlockedArray.count-2
+        unlockedLabel.text = "UNLOCKED: \(unlockedPackCount)/\(lockedPackCount)"
+    }
+    
     @objc func returnPackSelectNotificationKeyReceived(_ notification: Notification) {
             userSettings()
+            loadData()
             revealAnimate()
             packTableView.reloadData()
         }

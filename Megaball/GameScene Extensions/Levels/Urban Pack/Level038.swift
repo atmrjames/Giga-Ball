@@ -20,10 +20,6 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if j >= 0 && j <= 10 && i == 21 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickGreyDark
-                }
                 if j >= 1 && j <= 9 && i == 10 {
                     brick.texture = brickNormalTexture
                     brick.color = brickGreyDark

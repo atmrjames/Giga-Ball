@@ -29,14 +29,11 @@ extension GameScene {
                 if (i == 10 || i == 11) && j >= 3 && j <= 7  {
                     brick.texture = brickIndestructible2Texture
                 }
-                if (i == 8 || i == 9) && j >= 2 && j <= 8  {
-                    brick.texture = brickIndestructible2Texture
-                }
-                if (i == 6 || i == 7) && j >= 1 && j <= 9  {
+                if i == 9 && j >= 2 && j <= 8  {
                     brick.texture = brickIndestructible2Texture
                 }
                 
-                if i == 8 && j >= 3 && j <= 7 {
+                if i == 8 && j >= 2 && j <= 8 {
                     brick.texture = brickIndestructible1Texture
                 }
                 
@@ -55,9 +52,6 @@ extension GameScene {
                     brick.color = brickPurple
                 }
                 
-                if i == 8 && (j == 1 || j == 9) {
-                    brick.texture = brickInvisibleTexture
-                }
                 if i == 10 && (j == 2 || j == 8) {
                     brick.texture = brickInvisibleTexture
                 }

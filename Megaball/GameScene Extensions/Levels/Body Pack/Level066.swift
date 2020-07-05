@@ -47,12 +47,10 @@ extension GameScene {
                 }
                 
                 if j >= 4 && j <= 6 && i >= 6 && i <= 15 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickGreyDark
+                    brick.texture = brickNullTexture
                 }
                 if j >= 3 && j <= 7 && i >= 8 && i <= 13 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickGreyDark
+                    brick.texture = brickNullTexture
                 }
                 
                 if j == 4 && i >= 8 && i <= 9 {

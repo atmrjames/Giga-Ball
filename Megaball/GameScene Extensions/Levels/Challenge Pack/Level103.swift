@@ -63,6 +63,10 @@ extension GameScene {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
+                
+                if i == 1 || i == 20 {
+                    brick.texture = brickNullTexture
+                }
                                 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 

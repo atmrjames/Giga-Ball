@@ -26,9 +26,9 @@
                         <rect key="frame" x="20" y="0.0" width="280" height="50"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="State" textAlignment="right" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumFontSize="9" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="whk-ii-fM9">
-                                <rect key="frame" x="220" y="0.0" width="50" height="50"/>
+                                <rect key="frame" x="205" y="0.0" width="65" height="50"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="50" id="BLq-qa-4kl"/>
+                                    <constraint firstAttribute="width" constant="65" id="BLq-qa-4kl"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="18"/>
                                 <color key="textColor" red="0.16078431372549018" green="0.0" blue="0.23529411764705882" alpha="1" colorSpace="calibratedRGB"/>
@@ -69,7 +69,7 @@
                                 </constraints>
                             </imageView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Description" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumFontSize="9" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yvv-Oh-rK7">
-                                <rect key="frame" x="55" y="0.0" width="165" height="50"/>
+                                <rect key="frame" x="55" y="0.0" width="150" height="50"/>
                                 <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="18"/>
                                 <color key="textColor" red="0.16078431372549018" green="0.0" blue="0.23529411764705882" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>

@@ -108,13 +108,18 @@ class Playing: GKState {
 
         if scene.saveGameSaveArray! == [] {
             let startingScale = SKAction.scale(to: 0.8, duration: 0)
+            let startingScalePaddle = SKAction.scaleX(to: 0.0, duration: 0)
             let startingFade = SKAction.fadeOut(withDuration: 0)
-            let scaleUp = SKAction.scale(to: 1, duration: 0.5)
-            let fadeIn = SKAction.fadeIn(withDuration: 0.5)
+            let scaleUp = SKAction.scale(to: 1, duration: 0.2)
+            let scaleUpPaddle = SKAction.scaleX(to: 1, duration: 0.2)
+            let fadeIn = SKAction.fadeIn(withDuration: 0.2)
             let wait = SKAction.wait(forDuration: 0.25)
             let startingGroup = SKAction.group([startingScale, startingFade])
+            let startingGroupPaddle = SKAction.group([startingScalePaddle])
             let animationGroup = SKAction.group([scaleUp, fadeIn])
+            let animationGroupPaddle = SKAction.group([scaleUpPaddle])
             let animationSequence = SKAction.group([wait, animationGroup])
+            let animationSequencePaddle = SKAction.group([wait, animationGroupPaddle])
             
             scene.ball.run(startingGroup)
             scene.ball.isHidden = false
@@ -122,16 +127,16 @@ class Playing: GKState {
                 self.scene.ballStartingPositionY = self.scene.ball.position.y
                 // Resets the ball's starting position incase it is moved during the animation in
             })
-            scene.paddle.run(startingGroup)
+            scene.paddle.run(startingGroupPaddle)
             scene.paddle.isHidden = false
-            scene.paddle.run(animationSequence, completion: {
+            scene.paddle.run(animationSequencePaddle, completion: {
                 self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             })
             
             if scene.paddleTexture == scene.retroPaddle {
-                scene.paddleRetroTexture.run(startingGroup)
+                scene.paddleRetroTexture.run(startingGroupPaddle)
                 scene.paddleRetroTexture.isHidden = false
-                scene.paddleRetroTexture.run(animationSequence)
+                scene.paddleRetroTexture.run(animationSequencePaddle)
             }
             // Animate paddle and ball in
         // Don't animate if resuming from save

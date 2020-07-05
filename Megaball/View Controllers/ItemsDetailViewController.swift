@@ -73,40 +73,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
-        var unlockedCount: Int = 0
-        var arrayCount: Int = 0
-        
-        switch senderID {
-        case 0:
-            unlockedCount = LevelPackSetup().appIconUnlockedArray.filter{$0 == true}.count
-            arrayCount = LevelPackSetup().appIconUnlockedArray.count
-            titleLabel.text = "APP ICONS"
-        case 1:
-            unlockedCount = LevelPackSetup().powerUpUnlockedArray.filter{$0 == true}.count
-            arrayCount = LevelPackSetup().powerUpUnlockedArray.count
-            titleLabel.text = "POWER-UPS"
-        case 2:
-            unlockedCount = LevelPackSetup().ballUnlockedArray.filter{$0 == true}.count
-            arrayCount = LevelPackSetup().ballUnlockedArray.count
-            titleLabel.text = "BALLS"
-        case 3:
-            unlockedCount = LevelPackSetup().paddleUnlockedArray.filter{$0 == true}.count
-            arrayCount = LevelPackSetup().paddleUnlockedArray.count
-            titleLabel.text = "PADDLES"
-        case 4:
-            unlockedCount = LevelPackSetup().brickUnlockedArray.filter{$0 == true}.count
-            arrayCount = LevelPackSetup().brickUnlockedArray.count
-            titleLabel.text = "BRICKS"
-        case 5:
-            unlockedCount = 0
-            arrayCount = 0
-            titleLabel.text = "ACHIEVEMENTS"
-        default:
-            break
-        }
-        
-        unlockedLabel.text = "UNLOCKED: \(unlockedCount)/\(arrayCount)"
-        
         itemsTableView.rowHeight = 70.0
         
         userSettings()
@@ -114,31 +80,71 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if parallaxSetting! {
             addParallax()
         }
+        lockedCount()
         itemsTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
     }
     
+    func lockedCount() {
+        var unlockedCount: Int = 0
+        var arrayCount: Int = 0
+        switch senderID {
+        case 0:
+            unlockedCount = totalStatsArray[0].appIconUnlockedArray.filter{$0 == true}.count
+            arrayCount = totalStatsArray[0].appIconUnlockedArray.count
+            titleLabel.text = "APP ICONS"
+        case 1:
+            unlockedCount = totalStatsArray[0].powerUpUnlockedArray.filter{$0 == true}.count
+            arrayCount = totalStatsArray[0].powerUpUnlockedArray.count
+            titleLabel.text = "POWER-UPS"
+        case 2:
+            unlockedCount = totalStatsArray[0].ballUnlockedArray.filter{$0 == true}.count
+            arrayCount = totalStatsArray[0].ballUnlockedArray.count
+            titleLabel.text = "BALLS"
+        case 3:
+            unlockedCount = totalStatsArray[0].paddleUnlockedArray.filter{$0 == true}.count
+            arrayCount = totalStatsArray[0].paddleUnlockedArray.count
+            titleLabel.text = "PADDLES"
+        case 4:
+            unlockedCount = totalStatsArray[0].brickUnlockedArray.filter{$0 == true}.count
+            arrayCount = totalStatsArray[0].brickUnlockedArray.count
+            titleLabel.text = "BRICKS"
+        case 5:
+            unlockedCount = totalStatsArray[0].achievementsUnlockedArray.filter{$0 == true}.count
+            arrayCount = totalStatsArray[0].achievementsUnlockedArray.count
+            titleLabel.text = "ACHIEVEMENTS"
+        default:
+            break
+        }
+        if senderID == 5 {
+            unlockedLabel.text = "COMPLETE: \(unlockedCount)/\(arrayCount)"
+        } else {
+            unlockedLabel.text = "UNLOCKED: \(unlockedCount)/\(arrayCount)"
+        }
+    }
+    // Update locked/unlocked count
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         if senderID == 0 {
         // App icons
-            return LevelPackSetup().appIconUnlockedArray.count
+            return totalStatsArray[0].appIconUnlockedArray.count
         } else if senderID == 1 {
         // Power-ups
-            return LevelPackSetup().powerUpUnlockedArray.count
+            return totalStatsArray[0].powerUpUnlockedArray.count
         } else if senderID == 2 {
         // Balls
-            return LevelPackSetup().ballUnlockedArray.count
+            return totalStatsArray[0].ballUnlockedArray.count
         } else if senderID == 3 {
         // Paddles
-            return LevelPackSetup().paddleUnlockedArray.count
+            return totalStatsArray[0].paddleUnlockedArray.count
         } else if senderID == 4 {
         // Bricks
-            return LevelPackSetup().brickUnlockedArray.count
-        } else if senderID == 4 {
+            return totalStatsArray[0].brickUnlockedArray.count
+        } else if senderID == 5 {
         // Achievements
-            return 2
+            return LevelPackSetup().achievementsNameArray.count
         } else {
         // default
             return 1
@@ -164,7 +170,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if appIconSetting == indexPath.row {
                 cell.tickImage.isHidden = false
             }
-            if LevelPackSetup().appIconUnlockedArray[indexPath.row] == false {
+            if totalStatsArray[0].appIconUnlockedArray[indexPath.row] == false {
                 cell.settingDescription.text = "Locked"
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = 10
@@ -201,7 +207,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             }
             // Shows collection percentage stat
             
-            if LevelPackSetup().powerUpUnlockedArray[indexPath.row] == false {
+            if totalStatsArray[0].powerUpUnlockedArray[indexPath.row] == false {
                 cell.settingDescription.text = "Locked"
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = 8
@@ -228,7 +234,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.tickImage.isHidden = false
             }
             
-            if LevelPackSetup().ballUnlockedArray[indexPath.row] == false {
+            if totalStatsArray[0].ballUnlockedArray[indexPath.row] == false {
                 cell.settingDescription.text = "Locked"
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
@@ -255,7 +261,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.tickImage.isHidden = false
             }
             
-            if LevelPackSetup().paddleUnlockedArray[indexPath.row] == false {
+            if totalStatsArray[0].paddleUnlockedArray[indexPath.row] == false {
                 cell.settingDescription.text = "Locked"
                 cell.settingState.text = ""
                 cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
@@ -287,13 +293,35 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.tickImage.isHidden = false
             }
                         
-            if LevelPackSetup().brickUnlockedArray[indexPath.row] == false {
+            if totalStatsArray[0].brickUnlockedArray[indexPath.row] == false {
                 cell.settingDescription.text = "Locked"
                 cell.settingState.text = ""
                 cell.blurView.isHidden = false
                 cell.lockedImageView.isHidden = false
             }
             // Locked paddles hidden until unlocked
+        }
+        
+        if senderID == 5 {
+        // Achievements
+            cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.1483144264)
+            cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
+            cell.settingDescription.text = LevelPackSetup().achievementsNameArray[indexPath.row]
+            cell.settingDescription.font = cell.settingDescription.font.withSize(15)
+            cell.centreLabel.text = ""
+            cell.settingState.text = ""
+            if totalStatsArray[0].achievementsUnlockedArray[indexPath.row] {
+                cell.tickImage.isHidden = false
+                cell.iconImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!
+//                cell.settingState.isHidden = true
+            } else {
+                cell.tickImage.isHidden = true
+                cell.iconImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
+            }
+            if totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row] != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
+                cell.settingState.text = totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row]
+            }
+            // Show percentage complete if achievement has percentage complete and isn't complete
         }
         
         UIView.animate(withDuration: 0.2) {
@@ -321,7 +349,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         if senderID == 0 {
         // App icon
-            if LevelPackSetup().appIconUnlockedArray[indexPath.row] {
+            if totalStatsArray[0].appIconUnlockedArray[indexPath.row] {
                 appIconSetting = indexPath.row
                 defaults.set(appIconSetting!, forKey: "appIconSetting")
                 changeIcon(to: LevelPackSetup().appIconNameArray[indexPath.row])
@@ -331,16 +359,16 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         if senderID == 1 {
         // Power-ups
-            if LevelPackSetup().powerUpUnlockedArray[indexPath.row] {
+            if totalStatsArray[0].powerUpUnlockedArray[indexPath.row] {
                 hideAnimate()
-                moveToItemStats(powerUpIndex: indexPath.row)
+                moveToItemStats(passedIndex: indexPath.row, sender: "Power-Ups")
             }
             // Don't allow into menu if power-up is locked
         }
         
         if senderID == 2 {
         // Ball selection
-            if LevelPackSetup().ballUnlockedArray[indexPath.row] {
+            if totalStatsArray[0].ballUnlockedArray[indexPath.row] {
                 ballSetting = indexPath.row
                 defaults.set(ballSetting!, forKey: "ballSetting")
             }
@@ -357,6 +385,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Brick selection
             brickSetting = indexPath.row
             defaults.set(brickSetting!, forKey: "brickSetting")
+        }
+        
+        if senderID == 5 {
+        // Achievements
+            hideAnimate()
+            moveToItemStats(passedIndex: indexPath.row, sender: "Achievements")
+            // Don't allow into menu if power-up is locked
         }
 
         tableView.deselectRow(at: indexPath, animated: true)
@@ -454,9 +489,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
     }
     
-    func moveToItemStats(powerUpIndex: Int) {
+    func moveToItemStats(passedIndex: Int, sender: String) {
         let itemStatsView = self.storyboard?.instantiateViewController(withIdentifier: "itemsStatsView") as! ItemsStatsViewController
-        itemStatsView.powerUpIndex = powerUpIndex
+        itemStatsView.passedIndex = passedIndex
+        itemStatsView.sender = sender
         self.addChild(itemStatsView)
         itemStatsView.view.frame = self.view.frame
         self.view.addSubview(itemStatsView.view)

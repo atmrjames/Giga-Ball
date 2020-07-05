@@ -59,18 +59,23 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     
     func createInterstitial() {
+        interstitial = createInterstitialAd()
+    }
+    
+    func createInterstitialAd() -> GADInterstitial {
         print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
-        interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")
+        let interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")
         interstitial.delegate = self
         interstitial.load(GADRequest())
+        return interstitial
     }
     
     func loadInterstitial() {
         if self.interstitial.isReady {
-//            print("llama llama ad ready")
+            print("llama llama ad ready")
             self.interstitial.present(fromRootViewController: self)
         } else {
-//            print("llama llama ad not ready")
+            print("llama llama ad not ready")
             createInterstitial()
             // Setup next ad when the current one is closed
             NotificationCenter.default.post(name: .closeAd, object: nil)
@@ -111,13 +116,14 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Show PauseMenuViewController as popup
     
-    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool) {
+    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int) {
         let inbetweenView = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenView") as! InbetweenViewController
         inbetweenView.levelNumber = levelNumber
         inbetweenView.packNumber = packNumber
         inbetweenView.totalScore = score
         inbetweenView.levelScoreBonus = levelTimerBonus
         inbetweenView.firstLevel = firstLevel
+        inbetweenView.numberOfLevels = numberOfLevels
         // Update pause menu view controller properties with function input values
         self.addChild(inbetweenView)
         inbetweenView.view.frame = self.view.frame

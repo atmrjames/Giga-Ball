@@ -118,7 +118,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tableView == self.statsTableView {
-            return 6
+            return 7
         } else {
             return numberOfLevels!
         }
@@ -218,6 +218,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     cell.statValue.text = String(averageScore)
                 }
                 return cell
+            case 6:
+                if numberOfAttempts == 0 || packStatsArray[packNumber!].numberOfCompletes <= 0 {
+                    hideCell(cell: cell)
+                } else {
+                    statsTableView.rowHeight = 35.0
+                    cell.statDescription.text = "Best time (s)"
+                    let bestTime = packStatsArray[packNumber!].bestTime
+                    cell.statValue.text = String(bestTime)
+                }
+                return cell
             default:
                 return cell
             }
@@ -238,9 +248,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
             }
-            
-            if LevelPackSetup().levelUnlockedArray[startLevel!+indexPath.row] == false {
-                cell.levelNameLabel.text = "Unlocked by completing Level "+String(indexPath.row)
+
+            if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] == false {
+                cell.levelNameLabel.text = "Locked"
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
                 cell.blurView.isHidden = false
@@ -269,7 +279,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
             }
             
-            if LevelPackSetup().levelUnlockedArray[startLevel!+indexPath.row] {
+            if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] {
                 moveToLevelStatsSetup(sender: indexPath.row)
             }
             // Don't allow selection if level is locked
@@ -360,20 +370,25 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        
         if indexPath.row == 0 {
+            if self.hapticsSetting! {
+                self.interfaceHaptic.impactOccurred()
+            }
             removeAnimate()
             NotificationCenter.default.post(name: .returnPackSelectNotification, object: nil)
         }
         if indexPath.row == 1 {
             if gameCenterSetting! {
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 showGameCenterLeaderboards()
             }
         }
         if indexPath.row == 2 {
+            if self.hapticsSetting! {
+                self.interfaceHaptic.impactOccurred()
+            }
             moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
         }
         
@@ -382,23 +397,29 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
                 if self.gameCenterSetting! {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
             default:
                 print("Error: Out of range")
@@ -408,23 +429,29 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .identity
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
                 if self.gameCenterSetting! {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonPlay")
             default:
                 print("Error: Out of range")
@@ -593,13 +620,29 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func updateLabels() {
         titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
         numberOfAttempts = packStatsArray[packNumber!].scores.count
+        var numberOfUnlockedLevels = 0
+        let packFirstLevel = LevelPackSetup().startLevelNumber[packNumber!]
+        let packLastNumber = packFirstLevel + numberOfLevels!-1
+        var levelIndex = packFirstLevel
+        while levelIndex-packFirstLevel <= numberOfLevels!-1 {
+            if totalStatsArray[0].levelUnlockedArray[levelIndex] {
+                numberOfUnlockedLevels+=1
+            }
+            levelIndex+=1
+        }
+        
+        // 3/10 levels
+        
         if numberOfLevels! == 1 {
             levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Level", for: .normal)
         } else {
-            levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Levels", for: .normal)
+            if numberOfUnlockedLevels == numberOfLevels {
+                levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Levels", for: .normal)
+            } else {
+                // 3/10 levels
+                levelsHeaderLabel.setTitle(String(numberOfUnlockedLevels)+"/"+String(numberOfLevels!)+" Levels", for: .normal)
+            }
         }
-        
-//        playButtonLabel.setTitle("Play " + LevelPackSetup().packTitles[packNumber!], for: .normal)
     }
     
     func reloadData() {

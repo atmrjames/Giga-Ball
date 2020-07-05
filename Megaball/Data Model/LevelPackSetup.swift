@@ -8,6 +8,10 @@
 
 import Foundation
 import UIKit
+import GameplayKit
+import GameKit
+
+// This is always constant and never changes throughout use of app - can be referred to directly
 
 class LevelPackSetup {
     let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
@@ -29,22 +33,6 @@ class LevelPackSetup {
         "Challenge Pack"
     ]
     
-    let levelPackUnlockedArray: [Bool] = [
-        true, // Tutorial
-        true, // Endless Mode
-        true, // Classic
-        true, // Space
-        true, // Nature
-        true, // Urban
-        true, // Food
-        true, // Computer
-        true, // Body
-        true, // World
-        true, // Emoji
-        true, // Numbers
-        true // Challenge
-    ]
-    
     let ballImageArray: [UIImage] = [
         UIImage(named:"ballNormal.png")!,
         UIImage(named:"3DBall.png")!,
@@ -52,11 +40,10 @@ class LevelPackSetup {
         UIImage(named:"diamondBall.png")!,
         UIImage(named:"beachBall.png")!,
         UIImage(named:"concentricBall.png")!,
-        UIImage(named:"reuleauxBall.png")!,
+        UIImage(named:"pixelBall.png")!,
         UIImage(named:"dotBall.png")!,
         UIImage(named:"hobBall.png")!,
-        UIImage(named:"spiralBall.png")!,
-        UIImage(named:"pixelBall.png")!,
+        UIImage(named:"reuleauxBall.png")!,
         UIImage(named:"loadingBall.png")!,
         UIImage(named:"retroBall.png")!
     ]
@@ -68,29 +55,12 @@ class LevelPackSetup {
         "Diamond",
         "Beach Ball",
         "Concentric",
-        "Reuleaux",
+        "Pixel",
         "Dots",
         "Spokes",
-        "Spiral",
-        "Pixel",
+        "Reuleaux",
         "Rainbow",
         "Retro"
-    ]
-    
-    let ballUnlockedArray: [Bool] = [
-        true, // Classic
-        true, // 3D
-        true, // Outline
-        true, // Diamond
-        true, // Beach ball
-        true, // Concentric
-        true, // Reuleaux
-        true, // Dots
-        true, // Spokes
-        true, // Spiral
-        true, // Pixel
-        true, // Rainbow
-        true // Retro
     ]
     
     let ballIconArray: [UIImage] = [
@@ -100,11 +70,10 @@ class LevelPackSetup {
         UIImage(named:"diamondBallIcon.png")!,
         UIImage(named:"beachBallIcon.png")!,
         UIImage(named:"concentricBallIcon.png")!,
-        UIImage(named:"reuleauxBallIcon.png")!,
+        UIImage(named:"pixelBallIcon.png")!,
         UIImage(named:"dotBallIcon.png")!,
         UIImage(named:"hobBallIcon.png")!,
-        UIImage(named:"spiralBallIcon.png")!,
-        UIImage(named:"pixelBallIcon.png")!,
+        UIImage(named:"reuleauxBallIcon.png")!,
         UIImage(named:"loadingBallIcon.png")!,
         UIImage(named:"retroBallIcon.png")!
     ]
@@ -132,26 +101,11 @@ class LevelPackSetup {
         "Ice",
         "Glass",
         "Pixel",
-        "Giga",
+        "Giga-Paddle",
         "Candy Cane",
         "Split",
         "Rainbow",
         "Retro"
-    ]
-    
-    let paddleUnlockedArray: [Bool] = [
-        true, // Classic
-        true, // 3D
-        true, // Outline
-        true, // Square
-        true, // Ice
-        true, // Glass
-        true, // Pixel
-        true, // Giga
-        true, // Candy Cane
-        true, // Split
-        true, // Rainbow
-        true // Retro
     ]
     
     let paddleIconArray: [UIImage] = [
@@ -170,6 +124,7 @@ class LevelPackSetup {
     ]
     
     let appIconImageArray: [UIImage] = [
+        UIImage(named:"Purple.png")!,
         UIImage(named:"White.png")!,
         UIImage(named:"Yellow.png")!,
         UIImage(named:"Orange.png")!,
@@ -178,13 +133,13 @@ class LevelPackSetup {
         UIImage(named:"Brown.png")!,
         UIImage(named:"Black.png")!,
         UIImage(named:"Pink.png")!,
-        UIImage(named:"Purple.png")!,
         UIImage(named:"GigaBall.png")!,
         UIImage(named:"Rainbow.png")!,
         UIImage(named:"Retro.png")!
     ]
     
     let appIconNameArray: [String] = [
+        "Purple",
         "White",
         "Yellow",
         "Orange",
@@ -193,25 +148,9 @@ class LevelPackSetup {
         "Brown",
         "Black",
         "Pink",
-        "Purple",
         "Giga-Ball",
         "Rainbow",
         "Retro"        
-    ]
-    
-    let appIconUnlockedArray: [Bool] = [
-        true, // White
-        true, // Yellow
-        true, // Orange
-        true, // Green
-        true, // Blue
-        true, // Brown
-        true, // Black
-        true, // Pink
-        true, // Purple
-        true, // Giga-Ball
-        true, // Rainbow
-        true // Retro
     ]
     
     let brickImageArray: [UIImage] = [
@@ -222,11 +161,6 @@ class LevelPackSetup {
     let brickNameArray: [String] = [
         "Classic",
         "Retro"
-    ]
-    
-    let brickUnlockedArray: [Bool] = [
-        true, // Classic
-        true // Retro
     ]
     
     let brickIconArray: [UIImage] = [
@@ -483,143 +417,6 @@ class LevelPackSetup {
         "Finish Line"
     ]
     
-    let levelUnlockedArray: [Bool] = [
-        
-        true, // Endless mode
-        
-        // Classic Pack
-        true, // Checkers
-        true, // Electric Fence
-        true, // Gateway
-        true, // Surfer's Paradise
-        true, // Chevron
-        true, // Vignette
-        true, // Cluster
-        true, // Vertical Challenge
-        true, // Horizontal Challenge
-        true, // X Marks The Spot
-        
-        // Space Pack
-        true, // Cresent Moon
-        true, // Invader
-        true, // Constellation
-        true, // Star
-        true, // Rocket
-        true, // Galaxy
-        true, // Meteor Shower
-        true, // Neptune
-        true, // Saturn
-        true, // Meteorite
-
-        // Nature Pack
-        true, // Leaf
-        true, // Rainbow
-        true, // Egg
-        true, // Tree
-        true, // Sunset
-        true, // Apple
-        true, // Flower
-        true, // Birds
-        true, // Germ
-        true, // Butterfly
-        
-        // Urban Pack
-        true, // City Map
-        true, // Skyscraper
-        true, // Subway
-        true, // Cottage
-        true, // Traffic Light
-        true, // Finance
-        true, // Apartments
-        true, // City Hall
-        true, // Bridge
-        true, // Cityscape Reflection
-        
-        // Food Pack
-        true, // Hotdog
-        true, // Piece of Cake
-        true, // Wine Glass
-        true, // Fried Egg
-        true, // BBQ
-        true, // Kebabs
-        true, // Ice Cream
-        true, // Burger
-        true, // Pudding
-        true, // Chocolate Bar
-        
-        // Computer Pack
-        true, // Command
-        true, // Save
-        true, // @
-        true, // Mail
-        true, // Watch
-        true, // Trash
-        true, // Bug
-        true, // Zoom
-        true, // Battery
-        true, // Hour Glass
-        
-        // Body Pack
-        true, // Heart
-        true, // Brain
-        true, // Skull
-        true, // Intestine
-        true, // Lips
-        true, // Eye
-        true, // Kidney
-        true, // Tooth
-        true, // Lungs
-        true, // Face
-        
-        // World Pack
-        true, // Globe
-        true, // Pyramid
-        true, // Union Jack
-        true, // Compass
-        true, // Mountain
-        true, // Africa
-        true, // Island
-        true, // Partly Cloudy
-        true, // Maple Leaf
-        true, // Volcano
-        
-        // Emoji Pack
-        true, // Smiling Face
-        true, // Eyes
-        true, // Fire
-        true, // Weird Fish
-        true, // Winking Face
-        true, // Peach
-        true, // Ghost
-        true, // Augerbene / Eggplant
-        true, // Crying Face
-        true, // Poo
-        
-        // Numbers Pack
-        true, // One
-        true, // Two
-        true, // Three
-        true, // Four
-        true, // Five
-        true, // Six
-        true, // Seven
-        true, // Eight
-        true, // Nine
-        true, // Zero
-        
-        // Challenge Pack
-        true, // Lonesome Brick
-        true, // Kerplunk
-        true, // Gradient
-        true, // Restriction
-        true, // Barricade
-        true, // Minefield
-        true, // Split Screen
-        true, // Pimple
-        true, // Ringfence
-        true // Finish Line
-    ]
-    
     let levelLeaderboardsArray: [String] = [
         
         // Endless Mode
@@ -760,38 +557,6 @@ class LevelPackSetup {
         "Decrease Ball Size"
     ]
     
-    let powerUpUnlockedArray: [Bool] = [
-        true, // Get a Life
-        true, // Lose a Life
-        true, // Decrease Ball Speed
-        true, // Increase Ball Speed
-        true, // Increase Paddle Size
-        true, // Decrease Paddle Size
-        true, //false, // Sticky Paddle
-        true, //false, // Gravity
-        true, // +100 Points
-        true, // -100 Points Small
-        true, //false +1000 Points
-        true, //false -1000 Points
-        true, //false, // x2 Multiplier
-        true, //false, // Reset Multiplier
-        true, // Next Level
-        true, // Show All Bricks
-        true, // Hide Bricks
-        true, // Clear Multi-Hit Bricks
-        true, // Reset Multi-Hit Bricks
-        true, // Remove Indestructible Bricks
-        true, //false, // Giga-Ball
-        true, //false, // Undestructi-Ball
-        true, //false, // Lasers
-        true, //false, // Quicksand
-        true, //false, // Mystery
-        true, //false, // Backstop
-        true, //false, // Increase Ball Size
-        true //false // Decrease Ball Size
-    ]
-    // true == unlocked, false = locked
-    
     let powerUpDescriptionArray: [String] = [
         "Gives you an extra life",
         "Kills the ball in play",
@@ -883,5 +648,282 @@ class LevelPackSetup {
         "10",
         "10",
         "10"
+    ]
+    
+    let achievementsNameArray: [String] = [
+        "Endless Mode 10m Milestone", // 0 achievementEndlessTen
+        "Endless Mode 100m Milestone", // 1 achievementEndlessHundred
+        "Endless Mode 500m Milestone", // 2 achievementEndlessFiveHundred
+        "Endless Mode 1,000m Milestone", // 3 achievementEndlessOneK
+        "Endless Mode 5,000m Total Height", // 4 achievementEndlessFiveK
+        "Endless Mode 10,000m Total Height", // 5 achievementEndlessTenK
+        "Classic Pack Complete", // 6 classicPackComplete
+        "Space Pack Complete", // 7 spacePackComplete
+        "Nature Pack Complete", // 8 naturePackComplete
+        "Urban Pack Complete", // 9 urbanPackComplete
+        "Food Pack Complete", // 10 foodPackComplete
+        "Computer Pack Complete", // 11 computerPackComplete
+        "Body Pack Complete", // 12 bodyPackComplete
+        "World Pack Complete", // 13 worldPackComplete
+        "Emoji Pack Complete", // 14 emojiPackComplete
+        "Numbers Pack Complete", // 15 numbersPackComplete
+        "Challenge Pack Complete", // 16 challengePackComplete
+        "Endless Mode 1 Minute Milestone", // 17 endlessOneMins
+        "Endless Mode 5 Minute Milestone", // 18 endlessFiveMins
+        "Endless Mode 10 Minute Milestone", // 19 endlessTenMins
+        "Endless Mode 30 Minute Milestone", // 20 endlessThirtyMins
+        "Endless Mode 1 Hour Milestone", // 21 endlessSixtyMins
+        "Tidying Up", // 22 endlessCleared
+        "Taking The Plunge", // 23 mysteryPowerUp
+        "Now We’re Talking", // 24 firstPowerUp
+        "Giga-Lasers!", // 25 gigaLasers
+        "Didn’t Even Need It", // 26 endBackstop
+        "That’s My Favourite", // 27 favouritePowerUp
+        "100 And Counting", // 28 powerUpCollectorHundred
+        "Hoarder", // 29 powerUpCollectorThousand
+        "Picky", // 30 powerUpLeaverHundred
+        "Power-Up Shy", // 31 powerUpLeaverThousand
+        "This Is Too Easy", // 32 maxPaddleSize
+        "Good Luck", // 33 minPaddleSize
+        "Beach Ball", // 34 maxBallSize
+        "Pinball", // 35 minBallSize
+        "Invincible", // 36 noBallsLost
+        "Hanging on", // 37 threeBallsLost
+        "Super Powers", // 38 allLevelPowerUps
+        "Mere Mortal", // 39 noLevelPowerUps
+        "Giga-Speedy", // 40 quickLevelComplete
+        "Supreme Paddle Efficiency", // 41 fivePaddleHits
+        "Paddle Master", // 42 tenPaddleHits
+        "5,000 Points On 1 Level", // 43 fiveKPointsLevel
+        "10,000 Points On 1 Level", // 44 tenKPointsLevel
+        "1 Level Down", // 45 oneLevelsComplete
+        "Level Decade", // 46 tenLevelsComplete
+        "Level Century", // 47 hunderdLevelsComplete
+        "Level Millennium", // 48 oneKLevelsComplete
+        "Level 10 Millenia", // 49 tenKLevelsComplete
+        "Panic Move", // 50 paddleSpeed
+        "100,000 And Counting", // 51 hundredKTotalScore
+        "Half A Mill", // 52 fiveHundredKTotalScore
+        "Millionaire", // 53 millTotalScore
+        "God-Like", // 54 noBallsLostPack
+        "More Balls Please", // 55 tenBallsLostPack
+        "Super Hero", // 56 allPackPowerUps
+        "Serial Dodger", // 57 noPackPowerUps
+        "And Time", // 58 quickPackComplete
+        "10,000 Points On 1 Pack", // 59 tenKPointsPack
+        "25,000 Points On 1 Pack", // 60 twoFiveKPointsPack
+        "50,000 Points On 1 Pack", // 61 fiftyKPointsPack
+        "1 Pack Down", // 62 onePacksComplete
+        "Pack Decade", // 63 tenPacksComplete
+        "Pack Century", // 64 hundredPacksComplete
+        "Pack Millennium" // 65 thousandPacksComplete
+    ]
+    let achievementsPreEarnedDescriptionArray: [String] = [
+        "Reach 10m in Endless Mode", // 0 achievementEndlessTen
+        "Reach 100m in Endless Mode", // 1 achievementEndlessHundred
+        "Reach 500m in Endless Mode", // 2 achievementEndlessFiveHundred
+        "Reach 1,000m in Endless Mode", // 3 achievementEndlessOneK
+        "Reach 5,000m Total Height in Endless Mode", // 4 achievementEndlessFiveK
+        "Reach 10,000m Total Height in Endless Mode", // 5 achievementEndlessTenK
+        "Complete all levels in Classic Pack", // 6 classicPackComplete
+        "Complete all levels in Space Pack", // 7 spacePackComplete
+        "Complete all levels in Nature Pack", // 8 naturePackComplete
+        "Complete all levels in Urban Pack", // 9 urbanPackComplete
+        "Complete all levels in Food Pack", // 10 foodPackComplete
+        "Complete all levels in Computer Pack", // 11 computerPackComplete
+        "Complete all levels in Body Pack", // 12 bodyPackComplete
+        "Complete all levels in World Pack", // 13 worldPackComplete
+        "Complete all levels in Emoji Pack", // 14 emojiPackComplete
+        "Complete all levels in Numbers Pack", // 15 numbersPackComplete
+        "Complete all levels in Challenge Pack", // 16 challengePackComplete
+        "Survive 1 minute in Endless Mode", // 17 endlessOneMins
+        "Survive 5 minutes in Endless Mode", // 18 endlessFiveMins
+        "Survive 10 minutes in Endless Mode", // 19 endlessTenMins
+        "Survive 30 minutes in Endless Mode", // 20 endlessThirtyMins
+        "Survive 1 hour in Endless Mode", // 21 endlessSixtyMins
+        "Clear Endless Mode of all active bricks", // 22 endlessCleared
+        "Collect Mystery power-up for the first time", // 23 mysteryPowerUp
+        "Collect power-up for the first time", // 24 firstPowerUp
+        "Have Giga-Ball and Lasers power-up at the same time", // 25 gigaLasers
+        "End level with Backstop power-up still active", // 26 endBackstop
+        "Collect a single power-up 100 times", // 27 favouritePowerUp
+        "Collect 100 power-ups", // 28 powerUpCollectorHundred
+        "Collect 1000 power-ups", // 29 powerUpCollectorThousand
+        "Leave 100 power-ups", // 30 powerUpLeaverHundred
+        "Leave 1000 power-ups", // 31 powerUpLeaverThousand
+        "Expand the paddle to its maximum width", // 32 maxPaddleSize
+        "Shrink the paddle to its minimum width", // 33 minPaddleSize
+        "Expand the ball to its maximum size", // 34 maxBallSize
+        "Shrink the ball to its minimum size", // 35 minBallSize
+        "Complete level without losing ball", // 36 noBallsLost
+        "Complete level losing 3 or more balls", // 37 threeBallsLost
+        "Collect all power-ups on a level", // 38 allLevelPowerUps
+        "Collect no power-ups on a level", // 39 noLevelPowerUps
+        "Complete level in under a minute", // 40 quickLevelComplete
+        "Complete level in 5 or fewer paddle hits", // 41 fivePaddleHits
+        "Complete level in 10 or fewer paddle hits", // 42 tenPaddleHits
+        "Collect 5,000 points on a single level", // 43 fiveKPointsLevel
+        "Collect 10,000 points on a single level", // 44 tenKPointsLevel
+        "Complete first level", // 45 oneLevelsComplete
+        "Complete 10 levels", // 46 tenLevelsComplete
+        "Complete 100 levels", // 47 hunderdLevelsComplete
+        "Complete 1,000 levels", // 48 oneKLevelsComplete
+        "Complete 10,000 levels", // 49 tenKLevelsComplete
+        "Move the paddle at incredible speeds", // 50 paddleSpeed
+        "Earn 100,000 total points", // 51 hundredKTotalScore
+        "Earn 500,000 total points", // 52 fiveHundredKTotalScore
+        "Earn 1,000,000 total points", // 53 millTotalScore
+        "Complete pack without losing ball", // 54 noBallsLostPack
+        "Complete pack losing 10 or more balls", // 55 tenBallsLostPack
+        "Collect all power-ups on a pack", // 56 allPackPowerUps
+        "Collect no power-ups on a pack", // 57 noPackPowerUps
+        "Complete pack in under ten minutes", // 58 quickPackComplete
+        "Collect 10,000 points on a single pack", // 59 tenKPointsPack
+        "Collect 25,000 points on a single pack", // 60 twoFiveKPointsPack
+        "Collect 50,000 points on a single pack", // 61 fiftyKPointsPack
+        "Complete first pack", // 62 onePacksComplete
+        "Complete 10 packs", // 63 tenPacksComplete
+        "Complete 100 packs", // 64 hundredPacksComplete
+        "Complete 1,000 packs" // 65 thousandPacksComplete
+    ]
+    let achievementsEarnedDescriptionArray: [String] = [
+        "Passed 10m in Endless Mode", // 0 achievementEndlessTen
+        "Passed 100m in Endless Mode", // 1 achievementEndlessHundred
+        "Passed 500m in Endless Mode", // 2 achievementEndlessFiveHundred
+        "Passed 1,000m in Endless Mode", // 3 achievementEndlessOneK
+        "Passed 5,000m Total Height in Endless Mode", // 4 achievementEndlessFiveK
+        "Passed 10,000m Total Height in Endless Mode", // 5 achievementEndlessTenK
+        "Passed all levels in Classic Pack", // 6 classicPackComplete
+        "Passed all levels in Space Pack", // 7 spacePackComplete
+        "Passed all levels in Nature Pack", // 8 naturePackComplete
+        "Passed all levels in Urban Pack", // 9 urbanPackComplete
+        "Passed all levels in Food Pack", // 10 foodPackComplete
+        "Passed all levels in Computer Pack", // 11 computerPackComplete
+        "Passed all levels in Body Pack", // 12 bodyPackComplete
+        "Passed all levels in World Pack", // 13 worldPackComplete
+        "Passed all levels in Emoji Pack", // 14 emojiPackComplete
+        "Passed all levels in Numbers Pack", // 15 numbersPackComplete
+        "Passed all levels in Challenge Pack", // 16 challengePackComplete
+        "Survived 1 minute in Endless Mode", // 17 endlessOneMins
+        "Survived 5 minutes in Endless Mode", // 18 endlessFiveMins
+        "Survived 10 minutes in Endless Mode", // 19 endlessTenMins
+        "Survived 30 minutes in Endless Mode", // 20 endlessThirtyMins
+        "Survived 1 hour in Endless Mode", // 21 endlessSixtyMins
+        "Endless Mode cleared of all active bricks", // 22 endlessCleared
+        "Collected Mystery power-up", // 23 mysteryPowerUp
+        "Collected first power-up", // 24 firstPowerUp
+        "Had Giga-Ball and Lasers power-up at the same time", // 25 gigaLasers
+        "Ended level with Backstop power-up still active", // 26 endBackstop
+        "Collected a single power-up 100 times", // 27 favouritePowerUp
+        "Collected 100 power-ups", // 28 powerUpCollectorHundred
+        "Collected 1000 power-ups", // 29 powerUpCollectorThousand
+        "Left 100 power-ups", // 30 powerUpLeaverHundred
+        "Left 1000 power-ups", // 31 powerUpLeaverThousand
+        "Paddle expanded to its maximum width", // 32 maxPaddleSize
+        "Paddle shrunk to its minimum width", // 33 minPaddleSize
+        "Ball expanded to its maximum size", // 34 maxBallSize
+        "Ball shrunk to its minimum size", // 35 minBallSize
+        "Level completed without losing ball", // 36 noBallsLost
+        "Level completed losing 3 or more balls", // 37 threeBallsLost
+        "All power-ups on a level collected", // 38 allLevelPowerUps
+        "No power-ups on a level collected", // 39 noLevelPowerUps
+        "Level completed in under a minute", // 40 quickLevelComplete
+        "Level completed in 5 or fewer paddle its", // 41 fivePaddleHits
+        "Level completed in 10 or fewer paddle its", // 42 tenPaddleHits
+        "5,000 points collected on a single level", // 43 fiveKPointsLevel
+        "10,000 points collected on a single level", // 44 tenKPointsLevel
+        "First level completed", // 45 oneLevelsComplete
+        "Completed 10 levels", // 46 tenLevelsComplete
+        "Completed 100 levels", // 47 hunderdLevelsComplete
+        "Completed 1,000 levels", // 48 oneKLevelsComplete
+        "Completed 10,000 levels", // 49 tenKLevelsComplete
+        "Paddle moved at incredible speeds", // 50 paddleSpeed
+        "100,000 total points earned", // 51 hundredKTotalScore
+        "500,000 total points earned", // 52 fiveHundredKTotalScore
+        "1,000,000 total points earned", // 53 millTotalScore
+        "Pack completed without losing ball", // 54 noBallsLostPack
+        "Level pack losing 10 or more balls", // 55 tenBallsLostPack
+        "All power-ups on a pack collected", // 56 allPackPowerUps
+        "No power-ups on a pack collected", // 57 noPackPowerUps
+        "Pack completed in under ten minutes", // 58 quickPackComplete
+        "10,000 points collected on a single pack", // 59 tenKPointsPack
+        "25,000 points collected on a single pack", // 60 twoFiveKPointsPack
+        "50,000 points collected on a single pack", // 61 fiftyKPointsPack
+        "First pack completed", // 62 onePacksComplete
+        "Completed 10 packs", // 63 tenPacksComplete
+        "Completed 100 packs", // 64 hundredPacksComplete
+        "Completed 1,000 packs" // 65 thousandPacksComplete
+    ]
+    let achievementsImageArray: [String] = [
+        "AchivementBadge.png", // 0 achievementEndlessTen
+        "AchivementBadge.png", // 1 achievementEndlessHundred
+        "AchivementBadge.png", // 2 achievementEndlessFiveHundred
+        "AchivementBadge.png", // 3 achievementEndlessOneK
+        "AchivementBadge.png", // 4 achievementEndlessFiveK
+        "AchivementBadge.png", // 5 achievementEndlessTenK
+        "AchivementBadge.png", // 6 classicPackComplete
+        "AchivementBadge.png", // 7 spacePackComplete
+        "AchivementBadge.png", // 8 naturePackComplete
+        "AchivementBadge.png", // 9 urbanPackComplete
+        "AchivementBadge.png", // 10 foodPackComplete
+        "AchivementBadge.png", // 11 computerPackComplete
+        "AchivementBadge.png", // 12 bodyPackComplete
+        "AchivementBadge.png", // 13 worldPackComplete
+        "AchivementBadge.png", // 14 emojiPackComplete
+        "AchivementBadge.png", // 15 numbersPackComplete
+        "AchivementBadge.png", // 16 challengePackComplete
+        "AchivementBadge.png", // 17 endlessOneMins
+        "AchivementBadge.png", // 18 endlessFiveMins
+        "AchivementBadge.png", // 19 endlessTenMins
+        "AchivementBadge.png", // 20 endlessThirtyMins
+        "AchivementBadge.png", // 21 endlessSixtyMins
+        "AchivementBadge.png", // 22 endlessCleared
+        "AchivementBadge.png", // 23 mysteryPowerUp
+        "AchivementBadge.png", // 24 firstPowerUp
+        "AchivementBadge.png", // 25 gigaLasers
+        "AchivementBadge.png", // 26 endBackstop
+        "AchivementBadge.png", // 27 favouritePowerUp
+        "AchivementBadge.png", // 28 powerUpCollectorHundred
+        "AchivementBadge.png", // 29 powerUpCollectorThousand
+        "AchivementBadge.png", // 30 powerUpLeaverHundred
+        "AchivementBadge.png", // 31 powerUpLeaverThousand
+        "AchivementBadge.png", // 32 maxPaddleSize
+        "AchivementBadge.png", // 33 minPaddleSize
+        "AchivementBadge.png", // 34 maxBallSize
+        "AchivementBadge.png", // 35 minBallSize
+        "AchivementBadge.png", // 36 noBallsLost
+        "AchivementBadge.png", // 37 threeBallsLost
+        "AchivementBadge.png", // 38 allLevelPowerUps
+        "AchivementBadge.png", // 39 noLevelPowerUps
+        "AchivementBadge.png", // 40 quickLevelComplete
+        "AchivementBadge.png", // 41 fivePaddleHits
+        "AchivementBadge.png", // 42 tenPaddleHits
+        "AchivementBadge.png", // 43 fiveKPointsLevel
+        "AchivementBadge.png", // 44 tenKPointsLevel
+        "AchivementBadge.png", // 45 oneLevelsComplete
+        "AchivementBadge.png", // 46 tenLevelsComplete
+        "AchivementBadge.png", // 47 hunderdLevelsComplete
+        "AchivementBadge.png", // 48 oneKLevelsComplete
+        "AchivementBadge.png", // 49 tenKLevelsComplete
+        "AchivementBadge.png", // 50 paddleSpeed
+        "AchivementBadge.png", // 51 hundredKTotalScore
+        "AchivementBadge.png", // 52 fiveHundredKTotalScore
+        "AchivementBadge.png", // 53 millTotalScore
+        "AchivementBadge.png", // 54 noBallsLostPack
+        "AchivementBadge.png", // 55 tenBallsLostPack
+        "AchivementBadge.png", // 56 allPackPowerUps
+        "AchivementBadge.png", // 57 noPackPowerUps
+        "AchivementBadge.png", // 58 quickPackComplete
+        "AchivementBadge.png", // 59 tenKPointsPack
+        "AchivementBadge.png", // 60 twoFiveKPointsPack
+        "AchivementBadge.png", // 61 fiftyKPointsPack
+        "AchivementBadge.png", // 62 onePacksComplete
+        "AchivementBadge.png", // 63 tenPacksComplete
+        "AchivementBadge.png", // 64 hundredPacksComplete
+        "AchivementBadge.png" // 65 thousandPacksComplete
+    ]
+    let gameCenterAchievementsArray: [GKAchievement] = [
+        GKAchievement(identifier: "onePacksComplete"),
+        GKAchievement(identifier: "endlessOneMins")
     ]
 }

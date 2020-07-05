@@ -16,10 +16,11 @@ class InbetweenViewController: UIViewController {
     var levelScoreBonus: Int = 0
     var levelScoreMinusTimerBonus: Int = 0
     var firstLevel: Bool = false
+    var numberOfLevels: Int = 0
     // Properties to store passed over data
     
     var levelNumberCorrected = 0
-    var numberOfLevels = 0
+    var numberOfPackLevels = 0
     
     var showAnimateDuration = 0.25
     
@@ -50,6 +51,8 @@ class InbetweenViewController: UIViewController {
     @IBOutlet var timeBonusScore: UILabel!
     @IBOutlet var tapLabel: UILabel!
     
+    @IBOutlet var unlockedImage: UIImageView!
+    
     @IBAction func tapGesture(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
@@ -60,6 +63,7 @@ class InbetweenViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        unlockedImage.isHidden = true
         userSettings()
         setBlur()
         if parallaxSetting! {
@@ -111,8 +115,13 @@ class InbetweenViewController: UIViewController {
         { (finished: Bool) in
             if (finished) {
                 self.contentView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-                self.levelNumberLabel.text = "Level \(self.levelNumberCorrected+1) of \(self.numberOfLevels)"
-                self.levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber+1]
+                if self.numberOfLevels == 1 {
+                    self.levelNumberLabel.text = LevelPackSetup().levelNameArray[self.levelNumber+1]
+                    self.levelNameLabel.text = "Single Level Mode"
+                } else {
+                    self.levelNumberLabel.text = "Level \(self.levelNumberCorrected+1) of \(self.numberOfPackLevels)"
+                    self.levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber+1]
+                }
                 self.packNameLabel.text = LevelPackSetup().levelPackNameArray[self.packNumber]
                 self.scoreLabel.text = ""
                 self.completeLabel.text = ""
@@ -152,8 +161,8 @@ class InbetweenViewController: UIViewController {
         levelScoreMinusTimerBonus = totalScore - levelScoreBonus
         scoreLabel.text = String(levelScoreMinusTimerBonus)
         levelNumberCorrected = levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1
-        numberOfLevels = LevelPackSetup().numberOfLevels[packNumber]
-        levelNumberLabel.text = "Level \(levelNumberCorrected) of \(numberOfLevels)"
+        numberOfPackLevels = LevelPackSetup().numberOfLevels[packNumber]
+        levelNumberLabel.text = "Level \(levelNumberCorrected) of \(numberOfPackLevels)"
         levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber]
         packNameLabel.text = LevelPackSetup().levelPackNameArray[packNumber]
         timeBonusScore.text = "+\(levelScoreBonus)"

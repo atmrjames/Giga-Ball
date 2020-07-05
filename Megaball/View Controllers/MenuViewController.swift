@@ -35,6 +35,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var brickSetting: Int?
     var appIconSetting: Int?
     var statsCollapseSetting: Bool?
+    var swipeUpPause: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -43,6 +44,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var saveBrickXPositionArray: [Int]?
     var saveBrickYPositionArray: [Int]?
     var saveBallPropertiesArray: [Double]?
+    var savePowerUpFallingXPositionArray: [Int]?
+    var savePowerUpFallingYPositionArray: [Int]?
+    var savePowerUpFallingArray: [Int]?
+    var savePowerUpActiveArray: [String]?
+    var savePowerUpActiveDurationArray: [Double]?
+    var savePowerUpActiveTimerArray: [Double]?
+    var savePowerUpActiveMagnitudeArray: [Int]?
     // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -107,7 +115,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundNotificationKeyReceived), name: .backgroundNotification, object: nil)
         // Sets up an observer to watch for the app going into the background
         
-        print(NSHomeDirectory())
+        NotificationCenter.default.addObserver(self, selector: #selector(self.cancelGameResumeNotificationKeyReceived), name: .cancelGameResume, object: nil)
+        // Sets up an observer to watch for notifications to check game resume has been cancelled from splash screen
+        
+        print(NSHomeDirectory()+"llama llama ud")
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
         
         logoButton.titleLabel?.adjustsFontSizeToFitWidth = true
@@ -119,6 +130,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         refreshView()
         authGCPlayer()
         // Game Center authorisation
+        GameCenterHandler().fetchCloudData()
         
         print("llama game save array: ", saveGameSaveArray!)
 
@@ -153,7 +165,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func addParallaxToView() {
-        var amount = 12
+        var amount = 20
         if view.frame.width > 450 {
             amount = 25
             // iPad
@@ -405,6 +417,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["brickSetting": 0])
         defaults.register(defaults: ["appIconSetting": 0])
         defaults.register(defaults: ["statsCollapseSetting": false])
+        defaults.register(defaults: ["swipeUpPause": true])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -414,6 +427,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["saveBrickXPositionArray": []])
         defaults.register(defaults: ["saveBrickYPositionArray": []])
         defaults.register(defaults: ["saveBallPropertiesArray": []])
+        defaults.register(defaults: ["savePowerUpFallingXPositionArray": []])
+        defaults.register(defaults: ["savePowerUpFallingYPositionArray": []])
+        defaults.register(defaults: ["savePowerUpFallingArray": []])
+        defaults.register(defaults: ["savePowerUpActiveArray": []])
+        defaults.register(defaults: ["savePowerUpActiveDurationArray": []])
+        defaults.register(defaults: ["savePowerUpActiveTimerArray": []])
+        defaults.register(defaults: ["savePowerUpActiveMagnitudeArray": []])
         // Game save settings
     }
     // Set default settings
@@ -497,6 +517,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if totalStatsArray.count == 0 {
             let totalStatsItem = TotalStats()
             totalStatsArray = Array(repeating: totalStatsItem, count: 1)
+            totalStatsArray[0].dateSaved = Date()
             do {
                 let data = try encoder.encode(totalStatsArray)
                 try data.write(to: totalStatsStore!)
@@ -563,6 +584,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
+        swipeUpPause = defaults.bool(forKey: "swipeUpPause")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -572,7 +594,63 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         saveBrickXPositionArray = defaults.object(forKey: "saveBrickXPositionArray") as! [Int]?
         saveBrickYPositionArray = defaults.object(forKey: "saveBrickYPositionArray") as! [Int]?
         saveBallPropertiesArray = defaults.object(forKey: "saveBallPropertiesArray") as! [Double]?
+        savePowerUpFallingXPositionArray = defaults.object(forKey: "savePowerUpFallingXPositionArray") as! [Int]?
+        savePowerUpFallingYPositionArray = defaults.object(forKey: "savePowerUpFallingYPositionArray") as! [Int]?
+        savePowerUpFallingArray = defaults.object(forKey: "savePowerUpFallingArray") as! [Int]?
+        savePowerUpActiveArray = defaults.object(forKey: "savePowerUpActiveArray") as! [String]?
+        savePowerUpActiveDurationArray = defaults.object(forKey: "savePowerUpActiveDurationArray") as! [Double]?
+        savePowerUpActiveTimerArray = defaults.object(forKey: "savePowerUpActiveTimerArray") as! [Double]?
+        savePowerUpActiveMagnitudeArray = defaults.object(forKey: "savePowerUpActiveMagnitudeArray") as! [Int]?
         // Game save settings
+        
+        
+    }
+    
+    func checkPremium() {
+        totalStatsArray[0].levelUnlockedArray[31] = true
+        totalStatsArray[0].levelUnlockedArray[41] = true
+        totalStatsArray[0].levelUnlockedArray[51] = true
+        totalStatsArray[0].levelUnlockedArray[61] = true
+        totalStatsArray[0].levelUnlockedArray[71] = true
+        totalStatsArray[0].levelUnlockedArray[81] = true
+        totalStatsArray[0].levelUnlockedArray[91] = true
+        totalStatsArray[0].levelUnlockedArray[101] = true
+        // Unlock all pack first levels
+        
+        totalStatsArray[0].levelPackUnlockedArray[5] = true
+        totalStatsArray[0].levelPackUnlockedArray[6] = true
+        totalStatsArray[0].levelPackUnlockedArray[7] = true
+        totalStatsArray[0].levelPackUnlockedArray[8] = true
+        totalStatsArray[0].levelPackUnlockedArray[9] = true
+        totalStatsArray[0].levelPackUnlockedArray[10] = true
+        totalStatsArray[0].levelPackUnlockedArray[11] = true
+        totalStatsArray[0].levelPackUnlockedArray[12] = true
+        // Unlock all level packs
+        
+        totalStatsArray[0].powerUpUnlockedArray[6] = true
+        totalStatsArray[0].powerUpUnlockedArray[7] = true
+        totalStatsArray[0].powerUpUnlockedArray[10] = true
+        totalStatsArray[0].powerUpUnlockedArray[11] = true
+        totalStatsArray[0].powerUpUnlockedArray[12] = true
+        totalStatsArray[0].powerUpUnlockedArray[13] = true
+        totalStatsArray[0].powerUpUnlockedArray[20] = true
+        totalStatsArray[0].powerUpUnlockedArray[21] = true
+        totalStatsArray[0].powerUpUnlockedArray[22] = true
+        totalStatsArray[0].powerUpUnlockedArray[23] = true
+        totalStatsArray[0].powerUpUnlockedArray[24] = true
+        totalStatsArray[0].powerUpUnlockedArray[25] = true
+        totalStatsArray[0].powerUpUnlockedArray[26] = true
+        totalStatsArray[0].powerUpUnlockedArray[27] = true
+        // Unlock all power-ups
+        
+        totalStatsArray[0].dateSaved = Date()
+        do {
+            let data = try encoder.encode(self.totalStatsArray)
+            try data.write(to: totalStatsStore!)
+        } catch {
+            print("Error encoding total stats, \(error)")
+        }
+        // Save total stats
     }
     
     func authGCPlayer() {
@@ -632,6 +710,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if parallaxSetting! {
             addParallaxToView()
         }
+        if premiumSetting! {
+            checkPremium()
+        }
         updateAds()
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()
@@ -654,12 +735,21 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
         print("llama llama menu foreground")
         authGCPlayer()
+        GameCenterHandler().fetchCloudData()
         refreshView()
     }
     // Runs when the splash screen has ended
     
     @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
+        print("background notification")
+        GameCenterHandler().saveCloudData()
         print("llama llama menu background")
+    }
+    // Runs when the splash screen has ended
+    
+    @objc private func cancelGameResumeNotificationKeyReceived(_ notification: Notification) {
+        print("llama llama cancel game resume 2")
+        clearSavedGame()
     }
     // Runs when the splash screen has ended
     
@@ -672,6 +762,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         saveBrickXPositionArray! = []
         saveBrickYPositionArray! = []
         saveBallPropertiesArray! = []
+        savePowerUpFallingXPositionArray! = []
+        savePowerUpFallingYPositionArray! = []
+        savePowerUpFallingArray! = []
+        savePowerUpActiveArray! = []
+        savePowerUpActiveDurationArray! = []
+        savePowerUpActiveTimerArray! = []
+        savePowerUpActiveMagnitudeArray! = []
+
         defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
         defaults.set(saveMultiplier!, forKey: "saveMultiplier")
         defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
@@ -679,6 +777,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
         defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
         defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
+        defaults.set(savePowerUpFallingXPositionArray!, forKey: "savePowerUpFallingXPositionArray")
+        defaults.set(savePowerUpFallingYPositionArray!, forKey: "savePowerUpFallingYPositionArray")
+        defaults.set(savePowerUpFallingArray!, forKey: "savePowerUpFallingArray")
+        defaults.set(savePowerUpActiveArray!, forKey: "savePowerUpActiveArray")
+        defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
+        defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
+        defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
         print("llama llama save game data cleared MM: ", saveGameSaveArray!)
     }
     
@@ -696,5 +801,6 @@ extension Notification.Name {
     public static let splashScreenEndedNotification = Notification.Name(rawValue: "splashScreenEndedNotification")
     public static let foregroundNotification = Notification.Name(rawValue: "foregroundNotification")
     public static let backgroundNotification = Notification.Name(rawValue: "backgroundNotification")
+    public static let cancelGameResume = Notification.Name(rawValue: "cancelGameResume")    
 }
 // Notification setup

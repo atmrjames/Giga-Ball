@@ -24,6 +24,10 @@ extension GameScene {
                     brick.texture = brickIndestructible2Texture
                 }
                 
+                if j == 10 {
+                    brick.texture = brickNullTexture
+                }
+                
                 if j == 1 && i >= 2 && i <= 4 {
                     brick.texture = brickNormalTexture
                     brick.color = brickBrown

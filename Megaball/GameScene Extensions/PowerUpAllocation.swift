@@ -41,7 +41,7 @@ extension GameScene {
         powerUpProbArray[26] = 10 // Increase Ball Size
         powerUpProbArray[27] = 10 // Decrease Ball Size
         
-        powerUpProbFactor = 15
+        powerUpProbFactor = 10
         // default power-up allocation
         
         switch levelNumber {
@@ -58,12 +58,7 @@ extension GameScene {
             powerUpProbArray[13] = 0 // Reset Multiplier
             powerUpProbArray[14] = 0 // Next Level
             powerUpProbArray[23] = 0 // Quicksand
-            
-            // Testing purposes below
-//            powerUpProbArray[20] = 100 // Giga-Ball
-//            powerUpProbArray[21] = 100 // Undestructi-Ball
-//            powerUpProbFactor = 2
-            
+                        
         // Classic Pack
         case 1:
             powerUpProbArray[0] = 0 // Get a Life
@@ -88,6 +83,7 @@ extension GameScene {
             powerUpProbArray[23] = 0 // Quicksand
             powerUpProbArray[24] = 0 // Mystery
             powerUpProbArray[25] = 0 // Backstop
+        
         case 2:
             powerUpProbArray[2] = 5 // Decrease Ball Speed
             powerUpProbArray[3] = 5 // Increase Ball Speed
@@ -112,6 +108,7 @@ extension GameScene {
             powerUpProbArray[25] = 3 // Backstop
             powerUpProbArray[26] = 5 // Increase Ball Size
             powerUpProbArray[27] = 5 // Decrease Ball Size
+            
         case 3:
             powerUpProbArray[2] = 5 // Decrease Ball Speed
             powerUpProbArray[3] = 5 // Increase Ball Speed
@@ -137,14 +134,18 @@ extension GameScene {
             powerUpProbArray[24] = 10 // Mystery
             powerUpProbArray[26] = 5 // Increase Ball Size
             powerUpProbArray[27] = 5 // Decrease Ball Size
+            
         case 5:
             powerUpProbArray[23] = 10 // Quicksand
+            
         case 6:
             powerUpProbArray[20] = 0 // Giga-Ball
             powerUpProbArray[21] = 0 // Undestructi-Ball
             powerUpProbArray[22] = 0 // Lasers
+            
         case 7:
             powerUpProbArray[22] = 0 // Lasers
+            
         case 10:
             powerUpProbArray[15] = 10 // Show All Bricks
             powerUpProbArray[16] = 10 // Hide Bricks
@@ -257,21 +258,9 @@ extension GameScene {
         // Urban Pack
         case 33:
             powerUpProbArray[23] = 10 // Quicksand
-        case 34:
-            powerUpProbArray[23] = 5 // Quicksand
-            powerUpProbArray[25] = 10 // Backstop
         case 37:
             powerUpProbArray[20] = 10 // Giga-Ball
             powerUpProbArray[22] = 10 // Lasers
-        case 38:
-            powerUpProbArray[23] = 5 // Quicksand
-            powerUpProbArray[25] = 10 // Backstop
-        case 39:
-            powerUpProbArray[23] = 5 // Quicksand
-            powerUpProbArray[25] = 10 // Backstop
-        case 40:
-            powerUpProbArray[23] = 5 // Quicksand
-            powerUpProbArray[25] = 10 // Backstop
 
         // Food Pack
         case 42:
@@ -352,7 +341,7 @@ extension GameScene {
             powerUpProbArray[17] = 10 // Clear Multi-Hit Bricks
             powerUpProbArray[18] = 10 // Reset Multi-Hit Bricks
 
-        // Geography Pack
+        // World Pack
         case 71:
             powerUpProbArray[0] = 1 // Get a Life
             powerUpProbArray[1] = 1 // Lose a Life

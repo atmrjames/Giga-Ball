@@ -28,7 +28,21 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
+    var ballSetting: Int?
+    var paddleSetting: Int?
+    var brickSetting: Int?
+    var appIconSetting: Int?
+    var statsCollapseSetting: Bool?
+    var swipeUpPause: Bool?
     // User settings
+    var saveGameSaveArray: [Int]?
+    var saveMultiplier: Double?
+    var saveBrickTextureArray: [Int]?
+    var saveBrickColourArray: [Int]?
+    var saveBrickXPositionArray: [Int]?
+    var saveBrickYPositionArray: [Int]?
+    var saveBallPropertiesArray: [Double]?
+    // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
@@ -106,9 +120,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if navigatedFrom! == "PauseMenu" {
-            return 8
-        } else {
             return 9
+        } else {
+            return 12
         }
     }
     // Set number of cells in table view
@@ -118,6 +132,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         settingsTableView.rowHeight = 70.0
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+        cell.iconImage.isHidden = false
         
         switch indexPath.row {
         case 0:
@@ -218,8 +233,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingState.text = "x3.00"
                 cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             }
-            
         case 7:
+        // Swipe up to pause
+            cell.settingDescription.text = "Swipe Up To Pause"
+            cell.centreLabel.text = ""
+            cell.iconImage.image = UIImage(named:"iconPause.png")!
+            if swipeUpPause! {
+                cell.settingState.text = "on"
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            } else {
+                cell.settingState.text = "off"
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            }
+        case 8:
             if navigatedFrom! != "PauseMenu" {
             // Reset game data
                 cell.settingDescription.text = ""
@@ -235,14 +261,29 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             }
-        case 8:
+        case 9:
         // Restore purchases
             cell.settingDescription.text = ""
             cell.centreLabel.text = "Restore Purchases"
             cell.settingState.text = ""
             cell.iconImage.isHidden = true
             cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+        
+        case 10:
+        // Unlock all
+            cell.settingDescription.text = ""
+            cell.centreLabel.text = "Unlock All Items"
+            cell.settingState.text = ""
+            cell.iconImage.isHidden = true
+            cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
             
+        case 11:
+        // Re-lock all
+            cell.settingDescription.text = ""
+            cell.centreLabel.text = "Reset All Unlocked Items"
+            cell.settingState.text = ""
+            cell.iconImage.isHidden = true
+            cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
         default:
             print("Error: Out of range")
             break
@@ -313,6 +354,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
             defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
         case 7:
+        // Swipe up pause
+            swipeUpPause = !swipeUpPause!
+            defaults.set(swipeUpPause!, forKey: "swipeUpPause")
+        case 8:
             if navigatedFrom! != "PauseMenu" {
             // Reset game data
                 showWarning(senderID: "resetData")
@@ -320,9 +365,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Kill ball
                 showWarning(senderID: "killBall")
             }
-        case 8:
+        case 9:
         // Restore purchases
             print("Restore purchases")
+        case 10:
+        // Unlock all
+            unlockAllItems()
+        case 11:
+        // Re-lock all
+            relockAllItems()
         default:
             print("out of range")
             break
@@ -341,6 +392,53 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
         // Update table view
+    }
+    
+    func unlockAllItems() {
+        totalStatsArray[0].levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray.map { _ in true }
+        totalStatsArray[0].ballUnlockedArray = totalStatsArray[0].ballUnlockedArray.map { _ in true }
+        totalStatsArray[0].paddleUnlockedArray = totalStatsArray[0].paddleUnlockedArray.map { _ in true }
+        totalStatsArray[0].appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray.map { _ in true }
+        totalStatsArray[0].brickUnlockedArray = totalStatsArray[0].brickUnlockedArray.map { _ in true }
+        totalStatsArray[0].levelUnlockedArray = totalStatsArray[0].levelUnlockedArray.map { _ in true }
+        totalStatsArray[0].powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray.map { _ in true }
+        totalStatsArray[0].achievementsUnlockedArray = totalStatsArray[0].achievementsUnlockedArray.map { _ in true }
+        totalStatsArray[0].dateSaved = Date()
+        do {
+            let data = try encoder.encode(self.totalStatsArray)
+            try data.write(to: totalStatsStore!)
+        } catch {
+            print("Error encoding total stats, \(error)")
+        }
+        print("unlock all items")
+        GameCenterHandler().saveCloudData()
+        // Save to iCloud
+    }
+    
+    func relockAllItems() {
+        ballSetting = 0
+        defaults.set(ballSetting!, forKey: "ballSetting")
+        paddleSetting = 0
+        defaults.set(paddleSetting!, forKey: "paddleSetting")
+        brickSetting = 0
+        defaults.set(brickSetting!, forKey: "brickSetting")
+        if appIconSetting != 0 {
+            appIconSetting = 0
+            defaults.set(appIconSetting!, forKey: "appIconSetting")
+            changeIcon(to: LevelPackSetup().appIconNameArray[0])
+        }
+        
+        totalStatsArray[0] = TotalStats()
+        totalStatsArray[0].dateSaved = Date()
+        do {
+            let data = try encoder.encode(self.totalStatsArray)
+            try data.write(to: totalStatsStore!)
+        } catch {
+            print("Error encoding total stats, \(error)")
+        }
+        print("relock all items)")
+        GameCenterHandler().saveCloudData()
+        // Save to iCloud
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
@@ -497,7 +595,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
-        // Load user settings
+        ballSetting = defaults.integer(forKey: "ballSetting")
+        paddleSetting = defaults.integer(forKey: "paddleSetting")
+        brickSetting = defaults.integer(forKey: "brickSetting")
+        appIconSetting = defaults.integer(forKey: "appIconSetting")
+        statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
+        swipeUpPause = defaults.bool(forKey: "swipeUpPause")
+        // User settings
+        
+        saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
+        saveMultiplier = defaults.double(forKey: "saveMultiplier")
+        saveBrickTextureArray = defaults.object(forKey: "saveBrickTextureArray") as! [Int]?
+        saveBrickColourArray = defaults.object(forKey: "saveBrickColourArray") as! [Int]?
+        saveBrickXPositionArray = defaults.object(forKey: "saveBrickXPositionArray") as! [Int]?
+        saveBrickYPositionArray = defaults.object(forKey: "saveBrickYPositionArray") as! [Int]?
+        saveBallPropertiesArray = defaults.object(forKey: "saveBallPropertiesArray") as! [Double]?
+        // Game save settings
     }
     
     func loadData() {
@@ -553,7 +666,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func resetData() {
         premiumSetting = false
-        defaults.set(adsSetting!, forKey: "premiumSetting")
+        defaults.set(premiumSetting!, forKey: "premiumSetting")
         adsSetting = true
         defaults.set(adsSetting!, forKey: "adsSetting")
         soundsSetting = true
@@ -564,29 +677,52 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         defaults.set(hapticsSetting!, forKey: "hapticsSetting")
         parallaxSetting = true
         defaults.set(parallaxSetting!, forKey: "parallaxSetting")
-        paddleSensitivitySetting = 2
+        if view.frame.size.width > 450 {
+            paddleSensitivitySetting = 3
+        } else {
+            paddleSensitivitySetting = 2
+        }
         defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
+        
+        gameCenterSetting = false
+        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        ballSetting = 0
+        defaults.set(ballSetting!, forKey: "ballSetting")
+        paddleSetting = 0
+        defaults.set(paddleSetting!, forKey: "paddleSetting")
+        brickSetting = 0
+        defaults.set(brickSetting!, forKey: "brickSetting")
+        if appIconSetting != 0 {
+            appIconSetting = 0
+            defaults.set(appIconSetting!, forKey: "appIconSetting")
+            changeIcon(to: LevelPackSetup().appIconNameArray[0])
+        }
+        statsCollapseSetting = false
+        defaults.set(statsCollapseSetting!, forKey: "statsCollapseSetting")
+        swipeUpPause = true
+        defaults.set(swipeUpPause!, forKey: "swipeUpPause")
+        
+        saveGameSaveArray = []
+        defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
+        saveMultiplier = 1.0
+        defaults.set(saveMultiplier!, forKey: "saveMultiplier")
+        saveBrickTextureArray = []
+        defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
+        saveBrickColourArray = []
+        defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
+        saveBrickXPositionArray = []
+        defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
+        saveBrickYPositionArray = []
+        defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
+        saveBallPropertiesArray = []
+        defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
         // Reset user settings to defaults
         
-        for i in 1...totalStatsArray.count {
-            let index = i-1
-            totalStatsArray[index].cumulativeScore = 0
-            totalStatsArray[index].levelsPlayed = 0
-            totalStatsArray[index].levelsCompleted = 0
-            totalStatsArray[index].ballHits = 0
-            totalStatsArray[index].ballsLost = 0
-            totalStatsArray[index].powerupsCollected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            totalStatsArray[index].powerupsGenerated = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            totalStatsArray[index].playTime = 0
-            totalStatsArray[index].bricksHit = [0, 0, 0, 0, 0, 0, 0, 0]
-            totalStatsArray[index].bricksDestroyed = [0, 0, 0, 0, 0, 0, 0, 0]
-            totalStatsArray[index].lasersFired = 0
-            totalStatsArray[index].lasersHit = 0
-            totalStatsArray[index].endlessModeHeight.removeAll()
-            totalStatsArray[index].endlessModeHeightDate.removeAll()
-        }
+        totalStatsArray[0] = TotalStats()
+        totalStatsArray[0].dateSaved = Date()
         do {
             let data = try encoder.encode(self.totalStatsArray)
+            totalStatsArray[0].dateSaved = Date()
             try data.write(to: totalStatsStore!)
         } catch {
             print("Error encoding total stats, \(error)")
@@ -597,6 +733,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             packStatsArray[index].scores.removeAll()
             packStatsArray[index].scoreDates.removeAll()
             packStatsArray[index].numberOfCompletes = 0
+            packStatsArray[index].bestTime = 0
         }
         do {
             let data = try encoder.encode(self.packStatsArray)
@@ -618,6 +755,26 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             print("Error encoding level stats array, \(error)")
         }
         // Reset game data
+        
+        GameCenterHandler().deleteCloudData()
+        // Delete cloud data
+    }
+    
+    func changeIcon(to iconName: String) {
+        guard UIApplication.shared.supportsAlternateIcons else {
+            return
+        }
+        // Check app supports alternate icons
+
+        UIApplication.shared.setAlternateIconName(iconName, completionHandler: { (error) in
+        // Change the icon to an image with specific name
+            if let error = error {
+            print("App icon failed to change due to \(error.localizedDescription)")
+            } else {
+            print("App icon changed successfully")
+            }
+            // Print success or error
+        })
     }
     
     @objc func resetNotificiationKeyReceived(_ notification: Notification) {

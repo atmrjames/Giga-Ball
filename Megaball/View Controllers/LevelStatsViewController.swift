@@ -243,32 +243,18 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionViewLayout() {
-        if packNumber == 1 {
-            let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-            let viewWidth = backButtonCollectionView.frame.size.width
-            let cellWidth: CGFloat = 50
-            let cellSpacing = (viewWidth - cellWidth*3)/3
-            layout.minimumInteritemSpacing = cellSpacing
-            layout.minimumLineSpacing = cellSpacing
-            backButtonCollectionView!.collectionViewLayout = layout
-        } else {
-            let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-            let viewWidth = backButtonCollectionView.frame.size.width
-            let cellWidth: CGFloat = 50
-            let cellSpacing = (viewWidth - cellWidth*2)/2
-            layout.minimumInteritemSpacing = cellSpacing
-            layout.minimumLineSpacing = cellSpacing
-            backButtonCollectionView!.collectionViewLayout = layout
-        }
+        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+        let viewWidth = backButtonCollectionView.frame.size.width
+        let cellWidth: CGFloat = 50
+        let cellSpacing = (viewWidth - cellWidth*3)/3
+        layout.minimumInteritemSpacing = cellSpacing
+        layout.minimumLineSpacing = cellSpacing
+        backButtonCollectionView!.collectionViewLayout = layout
     }
     // Set the spacing between collection view cells
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if packNumber == 1 {
-            return 3
-        } else {
-            return 1
-        }
+        return 3
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -283,8 +269,12 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
-            if gameCenterSetting! {
-                cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+            if packNumber == 1 {
+                if gameCenterSetting! {
+                    cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                }
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             }
@@ -303,20 +293,27 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         
         if indexPath.row == 0 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             removeAnimate()
             NotificationCenter.default.post(name: .returnLevelSelectFromStatsNotification, object: nil)
         }
         if indexPath.row == 1 {
-            if gameCenterSetting! {
+            if gameCenterSetting! && packNumber == 1 {
+                if hapticsSetting! {
+                    interfaceHaptic.impactOccurred()
+                }
                 showGameCenterLeaderboards()
             }
+            // Only show leaderboard button for endless mode
         }
         if indexPath.row == 2 {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             moveToGame(selectedLevel: levelNumber!, numberOfLevels: 1, sender: levelSender, levelPack: packNumber!)
         }
         
@@ -325,23 +322,29 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-            
+
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
-                if self.gameCenterSetting! {
+                if self.gameCenterSetting! && self.packNumber == 1 {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
             default:
                 print("Error: Out of range")
@@ -351,23 +354,29 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .identity
             
             switch indexPath.row {
             case 0:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
-                if self.gameCenterSetting! {
+                if self.gameCenterSetting! && self.packNumber == 1 {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonPlay")
             default:
                 print("Error: Out of range")
