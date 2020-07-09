@@ -645,21 +645,21 @@
 		1A5A94832309E4F30076D635 /* Megaball */ = {
 			isa = PBXGroup;
 			children = (
+				1A5A94912309E4F40076D635 /* Assets.xcassets */,
+				1A5A94962309E4F40076D635 /* Info.plist */,
 				1A7EE25224AE03730045B3FA /* Giga-Ball.entitlements */,
-				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
-				1A5A94842309E4F30076D635 /* AppDelegate.swift */,
+				1A5A948E2309E4F30076D635 /* Main.storyboard */,
+				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
 				1A5A94862309E4F30076D635 /* GameScene.sks */,
 				1A5A94882309E4F30076D635 /* Actions.sks */,
+				1A5A94842309E4F30076D635 /* AppDelegate.swift */,
 				1A5A948A2309E4F30076D635 /* GameScene.swift */,
 				1ACC0F4023FDA3C400B7EFE9 /* GameScene Extensions */,
 				1AFF33C623EC42CB0033F485 /* Data Model */,
 				1AE9574C23257BC200E5618A /* View Controllers */,
 				1A5A94A2230F089A0076D635 /* Game States */,
-				1A5A948E2309E4F30076D635 /* Main.storyboard */,
-				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
 				1A5D804723E9A33F00F50BE0 /* Custom Cells */,
-				1A5A94912309E4F40076D635 /* Assets.xcassets */,
-				1A5A94962309E4F40076D635 /* Info.plist */,
+				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
 				1A7DFC7023F2B18700D7CD1B /* Fonts */,
 				1A408A4C247BC8010009BA8F /* Sounds */,
 				1A408A4D247BC8130009BA8F /* Music */,
@@ -1439,7 +1439,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;
@@ -1462,7 +1462,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;

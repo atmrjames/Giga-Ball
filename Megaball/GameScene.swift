@@ -1080,7 +1080,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Alpha Build 0.3.0(1) - tbc - 05/07/2020"
+		buildLabel.text = "Beta Build 0.3.1(1) - TBC - 00/00/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -3517,7 +3517,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleLaser.isHidden = true
 			}
 			// retro lasers
-            laserTimer = Timer.scheduledTimer(timeInterval: 0.33, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
+			laserTimer = Timer.scheduledTimer(timeInterval: 0.25, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[22]+=1
 			powerUpLimit = 4
@@ -5167,7 +5167,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 							paddleRetroTexture.isHidden = true
 							paddleLaser.isHidden = true
 						}
-						laserTimer = Timer.scheduledTimer(timeInterval: 0.33, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
+						laserTimer = Timer.scheduledTimer(timeInterval: 0.25, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 						powerUpLimit = 4
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
