@@ -83,8 +83,10 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let numberOfAttempts = totalStatsArray[0].levelsPlayed
         let numberOfEndlessModeAttempts = totalStatsArray[0].endlessModeHeight.count
         let heightArraySum = totalStatsArray[0].endlessModeHeight.reduce(0, +)
-        let unlockedItemCount = totalStatsArray[0].appIconUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].powerUpUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].ballUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].paddleUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].brickUnlockedArray.filter{$0 == true}.count
-        let lockedItemCount = totalStatsArray[0].appIconUnlockedArray.count + totalStatsArray[0].powerUpUnlockedArray.count + totalStatsArray[0].ballUnlockedArray.count + totalStatsArray[0].paddleUnlockedArray.count
+        
+        let unlockedItemCount = totalStatsArray[0].appIconUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].powerUpUnlockedArray.filter{$0 == true}.count + totalStatsArray[0].themeUnlockedArray.filter{$0 == true}.count
+        let lockedItemCount = totalStatsArray[0].appIconUnlockedArray.count + totalStatsArray[0].powerUpUnlockedArray.count + totalStatsArray[0].themeUnlockedArray.count
+        
         let unlockedLevelCount = totalStatsArray[0].levelUnlockedArray.filter{$0 == true}.count-1
         let lockedLevelCount = totalStatsArray[0].levelUnlockedArray.count-1
         let unlockedPackCount = totalStatsArray[0].levelPackUnlockedArray.filter{$0 == true}.count-2
@@ -287,19 +289,19 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Power-ups collected"
-                cell.statValue.text = String(totalStatsArray[0].powerupsCollected.reduce(0, +))
+                cell.statDescription.text = "Power-ups generated"
+                cell.statValue.text = String(totalStatsArray[0].powerupsGenerated.reduce(0, +))
             }
             return cell
         case 21:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Power-ups left"
-                let powerupsMissed = totalStatsArray[0].powerupsGenerated.reduce(0, +) - totalStatsArray[0].powerupsCollected.reduce(0, +)
-                cell.statValue.text = String(powerupsMissed)
+                cell.statDescription.text = "Power-ups collected"
+                cell.statValue.text = String(totalStatsArray[0].powerupsCollected.reduce(0, +))
             }
             return cell
+        
         case 22:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
@@ -390,15 +392,15 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
 
         if indexPath.row == 0 {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             removeAnimate()
         }
         if indexPath.row == 1 && gameCenterSetting! {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             showGameCenterLeaderboards()
         }
         
@@ -562,6 +564,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func removeAnimate() {
+        NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.view.alpha = 0.0})

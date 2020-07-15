@@ -58,6 +58,13 @@ extension GameScene {
             powerUpProbArray[13] = 0 // Reset Multiplier
             powerUpProbArray[14] = 0 // Next Level
             powerUpProbArray[23] = 0 // Quicksand
+            
+            
+            // testing
+            powerUpProbArray[22] = 100 // Lasers
+            powerUpProbArray[6] = 100 // Sticky Paddle
+            powerUpProbArray[20] = 100 // Giga-Ball
+            powerUpProbArray[21] = 100 // Undestructi-Ball
                         
         // Classic Pack
         case 1:
@@ -83,6 +90,9 @@ extension GameScene {
             powerUpProbArray[23] = 0 // Quicksand
             powerUpProbArray[24] = 0 // Mystery
             powerUpProbArray[25] = 0 // Backstop
+            
+            //testing purposes
+            powerUpProbArray[14] = 100 // Next Level
         
         case 2:
             powerUpProbArray[2] = 5 // Decrease Ball Speed
@@ -191,32 +201,11 @@ extension GameScene {
         case 13:
             powerUpProbArray[15] = 10 // Show All Bricks
             powerUpProbArray[16] = 10 // Hide Bricks
+        case 14:
+            powerUpProbArray[2] = 10 // Decrease Ball Speed
+            powerUpProbArray[25] = 10 // Backstop
         case 17:
-            powerUpProbArray[0] = 1 // Get a Life
-            powerUpProbArray[1] = 1 // Lose a Life
-            powerUpProbArray[2] = 1 // Decrease Ball Speed
-            powerUpProbArray[4] = 1 // Increase Paddle Size
-            powerUpProbArray[6] = 5 // Sticky Paddle
-            powerUpProbArray[7] = 5 // Gravity
-            powerUpProbArray[8] = 3 // +100 Points
-            powerUpProbArray[9] = 3 // -100 Points
-            powerUpProbArray[10] = 1 // +1000 Points
-            powerUpProbArray[11] = 1 // -1000 Points
-            powerUpProbArray[12] = 5 // x2 Multiplier
-            powerUpProbArray[13] = 5 // Reset Multiplier
-            powerUpProbArray[14] = 0 // Next Level
-            powerUpProbArray[15] = 3 // Show All Bricks
-            powerUpProbArray[16] = 3 // Hide Bricks
-            powerUpProbArray[17] = 3 // Clear Multi-Hit Bricks
-            powerUpProbArray[18] = 3 // Reset Multi-Hit Bricks
-            powerUpProbArray[19] = 3 // Remove Indestructible Bricks
-            powerUpProbArray[20] = 1 // Giga-Ball
-            powerUpProbArray[21] = 1 // Undestructi-Ball
-            powerUpProbArray[22] = 1 // Lasers
-            powerUpProbArray[23] = 5 // Quicksand
-            powerUpProbArray[24] = 5 // Mystery
-            powerUpProbArray[25] = 5 // Backstop
-            powerUpProbArray[26] = 1 // Increase Ball Size
+            powerUpProbFactor = 5
 
         // Nature Pack
         case 22:

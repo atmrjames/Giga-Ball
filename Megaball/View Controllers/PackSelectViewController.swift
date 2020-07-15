@@ -131,15 +131,14 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         
         UIView.animate(withDuration: 0.2) {
             let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
             cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-        }
-        
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
         }
         
         if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] {
@@ -195,9 +194,9 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         removeAnimate()
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()

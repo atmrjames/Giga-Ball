@@ -33,5 +33,14 @@ class UserDefaultsCloudSave: Codable {
     var saveBrickXPositionArray: [Int]?
     var saveBrickYPositionArray: [Int]?
     var saveBallPropertiesArray: [Double]?
+    
+    var savePowerUpFallingXPositionArray: [Int]?
+    var savePowerUpFallingYPositionArray: [Int]?
+    var savePowerUpFallingArray: [Int]?
+    var savePowerUpActiveArray: [String]?
+    var savePowerUpActiveDurationArray: [Double]?
+    var savePowerUpActiveTimerArray: [Double]?
+    var savePowerUpActiveMagnitudeArray: [Int]?
+
     // Game save settings
 }

@@ -110,22 +110,23 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     // Add content to cells
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         
         NotificationCenter.default.post(name: .cancelGameResume, object: nil)
         gameToResume = false
         removeAnimate(duration: 0.25)
-        
-        print("llama llama cancel game resume 1")
-        
+                
         UIView.animate(withDuration: 0.2) {
             let cell = self.cancelResumeButton.cellForRow(at: indexPath) as! SettingsTableViewCell
             cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+        tableView.reloadData()
+        // Update table view
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
@@ -136,9 +137,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         NotificationCenter.default.post(name: .cancelGameResume, object: nil)
         gameToResume = false
         removeAnimate(duration: 0.25)
-        
-        print("llama llama cancel game resume 3")
-        
+                
         UIView.animate(withDuration: 0.1) {
             let cell = self.cancelResumeButton.cellForRow(at: indexPath) as! SettingsTableViewCell
             cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)

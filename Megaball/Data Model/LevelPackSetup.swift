@@ -33,94 +33,84 @@ class LevelPackSetup {
         "Challenge Pack"
     ]
     
-    let ballImageArray: [UIImage] = [
-        UIImage(named:"ballNormal.png")!,
-        UIImage(named:"3DBall.png")!,
-        UIImage(named:"outlineBall.png")!,
-        UIImage(named:"diamondBall.png")!,
-        UIImage(named:"beachBall.png")!,
-        UIImage(named:"concentricBall.png")!,
-        UIImage(named:"pixelBall.png")!,
-        UIImage(named:"dotBall.png")!,
-        UIImage(named:"hobBall.png")!,
-        UIImage(named:"reuleauxBall.png")!,
-        UIImage(named:"loadingBall.png")!,
-        UIImage(named:"retroBall.png")!
-    ]
-    
-    let ballNameArray: [String] = [
+    let themeNameArray: [String] = [
         "Classic",
         "3D",
+        "Ice",
         "Outline",
-        "Diamond",
-        "Beach Ball",
-        "Concentric",
+        "Square",
+        "Glass",
         "Pixel",
-        "Dots",
-        "Spokes",
-        "Reuleaux",
+        "Split",
+        "Candy",
+        "Giga-Ball",
         "Rainbow",
         "Retro"
     ]
     
-    let ballIconArray: [UIImage] = [
-        UIImage(named:"ballIcon.png")!,
-        UIImage(named:"3DBallIcon.png")!,
-        UIImage(named:"outlineBallIcon.png")!,
-        UIImage(named:"diamondBallIcon.png")!,
-        UIImage(named:"beachBallIcon.png")!,
-        UIImage(named:"concentricBallIcon.png")!,
-        UIImage(named:"pixelBallIcon.png")!,
-        UIImage(named:"dotBallIcon.png")!,
-        UIImage(named:"hobBallIcon.png")!,
-        UIImage(named:"reuleauxBallIcon.png")!,
-        UIImage(named:"loadingBallIcon.png")!,
-        UIImage(named:"retroBallIcon.png")!
+    let themeIconArray: [UIImage] = [
+        UIImage(named:"regularThemeIcon.png")!,
+        UIImage(named:"3DThemeIcon.png")!,
+        UIImage(named:"iceThemeIcon.png")!,
+        UIImage(named:"outlineThemeIcon.png")!,
+        UIImage(named:"squareThemeIcon.png")!,
+        UIImage(named:"glassThemeIcon.png")!,
+        UIImage(named:"pixelThemeIcon.png")!,
+        UIImage(named:"splitThemeIcon.png")!,
+        UIImage(named:"candyThemeIcon.png")!,
+        UIImage(named:"gigaThemeIcon.png")!,
+        UIImage(named:"rainbowThemeIcon.png")!,
+        UIImage(named:"retroThemeIcon.png")!
+    ]
+    
+    let ballImageArray: [UIImage] = [
+        UIImage(named:"ballNormal.png")!,
+        UIImage(named:"3DBall.png")!,
+        UIImage(named:"iceBallNormal.png")!,
+        UIImage(named:"outlineBall.png")!,
+        UIImage(named:"squareBall.png")!,
+        UIImage(named:"glassBallNormal.png")!,
+        UIImage(named:"pixelBall.png")!,
+        UIImage(named:"splitBall.png")!,
+        UIImage(named:"candyBall.png")!,
+        UIImage(named:"ballGigaNormal.png")!,
+        UIImage(named:"rainbowBall.png")!,
+        UIImage(named:"retroBall.png")!
     ]
     
     let paddleImageArray: [UIImage] = [
         UIImage(named:"regularPaddle.png")!,
         UIImage(named:"3DPaddle.png")!,
+        UIImage(named:"icePaddle.png")!,
         UIImage(named:"outlinePaddle.png")!,
         UIImage(named:"squarePaddle.png")!,
-        UIImage(named:"icePaddle.png")!,
         UIImage(named:"glassPaddle.png")!,
         UIImage(named:"pixelPaddle.png")!,
-        UIImage(named:"gigaPaddle.png")!,
-        UIImage(named:"stripyPaddle.png")!,
         UIImage(named:"splitPaddle.png")!,
+        UIImage(named:"candyPaddle.png")!,
+        UIImage(named:"gigaPaddle.png")!,
         UIImage(named:"rainbowPaddle.png")!,
         UIImage(named:"retroPaddle.png")!
     ]
     
-    let paddleNameArray: [String] = [
-        "Classic",
-        "3D",
-        "Outline",
-        "Square",
-        "Ice",
-        "Glass",
-        "Pixel",
-        "Giga-Paddle",
-        "Candy Cane",
-        "Split",
-        "Rainbow",
-        "Retro"
+    let brickImageArray: [UIImage] = [
+        UIImage(named:"BrickNormal.png")!,
+        UIImage(named:"retroBrickNormal.png")!
     ]
     
-    let paddleIconArray: [UIImage] = [
-        UIImage(named:"regularPaddleIcon.png")!,
-        UIImage(named:"3DPaddleIcon.png")!,
-        UIImage(named:"outlinePaddleIcon.png")!,
-        UIImage(named:"squarePaddleIcon.png")!,
-        UIImage(named:"icePaddleIcon.png")!,
-        UIImage(named:"glassPaddleIcon.png")!,
-        UIImage(named:"pixelPaddleIcon.png")!,
-        UIImage(named:"gigaPaddleIcon.png")!,
-        UIImage(named:"stripyPaddleIcon.png")!,
-        UIImage(named:"splitPaddleIcon.png")!,
-        UIImage(named:"rainbowPaddleIcon.png")!,
-        UIImage(named:"retroPaddleIcon.png")!
+    let appIconNameArray: [String] = [
+        "Purple",
+        "White",
+        "Yellow",
+        "Orange",
+        "Green",
+        "Blue",
+        "Brown",
+        "Black",
+        "Pink",
+        "Giga-Ball",
+        "Rainbow",
+        "Retro"
     ]
     
     let appIconImageArray: [UIImage] = [
@@ -136,36 +126,6 @@ class LevelPackSetup {
         UIImage(named:"GigaBall.png")!,
         UIImage(named:"Rainbow.png")!,
         UIImage(named:"Retro.png")!
-    ]
-    
-    let appIconNameArray: [String] = [
-        "Purple",
-        "White",
-        "Yellow",
-        "Orange",
-        "Green",
-        "Blue",
-        "Brown",
-        "Black",
-        "Pink",
-        "Giga-Ball",
-        "Rainbow",
-        "Retro"        
-    ]
-    
-    let brickImageArray: [UIImage] = [
-        UIImage(named:"BrickNormal.png")!,
-        UIImage(named:"retroBrickNormal.png")!
-    ]
-    
-    let brickNameArray: [String] = [
-        "Classic",
-        "Retro"
-    ]
-    
-    let brickIconArray: [UIImage] = [
-        UIImage(named:"classicBrickIcon.png")!,
-        UIImage(named:"retroBrickIcon.png")!
     ]
     
     let levelImageArray: [UIImage] = [
@@ -645,7 +605,7 @@ class LevelPackSetup {
         "10",
         "",
         "",
-        "10",
+        "",
         "10",
         "10"
     ]
@@ -842,7 +802,7 @@ class LevelPackSetup {
         "500,000 total points earned", // 52 fiveHundredKTotalScore
         "1,000,000 total points earned", // 53 millTotalScore
         "Pack completed without losing ball", // 54 noBallsLostPack
-        "Level pack losing 10 or more balls", // 55 tenBallsLostPack
+        "Level pack completed losing 10 or more balls", // 55 tenBallsLostPack
         "All power-ups on a pack collected", // 56 allPackPowerUps
         "No power-ups on a pack collected", // 57 noPackPowerUps
         "Pack completed in under ten minutes", // 58 quickPackComplete

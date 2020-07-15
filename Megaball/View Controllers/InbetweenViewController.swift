@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import StoreKit
 
-class InbetweenViewController: UIViewController {
+class InbetweenViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, SKPaymentTransactionObserver {
 
     var levelNumber: Int = 0
     var packNumber: Int = 0
@@ -31,6 +32,7 @@ class InbetweenViewController: UIViewController {
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var premiumSetting: Bool?
     // User settings
 
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -50,18 +52,21 @@ class InbetweenViewController: UIViewController {
     @IBOutlet var timeBonusLabel: UILabel!
     @IBOutlet var timeBonusScore: UILabel!
     @IBOutlet var tapLabel: UILabel!
+    @IBOutlet var premiumTableView: UITableView!
     
     @IBOutlet var unlockedImage: UIImageView!
     
-    @IBAction func tapGesture(_ sender: Any) {
+    @IBAction func tapGestureAction(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
     }
-    
+        
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        SKPaymentQueue.default().add(self)
         
         unlockedImage.isHidden = true
         userSettings()
@@ -79,9 +84,23 @@ class InbetweenViewController: UIViewController {
             timeBonusScore.isHidden = false
         }
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotificationInbetween, object: nil)
+        // Sets up an observer to watch for notifications to check for in-app purchase success
+                
+        premiumTableView.delegate = self
+        premiumTableView.dataSource = self
+        premiumTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
+        
+        if premiumSetting! {
+            premiumTableView.isHidden = true
+        } else {
+            premiumTableView.isHidden = false
+        }
+        
         showAnimate()
         
         if levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel == true {
+            premiumTableView.isHidden = true
             showAnimateDuration = 0
             levelNumber = levelNumber-1
             levelNumberCorrected = levelNumberCorrected-1
@@ -96,6 +115,7 @@ class InbetweenViewController: UIViewController {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         // Load user settings
     }
 
@@ -109,6 +129,7 @@ class InbetweenViewController: UIViewController {
     }
     
     func removeAnimate() {
+        premiumTableView.isHidden = true
         UIView.animate(withDuration: showAnimateDuration, animations: {
             self.contentView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.contentView.alpha = 0.0})
@@ -157,6 +178,87 @@ class InbetweenViewController: UIViewController {
         }
     }
     
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 1
+    }
+    // Set number of cells in table view
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+        
+        premiumTableView.rowHeight = 84
+        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+        cell.iconImage.isHidden = false
+        
+        let premiumTagLineArray: [String] = [
+            "Support The App \nGet Giga-Ball Premium",
+            "Unlock All Power-Ups \nGet Giga-Ball Premium",
+            "Remove Ads \nGet Giga-Ball Premium",
+            "Unlock All Level Packs \nGet Giga-Ball Premium"
+        ]
+
+        cell.centreLabel.text = premiumTagLineArray.randomElement()!
+        cell.settingDescription.text = ""
+        cell.iconImage.image = UIImage(named:"iconPremium.png")!
+        cell.settingState.text = ""
+        
+        cell.cellView2.layer.cornerRadius = 30
+        cell.cellView2.layer.masksToBounds = false
+        cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cell.cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        cell.cellView2.layer.shadowOpacity = 0.2
+        cell.cellView2.layer.shadowRadius = 4
+        
+        UIView.animate(withDuration: 0.2) {
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+        }
+        
+        return cell
+    }
+    // Add content to cells
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
+    
+        print("llama llama premium selected")
+        showPurchaseScreen()
+        IAPHandler().purchasePremium()
+        
+        UIView.animate(withDuration: 0.2) {
+            let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+        }
+        tableView.deselectRow(at: indexPath, animated: true)
+        // Update table view
+    }
+    
+    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+                
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+        }
+    }
+    
     func updateLabels() {
         levelScoreMinusTimerBonus = totalScore - levelScoreBonus
         scoreLabel.text = String(levelScoreMinusTimerBonus)
@@ -166,6 +268,32 @@ class InbetweenViewController: UIViewController {
         levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber]
         packNameLabel.text = LevelPackSetup().levelPackNameArray[packNumber]
         timeBonusScore.text = "+\(levelScoreBonus)"
+    }
+    
+    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+        for transaction in transactions {
+            if transaction.transactionState == .purchased {
+                print("User payment successful - inbetween")
+                IAPHandler().unlockPremiumContent()
+                SKPaymentQueue.default().finishTransaction(transaction)
+                
+            } else if transaction.transactionState == .failed {
+                if let error = transaction.error {
+                    let errorDescription = error.localizedDescription
+                    print("User payment failed/cancelled - inbetween: \(errorDescription)")
+                }
+                SKPaymentQueue.default().finishTransaction(transaction)
+                NotificationCenter.default.post(name: .iAPIncompleteNotification, object: nil)
+                // Send notification to the app that the IAP was successful
+                
+            } else if transaction.transactionState == .restored {
+                print("User purchase restored - inbetween")
+                IAPHandler().unlockPremiumContent()
+                SKPaymentQueue.default().finishTransaction(transaction)
+            } else {
+                print("llama other - inbetween")
+            }
+        }
     }
     
     func setBlur() {
@@ -191,7 +319,6 @@ class InbetweenViewController: UIViewController {
     }
     
     func addParallaxToView() {
-        
         var amount = 25
         if view.frame.width > 450 {
             print("frame width: ", view.frame.width)
@@ -216,4 +343,21 @@ class InbetweenViewController: UIViewController {
         group!.motionEffects = [horizontal, vertical]
         contentView.addMotionEffect(group!)
     }
+    
+    func showPurchaseScreen() {
+        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
+        self.addChild(iAPVC)
+        iAPVC.view.frame = self.view.frame
+        self.view.addSubview(iAPVC.view)
+        iAPVC.didMove(toParent: self)
+    }
+    // Show iAPVC as popup
+    
+    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
+        removeAnimate()
+    }
+}
+
+extension Notification.Name {
+    public static let iAPcompleteNotificationInbetween = Notification.Name(rawValue: "iAPcompleteNotification")
 }

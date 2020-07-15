@@ -295,25 +295,25 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.row == 0 {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             removeAnimate()
             NotificationCenter.default.post(name: .returnLevelSelectFromStatsNotification, object: nil)
         }
         if indexPath.row == 1 {
             if gameCenterSetting! && packNumber == 1 {
-                if hapticsSetting! {
-                    interfaceHaptic.impactOccurred()
-                }
+//                if hapticsSetting! {
+//                    interfaceHaptic.impactOccurred()
+//                }
                 showGameCenterLeaderboards()
             }
             // Only show leaderboard button for endless mode
         }
         if indexPath.row == 2 {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             moveToGame(selectedLevel: levelNumber!, numberOfLevels: 1, sender: levelSender, levelPack: packNumber!)
         }
         

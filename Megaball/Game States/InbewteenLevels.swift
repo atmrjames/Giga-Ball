@@ -584,8 +584,7 @@ class InbetweenLevels: GKState {
             
             if scene.levelNumber == 10 && scene.totalStatsArray[0].achievementsUnlockedArray[6] == false {
                 scene.totalStatsArray[0].appIconUnlockedArray[1] = true
-                scene.totalStatsArray[0].ballUnlockedArray[1] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[1] = true
+                scene.totalStatsArray[0].themeUnlockedArray[1] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[6] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[7] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[6] = true
@@ -601,8 +600,7 @@ class InbetweenLevels: GKState {
             }
             if scene.levelNumber == 20 && scene.totalStatsArray[0].achievementsUnlockedArray[7] == false {
                 scene.totalStatsArray[0].appIconUnlockedArray[2] = true
-                scene.totalStatsArray[0].ballUnlockedArray[2] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[2] = true
+                scene.totalStatsArray[0].themeUnlockedArray[2] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[10] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[11] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[7] = true
@@ -619,8 +617,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 30 && scene.totalStatsArray[0].achievementsUnlockedArray[8] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[3] = true
-                scene.totalStatsArray[0].ballUnlockedArray[3] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[3] = true
+                scene.totalStatsArray[0].themeUnlockedArray[3] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[12] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[13] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[8] = true
@@ -637,8 +634,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 40 && scene.totalStatsArray[0].achievementsUnlockedArray[9] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[6] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[4] = true
-                scene.totalStatsArray[0].ballUnlockedArray[4] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[4] = true
+                scene.totalStatsArray[0].themeUnlockedArray[4] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[20] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[21] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[9] = true
@@ -655,8 +651,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 50 && scene.totalStatsArray[0].achievementsUnlockedArray[10] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[7] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[5] = true
-                scene.totalStatsArray[0].ballUnlockedArray[5] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[5] = true
+                scene.totalStatsArray[0].themeUnlockedArray[5] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[22] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[23] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[10] = true
@@ -673,8 +668,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 60 && scene.totalStatsArray[0].achievementsUnlockedArray[11] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[8] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[6] = true
-                scene.totalStatsArray[0].ballUnlockedArray[6] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[6] = true
+                scene.totalStatsArray[0].themeUnlockedArray[6] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[24] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[25] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[11] = true
@@ -691,8 +685,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 70 && scene.totalStatsArray[0].achievementsUnlockedArray[12] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[9] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[7] = true
-                scene.totalStatsArray[0].ballUnlockedArray[7] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[7] = true
+                scene.totalStatsArray[0].themeUnlockedArray[7] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[26] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[27] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[12] = true
@@ -709,8 +702,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 80 && scene.totalStatsArray[0].achievementsUnlockedArray[13] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[10] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[8] = true
-                scene.totalStatsArray[0].ballUnlockedArray[8] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[8] = true
+                scene.totalStatsArray[0].themeUnlockedArray[8] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[13] = true
                 scene.totalStatsArray[0].achievementDates[13] = Date()
                 let achievementPack = GKAchievement(identifier: "worldPackComplete")
@@ -725,8 +717,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 90 && scene.totalStatsArray[0].achievementsUnlockedArray[14] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[11] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[9] = true
-                scene.totalStatsArray[0].ballUnlockedArray[9] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[9] = true
+                scene.totalStatsArray[0].themeUnlockedArray[9] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[14] = true
                 scene.totalStatsArray[0].achievementDates[14] = Date()
                 let achievementPack = GKAchievement(identifier: "emojiPackComplete")
@@ -741,8 +732,7 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 100 && scene.totalStatsArray[0].achievementsUnlockedArray[15] == false {
                 scene.totalStatsArray[0].levelPackUnlockedArray[12] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[10] = true
-                scene.totalStatsArray[0].ballUnlockedArray[10] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[10] = true
+                scene.totalStatsArray[0].themeUnlockedArray[10] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[15] = true
                 scene.totalStatsArray[0].achievementDates[15] = Date()
                 let achievementPack = GKAchievement(identifier: "numbersPackComplete")
@@ -756,9 +746,7 @@ class InbetweenLevels: GKState {
             }
             if scene.levelNumber == 110 && scene.totalStatsArray[0].achievementsUnlockedArray[16] == false {
                 scene.totalStatsArray[0].appIconUnlockedArray[11] = true
-                scene.totalStatsArray[0].ballUnlockedArray[11] = true
-                scene.totalStatsArray[0].paddleUnlockedArray[11] = true
-                scene.totalStatsArray[0].brickUnlockedArray[1] = true
+                scene.totalStatsArray[0].themeUnlockedArray[11] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[16] = true
                 scene.totalStatsArray[0].achievementDates[16] = Date()
                 let achievementPack = GKAchievement(identifier: "challengePackComplete")

@@ -126,15 +126,15 @@ class WarningViewController: UIViewController {
     func updateLabels() {
         if senderID == "killBall" {
             warningTitleLabel.text = "R E S E T   B A L L"
-            warningTextLabel.text = "Only reset the ball if it becomes stuck. \n You will lose a life if you have greater than 0 lives remaining."
+            warningTextLabel.text = "Only reset the ball if it becomes stuck. \nYou will lose a life if you have greater than 0 lives remaining."
         }
         if senderID == "resetData" {
             warningTitleLabel.text = "R E S E T   D A T A"
-            warningTextLabel.text = "Are you sure you want to reset the game data? You will irreversibly lose all game progress, statistics and settings. \n In-app purchases will remain."
+            warningTextLabel.text = "Are you sure you want to reset the game data? You will irreversibly lose all game progress, statistics and settings. \nIn-app purchases will remain."
         }
         if senderID == "pauseMenu" {
-            warningTitleLabel.text = "Q U I T"
-            warningTextLabel.text = "Are you sure you want to quit the game? \n Any progress will be lost."
+            warningTitleLabel.text = "M A I N   M E N U"
+            warningTextLabel.text = "Are you sure you want to return to the main menu? \nAny progress will be lost."
         }
         
     }

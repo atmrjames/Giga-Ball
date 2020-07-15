@@ -47,11 +47,11 @@ extension GameScene {
                 if j == 3 && (i == 13) {
                     brick.texture = brickIndestructible1Texture
                 }
-                if j == 3 && (i == 2 || i == 20) {
+                if j == 3 && i == 2 {
                    brick.texture = brickInvisibleTexture
                 }
                 
-                if j == 4 && (i == 2 || i == 13 || i == 20) {
+                if j == 4 && (i == 2 || i == 13) {
                    brick.texture = brickInvisibleTexture
                 }
                 if j == 4 && (i == 7 || i == 16) {
@@ -61,7 +61,7 @@ extension GameScene {
                 if j == 5 && i == 2 {
                     brick.texture = brickIndestructible1Texture
                 }
-                if j == 5 && (i == 12 || i == 19) {
+                if j == 5 && i == 12 {
                    brick.texture = brickInvisibleTexture
                 }
                 if j == 5 && (i == 7 || i == 16) {
@@ -77,7 +77,7 @@ extension GameScene {
                 if j == 6 && (i == 1 || i == 3) {
                     brick.texture = brickIndestructible1Texture
                 }
-                if j == 6 && (i == 11 || i == 19) {
+                if j == 6 && i == 11 {
                    brick.texture = brickInvisibleTexture
                 }
                 if j == 6 && (i == 7 || i == 16) {
@@ -86,9 +86,6 @@ extension GameScene {
                 
                 if j == 7 && (i == 2 || i == 11) {
                     brick.texture = brickIndestructible1Texture
-                }
-                if j == 7 && i == 19 {
-                   brick.texture = brickInvisibleTexture
                 }
                 
                 if j == 8 && i == 11 {

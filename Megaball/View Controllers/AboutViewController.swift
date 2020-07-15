@@ -114,9 +114,9 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         removeAnimate()
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -186,6 +186,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func removeAnimate() {
+        NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.view.alpha = 0.0})

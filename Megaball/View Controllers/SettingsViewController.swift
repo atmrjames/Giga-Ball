@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import StoreKit
 
 enum device {
     case Pad
@@ -15,7 +16,7 @@ enum device {
     case SE
 }
 
-class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
+class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, SKPaymentTransactionObserver {
     
     var navigatedFrom: String?
     
@@ -70,6 +71,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
+    @IBOutlet var premiumTableView: UITableView!
+    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
+    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
+    
+    @IBOutlet var backButtonCollapsed: NSLayoutConstraint!
+    @IBOutlet var backButtonExpanded: NSLayoutConstraint!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -79,10 +87,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnNotificiationKeyReceived), name: .returnNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the warning pop-up
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.reanimateNotificiationKeyReceived), name: .reanimateNotificiation, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has returned from another screen
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
+        // Sets up an observer to watch for notifications to check for in-app purchase success
+        
+        SKPaymentQueue.default().add(self)
+        
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
+        
+        premiumTableView.delegate = self
+        premiumTableView.dataSource = self
+        premiumTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
 
         let screenRatio = self.view.frame.size.height/self.view.frame.size.width
         
@@ -108,6 +128,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         userSettings()
         loadData()
+        premiumTableViewHideShow(animated: false)
         if parallaxSetting! {
             addParallaxToView()
         }
@@ -118,11 +139,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         showAnimate()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        premiumTableViewHideShow(animated: false)
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if navigatedFrom! == "PauseMenu" {
-            return 9
+            return 11
         } else {
-            return 12
+            return 14
         }
     }
     // Set number of cells in table view
@@ -130,172 +155,231 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
-        settingsTableView.rowHeight = 70.0
-        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-        cell.iconImage.isHidden = false
-        
-        switch indexPath.row {
-        case 0:
-        // Premium
-            cell.settingDescription.text = "Premium"
-            cell.centreLabel.text = ""
+        if tableView == self.premiumTableView {
+            
+            premiumTableView.rowHeight = 84
+            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+            cell.iconImage.isHidden = false
+            
+            let premiumTagLineArray: [String] = [
+                "Support The App \nGet Giga-Ball Premium",
+                "Unlock All Power-Ups \nGet Giga-Ball Premium",
+                "Remove Ads \nGet Giga-Ball Premium",
+                "Unlock All Level Packs \nGet Giga-Ball Premium"
+            ]
+
+            cell.centreLabel.text = premiumTagLineArray.randomElement()!
+            cell.settingDescription.text = ""
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
-            if premiumSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            cell.settingState.text = ""
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            
+            cell.cellView2.layer.cornerRadius = 30
+            cell.cellView2.layer.masksToBounds = false
+            cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 2)
+            cell.cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            cell.cellView2.layer.shadowOpacity = 0.2
+            cell.cellView2.layer.shadowRadius = 4
+            
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
-        case 1:
-        // Ads
-            cell.settingDescription.text = "Ads"
-            cell.centreLabel.text = ""
-            cell.iconImage.image = UIImage(named:"iconAd.png")!
-            if adsSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            }
-        case 2:
-        // Sounds
-            cell.settingDescription.text = "Sounds"
-            cell.centreLabel.text = ""
-            cell.iconImage.image = UIImage(named:"iconSound.png")!
-            if soundsSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            }
-        case 3:
-        // Music
-            cell.settingDescription.text = "Music"
-            cell.centreLabel.text = ""
-            cell.iconImage.image = UIImage(named:"iconMusic.png")!
-            if musicSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            }
-        case 4:
-        // Haptics
-            if screenSize == .Pad || screenSize == .SE {
-            // No haptics' engine
-                hideCell(cell: cell)
-            } else {
-                cell.settingDescription.text = "Haptics"
+            tableView.showsVerticalScrollIndicator = false
+            
+            return cell
+            
+        } else {
+        
+            settingsTableView.rowHeight = 70.0
+            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+            cell.iconImage.isHidden = false
+            
+            switch indexPath.row {
+            case 0:
+            // Premium
+                cell.settingDescription.text = "Premium"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconHaptics.png")!
-                if hapticsSetting! {
+                cell.iconImage.image = UIImage(named:"iconPremium.png")!
+                if premiumSetting! {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 } else {
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            }
-        case 5:
-        // Parallax
-            cell.settingDescription.text = "Parallax"
-            cell.centreLabel.text = ""
-            cell.iconImage.image = UIImage(named:"iconParallax.png")!
-            if parallaxSetting! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            }
-        case 6:
-        // Paddle sensitivity
-            cell.settingDescription.text = "Paddle Sensitivity"
-            cell.centreLabel.text = ""
-            cell.iconImage.image = UIImage(named:"iconPaddleSensitivity.png")!
-            if paddleSensitivitySetting == 0 {
-                cell.settingState.text = "x1.00"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            } else if paddleSensitivitySetting == 1 {
-                cell.settingState.text = "x1.25"
-                cell.settingState.textColor = #colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1)
-            } else if paddleSensitivitySetting == 2 {
-                cell.settingState.text = "x1.50"
-                cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
-            } else if paddleSensitivitySetting == 3 {
-                cell.settingState.text = "x2.00"
-                cell.settingState.textColor = #colorLiteral(red: 0.12, green: 0.13, blue: 0.14, alpha: 1)
-            } else if paddleSensitivitySetting == 4 {
-                cell.settingState.text = "x3.00"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            }
-        case 7:
-        // Swipe up to pause
-            cell.settingDescription.text = "Swipe Up To Pause"
-            cell.centreLabel.text = ""
-            cell.iconImage.image = UIImage(named:"iconPause.png")!
-            if swipeUpPause! {
-                cell.settingState.text = "on"
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            } else {
-                cell.settingState.text = "off"
-                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-            }
-        case 8:
-            if navigatedFrom! != "PauseMenu" {
-            // Reset game data
+//                hideCell(cell: cell)
+            case 1:
+            // Ads
+                cell.settingDescription.text = "Ads"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconAd.png")!
+                if adsSetting! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
+            case 2:
+            // App icon
+                if navigatedFrom! == "PauseMenu" {
+                    hideCell(cell: cell)
+                } else {
+                    cell.settingDescription.text = "App Icon"
+                    cell.centreLabel.text = ""
+                    cell.iconImage.image = UIImage(named:"iconAppIcon.png")!
+                    cell.settingState.text = ""
+                }
+            case 3:
+            // Theme
+                if navigatedFrom! == "PauseMenu" {
+                    hideCell(cell: cell)
+                } else {
+                    cell.settingDescription.text = "Ball & Paddle"
+                    cell.centreLabel.text = ""
+                    cell.iconImage.image = UIImage(named:"iconTheme.png")!
+                    cell.settingState.text = ""
+                }
+            case 4:
+            // Sounds
+                cell.settingDescription.text = "Sounds"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconSound.png")!
+                if soundsSetting! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
+            case 5:
+            // Music
+                cell.settingDescription.text = "Music"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconMusic.png")!
+                if musicSetting! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
+            case 6:
+            // Haptics
+                if screenSize == .Pad || screenSize == .SE {
+                // No haptics' engine
+                    hideCell(cell: cell)
+                } else {
+                    cell.settingDescription.text = "Haptics"
+                    cell.centreLabel.text = ""
+                    cell.iconImage.image = UIImage(named:"iconHaptics.png")!
+                    if hapticsSetting! {
+                        cell.settingState.text = "on"
+                        cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                    } else {
+                        cell.settingState.text = "off"
+                        cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    }
+                }
+            case 7:
+            // Parallax
+                cell.settingDescription.text = "Parallax"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconParallax.png")!
+                if parallaxSetting! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
+            case 8:
+            // Paddle sensitivity
+                cell.settingDescription.text = "Paddle Sensitivity"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconPaddleSensitivity.png")!
+                if paddleSensitivitySetting == 0 {
+                    cell.settingState.text = "x1.00"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                } else if paddleSensitivitySetting == 1 {
+                    cell.settingState.text = "x1.25"
+                    cell.settingState.textColor = #colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1)
+                } else if paddleSensitivitySetting == 2 {
+                    cell.settingState.text = "x1.50"
+                    cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
+                } else if paddleSensitivitySetting == 3 {
+                    cell.settingState.text = "x2.00"
+                    cell.settingState.textColor = #colorLiteral(red: 0.12, green: 0.13, blue: 0.14, alpha: 1)
+                } else if paddleSensitivitySetting == 4 {
+                    cell.settingState.text = "x3.00"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                }
+            case 9:
+            // Swipe up to pause
+                cell.settingDescription.text = "Swipe Up To Pause"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconPause.png")!
+                if swipeUpPause! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
+            case 10:
+                if navigatedFrom! != "PauseMenu" {
+                // Reset game data
+                    cell.settingDescription.text = ""
+                    cell.centreLabel.text = "Reset Game Data"
+                    cell.settingState.text = ""
+                    cell.iconImage.isHidden = true
+                    cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                } else {
+                // Kill ball
+                    cell.settingDescription.text = ""
+                    cell.settingState.text = ""
+                    cell.centreLabel.text = "Reset Ball"
+                    cell.iconImage.isHidden = true
+                    cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                }
+            case 11:
+            // Restore purchases
+                if premiumSetting! == false {
+                    cell.settingDescription.text = ""
+                    cell.centreLabel.text = "Restore Purchase"
+                    cell.settingState.text = ""
+                    cell.iconImage.isHidden = true
+                    cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                } else {
+                    hideCell(cell: cell)
+                }
+            case 12:
+            // Unlock all
                 cell.settingDescription.text = ""
-                cell.centreLabel.text = "Reset Game Data"
+                cell.centreLabel.text = "Unlock All Items"
                 cell.settingState.text = ""
                 cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
-            } else {
-            // Kill ball
+                
+            case 13:
+            // Re-lock all
                 cell.settingDescription.text = ""
+                cell.centreLabel.text = "Reset All Unlocked Items"
                 cell.settingState.text = ""
-                cell.centreLabel.text = "Reset Ball"
                 cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+            default:
+                print("Error: Out of range")
+                break
             }
-        case 9:
-        // Restore purchases
-            cell.settingDescription.text = ""
-            cell.centreLabel.text = "Restore Purchases"
-            cell.settingState.text = ""
-            cell.iconImage.isHidden = true
-            cell.centreLabel.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-        
-        case 10:
-        // Unlock all
-            cell.settingDescription.text = ""
-            cell.centreLabel.text = "Unlock All Items"
-            cell.settingState.text = ""
-            cell.iconImage.isHidden = true
-            cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
-            
-        case 11:
-        // Re-lock all
-            cell.settingDescription.text = ""
-            cell.centreLabel.text = "Reset All Unlocked Items"
-            cell.settingState.text = ""
-            cell.iconImage.isHidden = true
-            cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
-        default:
-            print("Error: Out of range")
-            break
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
+            tableView.showsVerticalScrollIndicator = false
+            return cell
         }
-        tableView.showsVerticalScrollIndicator = false
-        
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-        }
-        
-        return cell
     }
     // Add content to cells
     
@@ -307,99 +391,184 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         
-        switch indexPath.row {
-        case 0:
-        // Premium
-            premiumSetting = !premiumSetting!
-            defaults.set(adsSetting!, forKey: "premiumSetting")
-            if premiumSetting == true {
-                adsSetting = false
-            } else {
-                adsSetting = true
+        if tableView == premiumTableView {
+            print("llama llama premium selected")
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
+            
+            UIView.animate(withDuration: 0.2) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
-            defaults.set(adsSetting!, forKey: "adsSetting")
-        case 1:
-        // Ads
-            adsSetting = !adsSetting!
-            defaults.set(adsSetting!, forKey: "adsSetting")
-        case 2:
-        // Sounds
-            soundsSetting = !soundsSetting!
-            defaults.set(soundsSetting!, forKey: "soundsSetting")
-        case 3:
-        // Music
-            musicSetting = !musicSetting!
-            defaults.set(musicSetting!, forKey: "musicSetting")
-        case 4:
-        // Haptics
-            hapticsSetting = !hapticsSetting!
-            defaults.set(hapticsSetting!, forKey: "hapticsSetting")
-        case 5:
-        // Parallax
-            parallaxSetting = !parallaxSetting!
-            defaults.set(parallaxSetting!, forKey: "parallaxSetting")
-            if parallaxSetting! {
-                addParallaxToView()
-            } else if parallaxSetting! == false {
-                if group != nil {
-                    backgroundView.removeMotionEffect(group!)
+            tableView.deselectRow(at: indexPath, animated: true)
+            // Update table view
+            
+        } else {
+            switch indexPath.row {
+            case 0:
+            // Premium
+                premiumSetting = !premiumSetting!
+                defaults.set(premiumSetting!, forKey: "premiumSetting")
+                if premiumSetting! {
+                    adsSetting = false
+                } else {
+                    adsSetting = true
                 }
+                defaults.set(adsSetting!, forKey: "adsSetting")
+                premiumTableViewHideShow(animated: true)
+            case 1:
+            // Ads
+                adsSetting = !adsSetting!
+                defaults.set(adsSetting!, forKey: "adsSetting")
+            case 2:
+            // App icon
+                hideAnimate()
+                moveToItemDetails(senderID: 0)
+            case 3:
+            // Theme
+                hideAnimate()
+                moveToItemDetails(senderID: 1)
+            case 4:
+            // Sounds
+                soundsSetting = !soundsSetting!
+                defaults.set(soundsSetting!, forKey: "soundsSetting")
+            case 5:
+            // Music
+                musicSetting = !musicSetting!
+                defaults.set(musicSetting!, forKey: "musicSetting")
+            case 6:
+            // Haptics
+                hapticsSetting = !hapticsSetting!
+                defaults.set(hapticsSetting!, forKey: "hapticsSetting")
+            case 7:
+            // Parallax
+                parallaxSetting = !parallaxSetting!
+                defaults.set(parallaxSetting!, forKey: "parallaxSetting")
+                if parallaxSetting! {
+                    addParallaxToView()
+                } else if parallaxSetting! == false {
+                    if group != nil {
+                        backgroundView.removeMotionEffect(group!)
+                    }
+                }
+            case 8:
+            // Paddle sensitivity
+                paddleSensitivitySetting = paddleSensitivitySetting!+1
+                if paddleSensitivitySetting! > 4 {
+                    paddleSensitivitySetting = 0
+                }
+                defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
+            case 9:
+            // Swipe up pause
+                swipeUpPause = !swipeUpPause!
+                defaults.set(swipeUpPause!, forKey: "swipeUpPause")
+            case 10:
+                if navigatedFrom! != "PauseMenu" {
+                // Reset game data
+                    showWarning(senderID: "resetData")
+                } else {
+                // Kill ball
+                    showWarning(senderID: "killBall")
+                }
+            case 11:
+            // Restore purchases
+                showPurchaseScreen()
+                IAPHandler().restorePurchase()
+                print("Restore purchase")
+            case 12:
+            // Unlock all
+                unlockAllItems()
+            case 13:
+            // Re-lock all
+                relockAllItems()
+            default:
+                print("out of range")
+                break
             }
-        case 6:
-        // Paddle sensitivity
-            paddleSensitivitySetting = paddleSensitivitySetting!+1
-            if paddleSensitivitySetting! > 4 {
-                paddleSensitivitySetting = 0
+            
+            UIView.animate(withDuration: 0.2) {
+                let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
             }
-            defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
-        case 7:
-        // Swipe up pause
-            swipeUpPause = !swipeUpPause!
-            defaults.set(swipeUpPause!, forKey: "swipeUpPause")
-        case 8:
-            if navigatedFrom! != "PauseMenu" {
-            // Reset game data
-                showWarning(senderID: "resetData")
+            tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
+            // Update table view
+        }
+    }
+    
+    func moveToItemDetails(senderID: Int) {
+        let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
+        itemsDetailView.senderID = senderID
+        self.addChild(itemsDetailView)
+        itemsDetailView.view.frame = self.view.frame
+        self.view.addSubview(itemsDetailView.view)
+        itemsDetailView.didMove(toParent: self)
+    }
+    
+    func hideAnimate() {
+        UIView.animate(withDuration: 0.25, animations: {
+            self.backgroundView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+            self.backgroundView.alpha = 0.0
+        })
+    }
+    
+    func premiumTableViewHideShow(animated: Bool) {
+        if premiumSetting! {
+            premiumTableView.isHidden = true
+            premiumTableExpanded.isActive = false
+            premiumTableCollapsed.isActive = true
+            backButtonCollapsed.isActive = true
+            backButtonExpanded.isActive = false
+
+        } else {
+            premiumTableView.isHidden = false
+            premiumTableExpanded.isActive = true
+            premiumTableCollapsed.isActive = false
+            backButtonExpanded.isActive = true
+            backButtonCollapsed.isActive = false
+        }
+        if animated {
+            UIView.animate(withDuration: 0.25) {
+                self.view.layoutIfNeeded()
+            }
+        }
+    }
+    
+    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+        for transaction in transactions {
+            if transaction.transactionState == .purchased {
+                print("User payment successful - settings")
+                IAPHandler().unlockPremiumContent()
+                SKPaymentQueue.default().finishTransaction(transaction)
+                
+            } else if transaction.transactionState == .failed {
+                if let error = transaction.error {
+                    let errorDescription = error.localizedDescription
+                    print("User payment failed/cancelled - settings: \(errorDescription)")
+                }
+                NotificationCenter.default.post(name: .iAPIncompleteNotification, object: nil)
+                SKPaymentQueue.default().finishTransaction(transaction)
+                
+            } else if transaction.transactionState == .restored {
+                print("User purchase restored - settings")
+                IAPHandler().unlockPremiumContent()
+                SKPaymentQueue.default().finishTransaction(transaction)
             } else {
-            // Kill ball
-                showWarning(senderID: "killBall")
+                print("llama other - settings")
             }
-        case 9:
-        // Restore purchases
-            print("Restore purchases")
-        case 10:
-        // Unlock all
-            unlockAllItems()
-        case 11:
-        // Re-lock all
-            relockAllItems()
-        default:
-            print("out of range")
-            break
         }
-        
-        UIView.animate(withDuration: 0.2) {
-            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-        }
-        
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        
-        tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadData()
-        // Update table view
     }
     
     func unlockAllItems() {
         totalStatsArray[0].levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray.map { _ in true }
-        totalStatsArray[0].ballUnlockedArray = totalStatsArray[0].ballUnlockedArray.map { _ in true }
-        totalStatsArray[0].paddleUnlockedArray = totalStatsArray[0].paddleUnlockedArray.map { _ in true }
+        totalStatsArray[0].themeUnlockedArray = totalStatsArray[0].themeUnlockedArray.map { _ in true }
         totalStatsArray[0].appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray.map { _ in true }
-        totalStatsArray[0].brickUnlockedArray = totalStatsArray[0].brickUnlockedArray.map { _ in true }
         totalStatsArray[0].levelUnlockedArray = totalStatsArray[0].levelUnlockedArray.map { _ in true }
         totalStatsArray[0].powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray.map { _ in true }
         totalStatsArray[0].achievementsUnlockedArray = totalStatsArray[0].achievementsUnlockedArray.map { _ in true }
@@ -445,10 +614,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        if tableView == premiumTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
+        } else {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -456,10 +633,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if tableView == premiumTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            }
+        } else {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     
@@ -483,9 +668,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         removeAnimate()
         if navigatedFrom! == "PauseMenu" {
             NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
@@ -777,6 +962,24 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         })
     }
     
+    func showPurchaseScreen() {
+        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
+        self.addChild(iAPVC)
+        iAPVC.view.frame = self.view.frame
+        self.view.addSubview(iAPVC.view)
+        iAPVC.didMove(toParent: self)
+    }
+    // Show iAPVC as popup
+    
+    func revealAnimate() {
+        self.backgroundView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        self.backgroundView.alpha = 0.0
+        UIView.animate(withDuration: 0.25, animations: {
+            self.backgroundView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            self.backgroundView.alpha = 1.0
+        })
+    }
+    
     @objc func resetNotificiationKeyReceived(_ notification: Notification) {
         resetData()
         userSettings()
@@ -784,16 +987,39 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if parallaxSetting! {
             addParallaxToView()
         }
+        premiumTableView.reloadData()
         settingsTableView.reloadData()
     }
     
     @objc func returnNotificiationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
+        premiumTableViewHideShow(animated: false)
         if parallaxSetting! {
             addParallaxToView()
         }
+        premiumTableView.reloadData()
         settingsTableView.reloadData()
+    }
+    
+    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
+        userSettings()
+        loadData()
+        premiumTableViewHideShow(animated: true)
+        premiumTableView.reloadData()
+        settingsTableView.reloadData()
+    }
+    
+    @objc func reanimateNotificiationKeyReceived(_ notification: Notification) {
+        userSettings()
+        loadData()
+        premiumTableViewHideShow(animated: false)
+        if parallaxSetting! {
+            addParallaxToView()
+        }
+        premiumTableView.reloadData()
+        settingsTableView.reloadData()
+        revealAnimate()
     }
     
 }
@@ -801,5 +1027,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 extension Notification.Name {
     public static let resetNotificiation = Notification.Name(rawValue: "resetNotificiation")
     public static let returnNotificiation = Notification.Name(rawValue: "returnNotificiation")
+    public static let reanimateNotificiation = Notification.Name(rawValue: "reanimateNotificiation")
+    public static let iAPcompleteNotification = Notification.Name(rawValue: "iAPcompleteNotification")
 }
 // Notification setup for sending information from the pause menu popup to unpause the game

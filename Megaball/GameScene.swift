@@ -150,6 +150,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Power-up empty progress bars
 	
 	var powerUpTray = SKSpriteNode()
+	var scoreBacker = SKSpriteNode()
 	
 	var screenBlockArray: [SKSpriteNode] = []
 
@@ -347,42 +348,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var ballTexture: SKTexture = SKTexture(imageNamed: "ballNormal")
 	let threeDBall: SKTexture = SKTexture(imageNamed: "3DBall")
 	let outlineBall: SKTexture = SKTexture(imageNamed: "outlineBall")
-	let diamondBall: SKTexture = SKTexture(imageNamed: "diamondBall")
-	let beachBall: SKTexture = SKTexture(imageNamed: "beachBall")
-	let concentricBall: SKTexture = SKTexture(imageNamed: "concentricBall")
-	let reuleauxBall: SKTexture = SKTexture(imageNamed: "reuleauxBall")
-	let dotBall: SKTexture = SKTexture(imageNamed: "dotBall")
-	let hobBall: SKTexture = SKTexture(imageNamed: "hobBall")
+	let squareBall: SKTexture = SKTexture(imageNamed: "squareBall")
+	let candyBall: SKTexture = SKTexture(imageNamed: "candyBall")
+	let splitBall: SKTexture = SKTexture(imageNamed: "splitBall")
+	let iceBall: SKTexture = SKTexture(imageNamed: "iceBallNormal")
+	let glassBall: SKTexture = SKTexture(imageNamed: "glassBallNormal")
 	let pixelBall: SKTexture = SKTexture(imageNamed: "pixelBall")
-	let loadingBall: SKTexture = SKTexture(imageNamed: "loadingBall")
+	let gigaBallNormal: SKTexture = SKTexture(imageNamed: "ballGigaNormal")
+	let rainbowBall: SKTexture = SKTexture(imageNamed: "rainbowBall")
 	let retroBall: SKTexture = SKTexture(imageNamed: "retroBall")
 	// regular ball texutes
 	
 	var gigaBallTexture: SKTexture = SKTexture(imageNamed: "ballGiga")
 	let threeDBallGiga: SKTexture = SKTexture(imageNamed: "3DBallGiga")
 	let outlineBallGiga: SKTexture = SKTexture(imageNamed: "outlineBallGiga")
-	let diamondBallGiga: SKTexture = SKTexture(imageNamed: "diamondBallGiga")
-	let beachBallGiga: SKTexture = SKTexture(imageNamed: "beachBallGiga")
-	let concentricBallGiga: SKTexture = SKTexture(imageNamed: "concentricBallGiga")
-	let reuleauxBallGiga: SKTexture = SKTexture(imageNamed: "reuleauxBallGiga")
-	let dotBallGiga: SKTexture = SKTexture(imageNamed: "dotBallGiga")
-	let hobBallGiga: SKTexture = SKTexture(imageNamed: "hobBallGiga")
+	let squareBallGiga: SKTexture = SKTexture(imageNamed: "squareBallGiga")
+	let candyBallGiga: SKTexture = SKTexture(imageNamed: "candyGiga")
+	let splitBallGiga: SKTexture = SKTexture(imageNamed: "splitBallGiga")
+	let iceBallGiga: SKTexture = SKTexture(imageNamed: "iceBallGiga")
+	let glassBallGiga: SKTexture = SKTexture(imageNamed: "glassBallGiga")
 	let pixelBallGiga: SKTexture = SKTexture(imageNamed: "pixelBallGiga")
-	let loadingBallGiga: SKTexture = SKTexture(imageNamed: "loadingBallGiga")
+	let rainbowBallGiga: SKTexture = SKTexture(imageNamed: "rainbowBallGiga")
 	let retroBallGiga: SKTexture = SKTexture(imageNamed: "retroBallGiga")
 	// giga ball texutes
 	
 	var undestructiballTexture: SKTexture = SKTexture(imageNamed: "ballUndestructi")
 	let threeDBallUndestructi: SKTexture = SKTexture(imageNamed: "3DBallUndestructi")
 	let outlineBallUndestructi: SKTexture = SKTexture(imageNamed: "outlineBallUndestructi")
-	let diamondBallUndestructi: SKTexture = SKTexture(imageNamed: "diamondBallUndestructi")
-	let beachBallUndestructi: SKTexture = SKTexture(imageNamed: "beachBallUndestructi")
-	let concentricBallUndestructi: SKTexture = SKTexture(imageNamed: "concentricBallUndestructi")
-	let reuleauxBallUndestructi: SKTexture = SKTexture(imageNamed: "reuleauxBallUndestructi")
-	let dotBallUndestructi: SKTexture = SKTexture(imageNamed: "dotBallUndestructi")
-	let hobBallUndestructi: SKTexture = SKTexture(imageNamed: "hobBallUndestructi")
+	let squareBallUndestructi: SKTexture = SKTexture(imageNamed: "squareBallUndestructi")
+	let candyBallUndestructi: SKTexture = SKTexture(imageNamed: "candyUndestructi")
+	let splitBallUndestructi: SKTexture = SKTexture(imageNamed: "splitBallUndestructi")
+	let iceBallUndestructi: SKTexture = SKTexture(imageNamed: "iceBallUndestructi")
+	let glassBallUndestructi: SKTexture = SKTexture(imageNamed: "glassBallUndestructi")
 	let pixelBallUndestructi: SKTexture = SKTexture(imageNamed: "pixelBallUndestructi")
-	let loadingBallUndestructi: SKTexture = SKTexture(imageNamed: "loadingBallUndestructi")
+	let rainbowBallUndestructi: SKTexture = SKTexture(imageNamed: "rainbowBallUndestructi")
 	let retroBallUndestructi: SKTexture = SKTexture(imageNamed: "retroBallUndestructi")
 	// undestructi-ball texutes
 	
@@ -394,7 +393,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let glassPaddle: SKTexture = SKTexture(imageNamed: "glassPaddle")
 	let pixelPaddle: SKTexture = SKTexture(imageNamed: "pixelPaddle")
 	let gigaPaddle: SKTexture = SKTexture(imageNamed: "gigaPaddle")
-	let stripyPaddle: SKTexture = SKTexture(imageNamed: "stripyPaddle")
+	let candyPaddle: SKTexture = SKTexture(imageNamed: "candyPaddle")
 	let splitPaddle: SKTexture = SKTexture(imageNamed: "splitPaddle")
 	let rainbowPaddle: SKTexture = SKTexture(imageNamed: "rainbowPaddle")
 	let retroPaddle: SKTexture = SKTexture(imageNamed: "retroPaddle")
@@ -402,12 +401,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var laserPaddleTexture: SKTexture = SKTexture(imageNamed: "regularLasers")
 	let threeDLaserTexture: SKTexture = SKTexture(imageNamed: "3DLasers")
+	let outlineLaserTexture: SKTexture = SKTexture(imageNamed: "outlineLasers")
 	let squareLaserTexture: SKTexture = SKTexture(imageNamed: "squareLasers")
+	let iceLaserTexture: SKTexture = SKTexture(imageNamed: "iceLasers")
 	let glassLaserTexture: SKTexture = SKTexture(imageNamed: "glassLasers")
+	let pixelLaserTexture: SKTexture = SKTexture(imageNamed: "pixelLasers")
+	let gigaLaserTexture: SKTexture = SKTexture(imageNamed: "gigaLasers")
+	let candyLaserTexture: SKTexture = SKTexture(imageNamed: "stripyLasers")
+	let splitLaserTexture: SKTexture = SKTexture(imageNamed: "splitLasers")
 	let rainbowLaserTexture: SKTexture = SKTexture(imageNamed: "rainbowLasers")
 	let retroLaserTexture: SKTexture = SKTexture(imageNamed: "retroLasers")
-	let gigaLaserTexture: SKTexture = SKTexture(imageNamed: "gigaLasers")
-	let stripyLaserTexture: SKTexture = SKTexture(imageNamed: "stripyLasers")
 	// paddle laser textures
 	
 	var stickyPaddleTexture: SKTexture = SKTexture(imageNamed: "regularSticky")
@@ -419,6 +422,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let retroStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "retroSticky")
 	let splitStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "splitSticky")
 	let squareStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "squareSticky")
+	let gigaStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "gigaSticky")
+	let candyStickyPaddleTexture: SKTexture = SKTexture(imageNamed: "candySticky")
 	// paddle sticky textures
 
 	let backStopTexture: SKTexture = SKTexture(imageNamed: "backStopTexture")
@@ -440,6 +445,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let laserViolet: SKTexture = SKTexture(imageNamed: "laserViolet")
 	let laserRetroPink: SKTexture = SKTexture(imageNamed: "laserRetroPink")
 	let laserRetroBlue: SKTexture = SKTexture(imageNamed: "laserRetroBlue")
+	let laserGigaNormal: SKTexture = SKTexture(imageNamed: "laserGigaNormal")
 	// regular laser textures
 	
     var laserGigaTexture: SKTexture = SKTexture(imageNamed: "laserGiga")
@@ -659,9 +665,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 //MARK: - Object Initialisation
 		
-		let ballTextureArray = [ballTexture, threeDBall, outlineBall, diamondBall, beachBall, concentricBall, reuleauxBall, dotBall, hobBall, pixelBall, loadingBall, retroBall]
-		let ballGigaTextureArray = [gigaBallTexture, threeDBallGiga, outlineBallGiga, diamondBallGiga, beachBallGiga, concentricBallGiga, reuleauxBallGiga, dotBallGiga, hobBallGiga, pixelBallGiga, loadingBallGiga, retroBallGiga]
-		let ballUndestructiTextureArray = [undestructiballTexture, threeDBallUndestructi, outlineBallUndestructi, diamondBallUndestructi, beachBallUndestructi, concentricBallUndestructi, reuleauxBallUndestructi, dotBallUndestructi, hobBallUndestructi, pixelBallUndestructi, loadingBallUndestructi, retroBallUndestructi]
+		let ballTextureArray = [ballTexture, threeDBall, iceBall, outlineBall, squareBall, glassBall, pixelBall, splitBall, candyBall, gigaBallNormal, rainbowBall, retroBall]
+		let ballGigaTextureArray = [gigaBallTexture, threeDBallGiga, iceBallGiga, outlineBallGiga, squareBallGiga, glassBallGiga, pixelBallGiga, splitBallGiga, candyBallGiga, gigaBallTexture, rainbowBallGiga, retroBallGiga]
+		let ballUndestructiTextureArray = [undestructiballTexture, threeDBallUndestructi, iceBallUndestructi, outlineBallUndestructi, squareBallUndestructi, glassBallUndestructi, pixelBallUndestructi, splitBallUndestructi, candyBallUndestructi, undestructiballTexture, rainbowBallUndestructi, retroBallUndestructi]
 		// ball texture arrays
 		
 		ballTexture = ballTextureArray[ballSetting!]
@@ -669,9 +675,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		undestructiballTexture = ballUndestructiTextureArray[ballSetting!]
 		// ball texture set
 		
-		let paddleTextureArray = [paddleTexture, threeDPaddle, outlinePaddle, squarePaddle, icePaddle, glassPaddle, pixelPaddle, gigaPaddle, stripyPaddle, splitPaddle, rainbowPaddle, retroPaddle]
-		let laserPaddleTextureArray = [laserPaddleTexture, threeDLaserTexture, laserPaddleTexture, squareLaserTexture, glassLaserTexture, glassLaserTexture, squareLaserTexture, gigaLaserTexture, stripyLaserTexture, laserPaddleTexture, rainbowLaserTexture, retroLaserTexture]
-		let stickyPaddleTextureArray = [stickyPaddleTexture, threeDStickyPaddleTexture, outlineStickyPaddleTexture, squareStickyPaddleTexture, glassStickyPaddleTexture, glassStickyPaddleTexture, pixelStickyPaddleTexture, stickyPaddleTexture, stickyPaddleTexture, splitStickyPaddleTexture, rainbowStickyPaddleTexture, retroStickyPaddleTexture]
+		let paddleTextureArray = [paddleTexture, threeDPaddle, icePaddle, outlinePaddle, squarePaddle, glassPaddle, pixelPaddle, splitPaddle, candyPaddle, gigaPaddle, rainbowPaddle, retroPaddle]
+		let laserPaddleTextureArray = [laserPaddleTexture, threeDLaserTexture, iceLaserTexture, outlineLaserTexture, squareLaserTexture, glassLaserTexture, pixelLaserTexture, splitLaserTexture, candyLaserTexture, gigaLaserTexture, rainbowLaserTexture, retroLaserTexture]
+		let stickyPaddleTextureArray = [stickyPaddleTexture, threeDStickyPaddleTexture, glassStickyPaddleTexture, outlineStickyPaddleTexture, squareStickyPaddleTexture, glassStickyPaddleTexture, pixelStickyPaddleTexture, splitStickyPaddleTexture, candyStickyPaddleTexture, gigaStickyPaddleTexture, rainbowStickyPaddleTexture, retroStickyPaddleTexture]
 		// paddle texture arrays
 		
 		paddleTexture = paddleTextureArray[paddleSetting!]
@@ -679,8 +685,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		stickyPaddleTexture = stickyPaddleTextureArray[paddleSetting!]
 		// paddle texture set
 		
-		let laserTextureArray = [laserNormalTexture, laser3D, laserOutline, laserSquare, laserGlass, laserGlass, laserPixel, laserNormalTexture, laserRed, laserSplit, laserRed, laserRetroPink]
-		let laserGigaTextureArray = [laserGigaTexture, laser3DGiga, laserOutlineGiga, laserSquareGiga, laserGlassGiga, laserGlassGiga, laserPixelGiga, laserGigaTexture, laserGigaTexture, laserSplitGiga, laserGigaTexture, laserGigaTexture]
+		// classic, 3d, ice, outline, square, glass, pixel, split, candy, giga, rainbow, retro
+		
+		let laserTextureArray = [laserNormalTexture, laser3D, laserGlass, laserOutline, laserSquare, laserGlass, laserPixel, laserSplit, laserRed, laserGigaNormal, laserRed, laserRetroPink]
+		let laserGigaTextureArray = [laserGigaTexture, laser3DGiga, laserGlassGiga, laserOutlineGiga, laserSquareGiga, laserGlassGiga, laserPixelGiga, laserSplitGiga, laserGigaTexture, laserGigaTexture, laserGigaTexture, laserGigaTexture]
 		
 		rainbowLaserArray = [laserRed, laserOrange, laserYellow, laserGreen, laserBlue, laserIndigo, laserViolet]
 		stripyLaserArray = [laserRed, laserNormalTexture]
@@ -752,6 +760,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
+		scoreBacker = self.childNode(withName: "scoreBacker") as! SKSpriteNode
 		// Power-up area
 		
 		screenRatio = frame.size.height/frame.size.width
@@ -1039,12 +1048,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpTray.size.height = iconSize*2
 		powerUpTray.position.x = 0
 		
+		
+		
 		if screenSize == "X" {
+			scoreBacker.isHidden = true
 			powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - powerUpTray.size.height/2 - labelSpacing/2
 		} else {
+			scoreBacker.isHidden = false
 			powerUpTray.position.y = frame.size.height/2 - powerUpTray.size.height/2
 			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight - labelSpacing/2 - pauseButton.size.height/2
 		}
+		
+		scoreBacker.zPosition = 8
+		scoreBacker.size.width = gameWidth
+		scoreBacker.size.height = (iconSize*2)/3*2
+		scoreBacker.position.x = 0
+		scoreBacker.position.y = powerUpTray.position.y - powerUpTray.size.height/2 - scoreBacker.size.height/2
 		
 		scoreLabel.position.x = frame.size.width/2 - labelSpacing*2
 		scoreLabel.position.y = pauseButton.position.y + fontSize/4 + labelSpacing/2
@@ -1052,6 +1071,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		scoreLabel.zPosition = 10
 		
 		if screenSize == "Pad" {
+			scoreBacker.isHidden = false
 			pauseButton.position.x = sideScreenBlockLeft.position.x + sideScreenBlockLeft.size.width/2 + pauseButton.size.width/2 + layoutUnit/2
 			scoreLabel.position.x = sideScreenBlockRight.position.x - sideScreenBlockRight.size.width/2 - layoutUnit/2
 		}
@@ -3995,6 +4015,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		self.removeAction(forKey: "gameTimer")
 		// Stop the level timer
 		
+		readyCountdown.isHidden = true
+		goCountdown.isHidden = true
+		
 		var score = totalScore
 		if sender == "Pause" {
 			score = totalScore + levelScore
@@ -4277,7 +4300,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// rainbow lasers
 			
-			if paddleTexture == stripyPaddle {
+			if paddleTexture == candyPaddle {
 				if stripyLaserIndex > stripyLaserArray.count-1 {
 					stripyLaserIndex = 0
 				}
@@ -5249,6 +5272,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					case "backstop":
 						backstop.size.height = self.paddleHeight
 						backstop.size.width = self.gameWidth-2
+						self.backstop.run(SKAction.scaleX(by: 0.25, y: 1, duration: 0.0))
 						self.backstop.run(SKAction.scaleX(by: 4, y: 1, duration: 0.0))
 						self.backstop.isHidden = false
 						self.backstopCatches = 1

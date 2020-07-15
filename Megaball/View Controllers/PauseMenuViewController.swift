@@ -97,7 +97,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            cell.iconImage.image = UIImage(named:"ButtonHome.png")
             cell.widthConstraint.constant = 40
         case 1:
             if self.sender == "Pause" {
@@ -127,9 +127,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
-            if self.hapticsSetting! {
-                self.interfaceHaptic.impactOccurred()
-            }
+//            if self.hapticsSetting! {
+//                self.interfaceHaptic.impactOccurred()
+//            }
             if sender == "Pause" {
                 showWarning(senderID: "pauseMenu")
             } else {
@@ -141,16 +141,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
         if indexPath.row == 1 {
             if self.sender == "Pause" {
-                if self.hapticsSetting! {
-                    self.interfaceHaptic.impactOccurred()
-                }
+//                if self.hapticsSetting! {
+//                    self.interfaceHaptic.impactOccurred()
+//                }
                 removeAnimate(nextAction: .unpause)
             }
         }
         if indexPath.row == 2 {
-            if self.hapticsSetting! {
-                self.interfaceHaptic.impactOccurred()
-            }
+//            if self.hapticsSetting! {
+//                self.interfaceHaptic.impactOccurred()
+//            }
             if self.sender == "Pause" {
                 hideAnimate()
                 moveToSettings()
@@ -173,7 +173,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 if self.hapticsSetting! {
                     self.interfaceHaptic.impactOccurred()
                 }
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.iconImage.image = UIImage(named:"ButtonHomeHighlighted.png")
             case 1:
                 if self.sender == "Pause" {
                     if self.hapticsSetting! {
@@ -211,7 +211,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 if self.hapticsSetting! {
                     self.interfaceHaptic.impactOccurred()
                 }
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.iconImage.image = UIImage(named:"ButtonHome.png")
             case 1:
                 if self.sender == "Pause" {
                     if self.hapticsSetting! {

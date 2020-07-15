@@ -91,23 +91,23 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         switch indexPath.row {
         case 0:
-            cell.settingDescription.text = "App Icons"
-            cell.iconImage.image = UIImage(named:"iconAppIcon.png")!
-        case 1:
             cell.settingDescription.text = "Power-Ups"
             cell.iconImage.image = UIImage(named:"iconPowerUp.png")!
-        case 2:
-            cell.settingDescription.text = "Balls"
-            cell.iconImage.image = UIImage(named:"iconBalls.png")!
-        case 3:
-            cell.settingDescription.text = "Paddles"
-            cell.iconImage.image = UIImage(named:"iconPaddles.png")!
-        case 4:
-            cell.settingDescription.text = "Bricks"
-            cell.iconImage.image = UIImage(named:"iconBricks.png")!
-        case 5:
+        case 1:
             cell.settingDescription.text = "Achievements"
             cell.iconImage.image = UIImage(named:"iconAchievements.png")!
+        case 2:
+            cell.settingDescription.text = "Statistics"
+            cell.iconImage.image = UIImage(named:"iconStats.png")!
+        case 3:
+            cell.settingDescription.text = "About"
+            cell.iconImage.image = UIImage(named:"iconAbout.png")!
+        case 4:
+            cell.settingDescription.text = "Tutorial"
+            cell.iconImage.image = UIImage(named:"iconTutorial.png")!
+        case 5:
+            cell.settingDescription.text = "Giga-Ball Premium"
+            cell.iconImage.image = UIImage(named:"iconPremium.png")!
         default:
             break
         }
@@ -121,19 +121,39 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
+//        
         UIView.animate(withDuration: 0.2) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
             cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
-        
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        
         hideAnimate()
-        moveToItemDetails(senderID: indexPath.row)
+        
+        switch indexPath.row {
+        case 0:
+        // Power-ups
+            moveToItemDetails(senderID: 2)
+        case 1:
+        // Achievements
+            moveToItemDetails(senderID: 3)
+        case 2:
+        // Stats
+            moveToStats()
+        case 3:
+        // About
+            moveToAbout()
+        case 4:
+        // Tutorial
+            break
+        case 5:
+        // Premium
+            break
+        default:
+            break
+        }
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
@@ -190,7 +210,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
             if gameCenterSetting! {
-                cell.iconImage.image = UIImage(named:"ButtonAchievements")
+                cell.iconImage.image = UIImage(named:"ButtonItems")
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             }
@@ -211,15 +231,15 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.row == 0 {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             removeAnimate()
         }
         if indexPath.row == 1 && gameCenterSetting! {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             showGameCenterAchievements()
         }
         
@@ -243,7 +263,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     if self.hapticsSetting! {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonAchievementsHighlighted")
+                    cell.iconImage.image = UIImage(named:"ButtonItemsHighlighted")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
@@ -272,7 +292,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     if self.hapticsSetting! {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonAchievements")
+                    cell.iconImage.image = UIImage(named:"ButtonItems")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
@@ -292,6 +312,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         itemsDetailView.view.frame = self.view.frame
         self.view.addSubview(itemsDetailView.view)
         itemsDetailView.didMove(toParent: self)
+    }
+    
+    func moveToAbout() {
+        let aboutView = self.storyboard?.instantiateViewController(withIdentifier: "aboutVC") as! AboutViewController
+        self.addChild(aboutView)
+        aboutView.view.frame = self.view.frame
+        self.view.addSubview(aboutView.view)
+        aboutView.didMove(toParent: self)
     }
         
     func userSettings() {
@@ -382,6 +410,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         group = UIMotionEffectGroup()
         group!.motionEffects = [horizontal, vertical]
         itemsView.addMotionEffect(group!)
+    }
+    
+    func moveToStats() {
+        let statsView = self.storyboard?.instantiateViewController(withIdentifier: "statsView") as! StatsViewController
+        self.addChild(statsView)
+        statsView.view.frame = self.view.frame
+        self.view.addSubview(statsView.view)
+        statsView.didMove(toParent: self)
     }
     
     func showAnimate() {

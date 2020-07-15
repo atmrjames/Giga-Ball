@@ -113,6 +113,7 @@
 		1A661D2023DDCF4F0063CE5A /* Ad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A661D1F23DDCF4F0063CE5A /* Ad.swift */; };
 		1A661D2223DDEC340063CE5A /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A661D2123DDEC340063CE5A /* SettingsViewController.swift */; };
 		1A6673792358F62800EE8F7E /* PauseMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */; };
+		1A6BBFB124B9D09600CF2169 /* InAppPurchaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6BBFB024B9D09600CF2169 /* InAppPurchaseViewController.swift */; };
 		1A6E15EF23F58A5F002F8D8B /* StatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6E15EE23F58A5F002F8D8B /* StatsViewController.swift */; };
 		1A6E15F123F58A7C002F8D8B /* ItemsDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6E15F023F58A7C002F8D8B /* ItemsDetailViewController.swift */; };
 		1A7A34CA240E640600044C87 /* FugazOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A5BBB2C240D75240087A879 /* FugazOne-Regular.ttf */; };
@@ -161,6 +162,8 @@
 		1A82B52024299A2000694B67 /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A82B51F24299A2000694B67 /* GameKit.framework */; };
 		1A82B52224299C8100694B67 /* GameCenterHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A82B52124299C8100694B67 /* GameCenterHandler.swift */; };
 		1A850392247FBC2D00B8E9B3 /* ballPaddleHit.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1A850391247FBC2D00B8E9B3 /* ballPaddleHit.mp3 */; };
+		1A8AB85D24B97C0200D918B1 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A8AB85C24B97C0200D918B1 /* StoreKit.framework */; };
+		1A8AB85F24B98F5D00D918B1 /* IAPHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A8AB85E24B98F5D00D918B1 /* IAPHandler.swift */; };
 		1A943635245D5FBB00388D6C /* Level081.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A943634245D5FBB00388D6C /* Level081.swift */; };
 		1A943637245D5FC000388D6C /* Level082.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A943636245D5FC000388D6C /* Level082.swift */; };
 		1A943639245D5FC600388D6C /* Level083.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A943638245D5FC600388D6C /* Level083.swift */; };
@@ -340,6 +343,7 @@
 		1A661D1F23DDCF4F0063CE5A /* Ad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ad.swift; sourceTree = "<group>"; };
 		1A661D2123DDEC340063CE5A /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseMenuViewController.swift; sourceTree = "<group>"; };
+		1A6BBFB024B9D09600CF2169 /* InAppPurchaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppPurchaseViewController.swift; sourceTree = "<group>"; };
 		1A6E15EE23F58A5F002F8D8B /* StatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsViewController.swift; sourceTree = "<group>"; };
 		1A6E15F023F58A7C002F8D8B /* ItemsDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ItemsDetailViewController.swift; path = "/Users/James/Megaball/Megaball/View Controllers/ItemsDetailViewController.swift"; sourceTree = "<absolute>"; };
 		1A7A34CB240E901500044C87 /* Level013.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level013.swift; sourceTree = "<group>"; };
@@ -388,6 +392,8 @@
 		1A82B51F24299A2000694B67 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
 		1A82B52124299C8100694B67 /* GameCenterHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterHandler.swift; sourceTree = "<group>"; };
 		1A850391247FBC2D00B8E9B3 /* ballPaddleHit.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ballPaddleHit.mp3; sourceTree = "<group>"; };
+		1A8AB85C24B97C0200D918B1 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		1A8AB85E24B98F5D00D918B1 /* IAPHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPHandler.swift; sourceTree = "<group>"; };
 		1A943634245D5FBB00388D6C /* Level081.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level081.swift; sourceTree = "<group>"; };
 		1A943636245D5FC000388D6C /* Level082.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level082.swift; sourceTree = "<group>"; };
 		1A943638245D5FC600388D6C /* Level083.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level083.swift; sourceTree = "<group>"; };
@@ -467,6 +473,7 @@
 				1A1CCF6F24B0840200336F53 /* CloudKit.framework in Frameworks */,
 				2502B01B0C928E896886F6F8 /* Pods_Megaball.framework in Frameworks */,
 				1A82B52024299A2000694B67 /* GameKit.framework in Frameworks */,
+				1A8AB85D24B97C0200D918B1 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -648,8 +655,8 @@
 				1A5A94912309E4F40076D635 /* Assets.xcassets */,
 				1A5A94962309E4F40076D635 /* Info.plist */,
 				1A7EE25224AE03730045B3FA /* Giga-Ball.entitlements */,
-				1A5A948E2309E4F30076D635 /* Main.storyboard */,
 				1A5A94932309E4F40076D635 /* LaunchScreen.storyboard */,
+				1A5A948E2309E4F30076D635 /* Main.storyboard */,
 				1A5A94862309E4F30076D635 /* GameScene.sks */,
 				1A5A94882309E4F30076D635 /* Actions.sks */,
 				1A5A94842309E4F30076D635 /* AppDelegate.swift */,
@@ -659,6 +666,7 @@
 				1AE9574C23257BC200E5618A /* View Controllers */,
 				1A5A94A2230F089A0076D635 /* Game States */,
 				1A5D804723E9A33F00F50BE0 /* Custom Cells */,
+				1A8AB85E24B98F5D00D918B1 /* IAPHandler.swift */,
 				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
 				1A7DFC7023F2B18700D7CD1B /* Fonts */,
 				1A408A4C247BC8010009BA8F /* Sounds */,
@@ -918,6 +926,7 @@
 				1A6673782358F62800EE8F7E /* PauseMenuViewController.swift */,
 				1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */,
 				1AFEA46324414029006E765F /* InbetweenViewController.swift */,
+				1A6BBFB024B9D09600CF2169 /* InAppPurchaseViewController.swift */,
 			);
 			path = "View Controllers";
 			sourceTree = "<group>";
@@ -946,6 +955,7 @@
 		574CE7D6FC78ECBFB980A8C3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1A8AB85C24B97C0200D918B1 /* StoreKit.framework */,
 				1A1CCF6E24B0840200336F53 /* CloudKit.framework */,
 				1A82B51F24299A2000694B67 /* GameKit.framework */,
 				88B48EF8C02FF4C9CD3C7E46 /* Pods_Megaball.framework */,
@@ -1215,6 +1225,7 @@
 				1AC8A40A244403460084C9E9 /* Level021.swift in Sources */,
 				1A31942924441D13004917D0 /* Level053.swift in Sources */,
 				1AD4686723ED6BC6004EF873 /* LevelPackSetup.swift in Sources */,
+				1A8AB85F24B98F5D00D918B1 /* IAPHandler.swift in Sources */,
 				1A28AF5F244DB4F0007A1A3E /* Level061.swift in Sources */,
 				1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */,
 				1A31940C24440BC0004917D0 /* Level039.swift in Sources */,
@@ -1222,6 +1233,7 @@
 				1A943635245D5FBB00388D6C /* Level081.swift in Sources */,
 				1A31941524441CCE004917D0 /* Level043.swift in Sources */,
 				1A31940624440BAF004917D0 /* Level036.swift in Sources */,
+				1A6BBFB124B9D09600CF2169 /* InAppPurchaseViewController.swift in Sources */,
 				1A94364B245D600800388D6C /* Level092.swift in Sources */,
 				1A28AF85244DB5BD007A1A3E /* Level080.swift in Sources */,
 				1A31941924441CDA004917D0 /* Level045.swift in Sources */,

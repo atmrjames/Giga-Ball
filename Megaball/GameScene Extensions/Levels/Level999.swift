@@ -40,48 +40,64 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if (i == 0 || i == 1) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-                    brick.texture = brickIndestructible1Texture
+                let randomBrick = Int.random(in: 1...100)
+                if randomBrick <= 5 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickWhite
+                } else if randomBrick > 5 && randomBrick <= 6 {
+                    brick.texture = brickMultiHit3Texture
                 }
                 
-                if (i == 2 || i == 3) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
-                    brick.texture = brickMultiHit1Texture
+                if i >= 19 {
+                    brick.texture = brickNullTexture
                 }
-                if (i == 4 || i == 5) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-                    brick.texture = brickMultiHit1Texture
+                if i == 21 && j == 5 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickGreenGigaball
                 }
                 
-                if (i == 6 || i == 7) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
-                    brick.texture = brickInvisibleTexture
-                }
-                if (i == 8 || i == 9) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-                    brick.texture = brickInvisibleTexture
-                }
-                
-                if (i == 10 || i == 11) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
-                if (i == 12 || i == 13) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
-                if (i == 14 || i == 15) && (j == 2 || j == 4 || j == 6 || j == 8) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
-                if (i == 16 || i == 17) && (j == 3 || j == 5 || j == 7) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
-                if (i == 18 || i == 19) && (j == 4 || j == 6) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
-                if (i == 20 || i == 21) && j == 5 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
+//                if (i == 0 || i == 1) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
+//                    brick.texture = brickIndestructible1Texture
+//                }
+//
+//                if (i == 2 || i == 3) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
+//                    brick.texture = brickMultiHit1Texture
+//                }
+//                if (i == 4 || i == 5) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
+//                    brick.texture = brickMultiHit1Texture
+//                }
+//
+//                if (i == 6 || i == 7) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
+//                    brick.texture = brickInvisibleTexture
+//                }
+//                if (i == 8 || i == 9) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
+//                    brick.texture = brickInvisibleTexture
+//                }
+//
+//                if (i == 10 || i == 11) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
+//                if (i == 12 || i == 13) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
+//                if (i == 14 || i == 15) && (j == 2 || j == 4 || j == 6 || j == 8) {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
+//                if (i == 16 || i == 17) && (j == 3 || j == 5 || j == 7) {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
+//                if (i == 18 || i == 19) && (j == 4 || j == 6) {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
+//                if (i == 20 || i == 21) && j == 5 {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffsetEndless - brickHeight*CGFloat(i))
                 

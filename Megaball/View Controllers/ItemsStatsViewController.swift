@@ -103,12 +103,16 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         if sender == "Power-Ups" {
             switch indexPath.row {
             case 0:
-                cell.statDescription.text = "Mutliplier"
                 if LevelPackSetup().powerUpMultiplierArray[passedIndex!] == "" {
                     hideCell(cell: cell)
                     return cell
                 } else {
                     cell.statValue.text = LevelPackSetup().powerUpMultiplierArray[passedIndex!]
+                    if LevelPackSetup().powerUpMultiplierArray[passedIndex!] == "+0.1x" {
+                        cell.statDescription.text = "Mutliplier bonus"
+                    } else {
+                        cell.statDescription.text = "Mutliplier penalty"
+                    }
                 }
                 return cell
             case 1:
@@ -125,12 +129,12 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 }
                 return cell
             case 2:
-                cell.statDescription.text = "Collected"
-                cell.statValue.text = String(totalStatsArray[0].powerupsCollected[passedIndex!])
+                cell.statDescription.text = "Generated"
+                cell.statValue.text = String(totalStatsArray[0].powerupsGenerated[passedIndex!])
                 return cell
             case 3:
-                cell.statDescription.text = "Left"
-                cell.statValue.text = String(totalStatsArray[0].powerupsGenerated[passedIndex!] - totalStatsArray[0].powerupsCollected[passedIndex!])
+                cell.statDescription.text = "Collected"
+                cell.statValue.text = String(totalStatsArray[0].powerupsCollected[passedIndex!])
                 return cell
             case 4:
                 if totalStatsArray[0].powerupsGenerated[passedIndex!] == 0 {
@@ -190,9 +194,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         removeAnimate()
         NotificationCenter.default.post(name: .returnItemStatsNotification, object: nil)
         collectionView.deselectItem(at: indexPath, animated: true)

@@ -81,10 +81,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Check if this is the first opening of the app since closing to know if to run splash screen
     
     @IBAction func logoButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        moveToAbout()
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
+//        moveToAbout()
     }
     
     @IBOutlet var bannerView: GADBannerView!
@@ -243,9 +243,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         
         UIView.animate(withDuration: 0.1) {
             let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
@@ -318,9 +318,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonStats.png")
+            cell.iconImage.image = UIImage(named:"ButtonInfo.png")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonItems.png")
+            cell.iconImage.image = nil
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonSettings.png")
         default:
@@ -336,15 +336,15 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+//        if hapticsSetting! {
+//            interfaceHaptic.impactOccurred()
+//        }
         
         if indexPath.row == 0 {
-            moveToStats()
+            moveToItems()
         }
         if indexPath.row == 1 {
-            moveToItems()
+            
         }
         if indexPath.row == 2 {
             moveToSettings()
@@ -355,19 +355,23 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
+        
         UIView.animate(withDuration: 0.1) {
             let cell = self.iconCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
             switch indexPath.row {
             case 0:
-                cell.iconImage.image = UIImage(named:"ButtonStatsHighlighted.png")
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
+                cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonItemsHighlighted.png")
+                cell.iconImage.image = nil
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
             default:
                 print("Error: Out of range")
@@ -377,19 +381,22 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
         UIView.animate(withDuration: 0.1) {
             let cell = self.iconCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
             cell.view.transform = .identity
             
             switch indexPath.row {
             case 0:
-                cell.iconImage.image = UIImage(named:"ButtonStats.png")
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
+                cell.iconImage.image = UIImage(named:"ButtonInfo.png")
             case 1:
-                cell.iconImage.image = UIImage(named:"ButtonItems.png")
+                cell.iconImage.image = nil
             case 2:
+                if self.hapticsSetting! {
+                    self.interfaceHaptic.impactOccurred()
+                }
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
             default:
                 print("Error: Out of range")
@@ -416,7 +423,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["paddleSetting": 0])
         defaults.register(defaults: ["brickSetting": 0])
         defaults.register(defaults: ["appIconSetting": 0])
-        defaults.register(defaults: ["statsCollapseSetting": false])
+        defaults.register(defaults: ["statsCollapseSetting": true])
         defaults.register(defaults: ["swipeUpPause": true])
         // User settings
         
@@ -479,28 +486,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Segue to Settings
     
-    func moveToAbout() {
-        let aboutView = self.storyboard?.instantiateViewController(withIdentifier: "aboutVC") as! AboutViewController
-        self.addChild(aboutView)
-        aboutView.view.frame = self.view.frame
-        self.view.addSubview(aboutView.view)
-        aboutView.didMove(toParent: self)
-    }
-    
     func moveToItems() {
         let itemsView = self.storyboard?.instantiateViewController(withIdentifier: "itemsView") as! ItemsViewController
         self.addChild(itemsView)
         itemsView.view.frame = self.view.frame
         self.view.addSubview(itemsView.view)
         itemsView.didMove(toParent: self)
-    }
-    
-    func moveToStats() {
-        let statsView = self.storyboard?.instantiateViewController(withIdentifier: "statsView") as! StatsViewController
-        self.addChild(statsView)
-        statsView.view.frame = self.view.frame
-        self.view.addSubview(statsView.view)
-        statsView.didMove(toParent: self)
     }
     
     func loadData() {
@@ -602,8 +593,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         savePowerUpActiveTimerArray = defaults.object(forKey: "savePowerUpActiveTimerArray") as! [Double]?
         savePowerUpActiveMagnitudeArray = defaults.object(forKey: "savePowerUpActiveMagnitudeArray") as! [Int]?
         // Game save settings
-        
-        
     }
     
     func checkPremium() {

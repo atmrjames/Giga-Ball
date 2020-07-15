@@ -57,6 +57,14 @@ final class GameCenterHandler: NSObject {
     var saveBrickXPositionArray: [Int]?
     var saveBrickYPositionArray: [Int]?
     var saveBallPropertiesArray: [Double]?
+    var savePowerUpFallingXPositionArray: [Int]?
+    var savePowerUpFallingYPositionArray: [Int]?
+    var savePowerUpFallingArray: [Int]?
+    var savePowerUpActiveArray: [String]?
+    var savePowerUpActiveDurationArray: [Double]?
+    var savePowerUpActiveTimerArray: [Double]?
+    var savePowerUpActiveMagnitudeArray: [Int]?
+
     // Game save settings
     let userDefaultsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("userDefaultsStore.plist")
     // User defaults
@@ -322,7 +330,14 @@ final class GameCenterHandler: NSObject {
         UserDefaultsCloudSave().saveBrickXPositionArray = saveBrickXPositionArray
         UserDefaultsCloudSave().saveBrickYPositionArray = saveBrickYPositionArray
         UserDefaultsCloudSave().saveBallPropertiesArray = saveBallPropertiesArray
-
+        
+        UserDefaultsCloudSave().savePowerUpFallingXPositionArray = savePowerUpFallingXPositionArray
+        UserDefaultsCloudSave().savePowerUpFallingYPositionArray = savePowerUpFallingYPositionArray
+        UserDefaultsCloudSave().savePowerUpFallingArray = savePowerUpFallingArray
+        UserDefaultsCloudSave().savePowerUpActiveArray = savePowerUpActiveArray
+        UserDefaultsCloudSave().savePowerUpActiveDurationArray = savePowerUpActiveDurationArray
+        UserDefaultsCloudSave().savePowerUpActiveTimerArray = savePowerUpActiveTimerArray
+        UserDefaultsCloudSave().savePowerUpActiveMagnitudeArray = savePowerUpActiveMagnitudeArray
     }
     // Sync UserDefaultsCloudSave with current UserDefaults ahead of save
     
@@ -354,7 +369,16 @@ final class GameCenterHandler: NSObject {
         saveBrickXPositionArray = defaults.object(forKey: "saveBrickXPositionArray") as! [Int]?
         saveBrickYPositionArray = defaults.object(forKey: "saveBrickYPositionArray") as! [Int]?
         saveBallPropertiesArray = defaults.object(forKey: "saveBallPropertiesArray") as! [Double]?
+        
+        savePowerUpFallingXPositionArray = defaults.object(forKey: "savePowerUpFallingXPositionArray") as! [Int]?
+        savePowerUpFallingYPositionArray = defaults.object(forKey: "savePowerUpFallingYPositionArray") as! [Int]?
+        savePowerUpFallingArray = defaults.object(forKey: "savePowerUpFallingArray") as! [Int]?
+        savePowerUpActiveArray = defaults.object(forKey: "savePowerUpActiveArray") as! [String]?
+        savePowerUpActiveDurationArray = defaults.object(forKey: "savePowerUpActiveDurationArray") as! [Double]?
+        savePowerUpActiveTimerArray = defaults.object(forKey: "savePowerUpActiveTimerArray") as! [Double]?
+        savePowerUpActiveMagnitudeArray = defaults.object(forKey: "savePowerUpActiveMagnitudeArray") as! [Int]?
         // Game save settings
+
     }
         
 }

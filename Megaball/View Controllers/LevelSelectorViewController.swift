@@ -76,7 +76,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
         statsCollapseSetting = !statsCollapseSetting!
         defaults.set(statsCollapseSetting!, forKey: "statsCollapseSetting")
-        statsTableOpenClose()
+        statsTableOpenClose(animated: true)
     }
     
     override func viewDidLoad() {
@@ -111,7 +111,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             addParallax()
         }
         updateLabels()
-        statsTableOpenClose()
+        statsTableOpenClose(animated: false)
         showAnimate()
         reloadData()
     }
@@ -269,9 +269,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == self.levelsTableView {
-            if hapticsSetting! {
-                interfaceHaptic.impactOccurred()
-            }
+//            if hapticsSetting! {
+//                interfaceHaptic.impactOccurred()
+//            }
             
             UIView.animate(withDuration: 0.1) {
                 let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
@@ -371,24 +371,24 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
-            if self.hapticsSetting! {
-                self.interfaceHaptic.impactOccurred()
-            }
+//            if self.hapticsSetting! {
+//                self.interfaceHaptic.impactOccurred()
+//            }
             removeAnimate()
             NotificationCenter.default.post(name: .returnPackSelectNotification, object: nil)
         }
         if indexPath.row == 1 {
             if gameCenterSetting! {
-                if self.hapticsSetting! {
-                    self.interfaceHaptic.impactOccurred()
-                }
+//                if self.hapticsSetting! {
+//                    self.interfaceHaptic.impactOccurred()
+//                }
                 showGameCenterLeaderboards()
             }
         }
         if indexPath.row == 2 {
-            if self.hapticsSetting! {
-                self.interfaceHaptic.impactOccurred()
-            }
+//            if self.hapticsSetting! {
+//                self.interfaceHaptic.impactOccurred()
+//            }
             moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
         }
         
@@ -622,7 +622,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         numberOfAttempts = packStatsArray[packNumber!].scores.count
         var numberOfUnlockedLevels = 0
         let packFirstLevel = LevelPackSetup().startLevelNumber[packNumber!]
-        let packLastNumber = packFirstLevel + numberOfLevels!-1
         var levelIndex = packFirstLevel
         while levelIndex-packFirstLevel <= numberOfLevels!-1 {
             if totalStatsArray[0].levelUnlockedArray[levelIndex] {
@@ -651,7 +650,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         backButtonCollectionView.reloadData()
     }
     
-    func statsTableOpenClose() {
+    func statsTableOpenClose(animated: Bool) {
         if statsCollapseSetting == false {
             collapsedStatsTableViewHeight.isActive = false
             if numberOfAttempts == 0 {
@@ -673,8 +672,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             })
         }
         updateLabels()
-        UIView.animate(withDuration: 0.25) {
-            self.view.layoutIfNeeded()
+        if animated {
+            UIView.animate(withDuration: 0.25) {
+                self.view.layoutIfNeeded()
+            }
         }
     }
     
@@ -740,7 +741,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         loadData()
         reloadData()
         updateLabels()
-        statsTableOpenClose()
+        statsTableOpenClose(animated: false)
     }
     // Runs when returning from game
     

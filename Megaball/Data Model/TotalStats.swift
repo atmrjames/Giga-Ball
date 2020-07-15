@@ -45,33 +45,18 @@ class TotalStats: Codable {
         false, // Numbers
         false // Challenge
     ]
-    
-    var ballUnlockedArray: [Bool] = [
+        
+    var themeUnlockedArray: [Bool] = [
         true, // Classic
         false, // 3D
-        false, // Outline
-        false, // Diamond
-        false, // Beach ball
-        false, // Concentric
-        false, // Pixel
-        false, // Dots
-        false, // Spokes
-        false, // Reuleaux
-        false, // Rainbow
-        false // Retro
-    ]
-    
-    var paddleUnlockedArray: [Bool] = [
-        true, // Classic
-        false, // 3D
+        false, // Ice
         false, // Outline
         false, // Square
-        false, // Ice
         false, // Glass
         false, // Pixel
-        false, // Giga
-        false, // Candy Cane
         false, // Split
+        false, // Candy
+        false, // Giga
         false, // Rainbow
         false // Retro
     ]
@@ -88,11 +73,6 @@ class TotalStats: Codable {
         false, // Pink
         false, // Giga-Ball
         false, // Rainbow
-        false // Retro
-    ]
-    
-    var brickUnlockedArray: [Bool] = [
-        true, // Classic
         false // Retro
     ]
     
