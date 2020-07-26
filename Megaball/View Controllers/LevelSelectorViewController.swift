@@ -92,7 +92,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         collectionViewLayout()
-        // Collection view setup
+        // Collection view setup 
         
         userSettings()
         loadData()
