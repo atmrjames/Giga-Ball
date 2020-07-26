@@ -65,7 +65,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     @IBOutlet var modeSelectTableView: UITableView!
     @IBOutlet var iconCollectionView: UICollectionView!
-    @IBOutlet var logoButton: UIButton!
+    @IBOutlet var logoImage: UIImageView!
     
     @IBOutlet var bannerAdCollapsed: NSLayoutConstraint!
     @IBOutlet var bannerAdOpenSmall: NSLayoutConstraint!
@@ -92,6 +92,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        logoImage.image = UIImage(named: "Logo")
         
         modeSelectTableView.delegate = self
         modeSelectTableView.dataSource = self
@@ -120,9 +122,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         print(NSHomeDirectory()+"llama llama ud")
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
-        
-        logoButton.titleLabel?.adjustsFontSizeToFitWidth = true
-        
+                
         backgroundImageView.image = UIImage(named:"mainMenuBackground.png")!
         
         collectionViewLayout()
@@ -320,7 +320,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonInfo.png")
         case 1:
-            cell.iconImage.image = nil
+            if premiumSetting! {
+                cell.iconImage.image = nil
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonPremium.png")
+            }
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonSettings.png")
         default:
@@ -336,15 +340,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-        
+
         if indexPath.row == 0 {
             moveToItems()
         }
         if indexPath.row == 1 {
-            
+            if !premiumSetting! {
+                moveToPremiumInfo()
+            }
         }
         if indexPath.row == 2 {
             moveToSettings()
@@ -367,7 +370,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 }
                 cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
             case 1:
-                cell.iconImage.image = nil
+                if self.premiumSetting! {
+                    cell.iconImage.image = nil
+                } else {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPremiumHighlighted.png")
+                }
             case 2:
                 if self.hapticsSetting! {
                     self.interfaceHaptic.impactOccurred()
@@ -392,7 +402,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 }
                 cell.iconImage.image = UIImage(named:"ButtonInfo.png")
             case 1:
-                cell.iconImage.image = nil
+                if self.premiumSetting! {
+                    cell.iconImage.image = nil
+                } else {
+                    if self.hapticsSetting! {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPremium.png")
+                }
             case 2:
                 if self.hapticsSetting! {
                     self.interfaceHaptic.impactOccurred()
@@ -492,6 +509,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         itemsView.view.frame = self.view.frame
         self.view.addSubview(itemsView.view)
         itemsView.didMove(toParent: self)
+    }
+    
+    func moveToPremiumInfo() {
+        let premiumInfoView = self.storyboard?.instantiateViewController(withIdentifier: "premiumInfoView") as! PremiumInfoViewController
+        self.addChild(premiumInfoView)
+        premiumInfoView.view.frame = self.view.frame
+        self.view.addSubview(premiumInfoView.view)
+        premiumInfoView.didMove(toParent: self)
     }
     
     func loadData() {
@@ -653,6 +678,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 self.updateGCAuth()
             }
         }
+        if GKLocalPlayer.local.isAuthenticated {
+            gameCenterSetting = true
+        } else {
+            gameCenterSetting = false
+        }
+        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
     }
     // Sets up game center
     

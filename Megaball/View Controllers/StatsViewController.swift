@@ -21,6 +21,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var gameCenterSetting: Bool?
     // User settings
     
+    var sender: String?
+    
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
     let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
@@ -52,6 +54,13 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         userSettings()
         loadData()
         
+        if GKLocalPlayer.local.isAuthenticated {
+            gameCenterSetting = true
+        } else {
+            gameCenterSetting = false
+        }
+        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        
         statsTableView.delegate = self
         statsTableView.dataSource = self
         statsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
@@ -67,7 +76,11 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if parallaxSetting! {
             addParallax()
         }
-        setBlur()
+        
+        if sender != "Info" {
+            setBlur()
+        }
+        
         statsTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()

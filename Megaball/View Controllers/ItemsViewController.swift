@@ -22,6 +22,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var gameCenterSetting: Bool?
     var ballSetting: Int?
     var paddleSetting: Int?
+    var premiumSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -67,6 +68,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         userSettings()
         loadData()
+        
+        if GKLocalPlayer.local.isAuthenticated {
+            gameCenterSetting = true
+        } else {
+            gameCenterSetting = false
+        }
+        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        
         if parallaxSetting! {
             addParallax()
         }
@@ -77,7 +86,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 6
+        return 9
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -100,14 +109,31 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             cell.settingDescription.text = "Statistics"
             cell.iconImage.image = UIImage(named:"iconStats.png")!
         case 3:
-            cell.settingDescription.text = "About"
-            cell.iconImage.image = UIImage(named:"iconAbout.png")!
+            if gameCenterSetting! {
+                cell.settingDescription.text = "Game Center"
+                cell.iconImage.image = UIImage(named:"iconGameCenter.png")!
+            } else {
+                hideCell(cell: cell)
+            }
         case 4:
             cell.settingDescription.text = "Tutorial"
             cell.iconImage.image = UIImage(named:"iconTutorial.png")!
         case 5:
-            cell.settingDescription.text = "Giga-Ball Premium"
-            cell.iconImage.image = UIImage(named:"iconPremium.png")!
+            cell.settingDescription.text = "About"
+            cell.iconImage.image = UIImage(named:"iconAbout.png")!
+        case 6:
+            cell.settingDescription.text = "Leave a review"
+            cell.iconImage.image = UIImage(named:"iconReview.png")!
+        case 7:
+            cell.settingDescription.text = "Share"
+            cell.iconImage.image = UIImage(named:"iconShare.png")!
+        case 8:
+            if premiumSetting! {
+                hideCell(cell: cell)
+            } else {
+                cell.settingDescription.text = "Giga-Ball Premium"
+                cell.iconImage.image = UIImage(named:"iconPremium.png")!
+            }
         default:
             break
         }
@@ -120,17 +146,20 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         return cell
     }
     
+    func hideCell(cell: SettingsTableViewCell) {
+        cell.centreLabel.text = ""
+        cell.settingState.text = ""
+        cell.settingDescription.text = ""
+        cell.iconImage.image = nil
+        itemsTableView.rowHeight = 0.0
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-//        
         UIView.animate(withDuration: 0.2) {
             let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
             cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
-        hideAnimate()
         
         switch indexPath.row {
         case 0:
@@ -143,14 +172,23 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // Stats
             moveToStats()
         case 3:
-        // About
-            moveToAbout()
+        // Game Center
+            showGameCenterLeaderboards()
         case 4:
         // Tutorial
-            break
+            print("Tutorial")
         case 5:
+        // About
+            moveToAbout()
+        case 6:
+        // Review
+            print("Review")
+        case 7:
+        // Share
+            print("Share")
+        case 8:
         // Premium
-            break
+            moveToPremiumInfo()
         default:
             break
         }
@@ -209,11 +247,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
-            if gameCenterSetting! {
-                cell.iconImage.image = UIImage(named:"ButtonItems")
-            } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull")
-            }
+//            if gameCenterSetting! {
+//                cell.iconImage.image = UIImage(named:"ButtonItems")
+//            } else {
+//                cell.iconImage.image = UIImage(named:"ButtonNull")
+//            }
+             cell.iconImage.image = UIImage(named:"ButtonNull")
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonNull")
         default:
@@ -231,17 +270,11 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.row == 0 {
-//            if hapticsSetting! {
-//                interfaceHaptic.impactOccurred()
-//            }
             removeAnimate()
         }
-        if indexPath.row == 1 && gameCenterSetting! {
-//            if hapticsSetting! {
-//                interfaceHaptic.impactOccurred()
-//            }
-            showGameCenterAchievements()
-        }
+//        if indexPath.row == 1 && gameCenterSetting! {
+//            showGameCenterAchievements()
+//        }
         
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -259,14 +292,15 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
-                if self.gameCenterSetting! {
-                    if self.hapticsSetting! {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonItemsHighlighted")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
-                }
+                 cell.iconImage.image = UIImage(named:"ButtonNull")
+//                if self.gameCenterSetting! {
+//                    if self.hapticsSetting! {
+//                        self.interfaceHaptic.impactOccurred()
+//                    }
+//                    cell.iconImage.image = UIImage(named:"ButtonItemsHighlighted")
+//                } else {
+//                    cell.iconImage.image = UIImage(named:"ButtonNull")
+//                }
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             default:
@@ -288,14 +322,15 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
-                if self.gameCenterSetting! {
-                    if self.hapticsSetting! {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonItems")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
-                }
+                cell.iconImage.image = UIImage(named:"ButtonNull")
+//                if self.gameCenterSetting! {
+//                    if self.hapticsSetting! {
+//                        self.interfaceHaptic.impactOccurred()
+//                    }
+//                    cell.iconImage.image = UIImage(named:"ButtonItems")
+//                } else {
+//                    cell.iconImage.image = UIImage(named:"ButtonNull")
+//                }
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             default:
@@ -305,22 +340,18 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
     }
     
-    func moveToItemDetails(senderID: Int) {
-        let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
-        itemsDetailView.senderID = senderID
-        self.addChild(itemsDetailView)
-        itemsDetailView.view.frame = self.view.frame
-        self.view.addSubview(itemsDetailView.view)
-        itemsDetailView.didMove(toParent: self)
+    func showGameCenterLeaderboards() {
+        if gameCenterSetting! {
+            GameCenterHandler().gameCenterSave()
+        }
+        // Save scores to game center
+        let viewController = self.view.window?.rootViewController
+        let gcViewController = GKGameCenterViewController()
+        gcViewController.gameCenterDelegate = self
+        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
+        viewController?.present(gcViewController, animated: true, completion: nil)
     }
-    
-    func moveToAbout() {
-        let aboutView = self.storyboard?.instantiateViewController(withIdentifier: "aboutVC") as! AboutViewController
-        self.addChild(aboutView)
-        aboutView.view.frame = self.view.frame
-        self.view.addSubview(aboutView.view)
-        aboutView.didMove(toParent: self)
-    }
+    // Show game center view controller
         
     func userSettings() {
         adsSetting = defaults.bool(forKey: "adsSetting")
@@ -332,6 +363,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         ballSetting = defaults.integer(forKey: "ballSetting")
         paddleSetting = defaults.integer(forKey: "paddleSetting")
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         // Load user settings
     }
     
@@ -412,12 +444,44 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         itemsView.addMotionEffect(group!)
     }
     
+    func moveToItemDetails(senderID: Int) {
+        hideAnimate()
+        let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
+        itemsDetailView.senderID = senderID
+        self.addChild(itemsDetailView)
+        itemsDetailView.view.frame = self.view.frame
+        self.view.addSubview(itemsDetailView.view)
+        itemsDetailView.didMove(toParent: self)
+    }
+    
+    func moveToAbout() {
+        hideAnimate()
+        let aboutView = self.storyboard?.instantiateViewController(withIdentifier: "aboutVC") as! AboutViewController
+        aboutView.sender = "Info"
+        self.addChild(aboutView)
+        aboutView.view.frame = self.view.frame
+        self.view.addSubview(aboutView.view)
+        aboutView.didMove(toParent: self)
+    }
+    
     func moveToStats() {
+        hideAnimate()
         let statsView = self.storyboard?.instantiateViewController(withIdentifier: "statsView") as! StatsViewController
+        statsView.sender = "Info"
         self.addChild(statsView)
         statsView.view.frame = self.view.frame
         self.view.addSubview(statsView.view)
         statsView.didMove(toParent: self)
+    }
+    
+    func moveToPremiumInfo() {
+        hideAnimate()
+        let premiumInfoView = self.storyboard?.instantiateViewController(withIdentifier: "premiumInfoView") as! PremiumInfoViewController
+        premiumInfoView.sender = "Info"
+        self.addChild(premiumInfoView)
+        premiumInfoView.view.frame = self.view.frame
+        self.view.addSubview(premiumInfoView.view)
+        premiumInfoView.didMove(toParent: self)
     }
     
     func showAnimate() {

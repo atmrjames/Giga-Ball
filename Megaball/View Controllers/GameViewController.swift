@@ -21,8 +21,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     weak var menuViewControllerDelegate:MenuViewControllerDelegate?
     // Create the delegate property for the MenuViewController
     
-    @IBOutlet var gameView: UIView!
-    
     var selectedLevel: Int?
     var numberOfLevels: Int?
     var levelSender: String?
@@ -116,11 +114,12 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Show PauseMenuViewController as popup
     
-    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int) {
+    func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int) {
         let inbetweenView = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "inbetweenView") as! InbetweenViewController
         inbetweenView.levelNumber = levelNumber
         inbetweenView.packNumber = packNumber
         inbetweenView.totalScore = score
+        inbetweenView.levelScore = levelScore
         inbetweenView.levelScoreBonus = levelTimerBonus
         inbetweenView.firstLevel = firstLevel
         inbetweenView.numberOfLevels = numberOfLevels

@@ -26,6 +26,33 @@ extension GameScene {
         scoreLabel.position.y = life.position.y-2
         scoreLabel.text = "\(endlessHeight) m"
         // Setup score label for endless mode
+                
+        height01 = Int.random(in: 0...25)
+        height02 = Int.random(in: height01!...50)
+        height03 = Int.random(in: height02!...75)
+        height04 = Int.random(in: height03!...100)
+        height05 = Int.random(in: height04!...150)
+        height06 = Int.random(in: height05!...200)
+        height07 = Int.random(in: height06!...250)
+        height08 = Int.random(in: height07!...300)
+        height09 = Int.random(in: height08!...350)
+        height10 = Int.random(in: height09!...400)
+        height11 = Int.random(in: height10!...450)
+        height12 = Int.random(in: height11!...500)
+        height13 = Int.random(in: height12!...550)
+        height14 = Int.random(in: height13!...600)
+        height15 = Int.random(in: height14!...650)
+        height16 = Int.random(in: height15!...700)
+        height17 = Int.random(in: height16!...775)
+        height18 = Int.random(in: height17!...850)
+        height19 = Int.random(in: height18!...925)
+        height20 = Int.random(in: height19!...1000)
+        // Random height boundaries within limits
+        
+        endlessBrickMode01 = Int.random(in: 1...4)
+        endlessBrickMode02 = Int.random(in: 1...4)
+        endlessBrickMode03 = Int.random(in: 1...4)
+        endlessBrickMode04 = Int.random(in: 1...4)
     }
     
     func loadLevel999() {
@@ -55,49 +82,6 @@ extension GameScene {
                     brick.texture = brickNormalTexture
                     brick.color = brickGreenGigaball
                 }
-                
-//                if (i == 0 || i == 1) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-//                    brick.texture = brickIndestructible1Texture
-//                }
-//
-//                if (i == 2 || i == 3) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
-//                    brick.texture = brickMultiHit1Texture
-//                }
-//                if (i == 4 || i == 5) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-//                    brick.texture = brickMultiHit1Texture
-//                }
-//
-//                if (i == 6 || i == 7) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
-//                    brick.texture = brickInvisibleTexture
-//                }
-//                if (i == 8 || i == 9) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-//                    brick.texture = brickInvisibleTexture
-//                }
-//
-//                if (i == 10 || i == 11) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
-//                    brick.texture = brickNormalTexture
-//                    brick.color = brickWhite
-//                }
-//                if (i == 12 || i == 13) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
-//                    brick.texture = brickNormalTexture
-//                    brick.color = brickWhite
-//                }
-//                if (i == 14 || i == 15) && (j == 2 || j == 4 || j == 6 || j == 8) {
-//                    brick.texture = brickNormalTexture
-//                    brick.color = brickWhite
-//                }
-//                if (i == 16 || i == 17) && (j == 3 || j == 5 || j == 7) {
-//                    brick.texture = brickNormalTexture
-//                    brick.color = brickWhite
-//                }
-//                if (i == 18 || i == 19) && (j == 4 || j == 6) {
-//                    brick.texture = brickNormalTexture
-//                    brick.color = brickWhite
-//                }
-//                if (i == 20 || i == 21) && j == 5 {
-//                    brick.texture = brickNormalTexture
-//                    brick.color = brickWhite
-//                }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffsetEndless - brickHeight*CGFloat(i))
                 

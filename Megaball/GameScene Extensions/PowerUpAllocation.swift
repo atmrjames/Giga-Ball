@@ -58,13 +58,6 @@ extension GameScene {
             powerUpProbArray[13] = 0 // Reset Multiplier
             powerUpProbArray[14] = 0 // Next Level
             powerUpProbArray[23] = 0 // Quicksand
-            
-            
-            // testing
-            powerUpProbArray[22] = 100 // Lasers
-            powerUpProbArray[6] = 100 // Sticky Paddle
-            powerUpProbArray[20] = 100 // Giga-Ball
-            powerUpProbArray[21] = 100 // Undestructi-Ball
                         
         // Classic Pack
         case 1:
@@ -90,9 +83,6 @@ extension GameScene {
             powerUpProbArray[23] = 0 // Quicksand
             powerUpProbArray[24] = 0 // Mystery
             powerUpProbArray[25] = 0 // Backstop
-            
-            //testing purposes
-            powerUpProbArray[14] = 100 // Next Level
         
         case 2:
             powerUpProbArray[2] = 5 // Decrease Ball Speed

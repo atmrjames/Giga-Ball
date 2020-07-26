@@ -33,6 +33,21 @@ class LevelPackSetup {
         "Challenge Pack"
     ]
     
+    let unlockedDescriptionArray: [String] = [
+        "",
+        "Complete Classic Pack to unlock", // White
+        "Complete Space Pack to unlock", // Yellow
+        "Complete Nature Pack to unlock", // Orange
+        "Complete Urban Pack to unlock", // Green
+        "Complete Food Pack to unlock", // Blue
+        "Complete Computer Pack to unlock", // Brown
+        "Complete Body Pack to unlock", // Black
+        "Complete World Pack to unlock", // Pink
+        "Complete Emoji Pack to unlock", // Giga
+        "Complete Numbers Pack to unlock", // Rainbow
+        "Complete Challenge Pack to unlock" // Retro
+    ]
+    
     let themeNameArray: [String] = [
         "Classic",
         "3D",
@@ -486,6 +501,9 @@ class LevelPackSetup {
         UIImage(named:"PowerUpDecreaseBallSize.png")!
     ]
     
+    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24]
+    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7]
+    
     let powerUpNameArray: [String] = [
         "Get A Life",
         "Lose A Life",
@@ -515,6 +533,68 @@ class LevelPackSetup {
         "Backstop",
         "Increase Ball Size",
         "Decrease Ball Size"
+    ]
+    
+    let powerUpUnlockedDescriptionArray: [String] = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Complete Classic Pack to unlock", // Sticky Paddle
+        "Complete Classic Pack to unlock", // Gravity
+        "",
+        "",
+        "Complete Space Pack to unlock", // +1000 Points
+        "Complete Space Pack to unlock", // -1000 Points
+        "Complete Nature Pack to unlock", // x2 Multiplier
+        "Complete Nature Pack to unlock", // Reset Multiplier
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Complete Urban Pack to unlock", // Giga-Ball
+        "Complete Urban Pack to unlock", // Undestructi-Ball
+        "Complete Food Pack to unlock", // Lasers
+        "Complete Food Pack to unlock", // Quicksand
+        "Complete Body to unlock", // Mystery
+        "Complete Body to unlock", // Backstop
+        "Complete Computer to unlock", // Increase Ball Size
+        "Complete Computer to unlock" // Decrease Ball Size
+    ]
+    
+    let powerUpHiddenUnlockedDescriptionArray: [String] = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Complete Pack 1 to unlock", // Sticky Paddle
+        "Complete Pack 1 to unlock", // Gravity
+        "",
+        "",
+        "Complete Pack 2 to unlock", // +1000 Points
+        "Complete Pack 2 to unlock", // -1000 Points
+        "Complete Pack 3 to unlock", // x2 Multiplier
+        "Complete Pack 3 to unlock", // Reset Multiplier
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Complete Pack 4 to unlock", // Giga-Ball
+        "Complete Pack 4 to unlock", // Undestructi-Ball
+        "Complete Pack 5 to unlock", // Lasers
+        "Complete Pack 5 to unlock", // Quicksand
+        "Complete Pack 7 to unlock", // Mystery
+        "Complete Pack 7 to unlock", // Backstop
+        "Complete Pack 6 to unlock", // Increase Ball Size
+        "Complete Pack 6 to unlock" // Decrease Ball Size
     ]
     
     let powerUpDescriptionArray: [String] = [

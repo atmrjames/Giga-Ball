@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="16097" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="16097.2" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
@@ -88,13 +88,15 @@
                             <constraint firstItem="i9D-gn-f3D" firstAttribute="trailing" secondItem="TdH-IU-bHR" secondAttribute="trailing" id="KQQ-T3-P23"/>
                             <constraint firstItem="Yvv-Oh-rK7" firstAttribute="leading" secondItem="i9D-gn-f3D" secondAttribute="trailing" constant="10" id="PGk-87-dAg"/>
                             <constraint firstItem="TdH-IU-bHR" firstAttribute="leading" secondItem="i9D-gn-f3D" secondAttribute="leading" id="RH9-K9-tuy"/>
+                            <constraint firstItem="whk-ii-fM9" firstAttribute="leading" secondItem="Yvv-Oh-rK7" secondAttribute="trailing" id="SLQ-Dm-SLf"/>
                             <constraint firstItem="i9D-gn-f3D" firstAttribute="bottom" secondItem="TdH-IU-bHR" secondAttribute="bottom" id="T7E-Mw-Kqg"/>
                             <constraint firstItem="Tie-31-gNW" firstAttribute="centerX" secondItem="Ws3-RG-ya5" secondAttribute="centerX" id="Txd-un-VKf"/>
                             <constraint firstAttribute="trailing" secondItem="whk-ii-fM9" secondAttribute="trailing" constant="10" id="UUZ-4w-PoU"/>
                             <constraint firstAttribute="trailing" secondItem="Dqm-Bo-pMX" secondAttribute="trailing" constant="5" id="Xmy-8x-qaM"/>
+                            <constraint firstItem="Dqm-Bo-pMX" firstAttribute="leading" secondItem="Yvv-Oh-rK7" secondAttribute="trailing" priority="999" id="ZHx-Dr-IEL"/>
                             <constraint firstItem="Tie-31-gNW" firstAttribute="top" secondItem="Ws3-RG-ya5" secondAttribute="top" id="az4-LW-yU9"/>
                             <constraint firstItem="Tie-31-gNW" firstAttribute="leading" secondItem="Ws3-RG-ya5" secondAttribute="leading" constant="10" id="cIf-ar-HAh"/>
-                            <constraint firstItem="whk-ii-fM9" firstAttribute="leading" secondItem="Yvv-Oh-rK7" secondAttribute="trailing" id="fgq-YG-VaE"/>
+                            <constraint firstAttribute="trailing" secondItem="Yvv-Oh-rK7" secondAttribute="trailing" priority="999" constant="10" id="fgq-YG-VaE"/>
                             <constraint firstItem="Dqm-Bo-pMX" firstAttribute="top" secondItem="Ws3-RG-ya5" secondAttribute="top" constant="5" id="kgF-Z0-i7K"/>
                             <constraint firstItem="i9D-gn-f3D" firstAttribute="leading" secondItem="Ws3-RG-ya5" secondAttribute="leading" constant="5" id="nlZ-Mw-eXK"/>
                             <constraint firstItem="whk-ii-fM9" firstAttribute="top" secondItem="Ws3-RG-ya5" secondAttribute="top" id="pLp-ma-BiK"/>
@@ -116,6 +118,9 @@
                 <outlet property="blurView" destination="TdH-IU-bHR" id="rM9-UN-An5"/>
                 <outlet property="cellView2" destination="Ws3-RG-ya5" id="noL-VU-EVy"/>
                 <outlet property="centreLabel" destination="Tie-31-gNW" id="BZm-N7-qi0"/>
+                <outlet property="decriptionFullWidthConstraint" destination="fgq-YG-VaE" id="YNB-45-PzA"/>
+                <outlet property="descriptionAndStateSharedWidthConstraint" destination="SLQ-Dm-SLf" id="uiM-0v-I3s"/>
+                <outlet property="descriptionTickWidthConstraint" destination="ZHx-Dr-IEL" id="c6d-Dc-q52"/>
                 <outlet property="iconImage" destination="i9D-gn-f3D" id="Ksr-tz-yVl"/>
                 <outlet property="lockedImageView" destination="dvd-yV-3A8" id="xwG-2A-e78"/>
                 <outlet property="settingDescription" destination="Yvv-Oh-rK7" id="NYN-yi-flR"/>

@@ -21,6 +21,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var paddleSetting: Int?
     var brickSetting: Int?
     var appIconSetting: Int?
+    var premiumSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -48,12 +49,19 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     // UIViewController outlets
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
+    
+    @IBOutlet var premiumTableView: UITableView!
+    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
+    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnItemStatsNotificationKeyReceived), name: .returnItemStatsNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from another view
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
+        // Sets up an observer to watch for notifications to check for in-app purchase success
         
         itemsTableView.delegate = self
         itemsTableView.dataSource = self
@@ -65,6 +73,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
+        premiumTableView.delegate = self
+        premiumTableView.dataSource = self
+        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
+        
         itemsTableView.rowHeight = 70.0
         
         userSettings()
@@ -72,10 +84,31 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if parallaxSetting! {
             addParallax()
         }
+        premiumTableViewHideShow()
         lockedCount()
         itemsTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        premiumTableViewHideShow()
+    }
+    
+    func premiumTableViewHideShow() {
+        var allUnlockedBool = false
+        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
+            allUnlockedBool = true
+        }
+        if premiumSetting! == false && senderID == 2 && allUnlockedBool == false {
+            premiumTableView.isHidden = false
+            premiumTableExpanded.isActive = true
+            premiumTableCollapsed.isActive = false
+        } else {
+            premiumTableView.isHidden = true
+            premiumTableExpanded.isActive = false
+            premiumTableCollapsed.isActive = true
+        }
     }
     
     func lockedCount() {
@@ -110,223 +143,336 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     // Update locked/unlocked count
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        
-        if senderID == 0 {
-        // App icons
-            return totalStatsArray[0].appIconUnlockedArray.count
-        } else if senderID == 1 {
-        // Theme
-            return totalStatsArray[0].themeUnlockedArray.count
-        } else if senderID == 2 {
-        // Power-ups
-            return totalStatsArray[0].powerUpUnlockedArray.count
-        } else if senderID == 3 {
-        // Achievements
-            return LevelPackSetup().achievementsNameArray.count
-        } else {
-        // default
+        if tableView == self.premiumTableView {
             return 1
+        } else {
+            if senderID == 0 {
+            // App icons
+                return totalStatsArray[0].appIconUnlockedArray.count
+            } else if senderID == 1 {
+            // Theme
+                return totalStatsArray[0].themeUnlockedArray.count
+            } else if senderID == 2 {
+            // Power-ups
+                return totalStatsArray[0].powerUpUnlockedArray.count
+            } else if senderID == 3 {
+            // Achievements
+                return LevelPackSetup().achievementsNameArray.count
+            } else {
+            // default
+                return 1
+            }
         }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
-        
-        cell.blurView.isHidden = true
-        cell.lockedImageView.isHidden = true
-        
-        if senderID == 0 {
-        // App icons
-            cell.iconImage.image = LevelPackSetup().appIconImageArray[indexPath.row]
-            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-            cell.iconImage.layer.cornerRadius = 10
-            cell.settingDescription.text = LevelPackSetup().appIconNameArray[indexPath.row]
-            cell.centreLabel.text = ""
-            cell.settingState.text = ""
-            cell.tickImage.isHidden = true
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
-            if appIconSetting == indexPath.row {
-                cell.tickImage.isHidden = false
-            }
-            if totalStatsArray[0].appIconUnlockedArray[indexPath.row] == false {
-                cell.settingDescription.text = "Locked"
-                cell.settingState.text = ""
-                cell.blurView.layer.cornerRadius = 10
-                cell.lockedImageView.layer.cornerRadius = 10
-                cell.blurView.layer.masksToBounds = true
-                cell.lockedImageView.layer.masksToBounds = true
-                cell.blurView.isHidden = false
-                cell.lockedImageView.isHidden = false
-            }
-            // Locked power-ups hidden until unlocked
+        if tableView == self.premiumTableView {
             
-        }
-        
-        if senderID == 1 {
-        // Themes
-            cell.iconImage.image = LevelPackSetup().themeIconArray[indexPath.row]
-            cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
-            cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
-            cell.settingDescription.text = LevelPackSetup().themeNameArray[indexPath.row]
-            cell.centreLabel.text = ""
-            cell.settingState.text = ""
-            cell.tickImage.isHidden = true
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
-            if ballSetting == indexPath.row {
-                cell.tickImage.isHidden = false
-            }
+            let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
+            premiumTableView.rowHeight = 84.0
+            cell.centreLabel.isHidden = true
+            cell.tagLine.text = "Unlock All Power-Ups"
+            cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
-            if totalStatsArray[0].themeUnlockedArray[indexPath.row] == false {
-                cell.settingDescription.text = "Locked"
-                cell.settingState.text = ""
-                cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
-                cell.lockedImageView.layer.cornerRadius = cell.iconImage.frame.size.height/2
-                cell.blurView.layer.masksToBounds = true
-                cell.lockedImageView.layer.masksToBounds = true
-                cell.blurView.isHidden = false
-                cell.lockedImageView.isHidden = false
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView.transform = .identity
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
-            // Locked balls hidden until unlocked
-        }
-        
-        if senderID == 2 {
-        // Power-ups
-            cell.iconImage.image = LevelPackSetup().powerUpImageArray[indexPath.row]
-            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-            cell.settingDescription.text = LevelPackSetup().powerUpNameArray[indexPath.row]
-            cell.centreLabel.text = ""
-                        
-            if totalStatsArray[0].powerupsGenerated.count < indexPath.row-1 {
-                totalStatsArray[0].powerupsGenerated.append(0)
-            }
-            if totalStatsArray[0].powerupsCollected.count < indexPath.row-1 {
-                totalStatsArray[0].powerupsCollected.append(0)
-            }
-
-            if totalStatsArray[0].powerupsGenerated[indexPath.row] > 0 {
-                let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[indexPath.row]) / Double(totalStatsArray[0].powerupsGenerated[indexPath.row])
-                cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
-                cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
-            } else {
-                cell.settingState.text = ""
-            }
-            // Shows collection percentage stat
+            tableView.showsVerticalScrollIndicator = false
             
-            if totalStatsArray[0].powerUpUnlockedArray[indexPath.row] == false {
-                cell.settingDescription.text = "Locked"
+            return cell
+            
+        } else {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+            
+            cell.blurView.isHidden = true
+            cell.lockedImageView.isHidden = true
+            
+            cell.descriptionAndStateSharedWidthConstraint.isActive = true
+            cell.decriptionFullWidthConstraint.isActive = false
+            cell.descriptionTickWidthConstraint.isActive = false
+            cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            cell.settingDescription.font = cell.settingDescription.font.withSize(18)
+            
+            if senderID == 0 {
+            // App icons
+                cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = false
+                cell.descriptionTickWidthConstraint.isActive = true
+                
+                cell.iconImage.image = LevelPackSetup().appIconImageArray[indexPath.row]
+                cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+                cell.iconImage.layer.cornerRadius = 10
+                cell.settingDescription.text = LevelPackSetup().appIconNameArray[indexPath.row]
+                cell.centreLabel.text = ""
                 cell.settingState.text = ""
-                cell.blurView.layer.cornerRadius = 8
-                cell.lockedImageView.layer.cornerRadius = 8
-                cell.blurView.layer.masksToBounds = true
-                cell.lockedImageView.layer.masksToBounds = true
-                cell.blurView.isHidden = false
-                cell.lockedImageView.isHidden = false
-            }
-            // Locked power-ups hidden until unlocked
-        }
-        
-        if senderID == 3 {
-        // Achievements
-            cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.1483144264)
-            cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
-            cell.settingDescription.text = LevelPackSetup().achievementsNameArray[indexPath.row]
-            cell.settingDescription.font = cell.settingDescription.font.withSize(15)
-            cell.centreLabel.text = ""
-            cell.settingState.text = ""
-            if totalStatsArray[0].achievementsUnlockedArray[indexPath.row] {
-                cell.tickImage.isHidden = false
-                cell.iconImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!
-//                cell.settingState.isHidden = true
-            } else {
                 cell.tickImage.isHidden = true
-                cell.iconImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+                if appIconSetting == indexPath.row {
+                    cell.tickImage.isHidden = false
+                }
+                if totalStatsArray[0].appIconUnlockedArray[indexPath.row] == false {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
+                    cell.descriptionTickWidthConstraint.isActive = false
+                    cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                    cell.settingDescription.font = cell.settingDescription.font.withSize(16)
+                    
+                    if totalStatsArray[0].appIconUnlockedArray[indexPath.row-1] {
+                        cell.settingDescription.text = LevelPackSetup().unlockedDescriptionArray[indexPath.row]
+                    } else {
+                        cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
+                    }
+                    // Only show pack name in unlock description if that pack is available to play
+                    
+                    cell.settingState.text = ""
+                    cell.blurView.layer.cornerRadius = 10
+                    cell.lockedImageView.layer.cornerRadius = 10
+                    cell.blurView.layer.masksToBounds = true
+                    cell.lockedImageView.layer.masksToBounds = true
+                    cell.blurView.isHidden = false
+                    cell.lockedImageView.isHidden = false
+                }
+                // Locked power-ups hidden until unlocked
             }
-            if totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row] != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
-                cell.settingState.text = totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row]
+            
+            if senderID == 1 {
+            // Themes
+                cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = false
+                cell.descriptionTickWidthConstraint.isActive = true
+                
+                cell.iconImage.image = LevelPackSetup().themeIconArray[indexPath.row]
+                cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
+                cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
+                cell.settingDescription.text = LevelPackSetup().themeNameArray[indexPath.row]
+                cell.centreLabel.text = ""
+                cell.settingState.text = ""
+                cell.tickImage.isHidden = true
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+                if ballSetting == indexPath.row {
+                    cell.tickImage.isHidden = false
+                }
+                
+                if totalStatsArray[0].themeUnlockedArray[indexPath.row] == false {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
+                    cell.descriptionTickWidthConstraint.isActive = false
+                    cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                    cell.settingDescription.font = cell.settingDescription.font.withSize(16)
+                    
+                    if totalStatsArray[0].themeUnlockedArray[indexPath.row-1] {
+                        cell.settingDescription.text = LevelPackSetup().unlockedDescriptionArray[indexPath.row]
+                    } else {
+                        cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
+                    }
+                    // Only show pack name in unlock description if that pack is available to play
+                    
+                    cell.settingState.text = ""
+                    cell.blurView.layer.cornerRadius = cell.iconImage.frame.size.height/2
+                    cell.lockedImageView.layer.cornerRadius = cell.iconImage.frame.size.height/2
+                    cell.blurView.layer.masksToBounds = true
+                    cell.lockedImageView.layer.masksToBounds = true
+                    cell.blurView.isHidden = false
+                    cell.lockedImageView.isHidden = false
+                }
+                // Locked balls hidden until unlocked
             }
-            // Show percentage complete if achievement has percentage complete and isn't complete
+            
+            if senderID == 2 {
+            // Power-ups
+                let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[indexPath.row]
+                
+                cell.iconImage.image = LevelPackSetup().powerUpImageArray[powerUpIndexCorrection]
+                cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+                cell.settingDescription.text = LevelPackSetup().powerUpNameArray[powerUpIndexCorrection]
+                cell.centreLabel.text = ""
+                            
+                if totalStatsArray[0].powerupsGenerated.count < powerUpIndexCorrection-1 {
+                    totalStatsArray[0].powerupsGenerated.append(0)
+                }
+                if totalStatsArray[0].powerupsCollected.count < powerUpIndexCorrection-1 {
+                    totalStatsArray[0].powerupsCollected.append(0)
+                }
+
+                if totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection] > 0 {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
+                    cell.decriptionFullWidthConstraint.isActive = false
+                    cell.descriptionTickWidthConstraint.isActive = false
+                    
+                    let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[powerUpIndexCorrection]) / Double(totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection])
+                    cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
+                } else {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
+                    cell.descriptionTickWidthConstraint.isActive = false
+                    
+                    cell.settingState.text = ""
+                }
+                // Shows collection percentage stat
+                
+                if totalStatsArray[0].powerUpUnlockedArray[powerUpIndexCorrection] == false {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
+                    cell.descriptionTickWidthConstraint.isActive = false
+                    cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                    cell.settingDescription.font = cell.settingDescription.font.withSize(16)
+                    
+                    if totalStatsArray[0].levelPackUnlockedArray[LevelPackSetup().powerUpPackOrderArray[powerUpIndexCorrection]+2] {
+                        cell.settingDescription.text = "\(LevelPackSetup().powerUpUnlockedDescriptionArray[powerUpIndexCorrection])"
+                    } else {
+                        cell.settingDescription.text = "\(LevelPackSetup().powerUpHiddenUnlockedDescriptionArray[powerUpIndexCorrection])"
+                    }
+                    // Only show pack name in unlock description if that pack is available to play
+
+                    cell.settingState.text = ""
+                    cell.blurView.layer.cornerRadius = 8
+                    cell.lockedImageView.layer.cornerRadius = 8
+                    cell.blurView.layer.masksToBounds = true
+                    cell.lockedImageView.layer.masksToBounds = true
+                    cell.blurView.isHidden = false
+                    cell.lockedImageView.isHidden = false
+                }
+                // Locked power-ups hidden until unlocked
+            }
+            
+            if senderID == 3 {
+            // Achievements
+                cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = true
+                cell.descriptionTickWidthConstraint.isActive = false
+                
+                cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.1483144264)
+                cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
+                cell.settingDescription.text = LevelPackSetup().achievementsNameArray[indexPath.row]
+                cell.settingDescription.font = cell.settingDescription.font.withSize(15)
+                cell.centreLabel.text = ""
+                cell.settingState.text = ""
+                if totalStatsArray[0].achievementsUnlockedArray[indexPath.row] {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = false
+                    cell.descriptionTickWidthConstraint.isActive = true
+                    
+                    cell.tickImage.isHidden = false
+                    cell.iconImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!
+    //                cell.settingState.isHidden = true
+                } else {
+                    cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                    cell.settingDescription.font = cell.settingDescription.font.withSize(16)
+                    cell.tickImage.isHidden = true
+                    cell.iconImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
+                }
+                if totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row] != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
+                    cell.decriptionFullWidthConstraint.isActive = false
+                    cell.descriptionTickWidthConstraint.isActive = false
+                    
+                    cell.settingState.text = totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row]
+                }
+                // Show percentage complete if achievement has percentage complete and isn't complete
+            }
+            
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+    //            if cell.tickImage.isHidden == false {
+    //                cell.cellView2.backgroundColor = #colorLiteral(red: 0.7702723742, green: 1, blue: 0, alpha: 1)
+    //            }
+            }
+            return cell
         }
-        
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-//            if cell.tickImage.isHidden == false {
-//                cell.cellView2.backgroundColor = #colorLiteral(red: 0.7702723742, green: 1, blue: 0, alpha: 1)
-//            }
-        }
-        
-        return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-        
-        UIView.animate(withDuration: 0.2) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-        }
-        
-        if senderID == 0 {
-        // App icon
-            if totalStatsArray[0].appIconUnlockedArray[indexPath.row] {
-                appIconSetting = indexPath.row
-                defaults.set(appIconSetting!, forKey: "appIconSetting")
-                changeIcon(to: LevelPackSetup().appIconNameArray[indexPath.row])
+        if tableView == premiumTableView {
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
+            
+            UIView.animate(withDuration: 0.2) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
-            // Don't allow selection if app icon is locked
-        }
-        
-        if senderID == 1 {
-        // Theme selection
-            if totalStatsArray[0].themeUnlockedArray[indexPath.row] {
-                ballSetting = indexPath.row
-                paddleSetting = indexPath.row
-                brickSetting = 0
-                defaults.set(ballSetting!, forKey: "ballSetting")
-                defaults.set(paddleSetting!, forKey: "paddleSetting")
-                defaults.set(brickSetting!, forKey: "brickSetting")
-
-                
-                if indexPath.row == 11 {
-                    brickSetting = 1
-                    defaults.set(brickSetting!, forKey: "brickSetting")
+            tableView.deselectRow(at: indexPath, animated: true)
+            // Update table view
+            
+        } else {
+            UIView.animate(withDuration: 0.2) {
+                let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            }
+            
+            if senderID == 0 {
+            // App icon
+                if totalStatsArray[0].appIconUnlockedArray[indexPath.row] {
+                    appIconSetting = indexPath.row
+                    defaults.set(appIconSetting!, forKey: "appIconSetting")
+                    changeIcon(to: LevelPackSetup().appIconNameArray[indexPath.row])
                 }
+                // Don't allow selection if app icon is locked
             }
-            // Don't allow selection if theme is locked
-        }
-        
-        if senderID == 2 {
-        // Power-ups
-            if totalStatsArray[0].powerUpUnlockedArray[indexPath.row] {
-                hideAnimate()
-                moveToItemStats(passedIndex: indexPath.row, sender: "Power-Ups")
-            }
-            // Don't allow into menu if power-up is locked
-        }
-        
-        if senderID == 3 {
-        // Achievements
-            hideAnimate()
-            moveToItemStats(passedIndex: indexPath.row, sender: "Achievements")
-            // Don't allow into menu if power-up is locked
-        }
+            
+            if senderID == 1 {
+            // Theme selection
+                if totalStatsArray[0].themeUnlockedArray[indexPath.row] {
+                    ballSetting = indexPath.row
+                    paddleSetting = indexPath.row
+                    brickSetting = 0
+                    defaults.set(ballSetting!, forKey: "ballSetting")
+                    defaults.set(paddleSetting!, forKey: "paddleSetting")
+                    defaults.set(brickSetting!, forKey: "brickSetting")
 
-        tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadData()
-        // Update table view
+                    
+                    if indexPath.row == 11 {
+                        brickSetting = 1
+                        defaults.set(brickSetting!, forKey: "brickSetting")
+                    }
+                }
+                // Don't allow selection if theme is locked
+            }
+            
+            if senderID == 2 {
+            // Power-ups
+                let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[indexPath.row]
+                
+                if totalStatsArray[0].powerUpUnlockedArray[powerUpIndexCorrection] {
+                    hideAnimate()
+                    moveToItemStats(passedIndex: powerUpIndexCorrection, sender: "Power-Ups")
+                }
+                // Don't allow into menu if power-up is locked
+            }
+            
+            if senderID == 3 {
+            // Achievements
+                hideAnimate()
+                moveToItemStats(passedIndex: indexPath.row, sender: "Achievements")
+                // Don't allow into menu if power-up is locked
+            }
+
+            tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
+            // Update table view
+        }
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        if tableView == premiumTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
+        } else {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -334,10 +480,18 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if tableView == premiumTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .identity
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            }
+        } else {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     
@@ -424,6 +578,15 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         itemStatsView.didMove(toParent: self)
     }
     
+    func showPurchaseScreen() {
+        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
+        self.addChild(iAPVC)
+        iAPVC.view.frame = self.view.frame
+        self.view.addSubview(iAPVC.view)
+        iAPVC.didMove(toParent: self)
+    }
+    // Show iAPVC as popup
+    
     func userSettings() {
         adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
@@ -435,6 +598,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         paddleSetting = defaults.integer(forKey: "paddleSetting")
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         // Load user settings
     }
     
@@ -537,6 +701,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         revealAnimate()
     }
     // Runs when returning from item stats view
+    
+    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
+        userSettings()
+        premiumTableViewHideShow()
+        premiumTableView.reloadData()
+        itemsTableView.reloadData()
+    }
 }
 
 extension Notification.Name {

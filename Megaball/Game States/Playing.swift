@@ -48,15 +48,28 @@ class Playing: GKState {
     // This function runs when this state is entered.
 
     func reloadUI() {
-        scene.scoreLabel.isHidden = false
-        scene.multiplierLabel.isHidden = false
-        scene.pauseButton.isHidden = false
-        scene.livesLabel.isHidden = false
-        scene.life.isHidden = false
+        let wait = SKAction.wait(forDuration: 0.35)
+        self.scene.run(wait, completion: {
+            self.scene.scoreLabel.isHidden = false
+            self.scene.multiplierLabel.isHidden = false
+            self.scene.pauseButton.isHidden = false
+            self.scene.livesLabel.isHidden = false
+            self.scene.life.isHidden = false
+            if self.scene.endlessMode {
+                self.scene.life.isHidden = true
+                self.scene.livesLabel.isHidden = true
+                self.scene.multiplierLabel.isHidden = true
+            }
+        })
         // Show game labels
+        
+        scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
         scene.livesLabel.text = "x\(scene.numberOfLives)"
         // Reset labels
+        
+        scene.powerUpIconReset(sender: "")
+        // Reset power-up icons locked icon if power-up locked
     }
     
     func loadNextLevel() {
@@ -113,13 +126,13 @@ class Playing: GKState {
             let scaleUp = SKAction.scale(to: 1, duration: 0.2)
             let scaleUpPaddle = SKAction.scaleX(to: 1, duration: 0.2)
             let fadeIn = SKAction.fadeIn(withDuration: 0.2)
-            let wait = SKAction.wait(forDuration: 0.25)
+            let wait = SKAction.wait(forDuration: 0.3)
             let startingGroup = SKAction.group([startingScale, startingFade])
             let startingGroupPaddle = SKAction.group([startingScalePaddle])
             let animationGroup = SKAction.group([scaleUp, fadeIn])
             let animationGroupPaddle = SKAction.group([scaleUpPaddle])
-            let animationSequence = SKAction.group([wait, animationGroup])
-            let animationSequencePaddle = SKAction.group([wait, animationGroupPaddle])
+            let animationSequence = SKAction.sequence([wait, animationGroup])
+            let animationSequencePaddle = SKAction.sequence([wait, animationGroupPaddle])
             
             scene.ball.run(startingGroup)
             scene.ball.isHidden = false
@@ -170,7 +183,7 @@ class Playing: GKState {
             scene.levelTimerValue = 0
             // reset level timer bonus
             
-            if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] && scene.levelNumber != 0 {
+            if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] || scene.levelNumber == 0 {
                 scene.firstLevel = true
                 scene.showInbetweenView()
                 scene.firstLevel = false

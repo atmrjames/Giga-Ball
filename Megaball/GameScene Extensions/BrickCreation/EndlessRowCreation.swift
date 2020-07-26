@@ -12,19 +12,9 @@ import GameplayKit
 extension GameScene {
     
     func buildNewEndlessRow() {
-
+        
         var brickArray: [SKNode] = []
         // Array to store all bricks
-        
-//        let randomRow = Int.random(in: 0...99)
-        
-        let rare = Int.random(in: 1...3)
-        let few = Int.random(in: 2...6)
-        let infrequent = Int.random(in: 4...10)
-        let several = Int.random(in: 7...15)
-        let frequent = Int.random(in: 15...25)
-        let many = Int.random(in: 25...35)
-        // Set brick frequency limits
         
         var normalProb: Int?
         var mHThreeProb: Int?
@@ -48,93 +38,167 @@ extension GameScene {
         var indestructibleMixSemiRowProb: Int?
         // Setup random row brick probability variables
         
+        let rare = Int.random(in: 1...3)
+        let few = Int.random(in: 2...6)
+        let infrequent = Int.random(in: 4...10)
+        let several = Int.random(in: 7...15)
+        let frequent = Int.random(in: 15...25)
+        let many = Int.random(in: 25...35)
+        // Set brick frequency limits
+        
+        let randRow = Int.random(in: 1...100)
+        let randRowSelect = Int.random(in: 1...100)
+        // Random pre-defined row selector
+                
+        powerUpProbArray[7] = 7 // Gravity
+        powerUpProbArray[18] = 5 // Reset Multi-Hit Bricks
+        powerUpProbArray[19] = 5 // Remove Indestructible Bricks
+        powerUpProbArray[21] = 3 // Undestructi-Ball
         
         for j in 0..<numberOfBrickColumns {
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
             
-            if endlessHeight < 25 {
+            normalProb = 0
+            mHThreeProb = 0
+            mHTwoProb = 0
+            mHOneProb = 0
+            indestTwoProb = 0
+            indestOneProb = 0
+            invisiProb = 0
+            
+            randRowProb = 0
+            nullRowProb = 0
+            normalSemiRowProb = 0
+            normalFullRowProb = 0
+            invisibleSemiRowProb = 0
+            invisibleFullRowProb = 0
+            multiHitSemiRowProb = 0
+            multiHitFullRowProb = 0
+            indestructible1SemiRowProb = 0
+            indestructible2SemiRowProb = 0
+            indestructibleMixSemiRowProb = 0
+            
+            if endlessHeight < height01! {
                 normalProb = several
                 mHThreeProb = rare
-                mHTwoProb = 0
-                mHOneProb = 0
-                indestTwoProb = 0
-                indestOneProb = 0
-                invisiProb = 0
-                
+                // Brick probs
+
                 randRowProb = 0
-                nullRowProb = 0
-                normalSemiRowProb = 0
-                normalFullRowProb = 100
-                invisibleSemiRowProb = 0
-                invisibleFullRowProb = 0
-                multiHitSemiRowProb = 0
-                multiHitFullRowProb = 0
-                indestructible1SemiRowProb = 0
-                indestructible2SemiRowProb = 0
-                indestructibleMixSemiRowProb = 0
             }
-            
-            if endlessHeight >= 25 && endlessHeight < 50 {
+
+            if endlessHeight >= height01! && endlessHeight < height02! {
                 normalProb = several
                 mHThreeProb = rare
-                mHTwoProb = 0
-                mHOneProb = 0
-                indestTwoProb = rare
-                indestOneProb = 0
-                invisiProb = 0
+                // Brick probs
+
+                randRowProb = 4
+                normalSemiRowProb = 100
+                // Row probs
             }
-            
-            if endlessHeight >= 50 && endlessHeight < 75 {
+
+            if endlessHeight >= height02! && endlessHeight < height03! {
                 normalProb = several
                 mHThreeProb = few
-                mHTwoProb = 0
-                mHOneProb = 0
                 indestTwoProb = rare
-                indestOneProb = 0
-                invisiProb = 0
+                // Brick probs
+
+                randRowProb = 2
+                normalFullRowProb = 100
+                // Row probs
             }
-            
-            if endlessHeight >= 75 && endlessHeight < 100 {
+
+            if endlessHeight >= height03! && endlessHeight < height04! {
                 normalProb = several
                 mHThreeProb = few
                 mHTwoProb = rare
-                mHOneProb = 0
                 indestTwoProb = rare
-                indestOneProb = 0
-                invisiProb = 0
+                // Brick probs
+
+                randRowProb = 4
+                normalFullRowProb = 100
+                // Row probs
             }
             
-            if endlessHeight >= 100 && endlessHeight < 150 {
+            if endlessHeight >= height04! && endlessHeight < height05! {
+                switch endlessBrickMode01 {
+                    case 1:
+                        normalProb = several
+                    case 2:
+                        mHThreeProb = several
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    case 3:
+                        normalProb = several
+                    case 4:
+                        mHThreeProb = several
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    default:
+                        break
+                }
+            }
+            
+            if endlessHeight >= height05! && endlessHeight < height06! {
                 normalProb = frequent
                 mHThreeProb = few
                 mHTwoProb = rare
-                mHOneProb = 0
                 indestTwoProb = rare
-                indestOneProb = 0
-                invisiProb = 0
+                // Brick probs
+                
+                randRowProb = 4
+                normalSemiRowProb = 50
+                normalFullRowProb = 50
+                // Row probs
             }
             
-            if endlessHeight >= 150 && endlessHeight < 200 {
+            if endlessHeight >= height06! && endlessHeight < height07! {
                 normalProb = frequent
                 mHThreeProb = few
                 mHTwoProb = rare
-                mHOneProb = 0
                 indestTwoProb = rare
                 indestOneProb = rare
-                invisiProb = 0
+                // Brick probs
+                
+                randRowProb = 4
+                normalSemiRowProb = 20
+                normalFullRowProb = 20
+                indestructible1SemiRowProb = 20
+                indestructible2SemiRowProb = 20
+                indestructibleMixSemiRowProb = 20
+                // Row probs
             }
             
-            if endlessHeight >= 200 && endlessHeight < 250 {
+            if endlessHeight >= height07! && endlessHeight < height08! {
                 normalProb = frequent
                 mHThreeProb = few
                 mHTwoProb = rare
                 mHOneProb = rare
                 indestTwoProb = rare
                 indestOneProb = rare
-                invisiProb = 0
+                // Brick probs
+                
+                randRowProb = 2
+                multiHitSemiRowProb = 100
+                // Row probs
+            }
+
+            if endlessHeight >= height08! && endlessHeight < height09! {
+                switch endlessBrickMode02 {
+                    case 1:
+                        normalProb = frequent
+                    case 2:
+                        mHThreeProb = frequent
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    case 3:
+                        mHTwoProb = frequent
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    case 4:
+                        mHThreeProb = frequent
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    default:
+                        break
+                }
             }
             
-            if endlessHeight >= 250 && endlessHeight < 300 {
+            if endlessHeight >= height09! && endlessHeight < height10! {
                 normalProb = frequent
                 mHThreeProb = few
                 mHTwoProb = rare
@@ -142,9 +206,23 @@ extension GameScene {
                 indestTwoProb = rare
                 indestOneProb = rare
                 invisiProb = few
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
-            if endlessHeight >= 300 && endlessHeight < 375 {
+            if endlessHeight >= height10! && endlessHeight < height11! {
                 normalProb = many
                 mHThreeProb = few
                 mHTwoProb = rare
@@ -152,9 +230,14 @@ extension GameScene {
                 indestTwoProb = rare
                 indestOneProb = rare
                 invisiProb = infrequent
+                // Brick probs
+                
+                randRowProb = 8
+                nullRowProb = 100
+                // Row probs
             }
             
-            if endlessHeight >= 375 && endlessHeight < 450 {
+            if endlessHeight >= height11! && endlessHeight < height12! {
                 normalProb = many
                 mHThreeProb = few
                 mHTwoProb = few
@@ -162,9 +245,43 @@ extension GameScene {
                 indestTwoProb = rare
                 indestOneProb = rare
                 invisiProb = infrequent
+                // Brick probs
+                
+                randRowProb = 8
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
-            if endlessHeight >= 450 && endlessHeight < 525 {
+            if endlessHeight >= height12! && endlessHeight < height13! {
+                switch endlessBrickMode03 {
+                    case 1:
+                        normalProb = many
+                    case 2:
+                        mHTwoProb = many
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    case 3:
+                        invisiProb = many
+                    case 4:
+                        indestOneProb = infrequent
+                        powerUpProbArray[7] = 0 // Gravity
+                        powerUpProbArray[19] = 0 // Remove Indestructible Bricks
+                        powerUpProbArray[21] = 0 // Undestructi-Ball
+                        // Remove power-ups that aren't suited to indestructible only bricks
+                    default:
+                        break
+                }
+            }
+            
+            if endlessHeight >= height13! && endlessHeight < height14! {
                 normalProb = many
                 mHThreeProb = infrequent
                 mHTwoProb = few
@@ -172,9 +289,23 @@ extension GameScene {
                 indestTwoProb = few
                 indestOneProb = rare
                 invisiProb = infrequent
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
-            if endlessHeight >= 525 && endlessHeight < 600 {
+            if endlessHeight >= height14! && endlessHeight < height15! {
                 normalProb = many
                 mHThreeProb = infrequent
                 mHTwoProb = few
@@ -182,9 +313,23 @@ extension GameScene {
                 indestTwoProb = few
                 indestOneProb = few
                 invisiProb = infrequent
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
-            if endlessHeight >= 600 && endlessHeight < 700 {
+            if endlessHeight >= height15! && endlessHeight < height16! {
                 normalProb = many
                 mHThreeProb = infrequent
                 mHTwoProb = infrequent
@@ -192,9 +337,15 @@ extension GameScene {
                 indestTwoProb = few
                 indestOneProb = few
                 invisiProb = frequent
+                // Brick probs
+                
+                randRowProb = 2
+                invisibleSemiRowProb = 50
+                invisibleFullRowProb = 50
+                // Row probs
             }
             
-            if endlessHeight >= 700 && endlessHeight < 800 {
+            if endlessHeight >= height16! && endlessHeight < height17! {
                 normalProb = many
                 mHThreeProb = infrequent
                 mHTwoProb = infrequent
@@ -202,9 +353,47 @@ extension GameScene {
                 indestTwoProb = few
                 indestOneProb = infrequent
                 invisiProb = frequent
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
-            if endlessHeight >= 800 && endlessHeight < 900 {
+            if endlessHeight >= height17! && endlessHeight < height18! {
+                normalProb = several
+                mHThreeProb = infrequent
+                mHTwoProb = infrequent
+                mHOneProb = few
+                indestTwoProb = infrequent
+                indestOneProb = infrequent
+                invisiProb = frequent
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
+            }
+            
+            if endlessHeight >= height18! && endlessHeight < height19! {
                 normalProb = many
                 mHThreeProb = infrequent
                 mHTwoProb = infrequent
@@ -212,20 +401,67 @@ extension GameScene {
                 indestTwoProb = infrequent
                 indestOneProb = infrequent
                 invisiProb = frequent
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
-            if endlessHeight >= 900 && endlessHeight < 1000 {
+            if endlessHeight >= height19! && endlessHeight < height20! {
+                switch endlessBrickMode04 {
+                    case 1:
+                        normalProb = Int(round(Double(many)*1.5))
+                    case 2:
+                        mHOneProb = Int(round(Double(many)*1.5))
+                        powerUpProbArray[18] = 0 // Reset Multi-Hit Bricks
+                    case 3:
+                        invisiProb = Int(round(Double(many)*1.5))
+                    case 4:
+                        indestOneProb = infrequent
+                        powerUpProbArray[7] = 0 // Gravity
+                        powerUpProbArray[19] = 0 // Remove Indestructible Bricks
+                        powerUpProbArray[21] = 0 // Undestructi-Ball
+                        // Remove power-ups that aren't suited to indestructible only bricks
+                    default:
+                        break
+                }
+            }
+            
+            if endlessHeight >= height20! {
                 normalProb = many
-                mHThreeProb = infrequent
+                mHThreeProb = several
                 mHTwoProb = infrequent
-                mHOneProb = several
+                mHOneProb = infrequent
                 indestTwoProb = infrequent
-                indestOneProb = several
-                invisiProb = frequent
+                indestOneProb = infrequent
+                invisiProb = several
+                // Brick probs
+                
+                randRowProb = 4
+                nullRowProb = 10
+                normalSemiRowProb = 10
+                normalFullRowProb = 10
+                invisibleSemiRowProb = 10
+                invisibleFullRowProb = 10
+                multiHitSemiRowProb = 10
+                multiHitFullRowProb = 10
+                indestructible1SemiRowProb = 10
+                indestructible2SemiRowProb = 10
+                indestructibleMixSemiRowProb = 10
+                // Row probs
             }
             
             brick.texture = brickNullTexture
-            let randomBrick = Int.random(in: 1...100)
             
             mHThreeProb = normalProb! + mHThreeProb!
             mHTwoProb = mHThreeProb! + mHTwoProb!
@@ -234,26 +470,24 @@ extension GameScene {
             indestOneProb = indestTwoProb! + indestOneProb!
             invisiProb = indestOneProb! + invisiProb!
             
-            if randomBrick <= normalProb! {
-                brick.texture = brickNormalTexture
-            } else if randomBrick > normalProb! && randomBrick <= mHThreeProb! {
-                brick.texture = brickMultiHit3Texture
-            } else if randomBrick > mHThreeProb! && randomBrick <= mHTwoProb! {
-                brick.texture = brickMultiHit2Texture
-            } else if randomBrick > mHTwoProb! && randomBrick <= mHOneProb! {
-                brick.texture = brickMultiHit1Texture
-            } else if randomBrick > mHOneProb! && randomBrick <= indestTwoProb! {
-                brick.texture = brickIndestructible2Texture
-            } else if randomBrick > indestTwoProb! && randomBrick <= indestOneProb! {
-                brick.texture = brickIndestructible1Texture
-            } else if randomBrick > indestOneProb! && randomBrick <= invisiProb! {
-                brick.texture = brickInvisibleTexture
-            }
-            
-            let randRow = Int.random(in: 1...100)
-            if randRow < randRowProb! {
-                let randRowSelect = Int.random(in: 1...100)
-                
+            if randRow >= randRowProb! {
+                let randomBrick = Int.random(in: 1...100)
+                if randomBrick <= normalProb! {
+                    brick.texture = brickNormalTexture
+                } else if randomBrick > normalProb! && randomBrick <= mHThreeProb! {
+                    brick.texture = brickMultiHit3Texture
+                } else if randomBrick > mHThreeProb! && randomBrick <= mHTwoProb! {
+                    brick.texture = brickMultiHit2Texture
+                } else if randomBrick > mHTwoProb! && randomBrick <= mHOneProb! {
+                    brick.texture = brickMultiHit1Texture
+                } else if randomBrick > mHOneProb! && randomBrick <= indestTwoProb! {
+                    brick.texture = brickIndestructible2Texture
+                } else if randomBrick > indestTwoProb! && randomBrick <= indestOneProb! {
+                    brick.texture = brickIndestructible1Texture
+                } else if randomBrick > indestOneProb! && randomBrick <= invisiProb! {
+                    brick.texture = brickInvisibleTexture
+                }
+            } else {
                 normalSemiRowProb = nullRowProb! + normalSemiRowProb!
                 normalFullRowProb = normalSemiRowProb! + normalFullRowProb!
                 invisibleSemiRowProb = normalFullRowProb! + invisibleSemiRowProb!
@@ -315,6 +549,9 @@ extension GameScene {
             
             if brick.texture == brickNormalTexture {
                 brick.color = brickWhite
+                if endlessHeight >= 1000 {
+                    brick.color = brickGreenGigaball
+                }
             }
             
             if brick.texture == brickInvisibleTexture {
@@ -340,6 +577,8 @@ extension GameScene {
             addChild(brick)
             brickArray.append(brick)
             
+            print("llama llama new brick set")
+            
         }
         // Define brick properties
         
@@ -362,19 +601,25 @@ extension GameScene {
             brick.alpha = 1.0
             // Pre animation setup
             
+            if brickCurrent.texture == brickNullTexture {
+                brickCurrent.isHidden = true
+                brickCurrent.physicsBody = nil
+            }
+            // Hide and remove interaction for null bricks before animation down
+            
+            if brickCurrent.texture != self.brickNullTexture && brickCurrent.texture != self.brickIndestructible2Texture {
+                self.bricksLeft += 1
+            }
+            // Add new bricks to brick count. Don't add non-active bricks
+            
             brick.run(brickGroup, completion: {
                 self.endlessMoveInProgress = false
-            })
-            // Run animation for each brick
-
-            if brickCurrent.texture == self.brickNullTexture || brickCurrent.texture == self.brickIndestructible2Texture {
                 if brickCurrent.texture == self.brickNullTexture {
                     brickCurrent.removeFromParent()
                 }
-            } else {
-                self.bricksLeft += 1
-            }
-            // Remove null bricks & discount indestructible bricks
+                // Remove null bricks after animation
+            })
+            // Run animation for each brick
         }
         
         if hapticsSetting! {

@@ -97,6 +97,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         userSettings()
         loadData()
         
+        if GKLocalPlayer.local.isAuthenticated {
+            gameCenterSetting = true
+        } else {
+            gameCenterSetting = false
+        }
+        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        
         statsTableView.delegate = self
         statsTableView.dataSource = self
         statsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
@@ -240,6 +247,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.lockedImageView.isHidden = true
             cell.cellView3.tag = indexPath.row+1
             cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
+            cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             // Setup cell buttons
             let levelNumber = startLevel!+indexPath.row
             if levelStatsArray[levelNumber].scores.isEmpty == false {
@@ -250,7 +258,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             }
 
             if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] == false {
-                cell.levelNameLabel.text = "Locked"
+                cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row-1] {
+                    cell.levelNameLabel.text = "Complete \(LevelPackSetup().levelNameArray[startLevel!+indexPath.row-1]) level to unlock"
+                } else {
+                    cell.levelNameLabel.text = "Complete Level \(indexPath.row) to unlock"
+                }
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
                 cell.blurView.isHidden = false
@@ -389,6 +402,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
 //            if self.hapticsSetting! {
 //                self.interfaceHaptic.impactOccurred()
 //            }
+            MenuViewController().clearSavedGame()
             moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
         }
         

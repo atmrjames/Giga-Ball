@@ -72,9 +72,29 @@ class Paused: GKState {
                         
         scene.userSettings()
         // Set user settings
-        
+                
         scene.musicHandler()
         // Background music setup
+        
+        if scene.multiplier >= 2 {
+            scene.multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        } else {
+            scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        }
+        
+        scene.scoreLabel.isHidden = false
+        scene.multiplierLabel.isHidden = false
+        scene.pauseButton.isHidden = false
+        scene.livesLabel.isHidden = false
+        scene.life.isHidden = false
+        if scene.endlessMode {
+            scene.life.isHidden = true
+            scene.livesLabel.isHidden = true
+            scene.multiplierLabel.isHidden = true
+        }
+        
+        scene.powerUpIconReset(sender: "Pause")
+        // Reset power-up icons locked icon if power-up locked
         
         if scene.ballIsOnPaddle || scene.killBall || scene.ball.position.y + scene.ballSize/2 < scene.paddle.position.y - scene.paddle.size.height/2 {
 //            scene.isPaused = false

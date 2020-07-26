@@ -21,6 +21,11 @@ class SettingsTableViewCell: UITableViewCell {
     @IBOutlet var lockedImageView: UIImageView!
     // Settings cell properties
     
+    @IBOutlet var descriptionAndStateSharedWidthConstraint: NSLayoutConstraint!
+    @IBOutlet var decriptionFullWidthConstraint: NSLayoutConstraint!
+    @IBOutlet var descriptionTickWidthConstraint: NSLayoutConstraint!
+    
+    
     var blurViewLayer: UIVisualEffectView?
     
     override func awakeFromNib() {
@@ -39,6 +44,14 @@ class SettingsTableViewCell: UITableViewCell {
         cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         cellView2.layer.shadowOpacity = 0.5
         cellView2.layer.shadowRadius = 4
+        
+        settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        settingDescription.font = settingDescription.font.withSize(18)
+        
+        descriptionAndStateSharedWidthConstraint.isActive = true
+        decriptionFullWidthConstraint.isActive = false
+        descriptionTickWidthConstraint.isActive = false
+    
     }
     
     func setBlur() {
@@ -62,11 +75,5 @@ class SettingsTableViewCell: UITableViewCell {
         ])
         // Keep the frame of the blurView consistent with that of the associated view.
     }
-    
-    
-    
-    
-    
-    
     
 }

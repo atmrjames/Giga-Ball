@@ -18,6 +18,8 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     
+    var sender: String?
+    
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
     var group: UIMotionEffectGroup?
@@ -81,7 +83,11 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         // Setup swipe gesture
         
         userSettings()
-        setBlur()
+        
+        if sender != "Info" {
+            setBlur()
+        }
+        
         if parallaxSetting! {
             addParallax()
         }

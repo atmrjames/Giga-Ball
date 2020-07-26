@@ -102,8 +102,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         premiumTableView.delegate = self
         premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
-
+        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
+        
         let screenRatio = self.view.frame.size.height/self.view.frame.size.width
         
         if screenRatio > 2 {
@@ -144,52 +144,62 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if navigatedFrom! == "PauseMenu" {
-            return 11
+        if tableView == self.premiumTableView {
+            return 1
         } else {
-            return 14
+            if navigatedFrom! == "PauseMenu" {
+                return 11
+            } else {
+                return 14
+            }
         }
     }
     // Set number of cells in table view
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
         if tableView == self.premiumTableView {
             
-            premiumTableView.rowHeight = 84
-            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-            cell.iconImage.isHidden = false
+            let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
+            premiumTableView.rowHeight = 84.0
+            cell.centreLabel.isHidden = true
             
-            let premiumTagLineArray: [String] = [
-                "Support The App \nGet Giga-Ball Premium",
-                "Unlock All Power-Ups \nGet Giga-Ball Premium",
-                "Remove Ads \nGet Giga-Ball Premium",
-                "Unlock All Level Packs \nGet Giga-Ball Premium"
+            var premiumTagLineArray: [String] = [
+                "Support The App",
+                "Unlock All Power-Ups",
+                "Remove Ads",
+                "Unlock All Level Packs"
             ]
-
-            cell.centreLabel.text = premiumTagLineArray.randomElement()!
-            cell.settingDescription.text = ""
-            cell.iconImage.image = UIImage(named:"iconPremium.png")!
-            cell.settingState.text = ""
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            var allPacksUnlockedBool = false
+            if totalStatsArray[0].levelPackUnlockedArray.count == totalStatsArray[0].levelPackUnlockedArray.filter({$0 == true}).count {
+                allPacksUnlockedBool = true
+            }
+            var allPUsUnlockedBool = false
+            if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
+                allPUsUnlockedBool = true
+            }
+            if allPacksUnlockedBool {
+                premiumTagLineArray.remove(at: 3)
+            }
+            if allPUsUnlockedBool {
+                premiumTagLineArray.remove(at: 1)
+            }
+            // Don't show premium tags if packs or power-ups all unlocked
             
-            cell.cellView2.layer.cornerRadius = 30
-            cell.cellView2.layer.masksToBounds = false
-            cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 2)
-            cell.cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            cell.cellView2.layer.shadowOpacity = 0.2
-            cell.cellView2.layer.shadowRadius = 4
+            cell.tagLine.text = premiumTagLineArray.randomElement()!
+            cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
             UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+                cell.cellView.transform = .identity
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
             tableView.showsVerticalScrollIndicator = false
             
             return cell
             
         } else {
+            
+            let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
             settingsTableView.rowHeight = 70.0
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
@@ -391,19 +401,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
         
         if tableView == premiumTableView {
-            print("llama llama premium selected")
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
             
             UIView.animate(withDuration: 0.2) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
             tableView.deselectRow(at: indexPath, animated: true)
             // Update table view
@@ -616,9 +622,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         if tableView == premiumTableView {
             UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
             }
         } else {
             UIView.animate(withDuration: 0.1) {
@@ -635,9 +641,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         if tableView == premiumTableView {
             UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .identity
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
         } else {
             UIView.animate(withDuration: 0.1) {
@@ -654,7 +660,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
-        
         cell.frame.size.height = 50
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
@@ -663,14 +668,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
         }
-        
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
         removeAnimate()
         if navigatedFrom! == "PauseMenu" {
             NotificationCenter.default.post(name: .returnPauseNotification, object: nil)

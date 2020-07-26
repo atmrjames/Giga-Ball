@@ -44,7 +44,7 @@ enum CollisionTypes: UInt32 {
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool)
-	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int)
+	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
 	func createInterstitial()
 	func loadInterstitial()
 	var selectedLevel: Int? { get set }
@@ -160,6 +160,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var iconTimerArray: [SKSpriteNode] = []
 	var iconEmptyTimerArray: [SKSpriteNode] = []
 	var iconTimerTextureArray: [SKTexture] = []
+	var iconUnlockedBool: [Bool] = []
 	var iconSize: CGFloat = 0
 	
 	var layoutUnit: CGFloat = 0
@@ -256,6 +257,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var firstLevel: Bool = false
     // Setup score properties
 	
+	var premiumSetting: Bool?
 	var adsSetting: Bool?
 	var soundsSetting: Bool?
 	var musicSetting: Bool?
@@ -433,6 +435,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let laser3D: SKTexture = SKTexture(imageNamed: "laser3D")
 	let laserOutline: SKTexture = SKTexture(imageNamed: "laserOutline")
 	let laserSquare: SKTexture = SKTexture(imageNamed: "laserSquare")
+	let laserIce: SKTexture = SKTexture(imageNamed: "laserIce")
 	let laserGlass: SKTexture = SKTexture(imageNamed: "laserGlass")
 	let laserPixel: SKTexture = SKTexture(imageNamed: "laserPixel")
 	let laserSplit: SKTexture = SKTexture(imageNamed: "laserSplit")
@@ -496,6 +499,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let iconHiddenBlocksTexture: SKTexture = SKTexture(imageNamed: "HiddenBricksIcon")
 	let iconBallSizeBigTexture: SKTexture = SKTexture(imageNamed: "BallSizeBigIcon")
 	let iconBallSizeSmallTexture: SKTexture = SKTexture(imageNamed: "BallSizeSmallIcon")
+	let iconLockedTexture: SKTexture = SKTexture(imageNamed: "LockedIconDisabled")
 	// Power-up icon textures
 	
 	let iconPaddleSizeDisabledTexture: SKTexture = SKTexture(imageNamed: "PaddleSizeIconDisabled")
@@ -564,8 +568,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var finalBrickRowHeight: CGFloat = 0
 	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
-	// Endless mode
-	
+	var endlessBrickMode01: Int?
+	var endlessBrickMode02: Int?
+	var endlessBrickMode03: Int?
+	var endlessBrickMode04: Int?
+	var height01: Int?
+	var height02: Int?
+	var height03: Int?
+	var height04: Int?
+	var height05: Int?
+	var height06: Int?
+	var height07: Int?
+	var height08: Int?
+	var height09: Int?
+	var height10: Int?
+	var height11: Int?
+	var height12: Int?
+	var height13: Int?
+	var height14: Int?
+	var height15: Int?
+	var height16: Int?
+	var height17: Int?
+	var height18: Int?
+	var height19: Int?
+	var height20: Int?
+	// Endless mode properties
+		
 	var countdownStarted: Bool = false
 	
 	var screenRatio: CGFloat = 0.0
@@ -687,7 +715,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		// classic, 3d, ice, outline, square, glass, pixel, split, candy, giga, rainbow, retro
 		
-		let laserTextureArray = [laserNormalTexture, laser3D, laserGlass, laserOutline, laserSquare, laserGlass, laserPixel, laserSplit, laserRed, laserGigaNormal, laserRed, laserRetroPink]
+		let laserTextureArray = [laserNormalTexture, laser3D, laserIce, laserOutline, laserSquare, laserGlass, laserPixel, laserSplit, laserRed, laserGigaNormal, laserRed, laserRetroPink]
 		let laserGigaTextureArray = [laserGigaTexture, laser3DGiga, laserGlassGiga, laserOutlineGiga, laserSquareGiga, laserGlassGiga, laserPixelGiga, laserSplitGiga, laserGigaTexture, laserGigaTexture, laserGigaTexture, laserGigaTexture]
 		
 		rainbowLaserArray = [laserRed, laserOrange, laserYellow, laserGreen, laserBlue, laserIndigo, laserViolet]
@@ -913,26 +941,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		paddle.texture = paddleTexture
 		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
-		if paddle.physicsBody == nil {
+		var counter = 0
+		while paddle.physicsBody == nil {
+			counter+=1
 			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
-			
-		} else {
-//			print("llama created paddle physics body on the 1st attempt")
+			if paddle.physicsBody == nil {
+				paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
+			}
+			if counter > 10 {
+				print("llama llama no paddle physics body")
+				break
+			}
 		}
-		if paddle.physicsBody == nil {
-			paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
-		} else {
-//			print("llama created paddle physics body on or before the 2nd attempt")
-		}
-		if paddle.physicsBody == nil {
-			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
-		} else {
-//			print("llama created paddle physics body on or before the 3rd attempt")
-		}
-		if paddle.physicsBody == nil {
-//			print("llama failed to created the paddle physics body")
-		}
-		// Ensure paddle physics body is created - try 4 times
+		// Ensure paddle physics body is created
         paddle.physicsBody!.allowsRotation = false
         paddle.physicsBody!.friction = 0.0
         paddle.physicsBody!.affectedByGravity = false
@@ -1080,6 +1101,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplierLabel.position.y = scoreLabel.position.y - labelSpacing - fontSize/2
 		multiplierLabel.fontSize = fontSize
 		multiplierLabel.zPosition = 10
+		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		life.position.x = -life.size.width/3
 		life.position.y = pauseButton.position.y
 		life.zPosition = 10
@@ -1100,7 +1122,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Beta Build 0.3.1(1) - TBC - 00/00/2020"
+		buildLabel.text = "Beta Build 0.3.1(1) - TBC - 26/07/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1110,18 +1132,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 		
-		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, gigaBallIcon, hiddenBricksIcon, ballSizeIcon]
-		disabledIconTextureArray = [iconPaddleSizeDisabledTexture, iconBallSpeedDisabledTexture, iconStickyPaddleDisabledTexture, iconGravityDisabledTexture, iconLasersDisabledTexture, iconGigaBallDisabledTexture, iconHiddenBlocksDisabledTexture, iconBallSizeDisabledTexture]
-		iconTextureArray = [iconIncreasePaddleSizeTexture, iconDecreasePaddleSizeTexture, iconDecreaseBallSpeedTexture, iconIncreaseBallSpeedTexture, iconStickyPaddleTexture, iconGravityTexture, iconLasersTexture, iconUndestructiballTexture, iconGigaBallTexture, iconHiddenBlocksTexture, iconBallSizeBigTexture, iconBallSizeSmallTexture]
-		iconTimerArray = [paddleSizeIconBar, ballSpeedIconBar, stickyPaddleIconBar, gravityIconBar, lasersIconBar, gigaBallIconBar, hiddenBricksIconBar, ballSizeIconBar]
-		iconEmptyTimerArray = [paddleSizeIconEmptyBar, ballSpeedIconEmptyBar, stickyPaddleIconEmptyBar, gravityIconEmptyBar, lasersIconEmptyBar, gigaBallIconEmptyBar, hiddenBricksIconEmptyBar, ballSizeIconEmptyBar]
+		// speed, paddle size, hide, sticky, gravity, giga, laser, size
+		iconArray = [ballSpeedIcon, paddleSizeIcon, hiddenBricksIcon, stickyPaddleIcon, gravityIcon, gigaBallIcon, lasersIcon, ballSizeIcon]
+		disabledIconTextureArray = [iconBallSpeedDisabledTexture, iconPaddleSizeDisabledTexture, iconHiddenBlocksDisabledTexture, iconStickyPaddleDisabledTexture, iconGravityDisabledTexture, iconGigaBallDisabledTexture, iconLasersDisabledTexture, iconBallSizeDisabledTexture]
+		iconTimerArray = [ballSpeedIconBar, paddleSizeIconBar, hiddenBricksIconBar, stickyPaddleIconBar, gravityIconBar, gigaBallIconBar, lasersIconBar, ballSizeIconBar]
+		iconEmptyTimerArray = [ballSpeedIconEmptyBar, paddleSizeIconEmptyBar, hiddenBricksIconEmptyBar, stickyPaddleIconEmptyBar, gravityIconEmptyBar, gigaBallIconEmptyBar, lasersIconEmptyBar, ballSizeIconEmptyBar]
+		iconUnlockedBool = [false, false, false, false, false, false, false, false]
+		
+		// paddle size, speed, sticky, gravity, laser, giga, hide, ball size
+//		iconArray = [paddleSizeIcon, ballSpeedIcon, stickyPaddleIcon, gravityIcon, lasersIcon, gigaBallIcon, hiddenBricksIcon, ballSizeIcon]
+//		disabledIconTextureArray = [iconPaddleSizeDisabledTexture, iconBallSpeedDisabledTexture, iconStickyPaddleDisabledTexture, iconGravityDisabledTexture, iconLasersDisabledTexture, iconGigaBallDisabledTexture, iconHiddenBlocksDisabledTexture, iconBallSizeDisabledTexture]
+//		iconTimerArray = [paddleSizeIconBar, ballSpeedIconBar, stickyPaddleIconBar, gravityIconBar, lasersIconBar, gigaBallIconBar, hiddenBricksIconBar, ballSizeIconBar]
+//		iconEmptyTimerArray = [paddleSizeIconEmptyBar, ballSpeedIconEmptyBar, stickyPaddleIconEmptyBar, gravityIconEmptyBar, lasersIconEmptyBar, gigaBallIconEmptyBar, hiddenBricksIconEmptyBar, ballSizeIconEmptyBar]
+//		iconUnlockedBool = [true, true, false, false, false, false, false, false]
+		
 		
 		for i in 1...iconArray.count {
 			let index = i-1
 			let iconSpacing = ((gameWidth-iconSize*2) - iconSize*(CGFloat(iconArray.count)-1)) / (CGFloat(iconArray.count)-1)
 			iconArray[index].size.width = iconSize
 			iconArray[index].size.height = iconSize
-			iconArray[index].texture = disabledIconTextureArray[index]
+			iconArray[index].texture = iconLockedTexture
 			iconArray[index].position.x = -gameWidth/2 + iconSize + (iconSize+iconSpacing)*CGFloat(index)
 			iconArray[index].position.y = powerUpTray.position.y + labelSpacing/2
 			iconArray[index].zPosition = 10
@@ -1190,7 +1221,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpProbArray[26] = 10 // Increase Ball Size
 		powerUpProbArray[27] = 10 // Decrease Ball Size
 		// Set default probabilities
-		powerUpProbSum = powerUpProbArray.reduce(0, +)
 		// Power-up parameters
 		
 		brickDestroyScore = 10
@@ -1199,6 +1229,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 //MARK: - Score Database Setup
 		
+		loadGameData()
+		
+        NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
+        // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
+		
+		NotificationCenter.default.addObserver(self, selector: #selector(self.restartGameNotificiationKeyReceived), name: .restartGameNotificiation, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has restarted the game
+		
+		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
+		swipeUp.direction = .up
+		view.addGestureRecognizer(swipeUp)
+		// Setup swipe gesture
+		
+		gameState.enter(PreGame.self)
+        // Tell the state machine to enter the waiting for tap state
+    }
+	
+	func loadGameData() {
 		if let totalData = try? Data(contentsOf: totalStatsStore!) {
 			do {
 				totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
@@ -1225,21 +1273,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		// Load the level stats array from the NSCoder data store
-		
-        NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
-        // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
-		
-		NotificationCenter.default.addObserver(self, selector: #selector(self.restartGameNotificiationKeyReceived), name: .restartGameNotificiation, object: nil)
-        // Sets up an observer to watch for notifications to check if the user has restarted the game
-		
-		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
-		swipeUp.direction = .up
-		view.addGestureRecognizer(swipeUp)
-		// Setup swipe gesture
-		
-		gameState.enter(PreGame.self)
-        // Tell the state machine to enter the waiting for tap state
-    }
+	}
 	
 	func startLevelTimer() {
 		let timerInterval = SKAction.wait(forDuration: 1.0)
@@ -1621,6 +1655,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			scoreLabel.text = "\(endlessHeight) m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
+		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		// Reset score multiplier
 		
         if numberOfLives > 0 {
@@ -2001,16 +2036,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         case brickMultiHit4Texture:
 			totalStatsArray[0].bricksHit[4]+=1
+			totalStatsArray[0].bricksDestroyed[4]+=1
             removeBrick(node: node, sprite: sprite)
             break
 		case brickIndestructible1Texture:
 			totalStatsArray[0].bricksHit[5]+=1
-			removeBrick(node: node, sprite: sprite)
 			sprite.texture = brickIndestructible2Texture
+			removeBrick(node: node, sprite: sprite)
             break
 		case brickIndestructible2Texture:
 			totalStatsArray[0].bricksHit[6]+=1
-			removeBrick(node: node, sprite: sprite)
+			countBricks()
             break
         case brickInvisibleTexture:
 			totalStatsArray[0].bricksHit[7]+=1
@@ -2026,8 +2062,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     sprite.run(brickHitGroup)
                 })
                 // Animate bricks in
-                break
 			} else {
+				totalStatsArray[0].bricksHit[7]+=1
+				totalStatsArray[0].bricksDestroyed[7]+=1
 				removeBrick(node: node, sprite: sprite)
 			}
             break
@@ -2046,6 +2083,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     sprite.run(brickHitGroup)
                 })
 			} else {
+				totalStatsArray[0].bricksHit[0]+=1
+				totalStatsArray[0].bricksDestroyed[0]+=1
 				removeBrick(node: node, sprite: sprite)
 			}
             break
@@ -2056,10 +2095,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if sprite.texture == brickNullTexture {
 			node.removeFromParent()
+			countBricks()
 			return
 		}
 		
 		if ball.texture == undestructiballTexture {
+			countBricks()
 			return
 		}
 		// Don't allow removal of bricks during undestructi-ball
@@ -2072,7 +2113,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		
-		if powerUpProximity == false && sprite.texture != brickIndestructible2Texture {
+		if powerUpProximity == false {
 			var powerUpProb: Int = 0
 			if powerUpProbFactor > 0 {
 				powerUpProb = Int.random(in: 1...powerUpProbFactor)
@@ -2097,35 +2138,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		countBricks()
 		
-		switch sprite.texture {
-		case brickMultiHit1Texture:
-			totalStatsArray[0].bricksDestroyed[1]+=1
-			break
-		case brickMultiHit2Texture:
-			totalStatsArray[0].bricksDestroyed[2]+=1
-			break
-		case brickMultiHit3Texture:
-			totalStatsArray[0].bricksDestroyed[3]+=1
-			break
-		case brickMultiHit4Texture:
-			totalStatsArray[0].bricksDestroyed[4]+=1
-			break
-		case brickIndestructible1Texture:
-			totalStatsArray[0].bricksDestroyed[5]+=1
-			break
-		case brickIndestructible2Texture:
-			totalStatsArray[0].bricksDestroyed[6]+=1
-			break
-		case brickInvisibleTexture:
-			totalStatsArray[0].bricksDestroyed[7]+=1
-			break
-		default:
-		// Normal bricks
-			totalStatsArray[0].bricksDestroyed[0]+=1
-			break
-		}
-		
-		if sprite.texture != brickIndestructible2Texture {
+		if sprite.texture != brickIndestructible2Texture && sprite.texture != brickIndestructible1Texture {
 			
 			if brickRemovalCounter == 19 && endlessMode == false {
 				if multiplier < 2.0 {
@@ -2147,12 +2160,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight) m"
 		}
+		if multiplier >= 2 {
+			multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+		} else {
+			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		// Update score
-				
-		if sprite.texture == brickIndestructible1Texture {
-			bricksLeft-=1
-		}
         
         if bricksLeft == 0 && endlessMode == false {
 			clearSavedGame()
@@ -2204,7 +2218,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	
 	func countBricks() {
-				
 		bricksLeft = 0
 		var endlessModeBricks = 0
 		
@@ -2227,13 +2240,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// Checks if brick move is already in progress in endless mode
 			}
 		}
-				
+							
 		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0 {
 			moveEndlessModeRowDown()
 		}
 		// If there's no other bricks in the bottom row and a move isn't currently in progress, move to the row with the next lowest bricks
 		
-		if endlessMode && bricksLeft == 0 && totalStatsArray[0].achievementsUnlockedArray[22] == false {
+		if endlessMode && endlessModeBricks == 0 && totalStatsArray[0].achievementsUnlockedArray[22] == false {
 			totalStatsArray[0].achievementsUnlockedArray[22] = true
 			totalStatsArray[0].achievementDates[22] = Date()
 			let achievement = GKAchievement(identifier: "endlessCleared")
@@ -2249,7 +2262,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func moveEndlessModeRowDown() {
-		
+				
 		endlessMoveInProgress = true
 						
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
@@ -2323,8 +2336,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if multiplier < 2.0 {
 			multiplier = multiplier + 0.1
-			if multiplier > 2.0 {
+			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+			if multiplier >= 2.0 {
 				multiplier = 2.0
+				multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
 			}
 		}
 		
@@ -2541,6 +2556,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpOnScreenArray.append(sprite.texture!)
 		}
 		// Put all textures from current on-screen power-ups in an array
+		
+		powerUpProbSum = powerUpProbArray.reduce(0, +)
 		
 		let powerUpProb = Int.random(in: 0...powerUpProbSum-1)
 		// Select power-up at random based on weighting
@@ -3421,8 +3438,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
 				if temporarySprite.texture == self.brickIndestructible2Texture || temporarySprite.texture == self.brickIndestructible1Texture {
-					temporarySprite.texture = self.brickNullTexture
 					temporarySprite.isHidden = true
+					temporarySprite.texture = self.brickNullTexture
+					if temporarySprite.texture == self.brickIndestructible1Texture {
+						self.totalStatsArray[0].bricksDestroyed[5]+=1
+					} else if temporarySprite.texture == self.brickIndestructible2Texture {
+						self.totalStatsArray[0].bricksDestroyed[6]+=1
+					}
 					self.removeBrick(node: node, sprite: temporarySprite)
 				}
 			}
@@ -3618,6 +3640,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					})
 				})
 			}
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[25]+=1
 			// don't do anything if power-up already in place
             
 		case powerUpIncreaseBallSize:
@@ -3831,8 +3855,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplier = multiplier + powerUpMultiplierScore
 		if multiplier < 1.0 {
 			multiplier = 1.0
-		} else if multiplier > 2.0 {
+			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		}
+		if multiplier >= 2.0 {
 			multiplier = 2.0
+			multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
 		}
 		// Ensure multiplier never goes below 1 or above 2
 		if endlessMode == false {
@@ -3876,19 +3903,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleRetroLaserTexture.centerRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
 		paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 	}
+	
+	func powerUpIconReset(sender: String) {
+		// speed[2], paddle size[4], hide[16], sticky[6], gravity[7], giga[20], laser[22], size[26]
+		if premiumSetting! {
+			totalStatsArray[0].powerUpUnlockedArray[2] = true
+			totalStatsArray[0].powerUpUnlockedArray[4] = true
+			totalStatsArray[0].powerUpUnlockedArray[16] = true
+			totalStatsArray[0].powerUpUnlockedArray[6] = true
+			totalStatsArray[0].powerUpUnlockedArray[7] = true
+			totalStatsArray[0].powerUpUnlockedArray[20] = true
+			totalStatsArray[0].powerUpUnlockedArray[22] = true
+			totalStatsArray[0].powerUpUnlockedArray[26] = true
+		}
+		iconUnlockedBool = [totalStatsArray[0].powerUpUnlockedArray[2], totalStatsArray[0].powerUpUnlockedArray[4], totalStatsArray[0].powerUpUnlockedArray[16], totalStatsArray[0].powerUpUnlockedArray[6], totalStatsArray[0].powerUpUnlockedArray[7], totalStatsArray[0].powerUpUnlockedArray[20], totalStatsArray[0].powerUpUnlockedArray[22], totalStatsArray[0].powerUpUnlockedArray[26]]
+		for i in 1...iconArray.count {
+            let index = i-1
+			if sender == "Pause" {
+				if iconArray[index].texture == iconLockedTexture {
+					if iconUnlockedBool[index] {
+						iconArray[index].texture = disabledIconTextureArray[index]
+					} else {
+						iconArray[index].texture = iconLockedTexture
+					}
+				}
+			} else {
+				if iconUnlockedBool[index] {
+					iconArray[index].texture = disabledIconTextureArray[index]
+				} else {
+					iconArray[index].texture = iconLockedTexture
+				}
+			}
+        }
+        // Show locked icon if power-up locked
+	}
     
     func powerUpsReset() {
         self.removeAllActions()
         // Stop all timers and animations
-       
 		powerUpsOnScreen = 0
 		multiplier = 1.0
+		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
 		ball.physicsBody!.linearDamping = ballLinearDampening
 		powerUpLimit = 2
 		ball.texture = ballTexture
 		ballPhysicsBodySet()
-		gigaBallIcon.texture = iconGigaBallDisabledTexture
 		gigaBallIconBar.isHidden = true
 		deactivateGigaBall()
 		// Giga-Ball/Undestructiball reset
@@ -3902,17 +3962,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 		paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
 		paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-		paddleSizeIcon.texture = iconPaddleSizeDisabledTexture
 		paddleSizeIconBar.isHidden = true
 		// Paddle size reset
 		
 		ballSpeedLimit = ballSpeedNominal
-		ballSpeedIcon.texture = iconBallSpeedDisabledTexture
 		ballSpeedIconBar.isHidden = true
 		// Ball speed reset
 		
 		laserTimer?.invalidate()
-		lasersIcon.texture = iconLasersDisabledTexture
 		paddleLaser.isHidden = true
 		paddleRetroLaserTexture.isHidden = true
 		if paddleTexture == retroPaddle {
@@ -3927,7 +3984,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
 		ball.physicsBody!.affectedByGravity = false
 		gravityActivated = false
-		gravityIcon.texture = iconGravityDisabledTexture
 		gravityIconBar.isHidden = true
 		// Gravity reset
 		
@@ -3935,7 +3991,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleRetroStickyTexture.isHidden = true
 		stickyPaddleCatches = 0
 		stickyPaddleCatchesTotal = 0
-		stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
 		stickyPaddleIconBar.isHidden = true
 		stickyPaddleIconBar.xScale = 0
 		// Sticky paddle reset
@@ -3953,7 +4008,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.physicsBody!.isDynamic = true
 		// Backstop paddle reset
 		
-		ballSizeIcon.texture = iconBallSizeDisabledTexture
 		ballSizeIconBar.isHidden = true
 		ball.run(SKAction.scale(to: 1.0, duration: 0.2), completion: {
 			self.setBallStartingPositionY()
@@ -3975,11 +4029,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				})
 			}
 		}
-		hiddenBricksIcon.texture = iconHiddenBlocksDisabledTexture
 		hiddenBricksIconBar.isHidden = true
 		// Invisible bricks reset
 		
-		// Remove any existing power-up icons and timers
+		powerUpIconReset(sender: "")
+		// Remove any existing power-up icons
     }
 	
 	func ballPhysicsBodySet() {
@@ -4030,12 +4084,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             life.isHidden = true
 			// Hide UI
 		}
+		
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus)
 		// Pass over highscore data to pause menu
     }
 	
 	func showInbetweenView() {
-		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber, levelTimerBonus: levelTimerBonus, firstLevel: firstLevel, numberOfLevels: numberOfLevels)
+		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber, levelTimerBonus: levelTimerBonus, firstLevel: firstLevel, numberOfLevels: numberOfLevels, levelScore: levelScore)
 		// Pass over data to inbetween view
 	}
 	
@@ -4061,6 +4116,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Recentre ball if it isn't on smaller paddle
 	
 	func userSettings() {
+		premiumSetting = defaults.bool(forKey: "premiumSetting")
 		adsSetting = defaults.bool(forKey: "adsSetting")
 		soundsSetting = defaults.bool(forKey: "soundsSetting")
 		musicSetting = defaults.bool(forKey: "musicSetting")
@@ -4123,6 +4179,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			backgroundMusic.run(SKAction.play())
 		} else if backgroundMusic != nil {
 			backgroundMusic.run(SKAction.stop())
+			backgroundMusic.removeFromParent()
 		}
     }
     // Background music setup
@@ -4459,7 +4516,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func saveCurrentGame() {
-//		print("llama llama save current game")
 		if numberOfLives == 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
 			return
@@ -4541,7 +4597,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						}
 					}
 					powerUpActiveMagnitudeArray?.append(magnitude!)
-					print("llama llama ballspeedtimer left and scale: ", ballSpeedPowerUp.duration, ballSpeedIconBar.xScale, remainingTime, ballSpeedLimit, magnitude!)
 				}
 			}
 			if let paddleSizePowerUp = self.paddleSizeIconBar.action(forKey: "paddleSizeTimer") {
@@ -4567,7 +4622,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						}
 					}
 					powerUpActiveMagnitudeArray?.append(magnitude!)
-					print("llama llama paddleSizeTimer left and scale: ", paddleSizePowerUp.duration, paddleSizeIconBar.xScale, remainingTime, paddle.xScale, magnitude!)
 				}
 			}
 			if let gravityPowerUp = self.gravityIconBar.action(forKey: "gravityTimer") {
@@ -4576,7 +4630,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUpActiveDurationArray?.append(remainingTime)
 				powerUpActiveTimerArray?.append(Double(gravityPowerUp.duration))
 				powerUpActiveMagnitudeArray?.append(0)
-				print("llama llama gravityTimer left and scale: ", gravityPowerUp.duration, gravityIconBar.xScale, remainingTime)
 			}
 			
 			if let invisiblePowerUp = self.hiddenBricksIconBar.action(forKey: "invisibleBricksTimer") {
@@ -4585,7 +4638,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUpActiveDurationArray?.append(remainingTime)
 				powerUpActiveTimerArray?.append(Double(invisiblePowerUp.duration))
 				powerUpActiveMagnitudeArray?.append(0)
-				print("llama llama invisibleBricksTimer left and scale: ", invisiblePowerUp.duration, hiddenBricksIconBar.xScale, remainingTime)
 			}
 			if let gigaBallPowerUp = self.gigaBallIconBar.action(forKey: "gigaBallTimer") {
 				let remainingTime = Double(gigaBallPowerUp.duration) * Double(gigaBallIconBar.xScale)
@@ -4599,7 +4651,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					magnitude = 1 // undestructi-ball
 				}
 				powerUpActiveMagnitudeArray?.append(magnitude!)
-				print("llama llama gigaBallTimer left and scale: ", gigaBallPowerUp.duration, gigaBallIconBar.xScale, remainingTime, ball.texture!)
 			}
 			if let laserPowerUp = self.lasersIconBar.action(forKey: "laserTimer") {
 				let remainingTime = Double(laserPowerUp.duration) * Double(lasersIconBar.xScale)
@@ -4607,7 +4658,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUpActiveDurationArray?.append(remainingTime)
 				powerUpActiveTimerArray?.append(Double(laserPowerUp.duration))
 				powerUpActiveMagnitudeArray?.append(0)
-				print("llama llama laserTimer left and scale: ", laserPowerUp.duration, lasersIconBar.xScale, remainingTime)
 			}
 			if let ballSizePowerUp = self.ballSizeIconBar.action(forKey: "ballSizeTimer") {
 				if ball.xScale != 1.0 {
@@ -4630,7 +4680,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						}
 					}
 					powerUpActiveMagnitudeArray?.append(magnitude!)
-					print("llama llama ballSizeTimer left and scale: ", ballSizePowerUp.duration, ballSizeIconBar.xScale, remainingTime, ball.xScale)
 				}
 			}
 			if stickyPaddleCatches != 0 {
@@ -4638,14 +4687,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUpActiveDurationArray?.append(0)
 				powerUpActiveTimerArray?.append(0)
 				powerUpActiveMagnitudeArray?.append(stickyPaddleCatches)
-				print("llama llama stickyPaddle left: ", stickyPaddleCatches)
 			}
 			if backstopCatches != 0 {
 				powerUpActiveArray?.append("backstop")
 				powerUpActiveDurationArray?.append(0)
 				powerUpActiveTimerArray?.append(0)
 				powerUpActiveMagnitudeArray?.append(backstopCatches)
-				print("llama llama backstop left: ", backstopCatches)
 			}
 			
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
@@ -4835,7 +4882,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				case self.powerUpDecreaseBallSize:
 					powerUpTextureIndex = 27
 				default:
-					print("default")
+					break
 				}
 				
 				var currentPowerUpXIndex = Double((self.gameWidth/2 - self.brickWidth/2 - sprite.position.x)/self.brickWidth)
@@ -4896,8 +4943,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
 		defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
 		defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
-		
-//		print("llama saved game log: ", saveGameSaveArray!, saveMultiplier!, saveBrickTextureArray!, saveBrickColourArray!, saveBrickXPositionArray!, saveBrickYPositionArray!, saveBallPropertiesArray!)
 	}
 	
 	func clearSavedGame() {
@@ -4931,7 +4976,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
 		defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
 		defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
-//		print("llama llama save game data cleared GS: ", saveGameSaveArray!)
 	}
 	
 	func resumeGame() {
@@ -4954,6 +4998,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 				numberOfLevels = saveGameSaveArray![7]
 				levelTimerValue = saveGameSaveArray![8]
+				levelTimerBonus = 500
 			} else {
 				saveCurrentGame()
 			}
@@ -5013,7 +5058,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 							ballSpeedLimit = ballSpeedFastest
 							ballSpeedIcon.texture = self.iconIncreaseBallSpeedTexture
 						default:
-							print("Default")
+							break
 						}
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
@@ -5048,7 +5093,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 							setScale = 2.5
 							paddleSizeIcon.texture = self.iconIncreasePaddleSizeTexture
 						default:
-							print("Default")
+							break
 						}
 						paddleCenterRectPlus()
 						paddle.run(SKAction.scaleX(to: setScale!, duration: 0.0))
@@ -5153,7 +5198,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 							powerUpLimit = 2
 							// Power up set
 						default:
-							print("Default")
+							break
 						}
 						ballPhysicsBodySet()
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
@@ -5231,7 +5276,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 							setScale = 2.0
 							ballSizeIcon.texture = self.iconBallSizeBigTexture
 						default:
-							print("default")
+							break
 						}
 						ball.xScale = setScale!
 						ball.yScale = setScale!
@@ -5283,7 +5328,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.ballPhysicsBodySet()
 						
 					default:
-						print("default")
+						break
 					}
 				}
 			}

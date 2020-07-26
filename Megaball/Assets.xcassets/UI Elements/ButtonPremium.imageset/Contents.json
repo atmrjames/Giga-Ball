@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "SplashScreenIcon.png",
+      "filename" : "ButtonPremium.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "SplashScreenIcon@2x.png",
+      "filename" : "ButtonPremium@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "SplashScreenIcon@3x.png",
+      "filename" : "ButtonPremium@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

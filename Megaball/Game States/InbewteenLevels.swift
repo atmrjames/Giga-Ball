@@ -62,8 +62,8 @@ class InbetweenLevels: GKState {
     
     func resetGameScene() {
         
-        self.scene.removeAllActions()
-        // Stop all actions
+//        self.scene.removeAllActions()
+//        // Stop all actions
         
         let scaleUp = SKAction.scale(by: 1.5, duration: 0.1)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
@@ -152,6 +152,12 @@ class InbetweenLevels: GKState {
         }
         // Remove any remaining lasers
         
+        let waitEndScene = SKAction.wait(forDuration: 1.0)
+        self.scene.run(waitEndScene, completion: {
+            self.scene.removeAllActions()
+        })
+        // Remove any remaining actions after short delay
+        
     }
     
     func saveGameData() {
@@ -159,7 +165,14 @@ class InbetweenLevels: GKState {
             scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
             scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
         } else {
-            scene.totalScore = scene.totalScore + scene.levelScore + scene.levelTimerBonus
+            var packEndLivesBonus = 0
+            if scene.levelNumber == scene.endLevelNumber && scene.gameoverStatus == false && scene.numberOfLevels != 1 {
+                packEndLivesBonus = scene.numberOfLives*100
+                print("llama llama pack complete: \(scene.numberOfLives), \(packEndLivesBonus)")
+                // Additional lives remaining equal 100 bonus points each
+            }
+            scene.totalScore = scene.totalScore + scene.levelScore + scene.levelTimerBonus + packEndLivesBonus
+            
             scene.totalStatsArray[0].cumulativeScore = scene.totalStatsArray[0].cumulativeScore + scene.levelScore + scene.levelTimerBonus
             // Update total and cumulative scores
             scene.totalStatsArray[0].levelsPlayed+=1
@@ -263,6 +276,7 @@ class InbetweenLevels: GKState {
             if self.scene.adsSetting! {
                 self.scene.gameState.enter(Ad.self)
                 self.scene.loadInterstitial()
+                // Show ad
             } else {
                 if self.scene.endlessMode || self.scene.gameoverStatus == true  {
                     self.scene.showPauseMenu(sender: "Game Over")

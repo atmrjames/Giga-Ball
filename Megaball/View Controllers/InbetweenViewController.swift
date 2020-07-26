@@ -14,11 +14,19 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     var levelNumber: Int = 0
     var packNumber: Int = 0
     var totalScore: Int = 0
+    var levelScore: Int = 0
     var levelScoreBonus: Int = 0
     var levelScoreMinusTimerBonus: Int = 0
     var firstLevel: Bool = false
     var numberOfLevels: Int = 0
+    var sender: String?
     // Properties to store passed over data
+    
+    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    let encoder = PropertyListEncoder()
+    let decoder = PropertyListDecoder()
+    var totalStatsArray: [TotalStats] = []
+    // NSCoder data store & encoder setup
     
     var levelNumberCorrected = 0
     var numberOfPackLevels = 0
@@ -44,31 +52,40 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     @IBOutlet var contentView: UIView!
     
     @IBOutlet var packNameLabel: UILabel!
-    @IBOutlet var scoreLabel: UILabel!
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var levelNameLabel: UILabel!
     @IBOutlet var completeLabel: UILabel!
-    @IBOutlet var scoreAmountLabel: UILabel!
-    @IBOutlet var timeBonusLabel: UILabel!
-    @IBOutlet var timeBonusScore: UILabel!
+    
+    @IBOutlet var levelScoreTitle: UILabel!
+    @IBOutlet var levelScoreLabel: UILabel!
+    @IBOutlet var speedBonusTitle: UILabel!
+    @IBOutlet var speedBonusLabel: UILabel!
+    @IBOutlet var totalScoreTitle: UILabel!
+    @IBOutlet var totalScoreLabel: UILabel!
+    
     @IBOutlet var tapLabel: UILabel!
+    
     @IBOutlet var premiumTableView: UITableView!
     
-    @IBOutlet var unlockedImage: UIImageView!
+    @IBOutlet var totalScoreNoSpeedBonus: NSLayoutConstraint!
+    @IBOutlet var totalScoreSpeedBonus: NSLayoutConstraint!
     
+    @IBOutlet var completeLabelConstraint: NSLayoutConstraint!
+    @IBOutlet var packAndLevelConstriant: NSLayoutConstraint!
+        
     @IBAction func tapGestureAction(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
     }
-        
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         SKPaymentQueue.default().add(self)
         
-        unlockedImage.isHidden = true
+        loadData()
         userSettings()
         setBlur()
         if parallaxSetting! {
@@ -77,19 +94,26 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         updateLabels()
         
         if levelScoreBonus <= 0 {
-            timeBonusLabel.isHidden = true
-            timeBonusScore.isHidden = true
+            speedBonusTitle.isHidden = true
+            speedBonusLabel.isHidden = true
+            totalScoreNoSpeedBonus.isActive = true
+            totalScoreSpeedBonus.isActive = false
         } else {
-            timeBonusLabel.isHidden = false
-            timeBonusScore.isHidden = false
+            speedBonusTitle.isHidden = false
+            speedBonusLabel.isHidden = false
+            totalScoreNoSpeedBonus.isActive = false
+            totalScoreSpeedBonus.isActive = true
         }
+        
+        completeLabelConstraint.isActive = true
+        packAndLevelConstriant.isActive = false
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotificationInbetween, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
                 
         premiumTableView.delegate = self
         premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
+        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
         
         if premiumSetting! {
             premiumTableView.isHidden = true
@@ -99,7 +123,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         
         showAnimate()
         
-        if levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel == true {
+        if (levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel == true) || (levelNumber == 0 && firstLevel == true) {
             premiumTableView.isHidden = true
             showAnimateDuration = 0
             levelNumber = levelNumber-1
@@ -136,20 +160,18 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         { (finished: Bool) in
             if (finished) {
                 self.contentView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-                if self.numberOfLevels == 1 {
-                    self.levelNumberLabel.text = LevelPackSetup().levelNameArray[self.levelNumber+1]
-                    self.levelNameLabel.text = "Single Level Mode"
-                } else {
-                    self.levelNumberLabel.text = "Level \(self.levelNumberCorrected+1) of \(self.numberOfPackLevels)"
-                    self.levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber+1]
-                }
-                self.packNameLabel.text = LevelPackSetup().levelPackNameArray[self.packNumber]
-                self.scoreLabel.text = ""
+                self.levelNumber = self.levelNumber+1
+                self.updateLabels()
+                self.totalScoreLabel.text = ""
                 self.completeLabel.text = ""
-                self.scoreAmountLabel.text = ""
+                self.totalScoreTitle.text = ""
                 self.tapLabel.text = ""
-                self.timeBonusLabel.text = ""
-                self.timeBonusScore.text = ""
+                self.levelScoreTitle.text = ""
+                self.levelScoreLabel.text = ""
+                self.speedBonusTitle.text = ""
+                self.speedBonusLabel.text = ""
+                self.completeLabelConstraint.isActive = false
+                self.packAndLevelConstriant.isActive = true
                 NotificationCenter.default.post(name: .continueToNextLevel, object: nil)
                 UIView.animate(withDuration: 0.25, animations: {
                     self.contentView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
@@ -184,67 +206,55 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     // Set number of cells in table view
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
+        premiumTableView.rowHeight = 84.0
+        cell.centreLabel.isHidden = true
         
-        premiumTableView.rowHeight = 84
-        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-        cell.iconImage.isHidden = false
-        
-        let premiumTagLineArray: [String] = [
-            "Support The App \nGet Giga-Ball Premium",
-            "Unlock All Power-Ups \nGet Giga-Ball Premium",
-            "Remove Ads \nGet Giga-Ball Premium",
-            "Unlock All Level Packs \nGet Giga-Ball Premium"
+        var premiumTagLineArray: [String] = [
+            "Unlock All Power-Ups",
+            "Remove Ads",
         ]
-
-        cell.centreLabel.text = premiumTagLineArray.randomElement()!
-        cell.settingDescription.text = ""
-        cell.iconImage.image = UIImage(named:"iconPremium.png")!
-        cell.settingState.text = ""
+        var allPUsUnlockedBool = false
+        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
+            allPUsUnlockedBool = true
+        }
+        if allPUsUnlockedBool {
+            premiumTagLineArray.remove(at: 0)
+        }
+        // Don't show premium tags if packs or power-ups all unlocked
         
-        cell.cellView2.layer.cornerRadius = 30
-        cell.cellView2.layer.masksToBounds = false
-        cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 2)
-        cell.cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        cell.cellView2.layer.shadowOpacity = 0.2
-        cell.cellView2.layer.shadowRadius = 4
+        cell.tagLine.text = premiumTagLineArray.randomElement()!
+        cell.iconImage.image = UIImage(named:"iconPremium.png")!
         
         UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            cell.cellView.transform = .identity
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
         }
+        tableView.showsVerticalScrollIndicator = false
         
         return cell
     }
-    // Add content to cells
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-    
-        print("llama llama premium selected")
-        showPurchaseScreen()
-        IAPHandler().purchasePremium()
-        
+//        showPurchaseScreen()
+//        IAPHandler().purchasePremium()
+
         UIView.animate(withDuration: 0.2) {
-            let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
         }
         tableView.deselectRow(at: indexPath, animated: true)
-        // Update table view
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-                
         UIView.animate(withDuration: 0.1) {
-            let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
@@ -253,21 +263,33 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
-            let cell = self.premiumTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+            cell.cellView.transform = .identity
+            cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
         }
     }
     
     func updateLabels() {
-        levelScoreMinusTimerBonus = totalScore - levelScoreBonus
-        scoreLabel.text = String(levelScoreMinusTimerBonus)
+        totalScoreLabel.text = String(totalScore)
         levelNumberCorrected = levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1
         numberOfPackLevels = LevelPackSetup().numberOfLevels[packNumber]
-        levelNumberLabel.text = "Level \(levelNumberCorrected) of \(numberOfPackLevels)"
-        levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber]
-        packNameLabel.text = LevelPackSetup().levelPackNameArray[packNumber]
-        timeBonusScore.text = "+\(levelScoreBonus)"
+        speedBonusLabel.text = "+\(levelScoreBonus)"
+        levelScoreLabel.text = String(levelScore)
+        if levelNumber == 0 {
+            packNameLabel.text = ""
+            levelNumberLabel.text = String(LevelPackSetup().levelNameArray[0])
+            levelNameLabel.text = ""
+        }
+        if numberOfLevels == 1 && levelNumber > 0 {
+            packNameLabel.text = "Single Level Mode"
+            levelNumberLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
+            levelNameLabel.text = ""
+        }
+        if numberOfLevels > 1 {
+            packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
+            levelNumberLabel.text = "Level \(self.levelNumberCorrected) of \(self.numberOfPackLevels)"
+            levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
+        }
     }
     
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
@@ -352,6 +374,17 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         iAPVC.didMove(toParent: self)
     }
     // Show iAPVC as popup
+    
+    func loadData() {
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
+        // Load the total stats array from the NSCoder data store
+    }
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
         removeAnimate()

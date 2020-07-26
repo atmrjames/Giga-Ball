@@ -20,7 +20,7 @@ class PreGame: GKState {
     override func didEnter(from previousState: GKState?) {
         
         print("llama llama entered pre game")
-                
+                        
         self.resetGame()
         
         if scene.musicSetting! {
@@ -42,14 +42,22 @@ class PreGame: GKState {
     }
     // This function runs when this state is exited.
     
+    func showBlurView() {
+        
+    }
+    
     func resetGame() {
         scene.scoreLabel.isHidden = true
         scene.multiplierLabel.isHidden = true
+        scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         scene.pauseButton.isHidden = true
         scene.livesLabel.isHidden = true
         scene.life.isHidden = true
         scene.ballIsOnPaddle = true
         // Hide labels
+        
+        scene.powerUpIconReset(sender: "")
+        // Reset power-up icons locked icon if power-up locked
         
         scene.ballStartingPositionY = scene.paddlePositionY + scene.paddle.size.height/2 + scene.ballSize/2 + 1
         // Redeclare ballStartingPositionY

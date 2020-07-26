@@ -47,13 +47,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var containterView: UIView!
-    @IBOutlet weak var levelNumberLabel: UILabel!
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet var scoreLabelTitle: UILabel!
     @IBOutlet weak var highscoreLabel: UILabel!
     @IBOutlet weak var highscoreLabelTitle: UILabel!
     @IBOutlet var buttonCollectionView: UICollectionView!
     @IBOutlet var titleLabel: UILabel!
+    @IBOutlet var packNameLabel: UILabel!
+    @IBOutlet weak var levelNumberLabel: UILabel!
+    @IBOutlet var levelNameLabel: UILabel!
+    
+    @IBOutlet var levelTitleLowerConstraint: NSLayoutConstraint!
+    @IBOutlet var levelNameLabelNormalConstraint: NSLayoutConstraint!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -67,6 +72,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         buttonCollectionView.dataSource = self
         buttonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
+        
+        levelTitleLowerConstraint.isActive = false
+        levelNameLabelNormalConstraint.isActive = true
+        // Default constraints setting
         
         if levelNumber == 0 {
             endlessMode = true
@@ -288,7 +297,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     
         if endlessMode {
+            levelTitleLowerConstraint.isActive = true
+            levelNameLabelNormalConstraint.isActive = false
+            
+            packNameLabel.text = ""
             levelNumberLabel.text = String(LevelPackSetup().levelNameArray[levelNumber])
+            levelNameLabel.text = ""
             
             scoreLabelTitle.text = "Height"
             scoreLabel.text = "\(height) m"
@@ -303,13 +317,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if sender == "Pause" {
                 if height > heightBest {
                     scoreLabelTitle.text = "New Best Height"
-                    highscoreLabelTitle.text = "Previous Best Height"
+                    highscoreLabelTitle.text = "Previous Best"
                 }
                 highscoreLabel.text = "\(heightBest) m"
             } else {
                 if totalStatsArray[0].endlessModeHeight.count <= 1 {
                     scoreLabelTitle.text = "New Best Height"
-                    highscoreLabelTitle.text = "Previous Best Height"
+                    highscoreLabelTitle.text = "Previous Best"
                     highscoreLabel.text = "0 m"
                 } else {
                     var heightsArray = totalStatsArray[0].endlessModeHeight
@@ -317,7 +331,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     let previousBestHeight = heightsArray[1]
                     if height > previousBestHeight {
                         scoreLabelTitle.text = "New Best Height"
-                        highscoreLabelTitle.text = "Previous Best Height"
+                        highscoreLabelTitle.text = "Previous Best"
                         highscoreLabel.text = "\(previousBestHeight) m"
                     }
                 }
@@ -325,12 +339,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
         } else {
             if levelNumber == 100 {
+                levelTitleLowerConstraint.isActive = true
+                levelNameLabelNormalConstraint.isActive = false
+                
+                packNameLabel.text = ""
                 levelNumberLabel.text = "Tutorial"
+                levelNameLabel.text = ""
             } else {
                 if numberOfLevels > 1 {
-                    levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber]) \n Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber]) \n \(LevelPackSetup().levelNameArray[levelNumber])"
-                } else {                    
-                    levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber]) \n Single Level Mode"
+                    packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
+                    levelNumberLabel.text = "Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber])"
+                    levelNameLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
+                } else {
+                    levelTitleLowerConstraint.isActive = true
+                    levelNameLabelNormalConstraint.isActive = false
+                    
+                    packNameLabel.text = "Single Level Mode"
+                    levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNameLabel.text = ""
                 }
             }
             
@@ -376,6 +402,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     highscoreLabel.text = String(previousHighscore)
                 }
             }
+        }
+        
+        if sender == "Complete" && !endlessMode && numberOfLevels != 1 {
+            levelTitleLowerConstraint.isActive = true
+            levelNameLabelNormalConstraint.isActive = false
+            
+            packNameLabel.text = ""
+            levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
+            levelNameLabel.text = ""
         }
     }
     
