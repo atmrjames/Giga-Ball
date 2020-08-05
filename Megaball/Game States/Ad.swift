@@ -24,11 +24,13 @@ class Ad: GKState {
         
         print("llama llama entered ad")
         
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.menuVolume()
+            MusicHandler.sharedHelper.pauseMusic()
+        }
+        
         notificationCounter = 0
         
-        if let musicPlaying = scene.backgroundMusic {
-            musicPlaying.run(SKAction.stop())
-        }
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToCloseAd(_:)), name: .closeAd, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
 
@@ -54,7 +56,9 @@ class Ad: GKState {
     // Call the function to load the next level if a notification from the end level popup is received
     
     override func willExit(to nextState: GKState) {
-        
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.resumeMusic()
+        }
     }
     // This function runs when this state is exited.
     

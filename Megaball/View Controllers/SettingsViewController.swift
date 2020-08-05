@@ -35,6 +35,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var appIconSetting: Int?
     var statsCollapseSetting: Bool?
     var swipeUpPause: Bool?
+    var appOpenCount: Int?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -62,6 +63,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var group: UIMotionEffectGroup?
     var blurView: UIVisualEffectView?
     
+    var premiumTagLineArray: [String] = [
+        "Support The App",
+        "Unlock All Power-Ups",
+        "Remove Ads",
+        "Unlock All Levels & Packs",
+        "Unlock All Customisations",
+        "Unlock All Content"
+    ]
+    var tagline = ""
+    
+    var musicPausedBool: Bool = false
+    
     @IBOutlet var settingsView: UIView!
     @IBOutlet var backgroundView: UIView!
     @IBOutlet weak var settingsTableView: UITableView!
@@ -80,7 +93,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+                
         NotificationCenter.default.addObserver(self, selector: #selector(self.resetNotificiationKeyReceived), name: .resetNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
         
@@ -135,6 +148,30 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if navigatedFrom! == "MainMenu" {
             setBlur()
         }
+        var allPacksUnlockedBool = false
+        if totalStatsArray[0].levelPackUnlockedArray.count == totalStatsArray[0].levelPackUnlockedArray.filter({$0 == true}).count {
+            allPacksUnlockedBool = true
+        }
+        var allCustomUnlockedBool = false
+        if totalStatsArray[0].themeUnlockedArray.count == totalStatsArray[0].themeUnlockedArray.filter({$0 == true}).count && totalStatsArray[0].appIconUnlockedArray.count == totalStatsArray[0].appIconUnlockedArray.filter({$0 == true}).count {
+            allCustomUnlockedBool = true
+        }
+        var allPUsUnlockedBool = false
+        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
+            allPUsUnlockedBool = true
+        }
+        
+        if allCustomUnlockedBool {
+            premiumTagLineArray.remove(at: 5)
+        }
+        if allPacksUnlockedBool {
+            premiumTagLineArray.remove(at: 3)
+        }
+        if allPUsUnlockedBool {
+            premiumTagLineArray.remove(at: 1)
+        }
+        tagline = premiumTagLineArray.randomElement()!
+
         backButtonCollectionView.reloadData()
         showAnimate()
     }
@@ -163,30 +200,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
             cell.centreLabel.isHidden = true
-            
-            var premiumTagLineArray: [String] = [
-                "Support The App",
-                "Unlock All Power-Ups",
-                "Remove Ads",
-                "Unlock All Level Packs"
-            ]
-            var allPacksUnlockedBool = false
-            if totalStatsArray[0].levelPackUnlockedArray.count == totalStatsArray[0].levelPackUnlockedArray.filter({$0 == true}).count {
-                allPacksUnlockedBool = true
-            }
-            var allPUsUnlockedBool = false
-            if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
-                allPUsUnlockedBool = true
-            }
-            if allPacksUnlockedBool {
-                premiumTagLineArray.remove(at: 3)
-            }
-            if allPUsUnlockedBool {
-                premiumTagLineArray.remove(at: 1)
-            }
-            // Don't show premium tags if packs or power-ups all unlocked
-            
-            cell.tagLine.text = premiumTagLineArray.randomElement()!
+
+            cell.tagLine.text = tagline
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
             UIView.animate(withDuration: 0.2) {
@@ -412,6 +427,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
             tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
             // Update table view
             
         } else {
@@ -447,6 +463,21 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Music
                 musicSetting = !musicSetting!
                 defaults.set(musicSetting!, forKey: "musicSetting")
+                if musicSetting! {
+                    if musicPausedBool {
+                        MusicHandler.sharedHelper.resumeMusic()
+                    } else {
+                        if navigatedFrom == "MainMenu" {
+                            MusicHandler.sharedHelper.playMusic(sender: "Menu")
+                        } else {
+                            MusicHandler.sharedHelper.playMusic()
+                        }
+                    }
+                } else {
+                    musicPausedBool = true
+                    MusicHandler.sharedHelper.pauseMusic()
+                    // Stop music
+                }
             case 6:
             // Haptics
                 hapticsSetting = !hapticsSetting!
@@ -483,8 +514,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 11:
             // Restore purchases
-                showPurchaseScreen()
-                IAPHandler().restorePurchase()
+//                showPurchaseScreen()
+//                IAPHandler().restorePurchase()
                 print("Restore purchase")
             case 12:
             // Unlock all
@@ -787,6 +818,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         appIconSetting = defaults.integer(forKey: "appIconSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
+        appOpenCount = defaults.integer(forKey: "appOpenCount")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -883,10 +915,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             defaults.set(appIconSetting!, forKey: "appIconSetting")
             changeIcon(to: LevelPackSetup().appIconNameArray[0])
         }
-        statsCollapseSetting = false
+        statsCollapseSetting = true
         defaults.set(statsCollapseSetting!, forKey: "statsCollapseSetting")
         swipeUpPause = true
         defaults.set(swipeUpPause!, forKey: "swipeUpPause")
+        appOpenCount = 0
+        defaults.set(appOpenCount!, forKey: "appOpenCount")
         
         saveGameSaveArray = []
         defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
@@ -1032,3 +1066,4 @@ extension Notification.Name {
     public static let iAPcompleteNotification = Notification.Name(rawValue: "iAPcompleteNotification")
 }
 // Notification setup for sending information from the pause menu popup to unpause the game
+

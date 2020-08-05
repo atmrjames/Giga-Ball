@@ -20,6 +20,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
     var statsCollapseSetting: Bool?
+    var premiumSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -62,6 +63,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     @IBOutlet var noStatsTableViewHeight: NSLayoutConstraint!
     @IBOutlet var collapsedStatsTableViewHeight: NSLayoutConstraint!
     // Stats table view constraints
+    
+    @IBOutlet var premiumTableView: UITableView!
+    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
+    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
     
     @IBAction func levelsHeaderButton(_ sender: Any) {
         if hapticsSetting! {
@@ -114,6 +119,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         levelsTableView.register(UINib(nibName: "LevelSelectorTableViewCell", bundle: nil), forCellReuseIdentifier: "levelSelectorCell")
         // Levels tableView setup
         
+        premiumTableView.delegate = self
+        premiumTableView.dataSource = self
+        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
+        
+        premiumTableViewHideShow()
+        
         if parallaxSetting! {
             addParallax()
         }
@@ -123,9 +134,27 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         reloadData()
     }
     
+    func premiumTableViewHideShow() {
+        var allUnlockedBool = false
+        if totalStatsArray[0].levelUnlockedArray.count == totalStatsArray[0].levelUnlockedArray.filter({$0 == true}).count {
+            allUnlockedBool = true
+        }
+        if premiumSetting! == false && allUnlockedBool == false {
+            premiumTableView.isHidden = false
+            premiumTableExpanded.isActive = true
+            premiumTableCollapsed.isActive = false
+        } else {
+            premiumTableView.isHidden = true
+            premiumTableExpanded.isActive = false
+            premiumTableCollapsed.isActive = true
+        }
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tableView == self.statsTableView {
             return 7
+        } else if tableView == self.premiumTableView {
+            return 1
         } else {
             return numberOfLevels!
         }
@@ -133,6 +162,22 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     // Set number of cells in table views
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        if tableView == self.premiumTableView {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
+            premiumTableView.rowHeight = 84.0
+            cell.centreLabel.isHidden = true
+            cell.tagLine.text = "Unlock All Levels"
+            cell.iconImage.image = UIImage(named:"iconPremium.png")!
+            
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView.transform = .identity
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            }
+            tableView.showsVerticalScrollIndicator = false
+            
+            return cell
+        }
         
         numberOfAttempts = packStatsArray[packNumber!].scores.count
         let scoreArraySum = packStatsArray[packNumber!].scores.reduce(0, +)
@@ -226,13 +271,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
                 return cell
             case 6:
-                if numberOfAttempts == 0 || packStatsArray[packNumber!].numberOfCompletes <= 0 {
+                if numberOfAttempts == 0 {
                     hideCell(cell: cell)
                 } else {
                     statsTableView.rowHeight = 35.0
                     cell.statDescription.text = "Best time (s)"
                     let bestTime = packStatsArray[packNumber!].bestTime
                     cell.statValue.text = String(bestTime)
+                    if packStatsArray[packNumber!].numberOfCompletes <= 0 {
+                        cell.statValue.text = "Not set"
+                    }
                 }
                 return cell
             default:
@@ -281,10 +329,21 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if tableView == self.levelsTableView {
-//            if hapticsSetting! {
-//                interfaceHaptic.impactOccurred()
-//            }
+        
+        if tableView == premiumTableView {
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
+            
+            UIView.animate(withDuration: 0.2) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            }
+            tableView.reloadData()
+            tableView.deselectRow(at: indexPath, animated: true)
+            // Update table view
+            
+        } else if tableView == self.levelsTableView {
             
             UIView.animate(withDuration: 0.1) {
                 let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
@@ -304,11 +363,17 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-
-        if tableView == self.levelsTableView {
+        
+        if tableView == premiumTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
+        } else if tableView == self.levelsTableView {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             UIView.animate(withDuration: 0.1) {
                 let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
                 cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
@@ -318,10 +383,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if tableView == self.levelsTableView {
+        if tableView == premiumTableView {
+            UIView.animate(withDuration: 0.1) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .identity
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            }
+        } else if tableView == self.levelsTableView {
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
             UIView.animate(withDuration: 0.1) {
                 let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
                 cell.cellView3.transform = .identity
@@ -384,24 +455,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
-//            if self.hapticsSetting! {
-//                self.interfaceHaptic.impactOccurred()
-//            }
             removeAnimate()
             NotificationCenter.default.post(name: .returnPackSelectNotification, object: nil)
         }
         if indexPath.row == 1 {
             if gameCenterSetting! {
-//                if self.hapticsSetting! {
-//                    self.interfaceHaptic.impactOccurred()
-//                }
                 showGameCenterLeaderboards()
             }
         }
         if indexPath.row == 2 {
-//            if self.hapticsSetting! {
-//                self.interfaceHaptic.impactOccurred()
-//            }
             MenuViewController().clearSavedGame()
             moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
         }
@@ -474,6 +536,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
     }
     
+    func showPurchaseScreen() {
+        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
+        self.addChild(iAPVC)
+        iAPVC.view.frame = self.view.frame
+        self.view.addSubview(iAPVC.view)
+        iAPVC.didMove(toParent: self)
+    }
+    // Show iAPVC as popup
+    
     func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
         gameView.menuViewControllerDelegate = self as? MenuViewControllerDelegate
@@ -531,6 +602,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         // Load user settings
     }
     

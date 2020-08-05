@@ -21,6 +21,10 @@ class GameOver: GKState {
         
         print("llama llama entered game over")
         
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.menuVolume()
+        }
+        
         scene.moveToMainMenu()
     }
     // This function runs when this state is entered.

@@ -20,11 +20,15 @@ class Playing: GKState {
     override func didEnter(from previousState: GKState?) {
         
         print("llama llama entered playing")
+        scene.gameInProgress = true
+        scene.defaults.set(scene.gameInProgress!, forKey: "gameInProgress")
         
         scene.userSettings()
         // Set user settings
         
-        scene.musicHandler()
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.gameVolume()
+        }
         
         if previousState is InbetweenLevels || previousState is Ad {
             scene.clearSavedGame()
@@ -444,7 +448,12 @@ class Playing: GKState {
             // Load level in
         }
     }
-        
+    
+    override func willExit(to nextState: GKState) {
+        scene.gameInProgress = false
+        scene.defaults.set(scene.gameInProgress!, forKey: "gameInProgress")
+    }
+    
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
         switch stateClass {
         case is GameOver.Type:

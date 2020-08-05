@@ -42,6 +42,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     var paddleSensitivitySetting: Int?
     var premiumSetting: Bool?
     // User settings
+    
+    var premiumTagLineArray: [String] = [
+        "Unlock All Power-Ups",
+        "Remove Ads",
+    ]
+    var allPUsUnlockedBool = false
+    var tagline = ""
 
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
@@ -120,6 +127,15 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         } else {
             premiumTableView.isHidden = false
         }
+        
+        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
+            allPUsUnlockedBool = true
+        }
+        if allPUsUnlockedBool {
+            premiumTagLineArray.remove(at: 0)
+        }
+        tagline = premiumTagLineArray.randomElement()!
+        // Don't show premium tags if packs or power-ups all unlocked
         
         showAnimate()
         
@@ -210,20 +226,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         premiumTableView.rowHeight = 84.0
         cell.centreLabel.isHidden = true
         
-        var premiumTagLineArray: [String] = [
-            "Unlock All Power-Ups",
-            "Remove Ads",
-        ]
-        var allPUsUnlockedBool = false
-        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
-            allPUsUnlockedBool = true
-        }
-        if allPUsUnlockedBool {
-            premiumTagLineArray.remove(at: 0)
-        }
-        // Don't show premium tags if packs or power-ups all unlocked
-        
-        cell.tagLine.text = premiumTagLineArray.randomElement()!
+        cell.tagLine.text = tagline
         cell.iconImage.image = UIImage(named:"iconPremium.png")!
         
         UIView.animate(withDuration: 0.2) {
@@ -245,6 +248,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
             cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
         }
         tableView.deselectRow(at: indexPath, animated: true)
+        tableView.reloadData()
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {

@@ -44,6 +44,10 @@ class InbetweenLevels: GKState {
 //    // This function runs when this state is entered.
     
     func inbetweenLevels() {
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.menuVolume()
+        }
+        
         resetGameScene()
         if scene.adsSetting! {
             scene.createInterstitial()
@@ -597,6 +601,10 @@ class InbetweenLevels: GKState {
             // Pack score achievements
             
             if scene.levelNumber == 10 && scene.totalStatsArray[0].achievementsUnlockedArray[6] == false {
+                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+2].numberOfCompletes > 0 {
+                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+                }
+                // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[1] = true
                 scene.totalStatsArray[0].themeUnlockedArray[1] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[6] = true
@@ -613,6 +621,10 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 20 && scene.totalStatsArray[0].achievementsUnlockedArray[7] == false {
+                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 {
+                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+                }
+                // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[2] = true
                 scene.totalStatsArray[0].themeUnlockedArray[2] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[10] = true
@@ -629,7 +641,10 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 30 && scene.totalStatsArray[0].achievementsUnlockedArray[8] == false {
-                scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-2].numberOfCompletes > 0 {
+                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+                }
+                // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[3] = true
                 scene.totalStatsArray[0].themeUnlockedArray[3] = true
                 scene.totalStatsArray[0].powerUpUnlockedArray[12] = true

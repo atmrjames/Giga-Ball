@@ -73,7 +73,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
         if tableView == self.premiumTableView {
             return 1
         } else {
-            return 4
+            return 5
         }
     }
     // Set number of cells in table view
@@ -117,12 +117,14 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
             
             switch indexPath.row {
             case 0:
-                cell.settingDescription.text = "Unlock all 28 power-ups"
+                cell.settingDescription.text = "Access to all 110 levels and 11 level packs"
             case 1:
-                cell.settingDescription.text = "Gain access to all 11 level packs"
+                cell.settingDescription.text = "Unlock all 28 power-ups"
             case 2:
-                cell.settingDescription.text = "Remove ads"
+                cell.settingDescription.text = "Unlock all customisations"
             case 3:
+                cell.settingDescription.text = "Remove ads"
+            case 4:
                 cell.settingDescription.text = "Support the app and indie app development"
             default:
                 break
@@ -148,6 +150,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
                 cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
             tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
             // Update table view
         }
     }

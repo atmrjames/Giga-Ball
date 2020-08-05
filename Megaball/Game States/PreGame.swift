@@ -23,11 +23,6 @@ class PreGame: GKState {
                         
         self.resetGame()
         
-        if scene.musicSetting! {
-            scene.musicHandler()
-        }
-        // First time music setup
-        
         let wait = SKAction.wait(forDuration: 1.0)
         // Add slight delay when moving in from main menu
         scene.self.run(wait, completion: {
@@ -47,6 +42,11 @@ class PreGame: GKState {
     }
     
     func resetGame() {
+        
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.menuVolume()
+        }
+        
         scene.scoreLabel.isHidden = true
         scene.multiplierLabel.isHidden = true
         scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)

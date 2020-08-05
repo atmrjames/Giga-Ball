@@ -9,6 +9,7 @@
 import UIKit
 import GoogleMobileAds
 import GameKit
+import StoreKit
 
 class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
@@ -36,6 +37,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var appIconSetting: Int?
     var statsCollapseSetting: Bool?
     var swipeUpPause: Bool?
+    var appOpenCount: Int?
+    var gameInProgress: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -133,6 +136,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         GameCenterHandler().fetchCloudData()
         
         print("llama game save array: ", saveGameSaveArray!)
+        
+        if musicSetting! {
+            MusicHandler.sharedHelper.playMusic(sender: "Menu")
+        }
 
         showSplashScreen()
         // Show splashscreen when first opening the app if there is no game to resume
@@ -243,9 +250,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
         
         UIView.animate(withDuration: 0.1) {
             let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
@@ -442,6 +446,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["appIconSetting": 0])
         defaults.register(defaults: ["statsCollapseSetting": true])
         defaults.register(defaults: ["swipeUpPause": true])
+        defaults.register(defaults: ["appOpenCount": 0])
+        defaults.register(defaults: ["gameInProgress": false])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -517,6 +523,15 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         premiumInfoView.view.frame = self.view.frame
         self.view.addSubview(premiumInfoView.view)
         premiumInfoView.didMove(toParent: self)
+    }
+    
+    func moveToIntro() {
+        let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
+        introView.sender = "Main"
+        self.addChild(introView)
+        introView.view.frame = self.view.frame
+        self.view.addSubview(introView.view)
+        introView.didMove(toParent: self)
     }
     
     func loadData() {
@@ -601,6 +616,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         appIconSetting = defaults.integer(forKey: "appIconSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
+        appOpenCount = defaults.integer(forKey: "appOpenCount")
+        gameInProgress = defaults.bool(forKey: "gameInProgress")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -740,6 +757,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
         refreshView()
+        if musicSetting! == false {
+            print("llama llama stop music")
+            MusicHandler.sharedHelper.stopMusic()
+        }
     }
     
     @objc private func splashScreenEndedNotificationKeyReceived(_ notification: Notification) {
@@ -748,7 +769,20 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         if saveGameSaveArray!.count > 0 {
             loadSavedGame()
+        } else {
+            let rand = Int.random(in: 1...10)
+            if appOpenCount! > 10 && totalStatsArray[0].playTimeSecs > 60*10 && rand == 1 {
+                SKStoreReviewController.requestReview()
+                // Show app rating pop-up when over 10 times opened the app and 10 minutes of play time with a 1 in 10 chance on launching the app
+            }
         }
+        
+        if appOpenCount == 0 {
+            moveToIntro()
+        }
+        appOpenCount!+=1
+        defaults.set(appOpenCount!, forKey: "appOpenCount")
+        // Present onboarding screen if first time opening app
     }
     // Runs when the splash screen has ended
     
@@ -761,14 +795,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Runs when the splash screen has ended
     
     @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
-        print("background notification")
         GameCenterHandler().saveCloudData()
         print("llama llama menu background")
     }
     // Runs when the splash screen has ended
     
     @objc private func cancelGameResumeNotificationKeyReceived(_ notification: Notification) {
-        print("llama llama cancel game resume 2")
         clearSavedGame()
     }
     // Runs when the splash screen has ended
@@ -814,6 +846,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         print("llama resume game: ", saveGameSaveArray![0], numberOfLevels!, levelSender!, saveGameSaveArray![2])
 // TODO: Show specific loading splashscreen - delay for some time to load data, login to game center, etc
     }
+    
 }
 
 extension Notification.Name {
@@ -821,6 +854,6 @@ extension Notification.Name {
     public static let splashScreenEndedNotification = Notification.Name(rawValue: "splashScreenEndedNotification")
     public static let foregroundNotification = Notification.Name(rawValue: "foregroundNotification")
     public static let backgroundNotification = Notification.Name(rawValue: "backgroundNotification")
-    public static let cancelGameResume = Notification.Name(rawValue: "cancelGameResume")    
+    public static let cancelGameResume = Notification.Name(rawValue: "cancelGameResume")
 }
 // Notification setup

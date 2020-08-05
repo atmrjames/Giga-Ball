@@ -22,6 +22,10 @@ class Paused: GKState {
         
         print("llama llama entered paused")
         
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.menuVolume()
+        }
+                
         scene.userSettings()
         // Set user settings
         
@@ -30,10 +34,6 @@ class Paused: GKState {
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.unpauseNotificationKeyReceived), name: .unpause, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu
-        
-        if let musicPlaying = scene.backgroundMusic {
-            musicPlaying.run(SKAction.pause())
-        }
         
         if scene.saveBallPropertiesArray == [] {
             
@@ -72,15 +72,15 @@ class Paused: GKState {
                         
         scene.userSettings()
         // Set user settings
-                
-        scene.musicHandler()
-        // Background music setup
         
         if scene.multiplier >= 2 {
             scene.multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         } else {
             scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         }
+        
+        scene.powerUpProbAllocation(levelNumber: scene.levelNumber)
+        // Re-check power-up allocation
         
         scene.scoreLabel.isHidden = false
         scene.multiplierLabel.isHidden = false

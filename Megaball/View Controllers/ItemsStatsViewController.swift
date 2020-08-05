@@ -43,16 +43,11 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var powerUpImage: UIImageView!
-    @IBOutlet var powerUpActionImage: UIImageView!
     @IBOutlet var descriptionLabel: UILabel!
     @IBOutlet var statsTableView: UITableView!
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
-    
-    @IBOutlet var powerUpActionImageAspectRatio: NSLayoutConstraint!
-    @IBOutlet var powerUpActionImageHeight: NSLayoutConstraint!
-    
-    
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -75,14 +70,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         updateLabels()
         statsTableView.reloadData()
         backButtonCollectionView.reloadData()
-        
-        if sender == "Power-Ups" {
-            powerUpActionImageAspectRatio.isActive = true
-            powerUpActionImageHeight.isActive = false
-        } else {
-            powerUpActionImageHeight.isActive = true
-            powerUpActionImageAspectRatio.isActive = false
-        }
 
         showAnimate()
     }
@@ -322,7 +309,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         if sender == "Power-Ups" {
             titleLabel.text = LevelPackSetup().powerUpNameArray[passedIndex!].uppercased()
             powerUpImage.image = LevelPackSetup().powerUpImageArray[passedIndex!]
-    //        powerUpActionImage.image = ""
             descriptionLabel.text = LevelPackSetup().powerUpDescriptionArray[passedIndex!]
         } else {
             titleLabel.text = LevelPackSetup().achievementsNameArray[passedIndex!].uppercased()
@@ -331,7 +317,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             } else {
                 powerUpImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
             }
-            powerUpActionImage.isHidden = true
             descriptionLabel.text = LevelPackSetup().achievementsPreEarnedDescriptionArray[passedIndex!]
             if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
                 descriptionLabel.text = LevelPackSetup().achievementsEarnedDescriptionArray[passedIndex!]
@@ -343,11 +328,5 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         powerUpImage.layer.shadowOffset = CGSize(width: 0.0, height: 0.0)
         powerUpImage.layer.shadowRadius = 10.0
         powerUpImage.layer.shadowOpacity = 0.75
-        
-        powerUpActionImage.layer.masksToBounds = false
-        powerUpActionImage.layer.shadowColor = UIColor.black.cgColor
-        powerUpActionImage.layer.shadowOffset = CGSize(width: 0.0, height: 0.0)
-        powerUpActionImage.layer.shadowRadius = 10.0
-        powerUpActionImage.layer.shadowOpacity = 0.75
     }
 }

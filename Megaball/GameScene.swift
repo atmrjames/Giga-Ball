@@ -9,6 +9,7 @@
 import SpriteKit
 import GameplayKit
 import GameKit
+import AVKit
 //import GameKit
 
 let PaddleCategoryName = "paddle"
@@ -54,11 +55,13 @@ protocol GameViewControllerDelegate: class {
 }
 // Setup the protocol to return to the main menu from GameViewController
 
-class GameScene: SKScene, SKPhysicsContactDelegate {
+class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 	
-	var backgroundMusic: SKAudioNode!
-	// Setup game music
-    
+//	var player: AVAudioPlayer?
+//	var playerBool = false
+//	var randomPlayerTrack: Int = 0
+//	// Setup game music
+	
     var paddle = SKSpriteNode()
 	var paddleLaser = SKSpriteNode()
 	var paddleSticky = SKSpriteNode()
@@ -247,7 +250,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var levelTimerBonus: Int = 0
 	var levelTimerValue: Int = 0 {
 		didSet {
-			timerLabel.text = String(levelTimerValue)
+//			timerLabel.text = String(levelTimerValue)
 			if endlessMode {
 				endlessModeDurationCheck()
 			}
@@ -270,6 +273,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var brickSetting: Int?
     var appIconSetting: Int?
 	var swipeUpPause: Bool?
+	var gameInProgress: Bool?
 	// User settings
 	var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -607,19 +611,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Setup timer icon animation
 	
 //MARK: - Sound and Haptic Definition
-
-	let laserFiredSound = SKAction.playSoundFileNamed("laserFired", waitForCompletion: false)
-	let ballPaddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit", waitForCompletion: false)
-	let ballLostSound = SKAction.playSoundFileNamed("ballLostSound", waitForCompletion: false)
-	let gameOverSound = SKAction.playSoundFileNamed("gameOverSound", waitForCompletion: false)
-	let brickHitSound = SKAction.playSoundFileNamed("brickHit", waitForCompletion: false)
-	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound", waitForCompletion: false)
 	
-//	if self.soundsSetting! {
-//		self.run(wallHitSound)
-//	}
-//	// ... sound
-
+	let ballLostSound = SKAction.playSoundFileNamed("ballLostSound.mp3", waitForCompletion: true)
+	let ballPaddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit.m4a", waitForCompletion: true)
+	let ballReleaseSound = SKAction.playSoundFileNamed("ballRelease.m4a", waitForCompletion: true)
+	let brickHitNormalSound = SKAction.playSoundFileNamed("brickHit.m4a", waitForCompletion: true)
+	let endlessRowDownSound = SKAction.playSoundFileNamed("endlessRowDown.m4a", waitForCompletion: true)
+	let gameOverSound = SKAction.playSoundFileNamed("gameOverSound.mp3", waitForCompletion: true)
+	let laserFiredSound = SKAction.playSoundFileNamed("laserFired.m4a", waitForCompletion: true)
+	let levelCompleteSound = SKAction.playSoundFileNamed("levelComplete.m4a", waitForCompletion: true)
+	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound.m4a", waitForCompletion: true)
+	let stickyPaddleHitSound = SKAction.playSoundFileNamed("stickyPaddleHit.m4a", waitForCompletion: true)
+	let uiClickSound = SKAction.playSoundFileNamed("brickHit.m4a", waitForCompletion: true)
 	// Sounds defined - pre-loaded to prevent game lag
     
     var lightHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -674,7 +677,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Haptics redefined for iOS13
 	
         physicsWorld.contactDelegate = self
-        // Sets the GameScene as the delegate in the physicsWorld
+        // Sets the GameScene as the delegate in the physicsWorld and AVAudio
         
         let boarder = SKPhysicsBody(edgeLoopFrom: frame)
         boarder.friction = 0
@@ -1069,13 +1072,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpTray.size.height = iconSize*2
 		powerUpTray.position.x = 0
 		
-		
+		scoreBacker.isHidden = true
 		
 		if screenSize == "X" {
-			scoreBacker.isHidden = true
 			powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - powerUpTray.size.height/2 - labelSpacing/2
 		} else {
-			scoreBacker.isHidden = false
 			powerUpTray.position.y = frame.size.height/2 - powerUpTray.size.height/2
 			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight - labelSpacing/2 - pauseButton.size.height/2
 		}
@@ -1092,7 +1093,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		scoreLabel.zPosition = 10
 		
 		if screenSize == "Pad" {
-			scoreBacker.isHidden = false
 			pauseButton.position.x = sideScreenBlockLeft.position.x + sideScreenBlockLeft.size.width/2 + pauseButton.size.width/2 + layoutUnit/2
 			scoreLabel.position.x = sideScreenBlockRight.position.x - sideScreenBlockRight.size.width/2 - layoutUnit/2
 		}
@@ -1122,7 +1122,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Beta Build 0.3.1(1) - TBC - 26/07/2020"
+		buildLabel.text = "Beta Build 0.3.2(70) - TBC - 05/08/2020"
 		
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1236,6 +1236,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(self.restartGameNotificiationKeyReceived), name: .restartGameNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has restarted the game
+		
+//		NotificationCenter.default.addObserver(self, selector: #selector(self.playMusicNotificationKeyReceived), name: .playMusicNotification, object: nil)
+//        // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
+//
+//		NotificationCenter.default.addObserver(self, selector: #selector(self.stopMusicNotificationKeyReceived), name: .stopMusicNotification, object: nil)
+//        // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
 		swipeUp.direction = .up
@@ -1443,6 +1449,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let name = touchedNode.name {
                 if name == "pauseButton" || name == "pauseButtonTouch" && gameState.currentState is Playing {
 					if endlessMoveInProgress == false {
+						if soundsSetting! {
+							self.run(uiClickSound)
+						}
 						clearSavedGame()
 						// Clear current saved game before re-saving
 						gameState.enter(Paused.self)
@@ -1537,6 +1546,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)
 		ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
         // Launches ball
+		
+		if soundsSetting! {
+			self.run(ballReleaseSound)
+		}
 		
 		startLevelTimer()
 		// restart timer
@@ -1714,7 +1727,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballLostAnimation() {
-		if self.soundsSetting! {
+		if soundsSetting! {
 			if numberOfLives > 0 {
 				self.run(ballLostSound)
 			} else {
@@ -1997,11 +2010,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if hapticsSetting! {
 			lightHaptic.impactOccurred()
 		}
-		
-		if self.soundsSetting! {
-			self.run(brickHitSound)
-		}
-		// Brick hit sound
 
 		if  laserSprite?.texture != laserGigaTexture {
             laserNode?.removeFromParent()
@@ -2020,34 +2028,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				scoreLabel.text = String(totalScore + levelScore)
 			}
 		}
-        
+        		
         switch sprite.texture {
         case brickMultiHit1Texture:
 			totalStatsArray[0].bricksHit[1]+=1
             sprite.texture = brickMultiHit2Texture
-            break
         case brickMultiHit2Texture:
 			totalStatsArray[0].bricksHit[2]+=1
             sprite.texture = brickMultiHit3Texture
-            break
 		case brickMultiHit3Texture:
 			totalStatsArray[0].bricksHit[3]+=1
             sprite.texture = brickMultiHit4Texture
-            break
         case brickMultiHit4Texture:
 			totalStatsArray[0].bricksHit[4]+=1
 			totalStatsArray[0].bricksDestroyed[4]+=1
             removeBrick(node: node, sprite: sprite)
-            break
 		case brickIndestructible1Texture:
 			totalStatsArray[0].bricksHit[5]+=1
 			sprite.texture = brickIndestructible2Texture
 			removeBrick(node: node, sprite: sprite)
-            break
 		case brickIndestructible2Texture:
 			totalStatsArray[0].bricksHit[6]+=1
 			countBricks()
-            break
         case brickInvisibleTexture:
 			totalStatsArray[0].bricksHit[7]+=1
             if sprite.isHidden {
@@ -2067,7 +2069,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				totalStatsArray[0].bricksDestroyed[7]+=1
 				removeBrick(node: node, sprite: sprite)
 			}
-            break
         default:
 		// Normal bricks
             totalStatsArray[0].bricksHit[0]+=1
@@ -2087,8 +2088,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				totalStatsArray[0].bricksDestroyed[0]+=1
 				removeBrick(node: node, sprite: sprite)
 			}
-            break
         }
+		if self.soundsSetting! {
+			self.run(brickHitNormalSound)
+		}
+		// Brick hit sound
     }
     
     func removeBrick(node: SKNode, sprite: SKSpriteNode) {
@@ -2169,6 +2173,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Update score
         
         if bricksLeft == 0 && endlessMode == false {
+			if soundsSetting! {
+				self.run(levelCompleteSound)
+			}
 			clearSavedGame()
 			checkPaddleHitsAchievement()
 			self.removeAction(forKey: "gameTimer")
@@ -2278,6 +2285,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Move bricks down
 		
+		if soundsSetting! {
+			self.run(endlessRowDownSound)
+		}
+		
 		if gameState.currentState is Playing {
 			buildNewEndlessRow()
 		}
@@ -2364,7 +2375,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func ballBackstopHit() {
-		if self.soundsSetting! {
+		if soundsSetting! {
 			self.run(ballPaddleHitSound)
 		}
 		// Play paddle hit sound
@@ -2394,19 +2405,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		paddleHitsPerLevel+=1
 		
-		if stickyPaddleCatches != 0 {
-			if paddleTexture == retroPaddle {
-				// Play retro sticky paddle sound
-			} else {
-				// Play sticky paddle sound
-			}
-		} else {
-			if self.soundsSetting! {
-				self.run(ballPaddleHitSound)
-			}
-			// Play paddle hit sound
-		}
-		
         totalStatsArray[0].ballHits+=1
 		brickBounceCounter = 0
 		ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
@@ -2424,7 +2422,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 //		print("Llama collision: ", collisionPercentage, angleDeg, (ball.position.x-paddle.position.x))
 		
-		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3  {
+		if soundsSetting! {
+			if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && stickyPaddleCatches != 0 {
+				self.run(stickyPaddleHitSound)
+			} else {
+				self.run(ballPaddleHitSound)
+			}
+		}
+		
+		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
 		// Only apply if the ball hits the centre of the paddle
 
 			if stickyPaddleCatches != 0 {
@@ -2477,7 +2483,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		let waitPaddleHitSave = SKAction.wait(forDuration: 0.1)
 		paddle.run(waitPaddleHitSave, completion: {
-			self.saveCurrentGame()
+//			self.saveCurrentGame()
 		})
 		
     }
@@ -2530,7 +2536,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return
 		}
 		// Limit number of power-ups available at once
-        
+		        
         let powerUp = SKSpriteNode(imageNamed: "PowerUpPreSet")
         
 		powerUp.size.width = brickWidth*0.85
@@ -2568,7 +2574,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var selectionComplete: Bool = false
 		
 		powerUpGeneratorCycles+=1
-		print("llama llama power-up return value: ", powerUpGeneratorCycles)
 		// Keep track of how many times the power-up generator has run to generate a valid power-up
 		
 		if powerUpGeneratorCycles > 10 {
@@ -2858,7 +2863,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			rigidHaptic.impactOccurred()
 		}
 		
-		if self.soundsSetting! {
+		if soundsSetting! {
 			self.run(powerUpSound)
 		}
 		// Power-up applied sound
@@ -3332,6 +3337,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				levelTimerBonus = 0
 			}
 			levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
+			if soundsSetting! {
+				self.run(levelCompleteSound)
+			}
             gameState.enter(InbetweenLevels.self)
 			return
 			
@@ -3464,6 +3472,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					levelTimerBonus = 0
 				}
 				levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
+				if soundsSetting! {
+					self.run(levelCompleteSound)
+				}
 				gameState.enter(InbetweenLevels.self)
 				return
 			}
@@ -4084,7 +4095,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             life.isHidden = true
 			// Hide UI
 		}
-		
+				
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus)
 		// Pass over highscore data to pause menu
     }
@@ -4129,6 +4140,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
 		swipeUpPause = defaults.bool(forKey: "swipeUpPause")
+		gameInProgress = defaults.bool(forKey: "gameInProgress")
 		// User settings
 		
 		saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -4168,22 +4180,65 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Set user settings
 	
-	func musicHandler() {
-		if musicSetting! && backgroundMusic == nil {
-			if let musicURL = Bundle.main.url(forResource: "BrendanBlockTitleMusic", withExtension: "mp3") {
-				backgroundMusic = SKAudioNode(url: musicURL)
-				addChild(backgroundMusic)
-			}
-		}
-        if musicSetting! {
-			backgroundMusic.run(SKAction.play())
-		} else if backgroundMusic != nil {
-			backgroundMusic.run(SKAction.stop())
-			backgroundMusic.removeFromParent()
-		}
-    }
-    // Background music setup
-
+//	func playMusic() {
+//		print("play music")
+//		if musicSetting! == false || playerBool {
+//			return
+//		}
+//
+//		let theEspace = Bundle.main.url(forResource: "Gigaball - The Escape", withExtension: "mp3")
+//		let theRebound = Bundle.main.url(forResource: "Gigaball - The Rebound", withExtension: "mp3")
+//		let theStrategy = Bundle.main.url(forResource: "Gigaball - The Strategy", withExtension: "mp3")
+//		let titleTheme = Bundle.main.url(forResource: "Gigaball - Title Theme", withExtension: "mp3")
+//		let gameMusicArray = [theEspace, theRebound, theStrategy, titleTheme]
+//
+//		var newRandomPlayerTrack = Int.random(in: 1...gameMusicArray.count)
+//		while newRandomPlayerTrack == randomPlayerTrack {
+//			newRandomPlayerTrack = Int.random(in: 1...gameMusicArray.count)
+//		}
+//		randomPlayerTrack = newRandomPlayerTrack
+//		// Don't allow same track to play twice in a row
+//		let selectedTrackURL = gameMusicArray[randomPlayerTrack-1]
+//
+//		do {
+//			try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+//			try AVAudioSession.sharedInstance().setActive(true)
+//			player = try AVAudioPlayer(contentsOf: selectedTrackURL!)
+//			player!.delegate = self
+//			player!.play()
+//			playerBool = true
+//			if gameState.currentState is Paused || gameState.currentState is InbetweenLevels || gameState.currentState is Ad || gameState.currentState is PreGame || gameState.currentState is GameOver {
+//				player!.volume = 0.25
+//			} else {
+//				player!.volume = 1.0
+//			}
+//			print("play music success")
+//		} catch let error {
+//			print("play music error")
+//			print(error.localizedDescription)
+//		}
+//	}
+//
+//	func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+//		playerBool = false
+//		playMusic()
+//	}
+//	// Play another music track once background audio has ended
+//
+//	@objc func playMusicNotificationKeyReceived() {
+//		musicSetting = true
+//		if playerBool {
+//			player?.play()
+//		} else {
+//			playMusic()
+//		}
+//	}
+//
+//	@objc func stopMusicNotificationKeyReceived() {
+//		musicSetting = false
+//		player?.pause()
+//	}
+	
 	func ballStuck() {
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			let temporarySprite = node as! SKSpriteNode
@@ -4438,7 +4493,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			addChild(laser)
 			totalStatsArray[0].lasersFired+=1
 			
-			if self.soundsSetting! {
+			if soundsSetting! {
 				self.run(laserFiredSound)
 			}
 			// Laser fired sound
@@ -4516,6 +4571,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func saveCurrentGame() {
+		
+		print("llama llama save current game")
+		
 		if numberOfLives == 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
 			return
@@ -4533,7 +4591,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var currentNumberOfLives = numberOfLives
 		let currentHeight = endlessHeight
 		let currentNumberOfLevels = numberOfLevels
-		let currentlevelTimerValue = levelTimerValue
+		let currentLevelTimerValue = levelTimerValue
+		let currentPackTimerValue = packTimerValue
 
 		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && gameoverStatus == false {
 			if numberOfLevels > 1 {
@@ -4545,7 +4604,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// If inbetween levels but only playing 1 level at a time don't save
 		
-		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentlevelTimerValue]
+		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentLevelTimerValue, currentPackTimerValue]
 		
 		var currentMultiplier = multiplier
 		
@@ -4998,6 +5057,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 				numberOfLevels = saveGameSaveArray![7]
 				levelTimerValue = saveGameSaveArray![8]
+				packTimerValue = saveGameSaveArray![9]
 				levelTimerBonus = 500
 			} else {
 				saveCurrentGame()
@@ -5033,6 +5093,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					powerUpsOnScreen+=1
 				}
 			// Load power-up position and texture if it has been saved
+				if endlessMode && screenSize != "X" {
+					scoreBacker.isHidden = false
+				}
 			}
 			
 			if savePowerUpActiveArray != [] {
@@ -5516,12 +5579,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessMode {
 			countBricks()
 		}
+		
+//		MusicHandler().resumeFromPause()
+		
+//		if musicSetting! == false && player != nil {
+//			playerBool = false
+//			player?.stop()
+//			player = nil
+//		}
+//		// If music has been turned off but not removed in settings, remove on resume
+//		
+//		if musicSetting! && player != nil && playerBool {
+//			player!.volume = 1.0
+//        }
+//        // Set the background music to 100% volume
 	}
 }
 
 extension Notification.Name {
     public static let pauseNotificationKey = Notification.Name(rawValue: "pauseNotificationKey")
 	public static let restartGameNotificiation = Notification.Name(rawValue: "restartGameNotificiation")
+//	public static let playMusicNotification = Notification.Name(rawValue: "playMusicNotification")
+//	public static let stopMusicNotification = Notification.Name(rawValue: "stopMusicNotification")
 }
 // Setup for notifcations from AppDelegate
 

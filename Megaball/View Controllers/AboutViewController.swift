@@ -29,46 +29,52 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     @IBOutlet var aboutView: UIView!
     // Background setup
     
-    @IBOutlet var createdByLabel: UILabel!
+    @IBOutlet var logoIcon: UIImageView!
+    @IBOutlet var logoTitle: UIImageView!
     @IBOutlet var creatorLabel: UILabel!
-    @IBOutlet var musicByLabel: UILabel!
     @IBOutlet var composerLabel: UILabel!
-    @IBOutlet var descriptionLabel: UILabel!
-    // Label setup
+    @IBOutlet var instagramLogo: UIButton!
+    @IBOutlet var facebookLogo: UIButton!
+    @IBOutlet var twitterLogo: UIButton!
+    @IBOutlet var websiteLink: UIButton!
+    @IBOutlet var buildLabel: UILabel!
+    @IBOutlet var copyrightLabel: UILabel!
     
-    @IBOutlet var imageView: UIImageView!
-    // Image view setup
-    
-    @IBOutlet var websiteButtonLabel: UIButton!
-    @IBOutlet var reviewButtonLabel: UIButton!
-    @IBOutlet var supportButtonLabel: UIButton!
-    // Button outlets
-    
-    @IBAction func websiteButton(_ sender: Any) {
-        // Website link
-    }
-    @IBAction func reviewButton(_ sender: Any) {
-        // App store link
-    }
-    @IBAction func supportButton(_ sender: Any) {
-        // Support link
-    }
-    
-    @IBOutlet var backButtonCollectionView: UICollectionView!
-    
-    @IBAction func tapGesture(_ sender: Any) {
+    @IBAction func instagramLogoTapped(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        removeAnimate()
+        if let url = URL(string: "https://www.instagram.com/giga_ballapp/") {
+            UIApplication.shared.open(url)
+        }
     }
-    // Tap gesture setup
+    @IBAction func facebookLogoTapped(_ sender: Any) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        if let url = URL(string: "https://www.facebook.com/GigaBallApp/") {
+            UIApplication.shared.open(url)
+        }
+    }
+    @IBAction func twitterLogoTapped(_ sender: Any) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        if let url = URL(string: "https://twitter.com/giga_ballapp") {
+            UIApplication.shared.open(url)
+        }
+    }
+    @IBAction func websiteLinkTapped(_ sender: Any) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        if let url = URL(string: "https://www.giga-ball.app") {
+            UIApplication.shared.open(url)
+        }
+    }
     
-    @IBOutlet var websiteButton: UIButton!
-    @IBOutlet var reviewButton: UIButton!
-    @IBOutlet var supportButton: UIButton!
-    // Button outlet setup
-    
+    @IBOutlet var backButtonCollectionView: UICollectionView!
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -76,11 +82,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
-        
-        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
-        swipeDown.direction = .down
-        view.addGestureRecognizer(swipeDown)
-        // Setup swipe gesture
         
         userSettings()
         
@@ -120,9 +121,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
         removeAnimate()
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -230,116 +228,111 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func fadeObjectsIn() {
-        
+
         let delay = 0.1
         var delayFactor: Double = 1.0
         let distance: CGFloat = 30
-        
-        createdByLabel.alpha = 0.0
-        createdByLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        createdByLabel.center.y += distance
-        
+
+        logoIcon.alpha = 0.0
+        logoIcon.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        logoIcon.center.y += distance
+
+        logoTitle.alpha = 0.0
+        logoTitle.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        logoTitle.center.y += distance
+
         creatorLabel.alpha = 0.0
         creatorLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         creatorLabel.center.y += distance
-        
-        musicByLabel.alpha = 0.0
-        musicByLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        musicByLabel.center.y += distance
-        
+
         composerLabel.alpha = 0.0
         composerLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         composerLabel.center.y += distance
+
+        instagramLogo.alpha = 0.0
+        instagramLogo.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        instagramLogo.center.y += distance
+
+        facebookLogo.alpha = 0.0
+        facebookLogo.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        facebookLogo.center.y += distance
+
+        twitterLogo.alpha = 0.0
+        twitterLogo.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        twitterLogo.center.y += distance
+
+        websiteLink.alpha = 0.0
+        websiteLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        websiteLink.center.y += distance
+
+        buildLabel.alpha = 0.0
+        buildLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        buildLabel.center.y += distance
         
-        imageView.alpha = 0.0
-        imageView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        imageView.center.y += distance
-        
-        descriptionLabel.alpha = 0.0
-        descriptionLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        descriptionLabel.center.y += distance
-        
-        websiteButtonLabel.alpha = 0.0
-        websiteButtonLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        websiteButtonLabel.center.y += distance
-        
-        reviewButtonLabel.alpha = 0.0
-        reviewButtonLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        reviewButtonLabel.center.y += distance
-        
-        supportButtonLabel.alpha = 0.0
-        supportButtonLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        supportButtonLabel.center.y += distance
+        copyrightLabel.alpha = 0.0
+        copyrightLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        copyrightLabel.center.y += distance
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.createdByLabel.alpha = 1.0
-            self.createdByLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.createdByLabel.center.y -= distance
+            self.logoIcon.alpha = 1.0
+            self.logoIcon.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.logoIcon.center.y -= distance
             delayFactor+=1
         })
-        
+
+        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
+            self.logoTitle.alpha = 1.0
+            self.logoTitle.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.logoTitle.center.y -= distance
+            delayFactor+=1
+        })
+
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.creatorLabel.alpha = 1.0
             self.creatorLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.creatorLabel.center.y -= distance
             delayFactor+=1
         })
-        
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.musicByLabel.alpha = 1.0
-            self.musicByLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.musicByLabel.center.y -= distance
-            delayFactor+=1
-        })
-        
+
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.composerLabel.alpha = 1.0
             self.composerLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.composerLabel.center.y -= distance
             delayFactor+=1
         })
-        
+
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.imageView.alpha = 1.0
-            self.imageView.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.imageView.center.y -= distance
+            self.instagramLogo.alpha = 1.0
+            self.instagramLogo.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.instagramLogo.center.y -= distance
+            self.facebookLogo.alpha = 1.0
+            self.facebookLogo.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.facebookLogo.center.y -= distance
+            self.twitterLogo.alpha = 1.0
+            self.twitterLogo.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.twitterLogo.center.y -= distance
+            delayFactor+=1
+        })
+
+        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
+            self.websiteLink.alpha = 1.0
+            self.websiteLink.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.websiteLink.center.y -= distance
+            delayFactor+=1
+        })
+
+        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
+            self.buildLabel.alpha = 1.0
+            self.buildLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.buildLabel.center.y -= distance
             delayFactor+=1
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.descriptionLabel.alpha = 1.0
-            self.descriptionLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.descriptionLabel.center.y -= distance
-            delayFactor+=1
-        })
-        
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.websiteButtonLabel.alpha = 1.0
-            self.websiteButtonLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.websiteButtonLabel.center.y -= distance
-            delayFactor+=1
-        })
-        
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.reviewButtonLabel.alpha = 1.0
-            self.reviewButtonLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.reviewButtonLabel.center.y -= distance
-            delayFactor+=1
-        })
-        
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.supportButtonLabel.alpha = 1.0
-            self.supportButtonLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.supportButtonLabel.center.y -= distance
+            self.copyrightLabel.alpha = 1.0
+            self.copyrightLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.copyrightLabel.center.y -= distance
             delayFactor+=1
         })
     }
-    
-    @objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        removeAnimate()
-    }
-    
 }

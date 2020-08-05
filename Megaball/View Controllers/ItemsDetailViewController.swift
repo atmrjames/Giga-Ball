@@ -96,18 +96,39 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func premiumTableViewHideShow() {
-        var allUnlockedBool = false
+        premiumTableView.isHidden = true
+        premiumTableExpanded.isActive = false
+        premiumTableCollapsed.isActive = true
+        
+        var allPUsUnlockedBool = false
         if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
-            allUnlockedBool = true
+            allPUsUnlockedBool = true
         }
-        if premiumSetting! == false && senderID == 2 && allUnlockedBool == false {
-            premiumTableView.isHidden = false
-            premiumTableExpanded.isActive = true
-            premiumTableCollapsed.isActive = false
-        } else {
-            premiumTableView.isHidden = true
-            premiumTableExpanded.isActive = false
-            premiumTableCollapsed.isActive = true
+        var allIconsUnlockedBool = false
+        if totalStatsArray[0].appIconUnlockedArray.count == totalStatsArray[0].appIconUnlockedArray.filter({$0 == true}).count {
+            allIconsUnlockedBool = true
+        }
+        var themeUnlockedArray = false
+        if totalStatsArray[0].themeUnlockedArray.count == totalStatsArray[0].themeUnlockedArray.filter({$0 == true}).count {
+            themeUnlockedArray = true
+        }
+        
+        if premiumSetting! == false && senderID! <= 3 {
+            if senderID == 0 && allIconsUnlockedBool == false {
+                premiumTableView.isHidden = false
+                premiumTableExpanded.isActive = true
+                premiumTableCollapsed.isActive = false
+            }
+            if senderID == 1 && themeUnlockedArray == false {
+                premiumTableView.isHidden = false
+                premiumTableExpanded.isActive = true
+                premiumTableCollapsed.isActive = false
+            }
+            if senderID == 2 && allPUsUnlockedBool == false {
+                premiumTableView.isHidden = false
+                premiumTableExpanded.isActive = true
+                premiumTableCollapsed.isActive = false
+            }
         }
     }
     
@@ -171,7 +192,17 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
             cell.centreLabel.isHidden = true
-            cell.tagLine.text = "Unlock All Power-Ups"
+            
+            switch senderID {
+                case 0:
+                    cell.tagLine.text = "Unlock All App Icons"
+                case 1:
+                    cell.tagLine.text = "Unlock All Balls & Paddles"
+                case 2:
+                    cell.tagLine.text = "Unlock All Power-Ups"
+            default:
+                break
+            }
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
             UIView.animate(withDuration: 0.2) {
@@ -319,7 +350,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                     cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                     
-                    if totalStatsArray[0].levelPackUnlockedArray[LevelPackSetup().powerUpPackOrderArray[powerUpIndexCorrection]+2] {
+                    if totalStatsArray[0].levelPackUnlockedArray[LevelPackSetup().powerUpPackOrderArray[powerUpIndexCorrection]+1] {
                         cell.settingDescription.text = "\(LevelPackSetup().powerUpUnlockedDescriptionArray[powerUpIndexCorrection])"
                     } else {
                         cell.settingDescription.text = "\(LevelPackSetup().powerUpHiddenUnlockedDescriptionArray[powerUpIndexCorrection])"
@@ -395,6 +426,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
             tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
             // Update table view
             
         } else {

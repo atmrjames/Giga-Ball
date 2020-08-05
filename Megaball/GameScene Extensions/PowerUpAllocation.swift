@@ -370,7 +370,17 @@ extension GameScene {
         default:
             break
         }
-                
+        
+        for i in powerUpProbArray {
+            if i > totalStatsArray[0].powerUpUnlockedArray.count-1 {
+                return
+            }
+            if totalStatsArray[0].powerUpUnlockedArray[i] == false {
+                powerUpProbArray[i] = 0
+            }
+        }
+        // Check if power-ups have been unlocked, if not, set their probability to zero
+                        
         powerUpProbSum = powerUpProbArray.reduce(0, +)
     }
 }

@@ -98,6 +98,10 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         cell.settingState.text = ""
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         
+        cell.descriptionAndStateSharedWidthConstraint.isActive = false
+        cell.decriptionFullWidthConstraint.isActive = true
+        cell.descriptionTickWidthConstraint.isActive = false
+        
         switch indexPath.row {
         case 0:
             cell.settingDescription.text = "Power-Ups"
@@ -116,24 +120,25 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 hideCell(cell: cell)
             }
         case 4:
-            cell.settingDescription.text = "Tutorial"
+            cell.settingDescription.text = "Quick Start Guide"
             cell.iconImage.image = UIImage(named:"iconTutorial.png")!
         case 5:
-            cell.settingDescription.text = "About"
-            cell.iconImage.image = UIImage(named:"iconAbout.png")!
-        case 6:
-            cell.settingDescription.text = "Leave a review"
-            cell.iconImage.image = UIImage(named:"iconReview.png")!
-        case 7:
-            cell.settingDescription.text = "Share"
-            cell.iconImage.image = UIImage(named:"iconShare.png")!
-        case 8:
             if premiumSetting! {
                 hideCell(cell: cell)
             } else {
                 cell.settingDescription.text = "Giga-Ball Premium"
                 cell.iconImage.image = UIImage(named:"iconPremium.png")!
             }
+        case 6:
+            cell.settingDescription.text = "About"
+            cell.iconImage.image = UIImage(named:"iconAbout.png")!
+        case 7:
+            cell.settingDescription.text = "Rate Giga-Ball"
+            cell.iconImage.image = UIImage(named:"iconReview.png")!
+        case 8:
+            cell.settingDescription.text = "Share"
+            cell.iconImage.image = UIImage(named:"iconShare.png")!
+        
         default:
             break
         }
@@ -176,19 +181,23 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             showGameCenterLeaderboards()
         case 4:
         // Tutorial
-            print("Tutorial")
+            moveToIntro()
         case 5:
-        // About
-            moveToAbout()
-        case 6:
-        // Review
-            print("Review")
-        case 7:
-        // Share
-            print("Share")
-        case 8:
         // Premium
             moveToPremiumInfo()
+        case 6:
+        // About
+            moveToAbout()
+        case 7:
+        // Review
+            guard let writeReviewURL = URL(string: "https://apps.apple.com/app/id1494628204?action=write-review")
+                else { fatalError("Expected a valid URL") }
+            UIApplication.shared.open(writeReviewURL, options: [:], completionHandler: nil)
+        case 8:
+        // Share
+            let shareURL: [Any] = ["Check-out this app", URL(string: "https://apps.apple.com/app/id1494628204")!]
+            let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
+            present(shareSheet, animated: true)
         default:
             break
         }
@@ -482,6 +491,16 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         premiumInfoView.view.frame = self.view.frame
         self.view.addSubview(premiumInfoView.view)
         premiumInfoView.didMove(toParent: self)
+    }
+    
+    func moveToIntro() {
+        hideAnimate()
+        let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
+        introView.sender = "Info"
+        self.addChild(introView)
+        introView.view.frame = self.view.frame
+        self.view.addSubview(introView.view)
+        introView.didMove(toParent: self)
     }
     
     func showAnimate() {

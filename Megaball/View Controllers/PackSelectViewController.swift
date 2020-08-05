@@ -144,6 +144,17 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             cell.descriptionAndStateSharedWidthConstraint.isActive = false
             cell.decriptionFullWidthConstraint.isActive = true
             cell.descriptionTickWidthConstraint.isActive = false
+            cell.tickImage.isHidden = true
+            
+            if packStatsArray[indexPath.row+2].numberOfCompletes > 0 {
+                cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = false
+                cell.descriptionTickWidthConstraint.isActive = true
+                cell.settingState.font = UIFont(name: "FugazOne-Regular", size: 24)
+                cell.settingState.text = String(packStatsArray[indexPath.row+2].scores.max()!)
+            }
+            // Show tick if pack has been completed at least once
+            
             cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             cell.settingDescription.font = cell.settingDescription.font.withSize(18)
             
@@ -176,6 +187,9 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             }
             
             if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
+                cell.descriptionAndStateSharedWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = true
+                cell.descriptionTickWidthConstraint.isActive = false
                 cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2-1] {
@@ -183,6 +197,10 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
                 } else {
                     cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
                 }
+                if indexPath.row == 3 {
+                    cell.settingDescription.text = "Complete first 3 packs to unlock"
+                }
+                // For level pack 4 show this message
                 cell.settingState.text = ""
                 cell.blurView.isHidden = false
                 cell.lockedImageView.isHidden = false
@@ -201,14 +219,15 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-//            showPurchaseScreen()
-//            IAPHandler().purchasePremium()
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
                 cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
                 cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
+            tableView.reloadData()
             tableView.deselectRow(at: indexPath, animated: true)
             // Update table view
             
