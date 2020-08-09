@@ -40,6 +40,7 @@ class Ad: GKState {
     @objc func notificationToCloseAd(_ notification: Notification) {
         notificationCounter+=1
         print("llama llama close ad")
+        scene.gameViewControllerDelegate?.createInterstitial()
         
         if notificationCounter <= 1 {
             if scene.endlessMode || scene.gameoverStatus == true {

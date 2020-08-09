@@ -37,6 +37,8 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     @IBOutlet var facebookLogo: UIButton!
     @IBOutlet var twitterLogo: UIButton!
     @IBOutlet var websiteLink: UIButton!
+    @IBOutlet var brendanWebsiteLink: UIButton!
+    
     @IBOutlet var buildLabel: UILabel!
     @IBOutlet var copyrightLabel: UILabel!
     
@@ -72,6 +74,16 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             UIApplication.shared.open(url)
         }
     }
+    
+    @IBAction func brendanWebsiteLinkTapped(_ sender: Any) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        if let url = URL(string: "https://www.giga-ball.app") {
+            UIApplication.shared.open(url)
+        }
+    }
+    
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
 
@@ -264,6 +276,10 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         websiteLink.alpha = 0.0
         websiteLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         websiteLink.center.y += distance
+        
+        brendanWebsiteLink.alpha = 0.0
+        brendanWebsiteLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        brendanWebsiteLink.center.y += distance
 
         buildLabel.alpha = 0.0
         buildLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
@@ -318,6 +334,13 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             self.websiteLink.alpha = 1.0
             self.websiteLink.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.websiteLink.center.y -= distance
+            delayFactor+=1
+        })
+        
+        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
+            self.brendanWebsiteLink.alpha = 1.0
+            self.brendanWebsiteLink.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.brendanWebsiteLink.center.y -= distance
             delayFactor+=1
         })
 

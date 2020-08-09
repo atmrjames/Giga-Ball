@@ -39,6 +39,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var swipeUpPause: Bool?
     var appOpenCount: Int?
     var gameInProgress: Bool?
+    var resumeGameToLoad: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -83,13 +84,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var firstLaunch: Bool = false
     // Check if this is the first opening of the app since closing to know if to run splash screen
     
-    @IBAction func logoButton(_ sender: Any) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-//        moveToAbout()
-    }
-    
     @IBOutlet var bannerView: GADBannerView!
     // Ad banner view
     
@@ -111,6 +105,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnMenuNotificationKeyReceived), name: .returnMenuNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the settings menu
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.returnSettingsNotificationKeyReceived), name: .returnSettingsNotification, object: nil)
+        // Sets up an observer to watch for notifications to check if the user has returned from the settings menu
+        
         NotificationCenter.default.addObserver(self, selector: #selector(self.splashScreenEndedNotificationKeyReceived), name: .splashScreenEndedNotification, object: nil)
         // Sets up an observer to watch for the end of the splash screen in order to load game center authentification
         
@@ -123,6 +120,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.cancelGameResumeNotificationKeyReceived), name: .cancelGameResume, object: nil)
         // Sets up an observer to watch for notifications to check game resume has been cancelled from splash screen
         
+        NotificationCenter.default.addObserver(self, selector: #selector(onUbiquitousKeyValueStoreDidChangeExternally(notification:)), name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: NSUbiquitousKeyValueStore.default)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore
+        
         print(NSHomeDirectory()+"llama llama ud")
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
                 
@@ -132,9 +132,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaultSettings()
         refreshView()
         authGCPlayer()
-        // Game Center authorisation
-        GameCenterHandler().fetchCloudData()
-        
+
         print("llama game save array: ", saveGameSaveArray!)
         
         if musicSetting! {
@@ -142,7 +140,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
 
         showSplashScreen()
-        // Show splashscreen when first opening the app if there is no game to resume
+        // Show splashscreen when first opening the app
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -201,7 +199,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             firstLaunch = true
             let splashView = self.storyboard?.instantiateViewController(withIdentifier: "splashView") as! SplashViewController
             
-            if saveGameSaveArray!.count > 0 {
+            userSettings()
+            print("llama llama resume game to load: ", resumeGameToLoad!)
+            if resumeGameToLoad! {
                 splashView.gameToResume = true
             } else {
                 splashView.gameToResume = false
@@ -448,6 +448,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["swipeUpPause": true])
         defaults.register(defaults: ["appOpenCount": 0])
         defaults.register(defaults: ["gameInProgress": false])
+        defaults.register(defaults: ["resumeGameToLoad": false])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -465,6 +466,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["savePowerUpActiveTimerArray": []])
         defaults.register(defaults: ["savePowerUpActiveMagnitudeArray": []])
         // Game save settings
+        
     }
     // Set default settings
 
@@ -555,6 +557,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             } catch {
                 print("Error setting up total stats array, \(error)")
             }
+            CloudKitHandler().saveTotalStats()
         }
         // Fill the empty array with 0s on first opening and re-save
         
@@ -618,6 +621,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         gameInProgress = defaults.bool(forKey: "gameInProgress")
+        resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -681,6 +685,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveTotalStats()
         // Save total stats
     }
     
@@ -739,6 +744,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Show or hide banner ad depending on setting
     
     func refreshView() {
+        CloudKitHandler().loadRecords()
         loadData()
         userSettings()
         if blurViewLayer == nil {
@@ -755,11 +761,15 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         iconCollectionView.reloadData()
     }
     
+    @objc func returnSettingsNotificationKeyReceived(_ notification: Notification) {
+        refreshView()
+    }
+    
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
         refreshView()
-        if musicSetting! == false {
-            print("llama llama stop music")
-            MusicHandler.sharedHelper.stopMusic()
+        MusicHandler.sharedHelper.stopMusic()
+        if musicSetting! {
+            MusicHandler.sharedHelper.playMusic(sender: "Menu")
         }
     }
     
@@ -767,7 +777,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         updateGCAuth()
         refreshView()
         
-        if saveGameSaveArray!.count > 0 {
+        if resumeGameToLoad! {
             loadSavedGame()
         } else {
             let rand = Int.random(in: 1...10)
@@ -789,13 +799,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
         print("llama llama menu foreground")
         authGCPlayer()
-        GameCenterHandler().fetchCloudData()
         refreshView()
     }
     // Runs when the splash screen has ended
     
     @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
-        GameCenterHandler().saveCloudData()
         print("llama llama menu background")
     }
     // Runs when the splash screen has ended
@@ -805,8 +813,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Runs when the splash screen has ended
     
+    @objc func onUbiquitousKeyValueStoreDidChangeExternally(notification:Notification) {
+        print("llama llama icloud update pushed")
+        CloudKitHandler().loadUserDefaults()
+        CloudKitHandler().loadTotalStats()
+        NotificationCenter.default.post(name: .refreshViewForSync, object: nil)
+        refreshView()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
+    
     func clearSavedGame() {
         userSettings()
+        resumeGameToLoad = false
+        defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
         saveGameSaveArray! = []
         saveMultiplier! = 1.0
         saveBrickTextureArray! = []
@@ -851,9 +870,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
 extension Notification.Name {
     public static let returnMenuNotification = Notification.Name(rawValue: "returnMenuNotification")
+    public static let returnSettingsNotification = Notification.Name(rawValue: "returnSettingsNotification")
     public static let splashScreenEndedNotification = Notification.Name(rawValue: "splashScreenEndedNotification")
     public static let foregroundNotification = Notification.Name(rawValue: "foregroundNotification")
     public static let backgroundNotification = Notification.Name(rawValue: "backgroundNotification")
     public static let cancelGameResume = Notification.Name(rawValue: "cancelGameResume")
+    public static let refreshViewForSync = Notification.Name(rawValue: "refreshViewForSync")
 }
 // Notification setup

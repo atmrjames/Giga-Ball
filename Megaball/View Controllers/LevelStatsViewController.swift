@@ -61,6 +61,9 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnLevelStatsNotificationKeyReceived), name: .returnLevelStatsNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the settings menu
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         levelTableView.delegate = self
         levelTableView.dataSource = self
         levelTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
@@ -70,7 +73,6 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
-        collectionViewLayout()
         // Collection view setup
         
         userSettings()
@@ -87,6 +89,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             addParallax()
         }
         updateLabels()
+        collectionViewLayout()
         levelTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
@@ -244,7 +247,7 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = backButtonCollectionView.frame.size.width
+        let viewWidth = levelStatsView.frame.size.width
         let cellWidth: CGFloat = 50
         let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
@@ -561,6 +564,16 @@ class LevelStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             levelTableView.reloadData()
     }
     // Runs when returning from game
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - level stats view")
+        userSettings()
+        loadData()
+        updateLabels()
+        levelTableView.reloadData()
+        backButtonCollectionView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
     
 }
 

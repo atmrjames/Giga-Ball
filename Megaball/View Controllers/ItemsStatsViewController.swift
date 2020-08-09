@@ -51,6 +51,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         statsTableView.delegate = self
         statsTableView.dataSource = self
         statsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
@@ -329,4 +332,14 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         powerUpImage.layer.shadowRadius = 10.0
         powerUpImage.layer.shadowOpacity = 0.75
     }
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - items stats view")
+        userSettings()
+        loadData()
+        updateLabels()
+        statsTableView.reloadData()
+        backButtonCollectionView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
 }

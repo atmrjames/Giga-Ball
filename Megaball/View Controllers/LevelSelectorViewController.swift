@@ -60,6 +60,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
     @IBOutlet var statsTableViewHeight: NSLayoutConstraint!
+    @IBOutlet var statsTableViewHeightNoTime: NSLayoutConstraint!
     @IBOutlet var noStatsTableViewHeight: NSLayoutConstraint!
     @IBOutlet var collapsedStatsTableViewHeight: NSLayoutConstraint!
     // Stats table view constraints
@@ -93,10 +94,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnLevelSelectFromStatsNotificationKeyReceived), name: .returnLevelSelectFromStatsNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from another view
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
-        collectionViewLayout()
         // Collection view setup 
         
         userSettings()
@@ -130,6 +133,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
         updateLabels()
         statsTableOpenClose(animated: false)
+        collectionViewLayout()
         showAnimate()
         reloadData()
     }
@@ -275,11 +279,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     hideCell(cell: cell)
                 } else {
                     statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Best time (s)"
-                    let bestTime = packStatsArray[packNumber!].bestTime
-                    cell.statValue.text = String(bestTime)
+                    cell.statDescription.text = "Best time (mm:ss)"
+                    let bestTimeSeconds = packStatsArray[packNumber!].bestTime
+                    let displayMinutesString = String(format: "%02d", bestTimeSeconds/60)
+                    let displaySecondsString = String(format: "%02d", bestTimeSeconds%60)
+                    cell.statValue.text = "\(displayMinutesString):\(displaySecondsString)"
                     if packStatsArray[packNumber!].numberOfCompletes <= 0 {
-                        cell.statValue.text = "Not set"
+                        hideCell(cell: cell)
+                        statsTableViewHeight.isActive = false
+                        statsTableViewHeightNoTime.isActive = true
                     }
                 }
                 return cell
@@ -331,8 +339,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -409,7 +417,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = backButtonCollectionView.frame.size.width
+        let viewWidth = levelSelectView.frame.size.width
         let cellWidth: CGFloat = 50
         let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
@@ -840,6 +848,14 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     // Runs when returning from another menu view
     
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - level select view")
+        userSettings()
+        loadData()
+        updateLabels()
+        reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
     
 }
 

@@ -22,6 +22,10 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     @IBOutlet var cancelResumeButton: UITableView!
     
+    @IBOutlet var packNameLabel: UILabel!
+    @IBOutlet var levelNumberLabel: UILabel!
+    @IBOutlet var scoreLabel: UILabel!
+    
     @IBAction func tapGesture(_ sender: Any) {
         if self.resumeInProgress == false {
             removeAnimate(duration: 0.1)
@@ -31,6 +35,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool?
+    var saveGameSaveArray: [Int]?
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     // User settings
     
@@ -66,9 +71,37 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             userSettings()
             resumingLabel.isHidden = false
             cancelResumeButton.isHidden = false
+            
+            let currentLevelNumber = saveGameSaveArray![0]
+            let currentPackNumber = saveGameSaveArray![2]
+            let score = saveGameSaveArray![4]
+            let height = saveGameSaveArray![6]
+            let numberOfLevels = saveGameSaveArray![7]
+            
+            if numberOfLevels > 1 {
+                packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[currentPackNumber])"
+                levelNumberLabel.text = "Level \(currentLevelNumber-LevelPackSetup().startLevelNumber[currentPackNumber]+1) of \(LevelPackSetup().numberOfLevels[currentPackNumber])"
+            } else {
+                packNameLabel.text = "Single Level Mode"
+                levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[currentLevelNumber])"
+            }
+            scoreLabel.text = "\(score)"
+            
+            if currentLevelNumber == 0 {
+                packNameLabel.text = ""
+                levelNumberLabel.text = "Endless Mode"
+                scoreLabel.text = "\(height) m"
+            }
+            
+            packNameLabel.isHidden = false
+            levelNumberLabel.isHidden = false
+            scoreLabel.isHidden = false
         } else {
             resumingLabel.isHidden = true
             cancelResumeButton.isHidden = true
+            packNameLabel.isHidden = true
+            levelNumberLabel.isHidden = true
+            scoreLabel.isHidden = true
         }
         // Show or hide resume label to reflect if a previous saved game is being loaded
     }
@@ -110,12 +143,9 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     // Add content to cells
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-        
+
         NotificationCenter.default.post(name: .cancelGameResume, object: nil)
-        gameToResume = false
+        gameToResume = false        
         removeAnimate(duration: 0.25)
                 
         UIView.animate(withDuration: 0.2) {
@@ -232,6 +262,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     func userSettings() {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
+        saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
         // Load user settings
     }
 }

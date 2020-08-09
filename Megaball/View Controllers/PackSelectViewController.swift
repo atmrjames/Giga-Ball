@@ -55,6 +55,9 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         userSettings()
         loadData()
         
@@ -219,8 +222,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -501,6 +504,17 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         premiumTableView.reloadData()
         packTableView.reloadData()
     }
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - pack select view")
+        userSettings()
+        loadData()
+        premiumTableViewHideShow()
+        premiumTableView.reloadData()
+        packTableView.reloadData()
+        backButtonCollectionView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
 }
 
 extension Notification.Name {

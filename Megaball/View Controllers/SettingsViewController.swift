@@ -106,6 +106,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         SKPaymentQueue.default().add(self)
         
         backButtonCollectionView.delegate = self
@@ -528,6 +531,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 break
             }
             
+            CloudKitHandler().saveUserDefaults()
+            // Save any changes to NSUbiquitousKeyValueStore
+            
             UIView.animate(withDuration: 0.2) {
                 let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
                 cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
@@ -616,9 +622,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveTotalStats()
         print("unlock all items")
-        GameCenterHandler().saveCloudData()
-        // Save to iCloud
     }
     
     func relockAllItems() {
@@ -642,8 +647,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveTotalStats()
         print("relock all items)")
-        GameCenterHandler().saveCloudData()
         // Save to iCloud
     }
     
@@ -707,7 +712,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if navigatedFrom! == "PauseMenu" {
             NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
         } else if navigatedFrom! == "MainMenu" {
-            NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+            NotificationCenter.default.post(name: .returnSettingsNotification, object: nil)
         }
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -947,6 +952,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveTotalStats()
         
         for i in 1...packStatsArray.count {
             let index = i-1
@@ -975,9 +981,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             print("Error encoding level stats array, \(error)")
         }
         // Reset game data
-        
-        GameCenterHandler().deleteCloudData()
-        // Delete cloud data
     }
     
     func changeIcon(to iconName: String) {
@@ -1056,6 +1059,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         settingsTableView.reloadData()
         revealAnimate()
     }
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - settings view")
+        userSettings()
+        loadData()
+        premiumTableViewHideShow(animated: true)
+        premiumTableView.reloadData()
+        settingsTableView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
     
 }
 

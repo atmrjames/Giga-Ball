@@ -19,6 +19,11 @@ class PreGame: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
+        if scene.musicSetting! {
+            MusicHandler.sharedHelper.stopMusic()
+            MusicHandler.sharedHelper.playMusic(sender: "PreGame")
+        }
+        
         print("llama llama entered pre game")
                         
         self.resetGame()
@@ -36,10 +41,6 @@ class PreGame: GKState {
         
     }
     // This function runs when this state is exited.
-    
-    func showBlurView() {
-        
-    }
     
     func resetGame() {
         

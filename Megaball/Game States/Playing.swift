@@ -88,7 +88,7 @@ class Playing: GKState {
         
         scene.ball.position.y = scene.ballStartingPositionY
 
-        if scene.saveGameSaveArray!.count > 0 {
+        if scene.resumeGameToLoad! {
             print("llama resume game log: ", scene.saveGameSaveArray!, scene.saveMultiplier!, scene.saveBrickTextureArray!, scene.saveBrickColourArray!, scene.saveBrickXPositionArray!, scene.saveBrickYPositionArray!)
             scene.levelScore = scene.saveGameSaveArray![3]
             scene.totalScore = scene.saveGameSaveArray![4]
@@ -123,7 +123,7 @@ class Playing: GKState {
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
 
-        if scene.saveGameSaveArray! == [] {
+        if scene.resumeGameToLoad! == false {
             let startingScale = SKAction.scale(to: 0.8, duration: 0)
             let startingScalePaddle = SKAction.scaleX(to: 0.0, duration: 0)
             let startingFade = SKAction.fadeOut(withDuration: 0)
@@ -157,7 +157,7 @@ class Playing: GKState {
             }
             // Animate paddle and ball in
         // Don't animate if resuming from save
-        } else if scene.saveGameSaveArray!.count > 0 {
+        } else if scene.resumeGameToLoad! {
             scene.ball.isHidden = false
             scene.paddle.isHidden = false
             if scene.paddleTexture == scene.retroPaddle {

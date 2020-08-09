@@ -21,7 +21,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     var randomPlayerTrack: Int = 0
     // Setup game music
     
-    var menuVolumeSet: Float = 0.35
+    var menuVolumeSet: Float = 0.50
     var gameVolumeSet: Float = 1.00
     
     func playMusic(sender: String? = "") {        
@@ -31,20 +31,15 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         }
         // Check if music setting is on
         
-        let theEspace = Bundle.main.url(forResource: "Gigaball - The Escape", withExtension: "mp3")
-        let theRebound = Bundle.main.url(forResource: "Gigaball - The Rebound", withExtension: "mp3")
-        let theStrategy = Bundle.main.url(forResource: "Gigaball - The Strategy", withExtension: "mp3")
-        let titleTheme = Bundle.main.url(forResource: "Gigaball - Title Theme", withExtension: "mp3")
-        let gameMusicArray = [theEspace, theRebound, theStrategy, titleTheme]
+        let titleTheme = Bundle.main.url(forResource: "Giga-Ball - Title Theme - Loop", withExtension: "mp3")
         
-        var newRandomPlayerTrack = Int.random(in: 1...gameMusicArray.count)
-        while newRandomPlayerTrack == randomPlayerTrack {
-            newRandomPlayerTrack = Int.random(in: 1...gameMusicArray.count)
-        }
-        randomPlayerTrack = newRandomPlayerTrack
-        // Don't allow same track to play twice in a row
+        let theEspace = Bundle.main.url(forResource: "Giga-Ball - The Escape - Loop", withExtension: "mp3")
+        let theRebound = Bundle.main.url(forResource: "Giga-Ball - The Rebound - Loop", withExtension: "mp3")
+        let theStrategy = Bundle.main.url(forResource: "Giga-Ball - The Strategy - Loop", withExtension: "mp3")
+        let gameMusicArray = [theEspace, theRebound, theStrategy]
+        // Set up tracks
         
-        var selectedTrackURL = gameMusicArray[randomPlayerTrack-1]
+        var selectedTrackURL = gameMusicArray.randomElement()!
         if sender == "Menu" {
             selectedTrackURL = titleTheme
         }
@@ -55,25 +50,23 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
             try AVAudioSession.sharedInstance().setActive(true)
             player = try AVAudioPlayer(contentsOf: selectedTrackURL!)
             player!.delegate = self
+            player!.numberOfLoops = -1
+            // Loop infinitely
             player!.prepareToPlay()
             player!.play()
-            print("llama llama music volume check: ", gameInProgress)
             if gameInProgress! {
                 player!.volume = gameVolumeSet
             } else {
                 player!.volume = menuVolumeSet
             }
-            print("play music success")
         } catch let error {
-            print("play music error")
             print(error.localizedDescription)
         }
     }
     
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        playMusic()
-    }
-    // Play another music track once background audio has ended
+//    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+//    }
+//    // What to do when a track ends
     
     func stopMusic() {
         player?.stop()
@@ -94,7 +87,6 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         if musicSetting! {
             player!.volume = menuVolumeSet
         }
-        // Set the background music to menu volume
     }
     
     func gameVolume() {
@@ -102,7 +94,6 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         if musicSetting! {
             player!.volume = gameVolumeSet
         }
-        // Set the background music to game volume
     }
     
     func userSettings() {

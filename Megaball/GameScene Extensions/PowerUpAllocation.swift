@@ -108,7 +108,7 @@ extension GameScene {
             powerUpProbArray[25] = 3 // Backstop
             powerUpProbArray[26] = 5 // Increase Ball Size
             powerUpProbArray[27] = 5 // Decrease Ball Size
-            
+                        
         case 3:
             powerUpProbArray[2] = 5 // Decrease Ball Speed
             powerUpProbArray[3] = 5 // Increase Ball Speed
@@ -355,6 +355,7 @@ extension GameScene {
         // Numbers Pack
         case 93:
             powerUpProbArray[19] = 0 // Remove Indestructible Bricks
+            powerUpProbArray[22] = 0 // Lasers
 
         // Challenge Pack
         case 102:

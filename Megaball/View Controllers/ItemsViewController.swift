@@ -52,6 +52,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnItemDetailsNotificationKeyReceived), name: .returnItemDetailsNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from another view
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         itemsTableView.delegate = self
         itemsTableView.dataSource = self
         itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
@@ -61,9 +64,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
-        
-        collectionViewLayout()
-        
+                
         itemsTableView.rowHeight = 70.0
         
         userSettings()
@@ -80,13 +81,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             addParallax()
         }
         setBlur()
+        collectionViewLayout()
         itemsTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 9
+        return 10
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -130,14 +132,17 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.iconImage.image = UIImage(named:"iconPremium.png")!
             }
         case 6:
-            cell.settingDescription.text = "About"
-            cell.iconImage.image = UIImage(named:"iconAbout.png")!
+            cell.settingDescription.text = "Purchase Soundtrack"
+            cell.iconImage.image = UIImage(named:"iconMusic.png")!
         case 7:
             cell.settingDescription.text = "Rate Giga-Ball"
             cell.iconImage.image = UIImage(named:"iconReview.png")!
         case 8:
             cell.settingDescription.text = "Share"
             cell.iconImage.image = UIImage(named:"iconShare.png")!
+        case 9:
+            cell.settingDescription.text = "About"
+            cell.iconImage.image = UIImage(named:"iconAbout.png")!
         
         default:
             break
@@ -186,8 +191,10 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // Premium
             moveToPremiumInfo()
         case 6:
-        // About
-            moveToAbout()
+        // Purchase soundtrack
+            if let purchaseSoundTrackURL = URL(string: "https://www.giga-ball.app") {
+                UIApplication.shared.open(purchaseSoundTrackURL)
+            }
         case 7:
         // Review
             guard let writeReviewURL = URL(string: "https://apps.apple.com/app/id1494628204?action=write-review")
@@ -198,6 +205,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             let shareURL: [Any] = ["Check-out this app", URL(string: "https://apps.apple.com/app/id1494628204")!]
             let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
             present(shareSheet, animated: true)
+        case 9:
+        // About
+            moveToAbout()
         default:
             break
         }
@@ -231,7 +241,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = backButtonCollectionView.frame.size.width
+        let viewWidth = itemsView.frame.size.width
         let cellWidth: CGFloat = 50
         let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
@@ -566,6 +576,15 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         revealAnimate()
     }
     // Runs when returning from item stats view
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - items view")
+        userSettings()
+        loadData()
+        itemsTableView.reloadData()
+        backButtonCollectionView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
 }
 
 extension Notification.Name {

@@ -49,10 +49,6 @@ class InbetweenLevels: GKState {
         }
         
         resetGameScene()
-        if scene.adsSetting! {
-            scene.createInterstitial()
-        }
-        // Only load next ad if user has ads enabled
         saveGameData()
         achievementsCheck()
         saveStatsArrayData()
@@ -60,7 +56,8 @@ class InbetweenLevels: GKState {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
-        GameCenterHandler().saveCloudData()
+//        CloudKitHandler().saveRecords()
+//        GameCenterHandler().saveCloudData()
         showAd()
     }
     
@@ -206,6 +203,7 @@ class InbetweenLevels: GKState {
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveTotalStats()
         // Save total stats
         
         if scene.endlessMode == false {
@@ -223,6 +221,7 @@ class InbetweenLevels: GKState {
         } catch {
             print("Error encoding level stats array, \(error)")
         }
+        CloudKitHandler().saveRecords()
         // Save level stats
         
         scene.packTimerValue = scene.packTimerValue + scene.levelTimerValue
@@ -241,6 +240,7 @@ class InbetweenLevels: GKState {
             } catch {
                 print("Error encoding pack stats array, \(error)")
             }
+            CloudKitHandler().saveRecords()
             // Save pack stats
         }
         if scene.gameCenterSetting! {
@@ -257,6 +257,7 @@ class InbetweenLevels: GKState {
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveTotalStats()
         // Save total stats
         do {
             let data = try scene.encoder.encode(self.scene.levelStatsArray)
@@ -272,6 +273,7 @@ class InbetweenLevels: GKState {
             print("Error encoding pack stats array, \(error)")
         }
         // Save pack stats
+        CloudKitHandler().saveRecords()
     }
     
     func showAd() {
@@ -279,7 +281,7 @@ class InbetweenLevels: GKState {
         self.scene.run(waitScene, completion: {
             if self.scene.adsSetting! {
                 self.scene.gameState.enter(Ad.self)
-                self.scene.loadInterstitial()
+                self.scene.gameViewControllerDelegate?.showAd()
                 // Show ad
             } else {
                 if self.scene.endlessMode || self.scene.gameoverStatus == true  {

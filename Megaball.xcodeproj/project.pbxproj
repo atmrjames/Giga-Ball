@@ -12,7 +12,6 @@
 		1A05BF4E23ED9DD9003E668F /* LevelSelectorTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */; };
 		1A18819524083DF800D5ED3A /* ItemsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A18819424083DF800D5ED3A /* ItemsViewController.swift */; };
 		1A1CCF6F24B0840200336F53 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A1CCF6E24B0840200336F53 /* CloudKit.framework */; };
-		1A1CCF7324B0A59900336F53 /* UserDefaultsCloudSave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1CCF7224B0A59900336F53 /* UserDefaultsCloudSave.swift */; };
 		1A28AF5F244DB4F0007A1A3E /* Level061.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A28AF5E244DB4F0007A1A3E /* Level061.swift */; };
 		1A28AF61244DB4FF007A1A3E /* Level062.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A28AF60244DB4FF007A1A3E /* Level062.swift */; };
 		1A28AF63244DB506007A1A3E /* Level063.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A28AF62244DB506007A1A3E /* Level063.swift */; };
@@ -159,6 +158,10 @@
 		1A7A34D8240E902100044C87 /* Level019.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7A34D7240E902100044C87 /* Level019.swift */; };
 		1A7A34DA240E902300044C87 /* Level020.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7A34D9240E902300044C87 /* Level020.swift */; };
 		1A7D6529231B0E980091CA58 /* Paused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7D6528231B0E980091CA58 /* Paused.swift */; };
+		1A80AB9F24E0092A0029207B /* Giga-Ball - Title Theme - Loop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1A80AB9B24E009280029207B /* Giga-Ball - Title Theme - Loop.mp3 */; };
+		1A80ABA024E0092A0029207B /* Giga-Ball - The Escape - Loop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1A80AB9C24E009280029207B /* Giga-Ball - The Escape - Loop.mp3 */; };
+		1A80ABA124E0092A0029207B /* Giga-Ball - The Strategy - Loop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1A80AB9D24E009290029207B /* Giga-Ball - The Strategy - Loop.mp3 */; };
+		1A80ABA224E0092A0029207B /* Giga-Ball - The Rebound - Loop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1A80AB9E24E0092A0029207B /* Giga-Ball - The Rebound - Loop.mp3 */; };
 		1A82B52024299A2000694B67 /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A82B51F24299A2000694B67 /* GameKit.framework */; };
 		1A82B52224299C8100694B67 /* GameCenterHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A82B52124299C8100694B67 /* GameCenterHandler.swift */; };
 		1A8AB85D24B97C0200D918B1 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A8AB85C24B97C0200D918B1 /* StoreKit.framework */; };
@@ -210,14 +213,11 @@
 		1AAB8FCD24CBE2B100C87D3D /* Retro@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 1AAB8FC724CBE2B100C87D3D /* Retro@3x.png */; };
 		1AAB8FD024CC07FF00C87D3D /* IAPTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AAB8FCE24CC07FF00C87D3D /* IAPTableViewCell.swift */; };
 		1AAB8FD124CC07FF00C87D3D /* IAPTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AAB8FCF24CC07FF00C87D3D /* IAPTableViewCell.xib */; };
+		1AB3CAE124DEA510005DCBFB /* CloudKitHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB3CAE024DEA50F005DCBFB /* CloudKitHandler.swift */; };
 		1AC08ADA23FC25FC00B4BC32 /* WarningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */; };
 		1AC08ADC23FC417A00B4BC32 /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */; };
 		1AC5AA4624D6A56300CA9414 /* ballLostSound.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1AC5AA3324D6A55E00CA9414 /* ballLostSound.mp3 */; };
 		1AC5AA5724D6A56300CA9414 /* gameOverSound.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1AC5AA4424D6A56300CA9414 /* gameOverSound.mp3 */; };
-		1AC5AA6524D6A5EA00CA9414 /* Gigaball - Title Theme.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1AC5AA6124D6A5E800CA9414 /* Gigaball - Title Theme.mp3 */; };
-		1AC5AA6624D6A5EA00CA9414 /* Gigaball - The Strategy.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1AC5AA6224D6A5E900CA9414 /* Gigaball - The Strategy.mp3 */; };
-		1AC5AA6724D6A5EA00CA9414 /* Gigaball - The Rebound.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1AC5AA6324D6A5EA00CA9414 /* Gigaball - The Rebound.mp3 */; };
-		1AC5AA6824D6A5EA00CA9414 /* Gigaball - The Escape.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1AC5AA6424D6A5EA00CA9414 /* Gigaball - The Escape.mp3 */; };
 		1AC5AA6A24D9586A00CA9414 /* MusicHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC5AA6924D9586A00CA9414 /* MusicHandler.swift */; };
 		1AC8782B23E9DD24006105CC /* Level012.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC8782A23E9DD24006105CC /* Level012.swift */; };
 		1AC8A40A244403460084C9E9 /* Level021.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC8A409244403460084C9E9 /* Level021.swift */; };
@@ -255,7 +255,6 @@
 		1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LevelSelectorTableViewCell.xib; sourceTree = "<group>"; };
 		1A18819424083DF800D5ED3A /* ItemsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ItemsViewController.swift; path = "/Users/James/Megaball/Megaball/View Controllers/ItemsViewController.swift"; sourceTree = "<absolute>"; };
 		1A1CCF6E24B0840200336F53 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
-		1A1CCF7224B0A59900336F53 /* UserDefaultsCloudSave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UserDefaultsCloudSave.swift; path = "/Users/James/Megaball/Megaball/Data Model/UserDefaultsCloudSave.swift"; sourceTree = "<absolute>"; };
 		1A28AF5E244DB4F0007A1A3E /* Level061.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level061.swift; sourceTree = "<group>"; };
 		1A28AF60244DB4FF007A1A3E /* Level062.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level062.swift; sourceTree = "<group>"; };
 		1A28AF62244DB506007A1A3E /* Level063.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level063.swift; sourceTree = "<group>"; };
@@ -405,6 +404,10 @@
 		1A7A34D9240E902300044C87 /* Level020.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level020.swift; sourceTree = "<group>"; };
 		1A7D6528231B0E980091CA58 /* Paused.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paused.swift; sourceTree = "<group>"; };
 		1A7EE25224AE03730045B3FA /* Giga-Ball.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Giga-Ball.entitlements"; sourceTree = "<group>"; };
+		1A80AB9B24E009280029207B /* Giga-Ball - Title Theme - Loop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Giga-Ball - Title Theme - Loop.mp3"; sourceTree = "<group>"; };
+		1A80AB9C24E009280029207B /* Giga-Ball - The Escape - Loop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Giga-Ball - The Escape - Loop.mp3"; sourceTree = "<group>"; };
+		1A80AB9D24E009290029207B /* Giga-Ball - The Strategy - Loop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Giga-Ball - The Strategy - Loop.mp3"; sourceTree = "<group>"; };
+		1A80AB9E24E0092A0029207B /* Giga-Ball - The Rebound - Loop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Giga-Ball - The Rebound - Loop.mp3"; sourceTree = "<group>"; };
 		1A82B51F24299A2000694B67 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
 		1A82B52124299C8100694B67 /* GameCenterHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterHandler.swift; sourceTree = "<group>"; };
 		1A8AB85C24B97C0200D918B1 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
@@ -456,14 +459,11 @@
 		1AAB8FC724CBE2B100C87D3D /* Retro@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Retro@3x.png"; sourceTree = "<group>"; };
 		1AAB8FCE24CC07FF00C87D3D /* IAPTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAPTableViewCell.swift; sourceTree = "<group>"; };
 		1AAB8FCF24CC07FF00C87D3D /* IAPTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = IAPTableViewCell.xib; sourceTree = "<group>"; };
+		1AB3CAE024DEA50F005DCBFB /* CloudKitHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitHandler.swift; sourceTree = "<group>"; };
 		1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WarningViewController.swift; path = Megaball/WarningViewController.swift; sourceTree = SOURCE_ROOT; };
 		1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
 		1AC5AA3324D6A55E00CA9414 /* ballLostSound.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ballLostSound.mp3; sourceTree = "<group>"; };
 		1AC5AA4424D6A56300CA9414 /* gameOverSound.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = gameOverSound.mp3; sourceTree = "<group>"; };
-		1AC5AA6124D6A5E800CA9414 /* Gigaball - Title Theme.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Gigaball - Title Theme.mp3"; sourceTree = "<group>"; };
-		1AC5AA6224D6A5E900CA9414 /* Gigaball - The Strategy.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Gigaball - The Strategy.mp3"; sourceTree = "<group>"; };
-		1AC5AA6324D6A5EA00CA9414 /* Gigaball - The Rebound.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Gigaball - The Rebound.mp3"; sourceTree = "<group>"; };
-		1AC5AA6424D6A5EA00CA9414 /* Gigaball - The Escape.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "Gigaball - The Escape.mp3"; sourceTree = "<group>"; };
 		1AC5AA6924D9586A00CA9414 /* MusicHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicHandler.swift; sourceTree = "<group>"; };
 		1AC8782A23E9DD24006105CC /* Level012.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level012.swift; sourceTree = "<group>"; };
 		1AC8A409244403460084C9E9 /* Level021.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Level021.swift; path = "/Users/James/Megaball/Megaball/GameScene Extensions/Levels/Level021.swift"; sourceTree = "<absolute>"; };
@@ -652,10 +652,10 @@
 		1A408A4D247BC8130009BA8F /* Music */ = {
 			isa = PBXGroup;
 			children = (
-				1AC5AA6424D6A5EA00CA9414 /* Gigaball - The Escape.mp3 */,
-				1AC5AA6324D6A5EA00CA9414 /* Gigaball - The Rebound.mp3 */,
-				1AC5AA6224D6A5E900CA9414 /* Gigaball - The Strategy.mp3 */,
-				1AC5AA6124D6A5E800CA9414 /* Gigaball - Title Theme.mp3 */,
+				1A80AB9C24E009280029207B /* Giga-Ball - The Escape - Loop.mp3 */,
+				1A80AB9E24E0092A0029207B /* Giga-Ball - The Rebound - Loop.mp3 */,
+				1A80AB9D24E009290029207B /* Giga-Ball - The Strategy - Loop.mp3 */,
+				1A80AB9B24E009280029207B /* Giga-Ball - Title Theme - Loop.mp3 */,
 			);
 			path = Music;
 			sourceTree = "<group>";
@@ -707,6 +707,7 @@
 				1A5D804723E9A33F00F50BE0 /* Custom Cells */,
 				1A8AB85E24B98F5D00D918B1 /* IAPHandler.swift */,
 				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
+				1AB3CAE024DEA50F005DCBFB /* CloudKitHandler.swift */,
 				1AC5AA6924D9586A00CA9414 /* MusicHandler.swift */,
 				1A7DFC7023F2B18700D7CD1B /* Fonts */,
 				1A408A4C247BC8010009BA8F /* Sounds */,
@@ -1002,7 +1003,6 @@
 				1AFF33C723EC43030033F485 /* PackStats.swift */,
 				1AFF33C923EC621B0033F485 /* LevelStats.swift */,
 				1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */,
-				1A1CCF7224B0A59900336F53 /* UserDefaultsCloudSave.swift */,
 			);
 			path = "Data Model";
 			sourceTree = "<group>";
@@ -1089,6 +1089,7 @@
 			files = (
 				1A491F7524959BCD00A2CCB4 /* Nunito-ExtraLight.ttf in Resources */,
 				1A491F7824959BCD00A2CCB4 /* Nunito-ExtraLightItalic.ttf in Resources */,
+				1A80ABA024E0092A0029207B /* Giga-Ball - The Escape - Loop.mp3 in Resources */,
 				1A2D234A24C44393002D5CE5 /* Green@2x.png in Resources */,
 				1A2D233A24C44393002D5CE5 /* White.png in Resources */,
 				1A2D234C24C44393002D5CE5 /* Yellow@3x.png in Resources */,
@@ -1103,10 +1104,10 @@
 				1A2D233724C44393002D5CE5 /* Black.png in Resources */,
 				1A2D234024C44393002D5CE5 /* White@3x.png in Resources */,
 				1AA099BE24DABDF0001C5EAD /* brickHit.m4a in Resources */,
-				1AC5AA6824D6A5EA00CA9414 /* Gigaball - The Escape.mp3 in Resources */,
 				1A2D233F24C44393002D5CE5 /* Pink.png in Resources */,
 				1AA099BC24DABDEA001C5EAD /* levelComplete.m4a in Resources */,
 				1A2D233224C44393002D5CE5 /* Brown@3x.png in Resources */,
+				1A80ABA224E0092A0029207B /* Giga-Ball - The Rebound - Loop.mp3 in Resources */,
 				1A2D234624C44393002D5CE5 /* Yellow.png in Resources */,
 				1AAB8FCC24CBE2B100C87D3D /* Rainbow@2x.png in Resources */,
 				1A5A94902309E4F30076D635 /* Main.storyboard in Resources */,
@@ -1128,13 +1129,12 @@
 				1A2D234424C44393002D5CE5 /* Blue@3x.png in Resources */,
 				1AA099BD24DABDEC001C5EAD /* powerUpSound.m4a in Resources */,
 				1A5A94952309E4F40076D635 /* LaunchScreen.storyboard in Resources */,
+				1A80ABA124E0092A0029207B /* Giga-Ball - The Strategy - Loop.mp3 in Resources */,
 				1A2D232824C44393002D5CE5 /* Orange@3x.png in Resources */,
-				1AC5AA6624D6A5EA00CA9414 /* Gigaball - The Strategy.mp3 in Resources */,
 				1A491F6E24959BCD00A2CCB4 /* Nunito-SemiBoldItalic.ttf in Resources */,
 				1AAB8FCB24CBE2B100C87D3D /* Retro@2x.png in Resources */,
 				1A2D234724C44393002D5CE5 /* Yellow@2x.png in Resources */,
 				1A2D232A24C44393002D5CE5 /* Purple@3x.png in Resources */,
-				1AC5AA6724D6A5EA00CA9414 /* Gigaball - The Rebound.mp3 in Resources */,
 				1AA099C124DABDF6001C5EAD /* stickyPaddleHit.m4a in Resources */,
 				1A2D233D24C44393002D5CE5 /* Purple@2x.png in Resources */,
 				1A5A94892309E4F30076D635 /* Actions.sks in Resources */,
@@ -1144,8 +1144,8 @@
 				1A2A387D23DDEEDF001BD200 /* SettingsTableViewCell.xib in Resources */,
 				1A2D233024C44393002D5CE5 /* Pink@2x.png in Resources */,
 				1A2D234224C44393002D5CE5 /* Blue@2x.png in Resources */,
-				1AC5AA6524D6A5EA00CA9414 /* Gigaball - Title Theme.mp3 in Resources */,
 				1A2D234B24C44393002D5CE5 /* Orange.png in Resources */,
+				1A80AB9F24E0092A0029207B /* Giga-Ball - Title Theme - Loop.mp3 in Resources */,
 				1A2D234824C44393002D5CE5 /* Blue.png in Resources */,
 				1A491F7724959BCD00A2CCB4 /* Nunito-BoldItalic.ttf in Resources */,
 				1A2D234924C44393002D5CE5 /* Orange@2x.png in Resources */,
@@ -1293,6 +1293,7 @@
 				1A28AF73244DB581007A1A3E /* Level071.swift in Sources */,
 				1A94365F245D605200388D6C /* Level103.swift in Sources */,
 				1A3193E92444038E004917D0 /* Level022.swift in Sources */,
+				1AB3CAE124DEA510005DCBFB /* CloudKitHandler.swift in Sources */,
 				1AFF33C323EB43AD0033F485 /* AboutViewController.swift in Sources */,
 				1A3193EF244403C4004917D0 /* Level025.swift in Sources */,
 				1A943653245D601F00388D6C /* Level096.swift in Sources */,
@@ -1315,7 +1316,6 @@
 				1A57A2AC23F592FB004D7AC2 /* TotalStats.swift in Sources */,
 				1A2A387C23DDEEDF001BD200 /* SettingsTableViewCell.swift in Sources */,
 				1A31941724441CD5004917D0 /* Level044.swift in Sources */,
-				1A1CCF7324B0A59900336F53 /* UserDefaultsCloudSave.swift in Sources */,
 				1A31941124441CC3004917D0 /* Level041.swift in Sources */,
 				1A943655245D602500388D6C /* Level097.swift in Sources */,
 				1A28AF67244DB512007A1A3E /* Level065.swift in Sources */,
@@ -1523,7 +1523,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "Megaball/Giga-Ball.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
@@ -1531,7 +1531,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.2;
+				MARKETING_VERSION = 0.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;
@@ -1546,7 +1546,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "Megaball/Giga-Ball.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
@@ -1554,7 +1554,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.2;
+				MARKETING_VERSION = 0.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;

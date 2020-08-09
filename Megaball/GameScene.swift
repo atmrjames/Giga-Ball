@@ -9,7 +9,6 @@
 import SpriteKit
 import GameplayKit
 import GameKit
-import AVKit
 //import GameKit
 
 let PaddleCategoryName = "paddle"
@@ -46,21 +45,16 @@ protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool)
 	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
-	func createInterstitial()
-	func loadInterstitial()
 	var selectedLevel: Int? { get set }
 	var numberOfLevels: Int? { get set }
 	var levelSender: String? { get set }
 	var levelPack: Int? { get set }
+	func showAd()
+	func createInterstitial()
 }
 // Setup the protocol to return to the main menu from GameViewController
 
 class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
-	
-//	var player: AVAudioPlayer?
-//	var playerBool = false
-//	var randomPlayerTrack: Int = 0
-//	// Setup game music
 	
     var paddle = SKSpriteNode()
 	var paddleLaser = SKSpriteNode()
@@ -274,6 +268,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
     var appIconSetting: Int?
 	var swipeUpPause: Bool?
 	var gameInProgress: Bool?
+	var resumeGameToLoad: Bool?
 	// User settings
 	var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -1044,15 +1039,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		timerLabel = self.childNode(withName: "timerLabel") as! SKLabelNode
         // Links objects to label
 		
-		readyCountdown.size.height = 58
-		readyCountdown.size.width = 248
+		readyCountdown.size.height = 85.56
+		readyCountdown.size.width = 320
 		readyCountdown.position.x = 0
 		readyCountdown.position.y = 0
 		readyCountdown.isHidden = true
 		readyCountdown.zPosition = 10
 		
-		goCountdown.size.height = 58
-		goCountdown.size.width = 123
+		goCountdown.size.height = 85.56
+		goCountdown.size.width = 320
 		goCountdown.position.x = 0
 		goCountdown.position.y = 0
 		goCountdown.isHidden = true
@@ -1122,8 +1117,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Beta Build 0.3.2(70) - TBC - 05/08/2020"
-		
+		buildLabel.text = "Beta Build 0.3.3(71) - TBC - 09/08/2020"
+	
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
 		pauseButtonTouch.position.y = pauseButton.position.y
@@ -1237,11 +1232,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		NotificationCenter.default.addObserver(self, selector: #selector(self.restartGameNotificiationKeyReceived), name: .restartGameNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has restarted the game
 		
-//		NotificationCenter.default.addObserver(self, selector: #selector(self.playMusicNotificationKeyReceived), name: .playMusicNotification, object: nil)
-//        // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
-//
-//		NotificationCenter.default.addObserver(self, selector: #selector(self.stopMusicNotificationKeyReceived), name: .stopMusicNotification, object: nil)
-//        // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
+		NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
 		swipeUp.direction = .up
@@ -4104,16 +4096,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber, levelTimerBonus: levelTimerBonus, firstLevel: firstLevel, numberOfLevels: numberOfLevels, levelScore: levelScore)
 		// Pass over data to inbetween view
 	}
-	
-	func createInterstitial() {
-		gameViewControllerDelegate?.createInterstitial()
-	}
-	// Setup interstitial ad
-	
-	func loadInterstitial() {
-		gameViewControllerDelegate?.loadInterstitial()
-	}
-	// Show interstitial ad
 
 	func recentreBall() {
 		if ballIsOnPaddle {
@@ -4141,6 +4123,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
         appIconSetting = defaults.integer(forKey: "appIconSetting")
 		swipeUpPause = defaults.bool(forKey: "swipeUpPause")
 		gameInProgress = defaults.bool(forKey: "gameInProgress")
+		resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
 		// User settings
 		
 		saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -4179,65 +4162,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		// Reset paddle sensitivity
 	}
 	// Set user settings
-	
-//	func playMusic() {
-//		print("play music")
-//		if musicSetting! == false || playerBool {
-//			return
-//		}
-//
-//		let theEspace = Bundle.main.url(forResource: "Gigaball - The Escape", withExtension: "mp3")
-//		let theRebound = Bundle.main.url(forResource: "Gigaball - The Rebound", withExtension: "mp3")
-//		let theStrategy = Bundle.main.url(forResource: "Gigaball - The Strategy", withExtension: "mp3")
-//		let titleTheme = Bundle.main.url(forResource: "Gigaball - Title Theme", withExtension: "mp3")
-//		let gameMusicArray = [theEspace, theRebound, theStrategy, titleTheme]
-//
-//		var newRandomPlayerTrack = Int.random(in: 1...gameMusicArray.count)
-//		while newRandomPlayerTrack == randomPlayerTrack {
-//			newRandomPlayerTrack = Int.random(in: 1...gameMusicArray.count)
-//		}
-//		randomPlayerTrack = newRandomPlayerTrack
-//		// Don't allow same track to play twice in a row
-//		let selectedTrackURL = gameMusicArray[randomPlayerTrack-1]
-//
-//		do {
-//			try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
-//			try AVAudioSession.sharedInstance().setActive(true)
-//			player = try AVAudioPlayer(contentsOf: selectedTrackURL!)
-//			player!.delegate = self
-//			player!.play()
-//			playerBool = true
-//			if gameState.currentState is Paused || gameState.currentState is InbetweenLevels || gameState.currentState is Ad || gameState.currentState is PreGame || gameState.currentState is GameOver {
-//				player!.volume = 0.25
-//			} else {
-//				player!.volume = 1.0
-//			}
-//			print("play music success")
-//		} catch let error {
-//			print("play music error")
-//			print(error.localizedDescription)
-//		}
-//	}
-//
-//	func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-//		playerBool = false
-//		playMusic()
-//	}
-//	// Play another music track once background audio has ended
-//
-//	@objc func playMusicNotificationKeyReceived() {
-//		musicSetting = true
-//		if playerBool {
-//			player?.play()
-//		} else {
-//			playMusic()
-//		}
-//	}
-//
-//	@objc func stopMusicNotificationKeyReceived() {
-//		musicSetting = false
-//		player?.pause()
-//	}
 	
 	func ballStuck() {
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
@@ -4553,6 +4477,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
         } catch {
             print("Error encoding total stats, \(error)")
         }
+		CloudKitHandler().saveTotalStats()
         // Save total stats
 		do {
 			let data = try encoder.encode(self.packStatsArray)
@@ -5002,10 +4927,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
 		defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
 		defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
+		
+		resumeGameToLoad = true
+		defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
 	}
 	
 	func clearSavedGame() {
 		userSettings()
+		resumeGameToLoad = false
+		defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
 		saveGameSaveArray! = []
 		saveMultiplier! = 1.0
 		saveBrickTextureArray! = []
@@ -5038,7 +4968,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 	}
 	
 	func resumeGame() {
-		if saveGameSaveArray! != [] {
+		if resumeGameToLoad! {
 			if saveBallPropertiesArray != [] {
 				ballIsOnPaddle = false
 				ballLostBool = false
@@ -5396,6 +5326,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 				}
 			}
 			// Load active power-ups if any saved
+			resumeGameToLoad = false
+			defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
 			self.gameState.enter(Paused.self)
 		}
 	}
@@ -5579,28 +5511,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		if endlessMode {
 			countBricks()
 		}
-		
-//		MusicHandler().resumeFromPause()
-		
-//		if musicSetting! == false && player != nil {
-//			playerBool = false
-//			player?.stop()
-//			player = nil
-//		}
-//		// If music has been turned off but not removed in settings, remove on resume
-//		
-//		if musicSetting! && player != nil && playerBool {
-//			player!.volume = 1.0
-//        }
-//        // Set the background music to 100% volume
 	}
+		
+	@objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - game scene")
+        userSettings()
+        loadGameData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
 }
 
 extension Notification.Name {
     public static let pauseNotificationKey = Notification.Name(rawValue: "pauseNotificationKey")
 	public static let restartGameNotificiation = Notification.Name(rawValue: "restartGameNotificiation")
-//	public static let playMusicNotification = Notification.Name(rawValue: "playMusicNotification")
-//	public static let stopMusicNotification = Notification.Name(rawValue: "stopMusicNotification")
 }
 // Setup for notifcations from AppDelegate
-

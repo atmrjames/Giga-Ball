@@ -21,6 +21,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     weak var menuViewControllerDelegate:MenuViewControllerDelegate?
     // Create the delegate property for the MenuViewController
     
+    var interstitial: GADInterstitial!
+    
     var selectedLevel: Int?
     var numberOfLevels: Int?
     var levelSender: String?
@@ -28,10 +30,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     // Properties to store the correct level to load and the number of levels within the selection passed from the menu
     
     let defaults = UserDefaults.standard
-    
-    var interstitial: GADInterstitial!
-    // Define interstitial ad
-    
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -54,39 +53,21 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
             view.showsFPS = true
             view.showsNodeCount = true
         }
-    }
-    
-    func createInterstitial() {
+        
         interstitial = createInterstitialAd()
     }
     
-    func createInterstitialAd() -> GADInterstitial {
-        print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
-        let interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")
-        interstitial.delegate = self
-        interstitial.load(GADRequest())
-        return interstitial
-    }
-    
-    func loadInterstitial() {
-        if self.interstitial.isReady {
+    func loadInterstitial(interstitial: GADInterstitial) {
+        print("Load Interstitial Game View")
+        if interstitial.isReady {
             print("llama llama ad ready")
-            self.interstitial.present(fromRootViewController: self)
+            interstitial.present(fromRootViewController: self)
         } else {
             print("llama llama ad not ready")
-            createInterstitial()
             // Setup next ad when the current one is closed
             NotificationCenter.default.post(name: .closeAd, object: nil)
             // Load the next level if the ad didn't load up in time
         }
-    }
-    
-    func interstitialDidDismissScreen(_ ad: GADInterstitial) {
-//        print("llama llama ad dismissed")
-        createInterstitial()
-        // Setup next ad when the current one is closed
-        NotificationCenter.default.post(name: .closeAd, object: nil)
-        // Send notification to move to Playing game state
     }
     
     func moveToMainMenu() {
@@ -128,6 +109,31 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         inbetweenView.view.frame = self.view.frame
         self.view.addSubview(inbetweenView.view)
         inbetweenView.didMove(toParent: self)
+    }
+    
+    func createInterstitial() {
+        interstitial = createInterstitialAd()
+    }
+    
+    func createInterstitialAd() -> GADInterstitial {
+        interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")
+        interstitial.delegate = self
+        interstitial.load(GADRequest())
+        return interstitial
+    }
+    
+    func showAd() {
+        if interstitial.isReady {
+            interstitial.present(fromRootViewController: self)
+        } else {
+            interstitial = createInterstitialAd()
+            NotificationCenter.default.post(name: .closeAd, object: nil)
+        }
+    }
+    
+    func interstitialDidDismissScreen(_ ad: GADInterstitial) {
+        interstitial = createInterstitialAd()
+        NotificationCenter.default.post(name: .closeAd, object: nil)
     }
 
     override var shouldAutorotate: Bool {

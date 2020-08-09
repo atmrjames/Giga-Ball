@@ -63,6 +63,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
         itemsTableView.delegate = self
         itemsTableView.dataSource = self
         itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
@@ -645,6 +648,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         // Load the total stats array from the NSCoder data store
         
+        print("llama llama icloud power-up array check 3: ", totalStatsArray[0].powerUpUnlockedArray[0], totalStatsArray[0].powerUpUnlockedArray[6])
+        //        powerUpUnlockedArray[0] // should = true when default
+        //        powerUpUnlockedArray[6] // should = false when default
+        
         if let packData = try? Data(contentsOf: packStatsStore!) {
             do {
                 packStatsArray = try decoder.decode([PackStats].self, from: packData)
@@ -740,6 +747,18 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         premiumTableView.reloadData()
         itemsTableView.reloadData()
     }
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - items detail view")
+        userSettings()
+        loadData()
+        premiumTableViewHideShow()
+        lockedCount()
+        premiumTableView.reloadData()
+        itemsTableView.reloadData()
+        backButtonCollectionView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
 }
 
 extension Notification.Name {

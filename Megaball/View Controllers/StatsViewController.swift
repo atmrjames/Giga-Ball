@@ -51,6 +51,9 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+                
         userSettings()
         loadData()
         
@@ -71,8 +74,6 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
-        collectionViewLayout()
-        
         if parallaxSetting! {
             addParallax()
         }
@@ -81,6 +82,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             setBlur()
         }
         
+        collectionViewLayout()
         statsTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
@@ -358,7 +360,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = backButtonCollectionView.frame.size.width
+        let viewWidth = statsView.frame.size.width
         let cellWidth: CGFloat = 50
         let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
@@ -608,5 +610,14 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
     }
     // Remove game center view contoller once dismissed
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        print("llama llama icloud update pushed - stats view")
+        userSettings()
+        loadData()
+        statsTableView.reloadData()
+        backButtonCollectionView.reloadData()
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
     
 }
