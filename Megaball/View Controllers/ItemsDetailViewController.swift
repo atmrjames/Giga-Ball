@@ -420,8 +420,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == premiumTableView {
-//            showPurchaseScreen()
-//            IAPHandler().purchasePremium()
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell

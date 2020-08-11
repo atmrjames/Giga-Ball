@@ -239,8 +239,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        showPurchaseScreen()
-//        IAPHandler().purchasePremium()
+        showPurchaseScreen()
+        IAPHandler().purchasePremium()
 
         UIView.animate(withDuration: 0.2) {
             let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell

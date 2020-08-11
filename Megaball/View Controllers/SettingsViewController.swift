@@ -421,8 +421,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-//            showPurchaseScreen()
-//            IAPHandler().purchasePremium()
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -517,8 +517,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 11:
             // Restore purchases
-//                showPurchaseScreen()
-//                IAPHandler().restorePurchase()
+                showPurchaseScreen()
+                IAPHandler().restorePurchase()
                 print("Restore purchase")
             case 12:
             // Unlock all

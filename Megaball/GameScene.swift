@@ -1117,7 +1117,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Beta Build 0.3.3(71) - TBC - 09/08/2020"
+		buildLabel.text = "Beta Build 0.3.4(72) - TBC - 00/00/2020"
 	
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
