@@ -24,19 +24,25 @@ extension GameScene {
                     brick.texture = brickIndestructible1Texture
                 }
                 
-                if j >= 4 && j <= 10 && ((i >= 4 && i <= 7) || (i >= 14 && i <= 17)) {
+//                if j >= 4 && j <= 10 && ((i >= 4 && i <= 7) || (i >= 14 && i <= 17)) {
+//                    brick.texture = brickNormalTexture
+//                    brick.color = brickWhite
+//                }
+                
+                if (j == 4 || j == 10) && (i == 4 || i == 8 || i == 13 || i == 17) {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
-                if (j == 5 || j == 7 || j == 9) && (i == 3 || i == 18) {
+                
+                if (j == 5 || j == 9) && (i == 3 || i == 18 || i == 7 || i == 14) {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
-                if (j == 6 || j == 8) && (i == 2 || i == 19) {
+                if (j == 6 || j == 8) && (i == 2 || i == 19 || i == 6 || i == 15) {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
-                if j == 7 && (i == 1 || i == 20) {
+                if j == 7 && (i == 1 || i == 20 || i == 5 || i == 16) {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
@@ -59,49 +65,32 @@ extension GameScene {
                     brick.color = brickPink
                 }
 
-                if (j == 4 || j == 10) && (i == 5 || i == 16) {
+                if (j == 4 || j == 10) && (i == 6 || i == 15) {
                     brick.texture = brickMultiHit4Texture
                 }
-                if (j == 5 || j == 9) && (i == 4 || i == 17) {
+                if (j == 5 || j == 9) && (i == 5 || i == 16) {
                     brick.texture = brickMultiHit3Texture
                 }
-                if (j == 6 || j == 8) && (i == 3 || i == 18) {
+                if (j == 6 || j == 8) && (i == 4 || i == 17) {
                     brick.texture = brickMultiHit2Texture
                 }
-                if j == 7 && (i == 2 || i == 19) {
+                if j == 7 && (i == 3 || i == 18) {
                     brick.texture = brickMultiHit1Texture
                 }
                 
-                if (j == 4 || j == 10) && (i == 7 || i == 14) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickBlueDarkExtra
-                }
-                if (j == 5 || j == 9) && (i == 6 || i == 15) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickBlueDarkExtra
-                }
-                if (j == 6 || j == 8) && (i == 5 || i == 16) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickBlueDarkExtra
-                }
-                if j == 7 && (i == 4 || i == 17) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickBlueDarkExtra
-                }
-                
-                if j >= 4 && j <= 10 && i >= 8 && i <= 13 {
+                if j >= 4 && j <= 10 && i >= 9 && i <= 12 {
                     brick.texture = brickNormalTexture
                     brick.color = brickPurple
                 }
-                if j >= 5 && j <= 9 && i >= 7 && i <= 14 {
+                if j >= 5 && j <= 9 && i >= 8 && i <= 13 {
                     brick.texture = brickNormalTexture
                     brick.color = brickPurple
                 }
-                if j >= 6 && j <= 8 && i >= 6 && i <= 15 {
+                if j >= 6 && j <= 8 && i >= 7 && i <= 14 {
                     brick.texture = brickNormalTexture
                     brick.color = brickPurple
                 }
-                if j == 7 && (i == 5 || i == 16) {
+                if j == 7 && (i == 6 || i == 15) {
                     brick.texture = brickNormalTexture
                     brick.color = brickPurple
                 }

@@ -46,17 +46,6 @@ extension GameScene {
                     brick.texture = brickIndestructible2Texture
                 }
                 
-                if j == 5 && i >= 16 && i <= 21 {
-                    brick.texture = brickMultiHit2Texture
-                }
-                if j >= 4 && j <= 6 && i >= 18 && i <= 19 {
-                    brick.texture = brickMultiHit2Texture
-                }
-                
-                if j == 5 && (i == 18 || i == 19) {
-                    brick.texture = brickMultiHit1Texture
-                }
-                
                 if (j == 1 || j == 9) && (i == 0 || i == 2 || i == 7 || i == 9) {
                     brick.texture = brickInvisibleTexture
                 }

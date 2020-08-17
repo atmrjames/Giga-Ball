@@ -1,8 +1,8 @@
 //
-//  Level008.swift
+//  Level009.swift
 //  Megaball
 //
-//  Created by James Harding on 08/09/2019.
+//  Created by James Harding on 28/11/2019.
 //  Copyright © 2019 James Harding. All rights reserved.
 //
 
@@ -10,8 +10,8 @@ import SpriteKit
 import GameplayKit
 
 extension GameScene {
-    func loadLevel8() {
-        
+    func loadLevel9() {
+
         var brickArray: [SKNode] = []
         // Array to store all bricks
 
@@ -20,21 +20,21 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if j == 0 || j == 10 {
+                if (i == 2 || i == 3 || i == 18 || i == 19) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
                 
-                if j == 1 || j == 9 {
+                if i == 4 || i == 5 || i == 16 || i == 17 {
                     brick.texture = brickInvisibleTexture
                 }
                 
-                if j == 3 || j == 7 {
+                if (i == 6 || i == 7 || i == 14 || i == 15) && (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) {
                     brick.texture = brickMultiHit1Texture
                 }
                 
-                if j == 5 && (i == 0 || i == 1 || i == 5 || i == 6 || i == 10 || i == 11 || i == 15 || i == 16 || i == 20 || i == 21) {
-                        brick.texture = brickIndestructible1Texture
+                if (i == 10 || i == 11) && (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) {
+                    brick.texture = brickIndestructible1Texture
                 }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))

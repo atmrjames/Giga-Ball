@@ -739,7 +739,7 @@
 			path = BrickCreation;
 			sourceTree = "<group>";
 		};
-		1A5D803A23E8B36300F50BE0 /* Starter Pack */ = {
+		1A5D803A23E8B36300F50BE0 /* Classic Pack */ = {
 			isa = PBXGroup;
 			children = (
 				1AE957452324EC2A00E5618A /* Level001.swift */,
@@ -753,7 +753,7 @@
 				1A04BEF9238FE42700EB6150 /* Level009.swift */,
 				1AF5749B23AA6DC300DCBAE5 /* Level010.swift */,
 			);
-			path = "Starter Pack";
+			path = "Classic Pack";
 			sourceTree = "<group>";
 		};
 		1A5D803D23E8B38700F50BE0 /* Space Pack */ = {
@@ -954,7 +954,7 @@
 			children = (
 				1ACC0F3923FD56F200B7EFE9 /* Level999.swift */,
 				1AF335DD24112695007DC048 /* Level000.swift */,
-				1A5D803A23E8B36300F50BE0 /* Starter Pack */,
+				1A5D803A23E8B36300F50BE0 /* Classic Pack */,
 				1A5D803D23E8B38700F50BE0 /* Space Pack */,
 				1A3193FA244403E7004917D0 /* Nature Pack */,
 				1A31940F24440BC9004917D0 /* Urban Pack */,

@@ -38,7 +38,7 @@ class LevelSelectorTableViewCell: UITableViewCell {
         levelImage.layer.shadowRadius = 4
         
         cellView3.layer.masksToBounds = false
-        cellView3.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cellView3.layer.shadowOffset = CGSize(width: 0, height: 0)
         cellView3.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         cellView3.layer.shadowOpacity = 0.5
         cellView3.layer.shadowRadius = 4

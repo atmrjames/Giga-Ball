@@ -139,7 +139,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         
         showAnimate()
         
-        if (levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel == true) || (levelNumber == 0 && firstLevel == true) {
+        if (levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel) || (levelNumber == 0 && firstLevel) || firstLevel {
             premiumTableView.isHidden = true
             showAnimateDuration = 0
             levelNumber = levelNumber-1
@@ -239,8 +239,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        showPurchaseScreen()
-        IAPHandler().purchasePremium()
+//        showPurchaseScreen()
+//        IAPHandler().purchasePremium()
+        IAPHandler().unlockPremiumContent() // Beta builds only
 
         UIView.animate(withDuration: 0.2) {
             let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell

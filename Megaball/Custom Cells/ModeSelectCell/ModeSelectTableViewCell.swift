@@ -22,7 +22,7 @@ class ModeSelectTableViewCell: UITableViewCell {
         cellView1.layer.masksToBounds = false
         cellView1.layer.shadowOffset = CGSize(width: 0, height: 2)
         cellView1.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        cellView1.layer.shadowOpacity = 0.2
+        cellView1.layer.shadowOpacity = 0.25
         cellView1.layer.shadowRadius = 4
     }
 

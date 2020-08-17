@@ -18,9 +18,9 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         super.awakeFromNib()
         
         iconImage.layer.masksToBounds = false
-        iconImage.layer.shadowOffset = CGSize(width: 0, height: 2)
+        iconImage.layer.shadowOffset = CGSize(width: 0, height: 0)
         iconImage.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        iconImage.layer.shadowOpacity = 0.2
+        iconImage.layer.shadowOpacity = 0.5
         iconImage.layer.shadowRadius = 4
     }
 

@@ -230,6 +230,22 @@ extension GameScene {
                     brick.texture = brickNullTexture
                 }
                 
+                if (i == 11 || i == 20) && (j == 3 || j == 7) {
+                    brick.texture = brickNullTexture
+                }
+                if (i == 13 || i == 17) && (j == 1 || j == 9) {
+                    brick.texture = brickNullTexture
+                }
+                if i == 15 && (j == 2 || j == 8) {
+                    brick.texture = brickNullTexture
+                }
+                if i == 16 && j == 5 {
+                    brick.texture = brickNullTexture
+                }
+                if i == 18 && (j == 4 || j == 6) {
+                    brick.texture = brickNullTexture
+                }
+                
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 
                 if brick.texture == brickInvisibleTexture {

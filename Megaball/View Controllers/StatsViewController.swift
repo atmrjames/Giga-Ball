@@ -24,13 +24,13 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var sender: String?
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let formatter = DateFormatter()
@@ -125,7 +125,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     cell.statValue.text = String(numberMinutes)+" minutes"
                 } else {
                     let numberHours = Double(totalStatsArray[0].playTimeSecs/3600)
-                    let numberHoursString = String(format:"%.1f", numberHours)
+                    let numberHoursString = String(format:"%.0f", numberHours)
                     // Double to string conversion to 1 decimal place
                     cell.statValue.text = String(numberHoursString)+" hours"
                 }
@@ -188,7 +188,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 if completionRate.isNaN || completionRate.isInfinite {
                     completionRate = 0.0
                 }
-                let completionRateString = String(format:"%.1f", completionRate)
+                let completionRateString = String(format:"%.0f", completionRate)
                 // Double to string conversion to 1 decimal place
                 cell.statValue.text = String(completionRateString)+"%"
             }
@@ -226,7 +226,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 if completionRate.isNaN || completionRate.isInfinite {
                     completionRate = 0.0
                 }
-                let completionRateString = String(format:"%.1f", completionRate)
+                let completionRateString = String(format:"%.0f", completionRate)
                 // Double to string conversion to 1 decimal place
                 cell.statValue.text = String(completionRateString)+"%"
             }
@@ -235,7 +235,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Endless mode plays"
+                cell.statDescription.text = "Endless Mode plays"
                 cell.statValue.text = String(numberOfEndlessModeAttempts)
             }
             return cell
@@ -243,7 +243,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Endless mode best height"
+                cell.statDescription.text = "Endless Mode best height"
                 if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
                     cell.statValue.text = String(bestHeight) + " m"
                 } else {
@@ -255,7 +255,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Endless mode total height"
+                cell.statDescription.text = "Endless Mode total height"
                 cell.statValue.text = String(heightArraySum)+" m"
             }
             return cell
@@ -263,7 +263,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Endless mode average height"
+                cell.statDescription.text = "Endless Mode average height"
                 let averageScore = heightArraySum/numberOfEndlessModeAttempts
                 cell.statValue.text = String(averageScore)+" m"
             }
@@ -326,7 +326,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 if collectionRate.isNaN || collectionRate.isInfinite {
                     collectionRate = 0.0
                 }
-                let collectionRateString = String(format:"%.1f", collectionRate)
+                let collectionRateString = String(format:"%.0f", collectionRate)
                 // Double to string conversion to 1 decimal place
                 cell.statValue.text = String(collectionRateString)+"%"
             }
@@ -502,23 +502,23 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         // Load the total stats array from the NSCoder data store
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding high score array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
+//
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
     }
     
     func setBlur() {

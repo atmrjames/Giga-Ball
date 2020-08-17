@@ -24,13 +24,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let formatter = DateFormatter()
@@ -45,7 +45,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var numberOfLevels: Int?
     var startLevel: Int?
     var levelSender: String = "MainMenu"
-    var numberOfAttempts = 0
     // Key properties
     
     @IBOutlet var backgroundView: UIView!
@@ -53,37 +52,17 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var statsTableView: UITableView!
     @IBOutlet var levelsTableView: UITableView!
-    @IBOutlet var levelsHeaderLabel: UIButton!
-    @IBOutlet var statsTableViewChevron: UIButton!
     // UIViewController outlets
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
     @IBOutlet var statsTableViewHeight: NSLayoutConstraint!
-    @IBOutlet var statsTableViewHeightNoTime: NSLayoutConstraint!
-    @IBOutlet var noStatsTableViewHeight: NSLayoutConstraint!
     @IBOutlet var collapsedStatsTableViewHeight: NSLayoutConstraint!
     // Stats table view constraints
     
     @IBOutlet var premiumTableView: UITableView!
     @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
     @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
-    
-    @IBAction func levelsHeaderButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        levelsTableView.setContentOffset(.zero, animated: true)
-    }
-    // UIViewController actions
-    @IBAction func statisticsHeaderButton(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        statsCollapseSetting = !statsCollapseSetting!
-        defaults.set(statsCollapseSetting!, forKey: "statsCollapseSetting")
-        statsTableOpenClose(animated: true)
-    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -96,6 +75,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
+        // Sets up an observer to watch for notifications to check for in-app purchase success
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
@@ -132,7 +114,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             addParallax()
         }
         updateLabels()
-        statsTableOpenClose(animated: false)
+//        statsTableOpenClose(animated: false)
         collectionViewLayout()
         showAnimate()
         reloadData()
@@ -156,7 +138,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tableView == self.statsTableView {
-            return 7
+            return 2
         } else if tableView == self.premiumTableView {
             return 1
         } else {
@@ -182,9 +164,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             return cell
         }
-        
-        numberOfAttempts = packStatsArray[packNumber!].scores.count
-        let scoreArraySum = packStatsArray[packNumber!].scores.reduce(0, +)
+                
+//        numberOfAttempts = packStatsArray[packNumber!].scores.count
+//        let scoreArraySum = packStatsArray[packNumber!].scores.reduce(0, +)
         
         statsTableView.rowHeight = 35.0
         levelsTableView.rowHeight = 150.0
@@ -194,101 +176,23 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                if numberOfAttempts == 0 {
-                    cell.statDescription.text = "No statistics available"
-                    cell.statValue.text = ""
+                cell.statDescription.text = "Highscore"
+                let highScore = totalStatsArray[0].packHighScores[packNumber!-2]
+                if highScore > 0 {
+                    cell.statValue.text = String(highScore)
                 } else {
-                    cell.statDescription.text = "Highscore"
-                    if let highScore = packStatsArray[packNumber!].scores.max() {
-                        cell.statValue.text = String(highScore)
-                    } else {
-                        cell.statValue.text = ""
-                    }
+                    cell.statValue.text = "Not set"
                 }
                 return cell
             case 1:
-                if numberOfAttempts == 0 {
-                    hideCell(cell: cell)
-                } else {
-                    statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Highscore date"
-                    
-                    if let highScore = packStatsArray[packNumber!].scores.max() {
-                        let highScoreIndex = packStatsArray[packNumber!].scores.firstIndex(of: highScore)
-                        let highScoreDate = packStatsArray[packNumber!].scoreDates[highScoreIndex!]
-                        // Find date of highscore
-                        
-                        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                        let inputDate = formatter.string(from: highScoreDate)
-                        let outputDate = formatter.date(from: inputDate)
-                        formatter.dateFormat = "dd/MM/yyyy"
-                        let convertedDate = formatter.string(from: outputDate!)
-                        // Date to string conversion
-                        
-                        cell.statValue.text = convertedDate
-                    } else {
-                        cell.statValue.text = ""
-                    }
-                }
-                return cell
-            case 2:
-                if numberOfAttempts == 0 {
-                    hideCell(cell: cell)
-                } else {
-                    statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Plays"
-                    cell.statValue.text = String(numberOfAttempts)
-                }
-                return cell
-            case 3:
-                if numberOfAttempts == 0 {
-                    hideCell(cell: cell)
-                } else {
-                    statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Completion rate"
-                    
-                    let completionRate: Double = Double(packStatsArray[packNumber!].numberOfCompletes)/Double(numberOfAttempts)*100.0
-
-                    let completionRateString = String(format:"%.1f", completionRate)
-                    // Double to string conversion to 1 decimal place
-                    
-                    cell.statValue.text = String(completionRateString)+"%"
-                }
-                return cell
-            case 4:
-                if numberOfAttempts == 0 {
-                    hideCell(cell: cell)
-                } else {
-                    statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Total score"
-                    cell.statValue.text = String(scoreArraySum)
-                }
-                return cell
-            case 5:
-                if numberOfAttempts == 0 {
-                    hideCell(cell: cell)
-                } else {
-                    statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Average score"
-                    let averageScore = scoreArraySum/numberOfAttempts
-                    cell.statValue.text = String(averageScore)
-                }
-                return cell
-            case 6:
-                if numberOfAttempts == 0 {
-                    hideCell(cell: cell)
-                } else {
-                    statsTableView.rowHeight = 35.0
-                    cell.statDescription.text = "Best time (mm:ss)"
-                    let bestTimeSeconds = packStatsArray[packNumber!].bestTime
-                    let displayMinutesString = String(format: "%02d", bestTimeSeconds/60)
-                    let displaySecondsString = String(format: "%02d", bestTimeSeconds%60)
-                    cell.statValue.text = "\(displayMinutesString):\(displaySecondsString)"
-                    if packStatsArray[packNumber!].numberOfCompletes <= 0 {
-                        hideCell(cell: cell)
-                        statsTableViewHeight.isActive = false
-                        statsTableViewHeightNoTime.isActive = true
-                    }
+                statsTableView.rowHeight = 35.0
+                cell.statDescription.text = "Best time (mm:ss)"
+                let bestTimeSeconds = totalStatsArray[0].packBestTimes[packNumber!-2]
+                let displayMinutesString = String(format: "%02d", bestTimeSeconds/60)
+                let displaySecondsString = String(format: "%02d", bestTimeSeconds%60)
+                cell.statValue.text = "\(displayMinutesString):\(displaySecondsString)"
+                if totalStatsArray[0].packBestTimes[packNumber!-2] == 0 {
+                    cell.statValue.text = "Not set"
                 }
                 return cell
             default:
@@ -305,9 +209,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
             cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             // Setup cell buttons
+            
+            let packLevelHighScoresArray: [[Int]] = [
+                totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
+            ]
+            
             let levelNumber = startLevel!+indexPath.row
-            if levelStatsArray[levelNumber].scores.isEmpty == false {
-                cell.highScoreLabel.text = String(levelStatsArray[levelNumber].scores.max()!)
+            if packLevelHighScoresArray[packNumber!-2][levelNumber-startLevel!] > 0 {
+//            if levelStatsArray[levelNumber].scores.isEmpty == false {
+                cell.highScoreLabel.text = String(packLevelHighScoresArray[packNumber!-2][levelNumber-startLevel!])
             } else {
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
@@ -339,8 +249,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
+            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -686,23 +597,23 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
         // Load the total stats array from the NSCoder data store
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding high score array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
+//
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
     }
     
     func moveToLevelStatsSetup(sender: Int) {
@@ -713,7 +624,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func updateLabels() {
         titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
-        numberOfAttempts = packStatsArray[packNumber!].scores.count
+//        numberOfAttempts = packStatsArray[packNumber!].scores.count
         var numberOfUnlockedLevels = 0
         let packFirstLevel = LevelPackSetup().startLevelNumber[packNumber!]
         var levelIndex = packFirstLevel
@@ -723,19 +634,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             }
             levelIndex+=1
         }
-        
-        // 3/10 levels
-        
-        if numberOfLevels! == 1 {
-            levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Level", for: .normal)
-        } else {
-            if numberOfUnlockedLevels == numberOfLevels {
-                levelsHeaderLabel.setTitle(String(numberOfLevels!)+" Levels", for: .normal)
-            } else {
-                // 3/10 levels
-                levelsHeaderLabel.setTitle(String(numberOfUnlockedLevels)+"/"+String(numberOfLevels!)+" Levels", for: .normal)
-            }
-        }
     }
     
     func reloadData() {
@@ -744,34 +642,29 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         backButtonCollectionView.reloadData()
     }
     
-    func statsTableOpenClose(animated: Bool) {
-        if statsCollapseSetting == false {
-            collapsedStatsTableViewHeight.isActive = false
-            if numberOfAttempts == 0 {
-                statsTableViewHeight.isActive = false
-                noStatsTableViewHeight.isActive = true
-            } else {
-                noStatsTableViewHeight.isActive = false
-                statsTableViewHeight.isActive = true
-            }
-            UIView.animate(withDuration: 0.25, animations: {
-                self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: 0)
-            })
-        } else if statsCollapseSetting! {
-            collapsedStatsTableViewHeight.isActive = true
-            statsTableViewHeight.isActive = false
-            noStatsTableViewHeight.isActive = false
-            UIView.animate(withDuration: 0.25, animations: {
-                self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi/2)
-            })
-        }
-        updateLabels()
-        if animated {
-            UIView.animate(withDuration: 0.25) {
-                self.view.layoutIfNeeded()
-            }
-        }
-    }
+//    func statsTableOpenClose(animated: Bool) {
+//        if statsCollapseSetting == false {
+//            collapsedStatsTableViewHeight.isActive = false
+//            statsTableViewHeight.isActive = true
+//            UIView.animate(withDuration: 0.25, animations: {
+//                self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: 0)
+//            })
+//        } else {
+//            collapsedStatsTableViewHeight.isActive = true
+//            statsTableViewHeight.isActive = false
+//            UIView.animate(withDuration: 0.25, animations: {
+//            self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi/2)
+//            })
+//        }
+//
+//        updateLabels()
+//        if animated {
+//            UIView.animate(withDuration: 0.25) {
+//                self.view.layoutIfNeeded()
+//            }
+//        }
+//        statsTableView.reloadData()
+//    }
     
     func showGameCenterLeaderboards() {
         if gameCenterSetting! {
@@ -835,7 +728,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         loadData()
         reloadData()
         updateLabels()
-        statsTableOpenClose(animated: false)
+//        statsTableOpenClose(animated: false)
     }
     // Runs when returning from game
     
@@ -857,6 +750,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     // Runs when the NSUbiquitousKeyValueStore changes
     
+    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
+        userSettings()
+        loadData()
+        premiumTableViewHideShow()
+        premiumTableView.reloadData()
+        levelsTableView.reloadData()
+    }
 }
 
 extension Notification.Name {

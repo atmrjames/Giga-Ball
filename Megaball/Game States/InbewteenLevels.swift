@@ -197,6 +197,65 @@ class InbetweenLevels: GKState {
         // Update total stats
         
         scene.totalStatsArray[0].dateSaved = Date()
+        
+        if scene.endlessMode == false {
+            
+            if (scene.levelScore + scene.levelTimerBonus) > scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] {
+                print("llama llama level score save")
+                scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] = (scene.levelScore + scene.levelTimerBonus)
+            }
+            
+            print("llama llama level score: ", (scene.levelScore + scene.levelTimerBonus), scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]])
+            
+//            scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore + scene.levelTimerBonus)
+//            scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
+//            if scene.gameoverStatus == false {
+//                scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1
+//            }
+        }
+        // Update level stats
+        
+        scene.packTimerValue = scene.packTimerValue + scene.levelTimerValue
+        if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 && scene.endlessMode == false {
+            
+            
+            if scene.totalScore > scene.totalStatsArray[0].packHighScores[scene.packNumber-2] {
+                scene.totalStatsArray[0].packHighScores[scene.packNumber-2] = scene.totalScore
+            }
+//            scene.packStatsArray[scene.packNumber].scores.append(scene.totalScore)
+//            scene.packStatsArray[scene.packNumber].scoreDates.append(Date())
+            if scene.gameoverStatus == false {
+                
+                if scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] == 0 || scene.packTimerValue < scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] {
+                    scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] = scene.packTimerValue
+                }
+//                scene.packStatsArray[scene.packNumber].numberOfCompletes+=1
+//                if scene.packStatsArray[scene.packNumber].bestTime == 0 || scene.packTimerValue < scene.packStatsArray[scene.packNumber].bestTime {
+//                    scene.packStatsArray[scene.packNumber].bestTime = scene.packTimerValue
+//                }
+            }
+//            do {
+//                let data = try scene.encoder.encode(self.scene.packStatsArray)
+//                try data.write(to: scene.packStatsStore!)
+//            } catch {
+//                print("Error encoding pack stats array, \(error)")
+//            }
+//            CloudKitHandler().saveRecords()
+            // Save pack stats
+        }
+    
+        scene.totalStatsArray[0].pack1LevelHighScores = scene.packLevelHighScoresArray![0]
+        scene.totalStatsArray[0].pack2LevelHighScores = scene.packLevelHighScoresArray![1]
+        scene.totalStatsArray[0].pack3LevelHighScores = scene.packLevelHighScoresArray![2]
+        scene.totalStatsArray[0].pack4LevelHighScores = scene.packLevelHighScoresArray![3]
+        scene.totalStatsArray[0].pack5LevelHighScores = scene.packLevelHighScoresArray![4]
+        scene.totalStatsArray[0].pack6LevelHighScores = scene.packLevelHighScoresArray![5]
+        scene.totalStatsArray[0].pack7LevelHighScores = scene.packLevelHighScoresArray![6]
+        scene.totalStatsArray[0].pack8LevelHighScores = scene.packLevelHighScoresArray![7]
+        scene.totalStatsArray[0].pack9LevelHighScores = scene.packLevelHighScoresArray![8]
+        scene.totalStatsArray[0].pack10LevelHighScores = scene.packLevelHighScoresArray![9]
+        scene.totalStatsArray[0].pack11LevelHighScores = scene.packLevelHighScoresArray![10]
+        
         do {
             let data = try scene.encoder.encode(self.scene.totalStatsArray)
             try data.write(to: scene.totalStatsStore!)
@@ -205,44 +264,6 @@ class InbetweenLevels: GKState {
         }
         CloudKitHandler().saveTotalStats()
         // Save total stats
-        
-        if scene.endlessMode == false {
-            scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore + scene.levelTimerBonus)
-            scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
-            if scene.gameoverStatus == false {
-                scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1
-            }
-        }
-        // Update level stats
-        
-        do {
-            let data = try scene.encoder.encode(self.scene.levelStatsArray)
-            try data.write(to: scene.levelStatsStore!)
-        } catch {
-            print("Error encoding level stats array, \(error)")
-        }
-        CloudKitHandler().saveRecords()
-        // Save level stats
-        
-        scene.packTimerValue = scene.packTimerValue + scene.levelTimerValue
-        if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 && scene.endlessMode == false {
-            scene.packStatsArray[scene.packNumber].scores.append(scene.totalScore)
-            scene.packStatsArray[scene.packNumber].scoreDates.append(Date())
-            if scene.gameoverStatus == false {
-                scene.packStatsArray[scene.packNumber].numberOfCompletes+=1
-                if scene.packStatsArray[scene.packNumber].bestTime == 0 || scene.packTimerValue < scene.packStatsArray[scene.packNumber].bestTime {
-                    scene.packStatsArray[scene.packNumber].bestTime = scene.packTimerValue
-                }
-            }
-            do {
-                let data = try scene.encoder.encode(self.scene.packStatsArray)
-                try data.write(to: scene.packStatsStore!)
-            } catch {
-                print("Error encoding pack stats array, \(error)")
-            }
-            CloudKitHandler().saveRecords()
-            // Save pack stats
-        }
         if scene.gameCenterSetting! {
             GameCenterHandler().gameCenterSave()
         }
@@ -259,21 +280,21 @@ class InbetweenLevels: GKState {
         }
         CloudKitHandler().saveTotalStats()
         // Save total stats
-        do {
-            let data = try scene.encoder.encode(self.scene.levelStatsArray)
-            try data.write(to: scene.levelStatsStore!)
-        } catch {
-            print("Error encoding level stats array, \(error)")
-        }
-        // Save level stats
-        do {
-            let data = try scene.encoder.encode(self.scene.packStatsArray)
-            try data.write(to: scene.packStatsStore!)
-        } catch {
-            print("Error encoding pack stats array, \(error)")
-        }
-        // Save pack stats
-        CloudKitHandler().saveRecords()
+//        do {
+//            let data = try scene.encoder.encode(self.scene.levelStatsArray)
+//            try data.write(to: scene.levelStatsStore!)
+//        } catch {
+//            print("Error encoding level stats array, \(error)")
+//        }
+//        // Save level stats
+//        do {
+//            let data = try scene.encoder.encode(self.scene.packStatsArray)
+//            try data.write(to: scene.packStatsStore!)
+//        } catch {
+//            print("Error encoding pack stats array, \(error)")
+//        }
+//        // Save pack stats
+//        CloudKitHandler().saveRecords()
     }
     
     func showAd() {
@@ -603,9 +624,15 @@ class InbetweenLevels: GKState {
             // Pack score achievements
             
             if scene.levelNumber == 10 && scene.totalStatsArray[0].achievementsUnlockedArray[6] == false {
-                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+2].numberOfCompletes > 0 {
+                scene.newItemsBool = true
+                
+                if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-1] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber] > 0  {
                     scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 }
+                
+//                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+2].numberOfCompletes > 0 {
+//                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+//                }
                 // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[1] = true
                 scene.totalStatsArray[0].themeUnlockedArray[1] = true
@@ -623,9 +650,15 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 20 && scene.totalStatsArray[0].achievementsUnlockedArray[7] == false {
-                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 {
+                scene.newItemsBool = true
+                
+                if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-3] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-1] > 0  {
                     scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 }
+                
+//                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 {
+//                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+//                }
                 // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[2] = true
                 scene.totalStatsArray[0].themeUnlockedArray[2] = true
@@ -643,9 +676,15 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 30 && scene.totalStatsArray[0].achievementsUnlockedArray[8] == false {
-                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-2].numberOfCompletes > 0 {
+                scene.newItemsBool = true
+                
+                if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-3] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-4] > 0  {
                     scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 }
+                
+//                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-2].numberOfCompletes > 0 {
+//                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+//                }
                 // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[3] = true
                 scene.totalStatsArray[0].themeUnlockedArray[3] = true
@@ -663,6 +702,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 40 && scene.totalStatsArray[0].achievementsUnlockedArray[9] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[6] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[4] = true
                 scene.totalStatsArray[0].themeUnlockedArray[4] = true
@@ -680,6 +720,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 50 && scene.totalStatsArray[0].achievementsUnlockedArray[10] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[7] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[5] = true
                 scene.totalStatsArray[0].themeUnlockedArray[5] = true
@@ -697,6 +738,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 60 && scene.totalStatsArray[0].achievementsUnlockedArray[11] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[8] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[6] = true
                 scene.totalStatsArray[0].themeUnlockedArray[6] = true
@@ -714,6 +756,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 70 && scene.totalStatsArray[0].achievementsUnlockedArray[12] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[9] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[7] = true
                 scene.totalStatsArray[0].themeUnlockedArray[7] = true
@@ -731,6 +774,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 80 && scene.totalStatsArray[0].achievementsUnlockedArray[13] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[10] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[8] = true
                 scene.totalStatsArray[0].themeUnlockedArray[8] = true
@@ -746,6 +790,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 90 && scene.totalStatsArray[0].achievementsUnlockedArray[14] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[11] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[9] = true
                 scene.totalStatsArray[0].themeUnlockedArray[9] = true
@@ -761,6 +806,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 100 && scene.totalStatsArray[0].achievementsUnlockedArray[15] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].levelPackUnlockedArray[12] = true
                 scene.totalStatsArray[0].appIconUnlockedArray[10] = true
                 scene.totalStatsArray[0].themeUnlockedArray[10] = true
@@ -776,6 +822,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.levelNumber == 110 && scene.totalStatsArray[0].achievementsUnlockedArray[16] == false {
+                scene.newItemsBool = true
                 scene.totalStatsArray[0].appIconUnlockedArray[11] = true
                 scene.totalStatsArray[0].themeUnlockedArray[11] = true
                 scene.totalStatsArray[0].achievementsUnlockedArray[16] = true
@@ -857,12 +904,16 @@ class InbetweenLevels: GKState {
             }
             // Pack speed achievement
             
-            if scene.packStatsArray[scene.packNumber].numberOfCompletes == 1 && scene.totalStatsArray[0].achievementsUnlockedArray[62] == false {
+            if scene.totalStatsArray[0].packHighScores[0] > 0 && scene.totalStatsArray[0].packHighScores[1] > 0 && scene.totalStatsArray[0].packHighScores[2] > 0  {
+                scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+            }
+                        
+            if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].achievementsUnlockedArray[62] == false {
                 scene.totalStatsArray[0].achievementsUnlockedArray[62] = true
                 scene.totalStatsArray[0].achievementDates[62] = Date()
                 let achievement = GKAchievement(identifier: "onePacksComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement onePacksComplete: ", scene.packStatsArray[scene.packNumber].numberOfCompletes)
+                    print("llama llama achievement onePacksComplete: ", scene.totalStatsArray[0].packHighScores[scene.packNumber-2])
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting onePacksComplete achievement")
@@ -870,7 +921,7 @@ class InbetweenLevels: GKState {
                 }
             }
             if scene.totalStatsArray[0].achievementsUnlockedArray[63] == false {
-                let percentComplete = Double(scene.packStatsArray[scene.packNumber].numberOfCompletes)/10.0*100.0
+                let percentComplete = Double(scene.totalStatsArray[0].packsCompleted)/10.0*100.0
                 if percentComplete >= 100.0 {
                     scene.totalStatsArray[0].achievementsPercentageCompleteArray[63] = "100%"
                     scene.totalStatsArray[0].achievementsUnlockedArray[63] = true
@@ -889,8 +940,8 @@ class InbetweenLevels: GKState {
                     }
                 }
             }
-            if scene.packStatsArray[scene.packNumber].numberOfCompletes <= 100 {
-                let percentComplete = Double(scene.packStatsArray[scene.packNumber].numberOfCompletes)/100.0*100.0
+            if scene.totalStatsArray[0].packsCompleted <= 100 {
+                let percentComplete = Double(scene.totalStatsArray[0].packsCompleted)/100.0*100.0
                 if percentComplete >= 100.0 && scene.totalStatsArray[0].achievementsUnlockedArray[64] == false {
                     scene.totalStatsArray[0].achievementsPercentageCompleteArray[64] = "100%"
                     scene.totalStatsArray[0].achievementsUnlockedArray[64] = true
@@ -909,8 +960,8 @@ class InbetweenLevels: GKState {
                     }
                 }
             }
-            if scene.packStatsArray[scene.packNumber].numberOfCompletes <= 1000 {
-                let percentComplete = Double(scene.packStatsArray[scene.packNumber].numberOfCompletes)/1000.0*100.0
+            if scene.totalStatsArray[0].packsCompleted <= 1000 {
+                let percentComplete = Double(scene.totalStatsArray[0].packsCompleted)/1000.0*100.0
                 if percentComplete >= 100.0 && scene.totalStatsArray[0].achievementsUnlockedArray[65] == false {
                     scene.totalStatsArray[0].achievementsPercentageCompleteArray[65] = "100%"
                     scene.totalStatsArray[0].achievementsUnlockedArray[65] = true

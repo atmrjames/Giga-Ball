@@ -27,6 +27,21 @@ class TotalStats: Codable {
     var packsPlayed: Int = 0
     var packsCompleted: Int = 0
     
+    var packHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0,0]
+    var packBestTimes: [Int] = [0,0,0,0,0,0,0,0,0,0,0]
+    
+    var pack1LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack2LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack3LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack4LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack5LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack6LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack7LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack8LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack9LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack10LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    var pack11LevelHighScores: [Int] = [0,0,0,0,0,0,0,0,0,0]
+    
     var endlessModeHeight: [Int] = []
     var endlessModeHeightDate: [Date] = []
     

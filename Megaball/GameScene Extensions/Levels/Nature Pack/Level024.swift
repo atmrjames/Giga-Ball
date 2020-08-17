@@ -37,7 +37,7 @@ extension GameScene {
                     brick.color = brickGreenDark
                 }
                 
-                if j == 5 && i >= 8 && i <= 21 {
+                if j == 5 && i >= 15 && i <= 21 {
                     brick.texture = brickIndestructible2Texture
                 }
                 if j >= 4 && j <= 6 && i >= 19 && i <= 21 {
@@ -46,20 +46,26 @@ extension GameScene {
                 if j >= 3 && j <= 7 && i == 21 {
                     brick.texture = brickIndestructible2Texture
                 }
-                if j >= 4 && j <= 6 && i >= 10 && i <= 11 {
-                    brick.texture = brickIndestructible2Texture
-                }
-                if (j == 3 || j == 7) && i >= 4 && i <= 5 {
-                    brick.texture = brickIndestructible2Texture
+                
+                if (j == 4 || j == 6) && i >= 10 && i <= 11 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
                 }
                 if (j == 4 || j == 6) && i >= 6 && i <= 7 {
-                    brick.texture = brickIndestructible2Texture
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
                 }
-                if (j == 3 || j == 7) && i == 12 {
-                    brick.texture = brickIndestructible2Texture
+                if (j == 3 || j == 7) && i >= 4 && i <= 5 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
                 }
-                if j >= 4 && j <= 6 && i >= 6 && i <= 11 {
-                    brick.texture = brickIndestructible2Texture
+                if (j == 3 || j == 7) && i >= 12 && i <= 13 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
+                }
+                if j == 5 && i >= 8 && i <= 14 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBrown
                 }
                 
                 if (j == 4 || j == 6) && i >= 0 && i <= 1 {

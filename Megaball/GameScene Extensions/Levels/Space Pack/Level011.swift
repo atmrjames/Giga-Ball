@@ -20,45 +20,36 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if (j == 0 || j == 7) && i >= 7 && i <= 14 {
+                if (j == 1 || j == 7) && i >= 6 && i <= 15 {
                     brick.texture = brickInvisibleTexture
                 }
-                if (j == 1 || j == 6) && i >= 4 && i <= 17 {
+                if (j == 2 || j == 6) && i >= 4 && i <= 17 {
                     brick.texture = brickInvisibleTexture
                 }
-                if (j == 2 || j == 5) && i >= 2 && i <= 19 {
+                if (j == 3 || j == 5) && i >= 3 && i <= 18 {
                     brick.texture = brickInvisibleTexture
                 }
-                if (j == 3 || j == 4) && i >= 1 && i <= 20 {
+                if j == 4 && i >= 2 && i <= 19 {
                     brick.texture = brickInvisibleTexture
                 }
-                // Invisible bricks
-                
-                if j == 4 && (i == 0 || i == 21) {
+
+                if j == 5 && (i == 2 || i == 19) {
                     brick.texture = brickNormalTexture
                     brick.color = brickYellowLight
                 }
-                if j == 5 && ((i >= 0 && i <= 1) || (i >= 20 && i <= 21)) {
+                if j == 6 && (i == 2 || i == 3 || i == 18 || i == 19) {
                     brick.texture = brickNormalTexture
                     brick.color = brickYellowLight
                 }
-                if j == 6 && ((i >= 0 && i <= 3) || (i >= 18 && i <= 21)) {
+                if j == 7 && ((i >= 3 && i <= 6) || (i >= 15 && i <= 18)) {
                     brick.texture = brickNormalTexture
                     brick.color = brickYellowLight
                 }
-                if j == 7 && ((i >= 1 && i <= 6) || (i >= 15 && i <= 20)) {
+                if j == 8 && (i >= 4 && i <= 17) {
                     brick.texture = brickNormalTexture
                     brick.color = brickYellowLight
                 }
-                if j == 8 && (i >= 2 && i <= 19) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickYellowLight
-                }
-                if j == 9 && (i >= 4 && i <= 17) {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickYellowLight
-                }
-                if j == 10 && (i >= 7 && i <= 14) {
+                if j == 9 && (i >= 6 && i <= 16) {
                     brick.texture = brickNormalTexture
                     brick.color = brickYellowLight
                 }

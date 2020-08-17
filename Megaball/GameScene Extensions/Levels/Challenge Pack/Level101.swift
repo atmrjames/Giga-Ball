@@ -27,10 +27,6 @@ extension GameScene {
                     brick.texture = brickInvisibleTexture
                 }
                 
-                if j >= 4 && j <= 6 && i >= 8 && i <= 13 {
-                    brick.texture = brickInvisibleTexture
-                }
-                
                 if j == 5 && i >= 10 && i <= 11 {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite

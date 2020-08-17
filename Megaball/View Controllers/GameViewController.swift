@@ -50,20 +50,18 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
                 view.presentScene(scene)
             }
             view.ignoresSiblingOrder = true
-            view.showsFPS = true
-            view.showsNodeCount = true
+            view.showsFPS = false
+            view.showsNodeCount = false
         }
         
         interstitial = createInterstitialAd()
     }
     
     func loadInterstitial(interstitial: GADInterstitial) {
-        print("Load Interstitial Game View")
         if interstitial.isReady {
-            print("llama llama ad ready")
             interstitial.present(fromRootViewController: self)
         } else {
-            print("llama llama ad not ready")
+            print("ad not ready")
             // Setup next ad when the current one is closed
             NotificationCenter.default.post(name: .closeAd, object: nil)
             // Load the next level if the ad didn't load up in time
@@ -71,6 +69,9 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     
     func moveToMainMenu() {
+        CloudKitHandler().saveUserDefaults()
+//        CloudKitHandler().saveRecords()
+        CloudKitHandler().saveTotalStats()
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
         NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
@@ -78,7 +79,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     // Segue to MenuViewController
     
-    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool) {
+    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
         pauseMenuVC.numberOfLevels = numberOfLevels
@@ -87,6 +88,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         pauseMenuVC.height = height
         pauseMenuVC.sender = sender
         pauseMenuVC.gameoverBool = gameoverBool
+        pauseMenuVC.newItemsBool = newItemsBool
+        pauseMenuVC.previousHighscore = previousHighscore
         // Update pause menu view controller properties with function input values
         self.addChild(pauseMenuVC)
         pauseMenuVC.view.frame = self.view.frame

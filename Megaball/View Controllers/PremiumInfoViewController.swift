@@ -117,7 +117,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
             
             switch indexPath.row {
             case 0:
-                cell.settingDescription.text = "Access to all 110 levels and 11 level packs"
+                cell.settingDescription.text = "Unlock all 110 levels and 11 level packs"
             case 1:
                 cell.settingDescription.text = "Unlock all 28 power-ups"
             case 2:
@@ -125,7 +125,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
             case 3:
                 cell.settingDescription.text = "Remove ads"
             case 4:
-                cell.settingDescription.text = "Support the app and indie app development"
+                cell.settingDescription.text = "Show you support for the app"
             default:
                 break
             }
@@ -141,8 +141,9 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
+            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell

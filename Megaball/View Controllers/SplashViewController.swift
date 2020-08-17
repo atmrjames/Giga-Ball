@@ -27,9 +27,9 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBOutlet var scoreLabel: UILabel!
     
     @IBAction func tapGesture(_ sender: Any) {
-        if self.resumeInProgress == false {
-            removeAnimate(duration: 0.1)
-        }
+//        if self.resumeInProgress == false {
+//            removeAnimate(duration: 0.1)
+//        }
     }
     // Remove this function in final release
     
@@ -128,9 +128,9 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         cell.cellView2.layer.cornerRadius = 25
         cell.cellView2.layer.masksToBounds = false
-        cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 0)
         cell.cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        cell.cellView2.layer.shadowOpacity = 0.2
+        cell.cellView2.layer.shadowOpacity = 0.5
         cell.cellView2.layer.shadowRadius = 4
         
         UIView.animate(withDuration: 0.2) {

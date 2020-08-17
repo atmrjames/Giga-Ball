@@ -37,7 +37,7 @@ extension GameScene {
         powerUpProbArray[22] = 3 // Lasers
         powerUpProbArray[23] = 7 // Quicksand
         powerUpProbArray[24] = 7 // Mystery
-        powerUpProbArray[25] = 7 // Backstop
+        powerUpProbArray[25] = 5 // Backstop
         powerUpProbArray[26] = 10 // Increase Ball Size
         powerUpProbArray[27] = 10 // Decrease Ball Size
         
@@ -229,6 +229,10 @@ extension GameScene {
             powerUpProbArray[27] = 1 // Decrease Ball Size
         case 23:
             powerUpProbArray[0] = 10 // Get a Life
+        case 24:
+            powerUpProbArray[0] = 10 // Get a Life
+            powerUpProbArray[7] = 10 // Gravity
+            powerUpProbArray[23] = 10 // Quicksand
         case 25:
             powerUpProbArray[20] = 7 // Giga-Ball
         case 29:
@@ -371,6 +375,34 @@ extension GameScene {
         default:
             break
         }
+        
+        if numberOfLives >= 5 {
+            powerUpProbArray[0] = 0 // Get a Life
+        }
+        if numberOfLevels <= 1 {
+            powerUpProbArray[0] = 0 // Get a Life
+            powerUpProbArray[1] = 0 // Lose a Life
+            powerUpProbArray[14] = 0 // Next Level
+        }
+        
+        if numberOfLives <= 2 {
+            if powerUpProbArray[0] < 5 {
+                powerUpProbArray[0] = 5 // Get a Life
+            }
+        }
+        if numberOfLives <= 1 {
+            if powerUpProbArray[0] < 7 {
+                powerUpProbArray[0] = 7 // Get a Life
+            }
+        }
+        if numberOfLives <= 0 {
+            powerUpProbArray[0] = 10 // Get a Life
+        }
+        // Increase probability of extra life if low on lives
+        
+        // Testing
+//        powerUpProbArray[14] = 100 // Next Level
+//        powerUpProbFactor = 2
         
         for i in powerUpProbArray {
             if i > totalStatsArray[0].powerUpUnlockedArray.count-1 {

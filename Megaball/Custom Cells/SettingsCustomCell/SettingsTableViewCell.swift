@@ -40,7 +40,7 @@ class SettingsTableViewCell: UITableViewCell {
         tickImage.isHidden = true
         
         cellView2.layer.masksToBounds = false
-        cellView2.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cellView2.layer.shadowOffset = CGSize(width: 0, height: 0)
         cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         cellView2.layer.shadowOpacity = 0.5
         cellView2.layer.shadowRadius = 4

@@ -24,25 +24,41 @@ extension GameScene {
                 brick.color = brickWhite
                 
                 if j == 5 && i >= 0 && i <= 21 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit2Texture
                 }
                 if (j == 4 || j == 6) && i >= 2 && i <= 18 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit3Texture
                 }
                 if (j == 3 || j == 7) && i >= 8 && i <= 17 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit3Texture
                 }
                 if (j == 2 || j == 8) && i >= 6 && i <= 17 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit3Texture
                 }
                 if (j == 1 || j == 9) && i >= 4 && i <= 13 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit3Texture
                 }
                 if (j == 1 || j == 9) && i >= 16 && i <= 17 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit3Texture
                 }
                 if (j == 0 || j == 10) && i >= 6 && i <= 11 {
-                    brick.texture = brickMultiHit1Texture
+                    brick.texture = brickMultiHit3Texture
+                }
+                
+                if (j == 4 || j == 6) && ((i >= 10 && i <= 16) || i == 0 || i == 1 || i == 19 || i == 20 || i == 21) {
+                    brick.texture = brickNullTexture
+                }
+                if (j == 3 || j == 7) && ((i >= 2 && i <= 7) || (i >= 10 && i <= 15) || i == 18 || i == 19) {
+                    brick.texture = brickNullTexture
+                }
+                if (j == 2 || j == 8) && (i == 4 || i == 5 || i == 10 || i == 11 || i == 18 || i == 19) {
+                    brick.texture = brickNullTexture
+                }
+                if (j == 1 || j == 9) && (i == 2 || i == 3 || i == 8 || i == 9 || i == 14 || i == 15 || i == 18 || i == 19) {
+                    brick.texture = brickNullTexture
+                }
+                if (j == 0 || j == 10) && (i == 4 || i == 5 || i == 12 || i == 13 || i == 16 || i == 17) {
+                    brick.texture = brickNullTexture
                 }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))

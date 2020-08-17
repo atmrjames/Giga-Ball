@@ -20,45 +20,40 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if j == 1 || j == 9 {
+                if (j == 1 || j == 9) && i < 16 {
                     brick.texture = brickInvisibleTexture
                 }
                 
-                if j >= 1 && j <= 9 && (i == 0 || i == 21) {
+                if j >= 1 && j <= 9 && (i == 0 || i == 15) {
                     brick.texture = brickInvisibleTexture
                 }
                 
-                if j >= 3 && j <= 7 && i == 18 {
+                if i == 12 && j >= 3 && j <= 7 {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
                 
-                if (j == 4 || j == 6) && i == 3 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                }
-                
-                if (j == 3 || j == 7) && i == 3 {
+                if i == 3 && j >= 3 && j <= 7 {
                     brick.texture = brickIndestructible2Texture
                 }
                 
-                if j == 5 && i == 3 {
+                if i == 3 && (j == 4 || j == 6) {
                     brick.texture = brickIndestructible1Texture
                 }
                 
-                if (j == 3 || j == 7) && i >= 4 && i <= 7 {
+                if (j == 3 || j == 7) && i >= 4 && i <= 5 {
                     brick.texture = brickMultiHit1Texture
                 }
                 
-                if (j == 3 || j == 7) && i >= 8 && i <= 10 {
+                if (j == 3 || j == 7) && i >= 6 && i <= 7 {
                     brick.texture = brickMultiHit2Texture
                 }
                 
-                if (j == 3 || j == 7) && i >= 11 && i <= 13 {
+                if (j == 3 || j == 7) && i >= 8 && i <= 9 {
                     brick.texture = brickMultiHit3Texture
                 }
                 
-                if (j == 3 || j == 7) && i >= 14 && i <= 17 {
+                if (j == 3 || j == 7) && i >= 10 && i <= 11 {
                     brick.texture = brickMultiHit4Texture
                 }
                 

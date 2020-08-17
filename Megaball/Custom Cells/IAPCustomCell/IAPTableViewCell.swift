@@ -22,7 +22,7 @@ class IAPTableViewCell: UITableViewCell {
         
         cellView.layer.cornerRadius = 32
         cellView.layer.masksToBounds = false
-        cellView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cellView.layer.shadowOffset = CGSize(width: 0, height: 0)
         cellView.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         cellView.layer.shadowOpacity = 0.5
         cellView.layer.shadowRadius = 4

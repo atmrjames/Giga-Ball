@@ -111,6 +111,49 @@ extension GameScene {
                     brick.texture = brickNormalTexture
                     brick.color = brickGreenGigaball
                 }
+                
+                
+                if j == 4 && i == 7 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
+                }
+                if j == 5 && i >= 4 && i <= 7 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
+                }
+                if j == 6 && (i == 3 || i == 4 || i == 5) {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
+                }
+                if j == 7 && (i == 2 || i == 3) {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
+                }
+                if j == 8 && (i == 2 || i == 1) {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
+                }
+                if j == 9 && i == 2 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickBlue
+                }
+                
+                if j == 7 && (i == 4 || i == 5) {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickWhite
+                }
+                if j == 8 && (i == 3 || i == 4) {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickWhite
+                }
+                if j == 9 && i >= 3 && i <= 5 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickWhite
+                }
+                if j == 10 && i >= 4 && i <= 6 {
+                    brick.texture = brickNormalTexture
+                    brick.color = brickWhite
+                }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 

@@ -26,13 +26,13 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -202,7 +202,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             UIApplication.shared.open(writeReviewURL, options: [:], completionHandler: nil)
         case 8:
         // Share
-            let shareURL: [Any] = ["Check-out this app", URL(string: "https://apps.apple.com/app/id1494628204")!]
+            let shareURL: [Any] = ["Check out Giga-Ball on the App Store", URL(string: "https://apps.apple.com/app/id1494628204")!]
             let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
             present(shareSheet, animated: true)
         case 9:
@@ -396,23 +396,23 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         // Load the total stats array from the NSCoder data store
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding high score array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
+//
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
     }
     
     func setBlur() {

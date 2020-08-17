@@ -12,15 +12,12 @@ import CloudKit
 final class CloudKitHandler: NSObject {
     typealias CompletionBlock = (Error?) -> Void
     static let helper = CloudKitHandler()
-    
-    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let defaults = UserDefaults.standard
@@ -29,6 +26,7 @@ final class CloudKitHandler: NSObject {
     var adsSetting: Bool?
     var appOpenCount: Int?
     var resumeGameToLoad: Bool?
+    var iCloudSetting: Bool?
 
     // Total Stats
     var dateSaved: Date?
@@ -56,6 +54,19 @@ final class CloudKitHandler: NSObject {
     var achievementsUnlockedArray: [Bool]?
     var achievementsPercentageCompleteArray: [String]?
     var achievementDates: [Date]?
+    var packHighScores: [Int]?
+    var packBestTimes: [Int]?
+    var pack1LevelHighScores: [Int]?
+    var pack2LevelHighScores: [Int]?
+    var pack3LevelHighScores: [Int]?
+    var pack4LevelHighScores: [Int]?
+    var pack5LevelHighScores: [Int]?
+    var pack6LevelHighScores: [Int]?
+    var pack7LevelHighScores: [Int]?
+    var pack8LevelHighScores: [Int]?
+    var pack9LevelHighScores: [Int]?
+    var pack10LevelHighScores: [Int]?
+    var pack11LevelHighScores: [Int]?
     
     // PackStats
     var savePackData: NSData?
@@ -70,7 +81,27 @@ final class CloudKitHandler: NSObject {
     var levelScoreDates: [Date]?
     var levelNumberOfCompletes: Int?
     
+    func isICloudContainerAvailable() {
+        CKContainer.default().accountStatus { (accountStatus, error) in
+            if case .available = accountStatus {
+                print("llama llama icloud on")
+                self.iCloudSetting = true
+                self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")
+            } else {
+                print("llama llama icloud off")
+                self.iCloudSetting = false
+                self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")
+            }
+        }
+    }
+
     func saveUserDefaults() {
+        iCloudSetting = defaults.bool(forKey: "iCloudSetting")
+        if !iCloudSetting! {
+            print("llama llama icloud off")
+            return
+        }
+        // Check iCloud status and end function if not
         print("llama llama icloud save user defaults")
         premiumSetting = defaults.bool(forKey: "premiumSetting")
         adsSetting = defaults.bool(forKey: "adsSetting")
@@ -82,6 +113,12 @@ final class CloudKitHandler: NSObject {
     }
     
     func loadUserDefaults() {
+        iCloudSetting = defaults.bool(forKey: "iCloudSetting")
+        if !iCloudSetting! {
+            print("llama llama icloud off")
+            return
+        }
+        // Check iCloud status and end function if not
         print("llama llama icloud load user defaults")
         premiumSetting = NSUbiquitousKeyValueStore.default.bool(forKey: "premiumSetting")
         adsSetting = NSUbiquitousKeyValueStore.default.bool(forKey: "adsSetting")
@@ -99,8 +136,21 @@ final class CloudKitHandler: NSObject {
     }
     
     func saveTotalStats() {
+        iCloudSetting = defaults.bool(forKey: "iCloudSetting")
+        if !iCloudSetting! {
+            print("llama llama icloud off")
+            return
+        }
+        // Check iCloud status and end function if not
         print("llama llama icloud save total stats")
-        loadTotalData()
+        let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
         dateSaved = totalStatsArray[0].dateSaved
         cumulativeScore = totalStatsArray[0].cumulativeScore
         levelsPlayed = totalStatsArray[0].levelsPlayed
@@ -126,6 +176,19 @@ final class CloudKitHandler: NSObject {
         achievementsUnlockedArray = totalStatsArray[0].achievementsUnlockedArray
         achievementsPercentageCompleteArray = totalStatsArray[0].achievementsPercentageCompleteArray
         achievementDates = totalStatsArray[0].achievementDates
+        packHighScores = totalStatsArray[0].packHighScores
+        packBestTimes = totalStatsArray[0].packBestTimes
+        pack1LevelHighScores = totalStatsArray[0].pack1LevelHighScores
+        pack2LevelHighScores = totalStatsArray[0].pack2LevelHighScores
+        pack3LevelHighScores = totalStatsArray[0].pack3LevelHighScores
+        pack4LevelHighScores = totalStatsArray[0].pack4LevelHighScores
+        pack5LevelHighScores = totalStatsArray[0].pack5LevelHighScores
+        pack6LevelHighScores = totalStatsArray[0].pack6LevelHighScores
+        pack7LevelHighScores = totalStatsArray[0].pack7LevelHighScores
+        pack8LevelHighScores = totalStatsArray[0].pack8LevelHighScores
+        pack9LevelHighScores = totalStatsArray[0].pack9LevelHighScores
+        pack10LevelHighScores = totalStatsArray[0].pack10LevelHighScores
+        pack11LevelHighScores = totalStatsArray[0].pack11LevelHighScores
         
         NSUbiquitousKeyValueStore.default.set(dateSaved, forKey: "dateSaved")
         NSUbiquitousKeyValueStore.default.set(cumulativeScore, forKey: "cumulativeScore")
@@ -152,11 +215,37 @@ final class CloudKitHandler: NSObject {
         NSUbiquitousKeyValueStore.default.set(achievementsUnlockedArray, forKey: "achievementsUnlockedArray")
         NSUbiquitousKeyValueStore.default.set(achievementsPercentageCompleteArray, forKey: "achievementsPercentageCompleteArray")
         NSUbiquitousKeyValueStore.default.set(achievementDates, forKey: "achievementDates")
+        NSUbiquitousKeyValueStore.default.set(packHighScores, forKey: "packHighScores")
+        NSUbiquitousKeyValueStore.default.set(packBestTimes, forKey: "packBestTimes")
+        NSUbiquitousKeyValueStore.default.set(pack1LevelHighScores, forKey: "pack1LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack2LevelHighScores, forKey: "pack2LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack3LevelHighScores, forKey: "pack3LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack4LevelHighScores, forKey: "pack4LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack5LevelHighScores, forKey: "pack5LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack6LevelHighScores, forKey: "pack6LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack7LevelHighScores, forKey: "pack7LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack8LevelHighScores, forKey: "pack8LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack9LevelHighScores, forKey: "pack9LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack10LevelHighScores, forKey: "pack10LevelHighScores")
+        NSUbiquitousKeyValueStore.default.set(pack11LevelHighScores, forKey: "pack11LevelHighScores")
     }
     
     func loadTotalStats() {
+        iCloudSetting = defaults.bool(forKey: "iCloudSetting")
+        if !iCloudSetting! {
+            print("llama llama icloud off")
+            return
+        }
+        // Check iCloud status and end function if not
         print("llama llama icloud load total stats")
-        loadTotalData()
+        let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+            do {
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+            } catch {
+                print("Error decoding total stats array, \(error)")
+            }
+        }
         dateSaved = NSUbiquitousKeyValueStore.default.object(forKey: "dateSaved") as? Date
         cumulativeScore = Int(NSUbiquitousKeyValueStore.default.longLong(forKey: "cumulativeScore"))
         levelsPlayed = Int(NSUbiquitousKeyValueStore.default.longLong(forKey: "levelsPlayed"))
@@ -182,6 +271,19 @@ final class CloudKitHandler: NSObject {
         achievementsUnlockedArray = NSUbiquitousKeyValueStore.default.array(forKey: "achievementsUnlockedArray") as? [Bool]
         achievementsPercentageCompleteArray = NSUbiquitousKeyValueStore.default.array(forKey: "achievementsPercentageCompleteArray") as? [String]
         achievementDates = NSUbiquitousKeyValueStore.default.array(forKey: "achievementDates") as? [Date]
+        packHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "packHighScores") as? [Int]
+        packBestTimes = NSUbiquitousKeyValueStore.default.array(forKey: "packBestTimes") as? [Int]
+        pack1LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack1LevelHighScores") as? [Int]
+        pack2LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack2LevelHighScores") as? [Int]
+        pack3LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack3LevelHighScores") as? [Int]
+        pack4LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack4LevelHighScores") as? [Int]
+        pack5LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack5LevelHighScores") as? [Int]
+        pack6LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack6LevelHighScores") as? [Int]
+        pack7LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack7LevelHighScores") as? [Int]
+        pack8LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack8LevelHighScores") as? [Int]
+        pack9LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack9LevelHighScores") as? [Int]
+        pack10LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack10LevelHighScores") as? [Int]
+        pack11LevelHighScores = NSUbiquitousKeyValueStore.default.array(forKey: "pack11LevelHighScores") as? [Int]
         
         if self.dateSaved != nil {
             totalStatsArray[0].dateSaved = dateSaved!
@@ -258,6 +360,45 @@ final class CloudKitHandler: NSObject {
         if self.achievementDates != nil {
             totalStatsArray[0].achievementDates = achievementDates!
         }
+        if self.packHighScores != nil {
+            totalStatsArray[0].packHighScores = packHighScores!
+        }
+        if self.packBestTimes != nil {
+            totalStatsArray[0].packBestTimes = packBestTimes!
+        }
+        if self.pack1LevelHighScores != nil {
+            totalStatsArray[0].pack1LevelHighScores = pack1LevelHighScores!
+        }
+        if self.pack2LevelHighScores != nil {
+            totalStatsArray[0].pack2LevelHighScores = pack2LevelHighScores!
+        }
+        if self.pack3LevelHighScores != nil {
+            totalStatsArray[0].pack3LevelHighScores = pack3LevelHighScores!
+        }
+        if self.pack4LevelHighScores != nil {
+            totalStatsArray[0].pack4LevelHighScores = pack4LevelHighScores!
+        }
+        if self.pack5LevelHighScores != nil {
+            totalStatsArray[0].pack5LevelHighScores = pack5LevelHighScores!
+        }
+        if self.pack6LevelHighScores != nil {
+            totalStatsArray[0].pack6LevelHighScores = pack6LevelHighScores!
+        }
+        if self.pack7LevelHighScores != nil {
+            totalStatsArray[0].pack7LevelHighScores = pack7LevelHighScores!
+        }
+        if self.pack8LevelHighScores != nil {
+            totalStatsArray[0].pack8LevelHighScores = pack8LevelHighScores!
+        }
+        if self.pack9LevelHighScores != nil {
+            totalStatsArray[0].pack9LevelHighScores = pack9LevelHighScores!
+        }
+        if self.pack10LevelHighScores != nil {
+            totalStatsArray[0].pack10LevelHighScores = pack10LevelHighScores!
+        }
+        if self.pack11LevelHighScores != nil {
+            totalStatsArray[0].pack11LevelHighScores = pack11LevelHighScores!
+        }
         
         do {
             print("llama llama icloud save total stats updates")
@@ -268,204 +409,4 @@ final class CloudKitHandler: NSObject {
         }
         // Save total stats changes
     }
-    
-//    var powerUpUnlockedArray: [Bool]?
-//    var achievementsUnlockedArray: [Bool]?
-//    var achievementsPercentageCompleteArray: [String]?
-//    var achievementDates: [Date]?
-
-    func loadDataToSync() {
-        let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-        let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
-        
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            savePackData = packData as NSData
-        }
-
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            saveLevelData = levelData as NSData
-        }
-    }
-    
-    func saveRecords() {
-        print("llama llama iCloud save records")
-        let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-        let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
-        
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            savePackData = packData as NSData
-        }
-
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            saveLevelData = levelData as NSData
-        }
-        // Load data to sync
-        
-        // User Settings
-        let levelAndPackRecord = CKRecord(recordType: "LevelAndPackRecord")
-
-        levelAndPackRecord["packData"] = savePackData! as CKRecordValue
-        levelAndPackRecord["levelData"] = saveLevelData! as CKRecordValue
-
-        let myContainer = CKContainer.default()
-        let privateDatabase = myContainer.privateCloudDatabase
-        privateDatabase.save(levelAndPackRecord) { (record, error) in
-            if let error = error {
-                print("llama llama iCloud Error with iCloud Sync: \(error.localizedDescription)")
-                return
-            }
-            print("llama llama iCloud Successful sync")
-        }
-    }
-
-    func loadRecords() {
-        print("llama llama iCloud load records")
-        let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-        let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
-        
-        let predicate = NSPredicate(value: true)
-        let sort = NSSortDescriptor(key: "creationDate", ascending: false)
-        let query = CKQuery(recordType: "LevelAndPackRecord", predicate: predicate)
-        query.sortDescriptors = [sort]
-
-        let operation = CKQueryOperation(query: query)
-        operation.desiredKeys = ["packData", "levelData"]
-        operation.resultsLimit = 1
-        // What data to retrieve
-
-        operation.recordFetchedBlock = { record in
-            self.savePackData = record["packData"]
-            self.saveLevelData = record["levelData"]
-        }
-        // Store retrieved data as its downloading
-
-        operation.queryCompletionBlock = { (cursor, error) in
-            DispatchQueue.main.async {
-                if error == nil {
-
-                    if self.savePackData != nil {
-                        do {
-                            let data = self.savePackData
-                            try data!.write(to: packStatsStore!)
-                            print("llama llama iCloud packs data loaded")
-                        } catch {
-                            print("Error encoding pack stats array, \(error)")
-                        }
-                    }
-                    if self.saveLevelData != nil {
-                        do {
-                            let data = self.saveLevelData
-                            try data!.write(to: levelStatsStore!)
-                            print("llama llama iCloud level data loaded")
-                        } catch {
-                            print("Error encoding level stats array, \(error)")
-                        }
-                    }
-
-                    print("llama llama iCloud Successful Load")
-                } else {
-                    print("llama llama iCloud Error with iCloud Load: \(error!.localizedDescription)")
-                }
-            }
-        }
-        // What to do once the data has successfully been retrieved
-
-        CKContainer.default().publicCloudDatabase.add(operation)
-    }
-    
-    func loadTotalData() {
-        if let totalData = try? Data(contentsOf: totalStatsStore!) {
-            do {
-                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
-            } catch {
-                print("Error decoding total stats array, \(error)")
-            }
-        }
-        // Load the total stats array from the NSCoder data store
-        
-//        if let packData = try? Data(contentsOf: packStatsStore!) {
-//            do {
-//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//            } catch {
-//                print("Error decoding pack stats array, \(error)")
-//            }
-//        }
-//        // Load the pack stats array from the NSCoder data store
-//
-//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//            do {
-//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//            } catch {
-//                print("Error decoding level stats array, \(error)")
-//            }
-//        }
-//        // Load the level stats array from the NSCoder data store
-    }
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
 }
-
-//
-//do {
-//    let data = try scene.encoder.encode(self.scene.totalStatsArray)
-//    try data.write(to: scene.totalStatsStore!)
-//} catch {
-//    print("Error encoding total stats, \(error)")
-//}
-//// Save total stats
-    
-// Things to sync across devices
-    
-        
-//var saveGameSaveArray: [Int]?
-//var saveMultiplier: Double?
-//var saveBrickTextureArray: [Int]?
-//var saveBrickColourArray: [Int]?
-//var saveBrickXPositionArray: [Int]?
-//var saveBrickYPositionArray: [Int]?
-//var saveBallPropertiesArray: [Double]?
-//
-//var savePowerUpFallingXPositionArray: [Int]?
-//var savePowerUpFallingYPositionArray: [Int]?
-//var savePowerUpFallingArray: [Int]?
-//var savePowerUpActiveArray: [String]?
-//var savePowerUpActiveDurationArray: [Double]?
-//var savePowerUpActiveTimerArray: [Double]?
-//var savePowerUpActiveMagnitudeArray: [Int]?
-    
-//    TotalStats
-//    var dateSaved: Date
-//    var cumulativeScore: Int
-//    var levelsPlayed: Int
-//    var levelsCompleted: Int
-//    var ballHits: Int
-//    var ballsLost: Int
-//    var powerupsCollected: [Int]
-//    var powerupsGenerated: [Int]
-//    var bricksHit: [Int]
-//    var bricksDestroyed: [Int]
-//    var lasersFired: Int
-//    var lasersHit: Int
-//    var playTimeSecs: Int
-//    var packsPlayed: Int
-//    var packsCompleted: Int
-//    var endlessModeHeight: [Int]
-//    var endlessModeHeightDate: [Date]
-//    var levelPackUnlockedArray: [Bool]
-//    var themeUnlockedArray: [Bool]
-//    var appIconUnlockedArray: [Bool]
-//    var levelUnlockedArray: [Bool]
-//    var powerUpUnlockedArray: [Bool]
-//    var achievementsUnlockedArray: [Bool]
-//    var achievementsPercentageCompleteArray: [String]
-//    var achievementDates: [Date]

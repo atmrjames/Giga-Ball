@@ -43,7 +43,7 @@ enum CollisionTypes: UInt32 {
 
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
-	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool)
+	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int)
 	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
 	var selectedLevel: Int? { get set }
 	var numberOfLevels: Int? { get set }
@@ -54,7 +54,7 @@ protocol GameViewControllerDelegate: class {
 }
 // Setup the protocol to return to the main menu from GameViewController
 
-class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
+class GameScene: SKScene, SKPhysicsContactDelegate {
 	
     var paddle = SKSpriteNode()
 	var paddleLaser = SKSpriteNode()
@@ -547,6 +547,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 	var powerUpsGeneratedPerPack: Int = 0
 	var paddleHitsPerLevel: Int = 0
 	var packTimerValue: Int = 0
+	var newItemsBool: Bool = false
+	var previousHighscore: Int = 0
+	var packLevelHighScoresArray: [[Int]]?
     // Game trackers
 	
 	let straightLaunchAngleRad = 90 * Double.pi / 180
@@ -560,8 +563,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
     // Label metrics
 	
 	var totalStatsArray: [TotalStats] = []
-	var packStatsArray: [PackStats] = []
-	var levelStatsArray: [LevelStats] = []
+//	var packStatsArray: [PackStats] = []
+//	var levelStatsArray: [LevelStats] = []
 	// Stats trackers
 	
 	var finalBrickRowHeight: CGFloat = 0
@@ -672,7 +675,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		// Haptics redefined for iOS13
 	
         physicsWorld.contactDelegate = self
-        // Sets the GameScene as the delegate in the physicsWorld and AVAudio
+        // Sets the GameScene as the delegate in the physicsWorld
         
         let boarder = SKPhysicsBody(edgeLoopFrom: frame)
         boarder.friction = 0
@@ -1078,7 +1081,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		
 		scoreBacker.zPosition = 8
 		scoreBacker.size.width = gameWidth
-		scoreBacker.size.height = (iconSize*2)/3*2
+		scoreBacker.size.height = pauseButtonSize*2
 		scoreBacker.position.x = 0
 		scoreBacker.position.y = powerUpTray.position.y - powerUpTray.size.height/2 - scoreBacker.size.height/2
 		
@@ -1118,6 +1121,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		// Label size & position definition
 		
 		buildLabel.text = "Beta Build 0.3.4(72) - TBC - 00/00/2020"
+		buildLabel.isHidden = true
 	
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
@@ -1252,25 +1256,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 				print("Error decoding total stats array, \(error)")
 			}
 		}
+		
+		packLevelHighScoresArray = [
+			totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
+		]
+		
 		// Load the total stats array from the NSCoder data store
 		
-		if let packData = try? Data(contentsOf: packStatsStore!) {
-			do {
-				packStatsArray = try decoder.decode([PackStats].self, from: packData)
-			} catch {
-				print("Error decoding pack stats array, \(error)")
-			}
-		}
-		// Load the pack stats array from the NSCoder data store
-		
-		if let levelData = try? Data(contentsOf: levelStatsStore!) {
-			do {
-				levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-			} catch {
-				print("Error decoding level stats array, \(error)")
-			}
-		}
-		// Load the level stats array from the NSCoder data store
+//		if let packData = try? Data(contentsOf: packStatsStore!) {
+//			do {
+//				packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//			} catch {
+//				print("Error decoding pack stats array, \(error)")
+//			}
+//		}
+//		// Load the pack stats array from the NSCoder data store
+//
+//		if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//			do {
+//				levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//			} catch {
+//				print("Error decoding level stats array, \(error)")
+//			}
+//		}
+//		// Load the level stats array from the NSCoder data store
 	}
 	
 	func startLevelTimer() {
@@ -1662,6 +1671,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		multiplierLabel.text = "x\(scoreFactorString)"
 		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		// Reset score multiplier
+		
+		if numberOfLives >= 5 {
+			powerUpProbArray[0] = 0 // Get a Life
+		}
+		if numberOfLives <= 2 {
+            if powerUpProbArray[0] < 5 {
+                powerUpProbArray[0] = 5 // Get a Life
+            }
+        }
+        if numberOfLives <= 1 {
+            if powerUpProbArray[0] < 7 {
+                powerUpProbArray[0] = 7 // Get a Life
+            }
+        }
+        if numberOfLives <= 0 {
+            powerUpProbArray[0] = 10 // Get a Life
+        }
+		powerUpProbSum = powerUpProbArray.reduce(0, +)
+		// Increase probability of extra life if low on lives
 		
         if numberOfLives > 0 {
 			
@@ -2395,6 +2423,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 			lightHaptic.impactOccurred()
 		}
 		
+		setBallStartingPositionY()
+		
 		paddleHitsPerLevel+=1
 		
         totalStatsArray[0].ballHits+=1
@@ -2698,14 +2728,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
         case 15:
 		// 15 - Invisible bricks become visible
 			powerUp.texture = self.powerUpShowInvisibleBricks
-			var hiddenNodeFound = false
+			var hiddenNodeFound = 0
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				if node.isHidden == true {
-					hiddenNodeFound = true
-					stop.initialize(to: true)
+					hiddenNodeFound+=1
 				}
 			}
-			if hiddenNodeFound == false {
+			if hiddenNodeFound < 3 {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			}
@@ -2713,15 +2742,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
         case 16:
 		// 16 - Normal bricks become invisble bricks
 			powerUp.texture = powerUpNormalToInvisibleBricks
-			var normalNodeFound = false
+			var normalNodeFound = 0
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				if sprite.texture != self.brickMultiHit1Texture && sprite.texture != self.brickMultiHit2Texture && sprite.texture != self.brickMultiHit3Texture && sprite.texture != self.brickMultiHit4Texture && sprite.texture != self.brickInvisibleTexture && sprite.texture != self.brickIndestructible1Texture && sprite.texture != self.brickIndestructible2Texture {
-					normalNodeFound = true
-					stop.initialize(to: true)
+					normalNodeFound+=1
 				}
 			}
-			if normalNodeFound == false {
+			if normalNodeFound < 3 {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			}
@@ -2729,15 +2757,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		case 17:
 		// 17 - Multi-hit bricks become normal bricks
 			powerUp.texture = powerUpMultiHitToNormalBricks
-			var multiNodeFound = false
+			var multiNodeFound = 0
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				if sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture {
-					multiNodeFound = true
-					stop.initialize(to: true)
+					multiNodeFound+=1
 				}
 			}
-			if multiNodeFound == false {
+			if multiNodeFound < 3 {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			}
@@ -2745,15 +2772,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		case 18:
 		// 18 - Multi-hit bricks reset
 			powerUp.texture = powerUpMultiHitBricksReset
-			var multiHitBrickFound = false
+			var multiHitBrickFound = 0
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				if sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture {
-					multiHitBrickFound = true
-					stop.initialize(to: true)
+					multiHitBrickFound+=1
 				}
 			}
-			if multiHitBrickFound == false {
+			if multiHitBrickFound < 3 {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			}
@@ -2761,15 +2787,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		case 19:
 		// 19 - Remove indestructible bricks
 			powerUp.texture = powerUpRemoveIndestructibleBricks
-			var indestructibleNodeFound = false
+			var indestructibleNodeFound = 0
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				if sprite.texture == self.brickIndestructible2Texture || sprite.texture == self.brickIndestructible1Texture {
-					indestructibleNodeFound = true
-					stop.initialize(to: true)
+					indestructibleNodeFound+=1
 				}
 			}
-			if indestructibleNodeFound == false {
+			if indestructibleNodeFound < 3 {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			}
@@ -2915,6 +2940,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 			life.run(newLifeSequence)
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[0]+=1
+			
+			if numberOfLives >= 5 {
+				powerUpProbArray[0] = 0 // Get a Life
+			}
+			if numberOfLives > 2 {
+				powerUpProbArray[0] = 3 // Get a Life
+			}
+			if numberOfLives <= 2 {
+				if powerUpProbArray[0] < 5 {
+					powerUpProbArray[0] = 5 // Get a Life
+				}
+			}
+			if numberOfLives <= 1 {
+				if powerUpProbArray[0] < 7 {
+					powerUpProbArray[0] = 7 // Get a Life
+				}
+			}
+			if numberOfLives <= 0 {
+				powerUpProbArray[0] = 10 // Get a Life
+			}
+			powerUpProbSum = powerUpProbArray.reduce(0, +)
+			// Increase probability of extra life if low on lives
             
         case powerUpLoseALife:
         // Lose a life
@@ -3439,12 +3486,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 				let temporarySprite = node as! SKSpriteNode
 				if temporarySprite.texture == self.brickIndestructible2Texture || temporarySprite.texture == self.brickIndestructible1Texture {
 					temporarySprite.isHidden = true
-					temporarySprite.texture = self.brickNullTexture
 					if temporarySprite.texture == self.brickIndestructible1Texture {
 						self.totalStatsArray[0].bricksDestroyed[5]+=1
 					} else if temporarySprite.texture == self.brickIndestructible2Texture {
 						self.totalStatsArray[0].bricksDestroyed[6]+=1
 					}
+					temporarySprite.texture = self.brickNullTexture
 					self.removeBrick(node: node, sprite: temporarySprite)
 				}
 			}
@@ -4088,7 +4135,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 			// Hide UI
 		}
 				
-		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus)
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore)
 		// Pass over highscore data to pause menu
     }
 	
@@ -4167,7 +4214,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			let temporarySprite = node as! SKSpriteNode
 			if temporarySprite.texture == self.brickIndestructible1Texture || temporarySprite.texture == self.brickIndestructible2Texture {
-					node.removeFromParent()
+				temporarySprite.texture = self.brickNullTexture
+				self.removeBrick(node: node, sprite: temporarySprite)
 			}
 		}
 		brickBounceCounter = 0
@@ -4479,20 +4527,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate, AVAudioPlayerDelegate {
         }
 		CloudKitHandler().saveTotalStats()
         // Save total stats
-		do {
-			let data = try encoder.encode(self.packStatsArray)
-			try data.write(to: packStatsStore!)
-		} catch {
-			print("Error encoding pack stats array, \(error)")
-		}
-		// Save pack stats
-		do {
-            let data = try encoder.encode(self.levelStatsArray)
-            try data.write(to: levelStatsStore!)
-        } catch {
-            print("Error encoding level stats array, \(error)")
-        }
-        // Save level stats
+//		do {
+//			let data = try encoder.encode(self.packStatsArray)
+//			try data.write(to: packStatsStore!)
+//		} catch {
+//			print("Error encoding pack stats array, \(error)")
+//		}
+//		// Save pack stats
+//		do {
+//            let data = try encoder.encode(self.levelStatsArray)
+//            try data.write(to: levelStatsStore!)
+//        } catch {
+//            print("Error encoding level stats array, \(error)")
+//        }
+//        // Save level stats
 	}
 	
 	func saveCurrentGame() {

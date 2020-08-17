@@ -21,13 +21,13 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -149,12 +149,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             cell.descriptionTickWidthConstraint.isActive = false
             cell.tickImage.isHidden = true
             
-            if packStatsArray[indexPath.row+2].numberOfCompletes > 0 {
+            if totalStatsArray[0].packHighScores[indexPath.row] > 0 {
                 cell.descriptionAndStateSharedWidthConstraint.isActive = false
                 cell.decriptionFullWidthConstraint.isActive = false
                 cell.descriptionTickWidthConstraint.isActive = true
-                cell.settingState.font = UIFont(name: "FugazOne-Regular", size: 24)
-                cell.settingState.text = String(packStatsArray[indexPath.row+2].scores.max()!)
+                cell.tickImage.isHidden = false
             }
             // Show tick if pack has been completed at least once
             
@@ -222,8 +221,9 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
+            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -467,23 +467,23 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
         // Load the total stats array from the NSCoder data store
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding pack stats array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding pack stats array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
+//
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
         
         let unlockedPackCount = totalStatsArray[0].levelPackUnlockedArray.filter{$0 == true}.count-2
         let lockedPackCount = totalStatsArray[0].levelPackUnlockedArray.count-2
@@ -500,6 +500,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
         userSettings()
+        loadData()
         premiumTableViewHideShow()
         premiumTableView.reloadData()
         packTableView.reloadData()

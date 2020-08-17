@@ -20,51 +20,51 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if j >= 0 && j <= 10 && i >= 1 && i <= 4 {
+                if j >= 0 && j <= 10 && i >= 0 && i <= 2 {
                     brick.texture = brickMultiHit1Texture
                 }
-                if j >= 0 && j <= 10 && i >= 5 && i <= 8 {
+                if j >= 0 && j <= 10 && i >= 3 && i <= 6 {
                     brick.texture = brickMultiHit2Texture
                 }
-                if j >= 0 && j <= 10 && i >= 9 && i <= 12 {
+                if j >= 0 && j <= 10 && i >= 7 && i <= 10 {
                     brick.texture = brickMultiHit3Texture
                 }
-                if j >= 0 && j <= 10 && i >= 13 && i <= 16 {
+                if j >= 0 && j <= 10 && i >= 11 && i <= 14 {
                     brick.texture = brickMultiHit4Texture
                 }
-                if j >= 0 && j <= 10 && i >= 17 && i <= 20 {
+                if j >= 0 && j <= 10 && i >= 15 && i <= 18 {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
                 
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 5 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 3 {
                     brick.texture = brickMultiHit1Texture
                 }
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 9 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 7 {
                     brick.texture = brickMultiHit2Texture
                 }
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 13 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 11 {
                     brick.texture = brickMultiHit3Texture
                 }
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 17 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 15 {
                     brick.texture = brickMultiHit4Texture
                 }
                 
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 4 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 2 {
                     brick.texture = brickMultiHit2Texture
                 }
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 8 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 6 {
                     brick.texture = brickMultiHit3Texture
                 }
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 12 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 10 {
                     brick.texture = brickMultiHit4Texture
                 }
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 16 {
+                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && i == 14 {
                     brick.texture = brickNormalTexture
                     brick.color = brickWhite
                 }
                 
-                if i == 1 || i == 20 {
+                if i >= 18 {
                     brick.texture = brickNullTexture
                 }
                                 

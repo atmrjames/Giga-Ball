@@ -49,11 +49,13 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
             try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)
             player = try AVAudioPlayer(contentsOf: selectedTrackURL!)
+            player!.prepareToPlay()
             player!.delegate = self
             player!.numberOfLoops = -1
             // Loop infinitely
-            player!.prepareToPlay()
-            player!.play()
+            DispatchQueue.global().async {
+                self.player!.play()
+            }
             if gameInProgress! {
                 player!.volume = gameVolumeSet
             } else {

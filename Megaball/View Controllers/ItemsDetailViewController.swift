@@ -25,13 +25,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -321,6 +321,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
                 cell.settingDescription.text = LevelPackSetup().powerUpNameArray[powerUpIndexCorrection]
                 cell.centreLabel.text = ""
+                cell.settingState.text = ""
                             
                 if totalStatsArray[0].powerupsGenerated.count < powerUpIndexCorrection-1 {
                     totalStatsArray[0].powerupsGenerated.append(0)
@@ -329,22 +330,22 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                     totalStatsArray[0].powerupsCollected.append(0)
                 }
 
-                if totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection] > 0 {
-                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
-                    cell.decriptionFullWidthConstraint.isActive = false
-                    cell.descriptionTickWidthConstraint.isActive = false
-                    
-                    let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[powerUpIndexCorrection]) / Double(totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection])
-                    cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
-                } else {
-                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                    cell.decriptionFullWidthConstraint.isActive = true
-                    cell.descriptionTickWidthConstraint.isActive = false
-                    
-                    cell.settingState.text = ""
-                }
-                // Shows collection percentage stat
+//                if totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection] > 0 {
+//                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
+//                    cell.decriptionFullWidthConstraint.isActive = false
+//                    cell.descriptionTickWidthConstraint.isActive = false
+//
+//                    let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[powerUpIndexCorrection]) / Double(totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection])
+//                    cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
+//                } else {
+//                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
+//                    cell.decriptionFullWidthConstraint.isActive = true
+//                    cell.descriptionTickWidthConstraint.isActive = false
+//
+//                    cell.settingState.text = ""
+//                }
+//                // Shows collection percentage stat
                 
                 if totalStatsArray[0].powerUpUnlockedArray[powerUpIndexCorrection] == false {
                     cell.descriptionAndStateSharedWidthConstraint.isActive = false
@@ -420,8 +421,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
+            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -652,23 +654,23 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         //        powerUpUnlockedArray[0] // should = true when default
         //        powerUpUnlockedArray[6] // should = false when default
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding high score array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
+//
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
     }
     
     func addParallax() {
@@ -743,6 +745,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
         userSettings()
+        loadData()
         premiumTableViewHideShow()
         premiumTableView.reloadData()
         itemsTableView.reloadData()

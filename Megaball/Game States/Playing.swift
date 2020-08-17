@@ -36,6 +36,22 @@ class Playing: GKState {
             // Increment level number
         }
         
+        if previousState is PreGame {
+            scene.newItemsBool = false
+            
+            if scene.packNumber > 1 {
+                if scene.numberOfLevels == 1  {
+
+                    print("llama llama 1")
+                    scene.previousHighscore = scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]]
+                } else {
+                    print("llama llama 0")
+                    scene.previousHighscore = scene.totalStatsArray[0].packHighScores[scene.packNumber-2]
+                }
+                print("llama llama previous highscore: ", scene.previousHighscore, scene.levelNumber, scene.packNumber, scene.numberOfLevels, scene.startLevelNumber, LevelPackSetup().startLevelNumber[scene.packNumber])
+            }
+        }
+        
         if previousState is PreGame || previousState is InbetweenLevels || previousState is Ad {
             reloadUI()
             loadNextLevel()
@@ -187,7 +203,7 @@ class Playing: GKState {
             scene.levelTimerValue = 0
             // reset level timer bonus
             
-            if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] || scene.levelNumber == 0 {
+            if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] || scene.levelNumber == 0 || scene.numberOfLevels == 1 {
                 scene.firstLevel = true
                 scene.showInbetweenView()
                 scene.firstLevel = false

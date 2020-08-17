@@ -47,13 +47,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     var screenSize: device?
@@ -226,6 +226,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             switch indexPath.row {
             case 0:
             // Premium
+                hideCell(cell: cell)
                 cell.settingDescription.text = "Premium"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconPremium.png")!
@@ -239,6 +240,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                hideCell(cell: cell)
             case 1:
             // Ads
+                hideCell(cell: cell)
                 cell.settingDescription.text = "Ads"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconAd.png")!
@@ -271,6 +273,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 4:
             // Sounds
+                hideCell(cell: cell)
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconSound.png")!
@@ -359,7 +362,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
                     cell.settingDescription.text = ""
-                    cell.centreLabel.text = "Reset Game Data"
+                    cell.centreLabel.text = "Reset All Game Data"
                     cell.settingState.text = ""
                     cell.iconImage.isHidden = true
                     cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
@@ -385,7 +388,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 12:
             // Unlock all
                 cell.settingDescription.text = ""
-                cell.centreLabel.text = "Unlock All Items"
+                cell.centreLabel.text = "Unlock All Items (developer)"
                 cell.settingState.text = ""
                 cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
@@ -393,7 +396,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 13:
             // Re-lock all
                 cell.settingDescription.text = ""
-                cell.centreLabel.text = "Reset All Unlocked Items"
+                cell.centreLabel.text = "Reset Locked Items (developer)"
                 cell.settingState.text = ""
                 cell.iconImage.isHidden = true
                 cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
@@ -421,8 +424,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
+//            showPurchaseScreen()
+//            IAPHandler().purchasePremium()
+            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -465,7 +469,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 5:
             // Music
                 musicSetting = !musicSetting!
+                soundsSetting = musicSetting
                 defaults.set(musicSetting!, forKey: "musicSetting")
+                defaults.set(soundsSetting!, forKey: "soundsSetting")
                 if musicSetting! {
                     if musicPausedBool {
                         MusicHandler.sharedHelper.resumeMusic()
@@ -846,23 +852,23 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         // Load the total stats array from the NSCoder data store
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding pack stats array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
-        
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding pack stats array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
+//
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
     }
     
     func ipadCompatibility() {
@@ -954,33 +960,33 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         CloudKitHandler().saveTotalStats()
         
-        for i in 1...packStatsArray.count {
-            let index = i-1
-            packStatsArray[index].scores.removeAll()
-            packStatsArray[index].scoreDates.removeAll()
-            packStatsArray[index].numberOfCompletes = 0
-            packStatsArray[index].bestTime = 0
-        }
-        do {
-            let data = try encoder.encode(self.packStatsArray)
-            try data.write(to: packStatsStore!)
-        } catch {
-            print("Error encoding pack stats array, \(error)")
-        }
+//        for i in 1...packStatsArray.count {
+//            let index = i-1
+//            packStatsArray[index].scores.removeAll()
+//            packStatsArray[index].scoreDates.removeAll()
+//            packStatsArray[index].numberOfCompletes = 0
+//            packStatsArray[index].bestTime = 0
+//        }
+//        do {
+//            let data = try encoder.encode(self.packStatsArray)
+//            try data.write(to: packStatsStore!)
+//        } catch {
+//            print("Error encoding pack stats array, \(error)")
+//        }
         
-        for i in 1...levelStatsArray.count {
-            let index = i-1
-            levelStatsArray[index].scores.removeAll()
-            levelStatsArray[index].scoreDates.removeAll()
-            levelStatsArray[index].numberOfCompletes = 0
-        }
-        do {
-            let data = try encoder.encode(self.levelStatsArray)
-            try data.write(to: levelStatsStore!)
-        } catch {
-            print("Error encoding level stats array, \(error)")
-        }
-        // Reset game data
+//        for i in 1...levelStatsArray.count {
+//            let index = i-1
+//            levelStatsArray[index].scores.removeAll()
+//            levelStatsArray[index].scoreDates.removeAll()
+//            levelStatsArray[index].numberOfCompletes = 0
+//        }
+//        do {
+//            let data = try encoder.encode(self.levelStatsArray)
+//            try data.write(to: levelStatsStore!)
+//        } catch {
+//            print("Error encoding level stats array, \(error)")
+//        }
+//        // Reset game data
     }
     
     func changeIcon(to iconName: String) {

@@ -40,6 +40,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var appOpenCount: Int?
     var gameInProgress: Bool?
     var resumeGameToLoad: Bool?
+    var iCloudSetting: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -58,13 +59,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
+//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
+//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-    var packStatsArray: [PackStats] = []
-    var levelStatsArray: [LevelStats] = []
+//    var packStatsArray: [PackStats] = []
+//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     @IBOutlet var modeSelectTableView: UITableView!
@@ -78,6 +79,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @IBOutlet var backgroundImageView: UIImageView!
     @IBOutlet var backgroundBlurView: UIView!
     
+    @IBOutlet var tableViewContainer: UIView!
+    
     var group: UIMotionEffectGroup?
     var blurViewLayer: UIVisualEffectView?
     
@@ -89,6 +92,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        CloudKitHandler().isICloudContainerAvailable()
         
         logoImage.image = UIImage(named: "Logo")
         
@@ -128,9 +133,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 
         backgroundImageView.image = UIImage(named:"mainMenuBackground.png")!
         
-        collectionViewLayout()
         defaultSettings()
         refreshView()
+        collectionViewLayout()
         authGCPlayer()
 
         print("llama game save array: ", saveGameSaveArray!)
@@ -296,10 +301,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         
-        if view.frame.size.width <= 414 && iconCollectionView.frame.size.width != view.frame.size.width-100 {
-            iconCollectionView.frame.size.width = view.frame.size.width-100
+        if view.frame.size.width <= 414 {
+            tableViewContainer.frame.size.width = view.frame.size.width
+            iconCollectionView.frame.size.width = tableViewContainer.frame.size.width-100
         }
         // Ensures the collection view is the correct size
+        
+        print("llama llama layout: ", iconCollectionView.frame.size.width, tableViewContainer.frame.size.width, view.frame.size.width)
         
         let spacing = (iconCollectionView.frame.size.width-(50*3))/2
         layout.minimumInteritemSpacing = spacing
@@ -449,6 +457,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["appOpenCount": 0])
         defaults.register(defaults: ["gameInProgress": false])
         defaults.register(defaults: ["resumeGameToLoad": false])
+        defaults.register(defaults: ["iCloudSetting": false])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -561,47 +570,47 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
         // Fill the empty array with 0s on first opening and re-save
         
-        if let packData = try? Data(contentsOf: packStatsStore!) {
-            do {
-                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-            } catch {
-                print("Error decoding high score array, \(error)")
-            }
-        }
-        // Load the pack stats array from the NSCoder data store
+//        if let packData = try? Data(contentsOf: packStatsStore!) {
+//            do {
+//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
+//            } catch {
+//                print("Error decoding high score array, \(error)")
+//            }
+//        }
+//        // Load the pack stats array from the NSCoder data store
         
-        if packStatsArray.count == 0 {
-            let packStatsItem = PackStats()
-            packStatsArray = Array(repeating: packStatsItem, count: 100)
-            do {
-                let data = try encoder.encode(packStatsArray)
-                try data.write(to: packStatsStore!)
-            } catch {
-                print("Error setting up pack stats array, \(error)")
-            }
-        }
-        // Fill the empty array with 0s on first opening and re-save
+//        if packStatsArray.count == 0 {
+//            let packStatsItem = PackStats()
+//            packStatsArray = Array(repeating: packStatsItem, count: 100)
+//            do {
+//                let data = try encoder.encode(packStatsArray)
+//                try data.write(to: packStatsStore!)
+//            } catch {
+//                print("Error setting up pack stats array, \(error)")
+//            }
+//        }
+//        // Fill the empty array with 0s on first opening and re-save
         
-        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-            do {
-                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-            } catch {
-                print("Error decoding level stats array, \(error)")
-            }
-        }
-        // Load the level stats array from the NSCoder data store
-        
-        if levelStatsArray.count == 0 {
-            let levelStatsItem = LevelStats()
-            levelStatsArray = Array(repeating: levelStatsItem, count: 500)
-            do {
-                let data = try encoder.encode(levelStatsArray)
-                try data.write(to: levelStatsStore!)
-            } catch {
-                print("Error setting up level stats array, \(error)")
-            }
-        }
-        // Fill the empty array with blank items on first opening and re-save
+//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
+//            do {
+//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
+//            } catch {
+//                print("Error decoding level stats array, \(error)")
+//            }
+//        }
+//        // Load the level stats array from the NSCoder data store
+//
+//        if levelStatsArray.count == 0 {
+//            let levelStatsItem = LevelStats()
+//            levelStatsArray = Array(repeating: levelStatsItem, count: 500)
+//            do {
+//                let data = try encoder.encode(levelStatsArray)
+//                try data.write(to: levelStatsStore!)
+//            } catch {
+//                print("Error setting up level stats array, \(error)")
+//            }
+//        }
+//        // Fill the empty array with blank items on first opening and re-save
     }
     
     func userSettings() {
@@ -623,6 +632,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         gameInProgress = defaults.bool(forKey: "gameInProgress")
         resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
         // User settings
+        
+        CloudKitHandler().isICloudContainerAvailable()
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
         saveMultiplier = defaults.double(forKey: "saveMultiplier")
@@ -743,8 +754,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Show or hide banner ad depending on setting
     
+    
+    
     func refreshView() {
-        CloudKitHandler().loadRecords()
+//        loadData()
+//        userSettings()
+        CloudKitHandler().loadTotalStats()
+        CloudKitHandler().loadUserDefaults()
         loadData()
         userSettings()
         if blurViewLayer == nil {
@@ -792,6 +808,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
         appOpenCount!+=1
         defaults.set(appOpenCount!, forKey: "appOpenCount")
+        CloudKitHandler().saveUserDefaults()
+        print("llama llama open count: ", appOpenCount!)
         // Present onboarding screen if first time opening app
     }
     // Runs when the splash screen has ended
@@ -800,6 +818,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         print("llama llama menu foreground")
         authGCPlayer()
         refreshView()
+        if musicSetting! {
+            MusicHandler.sharedHelper.resumeMusic()
+        }
     }
     // Runs when the splash screen has ended
     
