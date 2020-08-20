@@ -21,7 +21,7 @@ extension GameScene {
         multiplierLabel.isHidden = true
         // Remove classic mode labels
         
-        scoreLabel.fontSize = fontSize*1.25
+        scoreLabel.fontSize = fontSize*1.5
         scoreLabel.horizontalAlignmentMode = .right
         scoreLabel.position.y = life.position.y-2
         scoreLabel.text = "\(endlessHeight) m"

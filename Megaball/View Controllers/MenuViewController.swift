@@ -59,13 +59,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-//    var packStatsArray: [PackStats] = []
-//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     @IBOutlet var modeSelectTableView: UITableView!
@@ -569,48 +565,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             CloudKitHandler().saveTotalStats()
         }
         // Fill the empty array with 0s on first opening and re-save
-        
-//        if let packData = try? Data(contentsOf: packStatsStore!) {
-//            do {
-//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//            } catch {
-//                print("Error decoding high score array, \(error)")
-//            }
-//        }
-//        // Load the pack stats array from the NSCoder data store
-        
-//        if packStatsArray.count == 0 {
-//            let packStatsItem = PackStats()
-//            packStatsArray = Array(repeating: packStatsItem, count: 100)
-//            do {
-//                let data = try encoder.encode(packStatsArray)
-//                try data.write(to: packStatsStore!)
-//            } catch {
-//                print("Error setting up pack stats array, \(error)")
-//            }
-//        }
-//        // Fill the empty array with 0s on first opening and re-save
-        
-//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//            do {
-//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//            } catch {
-//                print("Error decoding level stats array, \(error)")
-//            }
-//        }
-//        // Load the level stats array from the NSCoder data store
-//
-//        if levelStatsArray.count == 0 {
-//            let levelStatsItem = LevelStats()
-//            levelStatsArray = Array(repeating: levelStatsItem, count: 500)
-//            do {
-//                let data = try encoder.encode(levelStatsArray)
-//                try data.write(to: levelStatsStore!)
-//            } catch {
-//                print("Error setting up level stats array, \(error)")
-//            }
-//        }
-//        // Fill the empty array with blank items on first opening and re-save
     }
     
     func userSettings() {
@@ -653,42 +607,16 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func checkPremium() {
-        totalStatsArray[0].levelUnlockedArray[31] = true
-        totalStatsArray[0].levelUnlockedArray[41] = true
-        totalStatsArray[0].levelUnlockedArray[51] = true
-        totalStatsArray[0].levelUnlockedArray[61] = true
-        totalStatsArray[0].levelUnlockedArray[71] = true
-        totalStatsArray[0].levelUnlockedArray[81] = true
-        totalStatsArray[0].levelUnlockedArray[91] = true
-        totalStatsArray[0].levelUnlockedArray[101] = true
-        // Unlock all pack first levels
+        premiumSetting = true
+        adsSetting = false
+        defaults.set(premiumSetting!, forKey: "premiumSetting")
+        defaults.set(adsSetting!, forKey: "adsSetting")
         
-        totalStatsArray[0].levelPackUnlockedArray[5] = true
-        totalStatsArray[0].levelPackUnlockedArray[6] = true
-        totalStatsArray[0].levelPackUnlockedArray[7] = true
-        totalStatsArray[0].levelPackUnlockedArray[8] = true
-        totalStatsArray[0].levelPackUnlockedArray[9] = true
-        totalStatsArray[0].levelPackUnlockedArray[10] = true
-        totalStatsArray[0].levelPackUnlockedArray[11] = true
-        totalStatsArray[0].levelPackUnlockedArray[12] = true
-        // Unlock all level packs
-        
-        totalStatsArray[0].powerUpUnlockedArray[6] = true
-        totalStatsArray[0].powerUpUnlockedArray[7] = true
-        totalStatsArray[0].powerUpUnlockedArray[10] = true
-        totalStatsArray[0].powerUpUnlockedArray[11] = true
-        totalStatsArray[0].powerUpUnlockedArray[12] = true
-        totalStatsArray[0].powerUpUnlockedArray[13] = true
-        totalStatsArray[0].powerUpUnlockedArray[20] = true
-        totalStatsArray[0].powerUpUnlockedArray[21] = true
-        totalStatsArray[0].powerUpUnlockedArray[22] = true
-        totalStatsArray[0].powerUpUnlockedArray[23] = true
-        totalStatsArray[0].powerUpUnlockedArray[24] = true
-        totalStatsArray[0].powerUpUnlockedArray[25] = true
-        totalStatsArray[0].powerUpUnlockedArray[26] = true
-        totalStatsArray[0].powerUpUnlockedArray[27] = true
-        // Unlock all power-ups
-        
+        totalStatsArray[0].levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray.map { _ in true }
+        totalStatsArray[0].levelUnlockedArray = totalStatsArray[0].levelUnlockedArray.map { _ in true }
+        totalStatsArray[0].powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray.map { _ in true }
+        totalStatsArray[0].themeUnlockedArray = totalStatsArray[0].themeUnlockedArray.map { _ in true }
+        totalStatsArray[0].appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray.map { _ in true }
         totalStatsArray[0].dateSaved = Date()
         do {
             let data = try encoder.encode(self.totalStatsArray)
@@ -696,6 +624,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveUserDefaults()
         CloudKitHandler().saveTotalStats()
         // Save total stats
     }

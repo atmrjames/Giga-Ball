@@ -25,7 +25,7 @@ class IntroPageViewController: UIPageViewController, UIPageViewControllerDataSou
     }
 
     func populateItems() {
-        let imageView = ["IntroView1", "IntroView2", "IntroView3", "IntroView4"]
+        let imageView = ["IntroView1", "IntroView2", "IntroView3", "IntroView4", "IntroView5"]
         
         for t in imageView {
             let c = createCarouselItemController(with: t)

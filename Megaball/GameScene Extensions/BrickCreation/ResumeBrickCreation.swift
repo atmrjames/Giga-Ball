@@ -16,6 +16,8 @@ extension GameScene {
             prepEndlessMode(height: saveGameSaveArray![6])
         }
         
+        powerUpProbAllocation(levelNumber: levelNumber)
+        
         var brickArray: [SKNode] = []
         // Array to store all bricks
         

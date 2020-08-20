@@ -21,12 +21,14 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     var randomPlayerTrack: Int = 0
     // Setup game music
     
+    var buttonClickPlayer: AVAudioPlayer?
+    
     var menuVolumeSet: Float = 0.50
     var gameVolumeSet: Float = 1.00
     
     func playMusic(sender: String? = "") {        
         userSettings()
-        if musicSetting == false {
+        if musicSetting! == false {
             return
         }
         // Check if music setting is on
@@ -46,7 +48,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         // Only play title theme in main menu
         
         do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+            try AVAudioSession.sharedInstance().setCategory(.soloAmbient, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)
             player = try AVAudioPlayer(contentsOf: selectedTrackURL!)
             player!.prepareToPlay()
@@ -62,7 +64,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
                 player!.volume = menuVolumeSet
             }
         } catch let error {
-            print(error.localizedDescription)
+            print("Music track failed: ", error.localizedDescription)
         }
     }
     
@@ -76,11 +78,21 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     }
     
     func pauseMusic() {
-        musicSetting = false
+        userSettings()
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+        } catch let error {
+            print("Failed to set player to ambient: ", error.localizedDescription)
+        }
         player?.pause()
     }
     
     func resumeMusic() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.soloAmbient, mode: .default)
+        } catch let error {
+            print("Failed to set player to ambient: ", error.localizedDescription)
+        }
         player?.play()
     }
     

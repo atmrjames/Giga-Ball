@@ -34,7 +34,7 @@ class InbetweenLevels: GKState {
         }
         
         if previousState is Ad {
-            if scene.endlessMode || scene.gameoverStatus == true {
+            if scene.endlessMode || scene.gameoverStatus {
                 scene.showPauseMenu(sender: "Game Over")
             } else {
                 scene.showPauseMenu(sender: "Complete")
@@ -63,9 +63,6 @@ class InbetweenLevels: GKState {
     
     func resetGameScene() {
         
-//        self.scene.removeAllActions()
-//        // Stop all actions
-        
         let scaleUp = SKAction.scale(by: 1.5, duration: 0.1)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
         let scaleDownPaddle = SKAction.scaleX(to: 0.0, duration: 0.2)
@@ -84,18 +81,23 @@ class InbetweenLevels: GKState {
         // Stop ball
         
         scene.ball.run(ballSequence, completion: {
-            self.scene.ball.isHidden = true
-            self.scene.ball.run(resetGroup)
+//            self.scene.ball.isHidden = true
+            self.scene.ball.run(resetGroup, completion: {
+                self.scene.ball.isHidden = true
+            })
         })
         scene.paddle.run(paddleSequence, completion: {
-            self.scene.paddle.isHidden = true
+//            self.scene.paddle.isHidden = true
             self.scene.paddle.run(resetGroupPaddle, completion: {
+                self.scene.paddle.isHidden = true
                 self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             })
         })
         scene.paddleRetroTexture.run(paddleSequence, completion: {
-            self.scene.paddleRetroTexture.isHidden = true
-            self.scene.paddleRetroTexture.run(resetGroupPaddle)
+//            self.scene.paddleRetroTexture.isHidden = true
+            self.scene.paddleRetroTexture.run(resetGroupPaddle, completion: {
+                self.scene.paddleRetroTexture.isHidden = true
+            })
         })
         // Animate retro paddle and ball out after level is won
         
@@ -115,6 +117,14 @@ class InbetweenLevels: GKState {
         
         scene.powerUpsReset()
         // Reset any power ups
+        
+        if scene.soundsSetting! {
+            if scene.gameoverStatus || scene.endlessMode {
+                self.scene.run(scene.gameOverSound)
+            } else {
+                self.scene.run(scene.levelCompleteSound)
+            }
+        }
         
         let scaleDown2 = SKAction.scale(to: 0.1, duration: 0.2)
         let fadeOut2 = SKAction.fadeOut(withDuration: 0.2)
@@ -156,6 +166,7 @@ class InbetweenLevels: GKState {
         let waitEndScene = SKAction.wait(forDuration: 1.0)
         self.scene.run(waitEndScene, completion: {
             self.scene.removeAllActions()
+            self.scene.ballIsOnPaddle = true
         })
         // Remove any remaining actions after short delay
         
@@ -222,26 +233,12 @@ class InbetweenLevels: GKState {
             if scene.totalScore > scene.totalStatsArray[0].packHighScores[scene.packNumber-2] {
                 scene.totalStatsArray[0].packHighScores[scene.packNumber-2] = scene.totalScore
             }
-//            scene.packStatsArray[scene.packNumber].scores.append(scene.totalScore)
-//            scene.packStatsArray[scene.packNumber].scoreDates.append(Date())
             if scene.gameoverStatus == false {
                 
                 if scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] == 0 || scene.packTimerValue < scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] {
                     scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] = scene.packTimerValue
                 }
-//                scene.packStatsArray[scene.packNumber].numberOfCompletes+=1
-//                if scene.packStatsArray[scene.packNumber].bestTime == 0 || scene.packTimerValue < scene.packStatsArray[scene.packNumber].bestTime {
-//                    scene.packStatsArray[scene.packNumber].bestTime = scene.packTimerValue
-//                }
             }
-//            do {
-//                let data = try scene.encoder.encode(self.scene.packStatsArray)
-//                try data.write(to: scene.packStatsStore!)
-//            } catch {
-//                print("Error encoding pack stats array, \(error)")
-//            }
-//            CloudKitHandler().saveRecords()
-            // Save pack stats
         }
     
         scene.totalStatsArray[0].pack1LevelHighScores = scene.packLevelHighScoresArray![0]
@@ -280,21 +277,6 @@ class InbetweenLevels: GKState {
         }
         CloudKitHandler().saveTotalStats()
         // Save total stats
-//        do {
-//            let data = try scene.encoder.encode(self.scene.levelStatsArray)
-//            try data.write(to: scene.levelStatsStore!)
-//        } catch {
-//            print("Error encoding level stats array, \(error)")
-//        }
-//        // Save level stats
-//        do {
-//            let data = try scene.encoder.encode(self.scene.packStatsArray)
-//            try data.write(to: scene.packStatsStore!)
-//        } catch {
-//            print("Error encoding pack stats array, \(error)")
-//        }
-//        // Save pack stats
-//        CloudKitHandler().saveRecords()
     }
     
     func showAd() {
@@ -626,13 +608,9 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 10 && scene.totalStatsArray[0].achievementsUnlockedArray[6] == false {
                 scene.newItemsBool = true
                 
-                if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-1] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber] > 0  {
+                if scene.totalStatsArray[0].achievementsUnlockedArray[8] && scene.totalStatsArray[0].achievementsUnlockedArray[7] && scene.totalStatsArray[0].achievementsUnlockedArray[6] {
                     scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 }
-                
-//                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+2].numberOfCompletes > 0 {
-//                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
-//                }
                 // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[1] = true
                 scene.totalStatsArray[0].themeUnlockedArray[1] = true
@@ -652,13 +630,9 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 20 && scene.totalStatsArray[0].achievementsUnlockedArray[7] == false {
                 scene.newItemsBool = true
                 
-                if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-3] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-1] > 0  {
+                if scene.totalStatsArray[0].achievementsUnlockedArray[8] && scene.totalStatsArray[0].achievementsUnlockedArray[7] && scene.totalStatsArray[0].achievementsUnlockedArray[6] {
                     scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 }
-                
-//                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber+1].numberOfCompletes > 0 {
-//                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
-//                }
                 // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[2] = true
                 scene.totalStatsArray[0].themeUnlockedArray[2] = true
@@ -678,13 +652,9 @@ class InbetweenLevels: GKState {
             if scene.levelNumber == 30 && scene.totalStatsArray[0].achievementsUnlockedArray[8] == false {
                 scene.newItemsBool = true
                 
-                if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-3] > 0 && scene.totalStatsArray[0].packHighScores[scene.packNumber-4] > 0  {
+                if scene.totalStatsArray[0].achievementsUnlockedArray[8] && scene.totalStatsArray[0].achievementsUnlockedArray[7] && scene.totalStatsArray[0].achievementsUnlockedArray[6] {
                     scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
                 }
-                
-//                if scene.packStatsArray[scene.packNumber].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-1].numberOfCompletes > 0 && scene.packStatsArray[scene.packNumber-2].numberOfCompletes > 0 {
-//                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
-//                }
                 // Only unlock pack 4[5] if first 3 packs have been completed
                 scene.totalStatsArray[0].appIconUnlockedArray[3] = true
                 scene.totalStatsArray[0].themeUnlockedArray[3] = true
@@ -904,7 +874,7 @@ class InbetweenLevels: GKState {
             }
             // Pack speed achievement
             
-            if scene.totalStatsArray[0].packHighScores[0] > 0 && scene.totalStatsArray[0].packHighScores[1] > 0 && scene.totalStatsArray[0].packHighScores[2] > 0  {
+            if scene.totalStatsArray[0].packBestTimes[0] > 0 && scene.totalStatsArray[0].packBestTimes[1] > 0 && scene.totalStatsArray[0].packBestTimes[2] > 0  {
                 scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
             }
                         

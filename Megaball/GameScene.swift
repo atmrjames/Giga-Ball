@@ -563,8 +563,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Label metrics
 	
 	var totalStatsArray: [TotalStats] = []
-//	var packStatsArray: [PackStats] = []
-//	var levelStatsArray: [LevelStats] = []
 	// Stats trackers
 	
 	var finalBrickRowHeight: CGFloat = 0
@@ -611,16 +609,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //MARK: - Sound and Haptic Definition
 	
 	let ballLostSound = SKAction.playSoundFileNamed("ballLostSound.mp3", waitForCompletion: true)
-	let ballPaddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit.m4a", waitForCompletion: true)
-	let ballReleaseSound = SKAction.playSoundFileNamed("ballRelease.m4a", waitForCompletion: true)
-	let brickHitNormalSound = SKAction.playSoundFileNamed("brickHit.m4a", waitForCompletion: true)
-	let endlessRowDownSound = SKAction.playSoundFileNamed("endlessRowDown.m4a", waitForCompletion: true)
+	let ballPaddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit.mp3", waitForCompletion: true)
+	let ballReleaseSound = SKAction.playSoundFileNamed("ballRelease.mp3", waitForCompletion: true)
+	let brickHitNormalSound = SKAction.playSoundFileNamed("brickHit.mp3", waitForCompletion: true)
+	let endlessRowDownSound = SKAction.playSoundFileNamed("endlessRowDown.mp3", waitForCompletion: true)
 	let gameOverSound = SKAction.playSoundFileNamed("gameOverSound.mp3", waitForCompletion: true)
-	let laserFiredSound = SKAction.playSoundFileNamed("laserFired.m4a", waitForCompletion: true)
-	let levelCompleteSound = SKAction.playSoundFileNamed("levelComplete.m4a", waitForCompletion: true)
-	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound.m4a", waitForCompletion: true)
-	let stickyPaddleHitSound = SKAction.playSoundFileNamed("stickyPaddleHit.m4a", waitForCompletion: true)
-	let uiClickSound = SKAction.playSoundFileNamed("brickHit.m4a", waitForCompletion: true)
+	let laserFiredSound = SKAction.playSoundFileNamed("laserFired.mp3", waitForCompletion: true)
+	let levelCompleteSound = SKAction.playSoundFileNamed("levelComplete.mp3", waitForCompletion: true)
+	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound.mp3", waitForCompletion: true)
+	let stickyPaddleHitSound = SKAction.playSoundFileNamed("stickyPaddleHit.mp3", waitForCompletion: true)
 	// Sounds defined - pre-loaded to prevent game lag
     
     var lightHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -656,8 +653,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// User settings  setup
 	
 	let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-	let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-	let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
 	let encoder = PropertyListEncoder()
 	let decoder = PropertyListDecoder()
 	// NSCoder data store & encoder setup
@@ -831,13 +826,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
 		fontSize = 16
-		
 		screenBlockTopHeight = layoutUnit*3
 		
 		if screenSize == "X" {
 			screenBlockTopHeight = layoutUnit*7.4
 		} else if screenSize == "Pad" {
 			pauseButtonSize = layoutUnit*1.5
+			fontSize = fontSize*1.5
 		}
 		
 		labelSpacing = fontSize/1.5
@@ -883,9 +878,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		sideScreenBlockLeft.size.height = frame.size.height
 		sideScreenBlockRight.size.height = frame.size.height
 		sideScreenBlockLeft.position.y = -frame.size.height/2+sideScreenBlockLeft.size.height/2
-		sideScreenBlockLeft.zPosition = 9
 		sideScreenBlockRight.position.y = -frame.size.height/2+sideScreenBlockRight.size.height/2
-		sideScreenBlockRight.zPosition = 9
 		
 		topGap = brickHeight*2
 		// Object size definition
@@ -909,7 +902,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ball.position.x = 0
 		ballStartingPositionY = paddlePositionY + paddleHeight/2 + ball.size.height/2 + 1
 		ball.position.y = ballStartingPositionY
-		directionMarker.zPosition = 10
+		directionMarker.zPosition = 9
 		// Object positioning definition
 		
 		bottomScreenBlock.size.height = frame.size.height/8
@@ -932,7 +925,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.name = BallCategoryName
         ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
         ballPhysicsBodySet()
-        ball.zPosition = 2
+        ball.zPosition = 3
 		ball.physicsBody!.usesPreciseCollisionDetection = true
 		ball.physicsBody!.linearDamping = ballLinearDampening
         ball.physicsBody!.angularDamping = 0
@@ -967,7 +960,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleSticky.zPosition = 4
 		paddleRetroTexture.zPosition = 4
 		paddleRetroLaserTexture.zPosition = 5
-		paddleRetroStickyTexture.zPosition = 1
+		paddleRetroStickyTexture.zPosition = 2
 		paddle.physicsBody!.usesPreciseCollisionDetection = true
 		paddle.physicsBody!.restitution = 1
 		// Define paddle properties
@@ -988,7 +981,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         backstop.physicsBody!.categoryBitMask = 0
 		backstop.physicsBody!.collisionBitMask = 0
 		backstop.physicsBody!.contactTestBitMask = 0
-        backstop.zPosition = 5
+        backstop.zPosition = 1
 		backstop.physicsBody!.usesPreciseCollisionDetection = true
 		backstop.physicsBody!.restitution = 1
 		backstop.isHidden = true
@@ -1010,7 +1003,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			screenBlockArray[index].physicsBody!.friction = 0.0
 			screenBlockArray[index].physicsBody!.affectedByGravity = false
 			screenBlockArray[index].physicsBody!.isDynamic = false
-			screenBlockArray[index].zPosition = 7
+			screenBlockArray[index].zPosition = 1
 			screenBlockArray[index].physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
 			screenBlockArray[index].physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 			screenBlockArray[index].physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
@@ -1065,7 +1058,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButton.zPosition = 10
         pauseButton.isUserInteractionEnabled = false
 		
-		powerUpTray.zPosition = 8
+		powerUpTray.zPosition = 2
 		powerUpTray.size.width = gameWidth
 		powerUpTray.size.height = iconSize*2
 		powerUpTray.position.x = 0
@@ -1079,7 +1072,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight - labelSpacing/2 - pauseButton.size.height/2
 		}
 		
-		scoreBacker.zPosition = 8
+		scoreBacker.zPosition = 9
 		scoreBacker.size.width = gameWidth
 		scoreBacker.size.height = pauseButtonSize*2
 		scoreBacker.position.x = 0
@@ -1120,7 +1113,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		timerLabel.isHidden = true
 		// Label size & position definition
 		
-		buildLabel.text = "Beta Build 0.3.4(72) - TBC - 00/00/2020"
+		buildLabel.text = "Build Number 0.0.0(0) - TBC - 00/00/0000"
 		buildLabel.isHidden = true
 	
 		pauseButtonTouch.size.width = pauseButtonSize*2.75
@@ -1154,20 +1147,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			iconArray[index].texture = iconLockedTexture
 			iconArray[index].position.x = -gameWidth/2 + iconSize + (iconSize+iconSpacing)*CGFloat(index)
 			iconArray[index].position.y = powerUpTray.position.y + labelSpacing/2
-			iconArray[index].zPosition = 10
+			iconArray[index].zPosition = 3
 			iconArray[index].name = PowerIconCategoryName
 			iconEmptyTimerArray[index].size.width = iconSize
 			iconEmptyTimerArray[index].size.height = iconSize/6.67
 			iconEmptyTimerArray[index].texture = powerUpIconBarEmpty
 			iconEmptyTimerArray[index].position.x = iconArray[index].position.x - iconEmptyTimerArray[index].size.width/2
 			iconEmptyTimerArray[index].position.y = iconArray[index].position.y - iconSize/2 - iconEmptyTimerArray[index].size.height/2 - labelSpacing/2
-			iconEmptyTimerArray[index].zPosition = 9
+			iconEmptyTimerArray[index].zPosition = 3
 			iconTimerArray[index].size.width = iconEmptyTimerArray[index].size.width
 			iconTimerArray[index].size.height = iconEmptyTimerArray[index].size.height
 			iconTimerArray[index].texture = powerUpIconBarFull
 			iconTimerArray[index].position.x = iconEmptyTimerArray[index].position.x
 			iconTimerArray[index].position.y = iconEmptyTimerArray[index].position.y
-			iconTimerArray[index].zPosition = 10
+			iconTimerArray[index].zPosition = 4
 			iconTimerArray[index].isHidden = true
 			iconTimerArray[index].centerRect = CGRect(x: 2.0/25.0, y: 0.0/2.5, width: 21.0/25.0, height: 2.5/2.5)
 			iconTimerArray[index].scale(to:CGSize(width: iconEmptyTimerArray[index].size.width, height: iconEmptyTimerArray[index].size.height))
@@ -1262,24 +1255,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		]
 		
 		// Load the total stats array from the NSCoder data store
-		
-//		if let packData = try? Data(contentsOf: packStatsStore!) {
-//			do {
-//				packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//			} catch {
-//				print("Error decoding pack stats array, \(error)")
-//			}
-//		}
-//		// Load the pack stats array from the NSCoder data store
-//
-//		if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//			do {
-//				levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//			} catch {
-//				print("Error decoding level stats array, \(error)")
-//			}
-//		}
-//		// Load the level stats array from the NSCoder data store
 	}
 	
 	func startLevelTimer() {
@@ -1443,6 +1418,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Define the current position of the ball relative to the paddle
         
         if gameState.currentState is Playing || gameState.currentState is Paused {
+			userSettings()
             let touch = touches.first
             let positionInScene = touch!.location(in: self)
             let touchedNode = self.atPoint(positionInScene)
@@ -1450,9 +1426,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let name = touchedNode.name {
                 if name == "pauseButton" || name == "pauseButtonTouch" && gameState.currentState is Playing {
 					if endlessMoveInProgress == false {
-						if soundsSetting! {
-							self.run(uiClickSound)
-						}
 						clearSavedGame()
 						// Clear current saved game before re-saving
 						gameState.enter(Paused.self)
@@ -1557,6 +1530,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if hapticsSetting! {
 			lightHaptic.impactOccurred()
+		}
+		if musicSetting! {
+			MusicHandler.sharedHelper.gameVolume()
 		}
     }
     
@@ -1755,6 +1731,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		// Ball lost sound
+		if musicSetting! {
+			MusicHandler.sharedHelper.menuVolume()
+		}
 		ballLostBool = true
 		saveCurrentGame()
         let scaleDown = SKAction.scale(to: 0, duration: 0.1)
@@ -2471,6 +2450,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleMoved = true
 				ball.position.y = ballStartingPositionY
 				invisibleBrickFlash()
+				
+				if musicSetting! {
+					MusicHandler.sharedHelper.menuVolume()
+				}
 				return
 				// Don't try to adjust the ball's angle if it is on the paddle
 			
@@ -4527,20 +4510,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
 		CloudKitHandler().saveTotalStats()
         // Save total stats
-//		do {
-//			let data = try encoder.encode(self.packStatsArray)
-//			try data.write(to: packStatsStore!)
-//		} catch {
-//			print("Error encoding pack stats array, \(error)")
-//		}
-//		// Save pack stats
-//		do {
-//            let data = try encoder.encode(self.levelStatsArray)
-//            try data.write(to: levelStatsStore!)
-//        } catch {
-//            print("Error encoding level stats array, \(error)")
-//        }
-//        // Save level stats
 	}
 	
 	func saveCurrentGame() {

@@ -22,6 +22,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
+    var premiumSetting: Bool?
     var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
@@ -31,13 +32,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-//    var packStatsArray: [PackStats] = []
-//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -100,24 +97,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         showAnimate()
     }
     
-//    func collectionViewLayout() {
-//        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-//
-//        if view.frame.size.width <= 414 {
-//            tableViewContainer.frame.size.width = view.frame.size.width
-//            iconCollectionView.frame.size.width = tableViewContainer.frame.size.width-100
-//        }
-//        // Ensures the collection view is the correct size
-//
-//        print("llama llama layout: ", iconCollectionView.frame.size.width, tableViewContainer.frame.size.width, view.frame.size.width)
-//
-//        let spacing = (iconCollectionView.frame.size.width-(50*3))/2
-//        layout.minimumInteritemSpacing = spacing
-//        layout.minimumLineSpacing = spacing
-//
-//        iconCollectionView!.collectionViewLayout = layout
-//    }
-    
     func collectionViewLayout() {
         print("llama llama layout 1: ", containterView.frame.size.width, view.frame.size.width, buttonCollectionView.frame.size.width)
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
@@ -160,7 +139,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         switch indexPath.row {
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonHome.png")
-            cell.widthConstraint.constant = 50
+            cell.widthConstraint.constant = 40
         case 1:
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonPlay.png")
@@ -174,7 +153,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonRestart.png")
             }
-            cell.widthConstraint.constant = 50
+            cell.widthConstraint.constant = 40
         default:
             print("Error: Out of range")
             break
@@ -322,6 +301,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func userSettings() {
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
@@ -341,18 +321,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func updateLabels() {
+        newItemsLabel.isHidden = true
         if sender == "Pause" {
             titleLabel.text = "P A U S E D"
-            newItemsLabel.isHidden = true
         } else if sender == "Game Over" {
             titleLabel.text = "G A M E   O V E R"
-            newItemsLabel.isHidden = true
         } else if sender == "Complete" {
             titleLabel.text = "C O M P L E T E"
-            if newItemsBool {
+            if newItemsBool && premiumSetting! == false {
                 newItemsLabel.isHidden = false
-            } else {
-                newItemsLabel.isHidden = true
             }
         }
     
@@ -423,23 +400,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             scoreLabelTitle.text = "Score"
             scoreLabel.text = "\(score)"
             highscoreLabelTitle.text = "Highscore"
-            
-//            var currentHighscore = score
-            
-//            if numberOfLevels == 1 {
-//
-////                if packLevelHighScoresArray![packNumber-2][levelNumber-startLevelNumber] > 0 {
-////                    currentHighscore = packLevelHighScoresArray![packNumber-2][levelNumber-startLevelNumber]
-////                }
-////                if levelStatsArray[levelNumber].scores.count > 0 {
-////                    currentHighscore = levelStatsArray[levelNumber].scores.max()!
-////                }
-//            } else {
-//                if totalStatsArray[0].packHighScores[packNumber-2] > 0 {
-////                if packStatsArray[packNumber].scores.count > 0 {
-//                    currentHighscore = totalStatsArray[0].packHighScores[packNumber-2]
-//                }
-//            }
             // Get current highscore from level or pack
             
             highscoreLabel.text = String(previousHighscore)
@@ -447,31 +407,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 scoreLabelTitle.text = "New Highscore"
                 highscoreLabelTitle.text = "Previous Highscore"
             }
-            
-//            if sender == "Pause" {
-//                if score > previousHighscore {
-//                    scoreLabelTitle.text = "New Highscore"
-//                    highscoreLabelTitle.text = "Previous Highscore"
-//                }
-//            } else {
-//
-//                if score == previousHighscore {
-//                // If the current score is the top score
-//                    scoreLabelTitle.text = "New Highscore"
-//                    highscoreLabelTitle.text = "Previous Highscore"
-////                    var previousHighscore = previousHighscore
-////                    if numberOfLevels == 1 {
-//////                        var scoresArray = levelStatsArray[levelNumber].scores
-//////                        scoresArray.sort(by: >)
-////                        previousHighscore = packLevelHighScoresArray![packNumber-2][levelNumber-startLevelNumber]
-////                    } else {
-//////                        var scoresArray = packStatsArray[packNumber].scores
-//////                        scoresArray.sort(by: >)
-////                        previousHighscore = previousHighscore
-////                    }
-//                    highscoreLabel.text = String(previousHighscore)
-//                }
-//            }
         }
         
         if sender == "Complete" && !endlessMode && numberOfLevels != 1 {
@@ -576,26 +511,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         packLevelHighScoresArray = [
             totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
         ]
-        
-        // Load the total stats array from the NSCoder data store
-        
-//        if let packData = try? Data(contentsOf: packStatsStore!) {
-//            do {
-//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//            } catch {
-//                print("Error decoding pack stats array, \(error)")
-//            }
-//        }
-//        // Load the pack stats array from the NSCoder data store
-//
-//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//            do {
-//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//            } catch {
-//                print("Error decoding level stats array, \(error)")
-//            }
-//        }
-//        // Load the level stats array from the NSCoder data store
     }
     
     @objc func returnPauseNotificationKeyReceived(_ notification: Notification) {

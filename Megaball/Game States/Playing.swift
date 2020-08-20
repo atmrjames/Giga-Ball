@@ -27,7 +27,11 @@ class Playing: GKState {
         // Set user settings
         
         if scene.musicSetting! {
-            MusicHandler.sharedHelper.gameVolume()
+            if scene.ballIsOnPaddle == false {
+                MusicHandler.sharedHelper.gameVolume()
+            } else {
+                MusicHandler.sharedHelper.menuVolume()
+            }
         }
         
         if previousState is InbetweenLevels || previousState is Ad {
@@ -102,7 +106,7 @@ class Playing: GKState {
         scene.levelScore = 0
         // Reset counters & scores
         
-        scene.ball.position.y = scene.ballStartingPositionY
+//        scene.ball.position.y = scene.ballStartingPositionY
 
         if scene.resumeGameToLoad! {
             print("llama resume game log: ", scene.saveGameSaveArray!, scene.saveMultiplier!, scene.saveBrickTextureArray!, scene.saveBrickColourArray!, scene.saveBrickXPositionArray!, scene.saveBrickYPositionArray!)

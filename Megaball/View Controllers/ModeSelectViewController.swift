@@ -72,7 +72,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         
         if indexPath.row == 0 {
             cell.iconImage.image = UIImage(named:"iconPlayLevel")
-            cell.settingDescription.text = "Play \(LevelPackSetup().levelNameArray[selectedLevel!]) level only"
+            cell.settingDescription.text = "Play single level only"
         } else {
             switch levelPack!-2 {
                 case 0:

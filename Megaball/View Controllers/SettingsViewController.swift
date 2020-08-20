@@ -47,13 +47,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-//    var packStatsArray: [PackStats] = []
-//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     var screenSize: device?
@@ -851,24 +847,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
         }
         // Load the total stats array from the NSCoder data store
-        
-//        if let packData = try? Data(contentsOf: packStatsStore!) {
-//            do {
-//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//            } catch {
-//                print("Error decoding pack stats array, \(error)")
-//            }
-//        }
-//        // Load the pack stats array from the NSCoder data store
-//
-//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//            do {
-//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//            } catch {
-//                print("Error decoding level stats array, \(error)")
-//            }
-//        }
-//        // Load the level stats array from the NSCoder data store
     }
     
     func ipadCompatibility() {
@@ -959,34 +937,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             print("Error encoding total stats, \(error)")
         }
         CloudKitHandler().saveTotalStats()
-        
-//        for i in 1...packStatsArray.count {
-//            let index = i-1
-//            packStatsArray[index].scores.removeAll()
-//            packStatsArray[index].scoreDates.removeAll()
-//            packStatsArray[index].numberOfCompletes = 0
-//            packStatsArray[index].bestTime = 0
-//        }
-//        do {
-//            let data = try encoder.encode(self.packStatsArray)
-//            try data.write(to: packStatsStore!)
-//        } catch {
-//            print("Error encoding pack stats array, \(error)")
-//        }
-        
-//        for i in 1...levelStatsArray.count {
-//            let index = i-1
-//            levelStatsArray[index].scores.removeAll()
-//            levelStatsArray[index].scoreDates.removeAll()
-//            levelStatsArray[index].numberOfCompletes = 0
-//        }
-//        do {
-//            let data = try encoder.encode(self.levelStatsArray)
-//            try data.write(to: levelStatsStore!)
-//        } catch {
-//            print("Error encoding level stats array, \(error)")
-//        }
-//        // Reset game data
     }
     
     func changeIcon(to iconName: String) {

@@ -19,11 +19,6 @@ class PreGame: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        if scene.musicSetting! {
-            MusicHandler.sharedHelper.stopMusic()
-            MusicHandler.sharedHelper.playMusic(sender: "PreGame")
-        }
-        
         print("llama llama entered pre game")
                         
         self.resetGame()
@@ -31,6 +26,10 @@ class PreGame: GKState {
         let wait = SKAction.wait(forDuration: 1.0)
         // Add slight delay when moving in from main menu
         scene.self.run(wait, completion: {
+            if self.scene.musicSetting! {
+                MusicHandler.sharedHelper.stopMusic()
+                MusicHandler.sharedHelper.playMusic(sender: "PreGame")
+            }
             self.scene.gameState.enter(Playing.self)
         })
         

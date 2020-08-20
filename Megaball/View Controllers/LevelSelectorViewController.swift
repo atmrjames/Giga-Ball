@@ -24,13 +24,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-//    var packStatsArray: [PackStats] = []
-//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let formatter = DateFormatter()
@@ -164,9 +160,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             return cell
         }
-                
-//        numberOfAttempts = packStatsArray[packNumber!].scores.count
-//        let scoreArraySum = packStatsArray[packNumber!].scores.reduce(0, +)
         
         statsTableView.rowHeight = 35.0
         levelsTableView.rowHeight = 150.0
@@ -596,24 +589,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             }
         }
         // Load the total stats array from the NSCoder data store
-        
-//        if let packData = try? Data(contentsOf: packStatsStore!) {
-//            do {
-//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//            } catch {
-//                print("Error decoding high score array, \(error)")
-//            }
-//        }
-//        // Load the pack stats array from the NSCoder data store
-//
-//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//            do {
-//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//            } catch {
-//                print("Error decoding level stats array, \(error)")
-//            }
-//        }
-//        // Load the level stats array from the NSCoder data store
     }
     
     func moveToLevelStatsSetup(sender: Int) {
@@ -624,7 +599,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func updateLabels() {
         titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
-//        numberOfAttempts = packStatsArray[packNumber!].scores.count
         var numberOfUnlockedLevels = 0
         let packFirstLevel = LevelPackSetup().startLevelNumber[packNumber!]
         var levelIndex = packFirstLevel

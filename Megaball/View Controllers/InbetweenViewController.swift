@@ -86,6 +86,12 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         }
         removeAnimate()
     }
+    @IBAction func tapBackgroundGestureAction(_ sender: Any) {
+        if hapticsSetting! {
+            interfaceHaptic.impactOccurred()
+        }
+        removeAnimate()
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()

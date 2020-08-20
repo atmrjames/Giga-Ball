@@ -20,13 +20,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
-//    let packStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("packStatsStore.plist")
-//    let levelStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("levelStatsStore.plist")
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-//    var packStatsArray: [PackStats] = []
-//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let formatter = DateFormatter()
@@ -241,24 +237,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             }
         }
         // Load the total stats array from the NSCoder data store
-        
-//        if let packData = try? Data(contentsOf: packStatsStore!) {
-//            do {
-//                packStatsArray = try decoder.decode([PackStats].self, from: packData)
-//            } catch {
-//                print("Error decoding high score array, \(error)")
-//            }
-//        }
-//        // Load the pack stats array from the NSCoder data store
-//
-//        if let levelData = try? Data(contentsOf: levelStatsStore!) {
-//            do {
-//                levelStatsArray = try decoder.decode([LevelStats].self, from: levelData)
-//            } catch {
-//                print("Error decoding level stats array, \(error)")
-//            }
-//        }
-//        // Load the level stats array from the NSCoder data store
     }
 
     func addParallax() {
