@@ -95,8 +95,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func premiumTableViewHideShow() {
-        premiumTableView.isHidden = true
         premiumTableExpanded.isActive = false
+        premiumTableView.isHidden = true
         premiumTableCollapsed.isActive = true
         
         var allPUsUnlockedBool = false
@@ -115,18 +115,20 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if premiumSetting! == false && senderID! <= 3 {
             if senderID == 0 && allIconsUnlockedBool == false {
                 premiumTableView.isHidden = false
-                premiumTableExpanded.isActive = true
                 premiumTableCollapsed.isActive = false
+                premiumTableExpanded.isActive = true
+                
             }
             if senderID == 1 && themeUnlockedArray == false {
                 premiumTableView.isHidden = false
-                premiumTableExpanded.isActive = true
                 premiumTableCollapsed.isActive = false
+                premiumTableExpanded.isActive = true
+                
             }
             if senderID == 2 && allPUsUnlockedBool == false {
                 premiumTableView.isHidden = false
-                premiumTableExpanded.isActive = true
                 premiumTableCollapsed.isActive = false
+                premiumTableExpanded.isActive = true
             }
         }
     }
@@ -218,9 +220,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.blurView.isHidden = true
             cell.lockedImageView.isHidden = true
             
-            cell.descriptionAndStateSharedWidthConstraint.isActive = true
             cell.decriptionFullWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = false
+            cell.descriptionAndStateSharedWidthConstraint.isActive = true
             cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             cell.settingDescription.font = cell.settingDescription.font.withSize(18)
             
@@ -243,12 +245,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 }
                 if totalStatsArray[0].appIconUnlockedArray[indexPath.row] == false {
                     cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                    cell.decriptionFullWidthConstraint.isActive = true
                     cell.descriptionTickWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
+
                     cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                     cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                     
-                    if totalStatsArray[0].appIconUnlockedArray[indexPath.row-1] {
+                    if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+1] {
                         cell.settingDescription.text = LevelPackSetup().unlockedDescriptionArray[indexPath.row]
                     } else {
                         cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
@@ -286,12 +289,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 
                 if totalStatsArray[0].themeUnlockedArray[indexPath.row] == false {
                     cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                    cell.decriptionFullWidthConstraint.isActive = true
                     cell.descriptionTickWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
                     cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                     cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                     
-                    if totalStatsArray[0].themeUnlockedArray[indexPath.row-1] {
+                    if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+1] {
                         cell.settingDescription.text = LevelPackSetup().unlockedDescriptionArray[indexPath.row]
                     } else {
                         cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
@@ -325,28 +328,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 if totalStatsArray[0].powerupsCollected.count < powerUpIndexCorrection-1 {
                     totalStatsArray[0].powerupsCollected.append(0)
                 }
-
-//                if totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection] > 0 {
-//                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
-//                    cell.decriptionFullWidthConstraint.isActive = false
-//                    cell.descriptionTickWidthConstraint.isActive = false
-//
-//                    let powerUpCollectionRate: Double = Double(totalStatsArray[0].powerupsCollected[powerUpIndexCorrection]) / Double(totalStatsArray[0].powerupsGenerated[powerUpIndexCorrection])
-//                    cell.settingState.text = String(format:"%.0f", (powerUpCollectionRate * 100)) + "%"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.6039215686, green: 0.6039215686, blue: 0.6039215686, alpha: 1)
-//                } else {
-//                    cell.descriptionAndStateSharedWidthConstraint.isActive = false
-//                    cell.decriptionFullWidthConstraint.isActive = true
-//                    cell.descriptionTickWidthConstraint.isActive = false
-//
-//                    cell.settingState.text = ""
-//                }
-//                // Shows collection percentage stat
                 
                 if totalStatsArray[0].powerUpUnlockedArray[powerUpIndexCorrection] == false {
                     cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                    cell.decriptionFullWidthConstraint.isActive = true
                     cell.descriptionTickWidthConstraint.isActive = false
+                    cell.decriptionFullWidthConstraint.isActive = true
                     cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                     cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                     
@@ -371,8 +357,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if senderID == 3 {
             // Achievements
                 cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                cell.decriptionFullWidthConstraint.isActive = true
                 cell.descriptionTickWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = true
                 
                 cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.1483144264)
                 cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
@@ -395,10 +381,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.iconImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
                 }
                 if totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row] != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
-                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
                     cell.decriptionFullWidthConstraint.isActive = false
                     cell.descriptionTickWidthConstraint.isActive = false
-                    
+                    cell.descriptionAndStateSharedWidthConstraint.isActive = true
+
                     cell.settingState.text = totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row]
                 }
                 // Show percentage complete if achievement has percentage complete and isn't complete
@@ -407,9 +393,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             UIView.animate(withDuration: 0.2) {
                 cell.cellView2.transform = .identity
                 cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-    //            if cell.tickImage.isHidden == false {
-    //                cell.cellView2.backgroundColor = #colorLiteral(red: 0.7702723742, green: 1, blue: 0, alpha: 1)
-    //            }
             }
             return cell
         }
@@ -538,10 +521,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Change the icon to an image with specific name
             if let error = error {
             print("App icon failed to change due to \(error.localizedDescription)")
-            } else {
-            print("App icon changed successfully")
             }
-            // Print success or error
         })
     }
     
@@ -650,7 +630,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -726,7 +705,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - items detail view")
         userSettings()
         loadData()
         premiumTableViewHideShow()

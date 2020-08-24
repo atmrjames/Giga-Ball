@@ -17,6 +17,7 @@ class WarningViewController: UIViewController {
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
+    var firstPause: Bool?
     // User settings
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -30,6 +31,9 @@ class WarningViewController: UIViewController {
     @IBOutlet var warningView: UIView!
     @IBOutlet var warningTitleLabel: UILabel!
     @IBOutlet var warningTextLabel: UILabel!
+    @IBOutlet var centerButton: UIButton!
+    @IBOutlet var rightButton: UIButton!
+    @IBOutlet var leftButton: UIButton!
     
     @IBAction func cancelButton(_ sender: Any) {
         if hapticsSetting! {
@@ -53,6 +57,18 @@ class WarningViewController: UIViewController {
         if senderID == "pauseMenu" {
             MenuViewController().clearSavedGame()
             moveToMainMenu()
+        }
+    }
+    @IBAction func centerButton(_ sender: Any) {
+        if senderID == "firstPause" {
+            firstPause = false
+            defaults.set(firstPause!, forKey: "firstPause")
+            CloudKitHandler().saveUserDefaults()
+            if hapticsSetting! {
+                interfaceHaptic.impactOccurred()
+            }
+            removeAnimate()
+            NotificationCenter.default.post(name: .returnNotificiation, object: nil)
         }
     }
     
@@ -92,7 +108,6 @@ class WarningViewController: UIViewController {
     func addParallaxToView() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -120,21 +135,32 @@ class WarningViewController: UIViewController {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        firstPause = defaults.bool(forKey: "firstPause")
         // Load user settings
     }
     
     func updateLabels() {
+        centerButton.isHidden = true
+        leftButton.isHidden = false
+        rightButton.isHidden = false
         if senderID == "killBall" {
             warningTitleLabel.text = "R E S E T   B A L L"
-            warningTextLabel.text = "Only reset the ball if it becomes stuck. \nYou will lose a life if you have greater than 0 lives remaining."
+            warningTextLabel.text = "Only reset if the ball becomes stuck."
         }
         if senderID == "resetData" {
             warningTitleLabel.text = "R E S E T   D A T A"
-            warningTextLabel.text = "Are you sure you want to reset the game data? You will irreversibly lose all game progress, statistics and settings. \nIn-app purchases will remain."
+            warningTextLabel.text = "Are you sure you want to reset the game data? You will irreversibly lose all game progress, statistics and settings.\nIn-app purchases will remain."
         }
         if senderID == "pauseMenu" {
             warningTitleLabel.text = "M A I N   M E N U"
-            warningTextLabel.text = "Are you sure you want to return to the main menu? \nAny progress will be lost."
+            warningTextLabel.text = "Are you sure?\nCurrent progress will be lost."
+        }
+        if senderID == "firstPause" {
+            centerButton.isHidden = false
+            leftButton.isHidden = true
+            rightButton.isHidden = true
+            warningTitleLabel.text = "S W I P E   U P"
+            warningTextLabel.text = "Swipe up anywhere to pause.\nDisable in Settings."
         }
         
     }

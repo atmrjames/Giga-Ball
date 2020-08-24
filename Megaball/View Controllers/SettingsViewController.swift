@@ -36,6 +36,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var statsCollapseSetting: Bool?
     var swipeUpPause: Bool?
     var appOpenCount: Int?
+    var firstPause: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -282,9 +283,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 5:
             // Music
-                cell.settingDescription.text = "Music"
+                cell.settingDescription.text = "Sound"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconMusic.png")!
+                cell.iconImage.image = UIImage(named:"iconSound.png")!
                 if musicSetting! {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
@@ -311,7 +312,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 7:
             // Parallax
-                cell.settingDescription.text = "Parallax"
+                cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconParallax.png")!
                 if parallaxSetting! {
@@ -323,7 +324,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 8:
             // Paddle sensitivity
-                cell.settingDescription.text = "Paddle Sensitivity"
+                cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconPaddleSensitivity.png")!
                 if paddleSensitivitySetting == 0 {
@@ -358,17 +359,17 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
                     cell.settingDescription.text = ""
-                    cell.centreLabel.text = "Reset All Game Data"
+                    cell.centreLabel.text = "Reset All Game Data (developer)"
                     cell.settingState.text = ""
                     cell.iconImage.isHidden = true
-                    cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
                 } else {
                 // Kill ball
                     cell.settingDescription.text = ""
                     cell.settingState.text = ""
                     cell.centreLabel.text = "Reset Ball"
                     cell.iconImage.isHidden = true
-                    cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
                 }
             case 11:
             // Restore purchases
@@ -377,7 +378,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.centreLabel.text = "Restore Purchase"
                     cell.settingState.text = ""
                     cell.iconImage.isHidden = true
-                    cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
                 } else {
                     hideCell(cell: cell)
                 }
@@ -387,7 +388,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.centreLabel.text = "Unlock All Items (developer)"
                 cell.settingState.text = ""
                 cell.iconImage.isHidden = true
-                cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
                 
             case 13:
             // Re-lock all
@@ -395,7 +396,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.centreLabel.text = "Reset Locked Items (developer)"
                 cell.settingState.text = ""
                 cell.iconImage.isHidden = true
-                cell.centreLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
             default:
                 print("Error: Out of range")
                 break
@@ -521,7 +522,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Restore purchases
                 showPurchaseScreen()
                 IAPHandler().restorePurchase()
-                print("Restore purchase")
             case 12:
             // Unlock all
                 unlockAllItems()
@@ -529,7 +529,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Re-lock all
                 relockAllItems()
             default:
-                print("out of range")
                 break
             }
             
@@ -567,16 +566,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if premiumSetting! {
             premiumTableView.isHidden = true
             premiumTableExpanded.isActive = false
+            backButtonExpanded.isActive = false
             premiumTableCollapsed.isActive = true
             backButtonCollapsed.isActive = true
-            backButtonExpanded.isActive = false
 
         } else {
             premiumTableView.isHidden = false
-            premiumTableExpanded.isActive = true
             premiumTableCollapsed.isActive = false
-            backButtonExpanded.isActive = true
             backButtonCollapsed.isActive = false
+            premiumTableExpanded.isActive = true
+            backButtonExpanded.isActive = true
         }
         if animated {
             UIView.animate(withDuration: 0.25) {
@@ -588,7 +587,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
         for transaction in transactions {
             if transaction.transactionState == .purchased {
-                print("User payment successful - settings")
                 IAPHandler().unlockPremiumContent()
                 SKPaymentQueue.default().finishTransaction(transaction)
                 
@@ -601,11 +599,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 SKPaymentQueue.default().finishTransaction(transaction)
                 
             } else if transaction.transactionState == .restored {
-                print("User purchase restored - settings")
                 IAPHandler().unlockPremiumContent()
                 SKPaymentQueue.default().finishTransaction(transaction)
-            } else {
-                print("llama other - settings")
             }
         }
     }
@@ -625,7 +620,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             print("Error encoding total stats, \(error)")
         }
         CloudKitHandler().saveTotalStats()
-        print("unlock all items")
     }
     
     func relockAllItems() {
@@ -649,15 +643,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveUserDefaults()
         CloudKitHandler().saveTotalStats()
-        print("relock all items)")
         // Save to iCloud
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
+            if indexPath.row != 6 {
+                interfaceHaptic.impactOccurred()
+            }
+        } else {
+            if indexPath.row == 6 {
+                interfaceHaptic.impactOccurred()
+            }
         }
+        
         if tableView == premiumTableView {
             UIView.animate(withDuration: 0.1) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
@@ -675,7 +676,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
+            if indexPath.row != 6 {
+                interfaceHaptic.impactOccurred()
+            }
+        } else {
+            if indexPath.row == 6 {
+                interfaceHaptic.impactOccurred()
+            }
         }
         if tableView == premiumTableView {
             UIView.animate(withDuration: 0.1) {
@@ -765,7 +772,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func addParallaxToView() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -826,6 +832,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
         appOpenCount = defaults.integer(forKey: "appOpenCount")
+        firstPause = defaults.bool(forKey: "firstPause")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -910,6 +917,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         defaults.set(swipeUpPause!, forKey: "swipeUpPause")
         appOpenCount = 0
         defaults.set(appOpenCount!, forKey: "appOpenCount")
+        firstPause = true
+        defaults.set(firstPause!, forKey: "firstPause")
         
         saveGameSaveArray = []
         defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
@@ -936,6 +945,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
+        CloudKitHandler().saveUserDefaults()
         CloudKitHandler().saveTotalStats()
     }
     
@@ -949,10 +959,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Change the icon to an image with specific name
             if let error = error {
             print("App icon failed to change due to \(error.localizedDescription)")
-            } else {
-            print("App icon changed successfully")
             }
-            // Print success or error
         })
     }
     
@@ -1017,7 +1024,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - settings view")
         userSettings()
         loadData()
         premiumTableViewHideShow(animated: true)

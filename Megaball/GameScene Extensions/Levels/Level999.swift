@@ -24,7 +24,7 @@ extension GameScene {
         scoreLabel.fontSize = fontSize*1.5
         scoreLabel.horizontalAlignmentMode = .right
         scoreLabel.position.y = life.position.y-2
-        scoreLabel.text = "\(endlessHeight) m"
+        scoreLabel.text = "\(endlessHeight)m"
         // Setup score label for endless mode
         
         if screenSize != "X" {

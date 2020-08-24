@@ -53,7 +53,6 @@ extension GameScene {
             case 10:
                 brickTexture = brickNullTexture
             default:
-                print("brick texture default")
                 brickTexture = brickNormalTexture
             }
             brick.texture = brickTexture!
@@ -111,7 +110,6 @@ extension GameScene {
                 case 23:
                     brickColour = brickYellowDark
                 default:
-                    print("no brick colour")
                     brickColour = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
                 }
                 if brick.texture == brickNormalTexture && brickColour != nil {

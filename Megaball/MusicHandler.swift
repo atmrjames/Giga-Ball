@@ -91,7 +91,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         do {
             try AVAudioSession.sharedInstance().setCategory(.soloAmbient, mode: .default)
         } catch let error {
-            print("Failed to set player to ambient: ", error.localizedDescription)
+            print("Failed to set player to solo ambient: ", error.localizedDescription)
         }
         player?.play()
     }

@@ -97,8 +97,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         
         cell.descriptionAndStateSharedWidthConstraint.isActive = false
-        cell.decriptionFullWidthConstraint.isActive = true
         cell.descriptionTickWidthConstraint.isActive = false
+        cell.decriptionFullWidthConstraint.isActive = true
         
         switch indexPath.row {
         case 0:
@@ -419,7 +419,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -557,7 +556,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     // Runs when returning from item stats view
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - items view")
         userSettings()
         loadData()
         itemsTableView.reloadData()

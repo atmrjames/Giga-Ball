@@ -51,7 +51,7 @@ class TotalStats: Codable {
         true, // Classic
         true, // Space
         true, // Nature
-        false, // Urban
+        false, // City
         false, // Food
         false, // Computer
         false, // Body
@@ -131,7 +131,7 @@ class TotalStats: Codable {
         false, // Germ
         false, // Butterfly
         
-        // Urban Pack
+        // City Pack
         false, // City Map
         false, // Skyscraper
         false, // Subway

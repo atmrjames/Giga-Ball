@@ -16,8 +16,6 @@ final class CloudKitHandler: NSObject {
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
-//    var packStatsArray: [PackStats] = []
-//    var levelStatsArray: [LevelStats] = []
     // NSCoder data store & encoder setup
     
     let defaults = UserDefaults.standard
@@ -26,6 +24,8 @@ final class CloudKitHandler: NSObject {
     var adsSetting: Bool?
     var appOpenCount: Int?
     var resumeGameToLoad: Bool?
+    var firstPause: Bool?
+    
     var iCloudSetting: Bool?
 
     // Total Stats
@@ -84,11 +84,9 @@ final class CloudKitHandler: NSObject {
     func isICloudContainerAvailable() {
         CKContainer.default().accountStatus { (accountStatus, error) in
             if case .available = accountStatus {
-                print("llama llama icloud on")
                 self.iCloudSetting = true
                 self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")
             } else {
-                print("llama llama icloud off")
                 self.iCloudSetting = false
                 self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")
             }
@@ -98,31 +96,30 @@ final class CloudKitHandler: NSObject {
     func saveUserDefaults() {
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         if !iCloudSetting! {
-            print("llama llama icloud off")
             return
         }
         // Check iCloud status and end function if not
-        print("llama llama icloud save user defaults")
         premiumSetting = defaults.bool(forKey: "premiumSetting")
         adsSetting = defaults.bool(forKey: "adsSetting")
         appOpenCount = defaults.integer(forKey: "appOpenCount")
+        firstPause = defaults.bool(forKey: "firstPause")
         
         NSUbiquitousKeyValueStore.default.set(premiumSetting, forKey: "premiumSetting")
         NSUbiquitousKeyValueStore.default.set(adsSetting, forKey: "adsSetting")
         NSUbiquitousKeyValueStore.default.set(appOpenCount, forKey: "appOpenCount")
+        NSUbiquitousKeyValueStore.default.set(firstPause, forKey: "firstPause")
     }
     
     func loadUserDefaults() {
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         if !iCloudSetting! {
-            print("llama llama icloud off")
             return
         }
         // Check iCloud status and end function if not
-        print("llama llama icloud load user defaults")
         premiumSetting = NSUbiquitousKeyValueStore.default.bool(forKey: "premiumSetting")
         adsSetting = NSUbiquitousKeyValueStore.default.bool(forKey: "adsSetting")
         appOpenCount = Int(NSUbiquitousKeyValueStore.default.longLong(forKey: "appOpenCount"))
+        firstPause = NSUbiquitousKeyValueStore.default.bool(forKey: "firstPause")
         
         if self.premiumSetting != nil {
             self.defaults.set(self.premiumSetting!, forKey: "premiumSetting")
@@ -133,16 +130,17 @@ final class CloudKitHandler: NSObject {
         if self.appOpenCount != nil {
             self.defaults.set(self.appOpenCount!, forKey: "appOpenCount")
         }
+        if self.firstPause != nil {
+            self.defaults.set(self.firstPause!, forKey: "firstPause")
+        }
     }
     
     func saveTotalStats() {
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         if !iCloudSetting! {
-            print("llama llama icloud off")
             return
         }
         // Check iCloud status and end function if not
-        print("llama llama icloud save total stats")
         let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {
@@ -233,11 +231,9 @@ final class CloudKitHandler: NSObject {
     func loadTotalStats() {
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         if !iCloudSetting! {
-            print("llama llama icloud off")
             return
         }
         // Check iCloud status and end function if not
-        print("llama llama icloud load total stats")
         let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {
@@ -401,7 +397,6 @@ final class CloudKitHandler: NSObject {
         }
         
         do {
-            print("llama llama icloud save total stats updates")
             let data = try encoder.encode(self.totalStatsArray)
             try data.write(to: totalStatsStore!)
         } catch {

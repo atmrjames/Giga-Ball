@@ -98,7 +98,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func collectionViewLayout() {
-        print("llama llama layout 1: ", containterView.frame.size.width, view.frame.size.width, buttonCollectionView.frame.size.width)
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         
         if view.frame.size.width <= 414 {
@@ -115,14 +114,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
         buttonCollectionView!.collectionViewLayout = layout
-        
-        print("llama llama layout 2: ", containterView.frame.size.width, view.frame.size.width, buttonCollectionView.frame.size.width, spacing)
-            
-//        let viewWidth = buttonCollectionView.frame.size.width
-//        let cellSpacing = (viewWidth-(75*3))/2
-//        layout.minimumInteritemSpacing = cellSpacing
-//        layout.minimumLineSpacing = cellSpacing
-//        buttonCollectionView!.collectionViewLayout = layout
     }
     // Set the spacing between collection view cells
     
@@ -334,21 +325,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     
         if endlessMode {
-            levelTitleLowerConstraint.isActive = true
             levelNameLabelNormalConstraint.isActive = false
+            levelTitleLowerConstraint.isActive = true
             
             packNameLabel.text = ""
             levelNumberLabel.text = String(LevelPackSetup().levelNameArray[levelNumber])
             levelNameLabel.text = ""
             
             scoreLabelTitle.text = "Height"
-            scoreLabel.text = "\(height) m"
+            scoreLabel.text = "\(height)m"
             highscoreLabelTitle.text = "Best"
             
             var heightBest = 0
             if totalStatsArray[0].endlessModeHeight.count > 0 {
                 heightBest = totalStatsArray[0].endlessModeHeight.max()!
-                highscoreLabel.text = "\(heightBest) m"
+                highscoreLabel.text = "\(heightBest)m"
             }
             
             if sender == "Pause" {
@@ -356,12 +347,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
                 }
-                highscoreLabel.text = "\(heightBest) m"
+                highscoreLabel.text = "\(heightBest)m"
             } else {
                 if totalStatsArray[0].endlessModeHeight.count <= 1 {
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
-                    highscoreLabel.text = "0 m"
+                    highscoreLabel.text = "0m"
                 } else {
                     var heightsArray = totalStatsArray[0].endlessModeHeight
                     heightsArray.sort(by: >)
@@ -369,15 +360,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     if height > previousBestHeight {
                         scoreLabelTitle.text = "New Best Height"
                         highscoreLabelTitle.text = "Previous Best"
-                        highscoreLabel.text = "\(previousBestHeight) m"
+                        highscoreLabel.text = "\(previousBestHeight)m"
                     }
                 }
             }
 
         } else {
             if levelNumber == 100 {
-                levelTitleLowerConstraint.isActive = true
                 levelNameLabelNormalConstraint.isActive = false
+                levelTitleLowerConstraint.isActive = true
                 
                 packNameLabel.text = ""
                 levelNumberLabel.text = "Tutorial"
@@ -388,8 +379,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     levelNumberLabel.text = "Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber])"
                     levelNameLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
                 } else {
-                    levelTitleLowerConstraint.isActive = true
                     levelNameLabelNormalConstraint.isActive = false
+                    levelTitleLowerConstraint.isActive = true
                     
                     packNameLabel.text = "Single Level Mode"
                     levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
@@ -410,8 +401,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
         
         if sender == "Complete" && !endlessMode && numberOfLevels != 1 {
-            levelTitleLowerConstraint.isActive = true
             levelNameLabelNormalConstraint.isActive = false
+            levelTitleLowerConstraint.isActive = true
             
             packNameLabel.text = ""
             levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
@@ -451,7 +442,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -529,13 +519,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NotificationCenter.default.post(name: .killBallNotification, object: nil)
         removeAnimate(nextAction: .unpause)
     }
-
-//    @objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
-//        removeAnimate(nextAction: .unpause)
-//    }
 }
 
 extension Notification.Name {

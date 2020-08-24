@@ -304,7 +304,6 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -366,9 +365,9 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         if levelNumber == 0 {
             highscoreTitleLabel.text = "Best Height"
             if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
-                highscoreLabel.text = String(bestHeight) + " m"
+                highscoreLabel.text = String(bestHeight) + "m"
             } else {
-                highscoreLabel.text = "0 m"
+                highscoreLabel.text = "0m"
             }
         } else {
             highscoreTitleLabel.text = "Highscore"
@@ -414,7 +413,6 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     // Runs when returning from game
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - level stats view")
         userSettings()
         loadData()
         updateLabels()

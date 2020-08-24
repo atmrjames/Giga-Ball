@@ -22,8 +22,6 @@ class Ad: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        print("llama llama entered ad")
-        
         if scene.musicSetting! {
             MusicHandler.sharedHelper.menuVolume()
             MusicHandler.sharedHelper.pauseMusic()
@@ -39,7 +37,6 @@ class Ad: GKState {
     
     @objc func notificationToCloseAd(_ notification: Notification) {
         notificationCounter+=1
-        print("llama llama close ad")
         scene.gameViewControllerDelegate?.createInterstitial()
         
         if scene.musicSetting! {

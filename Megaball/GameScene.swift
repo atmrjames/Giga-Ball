@@ -44,6 +44,7 @@ enum CollisionTypes: UInt32 {
 protocol GameViewControllerDelegate: class {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int)
+	func showWarning(senderID: String)
 	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
 	var selectedLevel: Int? { get set }
 	var numberOfLevels: Int? { get set }
@@ -269,6 +270,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var swipeUpPause: Bool?
 	var gameInProgress: Bool?
 	var resumeGameToLoad: Bool?
+	var firstPause: Bool?
 	// User settings
 	var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -550,6 +552,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var newItemsBool: Bool = false
 	var previousHighscore: Int = 0
 	var packLevelHighScoresArray: [[Int]]?
+	var ballSpeedZeroTracker: Int = 0
+	var ballHitBackstop: Bool = false
+	var verticalBallControlFlipper: Bool = false
+	var horizontalBallControlFlipper: Bool = false
     // Game trackers
 	
 	let straightLaunchAngleRad = 90 * Double.pi / 180
@@ -883,7 +889,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topGap = brickHeight*2
 		// Object size definition
 		
-		ballLinearDampening = -0.02
+		ballLinearDampening = 0.0
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = frame.height/2 - screenBlockTopHeight/2
@@ -943,7 +949,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 			}
 			if counter > 10 {
-				print("llama llama no paddle physics body")
 				break
 			}
 		}
@@ -1274,7 +1279,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[17] = Date()
 			let achievement = GKAchievement(identifier: "endlessOneMins")
 			if achievement.isCompleted == false {
-				print("llama llama achievement endlessOneMins")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting endlessOneMins achievement")
@@ -1286,7 +1290,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[18] = Date()
 			let achievement = GKAchievement(identifier: "endlessFiveMins")
 			if achievement.isCompleted == false {
-				print("llama llama achievement endlessFiveMins")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting endlessFiveMins achievement")
@@ -1298,7 +1301,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[19] = Date()
 			let achievement = GKAchievement(identifier: "endlessTenMins")
 			if achievement.isCompleted == false {
-				print("llama llama achievement endlessTenMins")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting endlessTenMins achievement")
@@ -1310,7 +1312,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[20] = Date()
 			let achievement = GKAchievement(identifier: "endlessThirtyMins")
 			if achievement.isCompleted == false {
-				print("llama llama achievement endlessThirtyMins")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting endlessThirtyMins achievement")
@@ -1322,7 +1323,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[21] = Date()
 			let achievement = GKAchievement(identifier: "endlessSixtyMins")
 			if achievement.isCompleted == false {
-				print("llama llama achievement endlessSixtyMins")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting endlessSixtyMins achievement")
@@ -1358,7 +1358,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				totalStatsArray[0].achievementDates[50] = Date()
 				let achievement = GKAchievement(identifier: "paddleSpeed")
 				if achievement.isCompleted == false {
-					print("llama llama achievement paddleSpeed")
 					achievement.showsCompletionBanner = true
 					GKAchievement.report([achievement]) { (error) in
 						print(error?.localizedDescription ?? "Error reporting paddleSpeed achievement")
@@ -1572,12 +1571,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 			}
 			// Sets the ball's gravity control
+			
+			
+			if ball.physicsBody!.velocity.dx == 0 && ball.physicsBody!.velocity.dy == 0 && ballIsOnPaddle == false {
+				ballSpeedZeroTracker+=1
+				if ballSpeedZeroTracker >= 100 {
+					ballSpeedZeroTracker = 0
+					ballIsOnPaddle = true
+					ball.position.x = paddle.position.x
+					setBallStartingPositionY()
+					ball.position.y = ballStartingPositionY
+				}
+			}
+			// Check if ball has stopped and reset to paddle
 
 			if ballIsOnPaddle {
 				ball.position.y = ballStartingPositionY
 				// Ensure ball remains on paddle
 			} else {
-				ballSpeedControl()
+//				ballSpeedControl()
 				// Ensure ball speed remains within limits
 			}
 		}
@@ -1642,7 +1654,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplier = 1.0
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight) m"
+			scoreLabel.text = "\(endlessHeight)m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
 		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
@@ -1769,10 +1781,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Ball hits Frame
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.backstopCategory.rawValue {
-				
-				if hapticsSetting! {
-					lightHaptic.impactOccurred()
-				}
+
 				if gigaBallDeactivate {
 					deactivateGigaBall()
 				}
@@ -1784,6 +1793,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 				backstopCatches-=1
 				// Size icon timer based on number of catches remaining
+				
 				if backstopCatches == 0 {
 					if hapticsSetting! {
 						heavyHaptic.impactOccurred()
@@ -1803,15 +1813,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				} else if backstopCatches < 0 {
 					backstopCatches = 0
 				}
+				
 				ballBackstopHit()
 				// Determine ball's angle after hitting backstop to prevent too shallow angle
 				
 				backstopHit = true
-				paddle.physicsBody!.isDynamic = false
 				ballPhysicsBodySet()
-				self.run(SKAction.wait(forDuration: 0.5), completion: {
+				self.run(SKAction.wait(forDuration: 0.25), completion: {
 					self.backstopHit = false
-					self.paddle.physicsBody!.isDynamic = true
 					self.ballPhysicsBodySet()
 				})
 				// Paddle cannot hit ball for some time after ball hits backstop
@@ -1852,14 +1861,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		   // Ball hits screenblock
 
             if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.brickCategory.rawValue {
+				var brickNodeShare: SKNode?
                 if let brickNode = secondBody.node {
                     hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode)
+					brickNodeShare = brickNode
                 }
 				let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
 				
 				if ball.texture != gigaBallTexture {
-					ballHorizontalControl(angleDegInput: angleDeg)
-					ballVerticalControl()
+					ballHorizontalControl(angleDegInput: angleDeg, brickNode: brickNodeShare)
+					ballVerticalControl(brickNode: brickNodeShare)
 				}
 				// Only apply ball angle correct when hitting bricks with giga-ball power off
             }
@@ -1898,8 +1909,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if firstBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue {
 
 				let powerUpNode = secondBody.node
-				powerUpNode!.removeAllActions()
 				if powerUpNode!.zPosition == 2 {
+					powerUpNode!.removeAllActions()
 					powerUpNode!.zPosition = 1
 					powerUpNode!.physicsBody!.collisionBitMask = 0
 					powerUpNode!.physicsBody!.contactTestBitMask = 0
@@ -1954,7 +1965,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 					let achievement = GKAchievement(identifier: "powerUpLeaverHundred")
 					if achievement.isCompleted == false {
-						print("llama llama achievement powerUpLeaverHundred: ", percentComplete)
 						achievement.percentComplete = percentComplete
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
@@ -1974,7 +1984,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 					let achievement = GKAchievement(identifier: "powerUpLeaverThousand")
 					if achievement.isCompleted == false {
-						print("llama llama achievement powerUpLeaverThousand: ", percentComplete)
 						achievement.percentComplete = percentComplete
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
@@ -2161,7 +2170,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight) m"
+			scoreLabel.text = "\(endlessHeight)m"
 		}
 		if multiplier >= 2 {
 			multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
@@ -2199,7 +2208,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 totalStatsArray[0].achievementDates[41] = Date()
 				let achievement = GKAchievement(identifier: "fivePaddleHits")
 				if achievement.isCompleted == false {
-					print("llama llama achievement fivePaddleHits: ", paddleHitsPerLevel)
 					achievement.showsCompletionBanner = true
 					GKAchievement.report([achievement]) { (error) in
 						print(error?.localizedDescription ?? "Error reporting fivePaddleHits achievement")
@@ -2211,7 +2219,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 totalStatsArray[0].achievementDates[42] = Date()
 				let achievement = GKAchievement(identifier: "tenPaddleHits")
 				if achievement.isCompleted == false {
-					print("llama llama achievement tenPaddleHits: ", paddleHitsPerLevel)
 					achievement.showsCompletionBanner = true
 					GKAchievement.report([achievement]) { (error) in
 						print(error?.localizedDescription ?? "Error reporting tenPaddleHits achievement")
@@ -2257,7 +2264,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[22] = Date()
 			let achievement = GKAchievement(identifier: "endlessCleared")
 			if achievement.isCompleted == false {
-				print("llama llama achievement endlessCleared")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting endlessCleared achievement")
@@ -2299,8 +2305,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[0] = Date()
 			let achievement = GKAchievement(identifier: "achievementEndlessTen")
 			if achievement.isCompleted == false {
-				print("llama llama achievement achievementEndlessTen")
-								achievement.showsCompletionBanner = true
+				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting achievementEndlessTen achievement")
 				}
@@ -2311,8 +2316,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[1] = Date()
 			let achievement = GKAchievement(identifier: "achievementEndlessHundred")
 			if achievement.isCompleted == false {
-				print("llama llama achievement achievementEndlessHundred")
-								achievement.showsCompletionBanner = true
+				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting achievementEndlessHundred achievement")
 				}
@@ -2323,7 +2327,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[2] = Date()
 			let achievement = GKAchievement(identifier: "achievementEndlessFiveHundred")
 			if achievement.isCompleted == false {
-				print("llama llama achievement achievementEndlessFiveHundred")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting achievementEndlessFiveHundred achievement")
@@ -2335,7 +2338,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[3] = Date()
 			let achievement = GKAchievement(identifier: "achievementEndlessOneK")
 			if achievement.isCompleted == false {
-				print("llama llama achievement achievementEndlessOneK")
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting achievementEndlessOneK achievement")
@@ -2360,7 +2362,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight) m"
+			scoreLabel.text = "\(endlessHeight)m"
 		}
 		
 		multiplierLabel.text = "x\(scoreFactorString)"
@@ -2401,7 +2403,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if hapticsSetting! {
 			lightHaptic.impactOccurred()
 		}
-		
+				
 		setBallStartingPositionY()
 		
 		paddleHitsPerLevel+=1
@@ -2414,15 +2416,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let ySpeed = ball.physicsBody!.velocity.dy
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
 		let paddleRightEdgePosition = paddle.position.x + paddle.size.width/2
-		let collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
+		var collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
 		// Define collision position between the ball and paddle
 		let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
 		// Assumes the ball's ySpeed is always positive
 		var angleDeg = Double(atan2(Double(ySpeedCorrected), Double(xSpeed)))/Double.pi*180
 		// Angle of the ball
 		
-//		print("Llama collision: ", collisionPercentage, angleDeg, (ball.position.x-paddle.position.x))
-		
+		if paddleTexture == squarePaddle {
+			if collisionPercentage < -1.0 {
+				collisionPercentage = -1.0
+			}
+			if collisionPercentage > 1.0 {
+				collisionPercentage = 1.0
+			}
+		}
+		// Paddle bounce angle rules are slightly different for square paddle due to lack of round edges
+				
 		if soundsSetting! {
 			if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && stickyPaddleCatches != 0 {
 				self.run(stickyPaddleHitSound)
@@ -2431,66 +2441,57 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		
-		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 {
+		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && collisionPercentage < 1.0 && collisionPercentage > -1.0 && stickyPaddleCatches != 0 {
+		// Catch the ball
 		// Only apply if the ball hits the centre of the paddle
-
-			if stickyPaddleCatches != 0 {
-			// Catch the ball
-				
-				self.removeAction(forKey: "gameTimer")
-				// Stop the level timer
-				
-				if paddleTexture == retroPaddle {
-					paddleRetroStickyTexture.isHidden = false
-				}
-				// show retro sticky paddle
-				
-				ballIsOnPaddle = true
-				ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
-				paddleMoved = true
-				ball.position.y = ballStartingPositionY
-				invisibleBrickFlash()
-				
-				if musicSetting! {
-					MusicHandler.sharedHelper.menuVolume()
-				}
-				return
-				// Don't try to adjust the ball's angle if it is on the paddle
+						
+			self.removeAction(forKey: "gameTimer")
+			// Stop the level timer
 			
-			} else if ballIsOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 {
-			// Only applies if the ball hits the top surface of the paddle
-
-				angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
-				// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
-				
-//				print("Angle correction: ", angleDeg)
-				
-				if angleDeg < 0+minAngleDeg {
-//					print("Angle correction 5")
-					angleDeg = minAngleDeg
-				}
-				// Travelling up and right alternative
-				if angleDeg > 180-minAngleDeg {
-//					print("Angle correction 6")
-					angleDeg = 180-minAngleDeg
-				}
-				// Travelling up and left alternative
-				// Prevents the new angle from over correting to a downward angle
+			if paddleTexture == retroPaddle {
+				paddleRetroStickyTexture.isHidden = false
 			}
+			// show retro sticky paddle
+			
+			ballIsOnPaddle = true
+			ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
+			paddleMoved = true
+			ball.position.y = ballStartingPositionY
+			invisibleBrickFlash()
+			
+			if musicSetting! {
+				MusicHandler.sharedHelper.menuVolume()
+			}
+			return
+			// Don't try to adjust the ball's angle if it is on the paddle
 		}
 		
-		if ballIsOnPaddle == false && ball.position.y >= paddle.position.y {
-		// Only control the ball's angle if it is above the centre of the paddle
-			ballHorizontalControl(angleDegInput: angleDeg)
+		if ballIsOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
+		// Only applies if the ball hits the top surface of the paddle
+			
+			angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
+			// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
+			
+			if angleDeg < 0+minAngleDeg {
+				angleDeg = minAngleDeg
+			}
+			// Travelling up and right alternative
+			if angleDeg > 180-minAngleDeg {
+				angleDeg = 180-minAngleDeg
+			}
+			// Travelling up and left alternative
+			// Prevents the new angle from over correting to a downward angle
+		}
+
+		if ballIsOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 && paddleTexture != squarePaddle {
+		// Only control the ball's angle if it in the centre of the paddle
+			if ball.position.y > paddle.position.y {
+				ballHorizontalControl(angleDegInput: angleDeg)
+			}
+			// Only control is the ball is above the paddle
 		}
 		
 		invisibleBrickFlash()
-		
-		let waitPaddleHitSave = SKAction.wait(forDuration: 0.1)
-		paddle.run(waitPaddleHitSave, completion: {
-//			self.saveCurrentGame()
-		})
-		
     }
 	
 	func invisibleBrickFlash() {
@@ -2656,7 +2657,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Don't show if power-up already falling or in endless mode or locked
 		case 9:
 		// 9 - -100 points
-			if levelScore <= Int(100*multiplier) || mysteryPowerUp || endlessMode {
+			if levelScore <= Int(100*2) || mysteryPowerUp || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			} else {
@@ -2674,7 +2675,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Don't show if power-up already falling or in endless mode or locked
 		case 11:
 		// 11 - -1000 points
-			if levelScore <= Int(1000*multiplier) || mysteryPowerUp || endlessMode {
+			if levelScore <= Int(1000*2) || mysteryPowerUp || endlessMode {
 				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 				return
 			} else {
@@ -2899,7 +2900,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].achievementDates[24] = Date()
 			let achievementPowerUp = GKAchievement(identifier: "firstPowerUp")
 			if achievementPowerUp.isCompleted == false {
-				print("llama llama achievement firstPowerUp")
 				achievementPowerUp.showsCompletionBanner = true
 				GKAchievement.report([achievementPowerUp]) { (error) in
 					print(error?.localizedDescription ?? "Error reporting firstPowerUp achievement")
@@ -2972,6 +2972,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				ballSpeedIconBar.isHidden = true
 			}
+			ballSpeedControl()
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[2]+=1
 			// Power up set
@@ -2979,6 +2980,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
 				self.ballSpeedLimit = self.ballSpeedNominal
+				self.ballSpeedControl()
 				self.ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				self.ballSpeedIconBar.isHidden = true
 				// Hide power-up icons
@@ -3011,6 +3013,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				ballSpeedIconBar.isHidden = true
 			}
+			ballSpeedControl()
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[3]+=1
             // Power up set
@@ -3018,6 +3021,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
 				self.ballSpeedLimit = self.ballSpeedNominal
+				self.ballSpeedControl()
 				self.ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				self.ballSpeedIconBar.isHidden = true
 				// Hide power-up icons
@@ -3087,7 +3091,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					totalStatsArray[0].achievementDates[32] = Date()
 					let achievement = GKAchievement(identifier: "maxPaddleSize")
 					if achievement.isCompleted == false {
-						print("llama llama achievement maxPaddleSize")
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
 							print(error?.localizedDescription ?? "Error reporting maxPaddleSize achievement")
@@ -3166,7 +3169,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					totalStatsArray[0].achievementDates[33] = Date()
 					let achievement = GKAchievement(identifier: "minPaddleSize")
 					if achievement.isCompleted == false {
-						print("llama llama achievement minPaddleSize")
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
 							print(error?.localizedDescription ?? "Error reporting minPaddleSize achievement")
@@ -3640,7 +3642,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				totalStatsArray[0].achievementDates[23] = Date()
 				let achievementMystery = GKAchievement(identifier: "mysteryPowerUp")
 				if achievementMystery.isCompleted == false {
-					print("llama llama achievement mysteryPowerUp")
 					achievementMystery.showsCompletionBanner = true
 					GKAchievement.report([achievementMystery]) { (error) in
 						print(error?.localizedDescription ?? "Error reporting mysteryPowerUp achievement")
@@ -3668,7 +3669,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.backstop.physicsBody!.categoryBitMask = CollisionTypes.backstopCategory.rawValue
 						self.backstop.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
 						self.backstop.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
-						self.ballPhysicsBodySet()
+//						self.ballPhysicsBodySet()
 						// Power up set and limit number of catches per power up
 					})
 				})
@@ -3703,7 +3704,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					totalStatsArray[0].achievementDates[34] = Date()
 					let achievement = GKAchievement(identifier: "maxBallSize")
 					if achievement.isCompleted == false {
-						print("llama llama achievement maxBallSize")
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
 							print(error?.localizedDescription ?? "Error reporting maxBallSize achievement")
@@ -3771,7 +3771,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					totalStatsArray[0].achievementDates[35] = Date()
 					let achievement = GKAchievement(identifier: "minBallSize")
 					if achievement.isCompleted == false {
-						print("llama llama achievement minBallSize")
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
 							print(error?.localizedDescription ?? "Error reporting minBallSize achievement")
@@ -3831,7 +3830,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			let achievement = GKAchievement(identifier: "favouritePowerUp")
 			if achievement.isCompleted == false {
-				print("llama llama achievement favouritePowerUp: ", percentComplete)
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
@@ -3853,7 +3851,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			let achievement = GKAchievement(identifier: "powerUpCollectorHundred")
 			if achievement.isCompleted == false {
-				print("llama llama achievement powerUpCollectorHundred: ", percentComplete)
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
@@ -3873,7 +3870,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			let achievement = GKAchievement(identifier: "powerUpCollectorThousand")
 			if achievement.isCompleted == false {
-				print("llama llama achievement powerUpCollectorThousand: ", percentComplete)
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
@@ -3893,6 +3889,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if multiplier >= 2.0 {
 			multiplier = 2.0
 			multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+		} else {
+			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		}
 		// Ensure multiplier never goes below 1 or above 2
 		if endlessMode == false {
@@ -3900,7 +3898,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		scoreFactorString = String(format:"%.1f", multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight) m"
+			scoreLabel.text = "\(endlessHeight)m"
 		}
 		multiplierLabel.text = "x\(scoreFactorString)"
         // Update score
@@ -4070,15 +4068,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 	
 	func ballPhysicsBodySet() {
-		if backstopHit && ball.texture != gigaBallTexture {
-			ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
-			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
-		}
-		else if backstopHit && ball.texture == gigaBallTexture {
-			ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue
-			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
-		}
-		else if ball.texture == gigaBallTexture {
+		if ball.texture == gigaBallTexture {
 		// Giga-Ball power-up
 			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Reset undestructi-ball power-up
@@ -4120,6 +4110,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore)
 		// Pass over highscore data to pause menu
+		
+//		firstPause = true
+		if firstPause! {
+			gameViewControllerDelegate?.showWarning(senderID: "firstPause")
+		}
+		// Pop-up to explain swipe up to pause
     }
 	
 	func showInbetweenView() {
@@ -4154,6 +4150,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		swipeUpPause = defaults.bool(forKey: "swipeUpPause")
 		gameInProgress = defaults.bool(forKey: "gameInProgress")
 		resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
+		firstPause = defaults.bool(forKey: "firstPause")
 		// User settings
 		
 		saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -4204,133 +4201,224 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		brickBounceCounter = 0
 	}
 
-	func ballHorizontalControl(angleDegInput: Double) {
-		
+	func ballHorizontalControl(angleDegInput: Double, brickNode: SKNode? = nil) {
+				
 		if gravityActivated && ball.position.y > paddle.position.y + ballSize*4 {
 			return
 		}
 		// Do not run ball angle correction if gravity is activated and the ball is above the non-gravity area
 		
-		var xSpeed = ball.physicsBody!.velocity.dx
-		var ySpeed = ball.physicsBody!.velocity.dy
-		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
-		var angleDeg = angleDegInput
-		
-//		print("Llama start horizontal angle: ", angleDeg)
-		
-		if angleDeg <= minAngleDeg && angleDeg > 0 {
-//			print("Horizontal correction 1")
-			angleDeg = minAngleDeg
-		}
-		// Up and right
-		if angleDeg >= -minAngleDeg && angleDeg <= 0 {
-//			print("Horizontal correction 2")
-			angleDeg = -minAngleDeg
-		}
-		// Down and right
-		if angleDeg <= 180+minAngleDeg && angleDeg >= 180-minAngleDeg {
-//			print("Horizontal correction 3")
-			angleDeg = 180-minAngleDeg
-		}
-		// Up and left
-		if angleDeg >= -180-minAngleDeg && angleDeg <= -180+minAngleDeg {
-//			print("Horizontal correction 4")
-			angleDeg = -180+minAngleDeg
-		}
-		// Down and left
+		if gameState.currentState is Playing {
+			
+			var xSpeed = ball.physicsBody!.velocity.dx
+			var ySpeed = ball.physicsBody!.velocity.dy
+			let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
+			var angleDeg = angleDegInput
+			
+			if brickNode != nil {
+				if angleDeg == 0 || angleDeg == -0 {
+				// Ball travelling horizontally right
+					if brickNode!.position.y > ball.position.y {
+					// Brick to above
+						angleDeg = angleDeg - 1
+						print("llama llama horizontal control: ball right, brick above")
+					}
+					if brickNode!.position.y < ball.position.y {
+					// Brick to below
+						angleDeg = angleDeg + 1
+						print("llama llama horizontal control: ball right, brick below")
+					}
+				}
+				if angleDeg == 180 || angleDeg == -180 {
+				// Ball travelling horizontally left
+					if brickNode!.position.y > ball.position.y {
+					// Brick to above
+						angleDeg = angleDeg + 1
+						print("llama llama horizontal control: ball left, brick above")
+					}
+					if brickNode!.position.y < ball.position.y {
+					// Brick to below
+						angleDeg = angleDeg - 1
+						print("llama llama horizontal control: ball left, brick below")
+					}
+				}
+			} else if angleDeg == 180.0 || angleDeg == 0.0 || angleDeg == -180 || angleDeg == -0 {
+				horizontalBallControlFlipper = !horizontalBallControlFlipper
+				if horizontalBallControlFlipper {
+					angleDeg = angleDeg + 1
+					print("llama llama horizontal flipper +")
+				} else {
+					angleDeg = angleDeg - 1
+					print("llama llama horizontal flipper -")
+				}
+			}
+			// Correct horizontal ball
+			if angleDeg > 180.0 {
+				angleDeg = angleDeg-360
+				print("llama llama >180 correction")
+			} else if angleDeg < -180 {
+				angleDeg = angleDeg+360
+				print("llama llama <-180 correction")
+			}
+			// Make sure the ball angle doesn't stray from 180 to -180 bounds
 
-//		print("Llama new horizontal angle: ", angleDeg)
-		
-		let angleRad = (angleDeg*Double.pi/180)
-		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-		ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-		ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-		// Set the new angle of the ball
+			let prob = Int.random(in: 1...10)
+			if prob == 1 {
+				let angleMag = Double.random(in: -5...5)
+				angleDeg = angleDeg+angleMag
+			}
+			// Apply a random angle factor
+					
+			if angleDeg <= minAngleDeg && angleDeg > 0 {
+				angleDeg = minAngleDeg
+			}
+			// Up and right
+			if angleDeg >= -minAngleDeg && angleDeg <= 0 {
+				angleDeg = -minAngleDeg
+			}
+			// Down and right
+			if angleDeg <= 180+minAngleDeg && angleDeg >= 180-minAngleDeg {
+				angleDeg = 180-minAngleDeg
+			}
+			// Up and left
+			if angleDeg >= -180-minAngleDeg && angleDeg <= -180+minAngleDeg {
+				angleDeg = -180+minAngleDeg
+			}
+			// Down and left
+			
+			let angleRad = (angleDeg*Double.pi/180)
+			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
+			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
+			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+			// Set the new angle of the ball
+			
+			ballSpeedControl()
+		}
 	}
 	
-	func ballVerticalControl() {
+	func ballVerticalControl(brickNode: SKNode? = nil) {
 		
 		if gravityActivated && ball.position.y > paddle.position.y + ballSize*4 {
 			return
 		}
 		// Do not run ball angle correction if gravity is activated and the ball is above the non-gravity area
 		
-		var xSpeed = ball.physicsBody!.velocity.dx
-		var ySpeed = ball.physicsBody!.velocity.dy
-		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
-		var angleDeg = Double(atan2(ySpeed, xSpeed))/Double.pi*180
-		let verticalMinAngle = minAngleDeg/2
-		
-//		print("Llama start vertical angle: ", angleDeg)
-		
-		// Vertical Control
-		if ball.position.x >= 0 {
-			// ball is on right side of screen
-			if angleDeg > 90-verticalMinAngle && angleDeg <= 90 {
-//				print("Vertical correction R1")
-				angleDeg = 90-verticalMinAngle
+		if gameState.currentState is Playing {
+			
+			var xSpeed = ball.physicsBody!.velocity.dx
+			var ySpeed = ball.physicsBody!.velocity.dy
+			let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
+			let angleDegInput = Double(atan2(ySpeed, xSpeed))/Double.pi*180
+			var angleDeg = angleDegInput
+			let verticalMinAngle = minAngleDeg/2
+			
+			if brickNode != nil {
+				if angleDeg == 90 {
+				// Ball travelling vertically up
+					if brickNode!.position.x < ball.position.x {
+					// Brick to the left
+						angleDeg = angleDeg - 1
+						print("llama llama vertical control: ball up, brick to the left")
+					}
+					if brickNode!.position.x > ball.position.x {
+					// Brick to the right
+						angleDeg = angleDeg + 1
+						print("llama llama vertical control: ball up, brick to the right")
+					}
+				}
+				if angleDeg == -90 {
+				// Ball travelling vertically down
+					if brickNode!.position.x < ball.position.x {
+					// Brick to the left
+						angleDeg = angleDeg + 1
+						print("llama llama vertical control: ball down, brick to the left")
+					}
+					if brickNode!.position.x > ball.position.x {
+					// Brick to the right
+						angleDeg = angleDeg - 1
+						print("llama llama vertical control: ball down, brick to the right")
+					}
+				}
+			} else if angleDeg == 90.0 || angleDeg == -90.0 {
+				verticalBallControlFlipper = !verticalBallControlFlipper
+				if verticalBallControlFlipper {
+					angleDeg = angleDeg + 1
+					print("llama llama vertical flipper +")
+				} else {
+					angleDeg = angleDeg - 1
+					print("llama llama vertical flipper -")
+				}
 			}
-			// Travelling up and right
-			if angleDeg <= 90+verticalMinAngle && angleDeg > 90 {
-//				print("Vertical correction R2")
-				angleDeg = 90+verticalMinAngle
+			// Correct vertical ball
+			
+			let prob = Int.random(in: 1...10)
+			if prob == 1 {
+				let angleMag = Double.random(in: -5...5)
+				angleDeg = angleDeg+angleMag
 			}
-			// Travelling up and left
-			if angleDeg >= -90 && angleDeg < -90+verticalMinAngle {
-//				print("Vertical correction R3")
-				angleDeg = -90+verticalMinAngle
+			// Apply a random angle factor
+			
+			// Vertical Control
+			if ball.position.x >= 0 {
+				// ball is on right side of screen
+				if angleDeg > 90-verticalMinAngle && angleDeg <= 90 {
+					angleDeg = 90-verticalMinAngle
+				}
+				// Travelling up and right
+				if angleDeg <= 90+verticalMinAngle && angleDeg > 90 {
+					angleDeg = 90+verticalMinAngle
+				}
+				// Travelling up and left
+				if angleDeg >= -90 && angleDeg < -90+verticalMinAngle {
+					angleDeg = -90+verticalMinAngle
+				}
+				// Travelling down and right
+				if angleDeg < -90 && angleDeg >= -90-verticalMinAngle {
+					angleDeg = -90-verticalMinAngle
+				}
+				// Travelling down and left
+			} else {
+				// ball is on left side of screen
+				if angleDeg >= 90-verticalMinAngle && angleDeg < 90 {
+					angleDeg = 90-verticalMinAngle
+				}
+				// Travelling up and right
+				if angleDeg < 90+verticalMinAngle && angleDeg >= 90 {
+					angleDeg = 90+verticalMinAngle
+				}
+				// Travelling up and left
+				if angleDeg > -90 && angleDeg <= -90+verticalMinAngle {
+					angleDeg = -90+verticalMinAngle
+				}
+				// Travelling down and right
+				if angleDeg <= -90 && angleDeg > -90-verticalMinAngle {
+					angleDeg = -90-verticalMinAngle
+				}
+				// Travelling down and left
 			}
-			// Travelling down and right
-			if angleDeg < -90 && angleDeg >= -90-verticalMinAngle {
-//				print("Vertical correction R4")
-				angleDeg = -90-verticalMinAngle
-			}
-			// Travelling down and left
-		} else {
-			// ball is on left side of screen
-			if angleDeg >= 90-verticalMinAngle && angleDeg < 90 {
-//				print("Vertical correction L1")
-				angleDeg = 90-verticalMinAngle
-			}
-			// Travelling up and right
-			if angleDeg < 90+verticalMinAngle && angleDeg >= 90 {
-//				print("Vertical correction L2")
-				angleDeg = 90+verticalMinAngle
-			}
-			// Travelling up and left
-			if angleDeg > -90 && angleDeg <= -90+verticalMinAngle {
-//				print("Vertical correction L3")
-				angleDeg = -90+verticalMinAngle
-			}
-			// Travelling down and right
-			if angleDeg <= -90 && angleDeg > -90-verticalMinAngle {
-//				print("Vertical correction L4")
-				angleDeg = -90-verticalMinAngle
-			}
-			// Travelling down and left
+			
+			let angleRad = (angleDeg*Double.pi/180)
+			xSpeed = CGFloat(cos(angleRad)) * currentSpeed
+			ySpeed = CGFloat(sin(angleRad)) * currentSpeed
+			ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
+			// Set the new angle of the ball
+			
+			ballSpeedControl()
 		}
-		
-//		print("Llama new vertical angle: ", angleDeg)
-		
-		let angleRad = (angleDeg*Double.pi/180)
-		xSpeed = CGFloat(cos(angleRad)) * currentSpeed
-		ySpeed = CGFloat(sin(angleRad)) * currentSpeed
-		ball.physicsBody!.velocity = CGVector(dx: xSpeed, dy: ySpeed)
-		// Set the new angle of the ball
 	}
 	
 	func ballSpeedControl() {
-		let xSpeed = ball.physicsBody!.velocity.dx
-		let ySpeed = ball.physicsBody!.velocity.dy
-		let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
-		if currentSpeed > ballSpeedLimit + currentSpeed/10 {
-			ball.physicsBody!.linearDamping = 1.0
-		} else if currentSpeed < ballSpeedLimit {
-			if gravityActivated == false || ball.position.y < paddle.position.y + ballSize*4 {
-				ball.physicsBody!.linearDamping = -1.0
-			}
-		} else {
-			ball.physicsBody!.linearDamping = ballLinearDampening
+		if !gravityActivated && gameState.currentState is Playing {
+			let xSpeed = ball.physicsBody!.velocity.dx
+			let ySpeed = ball.physicsBody!.velocity.dy
+			
+			let currentDirectionDeg = Double(atan2(Double(ySpeed), Double(xSpeed)))/Double.pi*180
+			let currentDirectionRad = (currentDirectionDeg*Double.pi/180)
+			
+			let setXSpeed = CGFloat(cos(currentDirectionRad)) * ballSpeedLimit
+			let setYSpeed = CGFloat(sin(currentDirectionRad)) * ballSpeedLimit
+						
+			ball.physicsBody!.velocity = CGVector(dx: setXSpeed, dy: setYSpeed)
 		}
 	}
 	// Set the new speed of the ball and ensure it stays within the boundary
@@ -4343,7 +4431,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: ySpeed)
 		// Ensure the ball bounces off the wall correctly]
-//		print("Frame control")
 		
 		let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
 		ballHorizontalControl(angleDegInput: angleDeg)
@@ -4353,10 +4440,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if gameState.currentState is Playing {
         
-			let laser = SKSpriteNode(imageNamed: "LaserNormal")
-			
+			let laser = SKSpriteNode(imageNamed: "laserNormal")
 			laser.texture = laserNormalTexture
-			
 			
 			if paddleTexture == rainbowPaddle {
 				if rainbowLaserIndex > rainbowLaserArray.count-1 {
@@ -4434,7 +4519,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     totalStatsArray[0].achievementDates[25] = Date()
 					let achievement = GKAchievement(identifier: "gigaLasers")
 					if achievement.isCompleted == false {
-						print("llama llama achievement gigaLasers")
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
 							print(error?.localizedDescription ?? "Error reporting gigaLasers achievement")
@@ -4497,7 +4581,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			clearSavedGame()
 			gameState.enter(Paused.self)
 		}
-		// Don't allow pause if brick down animation is in progress
 	}
 	
 	func saveGameStats() {
@@ -4513,9 +4596,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func saveCurrentGame() {
-		
-		print("llama llama save current game")
-		
+				
 		if numberOfLives == 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
 			return
@@ -5070,9 +5151,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						default:
 							break
 						}
+						ballSpeedControl()
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
 							self.ballSpeedLimit = self.ballSpeedNominal
+							self.ballSpeedControl()
 							self.ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 							self.ballSpeedIconBar.isHidden = true
 						}
@@ -5335,7 +5418,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.backstop.physicsBody!.categoryBitMask = CollisionTypes.backstopCategory.rawValue
 						self.backstop.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
 						self.backstop.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
-						self.ballPhysicsBodySet()
+//						self.ballPhysicsBodySet()
 						
 					default:
 						break
@@ -5490,6 +5573,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.size.height = pauseButtonSize
 		directionMarker.isHidden = true
 		isPaused = false
+				
+		if ballIsOnPaddle == false && pauseBallVelocityX == 0 && pauseBallVelocityY == 0 {
+			let randomLaunchDirection = Bool.random()
+            if randomLaunchDirection {
+                ballLaunchAngleRad = straightLaunchAngleRad + minLaunchAngleRad
+            } else {
+                ballLaunchAngleRad = straightLaunchAngleRad - minLaunchAngleRad
+            }
+			pauseBallVelocityX = cos(CGFloat(ballLaunchAngleRad)) * ballSpeedLimit
+			pauseBallVelocityY = sin(CGFloat(ballLaunchAngleRad)) * ballSpeedLimit
+		}
 		
 		enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
 			node.isPaused = false
@@ -5517,10 +5611,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Enusre the ball is affected by gravity
 		
 		if killBall {
-			
-			if numberOfLives == 0 {
-				numberOfLives = 1
-			}
+			numberOfLives+=1
 			ballLost()
 		}
 		killBall = false
@@ -5531,7 +5622,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 		
 	@objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - game scene")
         userSettings()
         loadGameData()
     }

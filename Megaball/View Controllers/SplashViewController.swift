@@ -90,7 +90,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             if currentLevelNumber == 0 {
                 packNameLabel.text = ""
                 levelNumberLabel.text = "Endless Mode"
-                scoreLabel.text = "\(height) m"
+                scoreLabel.text = "\(height)m"
             }
             
             packNameLabel.isHidden = false
@@ -123,7 +123,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         
         cell.settingDescription.text = ""
-        cell.centreLabel.text = "Cancel Resume"
+        cell.centreLabel.text = "Cancel"
         cell.settingState.text = ""
         
         cell.cellView2.layer.cornerRadius = 25

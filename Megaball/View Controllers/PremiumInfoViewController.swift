@@ -109,9 +109,9 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
             cell.settingDescription.textColor = #colorLiteral(red: 0.2159586251, green: 0.04048030823, blue: 0.3017641902, alpha: 1)
             
             cell.descriptionAndStateSharedWidthConstraint.isActive = false
-            cell.decriptionFullWidthConstraint.isActive = true
             cell.descriptionTickWidthConstraint.isActive = false
-            
+            cell.decriptionFullWidthConstraint.isActive = true
+
             cell.iconImage.image = UIImage(named:"ButtonPremium")
             cell.settingDescription.textColor = #colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 1)
             
@@ -121,7 +121,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
             case 1:
                 cell.settingDescription.text = "Unlock all 28 power-ups"
             case 2:
-                cell.settingDescription.text = "Unlock all customisations"
+                cell.settingDescription.text = "Unlock all 12 themes and app icons"
             case 3:
                 cell.settingDescription.text = "Remove ads"
             case 4:
@@ -288,7 +288,6 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -312,7 +311,6 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     }
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
-        print("llama llama purchase complete")
         removeAnimate()
     }
 }

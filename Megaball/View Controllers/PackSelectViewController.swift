@@ -94,8 +94,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
         if premiumSetting! == false && allUnlockedBool == false {
             premiumTableView.isHidden = false
-            premiumTableExpanded.isActive = true
             premiumTableCollapsed.isActive = false
+            premiumTableExpanded.isActive = true
         } else {
             premiumTableView.isHidden = true
             premiumTableExpanded.isActive = false
@@ -141,8 +141,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             cell.settingDescription.text = LevelPackSetup().levelPackNameArray[indexPath.row+2]
             
             cell.descriptionAndStateSharedWidthConstraint.isActive = false
-            cell.decriptionFullWidthConstraint.isActive = true
             cell.descriptionTickWidthConstraint.isActive = false
+            cell.decriptionFullWidthConstraint.isActive = true
             cell.tickImage.isHidden = true
             
             if totalStatsArray[0].packBestTimes[indexPath.row] > 0 {
@@ -186,8 +186,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             
             if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
                 cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                cell.decriptionFullWidthConstraint.isActive = true
                 cell.descriptionTickWidthConstraint.isActive = false
+                cell.decriptionFullWidthConstraint.isActive = true
                 cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2-1] {
@@ -394,7 +394,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -485,7 +484,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - pack select view")
         userSettings()
         loadData()
         premiumTableViewHideShow()

@@ -111,11 +111,11 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                     cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+" catches"
                 }
                 if LevelPackSetup().powerUpTimerArray[passedIndex!] == "10" {
-                    cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+" s"
+                    cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+"s"
                 }
                 return cell
             case 2:
-                cell.statDescription.text = "Generated"
+                cell.statDescription.text = "Released"
                 cell.statValue.text = String(totalStatsArray[0].powerupsGenerated[passedIndex!])
                 return cell
             case 3:
@@ -242,7 +242,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -312,7 +311,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - items stats view")
         userSettings()
         loadData()
         updateLabels()

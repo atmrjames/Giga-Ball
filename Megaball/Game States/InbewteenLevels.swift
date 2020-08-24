@@ -19,9 +19,7 @@ class InbetweenLevels: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        
-        print("llama llama entered inbetween levels")
-                
+                        
         NotificationCenter.default.addObserver(self, selector: #selector(self.notificationToContinueReceived(_:)), name: .continueToNextLevel, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed continue on the end level popup
         
@@ -56,8 +54,6 @@ class InbetweenLevels: GKState {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
-//        CloudKitHandler().saveRecords()
-//        GameCenterHandler().saveCloudData()
         showAd()
     }
     
@@ -106,7 +102,6 @@ class InbetweenLevels: GKState {
             scene.totalStatsArray[0].achievementDates[26] = Date()
             let achievement = GKAchievement(identifier: "endBackstop")
             if achievement.isCompleted == false {
-                print("llama llama achievement endBackstop")
                 achievement.showsCompletionBanner = true
                 GKAchievement.report([achievement]) { (error) in
                     print(error?.localizedDescription ?? "Error reporting endBackstop achievement")
@@ -180,7 +175,6 @@ class InbetweenLevels: GKState {
             var packEndLivesBonus = 0
             if scene.levelNumber == scene.endLevelNumber && scene.gameoverStatus == false && scene.numberOfLevels != 1 {
                 packEndLivesBonus = scene.numberOfLives*100
-                print("llama llama pack complete: \(scene.numberOfLives), \(packEndLivesBonus)")
                 // Additional lives remaining equal 100 bonus points each
             }
             scene.totalScore = scene.totalScore + scene.levelScore + scene.levelTimerBonus + packEndLivesBonus
@@ -212,17 +206,8 @@ class InbetweenLevels: GKState {
         if scene.endlessMode == false {
             
             if (scene.levelScore + scene.levelTimerBonus) > scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] {
-                print("llama llama level score save")
                 scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] = (scene.levelScore + scene.levelTimerBonus)
             }
-            
-            print("llama llama level score: ", (scene.levelScore + scene.levelTimerBonus), scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]])
-            
-//            scene.levelStatsArray[scene.levelNumber].scores.append(scene.levelScore + scene.levelTimerBonus)
-//            scene.levelStatsArray[scene.levelNumber].scoreDates.append(Date())
-//            if scene.gameoverStatus == false {
-//                scene.levelStatsArray[scene.levelNumber].numberOfCompletes+=1
-//            }
         }
         // Update level stats
         
@@ -313,7 +298,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[43] = Date()
                 let achievement = GKAchievement(identifier: "fiveKPointsLevel")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement fiveKPointsLevel: ", levelAchievementScore)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting fiveKPointsLevel achievement")
@@ -325,7 +309,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[44] = Date()
                 let achievement = GKAchievement(identifier: "tenKPointsLevel")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement tenKPointsLevel: ", levelAchievementScore)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting tenKPointsLevel achievement")
@@ -346,7 +329,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "hundredKTotalScore")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement hundredKTotalScore: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -366,7 +348,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "fiveHundredKTotalScore")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement fiveHundredKTotalScore: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -386,7 +367,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "millTotalScore")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement millTotalScore: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -404,7 +384,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[36] = Date()
                 let achievement = GKAchievement(identifier: "noBallsLost")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement noBallsLost: ", scene.deathsPerLevel)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting noBallsLost achievement")
@@ -416,7 +395,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[37] = Date()
                 let achievement = GKAchievement(identifier: "threeBallsLost")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement threeBallsLost: ", scene.deathsPerLevel)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting threeBallsLost achievement")
@@ -432,7 +410,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[38] = Date()
                 let achievement = GKAchievement(identifier: "allLevelPowerUps")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement allLevelPowerUps: ", scene.powerUpsGeneratedPerLevel, scene.powerUpsCollectedPerLevel)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting allLevelPowerUps achievement")
@@ -444,7 +421,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[39] = Date()
                 let achievement = GKAchievement(identifier: "noLevelPowerUps")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement noLevelPowerUps: ", scene.powerUpsGeneratedPerLevel, scene.powerUpsCollectedPerLevel)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting noLevelPowerUps achievement")
@@ -480,7 +456,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "tenLevelsComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement tenLevelsComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -500,7 +475,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "hunderdLevelsComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement hunderdLevelsComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -520,7 +494,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "oneKLevelsComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement oneKLevelsComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -540,7 +513,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "tenKLevelsComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement tenKLevelsComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -555,7 +527,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[40] = Date()
                 let achievement = GKAchievement(identifier: "quickLevelComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement quickLevelComplete: ", scene.levelTimerValue)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting quickLevelComplete achievement")
@@ -572,7 +543,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[59] = Date()
                 let achievement = GKAchievement(identifier: "tenKPointsPack")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement tenKPointsPack: ", scene.totalScore)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting tenKPointsPack achievement")
@@ -584,7 +554,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[60] = Date()
                 let achievement = GKAchievement(identifier: "twoFiveKPointsPack")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement twoFiveKPointsPack: ", scene.totalScore)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting twoFiveKPointsPack achievement")
@@ -596,7 +565,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[61] = Date()
                 let achievement = GKAchievement(identifier: "fiftyKPointsPack")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement fiftyKPointsPack: ", scene.totalScore)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting fiftyKPointsPack achievement")
@@ -620,8 +588,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[6] = Date()
                 let achievementPack = GKAchievement(identifier: "classicPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement classicPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting classicPackComplete achievement")
                     }
@@ -642,7 +609,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[7] = Date()
                 let achievementPack = GKAchievement(identifier: "spacePackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement spacePackComplete")
                     achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting spacePackComplete achievement")
@@ -664,8 +630,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[8] = Date()
                 let achievementPack = GKAchievement(identifier: "naturePackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement naturePackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting naturePackComplete achievement")
                     }
@@ -682,8 +647,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[9] = Date()
                 let achievementPack = GKAchievement(identifier: "urbanPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement urbanPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting urbanPackComplete achievement")
                     }
@@ -700,8 +664,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[10] = Date()
                 let achievementPack = GKAchievement(identifier: "foodPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement foodPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting foodPackComplete achievement")
                     }
@@ -718,8 +681,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[11] = Date()
                 let achievementPack = GKAchievement(identifier: "computerPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement computerPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting computerPackComplete achievement")
                     }
@@ -736,8 +698,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[12] = Date()
                 let achievementPack = GKAchievement(identifier: "bodyPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement bodyPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting bodyPackComplete achievement")
                     }
@@ -752,7 +713,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[13] = Date()
                 let achievementPack = GKAchievement(identifier: "worldPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement worldPackComplete")
                     achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting worldPackComplete achievement")
@@ -768,8 +728,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[14] = Date()
                 let achievementPack = GKAchievement(identifier: "emojiPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement emojiPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting emojiPackComplete achievement")
                     }
@@ -784,8 +743,7 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[15] = Date()
                 let achievementPack = GKAchievement(identifier: "numbersPackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement numbersPackComplete")
-                                        achievementPack.showsCompletionBanner = true
+                    achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting numbersPackComplete achievement")
                     }
@@ -799,7 +757,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[16] = Date()
                 let achievementPack = GKAchievement(identifier: "challengePackComplete")
                 if achievementPack.isCompleted == false {
-                    print("llama llama achievement challengePackComplete")
                                         achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting challengePackComplete achievement")
@@ -813,7 +770,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[54] = Date()
                 let achievement = GKAchievement(identifier: "noBallsLostPack")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement noBallsLostPack: ", scene.deathsPerPack)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting noBallsLostPack achievement")
@@ -825,7 +781,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[55] = Date()
                 let achievement = GKAchievement(identifier: "tenBallsLostPack")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement tenBallsLostPack: ", scene.deathsPerPack)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting tenBallsLostPack achievement")
@@ -839,7 +794,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[56] = Date()
                 let achievement = GKAchievement(identifier: "allPackPowerUps")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement allPackPowerUps: ", scene.powerUpsGeneratedPerPack, scene.powerUpsCollectedPerPack)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting allPackPowerUps achievement")
@@ -851,7 +805,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[57] = Date()
                 let achievement = GKAchievement(identifier: "noPackPowerUps")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement noPackPowerUps: ", scene.powerUpsGeneratedPerPack, scene.powerUpsCollectedPerPack)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting noPackPowerUps achievement")
@@ -865,7 +818,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[58] = Date()
                 let achievement = GKAchievement(identifier: "quickPackComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement quickPackComplete: ", scene.powerUpsGeneratedPerPack, scene.powerUpsCollectedPerPack)
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting quickPackComplete achievement")
@@ -883,7 +835,6 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].achievementDates[62] = Date()
                 let achievement = GKAchievement(identifier: "onePacksComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement onePacksComplete: ", scene.totalStatsArray[0].packHighScores[scene.packNumber-2])
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
                         print(error?.localizedDescription ?? "Error reporting onePacksComplete achievement")
@@ -902,7 +853,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "tenPacksComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement tenPacksComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -922,7 +872,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "hundredPacksComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement hundredPacksComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -942,7 +891,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "thousandPacksComplete")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement thousandPacksComplete: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -966,7 +914,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "achievementEndlessFiveK")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement achievementEndlessFiveK: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
@@ -986,7 +933,6 @@ class InbetweenLevels: GKState {
                 }
                 let achievement = GKAchievement(identifier: "achievementEndlessTenK")
                 if achievement.isCompleted == false {
-                    print("llama llama achievement achievementEndlessTenK: ", percentComplete)
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in

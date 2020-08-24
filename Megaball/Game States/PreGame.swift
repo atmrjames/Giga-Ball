@@ -18,9 +18,7 @@ class PreGame: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        
-        print("llama llama entered pre game")
-                        
+                                
         self.resetGame()
         
         let wait = SKAction.wait(forDuration: 1.0)

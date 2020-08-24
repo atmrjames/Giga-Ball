@@ -19,7 +19,6 @@ class Playing: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        print("llama llama entered playing")
         scene.gameInProgress = true
         scene.defaults.set(scene.gameInProgress!, forKey: "gameInProgress")
         
@@ -42,17 +41,12 @@ class Playing: GKState {
         
         if previousState is PreGame {
             scene.newItemsBool = false
-            
             if scene.packNumber > 1 {
                 if scene.numberOfLevels == 1  {
-
-                    print("llama llama 1")
                     scene.previousHighscore = scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]]
                 } else {
-                    print("llama llama 0")
                     scene.previousHighscore = scene.totalStatsArray[0].packHighScores[scene.packNumber-2]
                 }
-                print("llama llama previous highscore: ", scene.previousHighscore, scene.levelNumber, scene.packNumber, scene.numberOfLevels, scene.startLevelNumber, LevelPackSetup().startLevelNumber[scene.packNumber])
             }
         }
         
@@ -109,7 +103,6 @@ class Playing: GKState {
 //        scene.ball.position.y = scene.ballStartingPositionY
 
         if scene.resumeGameToLoad! {
-            print("llama resume game log: ", scene.saveGameSaveArray!, scene.saveMultiplier!, scene.saveBrickTextureArray!, scene.saveBrickColourArray!, scene.saveBrickXPositionArray!, scene.saveBrickYPositionArray!)
             scene.levelScore = scene.saveGameSaveArray![3]
             scene.totalScore = scene.saveGameSaveArray![4]
             scene.numberOfLives = scene.saveGameSaveArray![5]
@@ -207,265 +200,274 @@ class Playing: GKState {
             scene.levelTimerValue = 0
             // reset level timer bonus
             
+            var waitDuration = 0.0
+            
             if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] || scene.levelNumber == 0 || scene.numberOfLevels == 1 {
                 scene.firstLevel = true
                 scene.showInbetweenView()
                 scene.firstLevel = false
+                waitDuration = 0.10
             }
             // Show the level intro screen if the first level of the pack
             
-            switch scene.levelNumber {
-                
-            // Endless mode
-            case 0:
-                scene.loadLevel999()
-                
-            // Classic Pack
-            case 1:
-                scene.loadLevel1()
-            case 2:
-                scene.loadLevel2()
-            case 3:
-                scene.loadLevel3()
-            case 4:
-                scene.loadLevel4()
-            case 5:
-                scene.loadLevel5()
-            case 6:
-                scene.loadLevel6()
-            case 7:
-                scene.loadLevel7()
-            case 8:
-                scene.loadLevel8()
-            case 9:
-                scene.loadLevel9()
-            case 10:
-                scene.loadLevel10()
-                
-            // Space Pack
-            case 11:
-                scene.loadLevel11()
-            case 12:
-                scene.loadLevel12()
-            case 13:
-                scene.loadLevel13()
-            case 14:
-                scene.loadLevel14()
-            case 15:
-                scene.loadLevel15()
-            case 16:
-                scene.loadLevel16()
-            case 17:
-                scene.loadLevel17()
-            case 18:
-                scene.loadLevel18()
-            case 19:
-                scene.loadLevel19()
-            case 20:
-                scene.loadLevel20()
-                
-            // Nature Pack
-            case 21:
-                scene.loadLevel21()
-            case 22:
-                scene.loadLevel22()
-            case 23:
-                scene.loadLevel23()
-            case 24:
-                scene.loadLevel24()
-            case 25:
-                scene.loadLevel25()
-            case 26:
-                scene.loadLevel26()
-            case 27:
-                scene.loadLevel27()
-            case 28:
-                scene.loadLevel28()
-            case 29:
-                scene.loadLevel29()
-            case 30:
-                scene.loadLevel30()
-                
-            // Nature Pack
-            case 31:
-                scene.loadLevel31()
-            case 32:
-                scene.loadLevel32()
-            case 33:
-                scene.loadLevel33()
-            case 34:
-                scene.loadLevel34()
-            case 35:
-                scene.loadLevel35()
-            case 36:
-                scene.loadLevel36()
-            case 37:
-                scene.loadLevel37()
-            case 38:
-                scene.loadLevel38()
-            case 39:
-                scene.loadLevel39()
-            case 40:
-                scene.loadLevel40()
-                
-            // Food Pack
-            case 41:
-                scene.loadLevel41()
-            case 42:
-                scene.loadLevel42()
-            case 43:
-                scene.loadLevel43()
-            case 44:
-                scene.loadLevel44()
-            case 45:
-                scene.loadLevel45()
-            case 46:
-                scene.loadLevel46()
-            case 47:
-                scene.loadLevel47()
-            case 48:
-                scene.loadLevel48()
-            case 49:
-                scene.loadLevel49()
-            case 50:
-                scene.loadLevel50()
-                
-            // Computer Pack
-            case 51:
-                scene.loadLevel51()
-            case 52:
-                scene.loadLevel52()
-            case 53:
-                scene.loadLevel53()
-            case 54:
-                scene.loadLevel54()
-            case 55:
-                scene.loadLevel55()
-            case 56:
-                scene.loadLevel56()
-            case 57:
-                scene.loadLevel57()
-            case 58:
-                scene.loadLevel58()
-            case 59:
-                scene.loadLevel59()
-            case 60:
-                scene.loadLevel60()
             
-            // Body Pack
-            case 61:
-                scene.loadLevel61()
-            case 62:
-                scene.loadLevel62()
-            case 63:
-                scene.loadLevel63()
-            case 64:
-                scene.loadLevel64()
-            case 65:
-                scene.loadLevel65()
-            case 66:
-                scene.loadLevel66()
-            case 67:
-                scene.loadLevel67()
-            case 68:
-                scene.loadLevel68()
-            case 69:
-                scene.loadLevel69()
-            case 70:
-                scene.loadLevel70()
-            
-            // Geography Pack
-            case 71:
-                scene.loadLevel71()
-            case 72:
-                scene.loadLevel72()
-            case 73:
-                scene.loadLevel73()
-            case 74:
-                scene.loadLevel74()
-            case 75:
-                scene.loadLevel75()
-            case 76:
-                scene.loadLevel76()
-            case 77:
-                scene.loadLevel77()
-            case 78:
-                scene.loadLevel78()
-            case 79:
-                scene.loadLevel79()
-            case 80:
-                scene.loadLevel80()
-
-            // Emoji Pack
-            case 81:
-                scene.loadLevel81()
-            case 82:
-                scene.loadLevel82()
-            case 83:
-                scene.loadLevel83()
-            case 84:
-                scene.loadLevel84()
-            case 85:
-                scene.loadLevel85()
-            case 86:
-                scene.loadLevel86()
-            case 87:
-                scene.loadLevel87()
-            case 88:
-                scene.loadLevel88()
-            case 89:
-                scene.loadLevel89()
-            case 90:
-                scene.loadLevel90()
-
-            // Numbers Pack
-            case 91:
-                scene.loadLevel91()
-            case 92:
-                scene.loadLevel92()
-            case 93:
-                scene.loadLevel93()
-            case 94:
-                scene.loadLevel94()
-            case 95:
-                scene.loadLevel95()
-            case 96:
-                scene.loadLevel96()
-            case 97:
-                scene.loadLevel97()
-            case 98:
-                scene.loadLevel98()
-            case 99:
-                scene.loadLevel99()
-            case 100:
-                scene.loadLevel100()
-
-            // Challenge Pack
-            case 101:
-                scene.loadLevel101()
-            case 102:
-                scene.loadLevel102()
-            case 103:
-                scene.loadLevel103()
-            case 104:
-                scene.loadLevel104()
-            case 105:
-                scene.loadLevel105()
-            case 106:
-                scene.loadLevel106()
-            case 107:
-                scene.loadLevel107()
-            case 108:
-                scene.loadLevel108()
-            case 109:
-                scene.loadLevel109()
-            case 110:
-                scene.loadLevel110()
+            let wait = SKAction.wait(forDuration: waitDuration)
+            self.scene.run(wait, completion: {
+            // Add slight delay for loading first level to allow blur view to cover brick build animation properly
                 
-            default:
-                break
-            }
-            // Load level in
+                switch self.scene.levelNumber {
+                    
+                // Endless mode
+                case 0:
+                    self.scene.loadLevel999()
+                    
+                // Classic Pack
+                case 1:
+                    self.scene.loadLevel1()
+                case 2:
+                    self.scene.loadLevel2()
+                case 3:
+                    self.scene.loadLevel3()
+                case 4:
+                    self.scene.loadLevel4()
+                case 5:
+                    self.scene.loadLevel5()
+                case 6:
+                    self.scene.loadLevel6()
+                case 7:
+                    self.scene.loadLevel7()
+                case 8:
+                    self.scene.loadLevel8()
+                case 9:
+                    self.scene.loadLevel9()
+                case 10:
+                    self.scene.loadLevel10()
+                    
+                // Space Pack
+                case 11:
+                    self.scene.loadLevel11()
+                case 12:
+                    self.scene.loadLevel12()
+                case 13:
+                    self.scene.loadLevel13()
+                case 14:
+                    self.scene.loadLevel14()
+                case 15:
+                    self.scene.loadLevel15()
+                case 16:
+                    self.scene.loadLevel16()
+                case 17:
+                    self.scene.loadLevel17()
+                case 18:
+                    self.scene.loadLevel18()
+                case 19:
+                    self.scene.loadLevel19()
+                case 20:
+                    self.scene.loadLevel20()
+                    
+                // Nature Pack
+                case 21:
+                    self.scene.loadLevel21()
+                case 22:
+                    self.scene.loadLevel22()
+                case 23:
+                    self.scene.loadLevel23()
+                case 24:
+                    self.scene.loadLevel24()
+                case 25:
+                    self.scene.loadLevel25()
+                case 26:
+                    self.scene.loadLevel26()
+                case 27:
+                    self.scene.loadLevel27()
+                case 28:
+                    self.scene.loadLevel28()
+                case 29:
+                    self.scene.loadLevel29()
+                case 30:
+                    self.scene.loadLevel30()
+                    
+                // Nature Pack
+                case 31:
+                    self.scene.loadLevel31()
+                case 32:
+                    self.scene.loadLevel32()
+                case 33:
+                    self.scene.loadLevel33()
+                case 34:
+                    self.scene.loadLevel34()
+                case 35:
+                    self.scene.loadLevel35()
+                case 36:
+                    self.scene.loadLevel36()
+                case 37:
+                    self.scene.loadLevel37()
+                case 38:
+                    self.scene.loadLevel38()
+                case 39:
+                    self.scene.loadLevel39()
+                case 40:
+                    self.scene.loadLevel40()
+                    
+                // Food Pack
+                case 41:
+                    self.scene.loadLevel41()
+                case 42:
+                    self.scene.loadLevel42()
+                case 43:
+                    self.scene.loadLevel43()
+                case 44:
+                    self.scene.loadLevel44()
+                case 45:
+                    self.scene.loadLevel45()
+                case 46:
+                    self.scene.loadLevel46()
+                case 47:
+                    self.scene.loadLevel47()
+                case 48:
+                    self.scene.loadLevel48()
+                case 49:
+                    self.scene.loadLevel49()
+                case 50:
+                    self.scene.loadLevel50()
+                    
+                // Computer Pack
+                case 51:
+                    self.scene.loadLevel51()
+                case 52:
+                    self.scene.loadLevel52()
+                case 53:
+                    self.scene.loadLevel53()
+                case 54:
+                    self.scene.loadLevel54()
+                case 55:
+                    self.scene.loadLevel55()
+                case 56:
+                    self.scene.loadLevel56()
+                case 57:
+                    self.scene.loadLevel57()
+                case 58:
+                    self.scene.loadLevel58()
+                case 59:
+                    self.scene.loadLevel59()
+                case 60:
+                    self.scene.loadLevel60()
+                
+                // Body Pack
+                case 61:
+                    self.scene.loadLevel61()
+                case 62:
+                    self.scene.loadLevel62()
+                case 63:
+                    self.scene.loadLevel63()
+                case 64:
+                    self.scene.loadLevel64()
+                case 65:
+                    self.scene.loadLevel65()
+                case 66:
+                    self.scene.loadLevel66()
+                case 67:
+                    self.scene.loadLevel67()
+                case 68:
+                    self.scene.loadLevel68()
+                case 69:
+                    self.scene.loadLevel69()
+                case 70:
+                    self.scene.loadLevel70()
+                
+                // Geography Pack
+                case 71:
+                    self.scene.loadLevel71()
+                case 72:
+                    self.scene.loadLevel72()
+                case 73:
+                    self.scene.loadLevel73()
+                case 74:
+                    self.scene.loadLevel74()
+                case 75:
+                    self.scene.loadLevel75()
+                case 76:
+                    self.scene.loadLevel76()
+                case 77:
+                    self.scene.loadLevel77()
+                case 78:
+                    self.scene.loadLevel78()
+                case 79:
+                    self.scene.loadLevel79()
+                case 80:
+                    self.scene.loadLevel80()
+
+                // Emoji Pack
+                case 81:
+                    self.scene.loadLevel81()
+                case 82:
+                    self.scene.loadLevel82()
+                case 83:
+                    self.scene.loadLevel83()
+                case 84:
+                    self.scene.loadLevel84()
+                case 85:
+                    self.scene.loadLevel85()
+                case 86:
+                    self.scene.loadLevel86()
+                case 87:
+                    self.scene.loadLevel87()
+                case 88:
+                    self.scene.loadLevel88()
+                case 89:
+                    self.scene.loadLevel89()
+                case 90:
+                    self.scene.loadLevel90()
+
+                // Numbers Pack
+                case 91:
+                    self.scene.loadLevel91()
+                case 92:
+                    self.scene.loadLevel92()
+                case 93:
+                    self.scene.loadLevel93()
+                case 94:
+                    self.scene.loadLevel94()
+                case 95:
+                    self.scene.loadLevel95()
+                case 96:
+                    self.scene.loadLevel96()
+                case 97:
+                    self.scene.loadLevel97()
+                case 98:
+                    self.scene.loadLevel98()
+                case 99:
+                    self.scene.loadLevel99()
+                case 100:
+                    self.scene.loadLevel100()
+
+                // Challenge Pack
+                case 101:
+                    self.scene.loadLevel101()
+                case 102:
+                    self.scene.loadLevel102()
+                case 103:
+                    self.scene.loadLevel103()
+                case 104:
+                    self.scene.loadLevel104()
+                case 105:
+                    self.scene.loadLevel105()
+                case 106:
+                    self.scene.loadLevel106()
+                case 107:
+                    self.scene.loadLevel107()
+                case 108:
+                    self.scene.loadLevel108()
+                case 109:
+                    self.scene.loadLevel109()
+                case 110:
+                    self.scene.loadLevel110()
+                    
+                default:
+                    break
+                }
+                // Load level in
+            })
         }
     }
     

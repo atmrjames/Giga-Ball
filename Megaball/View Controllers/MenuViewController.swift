@@ -41,6 +41,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var gameInProgress: Bool?
     var resumeGameToLoad: Bool?
     var iCloudSetting: Bool?
+    var firstPause: Bool?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -115,8 +116,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.foregroundNotificationKeyReceived), name: .foregroundNotification, object: nil)
         // Sets up an observer to watch for the app returning from the background
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundNotificationKeyReceived), name: .backgroundNotification, object: nil)
-        // Sets up an observer to watch for the app going into the background
+//        NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundNotificationKeyReceived), name: .backgroundNotification, object: nil)
+//        // Sets up an observer to watch for the app going into the background
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.cancelGameResumeNotificationKeyReceived), name: .cancelGameResume, object: nil)
         // Sets up an observer to watch for notifications to check game resume has been cancelled from splash screen
@@ -124,7 +125,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(onUbiquitousKeyValueStoreDidChangeExternally(notification:)), name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: NSUbiquitousKeyValueStore.default)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore
         
-        print(NSHomeDirectory()+"llama llama ud")
+//        print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
                 
         backgroundImageView.image = UIImage(named:"mainMenuBackground.png")!
@@ -133,8 +134,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         refreshView()
         collectionViewLayout()
         authGCPlayer()
-
-        print("llama game save array: ", saveGameSaveArray!)
         
         if musicSetting! {
             MusicHandler.sharedHelper.playMusic(sender: "Menu")
@@ -201,7 +200,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             let splashView = self.storyboard?.instantiateViewController(withIdentifier: "splashView") as! SplashViewController
             
             userSettings()
-            print("llama llama resume game to load: ", resumeGameToLoad!)
             if resumeGameToLoad! {
                 splashView.gameToResume = true
             } else {
@@ -302,9 +300,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             iconCollectionView.frame.size.width = tableViewContainer.frame.size.width-100
         }
         // Ensures the collection view is the correct size
-        
-        print("llama llama layout: ", iconCollectionView.frame.size.width, tableViewContainer.frame.size.width, view.frame.size.width)
-        
+                
         let spacing = (iconCollectionView.frame.size.width-(50*3))/2
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
@@ -454,6 +450,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["gameInProgress": false])
         defaults.register(defaults: ["resumeGameToLoad": false])
         defaults.register(defaults: ["iCloudSetting": false])
+        defaults.register(defaults: ["firstPause": true])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -585,6 +582,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         gameInProgress = defaults.bool(forKey: "gameInProgress")
         resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
+        iCloudSetting = defaults.bool(forKey: "iCloudSetting")
+        firstPause = defaults.bool(forKey: "firstPause")
         // User settings
         
         CloudKitHandler().isICloudContainerAvailable()
@@ -738,13 +737,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         appOpenCount!+=1
         defaults.set(appOpenCount!, forKey: "appOpenCount")
         CloudKitHandler().saveUserDefaults()
-        print("llama llama open count: ", appOpenCount!)
         // Present onboarding screen if first time opening app
     }
     // Runs when the splash screen has ended
     
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
-        print("llama llama menu foreground")
         authGCPlayer()
         refreshView()
         if musicSetting! {
@@ -753,10 +750,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Runs when the splash screen has ended
     
-    @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
-        print("llama llama menu background")
-    }
-    // Runs when the splash screen has ended
+//    @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
+//    }
     
     @objc private func cancelGameResumeNotificationKeyReceived(_ notification: Notification) {
         clearSavedGame()
@@ -764,7 +759,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Runs when the splash screen has ended
     
     @objc func onUbiquitousKeyValueStoreDidChangeExternally(notification:Notification) {
-        print("llama llama icloud update pushed")
         CloudKitHandler().loadUserDefaults()
         CloudKitHandler().loadTotalStats()
         NotificationCenter.default.post(name: .refreshViewForSync, object: nil)
@@ -805,15 +799,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
         defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
         defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
-        print("llama llama save game data cleared MM: ", saveGameSaveArray!)
     }
     
     func loadSavedGame() {
         levelSender = "MainMenu"
         numberOfLevels = saveGameSaveArray![1] - saveGameSaveArray![0] + 1
         moveToGame(selectedLevel: saveGameSaveArray![0], numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: saveGameSaveArray![2])
-        print("llama resume game: ", saveGameSaveArray![0], numberOfLevels!, levelSender!, saveGameSaveArray![2])
-// TODO: Show specific loading splashscreen - delay for some time to load data, login to game center, etc
     }
     
 }

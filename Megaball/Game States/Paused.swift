@@ -20,8 +20,6 @@ class Paused: GKState {
 
     override func didEnter(from previousState: GKState?) {
         
-        print("llama llama entered paused")
-        
         if scene.musicSetting! {
             MusicHandler.sharedHelper.menuVolume()
         }

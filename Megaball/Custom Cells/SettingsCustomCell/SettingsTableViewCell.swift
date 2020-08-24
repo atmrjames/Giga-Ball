@@ -48,9 +48,9 @@ class SettingsTableViewCell: UITableViewCell {
         settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         settingDescription.font = settingDescription.font.withSize(18)
         
-        descriptionAndStateSharedWidthConstraint.isActive = true
         decriptionFullWidthConstraint.isActive = false
         descriptionTickWidthConstraint.isActive = false
+        descriptionAndStateSharedWidthConstraint.isActive = true
     
     }
     

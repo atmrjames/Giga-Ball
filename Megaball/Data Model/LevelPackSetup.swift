@@ -23,7 +23,7 @@ class LevelPackSetup {
         "Classic Pack",
         "Space Pack",
         "Nature Pack",
-        "Urban Pack",
+        "City Pack",
         "Food Pack",
         "Computer Pack",
         "Body Pack",
@@ -38,7 +38,7 @@ class LevelPackSetup {
         "Complete Classic Pack to unlock", // White
         "Complete Space Pack to unlock", // Yellow
         "Complete Nature Pack to unlock", // Orange
-        "Complete Urban Pack to unlock", // Green
+        "Complete City Pack to unlock", // Green
         "Complete Food Pack to unlock", // Blue
         "Complete Computer Pack to unlock", // Brown
         "Complete Body Pack to unlock", // Black
@@ -57,8 +57,8 @@ class LevelPackSetup {
         "Glass",
         "Pixel",
         "Split",
-        "Candy",
-        "Giga-Ball",
+        "Candy Cane",
+        "Glow",
         "Rainbow",
         "Retro"
     ]
@@ -117,13 +117,13 @@ class LevelPackSetup {
         "Purple",
         "White",
         "Yellow",
+        "Outline",
         "Orange",
         "Green",
         "Blue",
-        "Brown",
         "Black",
         "Pink",
-        "Giga-Ball",
+        "Glow",
         "Rainbow",
         "Retro"
     ]
@@ -132,13 +132,13 @@ class LevelPackSetup {
         UIImage(named:"Purple.png")!,
         UIImage(named:"White.png")!,
         UIImage(named:"Yellow.png")!,
+        UIImage(named:"Outline.png")!,
         UIImage(named:"Orange.png")!,
         UIImage(named:"Green.png")!,
         UIImage(named:"Blue.png")!,
-        UIImage(named:"Brown.png")!,
         UIImage(named:"Black.png")!,
         UIImage(named:"Pink.png")!,
-        UIImage(named:"GigaBall.png")!,
+        UIImage(named:"Glow.png")!,
         UIImage(named:"Rainbow.png")!,
         UIImage(named:"Retro.png")!
     ]
@@ -262,9 +262,9 @@ class LevelPackSetup {
         // Classic Pack
         "Checkers",
         "Electric Fence",
-        "Gateway",
+        "Tunnel",
         "Surfer's Paradise",
-        "Chevron",
+        "Spinning Top",
         "Vignette",
         "Cluster",
         "Vertical Challenge",
@@ -275,13 +275,13 @@ class LevelPackSetup {
         "Cresent Moon",
         "Invader",
         "Constellation",
-        "Star",
+        "The Sun",
         "Rocket",
-        "Galaxy",
+        "Spiral Galaxy",
         "Meteor Shower",
         "Neptune",
         "Saturn",
-        "Meteorite",
+        "Asteroid",
         
         // Nature Pack
         "Leaf",
@@ -291,16 +291,16 @@ class LevelPackSetup {
         "Sunset",
         "Apple",
         "Flower",
-        "Birds",
+        "Mother Goose",
         "Germ",
         "Butterfly",
         
-        // Urban Pack
+        // City Pack
         "City Map",
         "Skyscraper",
-        "Subway",
-        "Cottage",
-        "Traffic Light",
+        "Underground",
+        "Townhouse",
+        "Traffic Lights",
         "Finance",
         "Apartments",
         "City Hall",
@@ -309,7 +309,7 @@ class LevelPackSetup {
         
         // Food Pack
         "Hotdog",
-        "Piece of Cake",
+        "Cake",
         "Wine Glass",
         "Fried Egg",
         "BBQ",
@@ -324,21 +324,21 @@ class LevelPackSetup {
         "Save",
         "@",
         "Mail",
-        "Watch",
+        "Clock",
         "Trash",
         "Bug",
         "Zoom",
         "Battery",
-        "Hour Glass",
+        "Hourglass",
         
         // Body Pack
         "Heart",
         "Brain",
         "Skull",
-        "Intestine",
-        "Lips",
+        "Intestines",
+        "Mouth",
         "Eye",
-        "Kidney",
+        "Stomach",
         "Tooth",
         "Lungs",
         "Face",
@@ -356,14 +356,14 @@ class LevelPackSetup {
         "Volcano",
         
         // Emoji Pack
-        "Smiling Face",
-        "Eyes",
+        "Smiley Face",
+        "Side Eyes",
         "Fire",
         "Weird Fish",
-        "Winking Face",
+        "Cheeky Wink",
         "Peach",
         "Ghost",
-        "Augerbene / Eggplant",
+        "Aubergine",
         "Crying Face",
         "Poo",
         
@@ -381,14 +381,14 @@ class LevelPackSetup {
         
         // Challenge Pack
         "Lonesome Brick",
-        "Kerplunk",
+        "Pinball",
         "Gradient",
-        "Restriction",
+        "Narrow",
         "Barricade",
         "Minefield",
-        "Split Screen",
-        "Pimple",
-        "Ringfence",
+        "Mirror",
+        "Spot",
+        "Shield",
         "Finish Line"
     ]
     
@@ -433,7 +433,7 @@ class LevelPackSetup {
         "leaderboardLevel29Score",
         "leaderboardLevel30Score",
         
-        // Urban Pack
+        // City Pack
         "leaderboardLevel31Score",
         "leaderboardLevel32Score",
         "leaderboardLevel33Score",
@@ -505,34 +505,34 @@ class LevelPackSetup {
     let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7]
     
     let powerUpNameArray: [String] = [
-        "Get A Life",
-        "Lose A Life",
-        "Decrease Ball Speed",
-        "Increase Ball Speed",
-        "Increase Paddle Size",
-        "Decrease Paddle Size",
+        "Extra Ball",
+        "Lose A Ball",
+        "Slow Ball",
+        "Fast Ball",
+        "Expand Paddle",
+        "Shrink Paddle",
         "Sticky Paddle",
-        "Gravity",
+        "Gravity Field",
         "+100 Points",
         "-100 Points",
         "+1000 Points",
         "-1000 Points",
-        "x2 Multiplier",
+        "Max Multiplier",
         "Reset Multiplier",
-        "Next Level",
-        "Show All Bricks",
+        "Complete Level",
+        "Show Bricks",
         "Hide Bricks",
         "Clear Multi-Hit Bricks",
         "Reset Multi-Hit Bricks",
-        "Remove Indestructible Bricks",
+        "Zap Indestructible Bricks",
         "Giga-Ball",
-        "Undestructi-Ball",
+        "Inert Ball",
         "Lasers",
         "Quicksand",
         "Mystery",
         "Backstop",
-        "Increase Ball Size",
-        "Decrease Ball Size"
+        "Expand Ball",
+        "Shrink Ball"
     ]
     
     let powerUpUnlockedDescriptionArray: [String] = [
@@ -556,8 +556,8 @@ class LevelPackSetup {
         "",
         "",
         "",
-        "Complete Urban Pack to unlock", // Giga-Ball
-        "Complete Urban Pack to unlock", // Undestructi-Ball
+        "Complete City Pack to unlock", // Giga-Ball
+        "Complete City Pack to unlock", // Undestructi-Ball
         "Complete Food Pack to unlock", // Lasers
         "Complete Food Pack to unlock", // Quicksand
         "Complete Body to unlock", // Mystery
@@ -598,65 +598,65 @@ class LevelPackSetup {
     ]
     
     let powerUpDescriptionArray: [String] = [
-        "Gives you an extra life",
-        "Kills the ball in play",
+        "Gives you an extra ball",
+        "Lose your current ball",
         "Slows the ball down",
         "Speeds the ball up",
         "Makes the paddle wider",
         "Makes the paddle shorter",
-        "Retains the ball on the paddle",
-        "Makes the ball suseptible to gravity",
-        "Adds 100 points to your score",
-        "Takes 100 points away from your score",
-        "Adds 1000 points to your score",
-        "Takes 1000 points away from your score",
+        "Sticks the ball to the paddle on contact",
+        "Applies a gravity field to the ball",
+        "Adds 100 points x multiplier to your score",
+        "Removes 100 points x multiplier from your score",
+        "Adds 1000 points x multiplier to your score",
+        "Removes 1000 points x multiplier from your score",
         "Sets the multiplier to the maximum of x2",
         "Sets the multiplier to the minimum of x1",
-        "Completes the level",
-        "Shows all bricks that are currently invisible",
-        "Hides all visible bricks",
-        "Sets multi-hit bricks to single hit bricks",
-        "Resets all multi-hit bricks to their maximum hit setting",
+        "Moves you directly to the next level",
+        "Reveals all hidden bricks",
+        "Hides all standard and invisible bricks",
+        "Reduces multi-hit bricks to single hit bricks",
+        "Resets all multi-hit bricks",
         "Removes all indestructible bricks",
-        "Allows the ball to pass uninterrupted through all brick types",
+        "Allows the ball to pass through all bricks",
         "Prevents the ball from removing bricks",
-        "Lasers fire from either side of the paddle",
-        "Moves the bricks down towards the paddle",
-        "Randomly generates a mystery power-up when collected",
-        "Adds a backstop below the paddle to save a missed ball",
-        "Increases the size of the ball",
-        "Decreases the size of the ball"
+        "Fires lasers from the paddle",
+        "Moves all bricks down",
+        "Applies a random power-up, good or bad",
+        "Adds a safety net below the paddle to save a missed ball",
+        "Makes the ball larger",
+        "Makes the ball smaller"
     ]
     
     let powerUpMultiplierArray: [String] = [
-        "+0.1x",
+        "+0.1",
         "",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "-0.1x",
-        "2.0x",
-        "1.0x",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "-0.1",
         "",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "+0.1x",
-        "-0.1x",
-        "+0.1x",
-        "-0.1x",
         "",
-        "+0.1x",
-        "+0.1x",
-        "-0.1x"
+        "",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "+0.1",
+        "-0.1",
+        "+0.1",
+        "-0.1",
+        "",
+        "+0.1",
+        "+0.1",
+        "-0.1"
     ]
     
     let powerUpTimerArray: [String] = [
@@ -700,7 +700,7 @@ class LevelPackSetup {
         "Classic Pack Complete", // 6 classicPackComplete
         "Space Pack Complete", // 7 spacePackComplete
         "Nature Pack Complete", // 8 naturePackComplete
-        "Urban Pack Complete", // 9 urbanPackComplete
+        "City Pack Complete", // 9 urbanPackComplete
         "Food Pack Complete", // 10 foodPackComplete
         "Computer Pack Complete", // 11 computerPackComplete
         "Body Pack Complete", // 12 bodyPackComplete
@@ -768,7 +768,7 @@ class LevelPackSetup {
         "Complete all levels in Classic Pack", // 6 classicPackComplete
         "Complete all levels in Space Pack", // 7 spacePackComplete
         "Complete all levels in Nature Pack", // 8 naturePackComplete
-        "Complete all levels in Urban Pack", // 9 urbanPackComplete
+        "Complete all levels in City Pack", // 9 urbanPackComplete
         "Complete all levels in Food Pack", // 10 foodPackComplete
         "Complete all levels in Computer Pack", // 11 computerPackComplete
         "Complete all levels in Body Pack", // 12 bodyPackComplete
@@ -836,7 +836,7 @@ class LevelPackSetup {
         "Passed all levels in Classic Pack", // 6 classicPackComplete
         "Passed all levels in Space Pack", // 7 spacePackComplete
         "Passed all levels in Nature Pack", // 8 naturePackComplete
-        "Passed all levels in Urban Pack", // 9 urbanPackComplete
+        "Passed all levels in City Pack", // 9 urbanPackComplete
         "Passed all levels in Food Pack", // 10 foodPackComplete
         "Passed all levels in Computer Pack", // 11 computerPackComplete
         "Passed all levels in Body Pack", // 12 bodyPackComplete

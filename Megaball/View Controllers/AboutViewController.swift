@@ -227,7 +227,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }

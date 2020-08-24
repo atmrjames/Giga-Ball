@@ -19,8 +19,6 @@ class GameOver: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        print("llama llama entered game over")
-        
         if scene.musicSetting! {
             MusicHandler.sharedHelper.menuVolume()
         }

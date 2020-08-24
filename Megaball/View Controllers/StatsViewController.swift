@@ -300,7 +300,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
             } else {
-                cell.statDescription.text = "Power-ups generated"
+                cell.statDescription.text = "Power-ups released"
                 cell.statValue.text = String(totalStatsArray[0].powerupsGenerated.reduce(0, +))
             }
             return cell
@@ -524,7 +524,6 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -590,7 +589,6 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     // Remove game center view contoller once dismissed
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - stats view")
         userSettings()
         loadData()
         statsTableView.reloadData()

@@ -67,9 +67,9 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         cell.blurView.isHidden = true
         
         cell.descriptionAndStateSharedWidthConstraint.isActive = false
-        cell.decriptionFullWidthConstraint.isActive = true
         cell.descriptionTickWidthConstraint.isActive = false
-        
+        cell.decriptionFullWidthConstraint.isActive = true
+
         if indexPath.row == 0 {
             cell.iconImage.image = UIImage(named:"iconPlayLevel")
             cell.settingDescription.text = "Play single level only"
@@ -231,7 +231,6 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }

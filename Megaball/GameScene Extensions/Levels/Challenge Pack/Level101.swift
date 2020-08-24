@@ -20,7 +20,7 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                if (j == 0 || j == 2 || j == 4 || j == 6 || j == 8 || j == 10) && (i == 0 || i == 1 || i == 4 || i == 5 || i == 8 || i == 9 || i == 12 || i == 13 || i == 16 || i == 17 || i == 20 || i == 21) {
+                if (j == 2 || j == 4 || j == 6 || j == 8) && (i == 4 || i == 5 || i == 8 || i == 9 || i == 12 || i == 13 || i == 16 || i == 17) {
                     brick.texture = brickInvisibleTexture
                 }
                 if (j == 1 || j == 3 || j == 5 || j == 7 || j == 9) && (i == 2 || i == 3 || i == 6 || i == 7 || i == 10 || i == 11 || i == 14 || i == 15 || i == 18 || i == 19) {

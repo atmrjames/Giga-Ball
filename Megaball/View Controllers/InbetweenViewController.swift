@@ -109,8 +109,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         if levelScoreBonus <= 0 {
             speedBonusTitle.isHidden = true
             speedBonusLabel.isHidden = true
-            totalScoreNoSpeedBonus.isActive = true
             totalScoreSpeedBonus.isActive = false
+            totalScoreNoSpeedBonus.isActive = true
         } else {
             speedBonusTitle.isHidden = false
             speedBonusLabel.isHidden = false
@@ -118,9 +118,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
             totalScoreSpeedBonus.isActive = true
         }
         
-        completeLabelConstraint.isActive = true
         packAndLevelConstriant.isActive = false
-        
+        completeLabelConstraint.isActive = true
+
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotificationInbetween, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
                 
@@ -306,25 +306,22 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
         for transaction in transactions {
             if transaction.transactionState == .purchased {
-                print("User payment successful - inbetween")
                 IAPHandler().unlockPremiumContent()
                 SKPaymentQueue.default().finishTransaction(transaction)
                 
             } else if transaction.transactionState == .failed {
                 if let error = transaction.error {
                     let errorDescription = error.localizedDescription
-                    print("User payment failed/cancelled - inbetween: \(errorDescription)")
+                    print("User payment failed/cancelled: \(errorDescription)")
                 }
                 SKPaymentQueue.default().finishTransaction(transaction)
                 NotificationCenter.default.post(name: .iAPIncompleteNotification, object: nil)
                 // Send notification to the app that the IAP was successful
                 
             } else if transaction.transactionState == .restored {
-                print("User purchase restored - inbetween")
                 IAPHandler().unlockPremiumContent()
                 SKPaymentQueue.default().finishTransaction(transaction)
             } else {
-                print("llama other - inbetween")
             }
         }
     }
@@ -354,7 +351,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     func addParallaxToView() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }

@@ -61,7 +61,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         if interstitial.isReady {
             interstitial.present(fromRootViewController: self)
         } else {
-            print("ad not ready")
             // Setup next ad when the current one is closed
             NotificationCenter.default.post(name: .closeAd, object: nil)
             // Load the next level if the ad didn't load up in time
@@ -112,6 +111,15 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         inbetweenView.view.frame = self.view.frame
         self.view.addSubview(inbetweenView.view)
         inbetweenView.didMove(toParent: self)
+    }
+    
+    func showWarning(senderID: String) {
+        let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
+        warningView.senderID = senderID
+        self.addChild(warningView)
+        warningView.view.frame = self.view.frame
+        self.view.addSubview(warningView.view)
+        warningView.didMove(toParent: self)
     }
     
     func createInterstitial() {

@@ -576,9 +576,7 @@ extension GameScene {
             brick.physicsBody!.usesPreciseCollisionDetection = true
             addChild(brick)
             brickArray.append(brick)
-            
-            print("llama llama new brick set")
-            
+                        
         }
         // Define brick properties
         

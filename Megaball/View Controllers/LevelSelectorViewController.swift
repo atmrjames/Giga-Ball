@@ -123,8 +123,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
         if premiumSetting! == false && allUnlockedBool == false {
             premiumTableView.isHidden = false
-            premiumTableExpanded.isActive = true
             premiumTableCollapsed.isActive = false
+            premiumTableExpanded.isActive = true
         } else {
             premiumTableView.isHidden = true
             premiumTableExpanded.isActive = false
@@ -169,7 +169,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                cell.statDescription.text = "Highscore"
+                cell.statDescription.text = "Pack Highscore"
                 let highScore = totalStatsArray[0].packHighScores[packNumber!-2]
                 if highScore > 0 {
                     cell.statValue.text = String(highScore)
@@ -195,7 +195,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             let cell = tableView.dequeueReusableCell(withIdentifier: "levelSelectorCell", for: indexPath) as! LevelSelectorTableViewCell
             cell.levelLabel.text = "Level "+String(indexPath.row+1)
             cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row]
-            cell.highScoreTitleLabel.text = "Highscore"
+            cell.highScoreTitleLabel.text = "Level Highscore"
             cell.blurView.isHidden = true
             cell.lockedImageView.isHidden = true
             cell.cellView3.tag = indexPath.row+1
@@ -557,7 +557,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func addParallax() {
         var amount = 25
         if view.frame.width > 450 {
-            print("frame width: ", view.frame.width)
             amount = 50
             // iPad
         }
@@ -615,30 +614,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         levelsTableView.reloadData()
         backButtonCollectionView.reloadData()
     }
-    
-//    func statsTableOpenClose(animated: Bool) {
-//        if statsCollapseSetting == false {
-//            collapsedStatsTableViewHeight.isActive = false
-//            statsTableViewHeight.isActive = true
-//            UIView.animate(withDuration: 0.25, animations: {
-//                self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: 0)
-//            })
-//        } else {
-//            collapsedStatsTableViewHeight.isActive = true
-//            statsTableViewHeight.isActive = false
-//            UIView.animate(withDuration: 0.25, animations: {
-//            self.statsTableViewChevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi/2)
-//            })
-//        }
-//
-//        updateLabels()
-//        if animated {
-//            UIView.animate(withDuration: 0.25) {
-//                self.view.layoutIfNeeded()
-//            }
-//        }
-//        statsTableView.reloadData()
-//    }
     
     func showGameCenterLeaderboards() {
         if gameCenterSetting! {
@@ -716,7 +691,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     // Runs when returning from another menu view
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
-        print("llama llama icloud update pushed - level select view")
         userSettings()
         loadData()
         updateLabels()
