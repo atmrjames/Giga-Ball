@@ -70,7 +70,6 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         removeAnimate()
-//        set tutorial to viewed
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }

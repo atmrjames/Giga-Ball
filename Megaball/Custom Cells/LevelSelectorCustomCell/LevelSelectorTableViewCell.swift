@@ -52,13 +52,9 @@ class LevelSelectorTableViewCell: UITableViewCell {
     
     func setBlur() {
         blurView.backgroundColor = .clear
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurViewLayer = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurViewLayer!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         blurView.insertSubview(blurViewLayer!, at: 0)
 
         NSLayoutConstraint.activate([

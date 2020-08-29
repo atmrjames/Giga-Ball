@@ -18,23 +18,23 @@ extension GameScene {
         for i in 0..<numberOfBrickRows {
             for j in 0..<numberOfBrickColumns {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
-                brick.texture = brickInvisibleTexture
+                brick.texture = brickNullTexture
                 
                 if j >= 3 && j <= 7 && i >= 0 && i <= 21 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickGreenGigaball
+                    brick.color = brickWhite
                 }
                 if j >= 2 && j <= 8 && i >= 2 && i <= 19 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickGreenGigaball
+                    brick.color = brickWhite
                 }
                 if j >= 1 && j <= 9 && i >= 4 && i <= 17 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickGreenGigaball
+                    brick.color = brickWhite
                 }
                 if j >= 0 && j <= 10 && i >= 6 && i <= 15 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickGreenGigaball
+                    brick.color = brickWhite
                 }
                 
                 if j >= 3 && j <= 7 && i >= 2 && i <= 19 {
@@ -65,13 +65,12 @@ extension GameScene {
                 }
                 
                 if j >= 4 && j <= 6 && i >= 8 && i <= 13 {
-                    brick.texture = brickMultiHit2Texture
+                    brick.texture = brickMultiHit1Texture
                 }
                 
                 if j == 5 && i >= 10 && i <= 11 {
-                    brick.texture = brickIndestructible1Texture
+                    brick.texture = brickIndestructible2Texture
                 }
-                
                                 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 

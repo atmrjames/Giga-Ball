@@ -22,46 +22,46 @@ extension GameScene {
                 
                 if j >= 3 && j <= 7 && i >= 0 && i <= 21 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPink
+                    brick.color = brickGreyDark
                 }
                 if j >= 2 && j <= 8 && i >= 2 && i <= 19 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPink
+                    brick.color = brickGreyDark
                 }
                 if j >= 1 && j <= 9 && i >= 4 && i <= 17 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPink
+                    brick.color = brickGreyDark
                 }
                 if j >= 0 && j <= 10 && i >= 6 && i <= 15 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPink
+                    brick.color = brickGreyDark
                 }
                 
                 if j >= 3 && j <= 7 && i >= 2 && i <= 19 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPurple
+                    brick.color = brickGrey
                 }
                 if j >= 2 && j <= 8 && i >= 4 && i <= 17 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPurple
+                    brick.color = brickGrey
                 }
                 if j >= 1 && j <= 9 && i >= 6 && i <= 15 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickPurple
+                    brick.color = brickGrey
                 }
                 
                 if j >= 3 && j <= 7 && i >= 4 && i <= 17 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickBlue
+                    brick.color = brickGreyLight
                 }
                 if j >= 2 && j <= 8 && i >= 6 && i <= 15 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickBlue
+                    brick.color = brickGreyLight
                 }
                 
                 if j >= 3 && j <= 7 && i >= 6 && i <= 15 {
                     brick.texture = brickNormalTexture
-                    brick.color = brickGreenGigaball
+                    brick.color = brickWhite
                 }
                 
                 if j >= 4 && j <= 6 && i >= 8 && i <= 13 {

@@ -10,6 +10,7 @@ import UIKit
 
 class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UITableViewDelegate, UITableViewDataSource {
     
+    var premiumSetting: Bool?
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
@@ -35,6 +36,9 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
         infoTableView.delegate = self
         infoTableView.dataSource = self
@@ -183,7 +187,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-            1
+        1
     }
         
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -239,13 +243,9 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.5)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([
@@ -260,6 +260,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     }
     
     func userSettings() {
+        premiumSetting = defaults.bool(forKey: "premiumSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
     }
@@ -313,4 +314,12 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
         removeAnimate()
     }
+    
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
+        userSettings()
+        if premiumSetting! {
+            removeAnimate()
+        }
+    }
+    // Runs when the NSUbiquitousKeyValueStore changes
 }

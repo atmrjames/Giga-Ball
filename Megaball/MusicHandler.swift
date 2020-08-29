@@ -20,9 +20,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     var player: AVAudioPlayer?
     var randomPlayerTrack: Int = 0
     // Setup game music
-    
-    var buttonClickPlayer: AVAudioPlayer?
-    
+        
     var menuVolumeSet: Float = 0.50
     var gameVolumeSet: Float = 1.00
     
@@ -32,7 +30,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
             return
         }
         // Check if music setting is on
-        
+
         let titleTheme = Bundle.main.url(forResource: "Giga-Ball - Title Theme - Loop", withExtension: "mp3")
         
         let theEspace = Bundle.main.url(forResource: "Giga-Ball - The Escape - Loop", withExtension: "mp3")

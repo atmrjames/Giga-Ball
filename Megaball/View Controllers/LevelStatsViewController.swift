@@ -281,13 +281,9 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([

@@ -116,6 +116,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.iconImage.image = UIImage(named:"iconGameCenter.png")!
             } else {
                 hideCell(cell: cell)
+                return cell
             }
         case 4:
             cell.settingDescription.text = "Quick Start Guide"
@@ -123,6 +124,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 5:
             if premiumSetting! {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.settingDescription.text = "Giga-Ball Premium"
                 cell.iconImage.image = UIImage(named:"iconPremium.png")!
@@ -131,6 +133,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             cell.settingDescription.text = "Purchase Soundtrack"
             cell.iconImage.image = UIImage(named:"iconMusic.png")!
             hideCell(cell: cell)
+            return cell
         case 7:
             cell.settingDescription.text = "Rate Giga-Ball"
             cell.iconImage.image = UIImage(named:"iconReview.png")!
@@ -162,8 +165,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
         UIView.animate(withDuration: 0.2) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
             cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
@@ -201,7 +204,22 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // Share
             let shareURL: [Any] = ["Check out Giga-Ball on the App Store", URL(string: "https://apps.apple.com/app/id1494628204")!]
             let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
-            present(shareSheet, animated: true)
+            
+            if ( UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiom.pad ){
+                let rectOfCellInTableView = tableView.rectForRow(at: indexPath)
+                let rectOfCellInSuperview = tableView.convert(rectOfCellInTableView, to: tableView.backgroundView)
+                let popUpPosition = rectOfCellInSuperview.origin.y + cell.cellView2.frame.height/2
+                // Determine y poision of selected cell
+
+                if let popoverController = shareSheet.popoverPresentationController {
+                    popoverController.sourceView = self.view
+                    popoverController.sourceRect = CGRect(x: self.view.bounds.midX, y: popUpPosition, width: 0, height: 0)
+                }
+                // Show pop-up at selected cell position
+            }
+            // Determine where to display the share sheet on iPads
+            
+            self.present(shareSheet, animated: true, completion: nil)
         case 9:
         // About
             moveToAbout()
@@ -263,11 +281,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
-//            if gameCenterSetting! {
-//                cell.iconImage.image = UIImage(named:"ButtonItems")
-//            } else {
-//                cell.iconImage.image = UIImage(named:"ButtonNull")
-//            }
              cell.iconImage.image = UIImage(named:"ButtonNull")
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonNull")
@@ -288,9 +301,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if indexPath.row == 0 {
             removeAnimate()
         }
-//        if indexPath.row == 1 && gameCenterSetting! {
-//            showGameCenterAchievements()
-//        }
         
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -309,14 +319,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
                  cell.iconImage.image = UIImage(named:"ButtonNull")
-//                if self.gameCenterSetting! {
-//                    if self.hapticsSetting! {
-//                        self.interfaceHaptic.impactOccurred()
-//                    }
-//                    cell.iconImage.image = UIImage(named:"ButtonItemsHighlighted")
-//                } else {
-//                    cell.iconImage.image = UIImage(named:"ButtonNull")
-//                }
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             default:
@@ -339,14 +341,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
-//                if self.gameCenterSetting! {
-//                    if self.hapticsSetting! {
-//                        self.interfaceHaptic.impactOccurred()
-//                    }
-//                    cell.iconImage.image = UIImage(named:"ButtonItems")
-//                } else {
-//                    cell.iconImage.image = UIImage(named:"ButtonNull")
-//                }
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             default:
@@ -396,13 +390,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([

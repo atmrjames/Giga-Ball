@@ -144,7 +144,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         case 1:
             unlockedCount = totalStatsArray[0].themeUnlockedArray.filter{$0 == true}.count
             arrayCount = totalStatsArray[0].themeUnlockedArray.count
-            titleLabel.text = "BALL & PADDLE"
+            titleLabel.text = "BALL & PADDLE THEME" 
         case 2:
             unlockedCount = totalStatsArray[0].powerUpUnlockedArray.filter{$0 == true}.count
             arrayCount = totalStatsArray[0].powerUpUnlockedArray.count
@@ -370,10 +370,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.descriptionAndStateSharedWidthConstraint.isActive = false
                     cell.decriptionFullWidthConstraint.isActive = false
                     cell.descriptionTickWidthConstraint.isActive = true
-                    
                     cell.tickImage.isHidden = false
                     cell.iconImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!
-    //                cell.settingState.isHidden = true
                 } else {
                     cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
                     cell.settingDescription.font = cell.settingDescription.font.withSize(16)
@@ -545,9 +543,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
         removeAnimate()
         if senderID == 0 || senderID == 1 {
             NotificationCenter.default.post(name: .reanimateNotificiation, object: nil)

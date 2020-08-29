@@ -159,9 +159,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
-//            if self.hapticsSetting! {
-//                self.interfaceHaptic.impactOccurred()
-//            }
             if sender == "Pause" {
                 showWarning(senderID: "pauseMenu")
             } else {
@@ -173,16 +170,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
         if indexPath.row == 1 {
             if self.sender == "Pause" {
-//                if self.hapticsSetting! {
-//                    self.interfaceHaptic.impactOccurred()
-//                }
                 removeAnimate(nextAction: .unpause)
             }
         }
         if indexPath.row == 2 {
-//            if self.hapticsSetting! {
-//                self.interfaceHaptic.impactOccurred()
-//            }
             if self.sender == "Pause" {
                 hideAnimate()
                 moveToSettings()
@@ -271,13 +262,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.33)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([

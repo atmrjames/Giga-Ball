@@ -31,7 +31,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
 //            removeAnimate(duration: 0.1)
 //        }
     }
-    // Remove this function in final release
+    // Tap to dismiss splash screen
     
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool?

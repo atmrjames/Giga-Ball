@@ -77,20 +77,17 @@ class InbetweenLevels: GKState {
         // Stop ball
         
         scene.ball.run(ballSequence, completion: {
-//            self.scene.ball.isHidden = true
             self.scene.ball.run(resetGroup, completion: {
                 self.scene.ball.isHidden = true
             })
         })
         scene.paddle.run(paddleSequence, completion: {
-//            self.scene.paddle.isHidden = true
             self.scene.paddle.run(resetGroupPaddle, completion: {
                 self.scene.paddle.isHidden = true
                 self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             })
         })
         scene.paddleRetroTexture.run(paddleSequence, completion: {
-//            self.scene.paddleRetroTexture.isHidden = true
             self.scene.paddleRetroTexture.run(resetGroupPaddle, completion: {
                 self.scene.paddleRetroTexture.isHidden = true
             })
@@ -238,13 +235,7 @@ class InbetweenLevels: GKState {
         scene.totalStatsArray[0].pack10LevelHighScores = scene.packLevelHighScoresArray![9]
         scene.totalStatsArray[0].pack11LevelHighScores = scene.packLevelHighScoresArray![10]
         
-        do {
-            let data = try scene.encoder.encode(self.scene.totalStatsArray)
-            try data.write(to: scene.totalStatsStore!)
-        } catch {
-            print("Error encoding total stats, \(error)")
-        }
-        CloudKitHandler().saveTotalStats()
+        saveStatsArrayData()
         // Save total stats
         if scene.gameCenterSetting! {
             GameCenterHandler().gameCenterSave()
@@ -260,7 +251,7 @@ class InbetweenLevels: GKState {
         } catch {
             print("Error encoding total stats, \(error)")
         }
-        CloudKitHandler().saveTotalStats()
+        CloudKitHandler().saveToiCloud()
         // Save total stats
     }
     
@@ -279,9 +270,7 @@ class InbetweenLevels: GKState {
                     self.scene.showPauseMenu(sender: "Complete")
                     // Show game complete
                 } else {
-//                    self.scene.gameState.enter(Playing.self)
                     self.scene.showInbetweenView()
-                    // SHOW INBETWEEN LEVELS VC
                     // Move to the next level after a delay
                 }
             }

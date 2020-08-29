@@ -15,7 +15,7 @@ extension GameScene {
         if levelNumber == 0 {
             prepEndlessMode(height: saveGameSaveArray![6])
         }
-        
+
         powerUpProbAllocation(levelNumber: levelNumber)
         
         var brickArray: [SKNode] = []

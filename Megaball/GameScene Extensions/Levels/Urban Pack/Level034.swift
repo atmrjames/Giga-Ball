@@ -40,13 +40,13 @@ extension GameScene {
                 }
                 
                 if (j == 3 || j == 7) && i >= 16 && i <= 17 {
-                    brick.texture = brickInvisibleTexture
+                    brick.texture = brickNullTexture
                 }
                 if (j == 3 || j == 5 || j == 7) && i >= 11 && i <= 12 {
-                    brick.texture = brickInvisibleTexture
+                    brick.texture = brickNullTexture
                 }
                 if j == 5 && i >= 6 && i <= 7 {
-                    brick.texture = brickInvisibleTexture
+                    brick.texture = brickNullTexture
                 }
                 
                 if j == 5 && i >= 15 && i <= 18 {

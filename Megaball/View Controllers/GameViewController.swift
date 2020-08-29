@@ -33,7 +33,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         if let view = self.view as! SKView? {
             // Load the SKScene from 'GameScene.sks'
             if let scene = SKScene(fileNamed: "GameScene") {
@@ -68,9 +68,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     
     func moveToMainMenu() {
-        CloudKitHandler().saveUserDefaults()
-//        CloudKitHandler().saveRecords()
-        CloudKitHandler().saveTotalStats()
+        CloudKitHandler().saveToiCloud()
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
         NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
@@ -127,7 +125,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
     }
     
     func createInterstitialAd() -> GADInterstitial {
-        interstitial = GADInterstitial(adUnitID: "ca-app-pub-3940256099942544/4411468910")
+        interstitial = GADInterstitial(adUnitID: "ca-app-pub-3110131406973822/7277792086")
         interstitial.delegate = self
         interstitial.load(GADRequest())
         return interstitial
@@ -163,24 +161,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         return true
     }
     
-//    override func viewDidLayoutSubviews() {
-//        setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
-//    }
-//    // Setup controlling home bar status on other view controllers
-    
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
         return [.bottom]
     }
     // Disable home bar on 1st swipe
-    
-//    override var childForScreenEdgesDeferringSystemGestures: UIViewController? {
-//        return children.first { type(of: $0) == PauseMenuViewController.self }
-//    }
-//    // Allow re-enabling of home bar on 1st swipe in child view controllers
-    
 }
-
-//extension Notification.Name {
-//    public static let saveGameProgressNotificationKey = Notification.Name(rawValue: "saveGameProgressNotificationKey")
-//}
-//// Setup for notifcations from AppDelegate

@@ -42,13 +42,9 @@ class InAppPurchaseViewController: UIViewController {
     
     func setBlur() {
         contentView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.33)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
         NSLayoutConstraint.activate([
         blurView!.heightAnchor.constraint(equalTo: contentView.heightAnchor),
@@ -118,8 +114,6 @@ class InAppPurchaseViewController: UIViewController {
     }
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
-//        statusLabel.text = "Purchase successful \nThank you for supporting Giga-Ball"
-//        statusLabel.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         removeAnimate()
     }
     // IAP complete

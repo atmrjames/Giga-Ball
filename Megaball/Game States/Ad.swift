@@ -58,9 +58,7 @@ class Ad: GKState {
     // Call the function to load the next level if a notification from the end level popup is received
     
     override func willExit(to nextState: GKState) {
-//        if scene.musicSetting! {
-//            MusicHandler.sharedHelper.resumeMusic()
-//        }
+
     }
     // This function runs when this state is exited.
     

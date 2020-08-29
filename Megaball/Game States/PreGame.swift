@@ -18,7 +18,7 @@ class PreGame: GKState {
     }
     
     override func didEnter(from previousState: GKState?) {
-                                
+                                        
         self.resetGame()
         
         let wait = SKAction.wait(forDuration: 1.0)
@@ -50,6 +50,7 @@ class PreGame: GKState {
         scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         scene.pauseButton.isHidden = true
         scene.livesLabel.isHidden = true
+        scene.endlessGameIcon.isHidden = true
         scene.life.isHidden = true
         scene.ballIsOnPaddle = true
         // Hide labels

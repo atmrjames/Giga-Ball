@@ -209,7 +209,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             let levelNumber = startLevel!+indexPath.row
             if packLevelHighScoresArray[packNumber!-2][levelNumber-startLevel!] > 0 {
-//            if levelStatsArray[levelNumber].scores.isEmpty == false {
                 cell.highScoreLabel.text = String(packLevelHighScoresArray[packNumber!-2][levelNumber-startLevel!])
             } else {
                 cell.highScoreTitleLabel.text = ""
@@ -311,12 +310,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
             }
         }
-    }
-    
-    func hideCell(cell: StatsTableViewCell) {
-        cell.statValue.text = ""
-        cell.statDescription.text = ""
-        statsTableView.rowHeight = 0.0
     }
     
     func collectionViewLayout() {
@@ -485,13 +478,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([
@@ -677,7 +666,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         loadData()
         reloadData()
         updateLabels()
-//        statsTableOpenClose(animated: false)
     }
     // Runs when returning from game
     
@@ -694,6 +682,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         userSettings()
         loadData()
         updateLabels()
+        premiumTableViewHideShow()
+        premiumTableView.reloadData()
         reloadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes

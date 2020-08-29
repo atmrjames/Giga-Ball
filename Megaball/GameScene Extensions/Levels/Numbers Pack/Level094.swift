@@ -35,6 +35,19 @@ extension GameScene {
                 if j >= 1 && j <= 4 && i >= 12 && i <= 19 {
                     brick.texture = brickMultiHit4Texture
                 }
+                
+                if j >= 2 && j <= 3 && i >= 4 && i <= 7 {
+                    brick.texture = brickNullTexture
+                }
+                if j >= 7 && j <= 8 && i >= 4 && i <= 7 {
+                    brick.texture = brickNullTexture
+                }
+                if j >= 2 && j <= 3 && i >= 14 && i <= 17 {
+                    brick.texture = brickNullTexture
+                }
+                if j >= 7 && j <= 8 && i >= 14 && i <= 17 {
+                    brick.texture = brickNullTexture
+                }
                                 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffset - brickHeight*CGFloat(i))
                 

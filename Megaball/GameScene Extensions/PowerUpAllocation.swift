@@ -401,8 +401,16 @@ extension GameScene {
         // Increase probability of extra life if low on lives
         
         // Testing
+//        powerUpProbArray[4] = 100 // Increase Paddle Size
+//        powerUpProbArray[5] = 100 // Decrease Paddle Size
+//        powerUpProbArray[6] = 100 // Sticky Paddle
 //        powerUpProbArray[14] = 100 // Next Level
 //        powerUpProbArray[25] = 100 // Backstop
+//        powerUpProbArray[20] = 100 // Giga-Ball
+//        powerUpProbArray[22] = 100 // Lasers
+//        powerUpProbArray[24] = 100 // Mystery
+//        powerUpProbArray[26] = 100 // Increase Ball Size
+//        powerUpProbArray[27] = 100 // Decrease Ball Size
 //        powerUpProbFactor = 2
         // Testing
         

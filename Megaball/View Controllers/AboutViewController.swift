@@ -37,11 +37,10 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     @IBOutlet var facebookLogo: UIButton!
     @IBOutlet var twitterLogo: UIButton!
     @IBOutlet var websiteLink: UIButton!
-    @IBOutlet var brendanWebsiteLink: UIButton!
-    
     @IBOutlet var privacyPolicyLink: UIButton!
     @IBOutlet var buildLabel: UILabel!
     @IBOutlet var copyrightLabel: UILabel!
+    @IBOutlet var rightsLabel: UILabel!
     
     @IBAction func instagramLogoTapped(_ sender: Any) {
         if hapticsSetting! {
@@ -76,15 +75,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         }
     }
     
-    @IBAction func brendanWebsiteLinkTapped(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if let url = URL(string: "https://www.giga-ball.app") {
-            UIApplication.shared.open(url)
-        }
-    }
-    
     @IBAction func privacyPolicyTapped(_ sender: Any) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
@@ -93,8 +83,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             UIApplication.shared.open(url)
         }
     }
-    
-    
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
 
@@ -173,13 +161,9 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.5)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([
@@ -287,10 +271,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         websiteLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         websiteLink.center.y += distance
         
-        brendanWebsiteLink.alpha = 0.0
-        brendanWebsiteLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        brendanWebsiteLink.center.y += distance
-        
         privacyPolicyLink.alpha = 0.0
         privacyPolicyLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         privacyPolicyLink.center.y += distance
@@ -303,6 +283,10 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         copyrightLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         copyrightLabel.center.y += distance
         
+        rightsLabel.alpha = 0.0
+        rightsLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        rightsLabel.center.y += distance
+
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.logoIcon.alpha = 1.0
             self.logoIcon.transform = CGAffineTransform(scaleX: 1, y: 1)
@@ -352,13 +336,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         })
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.brendanWebsiteLink.alpha = 1.0
-            self.brendanWebsiteLink.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.brendanWebsiteLink.center.y -= distance
-            delayFactor+=1
-        })
-        
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.privacyPolicyLink.alpha = 1.0
             self.privacyPolicyLink.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.privacyPolicyLink.center.y -= distance
@@ -376,6 +353,13 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             self.copyrightLabel.alpha = 1.0
             self.copyrightLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.copyrightLabel.center.y -= distance
+            delayFactor+=1
+        })
+        
+        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
+            self.rightsLabel.alpha = 1.0
+            self.rightsLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.rightsLabel.center.y -= distance
             delayFactor+=1
         })
     }

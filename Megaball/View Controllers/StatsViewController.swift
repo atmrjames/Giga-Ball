@@ -130,6 +130,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 1:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Total score"
                 cell.statValue.text = String(totalStatsArray[0].cumulativeScore)
@@ -138,6 +139,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 2:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Items unlocked"
                 cell.statValue.text = String(unlockedItemCount)+"/"+String(lockedItemCount)
@@ -146,6 +148,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 3:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Achievements completed"
                 cell.statValue.text = String(unlockedAchievementCount)+"/"+String(lockedAchievementCount)
@@ -154,6 +157,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 4:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Packs unlocked"
                 cell.statValue.text = String(unlockedPackCount)+"/"+String(lockedPackCount)
@@ -162,6 +166,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 5:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Packs played"
                 cell.statValue.text = String(totalStatsArray[0].packsPlayed)
@@ -170,6 +175,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 6:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Packs completed"
                 cell.statValue.text = String(totalStatsArray[0].packsCompleted)
@@ -178,6 +184,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 7:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Pack completion rate"
                 var completionRate: Double = Double(totalStatsArray[0].packsCompleted)/Double(totalStatsArray[0].packsPlayed)*100.0
@@ -192,6 +199,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 8:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Levels unlocked"
                 cell.statValue.text = String(unlockedLevelCount)+"/"+String(lockedLevelCount)
@@ -200,6 +208,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 9:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Levels played"
                 cell.statValue.text = String(totalStatsArray[0].levelsPlayed)
@@ -208,6 +217,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 10:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Levels completed"
                 cell.statValue.text = String(totalStatsArray[0].levelsCompleted)
@@ -216,6 +226,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 11:
             if numberOfAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Level completion rate"
                 var completionRate: Double = Double(totalStatsArray[0].levelsCompleted)/Double(totalStatsArray[0].levelsPlayed)*100.0
@@ -230,6 +241,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 12:
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Endless Mode plays"
                 cell.statValue.text = String(numberOfEndlessModeAttempts)
@@ -238,6 +250,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 13:
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Endless Mode best height"
                 if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
@@ -250,6 +263,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 14:
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Endless Mode total height"
                 cell.statValue.text = String(heightArraySum)+" m"
@@ -258,6 +272,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 15:
             if numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Endless Mode average height"
                 let averageScore = heightArraySum/numberOfEndlessModeAttempts
@@ -267,6 +282,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 16:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Ball hits"
                 cell.statValue.text = String(totalStatsArray[0].ballHits)
@@ -275,6 +291,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 17:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Balls lost"
                 cell.statValue.text = String(totalStatsArray[0].ballsLost)
@@ -283,6 +300,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 18:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Bricks hit"
                 cell.statValue.text = String(totalStatsArray[0].bricksHit.reduce(0, +))
@@ -291,6 +309,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 19:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Bricks destroyed"
                 cell.statValue.text = String(totalStatsArray[0].bricksDestroyed.reduce(0, +))
@@ -299,6 +318,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 20:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Power-ups released"
                 cell.statValue.text = String(totalStatsArray[0].powerupsGenerated.reduce(0, +))
@@ -307,6 +327,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 21:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Power-ups collected"
                 cell.statValue.text = String(totalStatsArray[0].powerupsCollected.reduce(0, +))
@@ -316,6 +337,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 22:
             if numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Power-ups collection rate"
                 var collectionRate: Double = Double(totalStatsArray[0].powerupsCollected.reduce(0, +))/Double(totalStatsArray[0].powerupsGenerated.reduce(0, +))*100.0
@@ -330,6 +352,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 23:
             if (numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0) || totalStatsArray[0].lasersFired == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Lasers fired"
                 cell.statValue.text = String(totalStatsArray[0].lasersFired)
@@ -338,6 +361,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 24:
             if (numberOfAttempts == 0 && numberOfEndlessModeAttempts == 0) || totalStatsArray[0].lasersFired == 0 {
                 hideCell(cell: cell)
+                return cell
             } else {
                 cell.statDescription.text = "Lasers hit"
                 cell.statValue.text = String(totalStatsArray[0].lasersHit)
@@ -403,15 +427,9 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
 
         if indexPath.row == 0 {
-//            if hapticsSetting! {
-//                interfaceHaptic.impactOccurred()
-//            }
             removeAnimate()
         }
         if indexPath.row == 1 && gameCenterSetting! {
-//            if hapticsSetting! {
-//                interfaceHaptic.impactOccurred()
-//            }
             showGameCenterLeaderboards()
         }
         
@@ -501,13 +519,9 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([

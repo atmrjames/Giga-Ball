@@ -63,7 +63,7 @@ class WarningViewController: UIViewController {
         if senderID == "firstPause" {
             firstPause = false
             defaults.set(firstPause!, forKey: "firstPause")
-            CloudKitHandler().saveUserDefaults()
+            CloudKitHandler().saveToiCloud()
             if hapticsSetting! {
                 interfaceHaptic.impactOccurred()
             }

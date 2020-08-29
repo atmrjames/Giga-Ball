@@ -224,34 +224,36 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 0:
             // Premium
                 hideCell(cell: cell)
-                cell.settingDescription.text = "Premium"
-                cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconPremium.png")!
-                if premiumSetting! {
-                    cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-                } else {
-                    cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-                }
-//                hideCell(cell: cell)
+                return cell
+//                cell.settingDescription.text = "Premium"
+//                cell.centreLabel.text = ""
+//                cell.iconImage.image = UIImage(named:"iconPremium.png")!
+//                if premiumSetting! {
+//                    cell.settingState.text = "on"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+//                } else {
+//                    cell.settingState.text = "off"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+//                }
             case 1:
             // Ads
                 hideCell(cell: cell)
-                cell.settingDescription.text = "Ads"
-                cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconAd.png")!
-                if adsSetting! {
-                    cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-                } else {
-                    cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-                }
+                return cell
+//                cell.settingDescription.text = "Ads"
+//                cell.centreLabel.text = ""
+//                cell.iconImage.image = UIImage(named:"iconAd.png")!
+//                if adsSetting! {
+//                    cell.settingState.text = "on"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+//                } else {
+//                    cell.settingState.text = "off"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+//                }
             case 2:
             // App icon
                 if navigatedFrom! == "PauseMenu" {
                     hideCell(cell: cell)
+                    return cell
                 } else {
                     cell.settingDescription.text = "App Icon"
                     cell.centreLabel.text = ""
@@ -262,8 +264,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Theme
                 if navigatedFrom! == "PauseMenu" {
                     hideCell(cell: cell)
+                    return cell
                 } else {
-                    cell.settingDescription.text = "Ball & Paddle"
+                    cell.settingDescription.text = "Ball & Paddle Theme"
                     cell.centreLabel.text = ""
                     cell.iconImage.image = UIImage(named:"iconTheme.png")!
                     cell.settingState.text = ""
@@ -271,16 +274,17 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 4:
             // Sounds
                 hideCell(cell: cell)
-                cell.settingDescription.text = "Sounds"
-                cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconSound.png")!
-                if soundsSetting! {
-                    cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-                } else {
-                    cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-                }
+                return cell
+//                cell.settingDescription.text = "Sounds"
+//                cell.centreLabel.text = ""
+//                cell.iconImage.image = UIImage(named:"iconSound.png")!
+//                if soundsSetting! {
+//                    cell.settingState.text = "on"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+//                } else {
+//                    cell.settingState.text = "off"
+//                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+//                }
             case 5:
             // Music
                 cell.settingDescription.text = "Sound"
@@ -296,8 +300,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 6:
             // Haptics
                 if screenSize == .Pad || screenSize == .SE {
-                // No haptics' engine
+                // No haptics engine
                     hideCell(cell: cell)
+                    return cell
                 } else {
                     cell.settingDescription.text = "Haptics"
                     cell.centreLabel.text = ""
@@ -381,6 +386,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
                 } else {
                     hideCell(cell: cell)
+                    return cell
                 }
             case 12:
             // Unlock all
@@ -532,7 +538,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 break
             }
             
-            CloudKitHandler().saveUserDefaults()
+            CloudKitHandler().saveToiCloud()
             // Save any changes to NSUbiquitousKeyValueStore
             
             UIView.animate(withDuration: 0.2) {
@@ -619,7 +625,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
-        CloudKitHandler().saveTotalStats()
+        CloudKitHandler().saveToiCloud()
     }
     
     func relockAllItems() {
@@ -643,8 +649,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
-        CloudKitHandler().saveUserDefaults()
-        CloudKitHandler().saveTotalStats()
+        CloudKitHandler().saveDataReset()
         // Save to iCloud
     }
     
@@ -796,13 +801,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func setBlur() {
         settingsView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurView = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurView!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         view.insertSubview(blurView!, at: 0)
 
         NSLayoutConstraint.activate([
@@ -945,8 +946,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         } catch {
             print("Error encoding total stats, \(error)")
         }
-        CloudKitHandler().saveUserDefaults()
-        CloudKitHandler().saveTotalStats()
+        CloudKitHandler().saveDataReset()
     }
     
     func changeIcon(to iconName: String) {

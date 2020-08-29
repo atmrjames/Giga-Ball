@@ -89,9 +89,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        CloudKitHandler().isICloudContainerAvailable()
-        
+                
         logoImage.image = UIImage(named: "Logo")
         
         modeSelectTableView.delegate = self
@@ -116,14 +114,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.foregroundNotificationKeyReceived), name: .foregroundNotification, object: nil)
         // Sets up an observer to watch for the app returning from the background
         
-//        NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundNotificationKeyReceived), name: .backgroundNotification, object: nil)
-//        // Sets up an observer to watch for the app going into the background
+        NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.cancelGameResumeNotificationKeyReceived), name: .cancelGameResume, object: nil)
         // Sets up an observer to watch for notifications to check game resume has been cancelled from splash screen
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(onUbiquitousKeyValueStoreDidChangeExternally(notification:)), name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: NSUbiquitousKeyValueStore.default)
-        // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore
         
 //        print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
@@ -149,13 +144,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     func setBlur() {
         backgroundBlurView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0)
-        // 1: change the superview transparent
         let blurEffect = UIBlurEffect(style: .dark)
-        // 2 Create a blur with a style. Other options include .extraLight .light, .dark, .regular, and .prominent.
         blurViewLayer = UIVisualEffectView(effect: blurEffect)
-        // 3 Create a UIVisualEffectView with the new blur
         blurViewLayer!.translatesAutoresizingMaskIntoConstraints = false
-        // 4 Disable auto-resizing into constrains. Constrains are setup manually.
         backgroundBlurView.insertSubview(blurViewLayer!, at: 0)
 
         NSLayoutConstraint.activate([
@@ -559,7 +550,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             } catch {
                 print("Error setting up total stats array, \(error)")
             }
-            CloudKitHandler().saveTotalStats()
+            CloudKitHandler().saveToiCloud()
         }
         // Fill the empty array with 0s on first opening and re-save
     }
@@ -585,9 +576,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         firstPause = defaults.bool(forKey: "firstPause")
         // User settings
-        
-        CloudKitHandler().isICloudContainerAvailable()
-        
+                
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
         saveMultiplier = defaults.double(forKey: "saveMultiplier")
         saveBrickTextureArray = defaults.object(forKey: "saveBrickTextureArray") as! [Int]?
@@ -623,8 +612,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         } catch {
             print("Error encoding total stats, \(error)")
         }
-        CloudKitHandler().saveUserDefaults()
-        CloudKitHandler().saveTotalStats()
+        
+        CloudKitHandler().saveToiCloud()
         // Save total stats
     }
     
@@ -649,7 +638,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Sets up game center
     
     func updateGCAuth() {
-//      TODO: check user is the same user as signed in the previous session
         if GKLocalPlayer.local.isAuthenticated {
             gameCenterSetting = true
         } else {
@@ -662,7 +650,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func updateAds() {
         if defaults.bool(forKey: "adsSetting") {
             bannerView.isHidden = false
-            bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
+            bannerView.adUnitID = "ca-app-pub-3110131406973822/8913206996"
             bannerView.rootViewController = self
             // Configure banner ad
             
@@ -671,7 +659,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             bannerAdOpenLarge.isActive = true
 
             bannerView.load(GADRequest())
-            // Load banner ad
         } else {
             bannerView.isHidden = true
             
@@ -685,10 +672,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     
     func refreshView() {
-//        loadData()
-//        userSettings()
-        CloudKitHandler().loadTotalStats()
-        CloudKitHandler().loadUserDefaults()
+        CloudKitHandler().loadFromiCloud()
         loadData()
         userSettings()
         if blurViewLayer == nil {
@@ -736,7 +720,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
         appOpenCount!+=1
         defaults.set(appOpenCount!, forKey: "appOpenCount")
-        CloudKitHandler().saveUserDefaults()
+        CloudKitHandler().saveToiCloud()
         // Present onboarding screen if first time opening app
     }
     // Runs when the splash screen has ended
@@ -750,18 +734,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Runs when the splash screen has ended
     
-//    @objc private func backgroundNotificationKeyReceived(_ notification: Notification) {
-//    }
-    
     @objc private func cancelGameResumeNotificationKeyReceived(_ notification: Notification) {
         clearSavedGame()
     }
     // Runs when the splash screen has ended
     
-    @objc func onUbiquitousKeyValueStoreDidChangeExternally(notification:Notification) {
-        CloudKitHandler().loadUserDefaults()
-        CloudKitHandler().loadTotalStats()
-        NotificationCenter.default.post(name: .refreshViewForSync, object: nil)
+    @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         refreshView()
     }
     // Runs when the NSUbiquitousKeyValueStore changes

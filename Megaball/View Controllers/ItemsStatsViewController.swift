@@ -125,6 +125,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             case 4:
                 if totalStatsArray[0].powerupsGenerated[passedIndex!] == 0 {
                     hideCell(cell: cell)
+                    return cell
                 }
                 // Only show if power-up has been seen
                 cell.statDescription.text = "Collection rate"
@@ -180,9 +181,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        if hapticsSetting! {
-//            interfaceHaptic.impactOccurred()
-//        }
         removeAnimate()
         NotificationCenter.default.post(name: .returnItemStatsNotification, object: nil)
         collectionView.deselectItem(at: indexPath, animated: true)

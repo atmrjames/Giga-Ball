@@ -8,62 +8,56 @@
 
 import UIKit
 import GoogleMobileAds
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
-
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(onUbiquitousKeyValueStoreDidChangeExternally(notification:)), name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: NSUbiquitousKeyValueStore.default)
+                
+        NSUbiquitousKeyValueStore.default.synchronize()
+        
         GADMobileAds.sharedInstance().start(completionHandler: nil)
-        GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers = [ "495ff44867243016091130f00d511026" ] // remove before release
+//        GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers = [ "495ff44867243016091130f00d511026" ] // Test ads
         // Initialize Google Mobile Ads SDK
         
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+        // Ensure audio is played in background by default
+                
         return true
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
-    
         NotificationCenter.default.post(name: .pauseNotificationKey, object: nil)
-        // Send notification to ensure game is paused when app is quit
-        
+        // Ensure game is paused when app is quit
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-        
-//        NotificationCenter.default.post(name: .saveGameProgressNotificationKey, object: nil)
-        // Send notification to ensure game is paused when app is quit
-        
         NotificationCenter.default.post(name: .backgroundNotification, object: nil)
-//        save game state
-        
+        // Save game state
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
-                
+        NSUbiquitousKeyValueStore.default.synchronize()
         NotificationCenter.default.post(name: .foregroundNotification, object: nil)
-        // Send notification to check game center auth
-        
+        // Check game center auth
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     }
-    
-    // MARK: - Core Data stack
-    
+        
     func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-        // Saves changes in the application's managed object context before the application terminates.
+        NotificationCenter.default.post(name: .backgroundNotification, object: nil)
+        // Save game state
     }
+    
+    @objc func onUbiquitousKeyValueStoreDidChangeExternally(notification:Notification) {
+        CloudKitHandler().loadFromiCloud()
+        NotificationCenter.default.post(name: .refreshViewForSync, object: nil)
+    }
+    // Runs when there's an update to the iCloud database
 }
-
-

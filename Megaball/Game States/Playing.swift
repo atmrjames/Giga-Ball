@@ -77,6 +77,7 @@ class Playing: GKState {
                 self.scene.life.isHidden = true
                 self.scene.livesLabel.isHidden = true
                 self.scene.multiplierLabel.isHidden = true
+                self.scene.endlessGameIcon.isHidden = false
             }
         })
         // Show game labels
@@ -100,8 +101,6 @@ class Playing: GKState {
         scene.levelScore = 0
         // Reset counters & scores
         
-//        scene.ball.position.y = scene.ballStartingPositionY
-
         if scene.resumeGameToLoad! {
             scene.levelScore = scene.saveGameSaveArray![3]
             scene.totalScore = scene.saveGameSaveArray![4]
