@@ -97,9 +97,9 @@
 		1A31943524441D33004917D0 /* Level059.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A31943424441D33004917D0 /* Level059.swift */; };
 		1A31943724441D3A004917D0 /* Level060.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A31943624441D3A004917D0 /* Level060.swift */; };
 		1A3D147324CD022A00EE22B5 /* PremiumInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3D147224CD022A00EE22B5 /* PremiumInfoViewController.swift */; };
-		1A41E7FF24FCF54D0070FA50 /* Classic@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A41E7FC24FCF54C0070FA50 /* Classic@2x.png */; };
-		1A41E80024FCF54D0070FA50 /* Classic.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A41E7FD24FCF54C0070FA50 /* Classic.png */; };
-		1A41E80124FCF54D0070FA50 /* Classic@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A41E7FE24FCF54C0070FA50 /* Classic@3x.png */; };
+		1A41E80524FCF94B0070FA50 /* Purple@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A41E80224FCF94A0070FA50 /* Purple@3x.png */; };
+		1A41E80624FCF94B0070FA50 /* Purple@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A41E80324FCF94A0070FA50 /* Purple@2x.png */; };
+		1A41E80724FCF94B0070FA50 /* Purple.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A41E80424FCF94B0070FA50 /* Purple.png */; };
 		1A491F6E24959BCD00A2CCB4 /* Nunito-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A491F6024959BC800A2CCB4 /* Nunito-SemiBoldItalic.ttf */; };
 		1A491F6F24959BCD00A2CCB4 /* Nunito-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A491F6124959BC900A2CCB4 /* Nunito-Black.ttf */; };
 		1A491F7024959BCD00A2CCB4 /* Nunito-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A491F6224959BC900A2CCB4 /* Nunito-Italic.ttf */; };
@@ -338,9 +338,9 @@
 		1A31943424441D33004917D0 /* Level059.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level059.swift; sourceTree = "<group>"; };
 		1A31943624441D3A004917D0 /* Level060.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level060.swift; sourceTree = "<group>"; };
 		1A3D147224CD022A00EE22B5 /* PremiumInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumInfoViewController.swift; sourceTree = "<group>"; };
-		1A41E7FC24FCF54C0070FA50 /* Classic@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Classic@2x.png"; sourceTree = "<group>"; };
-		1A41E7FD24FCF54C0070FA50 /* Classic.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Classic.png; sourceTree = "<group>"; };
-		1A41E7FE24FCF54C0070FA50 /* Classic@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Classic@3x.png"; sourceTree = "<group>"; };
+		1A41E80224FCF94A0070FA50 /* Purple@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Purple@3x.png"; sourceTree = "<group>"; };
+		1A41E80324FCF94A0070FA50 /* Purple@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Purple@2x.png"; sourceTree = "<group>"; };
+		1A41E80424FCF94B0070FA50 /* Purple.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Purple.png; sourceTree = "<group>"; };
 		1A491F6024959BC800A2CCB4 /* Nunito-SemiBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nunito-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
 		1A491F6124959BC900A2CCB4 /* Nunito-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nunito-Black.ttf"; sourceTree = "<group>"; };
 		1A491F6224959BC900A2CCB4 /* Nunito-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Nunito-Italic.ttf"; sourceTree = "<group>"; };
@@ -786,9 +786,6 @@
 		1A67FCEC245E57EC00BC7129 /* App Icons */ = {
 			isa = PBXGroup;
 			children = (
-				1A41E7FD24FCF54C0070FA50 /* Classic.png */,
-				1A41E7FC24FCF54C0070FA50 /* Classic@2x.png */,
-				1A41E7FE24FCF54C0070FA50 /* Classic@3x.png */,
 				1AE1447A24F226F4000C4258 /* Outline.png */,
 				1AE1447924F226F4000C4258 /* Outline@2x.png */,
 				1AE1447824F226F3000C4258 /* Outline@3x.png */,
@@ -810,6 +807,9 @@
 				1A2D231A24C4438E002D5CE5 /* Pink.png */,
 				1A2D230B24C4438A002D5CE5 /* Pink@2x.png */,
 				1A2D230624C44389002D5CE5 /* Pink@3x.png */,
+				1A41E80424FCF94B0070FA50 /* Purple.png */,
+				1A41E80324FCF94A0070FA50 /* Purple@2x.png */,
+				1A41E80224FCF94A0070FA50 /* Purple@3x.png */,
 				1AAB8FC224CBE2AF00C87D3D /* Rainbow.png */,
 				1AAB8FC624CBE2B000C87D3D /* Rainbow@2x.png */,
 				1AAB8FC324CBE2AF00C87D3D /* Rainbow@3x.png */,
@@ -1087,6 +1087,7 @@
 				1A491F7824959BCD00A2CCB4 /* Nunito-ExtraLightItalic.ttf in Resources */,
 				1A80ABA024E0092A0029207B /* Giga-Ball - The Escape - Loop.mp3 in Resources */,
 				1A2D234A24C44393002D5CE5 /* Green@2x.png in Resources */,
+				1A41E80724FCF94B0070FA50 /* Purple.png in Resources */,
 				1A2D233A24C44393002D5CE5 /* White.png in Resources */,
 				1A2D234C24C44393002D5CE5 /* Yellow@3x.png in Resources */,
 				1AE1444724F1E969000C4258 /* Glow@3x.png in Resources */,
@@ -1119,14 +1120,14 @@
 				1A491F7124959BCD00A2CCB4 /* Nunito-SemiBold.ttf in Resources */,
 				1AAB8FD124CC07FF00C87D3D /* IAPTableViewCell.xib in Resources */,
 				1A491F7924959BCD00A2CCB4 /* Nunito-Bold.ttf in Resources */,
+				1A41E80624FCF94B0070FA50 /* Purple@2x.png in Resources */,
 				1A5F63BA2417F0FE0072EC61 /* ModeSelectTableViewCell.xib in Resources */,
 				1A2FEA5624D4F5F00052488A /* IntroContainerView.xib in Resources */,
+				1A41E80524FCF94B0070FA50 /* Purple@3x.png in Resources */,
 				1A5A94922309E4F40076D635 /* Assets.xcassets in Resources */,
 				1AE1447C24F226F4000C4258 /* Outline@2x.png in Resources */,
 				1A2D234424C44393002D5CE5 /* Blue@3x.png in Resources */,
 				1A5A94952309E4F40076D635 /* LaunchScreen.storyboard in Resources */,
-				1A41E80124FCF54D0070FA50 /* Classic@3x.png in Resources */,
-				1A41E7FF24FCF54D0070FA50 /* Classic@2x.png in Resources */,
 				1A80ABA124E0092A0029207B /* Giga-Ball - The Strategy - Loop.mp3 in Resources */,
 				1A2D232824C44393002D5CE5 /* Orange@3x.png in Resources */,
 				1A491F6E24959BCD00A2CCB4 /* Nunito-SemiBoldItalic.ttf in Resources */,
@@ -1134,7 +1135,6 @@
 				1A2D234724C44393002D5CE5 /* Yellow@2x.png in Resources */,
 				1AE1444624F1E969000C4258 /* Glow.png in Resources */,
 				1A5A94892309E4F30076D635 /* Actions.sks in Resources */,
-				1A41E80024FCF54D0070FA50 /* Classic.png in Resources */,
 				1A2D233E24C44393002D5CE5 /* Black@2x.png in Resources */,
 				1A2D232B24C44393002D5CE5 /* Pink@3x.png in Resources */,
 				1A491F7624959BCD00A2CCB4 /* Nunito-BlackItalic.ttf in Resources */,

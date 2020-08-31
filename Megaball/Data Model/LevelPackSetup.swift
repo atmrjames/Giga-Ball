@@ -114,7 +114,7 @@ class LevelPackSetup {
     ]
     
     let appIconNameArray: [String] = [
-        "Classic",
+        "Purple",
         "White",
         "Yellow",
         "Outline",
@@ -129,7 +129,7 @@ class LevelPackSetup {
     ]
     
     let appIconImageArray: [UIImage] = [
-        UIImage(named:"Classic.png")!,
+        UIImage(named:"Purple.png")!,
         UIImage(named:"White.png")!,
         UIImage(named:"Yellow.png")!,
         UIImage(named:"Outline.png")!,

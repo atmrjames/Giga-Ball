@@ -97,6 +97,7 @@ class PreGame: GKState {
         scene.paddleHitsPerLevel = 0
         scene.powerUpsCollectedPerPack = 0
         scene.powerUpsGeneratedPerPack = 0
+        scene.levelTimerValue = 0
         scene.packTimerValue = 0
         // Reset trackers
     }

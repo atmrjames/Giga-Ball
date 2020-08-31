@@ -363,11 +363,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 10:
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
-                    cell.settingDescription.text = ""
-                    cell.centreLabel.text = "Reset All Game Data (developer)"
-                    cell.settingState.text = ""
-                    cell.iconImage.isHidden = true
-                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
+                    hideCell(cell: cell)
+//                    cell.settingDescription.text = ""
+//                    cell.centreLabel.text = "Reset All Game Data (developer)"
+//                    cell.settingState.text = ""
+//                    cell.iconImage.isHidden = true
+//                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
                 } else {
                 // Kill ball
                     cell.settingDescription.text = ""
@@ -390,19 +391,20 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 12:
             // Unlock all
-                cell.settingDescription.text = ""
-                cell.centreLabel.text = "Unlock All Items (developer)"
-                cell.settingState.text = ""
-                cell.iconImage.isHidden = true
-                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
-                
+                hideCell(cell: cell)
+//                cell.settingDescription.text = ""
+//                cell.centreLabel.text = "Unlock All Items (developer)"
+//                cell.settingState.text = ""
+//                cell.iconImage.isHidden = true
+//                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
             case 13:
             // Re-lock all
-                cell.settingDescription.text = ""
-                cell.centreLabel.text = "Reset Locked Items (developer)"
-                cell.settingState.text = ""
-                cell.iconImage.isHidden = true
-                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
+                hideCell(cell: cell)
+//                cell.settingDescription.text = ""
+//                cell.centreLabel.text = "Reset Locked Items (developer)"
+//                cell.settingState.text = ""
+//                cell.iconImage.isHidden = true
+//                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
             default:
                 print("Error: Out of range")
                 break
@@ -427,9 +429,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-//            showPurchaseScreen()
-//            IAPHandler().purchasePremium()
-            IAPHandler().unlockPremiumContent() // Beta builds only
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
+//            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell

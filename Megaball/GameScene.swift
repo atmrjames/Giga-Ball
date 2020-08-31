@@ -4589,6 +4589,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let currentNumberOfLevels = numberOfLevels
 		let currentLevelTimerValue = levelTimerValue
 		let currentPackTimerValue = packTimerValue
+		let currentDeathsPerLevel = deathsPerLevel
+		let currentDeathsPerPack = deathsPerPack
+		let currentpowerUpsGeneratedPerLevel = powerUpsGeneratedPerLevel
+		let currentpowerUpsCollectedPerLevel = powerUpsCollectedPerLevel
+		let currentpowerUpsGeneratedPerPack = powerUpsGeneratedPerPack
+		let currentpowerUpsCollectedPerPack = powerUpsCollectedPerPack
+		let currentpaddleHitsPerLevel = paddleHitsPerLevel
+		
 
 		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && gameoverStatus == false {
 			if numberOfLevels > 1 {
@@ -4600,7 +4608,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// If inbetween levels but only playing 1 level at a time don't save
 		
-		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentLevelTimerValue, currentPackTimerValue]
+		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentLevelTimerValue, currentPackTimerValue, currentDeathsPerLevel, currentDeathsPerPack, currentpowerUpsGeneratedPerLevel, currentpowerUpsCollectedPerLevel, currentpowerUpsGeneratedPerPack, currentpowerUpsCollectedPerPack, currentpaddleHitsPerLevel]
 		
 		var currentMultiplier = multiplier
 		
@@ -5056,6 +5064,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				numberOfLevels = saveGameSaveArray![7]
 				levelTimerValue = saveGameSaveArray![8]
 				packTimerValue = saveGameSaveArray![9]
+				deathsPerLevel = saveGameSaveArray![10]
+				deathsPerPack = saveGameSaveArray![11]
+				powerUpsGeneratedPerLevel = saveGameSaveArray![12]
+				powerUpsCollectedPerLevel = saveGameSaveArray![13]
+				powerUpsGeneratedPerPack = saveGameSaveArray![14]
+				powerUpsCollectedPerPack = saveGameSaveArray![15]
+				paddleHitsPerLevel = saveGameSaveArray![16]
 				levelTimerBonus = 500
 			} else {
 				saveCurrentGame()

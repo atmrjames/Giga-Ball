@@ -37,7 +37,7 @@ extension GameScene {
         powerUpProbArray[22] = 3 // Lasers
         powerUpProbArray[23] = 7 // Quicksand
         powerUpProbArray[24] = 7 // Mystery
-        powerUpProbArray[25] = 5 // Backstop
+        powerUpProbArray[25] = 3 // Backstop
         powerUpProbArray[26] = 10 // Increase Ball Size
         powerUpProbArray[27] = 10 // Decrease Ball Size
         

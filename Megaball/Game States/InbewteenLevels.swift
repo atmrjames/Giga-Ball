@@ -210,13 +210,10 @@ class InbetweenLevels: GKState {
         
         scene.packTimerValue = scene.packTimerValue + scene.levelTimerValue
         if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 && scene.endlessMode == false {
-            
-            
             if scene.totalScore > scene.totalStatsArray[0].packHighScores[scene.packNumber-2] {
                 scene.totalStatsArray[0].packHighScores[scene.packNumber-2] = scene.totalScore
             }
             if scene.gameoverStatus == false {
-                
                 if scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] == 0 || scene.packTimerValue < scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] {
                     scene.totalStatsArray[0].packBestTimes[scene.packNumber-2] = scene.packTimerValue
                 }
@@ -419,7 +416,6 @@ class InbetweenLevels: GKState {
             scene.powerUpsCollectedPerPack = scene.powerUpsCollectedPerPack + scene.powerUpsCollectedPerLevel
             scene.powerUpsGeneratedPerPack = scene.powerUpsGeneratedPerPack + scene.powerUpsGeneratedPerLevel
             scene.powerUpsCollectedPerLevel = 0
-            scene.powerUpsGeneratedPerLevel = 0
             // Level power-up achievements
             
             if scene.totalStatsArray[0].levelsCompleted == 1 && scene.totalStatsArray[0].achievementsUnlockedArray[45] == false {
@@ -815,7 +811,7 @@ class InbetweenLevels: GKState {
             }
             // Pack speed achievement
             
-            if scene.totalStatsArray[0].packBestTimes[0] > 0 && scene.totalStatsArray[0].packBestTimes[1] > 0 && scene.totalStatsArray[0].packBestTimes[2] > 0  {
+            if scene.totalStatsArray[0].packBestTimes[0] > 0 && scene.totalStatsArray[0].packBestTimes[1] > 0 && scene.totalStatsArray[0].packBestTimes[2] > 0 {
                 scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
             }
                         

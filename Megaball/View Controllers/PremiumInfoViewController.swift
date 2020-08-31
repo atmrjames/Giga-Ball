@@ -145,9 +145,9 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == premiumTableView {
-//            showPurchaseScreen()
-//            IAPHandler().purchasePremium()
-            IAPHandler().unlockPremiumContent() // Beta builds only
+            showPurchaseScreen()
+            IAPHandler().purchasePremium()
+//            IAPHandler().unlockPremiumContent() // Beta builds only
             
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell

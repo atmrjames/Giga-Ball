@@ -572,7 +572,7 @@ final class CloudKitHandler: NSObject {
         if self.firstPause != nil {
             self.defaults.set(self.firstPause!, forKey: "firstPause")
         }
-        
+    
         cumulativeScore = totalStatsArray[0].cumulativeScore
         let cumulativeScoreCloud = Int(iCloudStore.longLong(forKey: "cumulativeScore"))
         if cumulativeScoreCloud > cumulativeScore! {
@@ -895,6 +895,19 @@ final class CloudKitHandler: NSObject {
                 print("Error decoding total stats array, \(error)")
             }
         }
+        
+        if totalStatsArray.count == 0 {
+            let totalStatsItem = TotalStats()
+            totalStatsArray = Array(repeating: totalStatsItem, count: 1)
+            totalStatsArray[0].dateSaved = Date()
+            do {
+                let data = try encoder.encode(totalStatsArray)
+                try data.write(to: totalStatsStore!)
+            } catch {
+                print("Error setting up total stats array, \(error)")
+            }
+        }
+        // Fill the empty array with 0s on first opening after app deleted and re-installed and don't save to allow icloud data to fill in
     }
     
     func saveLocalData() {

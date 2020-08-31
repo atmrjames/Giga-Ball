@@ -197,6 +197,9 @@ class Playing: GKState {
         } else {
             scene.levelTimerBonus = 500
             scene.levelTimerValue = 0
+            scene.powerUpsCollectedPerLevel = 0
+            scene.powerUpsGeneratedPerLevel = 0
+            scene.paddleHitsPerLevel = 0
             // reset level timer bonus
             
             var waitDuration = 0.0
