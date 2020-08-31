@@ -119,11 +119,16 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 } else if totalStatsArray[0].playTimeSecs <= 3600 {
                     let numberMinutes = Int(totalStatsArray[0].playTimeSecs/60)
                     cell.statValue.text = String(numberMinutes)+" minutes"
-                } else {
+                } else if totalStatsArray[0].playTimeSecs <= 5400 {
                     let numberHours = Double(totalStatsArray[0].playTimeSecs/3600)
                     let numberHoursString = String(format:"%.0f", numberHours)
                     // Double to string conversion to 1 decimal place
-                    cell.statValue.text = String(numberHoursString)+" hours"
+                    cell.statValue.text = String(numberHoursString)+" hour"
+                }  else {
+                   let numberHours = Double(totalStatsArray[0].playTimeSecs/3600)
+                   let numberHoursString = String(format:"%.0f", numberHours)
+                   // Double to string conversion to 1 decimal place
+                   cell.statValue.text = String(numberHoursString)+" hours"
                 }
             }
             return cell

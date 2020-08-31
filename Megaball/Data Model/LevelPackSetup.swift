@@ -114,7 +114,7 @@ class LevelPackSetup {
     ]
     
     let appIconNameArray: [String] = [
-        "Purple",
+        "Classic",
         "White",
         "Yellow",
         "Outline",
@@ -129,7 +129,7 @@ class LevelPackSetup {
     ]
     
     let appIconImageArray: [UIImage] = [
-        UIImage(named:"Purple.png")!,
+        UIImage(named:"Classic.png")!,
         UIImage(named:"White.png")!,
         UIImage(named:"Yellow.png")!,
         UIImage(named:"Outline.png")!,
@@ -272,8 +272,8 @@ class LevelPackSetup {
         "X Marks The Spot",
         
         // Space Pack
-        "Cresent Moon",
         "Invader",
+        "Cresent Moon",
         "Constellation",
         "The Sun",
         "Rocket",
