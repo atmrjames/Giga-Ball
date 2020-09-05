@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import StoreKit
 
 class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
@@ -22,7 +23,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var brickSetting: Int?
     var appIconSetting: Int?
     var premiumSetting: Bool?
+    var IAPLocalPrice: String?
     // User settings
+    
+    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -80,6 +84,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         userSettings()
         loadData()
+        loadProducts()
         if parallaxSetting! {
             addParallax()
         }
@@ -192,8 +197,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
-            cell.centreLabel.isHidden = true
             
+            cell.priceLabel.text = IAPLocalPrice
             switch senderID {
                 case 0:
                     cell.tagLine.text = "Unlock All App Icons"
@@ -396,12 +401,24 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
     }
     
+    func loadProducts() {
+        products = []
+        GigaBallProducts.store.requestProducts{ [weak self] success, products in
+          guard let self = self else { return }
+          if success {
+            self.products = products!
+            }
+        }
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
-//            IAPHandler().unlockPremiumContent() // Beta builds only
-            
+            // IAPHandler().unlockPremiumContent() // Beta builds only
+            if products.count > 0 {
+                showPurchaseScreen()
+                let product = products[0]
+                GigaBallProducts.store.buyProduct(product)
+            }
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
                 cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
@@ -607,6 +624,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
         premiumSetting = defaults.bool(forKey: "premiumSetting")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
     

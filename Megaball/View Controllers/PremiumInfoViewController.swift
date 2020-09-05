@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import StoreKit
 
 class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UITableViewDelegate, UITableViewDataSource {
     
@@ -14,6 +15,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
+    var IAPLocalPrice: String?
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
@@ -21,6 +23,9 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
     var blurView: UIVisualEffectView?
     
     var sender: String?
+    
+    var products: [SKProduct] = []
+    var localCurrency: String?
     
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var contentView: UIView!
@@ -59,6 +64,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
         }
         
         userSettings()
+        loadProducts()
         
         if sender != "Info" {
             setBlur()
@@ -86,8 +92,8 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
         if tableView == self.premiumTableView {
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
-            cell.premiumLabel.isHidden = true
-            cell.tagLine.text = ""
+            cell.priceLabel.text = IAPLocalPrice
+            cell.tagLine.text = "Upgrade now"
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
             UIView.animate(withDuration: 0.2) {
@@ -129,7 +135,8 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
             case 3:
                 cell.settingDescription.text = "Remove ads"
             case 4:
-                cell.settingDescription.text = "Show you support for the app"
+                cell.settingDescription.text = "Show your support for the app"
+
             default:
                 break
             }
@@ -143,12 +150,24 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
         }
     }
     
+    func loadProducts() {
+        products = []
+        GigaBallProducts.store.requestProducts{ [weak self] success, products in
+          guard let self = self else { return }
+          if success {
+            self.products = products!
+            }
+        }
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
-//            IAPHandler().unlockPremiumContent() // Beta builds only
-            
+            // IAPHandler().unlockPremiumContent() // Beta builds only
+            if products.count > 0 {
+                showPurchaseScreen()
+                let product = products[0]
+                GigaBallProducts.store.buyProduct(product)
+            }
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
                 cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
@@ -263,6 +282,7 @@ class PremiumInfoViewController: UIViewController, UICollectionViewDelegate, UIC
         premiumSetting = defaults.bool(forKey: "premiumSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
     }
     
     func showAnimate() {

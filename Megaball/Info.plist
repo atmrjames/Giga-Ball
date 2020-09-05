@@ -30,15 +30,6 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Outline</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Outline</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Glow</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -62,6 +53,15 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Orange</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<string>NO</string>
+			</dict>
+			<key>Outline</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>Outline</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
@@ -153,15 +153,6 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Outline</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Outline</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Glow</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -185,6 +176,15 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Orange</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<string>NO</string>
+			</dict>
+			<key>Outline</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>Outline</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>

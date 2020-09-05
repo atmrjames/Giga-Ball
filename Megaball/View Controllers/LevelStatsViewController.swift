@@ -90,7 +90,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = levelStatsView.frame.size.width
+        var viewWidth = view.frame.size.width
+        if view.frame.size.width > 414 {
+            viewWidth = levelStatsView.frame.size.width
+        }
         let cellWidth: CGFloat = 50
         let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing

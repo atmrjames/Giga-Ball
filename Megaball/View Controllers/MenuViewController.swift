@@ -11,7 +11,7 @@ import GoogleMobileAds
 import GameKit
 import StoreKit
 
-class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
+class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, SKProductsRequestDelegate {
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     // Haptics setup
@@ -42,6 +42,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var resumeGameToLoad: Bool?
     var iCloudSetting: Bool?
     var firstPause: Bool?
+    var IAPLocalPrice: String?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -64,6 +65,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
     // NSCoder data store & encoder setup
+    
+    
+    let iAPProductID = "com.atmrjames.Megaball.GigaBallPremium"
+    var request: SKProductsRequest!
+    var product: SKProduct?
+    var localCurrency: String?
+    // IAP
     
     @IBOutlet var modeSelectTableView: UITableView!
     @IBOutlet var iconCollectionView: UICollectionView!
@@ -89,6 +97,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+//        SKPaymentQueue.default().add(self)
                 
         logoImage.image = UIImage(named: "Logo")
         
@@ -119,6 +129,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.cancelGameResumeNotificationKeyReceived), name: .cancelGameResume, object: nil)
         // Sets up an observer to watch for notifications to check game resume has been cancelled from splash screen
+        
+//        NotificationCenter.default.addObserver(self, selector: #selector(self.handlePurchaseNotification(_:)), name: .IAPHelperPurchaseNotification, object: nil)
         
 //        print(NSHomeDirectory())
         // Prints the location of the NSUserDefaults plist (Library>Preferences)
@@ -442,6 +454,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["resumeGameToLoad": false])
         defaults.register(defaults: ["iCloudSetting": false])
         defaults.register(defaults: ["firstPause": true])
+        defaults.register(defaults: ["IAPLocalPrice": ""])
         // User settings
         
         defaults.register(defaults: ["saveGameSaveArray": []])
@@ -575,6 +588,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         firstPause = defaults.bool(forKey: "firstPause")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // User settings
                 
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -669,8 +683,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Show or hide banner ad depending on setting
     
-    
-    
     func refreshView() {
         CloudKitHandler().loadFromiCloud()
         loadData()
@@ -683,11 +695,31 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
         if premiumSetting! {
             checkPremium()
+        } else {
+            getProducts()
         }
         updateAds()
+        
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()
     }
+
+    func getProducts() {
+        let productID = NSSet(objects: self.iAPProductID)
+        request = SKProductsRequest(productIdentifiers: productID as! Set<String>)
+        request.delegate = self
+        request.start()
+    }
+
+    func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
+        let products = response.products
+        if (products.count != 0) {
+            product = products[0]
+            IAPLocalPrice = product!.localizedPrice
+            defaults.set(IAPLocalPrice, forKey: "IAPLocalPrice")
+        }
+    }
+    // SKProductsRequestDelegate protocol method.
     
     @objc func returnSettingsNotificationKeyReceived(_ notification: Notification) {
         refreshView()
@@ -795,5 +827,7 @@ extension Notification.Name {
     public static let backgroundNotification = Notification.Name(rawValue: "backgroundNotification")
     public static let cancelGameResume = Notification.Name(rawValue: "cancelGameResume")
     public static let refreshViewForSync = Notification.Name(rawValue: "refreshViewForSync")
+    public static let iAPcompleteNotification = Notification.Name(rawValue: "iAPcompleteNotification")
+    public static let iAPIncompleteNotification = Notification.Name(rawValue: "iAPIncompleteNotification")
 }
 // Notification setup

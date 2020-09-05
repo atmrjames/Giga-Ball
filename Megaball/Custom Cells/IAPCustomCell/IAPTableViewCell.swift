@@ -12,9 +12,9 @@ class IAPTableViewCell: UITableViewCell {
 
     @IBOutlet var iconImage: UIImageView!
     @IBOutlet var tagLine: UILabel!
-    @IBOutlet var premiumLabel: UILabel!
     @IBOutlet var cellView: UIView!
     @IBOutlet var centreLabel: UILabel!
+    @IBOutlet var priceLabel: UILabel!
     // Settings cell properties
         
     override func awakeFromNib() {

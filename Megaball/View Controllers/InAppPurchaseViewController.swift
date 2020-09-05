@@ -21,11 +21,12 @@ class InAppPurchaseViewController: UIViewController {
     @IBOutlet var contentView: UIView!
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var statusLabel: UILabel!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotificationView, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
         // Sets up an observer to watch for notifications to check for in-app purchase success
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.iAPIncompleteNotificationKeyReceived), name: .iAPIncompleteNotification, object: nil)
@@ -36,6 +37,7 @@ class InAppPurchaseViewController: UIViewController {
         if parallaxSetting! {
             addParallaxToView()
         }
+        activityIndicator.startAnimating()
         statusLabel.text = "Processing..."
         showAnimate()
     }
@@ -114,19 +116,16 @@ class InAppPurchaseViewController: UIViewController {
     }
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
+        activityIndicator.stopAnimating()
+        statusLabel.text = "Purchase successful"
         removeAnimate()
     }
     // IAP complete
     @objc func iAPIncompleteNotificationKeyReceived(_ notification: Notification) {
+        activityIndicator.stopAnimating()
         statusLabel.text = "Purchase unsuccessful"
-        statusLabel.textColor = #colorLiteral(red: 0.9936862588, green: 0.3239051104, blue: 0.3381963968, alpha: 1)
+        statusLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
         removeAnimate()
     }
     // IAP incomplete
 }
-
-extension Notification.Name {
-    public static let iAPcompleteNotificationView = Notification.Name(rawValue: "iAPcompleteNotification")
-    public static let iAPIncompleteNotification = Notification.Name(rawValue: "iAPIncompleteNotification")
-}
-

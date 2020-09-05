@@ -8,6 +8,7 @@
 
 import UIKit
 import GameKit
+import StoreKit
 
 class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
@@ -21,7 +22,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var gameCenterSetting: Bool?
     var statsCollapseSetting: Bool?
     var premiumSetting: Bool?
+    var IAPLocalPrice: String?
     // User settings
+    
+    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -82,6 +86,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         userSettings()
         loadData()
+        loadProducts()
         
         if GKLocalPlayer.local.isAuthenticated {
             gameCenterSetting = true
@@ -148,7 +153,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if tableView == self.premiumTableView {
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
-            cell.centreLabel.isHidden = true
+            
+            cell.priceLabel.text = IAPLocalPrice
             cell.tagLine.text = "Unlock All Levels"
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
@@ -238,20 +244,32 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
     }
     
+    func loadProducts() {
+        products = []
+        GigaBallProducts.store.requestProducts{ [weak self] success, products in
+          guard let self = self else { return }
+          if success {
+            self.products = products!
+            }
+        }
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
-//            IAPHandler().unlockPremiumContent() // Beta builds only
-            
+            // IAPHandler().unlockPremiumContent() // Beta builds only
+            if products.count > 0 {
+                showPurchaseScreen()
+                let product = products[0]
+                GigaBallProducts.store.buyProduct(product)
+            }
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
                 cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
                 cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
-            tableView.reloadData()
             tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
             // Update table view
             
         } else if tableView == self.levelsTableView {
@@ -314,7 +332,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        let viewWidth = levelSelectView.frame.size.width
+        var viewWidth = view.frame.size.width
+        if view.frame.size.width > 414 {
+            viewWidth = levelSelectView.frame.size.width
+        }
         let cellWidth: CGFloat = 50
         let cellSpacing = (viewWidth - cellWidth*3)/3
         layout.minimumInteritemSpacing = cellSpacing
@@ -504,6 +525,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         premiumSetting = defaults.bool(forKey: "premiumSetting")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
     

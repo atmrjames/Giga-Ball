@@ -16,7 +16,7 @@ enum device {
     case SE
 }
 
-class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, SKPaymentTransactionObserver {
+class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     var navigatedFrom: String?
     
@@ -37,6 +37,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var swipeUpPause: Bool?
     var appOpenCount: Int?
     var firstPause: Bool?
+    var IAPLocalPrice: String?
     // User settings
     var saveGameSaveArray: [Int]?
     var saveMultiplier: Double?
@@ -46,6 +47,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var saveBrickYPositionArray: [Int]?
     var saveBallPropertiesArray: [Double]?
     // Game save settings
+    
+    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -106,8 +109,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
-        SKPaymentQueue.default().add(self)
-        
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
@@ -141,6 +142,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         userSettings()
         loadData()
+        loadProducts()
         premiumTableViewHideShow(animated: false)
         if parallaxSetting! {
             addParallaxToView()
@@ -199,8 +201,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
-            cell.centreLabel.isHidden = true
 
+            cell.priceLabel.text = IAPLocalPrice
             cell.tagLine.text = tagline
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
@@ -426,13 +428,25 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         settingsTableView.rowHeight = 0.0
     }
     
+    func loadProducts() {
+        products = []
+        GigaBallProducts.store.requestProducts{ [weak self] success, products in
+          guard let self = self else { return }
+          if success {
+            self.products = products!
+            }
+        }
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
-//            IAPHandler().unlockPremiumContent() // Beta builds only
-            
+            // IAPHandler().unlockPremiumContent() // Beta builds only
+            if products.count > 0 {
+                showPurchaseScreen()
+                let product = products[0]
+                GigaBallProducts.store.buyProduct(product)
+            }
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
                 cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
@@ -529,7 +543,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 11:
             // Restore purchases
                 showPurchaseScreen()
-                IAPHandler().restorePurchase()
+                GigaBallProducts.store.restorePurchases()
             case 12:
             // Unlock all
                 unlockAllItems()
@@ -588,27 +602,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if animated {
             UIView.animate(withDuration: 0.25) {
                 self.view.layoutIfNeeded()
-            }
-        }
-    }
-    
-    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
-        for transaction in transactions {
-            if transaction.transactionState == .purchased {
-                IAPHandler().unlockPremiumContent()
-                SKPaymentQueue.default().finishTransaction(transaction)
-                
-            } else if transaction.transactionState == .failed {
-                if let error = transaction.error {
-                    let errorDescription = error.localizedDescription
-                    print("User payment failed/cancelled - settings: \(errorDescription)")
-                }
-                NotificationCenter.default.post(name: .iAPIncompleteNotification, object: nil)
-                SKPaymentQueue.default().finishTransaction(transaction)
-                
-            } else if transaction.transactionState == .restored {
-                IAPHandler().unlockPremiumContent()
-                SKPaymentQueue.default().finishTransaction(transaction)
             }
         }
     }
@@ -836,6 +829,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         firstPause = defaults.bool(forKey: "firstPause")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // User settings
         
         saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -1040,7 +1034,6 @@ extension Notification.Name {
     public static let resetNotificiation = Notification.Name(rawValue: "resetNotificiation")
     public static let returnNotificiation = Notification.Name(rawValue: "returnNotificiation")
     public static let reanimateNotificiation = Notification.Name(rawValue: "reanimateNotificiation")
-    public static let iAPcompleteNotification = Notification.Name(rawValue: "iAPcompleteNotification")
 }
 // Notification setup for sending information from the pause menu popup to unpause the game
 

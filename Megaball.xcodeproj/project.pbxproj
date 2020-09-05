@@ -10,6 +10,7 @@
 		1A04BEFA238FE42700EB6150 /* Level009.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A04BEF9238FE42700EB6150 /* Level009.swift */; };
 		1A05BF4D23ED9DD9003E668F /* LevelSelectorTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A05BF4B23ED9DD9003E668F /* LevelSelectorTableViewCell.swift */; };
 		1A05BF4E23ED9DD9003E668F /* LevelSelectorTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */; };
+		1A0F3B8A25031E3D007F14B5 /* GigaBallProducts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0F3B8925031E3D007F14B5 /* GigaBallProducts.swift */; };
 		1A18819524083DF800D5ED3A /* ItemsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A18819424083DF800D5ED3A /* ItemsViewController.swift */; };
 		1A1CCF6F24B0840200336F53 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A1CCF6E24B0840200336F53 /* CloudKit.framework */; };
 		1A28AF5F244DB4F0007A1A3E /* Level061.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A28AF5E244DB4F0007A1A3E /* Level061.swift */; };
@@ -251,6 +252,7 @@
 		1A04BEF9238FE42700EB6150 /* Level009.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level009.swift; sourceTree = "<group>"; };
 		1A05BF4B23ED9DD9003E668F /* LevelSelectorTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelSelectorTableViewCell.swift; sourceTree = "<group>"; };
 		1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LevelSelectorTableViewCell.xib; sourceTree = "<group>"; };
+		1A0F3B8925031E3D007F14B5 /* GigaBallProducts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GigaBallProducts.swift; sourceTree = "<group>"; };
 		1A18819424083DF800D5ED3A /* ItemsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ItemsViewController.swift; path = "/Users/James/Megaball/Megaball/View Controllers/ItemsViewController.swift"; sourceTree = "<absolute>"; };
 		1A1CCF6E24B0840200336F53 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		1A28AF5E244DB4F0007A1A3E /* Level061.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level061.swift; sourceTree = "<group>"; };
@@ -701,6 +703,7 @@
 				1AE9574C23257BC200E5618A /* View Controllers */,
 				1A5A94A2230F089A0076D635 /* Game States */,
 				1A5D804723E9A33F00F50BE0 /* Custom Cells */,
+				1A0F3B8925031E3D007F14B5 /* GigaBallProducts.swift */,
 				1A8AB85E24B98F5D00D918B1 /* IAPHandler.swift */,
 				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
 				1AB3CAE024DEA50F005DCBFB /* CloudKitHandler.swift */,
@@ -1354,6 +1357,7 @@
 				1A7A34D2240E901C00044C87 /* Level016.swift in Sources */,
 				1AC5AA6A24D9586A00CA9414 /* MusicHandler.swift in Sources */,
 				1A31940024440B9E004917D0 /* Level033.swift in Sources */,
+				1A0F3B8A25031E3D007F14B5 /* GigaBallProducts.swift in Sources */,
 				1A31943724441D3A004917D0 /* Level060.swift in Sources */,
 				1A3193F1244403C9004917D0 /* Level026.swift in Sources */,
 				1A943651245D601900388D6C /* Level095.swift in Sources */,
@@ -1515,7 +1519,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "Megaball/Giga-Ball.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
@@ -1523,7 +1527,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.6;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;
@@ -1538,7 +1542,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "Megaball/Giga-Ball.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				INFOPLIST_FILE = Megaball/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
@@ -1546,7 +1550,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.6;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball;
 				PRODUCT_NAME = "Giga-Ball";
 				SWIFT_VERSION = 5.0;

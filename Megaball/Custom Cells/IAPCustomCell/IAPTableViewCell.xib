@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="16097.2" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="16097.3" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
@@ -35,20 +35,11 @@
                                 </constraints>
                             </imageView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tagline to entise purchase" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4Vb-BH-c5k">
-                                <rect key="frame" x="69" y="11" width="234" height="20.5"/>
+                                <rect key="frame" x="69" y="3" width="234" height="20.5"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="20.5" id="Uii-TZ-OQH"/>
                                 </constraints>
-                                <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="16"/>
-                                <color key="textColor" red="0.16078431369999999" green="0.0" blue="0.23529411759999999" alpha="1" colorSpace="calibratedRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Get Giga-Ball Premium" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cKj-ba-sZW">
-                                <rect key="frame" x="69" y="27.5" width="234" height="27.5"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="27.5" id="aaV-HA-0Ob"/>
-                                </constraints>
-                                <fontDescription key="fontDescription" name="Nunito-ExtraBold" family="Nunito" pointSize="20"/>
+                                <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="15"/>
                                 <color key="textColor" red="0.16078431369999999" green="0.0" blue="0.23529411759999999" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -58,21 +49,30 @@
                                 <color key="textColor" red="0.16078431369999999" green="0.0" blue="0.23529411759999999" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="$0.00" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="PjH-be-QHn">
+                                <rect key="frame" x="69" y="40.5" width="234" height="20.5"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="20.5" id="3jG-jZ-YoI"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="15"/>
+                                <color key="textColor" red="0.16078431369999999" green="0.0" blue="0.23529411759999999" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" red="0.90196078431372551" green="1" blue="0.70196078431372544" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
+                            <constraint firstAttribute="trailing" secondItem="PjH-be-QHn" secondAttribute="trailing" constant="42" id="1nH-h9-DHo"/>
+                            <constraint firstItem="laI-EX-bgZ" firstAttribute="bottom" secondItem="PjH-be-QHn" secondAttribute="bottom" constant="-2" id="8Rs-GV-jlE"/>
                             <constraint firstItem="laI-EX-bgZ" firstAttribute="leading" secondItem="K38-Zz-NgT" secondAttribute="leading" constant="5" id="Eza-kF-ROf"/>
-                            <constraint firstItem="4Vb-BH-c5k" firstAttribute="top" secondItem="laI-EX-bgZ" secondAttribute="top" constant="6" id="Fju-Ng-vml"/>
+                            <constraint firstItem="4Vb-BH-c5k" firstAttribute="top" secondItem="laI-EX-bgZ" secondAttribute="top" constant="-2" id="Fju-Ng-vml"/>
                             <constraint firstAttribute="trailing" secondItem="4Vb-BH-c5k" secondAttribute="trailing" constant="42" id="Po0-ad-UXt"/>
                             <constraint firstItem="5Ju-pp-OHC" firstAttribute="centerY" secondItem="K38-Zz-NgT" secondAttribute="centerY" id="XlO-tK-wlg"/>
-                            <constraint firstAttribute="trailing" secondItem="cKj-ba-sZW" secondAttribute="trailing" constant="42" id="ZFx-9K-Vbg"/>
                             <constraint firstItem="laI-EX-bgZ" firstAttribute="top" secondItem="K38-Zz-NgT" secondAttribute="top" constant="5" id="a8r-PO-SEp"/>
-                            <constraint firstItem="laI-EX-bgZ" firstAttribute="bottom" secondItem="cKj-ba-sZW" secondAttribute="bottom" constant="4" id="glT-uW-0xO"/>
                             <constraint firstItem="laI-EX-bgZ" firstAttribute="centerY" secondItem="K38-Zz-NgT" secondAttribute="centerY" id="gst-Rf-FT8"/>
                             <constraint firstItem="4Vb-BH-c5k" firstAttribute="leading" secondItem="laI-EX-bgZ" secondAttribute="trailing" constant="10" id="mBM-qD-vyh"/>
-                            <constraint firstItem="cKj-ba-sZW" firstAttribute="leading" secondItem="laI-EX-bgZ" secondAttribute="trailing" constant="10" id="mCR-Yt-uru"/>
                             <constraint firstAttribute="trailing" secondItem="5Ju-pp-OHC" secondAttribute="trailing" constant="42" id="o74-is-s78"/>
                             <constraint firstItem="5Ju-pp-OHC" firstAttribute="leading" secondItem="laI-EX-bgZ" secondAttribute="trailing" constant="10" id="wGA-Yn-cjI"/>
+                            <constraint firstItem="PjH-be-QHn" firstAttribute="leading" secondItem="laI-EX-bgZ" secondAttribute="trailing" constant="10" id="znd-Id-SR8"/>
                         </constraints>
                     </view>
                 </subviews>
@@ -91,7 +91,7 @@
                 <outlet property="cellView" destination="K38-Zz-NgT" id="Bsm-J0-fdu"/>
                 <outlet property="centreLabel" destination="5Ju-pp-OHC" id="ecB-5p-cXF"/>
                 <outlet property="iconImage" destination="laI-EX-bgZ" id="rfc-Zi-Lux"/>
-                <outlet property="premiumLabel" destination="cKj-ba-sZW" id="P9g-HQ-Osl"/>
+                <outlet property="priceLabel" destination="PjH-be-QHn" id="9NM-uj-afC"/>
                 <outlet property="tagLine" destination="4Vb-BH-c5k" id="h2M-fm-f52"/>
             </connections>
             <point key="canvasLocation" x="184.78260869565219" y="138.61607142857142"/>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097.2" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Dua-qa-9Mb">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097.3" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Dua-qa-9Mb">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
@@ -2471,6 +2471,10 @@ In-App Purchase</string>
                                         <color key="textColor" red="0.87058823529999996" green="0.87058823529999996" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
+                                    <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="large" translatesAutoresizingMaskIntoConstraints="NO" id="80o-XK-jlq">
+                                        <rect key="frame" x="188.5" y="476.5" width="37" height="37"/>
+                                        <color key="color" red="0.82352941180000006" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                    </activityIndicatorView>
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
@@ -2478,7 +2482,9 @@ In-App Purchase</string>
                                     <constraint firstItem="2Mh-80-bkt" firstAttribute="top" secondItem="B6S-uE-5sH" secondAttribute="bottom" constant="20" id="1Bk-Xf-ORD"/>
                                     <constraint firstItem="GIl-1N-0fa" firstAttribute="centerX" secondItem="nZl-3x-OaR" secondAttribute="centerX" id="4yW-CA-3jZ"/>
                                     <constraint firstItem="GIl-1N-0fa" firstAttribute="top" secondItem="2Mh-80-bkt" secondAttribute="bottom" constant="20" id="Kks-sU-Z6R"/>
+                                    <constraint firstItem="80o-XK-jlq" firstAttribute="centerX" secondItem="nZl-3x-OaR" secondAttribute="centerX" id="aan-EF-501"/>
                                     <constraint firstItem="2Mh-80-bkt" firstAttribute="centerX" secondItem="nZl-3x-OaR" secondAttribute="centerX" id="nEL-gG-MOE"/>
+                                    <constraint firstItem="80o-XK-jlq" firstAttribute="top" secondItem="GIl-1N-0fa" secondAttribute="bottom" constant="25" id="uSH-5i-ssm"/>
                                     <constraint firstAttribute="centerY" secondItem="2Mh-80-bkt" secondAttribute="bottom" id="zBU-sH-x18"/>
                                 </constraints>
                             </view>
@@ -2493,6 +2499,7 @@ In-App Purchase</string>
                         <viewLayoutGuide key="safeArea" id="mGy-Rz-iRJ"/>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="80o-XK-jlq" id="LQO-RX-5Eg"/>
                         <outlet property="backgroundView" destination="nZl-3x-OaR" id="yZs-oJ-MH5"/>
                         <outlet property="contentView" destination="cYX-Dm-Obt" id="0ZZ-Dy-HaX"/>
                         <outlet property="statusLabel" destination="GIl-1N-0fa" id="WYI-vb-oOJ"/>
@@ -2500,7 +2507,7 @@ In-App Purchase</string>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="9g3-eE-Z86" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3334" y="842"/>
+            <point key="canvasLocation" x="3333.3333333333335" y="841.74107142857144"/>
         </scene>
         <!--Splash View Controller-->
         <scene sceneID="elX-Nl-mfP">

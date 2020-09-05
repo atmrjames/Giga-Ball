@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import StoreKit
 
 class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource  {
     
@@ -18,7 +19,10 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     var premiumSetting: Bool?
+    var IAPLocalPrice: String?
     // User settings
+    
+    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -56,6 +60,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         
         userSettings()
         loadData()
+        loadProducts()
         
         packTableView.delegate = self
         packTableView.dataSource = self
@@ -117,7 +122,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             
             let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
             premiumTableView.rowHeight = 84.0
-            cell.centreLabel.isHidden = true
+            
+            cell.priceLabel.text = IAPLocalPrice
             cell.tagLine.text = "Unlock All Level Packs"
             cell.iconImage.image = UIImage(named:"iconPremium.png")!
             
@@ -214,22 +220,34 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
     
+    func loadProducts() {
+        products = []
+        GigaBallProducts.store.requestProducts{ [weak self] success, products in
+          guard let self = self else { return }
+          if success {
+            self.products = products!
+            }
+        }
+    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView == premiumTableView {
-            showPurchaseScreen()
-            IAPHandler().purchasePremium()
-//            IAPHandler().unlockPremiumContent() // Beta builds only
-            
+            // IAPHandler().unlockPremiumContent() // Beta builds only
+            if products.count > 0 {
+                showPurchaseScreen()
+                let product = products[0]
+                GigaBallProducts.store.buyProduct(product)
+            }
             UIView.animate(withDuration: 0.2) {
                 let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
                 cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
                 cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
             }
-            tableView.reloadData()
             tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
             // Update table view
-            
+                
         } else {
             UIView.animate(withDuration: 0.2) {
                 let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
@@ -363,6 +381,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         premiumSetting = defaults.bool(forKey: "premiumSetting")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
     

@@ -9,7 +9,7 @@
 import UIKit
 import StoreKit
 
-class InbetweenViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, SKPaymentTransactionObserver {
+class InbetweenViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
     var levelNumber: Int = 0
     var packNumber: Int = 0
@@ -21,6 +21,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     var numberOfLevels: Int = 0
     var sender: String?
     // Properties to store passed over data
+    
+    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -41,6 +43,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
     var premiumSetting: Bool?
+    var IAPLocalPrice: String?
     // User settings
     
     var premiumTagLineArray: [String] = [
@@ -96,10 +99,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        SKPaymentQueue.default().add(self)
+//        SKPaymentQueue.default().add(self)
         
         loadData()
         userSettings()
+        loadProducts()
         setBlur()
         if parallaxSetting! {
             addParallaxToView()
@@ -165,6 +169,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         premiumSetting = defaults.bool(forKey: "premiumSetting")
+        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
 
@@ -233,8 +238,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
         premiumTableView.rowHeight = 84.0
-        cell.centreLabel.isHidden = true
         
+        cell.priceLabel.text = IAPLocalPrice
         cell.tagLine.text = tagline
         cell.iconImage.image = UIImage(named:"iconPremium.png")!
         
@@ -247,18 +252,33 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         return cell
     }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        showPurchaseScreen()
-        IAPHandler().purchasePremium()
-//        IAPHandler().unlockPremiumContent() // Beta builds only
-
-        UIView.animate(withDuration: 0.2) {
-            let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+    func loadProducts() {
+        products = []
+        GigaBallProducts.store.requestProducts{ [weak self] success, products in
+          guard let self = self else { return }
+          if success {
+            self.products = products!
+            }
         }
-        tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadData()
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if tableView == premiumTableView {
+            // IAPHandler().unlockPremiumContent() // Beta builds only
+            if products.count > 0 {
+                showPurchaseScreen()
+                let product = products[0]
+                GigaBallProducts.store.buyProduct(product)
+            }
+            UIView.animate(withDuration: 0.2) {
+                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
+                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
+            }
+            tableView.deselectRow(at: indexPath, animated: true)
+            tableView.reloadData()
+            // Update table view
+        }
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
@@ -306,28 +326,28 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
-    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
-        for transaction in transactions {
-            if transaction.transactionState == .purchased {
-                IAPHandler().unlockPremiumContent()
-                SKPaymentQueue.default().finishTransaction(transaction)
-                
-            } else if transaction.transactionState == .failed {
-                if let error = transaction.error {
-                    let errorDescription = error.localizedDescription
-                    print("User payment failed/cancelled: \(errorDescription)")
-                }
-                SKPaymentQueue.default().finishTransaction(transaction)
-                NotificationCenter.default.post(name: .iAPIncompleteNotification, object: nil)
-                // Send notification to the app that the IAP was successful
-                
-            } else if transaction.transactionState == .restored {
-                IAPHandler().unlockPremiumContent()
-                SKPaymentQueue.default().finishTransaction(transaction)
-            } else {
-            }
-        }
-    }
+//    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+//        for transaction in transactions {
+//            if transaction.transactionState == .purchased {
+//                IAPHandler().unlockPremiumContent()
+//                SKPaymentQueue.default().finishTransaction(transaction)
+//                
+//            } else if transaction.transactionState == .failed {
+//                if let error = transaction.error {
+//                    let errorDescription = error.localizedDescription
+//                    print("User payment failed/cancelled: \(errorDescription)")
+//                }
+//                SKPaymentQueue.default().finishTransaction(transaction)
+//                NotificationCenter.default.post(name: .iAPIncompleteNotification, object: nil)
+//                // Send notification to the app that the IAP was successful
+//                
+//            } else if transaction.transactionState == .restored {
+//                IAPHandler().unlockPremiumContent()
+//                SKPaymentQueue.default().finishTransaction(transaction)
+//            } else {
+//            }
+//        }
+//    }
     
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.33)
