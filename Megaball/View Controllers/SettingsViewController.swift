@@ -275,23 +275,23 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 4:
             // Sounds
-                hideCell(cell: cell)
-                return cell
-//                cell.settingDescription.text = "Sounds"
-//                cell.centreLabel.text = ""
-//                cell.iconImage.image = UIImage(named:"iconSound.png")!
-//                if soundsSetting! {
-//                    cell.settingState.text = "on"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-//                } else {
-//                    cell.settingState.text = "off"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-//                }
-            case 5:
-            // Music
-                cell.settingDescription.text = "Sound"
+//                hideCell(cell: cell)
+//                return cell
+                cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconSound.png")!
+                if soundsSetting! {
+                    cell.settingState.text = "on"
+                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                } else {
+                    cell.settingState.text = "off"
+                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                }
+            case 5:
+            // Music
+                cell.settingDescription.text = "Music"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconMusic.png")!
                 if musicSetting! {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
@@ -488,9 +488,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 5:
             // Music
                 musicSetting = !musicSetting!
-                soundsSetting = musicSetting
+//                soundsSetting = musicSetting
                 defaults.set(musicSetting!, forKey: "musicSetting")
-                defaults.set(soundsSetting!, forKey: "soundsSetting")
+//                defaults.set(soundsSetting!, forKey: "soundsSetting")
                 if musicSetting! {
                     if musicPausedBool {
                         MusicHandler.sharedHelper.resumeMusic()

@@ -182,12 +182,12 @@ class InbetweenLevels: GKState {
         }
 
         if scene.gameoverStatus == false && scene.endlessMode == false && scene.numberOfLevels != 1 {
-            scene.totalStatsArray[0].levelUnlockedArray[scene.levelNumber+1] = true
-            // Unlock next level
-            scene.totalStatsArray[0].levelsCompleted+=1
             if scene.levelNumber != scene.endLevelNumber {
+                scene.totalStatsArray[0].levelUnlockedArray[scene.levelNumber+1] = true
                 scene.numberOfLives+=1
             }
+            // Unlock next level and add extra life if next level exists
+            scene.totalStatsArray[0].levelsCompleted+=1
         }
         scene.totalStatsArray[0].playTimeSecs = scene.totalStatsArray[0].playTimeSecs + scene.levelTimerValue
         if scene.endlessMode == false && (scene.gameoverStatus == true || scene.levelNumber == self.scene.endLevelNumber) && scene.numberOfLevels != 1 {

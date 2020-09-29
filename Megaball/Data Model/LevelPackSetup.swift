@@ -273,7 +273,7 @@ class LevelPackSetup {
         
         // Space Pack
         "Invader",
-        "Cresent Moon",
+        "Crescent Moon",
         "Constellation",
         "The Sun",
         "Rocket",

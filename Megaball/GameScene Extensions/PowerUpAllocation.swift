@@ -156,12 +156,6 @@ extension GameScene {
         case 11:
             powerUpProbArray[0] = 0 // Get a Life
             powerUpProbArray[1] = 0 // Lose a Life
-            powerUpProbArray[7] = 10 // Gravity
-            powerUpProbArray[15] = 10 // Show All Bricks
-            powerUpProbArray[16] = 10 // Hide Bricks
-        case 12:
-            powerUpProbArray[0] = 0 // Get a Life
-            powerUpProbArray[1] = 0 // Lose a Life
             powerUpProbArray[2] = 7 // Decrease Ball Speed
             powerUpProbArray[3] = 7 // Increase Ball Speed
             powerUpProbArray[4] = 7 // Increase Paddle Size
@@ -188,6 +182,12 @@ extension GameScene {
             powerUpProbArray[25] = 5 // Backstop
             powerUpProbArray[26] = 7 // Increase Ball Size
             powerUpProbArray[27] = 7 // Decrease Ball Size
+        case 12:
+            powerUpProbArray[0] = 0 // Get a Life
+            powerUpProbArray[1] = 0 // Lose a Life
+            powerUpProbArray[7] = 10 // Gravity
+            powerUpProbArray[15] = 10 // Show All Bricks
+            powerUpProbArray[16] = 10 // Hide Bricks
         case 13:
             powerUpProbArray[15] = 10 // Show All Bricks
             powerUpProbArray[16] = 10 // Hide Bricks

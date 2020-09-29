@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097.3" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Dua-qa-9Mb">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17156" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Dua-qa-9Mb">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16087"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17125"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="collection view cell content view" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -76,6 +77,7 @@
                                         <color key="sectionIndexBackgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                     </tableView>
                                 </subviews>
+                                <viewLayoutGuide key="safeArea" id="0L1-sd-RCW"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstItem="d3U-8J-yMb" firstAttribute="trailing" secondItem="0L1-sd-RCW" secondAttribute="trailing" id="6LJ-0K-yfb"/>
@@ -95,7 +97,6 @@
                                     <constraint firstItem="o3y-rf-rFE" firstAttribute="leading" secondItem="0L1-sd-RCW" secondAttribute="leading" constant="20" id="x7a-9M-Tcc"/>
                                     <constraint firstItem="Dn7-p2-rC0" firstAttribute="centerX" secondItem="iE5-gF-frm" secondAttribute="centerX" id="yol-u5-wbT"/>
                                 </constraints>
-                                <viewLayoutGuide key="safeArea" id="0L1-sd-RCW"/>
                                 <variation key="default">
                                     <mask key="constraints">
                                         <exclude reference="SOC-8x-TE9"/>
@@ -110,6 +111,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="1R6-p5-C1Q"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="iE5-gF-frm" firstAttribute="centerX" secondItem="vRC-Mi-Or5" secondAttribute="centerX" id="QhX-Wg-Vdz"/>
@@ -117,7 +119,6 @@
                             <constraint firstItem="iE5-gF-frm" firstAttribute="centerY" secondItem="vRC-Mi-Or5" secondAttribute="centerY" id="wA5-X8-Q9P"/>
                             <constraint firstItem="iE5-gF-frm" firstAttribute="top" secondItem="1R6-p5-C1Q" secondAttribute="top" id="wpA-B7-Sah"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="1R6-p5-C1Q"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="ndV-tm-Vee"/>
@@ -251,6 +252,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="rdW-H6-Zvv"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="uLs-Na-H9n" firstAttribute="centerY" secondItem="SCp-xE-EHy" secondAttribute="centerY" id="AZq-71-IlX"/>
@@ -258,7 +260,6 @@
                             <constraint firstItem="uLs-Na-H9n" firstAttribute="top" secondItem="rdW-H6-Zvv" secondAttribute="top" id="sG4-mO-u6f"/>
                             <constraint firstItem="uLs-Na-H9n" firstAttribute="centerX" secondItem="SCp-xE-EHy" secondAttribute="centerX" id="yIq-eQ-RhG"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="rdW-H6-Zvv"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="lU7-OA-2MK"/>
@@ -371,6 +372,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="6pT-nd-tRM"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="n2C-i0-ee2" firstAttribute="centerY" secondItem="6sf-fY-6HP" secondAttribute="centerY" id="Jec-8C-XfI"/>
@@ -378,7 +380,6 @@
                             <constraint firstItem="n2C-i0-ee2" firstAttribute="top" secondItem="6pT-nd-tRM" secondAttribute="top" id="QMa-Jp-d8C"/>
                             <constraint firstItem="n2C-i0-ee2" firstAttribute="centerX" secondItem="6sf-fY-6HP" secondAttribute="centerX" id="RZY-EY-14n"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="6pT-nd-tRM"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="NWc-Hg-OYh"/>
@@ -495,6 +496,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="wqj-Vb-1yD"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="b4I-Lb-dbc" firstAttribute="top" secondItem="wqj-Vb-1yD" secondAttribute="top" id="46A-1r-TcG"/>
@@ -502,7 +504,6 @@
                             <constraint firstItem="b4I-Lb-dbc" firstAttribute="centerX" secondItem="8gq-xh-DFr" secondAttribute="centerX" id="VWN-80-UOS"/>
                             <constraint firstItem="b4I-Lb-dbc" firstAttribute="centerY" secondItem="8gq-xh-DFr" secondAttribute="centerY" id="hg0-kH-et7"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="wqj-Vb-1yD"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="46A-1r-TcG"/>
@@ -588,7 +589,7 @@
                                         <color key="textColor" red="0.87058823529999996" green="0.87058823529999996" blue="0.87058823529999996" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Giga-Ball 1.0.0(75) - August 2020" textAlignment="center" lineBreakMode="headTruncation" baselineAdjustment="alignBaselines" minimumFontSize="6" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="sV4-fy-Rm7" userLabel="Build label">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Giga-Ball 1.0.2(77) - September 2020" textAlignment="center" lineBreakMode="headTruncation" baselineAdjustment="alignBaselines" minimumFontSize="6" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="sV4-fy-Rm7" userLabel="Build label">
                                         <rect key="frame" x="20" y="666" width="374" height="20.5"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="20.670000000000002" id="FVM-sG-cba"/>
@@ -613,7 +614,7 @@
                                             <constraint firstAttribute="width" constant="110" id="n9e-6F-rXg"/>
                                         </constraints>
                                     </imageView>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bmE-iW-eIl">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bmE-iW-eIl">
                                         <rect key="frame" x="20" y="598.5" width="374" height="23"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="23.329999999999998" id="QQy-6e-eLf"/>
@@ -637,7 +638,7 @@
                                             <action selector="facebookLogoTapped:" destination="N6p-lC-xAk" eventType="touchUpInside" id="kd2-dy-giZ"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="L5s-wb-H90">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="L5s-wb-H90">
                                         <rect key="frame" x="143" y="550.5" width="32" height="32"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="32" id="1tk-9I-g7r"/>
@@ -648,7 +649,7 @@
                                             <action selector="instagramLogoTapped:" destination="N6p-lC-xAk" eventType="touchUpInside" id="V04-u5-QU7"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pDl-Dv-zOi">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pDl-Dv-zOi">
                                         <rect key="frame" x="239" y="550.5" width="32" height="32"/>
                                         <constraints>
                                             <constraint firstAttribute="width" secondItem="pDl-Dv-zOi" secondAttribute="height" multiplier="1:1" id="Cbx-bf-eJ2"/>
@@ -659,7 +660,7 @@
                                             <action selector="twitterLogoTapped:" destination="N6p-lC-xAk" eventType="touchUpInside" id="04z-0o-64H"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ydw-TQ-Dbj">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ydw-TQ-Dbj">
                                         <rect key="frame" x="20" y="626.5" width="374" height="23.5"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="23.329999999999998" id="htX-cb-1Mk"/>
@@ -735,6 +736,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="faD-yg-kA9"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -743,7 +745,6 @@
                             <constraint firstItem="tuY-8q-Jn4" firstAttribute="top" secondItem="faD-yg-kA9" secondAttribute="top" id="NpH-gC-l07"/>
                             <constraint firstItem="tuY-8q-Jn4" firstAttribute="centerX" secondItem="lxw-lU-i2a" secondAttribute="centerX" id="ScA-N9-GJZ"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="faD-yg-kA9"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="Kdq-ce-0dE"/>
@@ -903,6 +904,7 @@
                                 </constraints>
                             </imageView>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="3NZ-mn-eyJ"/>
                         <color key="backgroundColor" red="0.14901960784313725" green="0.14901960784313725" blue="0.14901960784313725" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                         <constraints>
                             <constraint firstItem="hXg-9M-a0w" firstAttribute="top" secondItem="goG-Uk-8FU" secondAttribute="bottom" constant="25" id="5sr-7u-Wz4"/>
@@ -931,7 +933,6 @@
                             <constraint firstItem="GLJ-e4-6Ry" firstAttribute="centerY" secondItem="qoM-35-LIT" secondAttribute="centerY" id="vDn-cs-2QC"/>
                             <constraint firstItem="GLJ-e4-6Ry" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="vwD-tZ-W3G"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="3NZ-mn-eyJ"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="hF7-NA-QSf"/>
@@ -988,8 +989,8 @@
                     <view key="view" multipleTouchEnabled="YES" contentMode="scaleToFill" id="3se-qz-xqx" customClass="SKView">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <viewLayoutGuide key="safeArea" id="4qk-I5-YsI"/>
+                        <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </view>
                     <navigationItem key="navigationItem" id="jDj-xl-y0b"/>
                 </viewController>
@@ -1079,6 +1080,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="uKa-ZE-1BH"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="gM4-kB-V3C" firstAttribute="top" secondItem="uKa-ZE-1BH" secondAttribute="top" id="12r-dn-hdc"/>
@@ -1086,7 +1088,6 @@
                             <constraint firstItem="gM4-kB-V3C" firstAttribute="centerX" secondItem="0FC-zg-xbT" secondAttribute="centerX" id="RBR-tb-Q79"/>
                             <constraint firstItem="gM4-kB-V3C" firstAttribute="leading" secondItem="uKa-ZE-1BH" secondAttribute="leading" id="wmR-40-YRl"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="uKa-ZE-1BH"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="12r-dn-hdc"/>
@@ -1180,6 +1181,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="5ih-yp-2sn"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="f1v-ap-PyS" firstAttribute="centerX" secondItem="0MV-1E-fMv" secondAttribute="centerX" id="RZ4-gg-f0l"/>
@@ -1187,7 +1189,6 @@
                             <constraint firstItem="f1v-ap-PyS" firstAttribute="centerY" secondItem="0MV-1E-fMv" secondAttribute="centerY" id="oQs-ht-KBM"/>
                             <constraint firstItem="f1v-ap-PyS" firstAttribute="leading" secondItem="5ih-yp-2sn" secondAttribute="leading" id="rZV-SF-qvu"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="5ih-yp-2sn"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="cui-gr-C4R"/>
@@ -1305,6 +1306,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="sry-RN-qaF"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="lMs-7N-jq9" firstAttribute="top" secondItem="sry-RN-qaF" secondAttribute="top" id="Au1-aG-gDX"/>
@@ -1312,7 +1314,6 @@
                             <constraint firstItem="lMs-7N-jq9" firstAttribute="leading" secondItem="sry-RN-qaF" secondAttribute="leading" id="JTl-as-5qB"/>
                             <constraint firstItem="lMs-7N-jq9" firstAttribute="centerY" secondItem="FFC-QC-Vqf" secondAttribute="centerY" id="smQ-0y-Jch"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="sry-RN-qaF"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="Au1-aG-gDX"/>
@@ -1429,6 +1430,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="UHL-wx-6z2"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="s59-XW-biX" firstAttribute="centerY" secondItem="SW8-BK-MxC" secondAttribute="centerY" id="4IQ-7P-DQJ"/>
@@ -1436,7 +1438,6 @@
                             <constraint firstItem="s59-XW-biX" firstAttribute="leading" secondItem="UHL-wx-6z2" secondAttribute="leading" id="h7A-Ga-JT5"/>
                             <constraint firstItem="s59-XW-biX" firstAttribute="centerX" secondItem="SW8-BK-MxC" secondAttribute="centerX" id="whW-Ej-FBP"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="UHL-wx-6z2"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="fMU-7W-IPP"/>
@@ -1537,6 +1538,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="tvd-dw-8Ig"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="AW2-GX-Y5z" firstAttribute="centerY" secondItem="5BE-gH-B0u" secondAttribute="centerY" id="Mwg-2L-2X9"/>
@@ -1544,7 +1546,6 @@
                             <constraint firstItem="AW2-GX-Y5z" firstAttribute="leading" secondItem="tvd-dw-8Ig" secondAttribute="leading" id="lvE-up-T82"/>
                             <constraint firstItem="AW2-GX-Y5z" firstAttribute="top" secondItem="tvd-dw-8Ig" secondAttribute="top" id="snc-tE-oIz"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="tvd-dw-8Ig"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="lvE-up-T82"/>
@@ -1664,6 +1665,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="9la-Ua-dVp"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="JLZ-FJ-btm" firstAttribute="centerY" secondItem="6tW-0N-nMZ" secondAttribute="centerY" id="Uhv-ys-e1n"/>
@@ -1671,7 +1673,6 @@
                             <constraint firstItem="JLZ-FJ-btm" firstAttribute="leading" secondItem="9la-Ua-dVp" secondAttribute="leading" id="nBJ-1L-RdU"/>
                             <constraint firstItem="JLZ-FJ-btm" firstAttribute="top" secondItem="9la-Ua-dVp" secondAttribute="top" id="xAG-0E-mEp"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="9la-Ua-dVp"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="nBJ-1L-RdU"/>
@@ -1797,6 +1798,7 @@
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="gId-kG-svg"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="ksA-xB-moz" firstAttribute="centerX" secondItem="7Pw-Ca-8Ns" secondAttribute="centerX" id="5Ij-og-IHy"/>
@@ -1804,7 +1806,6 @@
                             <constraint firstItem="ksA-xB-moz" firstAttribute="top" secondItem="gId-kG-svg" secondAttribute="top" id="aJp-EC-X9b"/>
                             <constraint firstItem="ksA-xB-moz" firstAttribute="centerY" secondItem="7Pw-Ca-8Ns" secondAttribute="centerY" id="ec2-69-P0f"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="gId-kG-svg"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="DPf-Ae-BDC"/>
@@ -2005,6 +2006,7 @@ U N L O C K E D</string>
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="4uA-Vf-8ca"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <gestureRecognizers/>
                         <constraints>
@@ -2013,7 +2015,6 @@ U N L O C K E D</string>
                             <constraint firstItem="NJ2-8t-agb" firstAttribute="leading" secondItem="4uA-Vf-8ca" secondAttribute="leading" id="dCK-Rm-SaV"/>
                             <constraint firstItem="4uA-Vf-8ca" firstAttribute="bottom" secondItem="NJ2-8t-agb" secondAttribute="bottom" id="eVK-qo-75M"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="4uA-Vf-8ca"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="eVK-qo-75M"/>
@@ -2074,20 +2075,20 @@ U N L O C K E D</string>
                                         <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="adf-Kn-psG">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="adf-Kn-psG">
                                         <rect key="frame" x="0.0" y="132" width="150" height="34"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="34" id="Pbw-WU-oui"/>
                                         </constraints>
                                         <fontDescription key="fontDescription" name="Nunito-Bold" family="Nunito" pointSize="20"/>
                                         <state key="normal" title="Cancel">
-                                            <color key="titleColor" systemColor="systemPinkColor" red="1" green="0.1764705882" blue="0.33333333329999998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                            <color key="titleColor" systemColor="systemPinkColor"/>
                                         </state>
                                         <connections>
                                             <action selector="cancelButton:" destination="JO7-7C-LaF" eventType="touchUpInside" id="2Hh-k3-2ZT"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="aNp-JK-Qt8">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="aNp-JK-Qt8">
                                         <rect key="frame" x="150" y="132" width="150" height="34"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="34" id="h3r-l8-2A9"/>
@@ -2100,7 +2101,7 @@ U N L O C K E D</string>
                                             <action selector="okButton:" destination="JO7-7C-LaF" eventType="touchUpInside" id="6Wt-du-MU1"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4wM-81-l84">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4wM-81-l84">
                                         <rect key="frame" x="20" y="132" width="260" height="34"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="34" id="i9c-aV-ZoG"/>
@@ -2135,12 +2136,12 @@ U N L O C K E D</string>
                                 </constraints>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="UPA-bi-NDI"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="YOj-vh-rKH" firstAttribute="centerY" secondItem="nUq-Ze-3AM" secondAttribute="centerY" id="01G-Gh-57Q"/>
                             <constraint firstItem="YOj-vh-rKH" firstAttribute="centerX" secondItem="nUq-Ze-3AM" secondAttribute="centerX" id="WTy-4Z-UK8"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="UPA-bi-NDI"/>
                     </view>
                     <connections>
                         <outlet property="backgroundView" destination="nUq-Ze-3AM" id="b9g-bK-1Ac"/>
@@ -2372,6 +2373,7 @@ U N L O C K E D</string>
                                 </variation>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="Pno-DS-vjx"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="a3N-BH-h4b" firstAttribute="leading" secondItem="Pno-DS-vjx" secondAttribute="leading" id="GPh-y6-PoQ"/>
@@ -2383,7 +2385,6 @@ U N L O C K E D</string>
                             <constraint firstItem="a3N-BH-h4b" firstAttribute="centerY" secondItem="FAx-7u-rBG" secondAttribute="centerY" id="nzH-BO-Q1k"/>
                             <constraint firstItem="a3N-BH-h4b" firstAttribute="top" secondItem="Pno-DS-vjx" secondAttribute="top" id="zEh-vu-ggT"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="Pno-DS-vjx"/>
                         <variation key="default">
                             <mask key="constraints">
                                 <exclude reference="GPh-y6-PoQ"/>
@@ -2489,6 +2490,7 @@ In-App Purchase</string>
                                 </constraints>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="mGy-Rz-iRJ"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="nZl-3x-OaR" firstAttribute="centerY" secondItem="cYX-Dm-Obt" secondAttribute="centerY" id="Mqe-Bn-NdF"/>
@@ -2496,7 +2498,6 @@ In-App Purchase</string>
                             <constraint firstItem="nZl-3x-OaR" firstAttribute="leading" secondItem="mGy-Rz-iRJ" secondAttribute="leading" id="cvx-jY-Okf"/>
                             <constraint firstItem="nZl-3x-OaR" firstAttribute="centerX" secondItem="cYX-Dm-Obt" secondAttribute="centerX" id="w92-6G-LgM"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="mGy-Rz-iRJ"/>
                     </view>
                     <connections>
                         <outlet property="activityIndicator" destination="80o-XK-jlq" id="LQO-RX-5Eg"/>
@@ -2741,6 +2742,7 @@ In-App Purchase</string>
                                 </connections>
                             </view>
                         </subviews>
+                        <viewLayoutGuide key="safeArea" id="84o-oe-FSV"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="SkD-vp-Ply" firstAttribute="top" secondItem="0nV-CO-csj" secondAttribute="top" id="QGW-0w-FV2"/>
@@ -2748,7 +2750,6 @@ In-App Purchase</string>
                             <constraint firstItem="SkD-vp-Ply" firstAttribute="leading" secondItem="0nV-CO-csj" secondAttribute="leading" id="r0b-Ba-VP7"/>
                             <constraint firstItem="SkD-vp-Ply" firstAttribute="centerX" secondItem="0nV-CO-csj" secondAttribute="centerX" id="yKh-f4-QBH"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="84o-oe-FSV"/>
                     </view>
                     <connections>
                         <outlet property="cancelResumeButton" destination="4JO-LQ-C8g" id="4Sn-sb-fiK"/>
@@ -2799,5 +2800,8 @@ In-App Purchase</string>
         <image name="iconPremiumYellow" width="125" height="125"/>
         <image name="instagramLogoWhite" width="504" height="504"/>
         <image name="twitterLogoWhite" width="400" height="400"/>
+        <systemColor name="systemPinkColor">
+            <color red="1" green="0.17647058823529413" blue="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
     </resources>
 </document>
