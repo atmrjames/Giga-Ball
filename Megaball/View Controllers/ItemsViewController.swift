@@ -130,10 +130,10 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 cell.iconImage.image = UIImage(named:"iconPremium.png")!
             }
         case 6:
-            cell.settingDescription.text = "Purchase Soundtrack"
+            cell.settingDescription.text = "SoundCloud Link"
             cell.iconImage.image = UIImage(named:"iconMusic.png")!
-            hideCell(cell: cell)
-            return cell
+//            hideCell(cell: cell)
+//            return cell
         case 7:
             cell.settingDescription.text = "Rate Giga-Ball"
             cell.iconImage.image = UIImage(named:"iconReview.png")!
@@ -192,7 +192,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             moveToPremiumInfo()
         case 6:
         // Purchase soundtrack
-            if let purchaseSoundTrackURL = URL(string: "https://www.giga-ball.app") {
+            if let purchaseSoundTrackURL = URL(string: "https://soundcloud.com/user-371123791/sets/giga-ball-original-sound-track?ref=clipboard&p=i&c=1") {
                 UIApplication.shared.open(purchaseSoundTrackURL)
             }
         case 7:
