@@ -84,13 +84,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
-    @IBOutlet var premiumTableView: UITableView!
-    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
-    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
-    
-    @IBOutlet var backButtonCollapsed: NSLayoutConstraint!
-    @IBOutlet var backButtonExpanded: NSLayoutConstraint!
-    
     override func viewDidLoad() {
         super.viewDidLoad()
                 
@@ -114,10 +107,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
         
-        premiumTableView.delegate = self
-        premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
-        
         let screenRatio = self.view.frame.size.height/self.view.frame.size.width
         
         if screenRatio > 2 {
@@ -138,12 +127,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         settingsTableView.separatorStyle = .none
         settingsTableView.rowHeight = 70.0
+        settingsTableView.isHidden = false
         // TableView setup
         
         userSettings()
         loadData()
         loadProducts()
-        premiumTableViewHideShow(animated: false)
         if parallaxSetting! {
             addParallaxToView()
         }
@@ -175,47 +164,26 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         tagline = premiumTagLineArray.randomElement()!
 
         backButtonCollectionView.reloadData()
+        settingsTableView.reloadData()
+        DispatchQueue.main.async {
+             self.settingsTableView.reloadData()
+        }
         showAnimate()
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        premiumTableViewHideShow(animated: false)
+        
     }
     
+    
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if tableView == self.premiumTableView {
-            return 1
-        } else {
-            if navigatedFrom! == "PauseMenu" {
-                return 11
-            } else {
-                return 14
-            }
-        }
+            return 9
     }
     // Set number of cells in table view
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        if tableView == self.premiumTableView {
-            
-            let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
-            premiumTableView.rowHeight = 84.0
-
-            cell.priceLabel.text = IAPLocalPrice
-            cell.tagLine.text = tagline
-            cell.iconImage.image = UIImage(named:"iconPremium.png")!
-            
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView.transform = .identity
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.showsVerticalScrollIndicator = false
-            
-            return cell
-            
-        } else {
-            
+                    
             let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
             settingsTableView.rowHeight = 70.0
@@ -223,60 +191,30 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.iconImage.isHidden = false
             
             switch indexPath.row {
+
             case 0:
-            // Premium
-                hideCell(cell: cell)
-                return cell
-//                cell.settingDescription.text = "Premium"
-//                cell.centreLabel.text = ""
-//                cell.iconImage.image = UIImage(named:"iconPremium.png")!
-//                if premiumSetting! {
-//                    cell.settingState.text = "on"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-//                } else {
-//                    cell.settingState.text = "off"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-//                }
-            case 1:
-            // Ads
-                hideCell(cell: cell)
-                return cell
-//                cell.settingDescription.text = "Ads"
-//                cell.centreLabel.text = ""
-//                cell.iconImage.image = UIImage(named:"iconAd.png")!
-//                if adsSetting! {
-//                    cell.settingState.text = "on"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-//                } else {
-//                    cell.settingState.text = "off"
-//                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-//                }
-            case 2:
             // App icon
-                if navigatedFrom! == "PauseMenu" {
-                    hideCell(cell: cell)
-                    return cell
-                } else {
+//                if navigatedFrom! == "PauseMenu" {
+//                    hideCell(cell: cell)
+//                    cell.isHidden = true
+//                } else {
                     cell.settingDescription.text = "App Icon"
                     cell.centreLabel.text = ""
                     cell.iconImage.image = UIImage(named:"iconAppIcon.png")!
                     cell.settingState.text = ""
-                }
-            case 3:
+//                }
+            case 1:
             // Theme
-                if navigatedFrom! == "PauseMenu" {
-                    hideCell(cell: cell)
-                    return cell
-                } else {
+//                if navigatedFrom! == "PauseMenu" {
+//                    hideCell(cell: cell)
+//                } else {
                     cell.settingDescription.text = "Ball & Paddle Theme"
                     cell.centreLabel.text = ""
                     cell.iconImage.image = UIImage(named:"iconTheme.png")!
                     cell.settingState.text = ""
-                }
-            case 4:
+//                }
+            case 2:
             // Sounds
-//                hideCell(cell: cell)
-//                return cell
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconSound.png")!
@@ -287,7 +225,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 5:
+            case 3:
             // Music
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
@@ -299,13 +237,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 6:
+            case 4:
             // Haptics
-                if screenSize == .Pad || screenSize == .SE {
-                // No haptics engine
-                    hideCell(cell: cell)
-                    return cell
-                } else {
+//                if screenSize == .Pad || screenSize == .SE {
+//                // No haptics engine
+//                    hideCell(cell: cell)
+//                } else {
                     cell.settingDescription.text = "Haptics"
                     cell.centreLabel.text = ""
                     cell.iconImage.image = UIImage(named:"iconHaptics.png")!
@@ -316,8 +253,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                         cell.settingState.text = "off"
                         cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                     }
-                }
-            case 7:
+//                }
+            case 5:
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
@@ -329,7 +266,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 8:
+            case 6:
             // Paddle sensitivity
                 cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
@@ -350,7 +287,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "x3.00"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 }
-            case 9:
+            case 7:
             // Swipe up to pause
                 cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
@@ -362,70 +299,66 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 10:
-                if navigatedFrom! != "PauseMenu" {
+            case 8:
+//                if navigatedFrom! = "PauseMenu" {
                 // Reset game data
-                    hideCell(cell: cell)
+//                    hideCell(cell: cell)
 //                    cell.settingDescription.text = ""
 //                    cell.centreLabel.text = "Reset All Game Data (developer)"
 //                    cell.settingState.text = ""
 //                    cell.iconImage.isHidden = true
 //                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
-                } else {
+//                } else {
                 // Kill ball
                     cell.settingDescription.text = ""
                     cell.settingState.text = ""
                     cell.centreLabel.text = "Reset Ball"
                     cell.iconImage.isHidden = true
                     cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
-                }
-            case 11:
-            // Restore purchases
-                if premiumSetting! == false {
-                    cell.settingDescription.text = ""
-                    cell.centreLabel.text = "Restore Purchase"
-                    cell.settingState.text = ""
-                    cell.iconImage.isHidden = true
-                    cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
-                } else {
-                    hideCell(cell: cell)
-                    return cell
-                }
-            case 12:
-            // Unlock all
-                hideCell(cell: cell)
-//                cell.settingDescription.text = ""
-//                cell.centreLabel.text = "Unlock All Items (developer)"
-//                cell.settingState.text = ""
-//                cell.iconImage.isHidden = true
-//                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
-            case 13:
-            // Re-lock all
-                hideCell(cell: cell)
-//                cell.settingDescription.text = ""
-//                cell.centreLabel.text = "Reset Locked Items (developer)"
-//                cell.settingState.text = ""
-//                cell.iconImage.isHidden = true
-//                cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
+//                }
             default:
                 print("Error: Out of range")
                 break
             }
+        
+//            if navigatedFrom! == "PauseMenu" {
+//                if (indexPath.row == 0) || (indexPath.row == 1) {
+//                    cell.isHidden = true
+//                } else {
+//                    cell.isHidden = false
+//                }
+//            } else {
+        if navigatedFrom! != "PauseMenu" {
+                if(indexPath.row == 8) {
+                    cell.isHidden = true
+                } else {
+                    cell.isHidden = false
+                }
+        }
+//            }
+        
+        
             UIView.animate(withDuration: 0.2) {
                 cell.cellView2.transform = .identity
                 cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
             }
-            tableView.showsVerticalScrollIndicator = false
             return cell
-        }
+//        }
     }
     // Add content to cells
     
-    func hideCell(cell: SettingsTableViewCell) {
-        cell.settingDescription.text = ""
-        cell.centreLabel.text = ""
-        cell.settingState.text = ""
-        settingsTableView.rowHeight = 0.0
+    private func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+        var rowHeight:CGFloat = 0
+
+        if navigatedFrom! != "PauseMenu" {
+            if (indexPath.row == 8) {
+                rowHeight = 0
+            } else {
+                rowHeight = 70.0
+            }
+        }
+//        }
+        return rowHeight
     }
     
     func loadProducts() {
@@ -440,52 +373,34 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if tableView == premiumTableView {
-            // IAPHandler().unlockPremiumContent() // Beta builds only
-            if products.count > 0 {
-                showPurchaseScreen()
-                let product = products[0]
-                GigaBallProducts.store.buyProduct(product)
-            }
-            UIView.animate(withDuration: 0.2) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.deselectRow(at: indexPath, animated: true)
-            tableView.reloadData()
-            // Update table view
-            
-        } else {
             switch indexPath.row {
+//            case 0:
+//            // Premium
+//                premiumSetting = !premiumSetting!
+//                defaults.set(premiumSetting!, forKey: "premiumSetting")
+//                if premiumSetting! {
+//                    adsSetting = false
+//                } else {
+//                    adsSetting = true
+//                }
+//                defaults.set(adsSetting!, forKey: "adsSetting")
+//            case 1:
+//            // Ads
+//                adsSetting = !adsSetting!
+//                defaults.set(adsSetting!, forKey: "adsSetting")
             case 0:
-            // Premium
-                premiumSetting = !premiumSetting!
-                defaults.set(premiumSetting!, forKey: "premiumSetting")
-                if premiumSetting! {
-                    adsSetting = false
-                } else {
-                    adsSetting = true
-                }
-                defaults.set(adsSetting!, forKey: "adsSetting")
-                premiumTableViewHideShow(animated: true)
-            case 1:
-            // Ads
-                adsSetting = !adsSetting!
-                defaults.set(adsSetting!, forKey: "adsSetting")
-            case 2:
             // App icon
                 hideAnimate()
                 moveToItemDetails(senderID: 0)
-            case 3:
+            case 1:
             // Theme
                 hideAnimate()
                 moveToItemDetails(senderID: 1)
-            case 4:
+            case 2:
             // Sounds
                 soundsSetting = !soundsSetting!
                 defaults.set(soundsSetting!, forKey: "soundsSetting")
-            case 5:
+            case 3:
             // Music
                 musicSetting = !musicSetting!
 //                soundsSetting = musicSetting
@@ -506,11 +421,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     MusicHandler.sharedHelper.pauseMusic()
                     // Stop music
                 }
-            case 6:
+            case 4:
             // Haptics
                 hapticsSetting = !hapticsSetting!
                 defaults.set(hapticsSetting!, forKey: "hapticsSetting")
-            case 7:
+            case 5:
             // Parallax
                 parallaxSetting = !parallaxSetting!
                 defaults.set(parallaxSetting!, forKey: "parallaxSetting")
@@ -521,18 +436,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                         backgroundView.removeMotionEffect(group!)
                     }
                 }
-            case 8:
+            case 6:
             // Paddle sensitivity
                 paddleSensitivitySetting = paddleSensitivitySetting!+1
                 if paddleSensitivitySetting! > 4 {
                     paddleSensitivitySetting = 0
                 }
                 defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
-            case 9:
+            case 7:
             // Swipe up pause
                 swipeUpPause = !swipeUpPause!
                 defaults.set(swipeUpPause!, forKey: "swipeUpPause")
-            case 10:
+            case 8:
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
                     showWarning(senderID: "resetData")
@@ -540,16 +455,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 // Kill ball
                     showWarning(senderID: "killBall")
                 }
-            case 11:
-            // Restore purchases
-                showPurchaseScreen()
-                GigaBallProducts.store.restorePurchases()
-            case 12:
-            // Unlock all
-                unlockAllItems()
-            case 13:
-            // Re-lock all
-                relockAllItems()
+//            case 11:
+//            // Restore purchases
+//                showPurchaseScreen()
+//                GigaBallProducts.store.restorePurchases()
+//            case 12:
+//            // Unlock all
+//                unlockAllItems()
+//            case 13:
+//            // Re-lock all
+//                relockAllItems()
             default:
                 break
             }
@@ -565,7 +480,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             tableView.deselectRow(at: indexPath, animated: true)
             tableView.reloadData()
             // Update table view
-        }
+//        }
     }
     
     func moveToItemDetails(senderID: Int) {
@@ -582,28 +497,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             self.backgroundView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
             self.backgroundView.alpha = 0.0
         })
-    }
-    
-    func premiumTableViewHideShow(animated: Bool) {
-        if premiumSetting! {
-            premiumTableView.isHidden = true
-            premiumTableExpanded.isActive = false
-            backButtonExpanded.isActive = false
-            premiumTableCollapsed.isActive = true
-            backButtonCollapsed.isActive = true
-
-        } else {
-            premiumTableView.isHidden = false
-            premiumTableCollapsed.isActive = false
-            backButtonCollapsed.isActive = false
-            premiumTableExpanded.isActive = true
-            backButtonExpanded.isActive = true
-        }
-        if animated {
-            UIView.animate(withDuration: 0.25) {
-                self.view.layoutIfNeeded()
-            }
-        }
     }
     
     func unlockAllItems() {
@@ -650,52 +543,36 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
-            if indexPath.row != 6 {
+            if indexPath.row != 4 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if indexPath.row == 6 {
+            if indexPath.row == 4 {
                 interfaceHaptic.impactOccurred()
             }
         }
         
-        if tableView == premiumTableView {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
-        } else {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
-            if indexPath.row != 6 {
+            if indexPath.row != 4 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if indexPath.row == 6 {
+            if indexPath.row == 4 {
                 interfaceHaptic.impactOccurred()
             }
         }
-        if tableView == premiumTableView {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .identity
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-        } else {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.settingsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
     }
     
@@ -984,37 +861,30 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if parallaxSetting! {
             addParallaxToView()
         }
-        premiumTableView.reloadData()
         settingsTableView.reloadData()
     }
     
     @objc func returnNotificiationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow(animated: false)
         if parallaxSetting! {
             addParallaxToView()
         }
-        premiumTableView.reloadData()
         settingsTableView.reloadData()
     }
     
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow(animated: true)
-        premiumTableView.reloadData()
         settingsTableView.reloadData()
     }
     
     @objc func reanimateNotificiationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow(animated: false)
         if parallaxSetting! {
             addParallaxToView()
         }
-        premiumTableView.reloadData()
         settingsTableView.reloadData()
         revealAnimate()
     }
@@ -1022,8 +892,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow(animated: true)
-        premiumTableView.reloadData()
         settingsTableView.reloadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes

@@ -33,56 +33,9 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     @IBOutlet var logoTitle: UIImageView!
     @IBOutlet var creatorLabel: UILabel!
     @IBOutlet var composerLabel: UILabel!
-    @IBOutlet var instagramLogo: UIButton!
-    @IBOutlet var facebookLogo: UIButton!
-    @IBOutlet var twitterLogo: UIButton!
-    @IBOutlet var websiteLink: UIButton!
-    @IBOutlet var privacyPolicyLink: UIButton!
     @IBOutlet var buildLabel: UILabel!
     @IBOutlet var copyrightLabel: UILabel!
     @IBOutlet var rightsLabel: UILabel!
-    
-    @IBAction func instagramLogoTapped(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if let url = URL(string: "https://www.instagram.com/giga_ballapp/") {
-            UIApplication.shared.open(url)
-        }
-    }
-    @IBAction func facebookLogoTapped(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if let url = URL(string: "https://www.facebook.com/GigaBallApp/") {
-            UIApplication.shared.open(url)
-        }
-    }
-    @IBAction func twitterLogoTapped(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if let url = URL(string: "https://twitter.com/giga_ballapp") {
-            UIApplication.shared.open(url)
-        }
-    }
-    @IBAction func websiteLinkTapped(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if let url = URL(string: "https://www.giga-ball.app") {
-            UIApplication.shared.open(url)
-        }
-    }
-    
-    @IBAction func privacyPolicyTapped(_ sender: Any) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        if let url = URL(string: "https://www.giga-ball.app/privacy") {
-            UIApplication.shared.open(url)
-        }
-    }
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
 
@@ -254,26 +207,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         composerLabel.alpha = 0.0
         composerLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         composerLabel.center.y += distance
-
-        instagramLogo.alpha = 0.0
-        instagramLogo.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        instagramLogo.center.y += distance
-
-        facebookLogo.alpha = 0.0
-        facebookLogo.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        facebookLogo.center.y += distance
-
-        twitterLogo.alpha = 0.0
-        twitterLogo.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        twitterLogo.center.y += distance
-
-        websiteLink.alpha = 0.0
-        websiteLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        websiteLink.center.y += distance
-        
-        privacyPolicyLink.alpha = 0.0
-        privacyPolicyLink.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        privacyPolicyLink.center.y += distance
         
         buildLabel.alpha = 0.0
         buildLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
@@ -312,33 +245,6 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             self.composerLabel.alpha = 1.0
             self.composerLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.composerLabel.center.y -= distance
-            delayFactor+=1
-        })
-
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.instagramLogo.alpha = 1.0
-            self.instagramLogo.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.instagramLogo.center.y -= distance
-            self.facebookLogo.alpha = 1.0
-            self.facebookLogo.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.facebookLogo.center.y -= distance
-            self.twitterLogo.alpha = 1.0
-            self.twitterLogo.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.twitterLogo.center.y -= distance
-            delayFactor+=1
-        })
-
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.websiteLink.alpha = 1.0
-            self.websiteLink.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.websiteLink.center.y -= distance
-            delayFactor+=1
-        })
-        
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.privacyPolicyLink.alpha = 1.0
-            self.privacyPolicyLink.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.privacyPolicyLink.center.y -= distance
             delayFactor+=1
         })
         

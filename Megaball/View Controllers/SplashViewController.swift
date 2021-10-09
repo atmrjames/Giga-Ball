@@ -27,9 +27,9 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBOutlet var scoreLabel: UILabel!
     
     @IBAction func tapGesture(_ sender: Any) {
-//        if self.resumeInProgress == false {
-//            removeAnimate(duration: 0.1)
-//        }
+        if self.resumeInProgress == false {
+            removeAnimate(duration: 0.1)
+        }
     }
     // Tap to dismiss splash screen
     

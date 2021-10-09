@@ -693,23 +693,23 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if parallaxSetting! {
             addParallaxToView()
         }
-        if premiumSetting! {
+//        if premiumSetting! {
             checkPremium()
-        } else {
-            getProducts()
-        }
+//        } else {
+//            getProducts()
+//        }
         updateAds()
         
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()
     }
 
-    func getProducts() {
-        let productID = NSSet(objects: self.iAPProductID)
-        request = SKProductsRequest(productIdentifiers: productID as! Set<String>)
-        request.delegate = self
-        request.start()
-    }
+//    func getProducts() {
+//        let productID = NSSet(objects: self.iAPProductID)
+//        request = SKProductsRequest(productIdentifiers: productID as! Set<String>)
+//        request.delegate = self
+//        request.start()
+//    }
 
     func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
         let products = response.products
