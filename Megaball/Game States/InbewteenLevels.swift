@@ -41,12 +41,33 @@ class InbetweenLevels: GKState {
         resetGameScene()
         saveGameData()
         achievementsCheck()
-//        saveStatsArrayData()
+        scene.saveGameStats()
         if scene.gameCenterSetting! {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
+
+        showEndOfLevelView()
     }
+
+    func showEndOfLevelView() {
+        let waitScene = SKAction.wait(forDuration: 0.5)
+        self.scene.run(waitScene, completion: {
+            if self.scene.endlessMode || self.scene.gameoverStatus == true {
+                self.scene.showPauseMenu(sender: "Game Over")
+                // Show game over pop-up
+            } else if self.scene.levelNumber == self.scene.endLevelNumber {
+                self.scene.showPauseMenu(sender: "Complete")
+                // Show game complete
+            } else {
+                self.scene.showInbetweenView()
+                // Move to the next level after a delay
+            }
+        })
+    }
+    // Presents the end-of-level UI. This routing previously lived inside showAd(),
+    // which was deleted with the ad code — taking the non-ad branch with it, which
+    // was the only branch that ran once ads were switched off.
     
     func resetGameScene() {
         
@@ -223,7 +244,7 @@ class InbetweenLevels: GKState {
         scene.totalStatsArray[0].pack10LevelHighScores = scene.packLevelHighScoresArray![9]
         scene.totalStatsArray[0].pack11LevelHighScores = scene.packLevelHighScoresArray![10]
         
-//        saveStatsArrayData()
+        scene.saveGameStats()
         // Save total stats
         if scene.gameCenterSetting! {
             GameCenterHandler().gameCenterSave()
