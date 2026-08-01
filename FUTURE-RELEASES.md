@@ -20,6 +20,26 @@ proportionally identical. This is strictly better than the current behaviour, wh
 ratio is inferred from a three-way device guess and the top-bar bleed bug is a symptom
 of guessing wrong.
 
+## Design constraint: existing progress and leaderboards are preserved
+
+Players have years of scores and progress. Nothing may invalidate them.
+
+This shapes how new content is added. New brick types and power-ups must be **purely
+additive**: every existing level and pack has to behave exactly as it does today, or old
+high scores stop being comparable. New mechanics belong in new packs and new modes, not
+retrofitted into old ones.
+
+Concretely:
+
+- Endless mode stays as it is, under its existing leaderboards. A reworked version is a
+  *separate mode* with *separate leaderboards*.
+- The eleven existing packs stay frozen. New mechanics ship as new packs.
+- This is a strong argument for moving level data out of code with a format version:
+  old packs pin to the current version and are guaranteed unchanged.
+- It also argues for regression tests that assert old levels still produce identical
+  brick layouts, power-up probabilities and scoring — the kind of guarantee that is
+  cheap to automate and painful to verify by hand across 110 levels.
+
 ---
 
 ## The case for a foundations release
@@ -162,6 +182,11 @@ shared cause of two known issues listed separately: iPad stuttering and iPad gra
 looking pixelated.
 
 ### Live bugs worth fixing
+- Table view selection animation appears on the wrong cell. Noted back in 2020 and
+  confirmed still present in August 2026
+- Table views in the menus stop short of the screen edge rather than filling it. Assess
+  during the 1.3 safe-area work rather than fixing separately — it is probably the same
+  fixed-layout cause
 - Sticky paddle icon bar not filling correctly when resuming
 - Paddle grows after resuming from pause; sticky texture behaves, paddle does not
 - Ball and paddle textures move independently when the paddle is slammed into the frame
@@ -173,6 +198,19 @@ looking pixelated.
 - Ball can hit the paddle after hitting the backstop
 - Floating-point precision on physics bodies; ball speed below ~150 px/s causes bounce
   gliding
+
+### Menu modernisation
+Best done *after* the 1.3 safe-area work, not before — several of these are symptoms of
+the current fixed layout, and redesigning around a broken foundation wastes the effort.
+
+- Bring the menus up to current design language
+- **The Giga-Ball logo on the main menu is clipped by incoming notifications.** It sits
+  too close to the top with no safe-area awareness, so banners overlap it. Moving it down
+  is the immediate fix; respecting the safe area is the real one
+- Reposition content to make use of larger screens rather than centring a phone-sized
+  column
+- Game modes become squares or boxes rather than full-width rows
+- Streamline the level and pack selection menus
 
 ### UI
 - Power-up timing bars become circles around the power-up icons
@@ -200,9 +238,27 @@ looking pixelated.
 
 Substantial but coherent — each is a release theme in its own right.
 
-- **Endless mode rework.** Difficulty curve (sparser start, brick types introduced
-  earlier, density ramping later), more breather sections, invisible bricks earlier,
-  height zones, a height scale graphic, gravity bricks.
+- **A second endless mode, alongside the existing one.** The current mode is renamed —
+  "Endless Mode Classic" or similar — and left completely untouched so its global
+  leaderboards stay valid. The new mode gets its own leaderboards and carries the rework:
+  difficulty curve (sparser start, brick types introduced earlier, density ramping
+  later), more breather sections, invisible bricks earlier, height zones, a height scale
+  graphic, gravity bricks, new brick types and power-ups.
+- **New level packs using the new mechanics.** The eleven existing packs stay frozen so
+  their scores remain comparable. Everything new ships as new packs. Much cheaper once
+  level data lives outside code.
+- **Endless mode session history.** A table of previous sessions, most recent first,
+  showing height, play time and date. Sortable by height or play time.
+
+  Cheaper than it looks: `TotalStats` already records `endlessModeHeight: [Int]` and
+  `endlessModeHeightDate: [Date]` — every session's height and date, already synced via
+  iCloud. Only per-session play time is missing; `playTimeSecs` is a lifetime total.
+  So the screen is mostly presentation over data that already exists, plus one new field
+  recorded going forward. Existing players would see full history with play time blank
+  for past sessions.
+
+  Worth noting these are parallel arrays, so this feature pairs naturally with moving
+  the save format to a versioned `Codable` struct.
 - **New power-ups.** The timed good/bad lists are strong: magnetism, ball wrap, portal
   paddle, landing marker, wrecking ball, aura, opposite input, erratic bounce. Build
   after the power-up system is decomposed out of `GameScene`.
