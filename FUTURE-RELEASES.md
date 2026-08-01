@@ -8,6 +8,20 @@ grouping. Rationale is recorded so decisions can be revisited rather than re-arg
 
 ---
 
+## Design constraint: the gameplay zone ratio is fixed
+
+**The play zone keeps a fixed aspect ratio on every device.** This is deliberate, not a
+limitation — the side borders on iPad exist for this reason. A player moving between
+iPhone and iPad must get the same game, so the playfield must not reflow.
+
+The safe-area rewrite below respects this. Safe-area insets move the *chrome* only —
+HUD, power-up tray, and the width of the side borders. The play zone stays
+proportionally identical. This is strictly better than the current behaviour, where the
+ratio is inferred from a three-way device guess and the top-bar bleed bug is a symptom
+of guessing wrong.
+
+---
+
 ## The case for a foundations release
 
 Three structural problems make everything else more expensive than it should be:
@@ -80,10 +94,39 @@ data-loss bug on the list and should not wait. Needs a sync tracker so a local r
 isn't replayed onto other devices as authoritative.
 
 ### App icon via Icon Composer
-Also resolves the Transporter warnings about alternate icons missing at 120×120,
-152×152 and 167×167 — the current alternates are uniform 256/512/768 PNGs outside the
-asset catalog. Moving them into proper asset-catalog alternate icon sets fixes the
-warnings and the sizing in one pass.
+An Icon Composer version of the primary icon already exists. The coloured variants stay —
+reauthored as Icon Composer documents so they pick up the current icon styles, including
+Liquid Glass, and added as asset-catalog alternate icons rather than the loose PNGs used
+today.
+
+That also resolves the Transporter warnings about alternate icons missing at 120×120,
+152×152 and 167×167: the current alternates are uniform 256/512/768 PNGs sitting outside
+the asset catalog, so no correctly-sized variant exists. A catalog-based set generates
+every required size automatically.
+
+*To verify: exact mechanics for using Icon Composer documents as alternate app icons in
+Xcode 26.*
+
+### Enable crash reporting
+Xcode Organizer, no SDK, no third-party code, no impact on the "Data Not Collected"
+privacy label. Given how much force-unwrapping the codebase contains, this is the
+difference between fixing the crashes that actually happen and guessing. Should land
+before, or alongside, the hardening work so the data starts accumulating.
+
+### Replace the save-game format
+The most likely crash in the app:
+
+```swift
+saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
+```
+
+A parallel `[Int]` array in UserDefaults, force-cast, read at launch while restoring a
+saved game. Corruption or a schema change is an unescapable crash, because it happens
+during resume. `TotalStats` already uses `Codable` with `PropertyListEncoder` — the save
+game simply never adopted it. Move to a versioned `Codable` struct with migration.
+
+Also a prerequisite for "save ongoing game to iCloud" later; syncing parallel int arrays
+across devices would be painful.
 
 ### Housekeeping
 - 117 `print()` calls — sweep them
@@ -95,6 +138,28 @@ warnings and the sizing in one pass.
 ## 1.4 — Player-visible improvements
 
 Cheap to build once 1.3 lands, and the things players will actually notice.
+
+### Accessibility
+There is currently not a single accessibility API in the project. The first three are
+nearly free:
+
+- **Reduce Motion.** Parallax is applied on essentially every view, plus blur and
+  animated transitions, and `isReduceMotionEnabled` is never consulted.
+- **Dynamic Type** on stats, settings and items — all fixed fonts today.
+- **VoiceOver on the menus.** Gameplay cannot reasonably be made VoiceOver-playable;
+  everything around it can.
+- **Colour-blindness.** Brick *type* is encoded purely in colour — multi-hit,
+  indestructible, inert. Players who can't distinguish them face an unfair game rather
+  than a harder one. An optional pattern or symbol overlay fixes it.
+- **Assist mode** — slower ball, wider paddle, optional no-life-loss. Doubles as
+  accessibility, widens the audience, and shares its difficulty-options plumbing with
+  speed-run mode.
+
+### Texture atlases
+There are no atlases in the project at all, so every sprite is its own draw call.
+Batching via `.spriteatlas` is the standard SpriteKit optimisation and is a plausible
+shared cause of two known issues listed separately: iPad stuttering and iPad graphics
+looking pixelated.
 
 ### Live bugs worth fixing
 - Sticky paddle icon bar not filling correctly when resuming
@@ -149,6 +214,15 @@ Substantial but coherent — each is a release theme in its own right.
   anniversary).
 - **Speed-running mode.** Power-ups off, separate time leaderboards, skippable level
   intros. Self-contained and well suited to the existing leaderboard structure.
+- **Move level data out of code.** The 110 levels are 110 Swift files totalling 10,566
+  lines compiled into the binary, and all of it is data. Moving to JSON or plist cuts
+  build time, makes a local level editor dramatically cheaper (the editor writes the
+  format the game already reads), makes seasonal packs trivial, and enables level
+  validation tests — every level solvable, no orphaned bricks, sane brick counts. Best
+  done after the test target exists.
+- **Daily challenge.** One level from a date seed, identical for everyone, single
+  attempt, daily leaderboard. Endless mode already generates random layouts, so most of
+  the machinery exists. A retention hook that needs no notifications.
 - **Save in-progress games to iCloud.**
 - **120 fps on ProMotion devices.**
 - **Localisation.**
@@ -163,14 +237,14 @@ Substantial but coherent — each is a release theme in its own right.
 
 ## Needs a decision before it can be planned
 
-### Monetisation
-The IAP and ads are gone and the app is entirely free. "Option to tip the creator" means
-reintroducing StoreKit — a reasonable choice, but decide the model before building
-anything that depends on it. Several older notes assume a premium tier that no longer
-exists and are dead as written.
+### Monetisation — deferred, low priority
+Not for the next release. "Option to tip the creator" means reintroducing StoreKit, which
+is a reasonable eventual choice, but nothing should be built that depends on it until the
+model is decided. Several older notes assume a premium tier that no longer exists and are
+dead as written.
 
-### Mac and Vision Pro
-"Add compatibility" hides a large fork:
+### Mac and Vision Pro — later, but high priority within that
+Wanted, and a genuinely appealing direction. "Add compatibility" hides a large fork:
 
 - **Designed for iPad** — near-zero work, ships the iPad build as-is, controls unchanged
 - **Mac Catalyst** — real work; a touch-driven paddle needs a mouse/keyboard control
@@ -178,7 +252,13 @@ exists and are dead as written.
 - **visionOS native** — a different interaction model entirely
 
 The cheap option is genuinely viable for a game like this and worth trying first. All of
-them depend on the safe-area work in 1.3.
+them depend on the safe-area work in 1.3, and all must preserve the fixed play-zone ratio.
+
+### Understanding player drop-off without collecting data
+Do **not** add an analytics SDK — it would cost the "Data Not Collected" privacy label
+just earned. Game Center achievement completion rates and App Store Connect's built-in
+metrics require no SDK and no privacy declaration. If most players never finish Classic
+Pack, that is a design signal already available and currently unread.
 
 ### Specification document
 Worth doing, but scope it. A full spec for a 5,600-line game that grew organically is an
