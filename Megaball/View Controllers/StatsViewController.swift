@@ -595,9 +595,9 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
-        let gcViewController = GKGameCenterViewController()
+        let gcViewController = GKGameCenterViewController(state: .leaderboards)
         gcViewController.gameCenterDelegate = self
-        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
+//        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
         viewController?.present(gcViewController, animated: true, completion: nil)
     }
     // Show game center view controller

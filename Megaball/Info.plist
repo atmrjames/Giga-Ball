@@ -8,6 +8,8 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>CFBundleIcons</key>
 	<dict>
 		<key>CFBundleAlternateIcons</key>
@@ -266,37 +268,33 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3110131406973822~9938707579</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIAppFonts</key>
-	<array>
-		<string>FugazOne-Regular</string>
-		<string>Nunito-Black</string>
-		<string>Nunito-BlackItalic</string>
-		<string>Nunito-Bold</string>
-		<string>Nunito-BoldItalic</string>
-		<string>Nunito-ExtraBold</string>
-		<string>Nunito-ExtraBoldItalic</string>
-		<string>Nunito-ExtraLight</string>
-		<string>Nunito-ExtraLightItalic</string>
-		<string>Nunito-Italic</string>
-		<string>Nunito-Light</string>
-		<string>Nunito-LightItalic</string>
-		<string>Nunito-Regular</string>
-		<string>Nunito-SemiBold</string>
-		<string>Nunito-SemiBoldItalic</string>
-	</array>
+	<array/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
 		<string>gamekit</string>
 	</array>
 	<key>UIRequiresFullScreen</key>

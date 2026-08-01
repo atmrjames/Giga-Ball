@@ -189,7 +189,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             moveToIntro()
         case 5:
         // Premium
-            moveToPremiumInfo()
+            break
         case 6:
         // Purchase soundtrack
             if let purchaseSoundTrackURL = URL(string: "https://soundcloud.com/user-371123791/sets/giga-ball-original-sound-track?ref=clipboard&p=i&c=1") {
@@ -205,7 +205,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             let shareURL: [Any] = ["Check out Giga-Ball on the App Store", URL(string: "https://apps.apple.com/app/id1494628204")!]
             let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
             
-            if ( UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiom.pad ){
+            if ( UIDevice.current.userInterfaceIdiom == UIUserInterfaceIdiom.pad ){
                 let rectOfCellInTableView = tableView.rectForRow(at: indexPath)
                 let rectOfCellInSuperview = tableView.convert(rectOfCellInTableView, to: tableView.backgroundView)
                 let popUpPosition = rectOfCellInSuperview.origin.y + cell.cellView2.frame.height/2
@@ -359,9 +359,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
-        let gcViewController = GKGameCenterViewController()
+        let gcViewController = GKGameCenterViewController(state: .leaderboards)
         gcViewController.gameCenterDelegate = self
-        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
+//        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
         viewController?.present(gcViewController, animated: true, completion: nil)
     }
     // Show game center view controller
@@ -464,16 +464,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         statsView.didMove(toParent: self)
     }
     
-    func moveToPremiumInfo() {
-        hideAnimate()
-        let premiumInfoView = self.storyboard?.instantiateViewController(withIdentifier: "premiumInfoView") as! PremiumInfoViewController
-        premiumInfoView.sender = "Info"
-        self.addChild(premiumInfoView)
-        premiumInfoView.view.frame = self.view.frame
-        self.view.addSubview(premiumInfoView.view)
-        premiumInfoView.didMove(toParent: self)
-    }
-    
     func moveToIntro() {
         hideAnimate()
         let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
@@ -526,9 +516,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
-        let gcViewController = GKGameCenterViewController()
+        let gcViewController = GKGameCenterViewController(state: .achievements)
         gcViewController.gameCenterDelegate = self
-        gcViewController.viewState = GKGameCenterViewControllerState.achievements
+//        gcViewController.viewState = GKGameCenterViewControllerState.achievements
         viewController?.present(gcViewController, animated: true, completion: nil)
     }
     // Show game center view controller

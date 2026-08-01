@@ -34,7 +34,7 @@ enum CollisionTypes: UInt32 {
 }
 // Setup for collisionBitMask
 
-protocol GameViewControllerDelegate: class {
+protocol GameViewControllerDelegate: AnyObject {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int)
 	func showWarning(senderID: String)
@@ -43,8 +43,6 @@ protocol GameViewControllerDelegate: class {
 	var numberOfLevels: Int? { get set }
 	var levelSender: String? { get set }
 	var levelPack: Int? { get set }
-	func showAd()
-	func createInterstitial()
 }
 // Setup the protocol to return to the main menu from GameViewController
 
@@ -196,7 +194,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var xSpeedLive: CGFloat = 0
 	var ySpeedLive: CGFloat = 0
     var bricksLeft: Int = 0
-    var ballLinearDampening: CGFloat = 0
+	var ballLinearDampening: CGFloat = 0.01
 	var ballSpeedSlow: CGFloat = 0
 	var ballSpeedSlowest: CGFloat = 0
 	var ballSpeedNominal: CGFloat = 0
@@ -633,7 +631,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         InbetweenLevels(scene: self),
         GameOver(scene: self),
         Paused(scene: self),
-		Ad(scene: self)
 	])
     // Sets up the game states
     
@@ -875,7 +872,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		topGap = brickHeight*2
 		// Object size definition
 		
-		ballLinearDampening = 0.0
+		ballLinearDampening = 0.01
 
 		topScreenBlock.position.x = 0
 		topScreenBlock.position.y = frame.height/2 - screenBlockTopHeight/2
@@ -4598,7 +4595,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let currentpaddleHitsPerLevel = paddleHitsPerLevel
 		
 
-		if (gameState.currentState is InbetweenLevels || gameState.currentState is Ad) && gameoverStatus == false {
+		if gameState.currentState is InbetweenLevels && gameoverStatus == false {
 			if numberOfLevels > 1 {
 				currentLevelNumber+=1
 			} else {
@@ -4617,7 +4614,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// If ball is lost on pause, update properties to reflect that when reloading the game
 		
-		if ballLostBool || gameState.currentState is InbetweenLevels || gameState.currentState is Ad {
+		if ballLostBool || gameState.currentState is InbetweenLevels {
 			currentMultiplier = 1.0
 		}
 		// If ball is lost or inbetween levels or ads, reset the multiplier

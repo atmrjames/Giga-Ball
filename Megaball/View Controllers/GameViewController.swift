@@ -9,19 +9,17 @@
 import UIKit
 import SpriteKit
 import GameplayKit
-import GoogleMobileAds
 
-protocol MenuViewControllerDelegate: class {
+protocol MenuViewControllerDelegate: AnyObject {
     func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int)
 }
 // Setup the protocol to return to the main menu from GameViewController
 
-class GameViewController: UIViewController, GameViewControllerDelegate, GADInterstitialDelegate {
+class GameViewController: UIViewController, GameViewControllerDelegate {
     
     weak var menuViewControllerDelegate:MenuViewControllerDelegate?
     // Create the delegate property for the MenuViewController
     
-    var interstitial: GADInterstitial!
     
     var selectedLevel: Int?
     var numberOfLevels: Int?
@@ -54,17 +52,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
             view.showsNodeCount = false
         }
         
-        interstitial = createInterstitialAd()
-    }
-    
-    func loadInterstitial(interstitial: GADInterstitial) {
-        if interstitial.isReady {
-            interstitial.present(fromRootViewController: self)
-        } else {
-            // Setup next ad when the current one is closed
-            NotificationCenter.default.post(name: .closeAd, object: nil)
-            // Load the next level if the ad didn't load up in time
-        }
     }
     
     func moveToMainMenu() {
@@ -118,31 +105,6 @@ class GameViewController: UIViewController, GameViewControllerDelegate, GADInter
         warningView.view.frame = self.view.frame
         self.view.addSubview(warningView.view)
         warningView.didMove(toParent: self)
-    }
-    
-    func createInterstitial() {
-        interstitial = createInterstitialAd()
-    }
-    
-    func createInterstitialAd() -> GADInterstitial {
-        interstitial = GADInterstitial(adUnitID: "ca-app-pub-3110131406973822/7277792086")
-        interstitial.delegate = self
-        interstitial.load(GADRequest())
-        return interstitial
-    }
-    
-    func showAd() {
-        if interstitial.isReady {
-            interstitial.present(fromRootViewController: self)
-        } else {
-            interstitial = createInterstitialAd()
-            NotificationCenter.default.post(name: .closeAd, object: nil)
-        }
-    }
-    
-    func interstitialDidDismissScreen(_ ad: GADInterstitial) {
-        interstitial = createInterstitialAd()
-        NotificationCenter.default.post(name: .closeAd, object: nil)
     }
 
     override var shouldAutorotate: Bool {

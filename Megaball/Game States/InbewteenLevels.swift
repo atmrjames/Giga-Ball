@@ -30,14 +30,6 @@ class InbetweenLevels: GKState {
             scene.saveCurrentGame()
             inbetweenLevels()
         }
-        
-        if previousState is Ad {
-            if scene.endlessMode || scene.gameoverStatus {
-                scene.showPauseMenu(sender: "Game Over")
-            } else {
-                scene.showPauseMenu(sender: "Complete")
-            }
-        }
     }
 //    // This function runs when this state is entered.
     
@@ -49,12 +41,11 @@ class InbetweenLevels: GKState {
         resetGameScene()
         saveGameData()
         achievementsCheck()
-        saveStatsArrayData()
+//        saveStatsArrayData()
         if scene.gameCenterSetting! {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
-        showAd()
     }
     
     func resetGameScene() {
@@ -232,7 +223,7 @@ class InbetweenLevels: GKState {
         scene.totalStatsArray[0].pack10LevelHighScores = scene.packLevelHighScoresArray![9]
         scene.totalStatsArray[0].pack11LevelHighScores = scene.packLevelHighScoresArray![10]
         
-        saveStatsArrayData()
+//        saveStatsArrayData()
         // Save total stats
         if scene.gameCenterSetting! {
             GameCenterHandler().gameCenterSave()
@@ -240,39 +231,17 @@ class InbetweenLevels: GKState {
         // Save scores to game center
     }
     
-    func saveStatsArrayData() {
-        scene.totalStatsArray[0].dateSaved = Date()
-        do {
-            let data = try scene.encoder.encode(self.scene.totalStatsArray)
-            try data.write(to: scene.totalStatsStore!)
-        } catch {
-            print("Error encoding total stats, \(error)")
-        }
-        CloudKitHandler().saveToiCloud()
-        // Save total stats
-    }
-    
-    func showAd() {
-        let waitScene = SKAction.wait(forDuration: 0.5)
-        self.scene.run(waitScene, completion: {
-            if self.scene.adsSetting! {
-                self.scene.gameState.enter(Ad.self)
-                self.scene.gameViewControllerDelegate?.showAd()
-                // Show ad
-            } else {
-                if self.scene.endlessMode || self.scene.gameoverStatus == true  {
-                    self.scene.showPauseMenu(sender: "Game Over")
-                    // Show game over pop-up
-                } else if self.scene.levelNumber == self.scene.endLevelNumber {
-                    self.scene.showPauseMenu(sender: "Complete")
-                    // Show game complete
-                } else {
-                    self.scene.showInbetweenView()
-                    // Move to the next level after a delay
-                }
-            }
-        })
-    }
+//    func saveStatsArrayData() {
+//        scene.totalStatsArray[0].dateSaved = Date()
+//        do {
+//            let data = try scene.encoder.encode(self.scene.totalStatsArray)
+//            try data.write(to: scene.totalStatsStore!)
+//        } catch {
+//            print("Error encoding total stats, \(error)")
+//        }
+//        CloudKitHandler().saveToiCloud()
+//        // Save total stats
+//    }
     
     func achievementsCheck() {
     
@@ -948,8 +917,6 @@ class InbetweenLevels: GKState {
         case is PreGame.Type:
             return true
         case is Playing.Type:
-            return true
-        case is Ad.Type:
             return true
         case is GameOver.Type:
             return true

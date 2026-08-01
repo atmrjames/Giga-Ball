@@ -7,9 +7,8 @@
 //
 
 import UIKit
-import StoreKit
 
-class InbetweenViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     var levelNumber: Int = 0
     var packNumber: Int = 0
@@ -22,7 +21,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     var sender: String?
     // Properties to store passed over data
     
-    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -103,7 +101,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         
         loadData()
         userSettings()
-        loadProducts()
         setBlur()
         if parallaxSetting! {
             addParallaxToView()
@@ -124,16 +121,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         
         packAndLevelConstriant.isActive = false
         completeLabelConstraint.isActive = true
-
-        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotificationInbetween, object: nil)
-        // Sets up an observer to watch for notifications to check for in-app purchase success
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
                 
-        premiumTableView.delegate = self
-        premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
         
         if premiumSetting! {
             premiumTableView.isHidden = true
@@ -230,78 +221,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         }
     }
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
-    }
-    // Set number of cells in table view
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
-        premiumTableView.rowHeight = 84.0
-        
-        cell.priceLabel.text = IAPLocalPrice
-        cell.tagLine.text = tagline
-        cell.iconImage.image = UIImage(named:"iconPremium.png")!
-        
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-        }
-        tableView.showsVerticalScrollIndicator = false
-        
-        return cell
-    }
-    
-    func loadProducts() {
-        products = []
-        GigaBallProducts.store.requestProducts{ [weak self] success, products in
-          guard let self = self else { return }
-          if success {
-            self.products = products!
-            }
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if tableView == premiumTableView {
-            // IAPHandler().unlockPremiumContent() // Beta builds only
-            if products.count > 0 {
-                showPurchaseScreen()
-                let product = products[0]
-                GigaBallProducts.store.buyProduct(product)
-            }
-            UIView.animate(withDuration: 0.2) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.deselectRow(at: indexPath, animated: true)
-            tableView.reloadData()
-            // Update table view
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-            cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
-            interfaceHaptic.impactOccurred()
-        }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-            cell.cellView.transform = .identity
-            cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-        }
-    }
     
     func updateLabels() {
         totalScoreLabel.text = String(totalScore)
@@ -392,15 +311,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         contentView.addMotionEffect(group!)
     }
     
-    func showPurchaseScreen() {
-        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
-        self.addChild(iAPVC)
-        iAPVC.view.frame = self.view.frame
-        self.view.addSubview(iAPVC.view)
-        iAPVC.didMove(toParent: self)
-    }
-    // Show iAPVC as popup
-    
     func loadData() {
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {
@@ -412,9 +322,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
         // Load the total stats array from the NSCoder data store
     }
     
-    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
-        removeAnimate()
-    }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
@@ -426,6 +333,3 @@ class InbetweenViewController: UIViewController, UITableViewDelegate, UITableVie
     // Runs when the NSUbiquitousKeyValueStore changes
 }
 
-extension Notification.Name {
-    public static let iAPcompleteNotificationInbetween = Notification.Name(rawValue: "iAPcompleteNotification")
-}

@@ -33,7 +33,7 @@ class Playing: GKState {
             }
         }
         
-        if previousState is InbetweenLevels || previousState is Ad {
+        if previousState is InbetweenLevels {
             scene.clearSavedGame()
             scene.levelNumber+=1
             // Increment level number
@@ -50,7 +50,7 @@ class Playing: GKState {
             }
         }
         
-        if previousState is PreGame || previousState is InbetweenLevels || previousState is Ad {
+        if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
             loadNextLevel()
         }
@@ -485,8 +485,6 @@ class Playing: GKState {
         case is InbetweenLevels.Type:
             return true
         case is Paused.Type:
-            return true
-        case is Ad.Type:
             return true
         default:
             return false

@@ -7,13 +7,10 @@
 //
 
 import UIKit
-import GoogleMobileAds
 import AVFoundation
 
-@UIApplicationMain
+@main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
@@ -21,40 +18,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 
         NSUbiquitousKeyValueStore.default.synchronize()
         
-        GADMobileAds.sharedInstance().start(completionHandler: nil)
-//        GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers = [ "495ff44867243016091130f00d511026" ] // Test ads
-        // Initialize Google Mobile Ads SDK
-        
         try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
         // Ensure audio is played in background by default
                 
         return true
     }
 
-    func applicationWillResignActive(_ application: UIApplication) {
-        NotificationCenter.default.post(name: .pauseNotificationKey, object: nil)
-        // Ensure game is paused when app is quit
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
+    // Scene lifecycle is handled in SceneDelegate
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        NotificationCenter.default.post(name: .backgroundNotification, object: nil)
-        // Save game state
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
-        NSUbiquitousKeyValueStore.default.synchronize()
-        NotificationCenter.default.post(name: .foregroundNotification, object: nil)
-        // Check game center auth
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-    }
-        
-    func applicationWillTerminate(_ application: UIApplication) {
-        NotificationCenter.default.post(name: .backgroundNotification, object: nil)
-        // Save game state
-    }
-    
     @objc func onUbiquitousKeyValueStoreDidChangeExternally(notification:Notification) {
         CloudKitHandler().loadFromiCloud()
         NotificationCenter.default.post(name: .refreshViewForSync, object: nil)

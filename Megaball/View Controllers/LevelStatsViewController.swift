@@ -385,13 +385,11 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         }
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
-        let gcViewController = GKGameCenterViewController()
+
+        let gcViewController = GKGameCenterViewController(leaderboardID: LevelPackSetup().levelLeaderboardsArray[levelNumber!], playerScope: .global, timeScope: .allTime)
         gcViewController.gameCenterDelegate = self
-        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
-        
-        gcViewController.leaderboardIdentifier = LevelPackSetup().levelLeaderboardsArray[levelNumber!]
         // Show corresponding leaderboard for the current level
-            
+
         viewController?.present(gcViewController, animated: true, completion: nil)
     }
     // Show game center view controller

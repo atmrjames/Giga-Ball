@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import StoreKit
 
 enum device {
     case Pad
@@ -48,7 +47,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var saveBallPropertiesArray: [Double]?
     // Game save settings
     
-    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -96,9 +94,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         NotificationCenter.default.addObserver(self, selector: #selector(self.reanimateNotificiationKeyReceived), name: .reanimateNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from another screen
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
-        // Sets up an observer to watch for notifications to check for in-app purchase success
-        
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
@@ -132,7 +127,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         userSettings()
         loadData()
-        loadProducts()
         if parallaxSetting! {
             addParallaxToView()
         }
@@ -359,16 +353,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
 //        }
         return rowHeight
-    }
-    
-    func loadProducts() {
-        products = []
-        GigaBallProducts.store.requestProducts{ [weak self] success, products in
-          guard let self = self else { return }
-          if success {
-            self.products = products!
-            }
-        }
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -753,10 +737,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func resetData() {
-        premiumSetting = false
+        premiumSetting = true
         defaults.set(premiumSetting!, forKey: "premiumSetting")
-        adsSetting = true
+        adsSetting = false
         defaults.set(adsSetting!, forKey: "adsSetting")
+        // All content is free since the IAP was removed, so a reset must not put the
+        // app back into the locked, ad-supported state it can no longer leave
         soundsSetting = true
         defaults.set(soundsSetting!, forKey: "soundsSetting")
         musicSetting = true
@@ -836,15 +822,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         })
     }
     
-    func showPurchaseScreen() {
-        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
-        self.addChild(iAPVC)
-        iAPVC.view.frame = self.view.frame
-        self.view.addSubview(iAPVC.view)
-        iAPVC.didMove(toParent: self)
-    }
-    // Show iAPVC as popup
-    
     func revealAnimate() {
         self.backgroundView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         self.backgroundView.alpha = 0.0
@@ -870,12 +847,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if parallaxSetting! {
             addParallaxToView()
         }
-        settingsTableView.reloadData()
-    }
-    
-    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
-        userSettings()
-        loadData()
         settingsTableView.reloadData()
     }
     

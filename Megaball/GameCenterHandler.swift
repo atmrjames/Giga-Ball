@@ -45,43 +45,37 @@ final class GameCenterHandler: NSObject {
         loadData()
         
         if totalStatsArray[0].cumulativeScore > 0 {
-            let totalScoreReporter = GKScore(leaderboardIdentifier: "leaderboardTotalScore")
-            totalScoreReporter.value = Int64(totalStatsArray[0].cumulativeScore)
-            let totalScoreArray: [GKScore] = [totalScoreReporter]
-            GKScore.report(totalScoreArray, withCompletionHandler: nil)
+            submit(totalStatsArray[0].cumulativeScore, to: "leaderboardTotalScore")
         }
         // Leaderboard Total Score
-        
+
         if totalStatsArray[0].endlessModeHeight.count > 0 {
-            let endlessBestReporter = GKScore(leaderboardIdentifier: "leaderboardBestHeight")
-            endlessBestReporter.value = Int64(totalStatsArray[0].endlessModeHeight.max()!)
-            let endlessBestArray: [GKScore] = [endlessBestReporter]
-            GKScore.report(endlessBestArray, withCompletionHandler: nil)
+            submit(totalStatsArray[0].endlessModeHeight.max()!, to: "leaderboardBestHeight")
         }
         // Leaderboard Endless Best Height
-        
+
         if totalStatsArray[0].endlessModeHeight.count > 0 {
-            let endlessTotalReporter = GKScore(leaderboardIdentifier: "leaderboardTotalHeight")
-            endlessTotalReporter.value = Int64(totalStatsArray[0].endlessModeHeight.reduce(0, +))
-            let endlessTotalArray: [GKScore] = [endlessTotalReporter]
-            GKScore.report(endlessTotalArray, withCompletionHandler: nil)
+            submit(totalStatsArray[0].endlessModeHeight.reduce(0, +), to: "leaderboardTotalHeight")
         }
         // Leaderboard Endless Total Height
         // Endless mode leaderboards
-        
+
         var arrayIndex = 0
         let leaderboardIdentifierArray = ["leaderboardClassicPackScore", "leaderboardSpacePackScore", "leaderboardNaturePackScore", "leaderboardUrbanPackScore", "leaderboardFoodPackScore", "leaderboardComputerPackScore", "leaderboardBodyPackScore", "leaderboardWorldPackScore", "leaderboardEmojiPackScore", "leaderboardNumbersPackScore", "leaderboardChallengePackScore"]
         while arrayIndex <= 10 {
             if totalStatsArray[0].packHighScores[arrayIndex] > 0 {
-                let scoreReporter = GKScore(leaderboardIdentifier: leaderboardIdentifierArray[arrayIndex])
-                scoreReporter.value = Int64(totalStatsArray[0].packHighScores[arrayIndex])
-                let scoreArray: [GKScore] = [scoreReporter]
-                GKScore.report(scoreArray, withCompletionHandler: nil)
+                submit(totalStatsArray[0].packHighScores[arrayIndex], to: leaderboardIdentifierArray[arrayIndex])
             }
             arrayIndex+=1
         }
         // Level pack total leaderboards
     }
+
+    private func submit(_ score: Int, to leaderboardID: String) {
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+        GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: [leaderboardID], completionHandler: { _ in })
+    }
+    // Replaces GKScore.report, deprecated in iOS 14
     
     func loadData() {
         if let totalData = try? Data(contentsOf: totalStatsStore!) {

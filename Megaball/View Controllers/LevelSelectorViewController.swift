@@ -8,7 +8,6 @@
 
 import UIKit
 import GameKit
-import StoreKit
 
 class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
@@ -25,7 +24,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var IAPLocalPrice: String?
     // User settings
     
-    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -76,9 +74,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
-        // Sets up an observer to watch for notifications to check for in-app purchase success
-        
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
@@ -86,7 +81,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         userSettings()
         loadData()
-        loadProducts()
         
         if GKLocalPlayer.local.isAuthenticated {
             gameCenterSetting = true
@@ -149,23 +143,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     // Set number of cells in table views
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        if tableView == self.premiumTableView {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
-            premiumTableView.rowHeight = 84.0
-            
-            cell.priceLabel.text = IAPLocalPrice
-            cell.tagLine.text = "Unlock All Levels"
-            cell.iconImage.image = UIImage(named:"iconPremium.png")!
-            
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView.transform = .identity
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.showsVerticalScrollIndicator = false
-            
-            return cell
-        }
         
         statsTableView.rowHeight = 35.0
         levelsTableView.rowHeight = 150.0
@@ -244,35 +221,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
     }
     
-    func loadProducts() {
-        products = []
-        GigaBallProducts.store.requestProducts{ [weak self] success, products in
-          guard let self = self else { return }
-          if success {
-            self.products = products!
-            }
-        }
-    }
-    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if tableView == premiumTableView {
-            // IAPHandler().unlockPremiumContent() // Beta builds only
-            if products.count > 0 {
-                showPurchaseScreen()
-                let product = products[0]
-                GigaBallProducts.store.buyProduct(product)
-            }
-            UIView.animate(withDuration: 0.2) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.deselectRow(at: indexPath, animated: true)
-            tableView.reloadData()
-            // Update table view
-            
-        } else if tableView == self.levelsTableView {
+        if tableView == self.levelsTableView {
             
             UIView.animate(withDuration: 0.1) {
                 let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
@@ -293,13 +244,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         
-        if tableView == premiumTableView {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
-        } else if tableView == self.levelsTableView {
+        if tableView == self.levelsTableView {
             if hapticsSetting! {
                 interfaceHaptic.impactOccurred()
             }
@@ -312,13 +257,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if tableView == premiumTableView {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .identity
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-        } else if tableView == self.levelsTableView {
+       
+        if tableView == self.levelsTableView {
             if hapticsSetting! {
                 interfaceHaptic.impactOccurred()
             }
@@ -461,15 +401,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             }
         }
     }
-    
-    func showPurchaseScreen() {
-        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
-        self.addChild(iAPVC)
-        iAPVC.view.frame = self.view.frame
-        self.view.addSubview(iAPVC.view)
-        iAPVC.didMove(toParent: self)
-    }
-    // Show iAPVC as popup
     
     func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
@@ -632,45 +563,18 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
-        let gcViewController = GKGameCenterViewController()
-        gcViewController.gameCenterDelegate = self
-        gcViewController.viewState = GKGameCenterViewControllerState.leaderboards
-        
-        if packNumber == 2 {
-            gcViewController.leaderboardIdentifier = "leaderboardClassicPackScore"
-        }
-        if packNumber == 3 {
-            gcViewController.leaderboardIdentifier = "leaderboardSpacePackScore"
-        }
-        if packNumber == 4 {
-            gcViewController.leaderboardIdentifier = "leaderboardNaturePackScore"
-        }
-        if packNumber == 5 {
-            gcViewController.leaderboardIdentifier = "leaderboardUrbanPackScore"
-        }
-        if packNumber == 6 {
-            gcViewController.leaderboardIdentifier = "leaderboardFoodPackScore"
-        }
-        if packNumber == 7 {
-            gcViewController.leaderboardIdentifier = "leaderboardComputerPackScore"
-        }
-        if packNumber == 8 {
-            gcViewController.leaderboardIdentifier = "leaderboardBodyPackScore"
-        }
-        if packNumber == 9 {
-            gcViewController.leaderboardIdentifier = "leaderboardWorldPackScore"
-        }
-        if packNumber == 10 {
-            gcViewController.leaderboardIdentifier = "leaderboardEmojiPackScore"
-        }
-        if packNumber == 11 {
-            gcViewController.leaderboardIdentifier = "leaderboardNumbersPackScore"
-        }
-        if packNumber == 12 {
-            gcViewController.leaderboardIdentifier = "leaderboardChallengePackScore"
-        }
+
+        let packLeaderboardIDs = [2: "leaderboardClassicPackScore", 3: "leaderboardSpacePackScore", 4: "leaderboardNaturePackScore", 5: "leaderboardUrbanPackScore", 6: "leaderboardFoodPackScore", 7: "leaderboardComputerPackScore", 8: "leaderboardBodyPackScore", 9: "leaderboardWorldPackScore", 10: "leaderboardEmojiPackScore", 11: "leaderboardNumbersPackScore", 12: "leaderboardChallengePackScore"]
         // Show corresponding leaderboard for the current level pack
-        
+
+        let gcViewController: GKGameCenterViewController
+        if let packNumber = packNumber, let leaderboardID = packLeaderboardIDs[packNumber] {
+            gcViewController = GKGameCenterViewController(leaderboardID: leaderboardID, playerScope: .global, timeScope: .allTime)
+        } else {
+            gcViewController = GKGameCenterViewController(state: .leaderboards)
+        }
+        gcViewController.gameCenterDelegate = self
+
         viewController?.present(gcViewController, animated: true, completion: nil)
     }
     // Show game center view controller
@@ -709,14 +613,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         reloadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes
-    
-    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
-        userSettings()
-        loadData()
-        premiumTableViewHideShow()
-        premiumTableView.reloadData()
-        levelsTableView.reloadData()
-    }
 }
 
 extension Notification.Name {

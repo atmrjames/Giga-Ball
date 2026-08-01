@@ -81,8 +81,22 @@ final class CloudKitHandler: NSObject {
     var levelScoreDates: [Date]?
     var levelNumberOfCompletes: Int?
     
+    static let containerIdentifier = "iCloud.com.atmrjames.Megaball"
+    // Named explicitly rather than using CKContainer.default(), which raises an uncatchable
+    // CKException ("containerIdentifier can not be nil") when the iCloud entitlement is absent,
+    // as it is on Simulator builds
+
     func isiCloudContainerAvailable() {
-        CKContainer.default().accountStatus { (accountStatus, error) in
+        guard FileManager.default.ubiquityIdentityToken != nil else {
+            iCloudSetting = false
+            defaults.set(false, forKey: "iCloudSetting")
+            return
+        }
+        // Touching CloudKit at all raises an uncatchable exception when the process has no
+        // iCloud entitlement, or when iCloud is unavailable to the user. Nil token means
+        // syncing could not work anyway, so treat it exactly as an unavailable account
+
+        CKContainer(identifier: CloudKitHandler.containerIdentifier).accountStatus { (accountStatus, error) in
             if case .available = accountStatus {
                 self.iCloudSetting = true
                 self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")

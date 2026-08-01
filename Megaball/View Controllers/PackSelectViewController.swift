@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import StoreKit
 
 class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource  {
     
@@ -22,7 +21,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     var IAPLocalPrice: String?
     // User settings
     
-    var products: [SKProduct] = []
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
     let encoder = PropertyListEncoder()
@@ -40,7 +38,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var packTableView: UITableView!
     @IBOutlet var backButtonCollectionView: UICollectionView!
-    @IBOutlet var unlockedLabel: UILabel!
     
     @IBOutlet var premiumTableView: UITableView!
     @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
@@ -52,15 +49,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnPackSelectNotificationKeyReceived), name: .returnPackSelectNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from another view
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.iAPcompleteNotificationKeyReceived), name: .iAPcompleteNotification, object: nil)
-        // Sets up an observer to watch for notifications to check for in-app purchase success
-        
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
         userSettings()
         loadData()
-        loadProducts()
         
         packTableView.delegate = self
         packTableView.dataSource = self
@@ -118,171 +111,116 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     // Set number of cells in table views
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if tableView == self.premiumTableView {
-            
-            let cell = tableView.dequeueReusableCell(withIdentifier: "iAPCell", for: indexPath) as! IAPTableViewCell
-            premiumTableView.rowHeight = 84.0
-            
-            cell.priceLabel.text = IAPLocalPrice
-            cell.tagLine.text = "Unlock All Level Packs"
-            cell.iconImage.image = UIImage(named:"iconPremium.png")!
-            
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView.transform = .identity
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.showsVerticalScrollIndicator = false
-            
-            return cell
-            
-        } else {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
-            
-            cell.blurView.isHidden = true
-            cell.lockedImageView.isHidden = true
-            
-            cell.centreLabel.text = ""
-            cell.settingState.text = ""
-            cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-            cell.settingDescription.text = LevelPackSetup().levelPackNameArray[indexPath.row+2]
-            
+        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+        
+        cell.blurView.isHidden = true
+        cell.lockedImageView.isHidden = true
+        
+        cell.centreLabel.text = ""
+        cell.settingState.text = ""
+        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+        cell.settingDescription.text = LevelPackSetup().levelPackNameArray[indexPath.row+2]
+        
+        cell.descriptionAndStateSharedWidthConstraint.isActive = false
+        cell.descriptionTickWidthConstraint.isActive = false
+        cell.decriptionFullWidthConstraint.isActive = true
+        cell.tickImage.isHidden = true
+        
+        if totalStatsArray[0].packBestTimes[indexPath.row] > 0 {
+            cell.descriptionAndStateSharedWidthConstraint.isActive = false
+            cell.decriptionFullWidthConstraint.isActive = false
+            cell.descriptionTickWidthConstraint.isActive = true
+            cell.tickImage.isHidden = false
+        }
+        // Show tick if pack has been completed at least once
+        
+        cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        cell.settingDescription.font = cell.settingDescription.font.withSize(18)
+        
+        switch indexPath.row+2 {
+        case 2:
+            cell.iconImage.image = UIImage(named:"iconClassicPack.png")!
+        case 3:
+            cell.iconImage.image = UIImage(named:"iconSpacePack.png")!
+        case 4:
+            cell.iconImage.image = UIImage(named:"iconNaturePack.png")!
+        case 5:
+            cell.iconImage.image = UIImage(named:"iconUrbanPack.png")!
+        case 6:
+            cell.iconImage.image = UIImage(named:"iconFoodPack.png")!
+        case 7:
+            cell.iconImage.image = UIImage(named:"iconComputerPack.png")!
+        case 8:
+            cell.iconImage.image = UIImage(named:"iconBodyPack.png")!
+        case 9:
+            cell.iconImage.image = UIImage(named:"iconWorldPack.png")!
+        case 10:
+            cell.iconImage.image = UIImage(named:"iconEmojiPack.png")!
+        case 11:
+            cell.iconImage.image = UIImage(named:"iconNumbersPack.png")!
+        case 12:
+            cell.iconImage.image = UIImage(named:"iconChallengePack.png")!
+        default:
+            cell.iconImage.image = nil
+            break
+        }
+        
+        if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
             cell.descriptionAndStateSharedWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = false
             cell.decriptionFullWidthConstraint.isActive = true
-            cell.tickImage.isHidden = true
-            
-            if totalStatsArray[0].packBestTimes[indexPath.row] > 0 {
-                cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                cell.decriptionFullWidthConstraint.isActive = false
-                cell.descriptionTickWidthConstraint.isActive = true
-                cell.tickImage.isHidden = false
+            cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+            cell.settingDescription.font = cell.settingDescription.font.withSize(16)
+            if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2-1] {
+                cell.settingDescription.text = "Complete \(LevelPackSetup().levelPackNameArray[indexPath.row+1]) to unlock"
+            } else {
+                cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
             }
-            // Show tick if pack has been completed at least once
-            
-            cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            cell.settingDescription.font = cell.settingDescription.font.withSize(18)
-            
-            switch indexPath.row+2 {
-            case 2:
-                cell.iconImage.image = UIImage(named:"iconClassicPack.png")!
-            case 3:
-                cell.iconImage.image = UIImage(named:"iconSpacePack.png")!
-            case 4:
-                cell.iconImage.image = UIImage(named:"iconNaturePack.png")!
-            case 5:
-                cell.iconImage.image = UIImage(named:"iconUrbanPack.png")!
-            case 6:
-                cell.iconImage.image = UIImage(named:"iconFoodPack.png")!
-            case 7:
-                cell.iconImage.image = UIImage(named:"iconComputerPack.png")!
-            case 8:
-                cell.iconImage.image = UIImage(named:"iconBodyPack.png")!
-            case 9:
-                cell.iconImage.image = UIImage(named:"iconWorldPack.png")!
-            case 10:
-                cell.iconImage.image = UIImage(named:"iconEmojiPack.png")!
-            case 11:
-                cell.iconImage.image = UIImage(named:"iconNumbersPack.png")!
-            case 12:
-                cell.iconImage.image = UIImage(named:"iconChallengePack.png")!
-            default:
-                cell.iconImage.image = nil
-                break
+            if indexPath.row == 3 {
+                cell.settingDescription.text = "Complete first 3 packs to unlock"
             }
-            
-            if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
-                cell.descriptionAndStateSharedWidthConstraint.isActive = false
-                cell.descriptionTickWidthConstraint.isActive = false
-                cell.decriptionFullWidthConstraint.isActive = true
-                cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-                cell.settingDescription.font = cell.settingDescription.font.withSize(16)
-                if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2-1] {
-                    cell.settingDescription.text = "Complete \(LevelPackSetup().levelPackNameArray[indexPath.row+1]) to unlock"
-                } else {
-                    cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
-                }
-                if indexPath.row == 3 {
-                    cell.settingDescription.text = "Complete first 3 packs to unlock"
-                }
-                // For level pack 4 show this message
-                cell.settingState.text = ""
-                cell.blurView.isHidden = false
-                cell.lockedImageView.isHidden = false
-            }
-            // Locked level packs until unlocked
+            // For level pack 4 show this message
+            cell.settingState.text = ""
+            cell.blurView.isHidden = false
+            cell.lockedImageView.isHidden = false
+        }
+        // Locked level packs until unlocked
 
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
-            
-            return cell
+        UIView.animate(withDuration: 0.2) {
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
-    }
-    
-    func loadProducts() {
-        products = []
-        GigaBallProducts.store.requestProducts{ [weak self] success, products in
-          guard let self = self else { return }
-          if success {
-            self.products = products!
-            }
-        }
+        
+        return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if tableView == premiumTableView {
-            // IAPHandler().unlockPremiumContent() // Beta builds only
-            if products.count > 0 {
-                showPurchaseScreen()
-                let product = products[0]
-                GigaBallProducts.store.buyProduct(product)
-            }
-            UIView.animate(withDuration: 0.2) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-            tableView.deselectRow(at: indexPath, animated: true)
-            tableView.reloadData()
-            // Update table view
-                
-        } else {
-            UIView.animate(withDuration: 0.2) {
-                let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-            }
-            
-            if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] {
-                hideAnimate()
-                moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
-            }
-            // Don't allow selection if level pack is locked
-            
-            tableView.deselectRow(at: indexPath, animated: true)
-            tableView.reloadData()
-            // Update table view
+        UIView.animate(withDuration: 0.2) {
+            let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
+        
+        if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] {
+            hideAnimate()
+            moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
+        }
+        // Don't allow selection if level pack is locked
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+        tableView.reloadData()
+        // Update table view
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        if tableView == premiumTableView {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
-        } else {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
         }
     }
     
@@ -290,18 +228,10 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         if hapticsSetting! {
             interfaceHaptic.impactOccurred()
         }
-        if tableView == premiumTableView {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.premiumTableView.cellForRow(at: indexPath) as! IAPTableViewCell
-                cell.cellView.transform = .identity
-                cell.cellView.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
-        } else {
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+        UIView.animate(withDuration: 0.1) {
+            let cell = self.packTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
+            cell.cellView2.transform = .identity
+            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
         }
     }
     
@@ -351,15 +281,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             cell.iconImage.image = UIImage(named:"ButtonClose.png")
         }
     }
-    
-    func showPurchaseScreen() {
-        let iAPVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "iAPVC") as! InAppPurchaseViewController
-        self.addChild(iAPVC)
-        iAPVC.view.frame = self.view.frame
-        self.view.addSubview(iAPVC.view)
-        iAPVC.didMove(toParent: self)
-    }
-    // Show iAPVC as popup
     
     func moveToLevelSelector(packNumber: Int, numberOfLevels: Int, startLevel: Int) {
         let levelSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "levelSelectorView") as! LevelSelectorViewController
@@ -474,9 +395,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
         // Load the total stats array from the NSCoder data store
         
-        let unlockedPackCount = totalStatsArray[0].levelPackUnlockedArray.filter{$0 == true}.count-2
-        let lockedPackCount = totalStatsArray[0].levelPackUnlockedArray.count-2
-        unlockedLabel.text = "UNLOCKED: \(unlockedPackCount)/\(lockedPackCount)"
     }
     
     @objc func returnPackSelectNotificationKeyReceived(_ notification: Notification) {
@@ -486,14 +404,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         packTableView.reloadData()
     }
     // Runs when returning from another menu view
-    
-    @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
-        userSettings()
-        loadData()
-        premiumTableViewHideShow()
-        premiumTableView.reloadData()
-        packTableView.reloadData()
-    }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()

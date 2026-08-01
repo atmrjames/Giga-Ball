@@ -7,11 +7,10 @@
 //
 
 import UIKit
-import GoogleMobileAds
 import GameKit
 import StoreKit
 
-class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, SKProductsRequestDelegate {
+class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     // Haptics setup
@@ -67,19 +66,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // NSCoder data store & encoder setup
     
     
-    let iAPProductID = "com.atmrjames.Megaball.GigaBallPremium"
-    var request: SKProductsRequest!
-    var product: SKProduct?
     var localCurrency: String?
     // IAP
     
     @IBOutlet var modeSelectTableView: UITableView!
     @IBOutlet var iconCollectionView: UICollectionView!
     @IBOutlet var logoImage: UIImageView!
-    
-    @IBOutlet var bannerAdCollapsed: NSLayoutConstraint!
-    @IBOutlet var bannerAdOpenSmall: NSLayoutConstraint!
-    @IBOutlet var bannerAdOpenLarge: NSLayoutConstraint!
     
     @IBOutlet var backgroundImageView: UIImageView!
     @IBOutlet var backgroundBlurView: UIView!
@@ -91,9 +83,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     var firstLaunch: Bool = false
     // Check if this is the first opening of the app since closing to know if to run splash screen
-    
-    @IBOutlet var bannerView: GADBannerView!
-    // Ad banner view
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -353,7 +342,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
         if indexPath.row == 1 {
             if !premiumSetting! {
-                moveToPremiumInfo()
+                moveToSettings()
             }
         }
         if indexPath.row == 2 {
@@ -525,14 +514,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         itemsView.didMove(toParent: self)
     }
     
-    func moveToPremiumInfo() {
-        let premiumInfoView = self.storyboard?.instantiateViewController(withIdentifier: "premiumInfoView") as! PremiumInfoViewController
-        self.addChild(premiumInfoView)
-        premiumInfoView.view.frame = self.view.frame
-        self.view.addSubview(premiumInfoView.view)
-        premiumInfoView.didMove(toParent: self)
-    }
-    
     func moveToIntro() {
         let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
         introView.sender = "Main"
@@ -661,28 +642,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Sets up game center
     
-    func updateAds() {
-        if defaults.bool(forKey: "adsSetting") {
-            bannerView.isHidden = false
-            bannerView.adUnitID = "ca-app-pub-3110131406973822/8913206996"
-            bannerView.rootViewController = self
-            // Configure banner ad
-            
-            bannerAdCollapsed.isActive = false
-            bannerAdOpenSmall.isActive = true
-            bannerAdOpenLarge.isActive = true
-
-            bannerView.load(GADRequest())
-        } else {
-            bannerView.isHidden = true
-            
-            bannerAdOpenSmall.isActive = false
-            bannerAdOpenLarge.isActive = false
-            bannerAdCollapsed.isActive = true
-        }
-    }
-    // Show or hide banner ad depending on setting
-    
     func refreshView() {
         CloudKitHandler().loadFromiCloud()
         loadData()
@@ -698,7 +657,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 //        } else {
 //            getProducts()
 //        }
-        updateAds()
         
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()
@@ -710,16 +668,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 //        request.delegate = self
 //        request.start()
 //    }
-
-    func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
-        let products = response.products
-        if (products.count != 0) {
-            product = products[0]
-            IAPLocalPrice = product!.localizedPrice
-            defaults.set(IAPLocalPrice, forKey: "IAPLocalPrice")
-        }
-    }
-    // SKProductsRequestDelegate protocol method.
     
     @objc func returnSettingsNotificationKeyReceived(_ notification: Notification) {
         refreshView()
@@ -742,7 +690,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         } else {
             let rand = Int.random(in: 1...10)
             if appOpenCount! > 10 && totalStatsArray[0].playTimeSecs > 60*10 && rand == 1 {
-                SKStoreReviewController.requestReview()
+                if let windowScene = view.window?.windowScene {
+                    if #available(iOS 16.0, *) {
+                        AppStore.requestReview(in: windowScene)
+                    } else {
+                        requestReviewLegacy(in: windowScene)
+                    }
+                }
                 // Show app rating pop-up when over 10 times opened the app and 10 minutes of play time with a 1 in 10 chance on launching the app
             }
         }
@@ -756,7 +710,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // Present onboarding screen if first time opening app
     }
     // Runs when the splash screen has ended
-    
+
+    @available(iOS, introduced: 14.0, deprecated: 16.0, message: "Superseded by AppStore.requestReview(in:)")
+    private func requestReviewLegacy(in windowScene: UIWindowScene) {
+        SKStoreReviewController.requestReview(in: windowScene)
+    }
+    // Review prompt for iOS 15. The deprecation annotation keeps this from warning on modern builds
+
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
         authGCPlayer()
         refreshView()
