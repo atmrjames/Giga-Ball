@@ -1378,7 +1378,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Megaball/Giga-Ball.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 81;
+				CURRENT_PROJECT_VERSION = 82;
 				DEAD_CODE_STRIPPING = YES;
 				INFOPLIST_FILE = Megaball/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Giga-Ball";
@@ -1406,7 +1406,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Megaball/Giga-Ball.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 81;
+				CURRENT_PROJECT_VERSION = 82;
 				DEAD_CODE_STRIPPING = YES;
 				INFOPLIST_FILE = Megaball/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Giga-Ball";
