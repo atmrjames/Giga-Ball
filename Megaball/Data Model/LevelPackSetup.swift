@@ -129,18 +129,18 @@ class LevelPackSetup {
     ]
     
     let appIconImageArray: [UIImage] = [
-        UIImage(named:"Purple.png")!,
+        UIImage(named:"IconPreviewPurple.png")!,
         UIImage(named:"IconPreviewWhite.png")!,
         UIImage(named:"IconPreviewYellow.png")!,
-        UIImage(named:"Outline.png")!,
+        UIImage(named:"IconPreviewOutline.png")!,
         UIImage(named:"IconPreviewOrange.png")!,
         UIImage(named:"IconPreviewGreen.png")!,
         UIImage(named:"IconPreviewBlue.png")!,
         UIImage(named:"IconPreviewBlack.png")!,
         UIImage(named:"IconPreviewPink.png")!,
         UIImage(named:"Glow.png")!,
-        UIImage(named:"Rainbow.png")!,
-        UIImage(named:"Retro.png")!
+        UIImage(named:"IconPreviewRainbow.png")!,
+        UIImage(named:"IconPreviewRetro.png")!
     ]
     
     let levelImageArray: [UIImage] = [

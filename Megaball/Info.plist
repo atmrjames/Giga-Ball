@@ -23,42 +23,6 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Outline</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Outline</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Purple</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Purple</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Rainbow</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Rainbow</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Retro</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Retro</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 		</dict>
 		<key>CFBundlePrimaryIcon</key>
 		<dict>
@@ -79,42 +43,6 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Glow</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Outline</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Outline</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Purple</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Purple</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Rainbow</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Rainbow</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Retro</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Retro</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
