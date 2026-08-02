@@ -776,28 +776,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		scoreBacker = self.childNode(withName: "scoreBacker") as! SKSpriteNode
 		// Power-up area
 		
-		screenRatio = frame.size.height/frame.size.width
-        
-		if screenRatio > 2 {
-			screenSize = "X"
-		} else if screenRatio < 1.7  {
-			screenSize = "Pad"
-			
-		} else {
-			screenSize = "8"
-		}
-		// Screen size and device detected
-		
-		if screenSize == "X" {
-			gameWidth = frame.size.height/2.16
-		} else {
-			gameWidth = (frame.size.height/2.16) * 1.1
-		}
+		computeLayoutMetrics()
+		// All size-dependent maths lives in one place so it can be re-run when the safe
+		// area or bounds change. Node positioning still happens inline below.
 
-		//
-		screenBlockSideWidth = (frame.size.width - gameWidth)/2
-		// Same aspect ratio as the iPhone X size phones
-		
 		sideScreenBlockLeft.isHidden = false
 		sideScreenBlockRight.isHidden = false
 		sideScreenBlockLeft.size.width = screenBlockSideWidth
@@ -805,32 +787,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		sideScreenBlockLeft.position.x = -gameWidth/2-screenBlockSideWidth/2
 		sideScreenBlockRight.position.x = gameWidth/2+screenBlockSideWidth/2
 		
-		numberOfBrickRows = 22
-        numberOfBrickColumns = numberOfBrickRows/2
-		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
-		brickWidth = layoutUnit*2
-		brickHeight = layoutUnit
-		paddleGap = layoutUnit*7
-		
-		pauseButtonSize = layoutUnit*2
-		iconSize = layoutUnit*1.5
-		fontSize = 16
-		screenBlockTopHeight = layoutUnit*3
-		
-		if screenSize == "X" {
-			screenBlockTopHeight = layoutUnit*7.4
-		} else if screenSize == "Pad" {
-			pauseButtonSize = layoutUnit*1.5
-			fontSize = fontSize*1.5
-		}
-		
 		logLayoutBaseline()
 		// TEMPORARY: records the geometry this build produces so the safe-area rewrite
 		// can be diffed against it. Remove once the rewrite is verified.
 
-		labelSpacing = fontSize/1.5
-		minPaddleGap = brickHeight*4
-		
+
 		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth)
 		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight)
 		
@@ -4063,6 +4024,51 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
+	func computeLayoutMetrics() {
+		screenRatio = frame.size.height/frame.size.width
+
+		if screenRatio > 2 {
+			screenSize = "X"
+		} else if screenRatio < 1.7 {
+			screenSize = "Pad"
+		} else {
+			screenSize = "8"
+		}
+		// Screen size and device detected
+
+		if screenSize == "X" {
+			gameWidth = frame.size.height/2.16
+		} else {
+			gameWidth = (frame.size.height/2.16) * 1.1
+		}
+		screenBlockSideWidth = (frame.size.width - gameWidth)/2
+		// Same aspect ratio as the iPhone X size phones
+
+		numberOfBrickRows = 22
+		numberOfBrickColumns = numberOfBrickRows/2
+		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
+		brickWidth = layoutUnit*2
+		brickHeight = layoutUnit
+		paddleGap = layoutUnit*7
+
+		pauseButtonSize = layoutUnit*2
+		iconSize = layoutUnit*1.5
+		fontSize = 16
+		screenBlockTopHeight = layoutUnit*3
+
+		if screenSize == "X" {
+			screenBlockTopHeight = layoutUnit*7.4
+		} else if screenSize == "Pad" {
+			pauseButtonSize = layoutUnit*1.5
+			fontSize = fontSize*1.5
+		}
+
+		labelSpacing = fontSize/1.5
+		minPaddleGap = brickHeight*4
+	}
+	// Every size-dependent value derived from the scene bounds. Pure maths, no node
+	// changes, so it is safe to call again whenever the bounds or safe area change.
+
 	func logLayoutBaseline() {
 		let viewInsets = self.view?.safeAreaInsets ?? .zero
 		let windowInsets = self.view?.window?.safeAreaInsets ?? .zero
