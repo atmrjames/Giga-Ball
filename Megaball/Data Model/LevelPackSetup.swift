@@ -138,7 +138,7 @@ class LevelPackSetup {
         UIImage(named:"IconPreviewBlue.png")!,
         UIImage(named:"IconPreviewBlack.png")!,
         UIImage(named:"IconPreviewPink.png")!,
-        UIImage(named:"Glow.png")!,
+        UIImage(named:"IconPreviewGlow.png")!,
         UIImage(named:"IconPreviewRainbow.png")!,
         UIImage(named:"IconPreviewRetro.png")!
     ]

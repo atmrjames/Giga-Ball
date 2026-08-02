@@ -10,54 +10,6 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
-	<key>CFBundleIcons</key>
-	<dict>
-		<key>CFBundleAlternateIcons</key>
-		<dict>
-			<key>Glow</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Glow</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-		</dict>
-		<key>CFBundlePrimaryIcon</key>
-		<dict>
-			<key>CFBundleIconFiles</key>
-			<array>
-				<string></string>
-			</array>
-			<key>UIPrerenderedIcon</key>
-			<false/>
-		</dict>
-	</dict>
-	<key>CFBundleIcons~ipad</key>
-	<dict>
-		<key>CFBundleAlternateIcons</key>
-		<dict>
-			<key>Glow</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Glow</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-		</dict>
-		<key>CFBundlePrimaryIcon</key>
-		<dict>
-			<key>CFBundleIconFiles</key>
-			<array>
-				<string></string>
-			</array>
-			<key>UIPrerenderedIcon</key>
-			<false/>
-		</dict>
-	</dict>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
