@@ -106,6 +106,7 @@
 		1A57A2AC23F592FB004D7AC2 /* TotalStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */; };
 		1A5A94852309E4F30076D635 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A94842309E4F30076D635 /* AppDelegate.swift */; };
 		1A5A94872309E4F30076D635 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94862309E4F30076D635 /* GameScene.sks */; };
+		1AF0FF0100000001 /* FugazOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1AF0FF0100000002 /* FugazOne-Regular.ttf */; };
 		1A5A94892309E4F30076D635 /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = 1A5A94882309E4F30076D635 /* Actions.sks */; };
 		1A5A948B2309E4F30076D635 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A948A2309E4F30076D635 /* GameScene.swift */; };
 		1A5A948D2309E4F30076D635 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A948C2309E4F30076D635 /* GameViewController.swift */; };
@@ -341,6 +342,7 @@
 		1A5A94812309E4F30076D635 /* Giga-Ball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Giga-Ball.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A5A94842309E4F30076D635 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1A5A94862309E4F30076D635 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
+		1AF0FF0100000002 /* FugazOne-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FugazOne-Regular.ttf"; sourceTree = "<group>"; };
 		1A5A94882309E4F30076D635 /* Actions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Actions.sks; sourceTree = "<group>"; };
 		1A5A948A2309E4F30076D635 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; usesTabs = 1; };
 		1A5A948C2309E4F30076D635 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
@@ -666,9 +668,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1AF0FF0100000003 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				1AF0FF0100000002 /* FugazOne-Regular.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		1A5A94832309E4F30076D635 /* Megaball */ = {
 			isa = PBXGroup;
 			children = (
+				1AF0FF0100000003 /* Fonts */,
 				1A5A94912309E4F40076D635 /* Assets.xcassets */,
 				1AF0FE0100000005 /* AppIcon.icon */,
 				1AF0FE0400000001 /* Glow.icon */,
@@ -1057,6 +1068,7 @@
 				1A2D234524C44393002D5CE5 /* White@2x.png in Resources */,
 				1AC5AA4624D6A56300CA9414 /* ballLostSound.mp3 in Resources */,
 				1A5A94872309E4F30076D635 /* GameScene.sks in Resources */,
+				1AF0FF0100000001 /* FugazOne-Regular.ttf in Resources */,
 				1ACA35C724ED2AE700AF505E /* ballPaddleHit.mp3 in Resources */,
 				1A2D233324C44393002D5CE5 /* Green@3x.png in Resources */,
 				1ACA35D124ED32ED00AF505E /* endlessRowDown.mp3 in Resources */,
