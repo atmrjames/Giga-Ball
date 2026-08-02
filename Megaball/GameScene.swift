@@ -1018,12 +1018,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		scoreBacker.isHidden = true
 		
-		if screenSize == "X" {
-			powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - powerUpTray.size.height/2 - labelSpacing/2
-		} else {
-			powerUpTray.position.y = frame.size.height/2 - powerUpTray.size.height/2
-			pauseButton.position.y = frame.size.height/2 - screenBlockTopHeight - labelSpacing/2 - pauseButton.size.height/2
-		}
+		let safeTopEdge = frame.size.height/2 - (self.view?.safeAreaInsets.top ?? 0)
+		powerUpTray.position.y = safeTopEdge - powerUpTray.size.height/2
+		pauseButton.position.y = powerUpTray.position.y - powerUpTray.size.height/2 - labelSpacing/2 - pauseButton.size.height/2
+		// Tray sits directly below the safe area, HUD below the tray. One arrangement for
+		// every device: this is what non-notched devices already did, and it keeps the
+		// tray clear of the Dynamic Island rather than tucked under it
 		
 		scoreBacker.zPosition = 9
 		scoreBacker.size.width = gameWidth
@@ -4027,8 +4027,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	static let playRatio: CGFloat = 1.8236
 	// Play height : play width. Measured from the shipping build and held constant on
 	// every device so the game plays identically across a player's devices.
-	static let hudUnits: CGFloat = 3.0
-	// Height of the HUD and power-up tray, in layout units
+	static let hudUnits: CGFloat = 5.5
+	// Height of the power-up tray (3 units) plus the HUD row (2 units) and the spacing
+	// between them, in layout units. Must cover everything stacked below the safe area
+	// inset, or the tray overhangs into the playfield
 
 	func computeLayoutMetrics() {
 		screenRatio = frame.size.height/frame.size.width
