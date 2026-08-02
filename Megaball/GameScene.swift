@@ -1019,11 +1019,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		scoreBacker.isHidden = true
 		
 		let safeTopEdge = frame.size.height/2 - (self.view?.safeAreaInsets.top ?? 0)
-		powerUpTray.position.y = safeTopEdge - powerUpTray.size.height/2
-		pauseButton.position.y = powerUpTray.position.y - powerUpTray.size.height/2 - labelSpacing/2 - pauseButton.size.height/2
-		// Tray sits directly below the safe area, HUD below the tray. One arrangement for
-		// every device: this is what non-notched devices already did, and it keeps the
-		// tray clear of the Dynamic Island rather than tucked under it
+		pauseButton.position.y = safeTopEdge - pauseButton.size.height/2
+		powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - labelSpacing/2 - powerUpTray.size.height/2
+		// HUD sits directly below the safe area, tray below it, playfield below both.
+		// One arrangement for every device. Both are measured from safeAreaInsets rather
+		// than the screen edge, so nothing can overhang into the playfield
 		
 		scoreBacker.zPosition = 9
 		scoreBacker.size.width = gameWidth
