@@ -1018,7 +1018,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		scoreBacker.isHidden = true
 		
-		let safeTopEdge = frame.size.height/2 - (self.view?.safeAreaInsets.top ?? 0)
+		let safeTopEdge = frame.size.height/2 - (self.view?.safeAreaInsets.top ?? 0) - layoutUnit
+		// One layout unit of breathing room below the inset. Without it the score and
+		// multiplier sit hard against the top edge and clip, most visibly on iPad where
+		// the status bar is hidden so the inset is minimal
 		pauseButton.position.y = safeTopEdge - pauseButton.size.height/2
 		powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - labelSpacing/2 - powerUpTray.size.height/2
 		// HUD sits directly below the safe area, tray below it, playfield below both.
@@ -4027,8 +4030,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	static let playRatio: CGFloat = 1.8236
 	// Play height : play width. Measured from the shipping build and held constant on
 	// every device so the game plays identically across a player's devices.
-	static let hudUnits: CGFloat = 5.5
-	// Height of the power-up tray (3 units) plus the HUD row (2 units) and the spacing
+	static let hudUnits: CGFloat = 6.5
+	// Top margin (1 unit), power-up tray (3 units), HUD row (2 units) and the spacing
 	// between them, in layout units. Must cover everything stacked below the safe area
 	// inset, or the tray overhangs into the playfield
 
