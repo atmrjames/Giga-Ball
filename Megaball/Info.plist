@@ -14,24 +14,6 @@
 	<dict>
 		<key>CFBundleAlternateIcons</key>
 		<dict>
-			<key>Black</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Black</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Blue</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Blue</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Glow</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -41,38 +23,11 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Green</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Green</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Orange</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Orange</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Outline</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Outline</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Pink</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Pink</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
@@ -100,24 +55,6 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Retro</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>White</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>White</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Yellow</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Yellow</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
@@ -137,24 +74,6 @@
 	<dict>
 		<key>CFBundleAlternateIcons</key>
 		<dict>
-			<key>Black</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Black</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Blue</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Blue</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Glow</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -164,38 +83,11 @@
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
 			</dict>
-			<key>Green</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Green</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Orange</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Orange</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
 			<key>Outline</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Outline</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Pink</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Pink</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
@@ -223,24 +115,6 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Retro</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>White</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>White</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<string>NO</string>
-			</dict>
-			<key>Yellow</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>Yellow</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<string>NO</string>
