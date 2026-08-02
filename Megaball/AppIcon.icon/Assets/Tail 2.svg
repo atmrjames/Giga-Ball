@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024px" height="1024px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Tail</title>
+    <defs>
+        <filter x="0.0%" y="0.0%" width="100.0%" height="100.0%" filterUnits="objectBoundingBox" id="filter-1">
+            <feGaussianBlur stdDeviation="0 0" in="SourceGraphic"></feGaussianBlur>
+        </filter>
+    </defs>
+    <g id="App-Icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M651.283583,220.224989 C647.847658,231.545521 646,243.556989 646,256 C646,323.931024 701.068976,379 769,379 C781.786585,379 794.117465,377.048899 805.711165,373.428173 C757.325925,411.042028 712.755854,454.733499 672,504.5 C624.785552,562.153017 582.452218,628.653017 545,704 L481,704 C500.510472,600.55674 526.343805,504.723407 558.5,416.5 C585.832766,341.510104 616.544764,276.43537 650.635995,221.275797 Z" id="Combined-Shape-Copy-2" fill="#FFFFFF" filter="url(#filter-1)"></path>
+    </g>
+</svg>
