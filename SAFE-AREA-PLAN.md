@@ -74,21 +74,39 @@ Matches the computed table exactly, which confirms the model above.
 originally sketched: reading insets at that point would always give zero and silently
 produce the wrong layout.
 
-Options, to decide when implementing:
+### Reading from the window does not work
 
-1. **Read from the window instead.** `view.window?.safeAreaInsets` may be populated
-   earlier, since the window exists before the scene view is laid out. Cheapest change
-   if it works — needs verifying, not assuming.
-2. **Defer the geometry pass.** Move layout out of `didMove(to view:)` into a first
-   `didChangeSize(_:)` or a one-shot on the first `update(_:)`, by which point insets
-   are valid. More correct, and a prerequisite for resizable windows later, but touches
-   more of the setup sequence.
-3. **Recompute on change.** Layout responds to `didChangeSize(_:)` regardless. Needed
-   eventually for iPad multitasking and rotation, so option 2 tends towards this anyway.
+Tested, and conclusively not viable:
 
-Option 2 is the more honest fix and aligns with the follow-on work. Option 1 is worth a
-quick test first: if the window reports correct insets during `didMove`, it is a much
-smaller change for this release.
+```
+LAYOUT-INSETS view(t:0.0 b:0.0) window(t:0.0 b:0.0) hasWindow=NO
+```
+
+The scene's view is **not in a window at all** during `didMove(to view:)`. There is no
+window to read insets from, so no variation on "read them from somewhere else at the
+same moment" can work. The geometry pass has to move.
+
+### What moving it requires
+
+`didMove(to view:)` spans **585 lines** and interleaves three different jobs:
+
+- 51 `childNode(withName:)` lookups — binding scene nodes
+- 192 `.size` / `.position` assignments — the geometry
+- the rest — game state, textures, settings, observers
+
+Only the geometry is size-dependent and needs re-running when insets or bounds change.
+So the work is:
+
+1. Extract the 192 geometry assignments into a `layoutScene(insets:)` that can be called
+   repeatedly and is safe to re-run, leaving node binding and state setup in `didMove`.
+2. Call it from `GameViewController.viewDidLayoutSubviews()`, which fires after the safe
+   area is known and again on any resize or rotation.
+3. Apply the closed-form sizing above, driven by real insets.
+
+Step 1 is the substantial part and should be done as its own change, verified against the
+recorded baseline, before the formula changes at all. Splitting it that way means the
+refactor can be proven inert — same numbers in, same numbers out — and only then does the
+behaviour change.
 
 ## The rewrite
 

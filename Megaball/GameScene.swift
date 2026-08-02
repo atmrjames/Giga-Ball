@@ -4064,7 +4064,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
 	func logLayoutBaseline() {
-		let insets = self.view?.safeAreaInsets ?? .zero
+		let viewInsets = self.view?.safeAreaInsets ?? .zero
+		let windowInsets = self.view?.window?.safeAreaInsets ?? .zero
+		print(String(format: "LAYOUT-INSETS view(t:%.1f b:%.1f) window(t:%.1f b:%.1f) hasWindow=%@",
+			viewInsets.top, viewInsets.bottom, windowInsets.top, windowInsets.bottom,
+			self.view?.window == nil ? "NO" : "YES"))
+		let insets = windowInsets
 		let playHeight = frame.size.height - screenBlockTopHeight
 		let ratio = playHeight / gameWidth
 		print(String(format:
