@@ -4024,6 +4024,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
+	static let playRatio: CGFloat = 1.8236
+	// Play height : play width. Measured from the shipping build and held constant on
+	// every device so the game plays identically across a player's devices.
+	static let hudUnits: CGFloat = 3.0
+	// Height of the HUD and power-up tray, in layout units
+
 	func computeLayoutMetrics() {
 		screenRatio = frame.size.height/frame.size.width
 
@@ -4036,13 +4042,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Screen size and device detected
 
-		if screenSize == "X" {
-			gameWidth = frame.size.height/2.16
-		} else {
-			gameWidth = (frame.size.height/2.16) * 1.1
-		}
+		let insets = self.view?.safeAreaInsets ?? .zero
+		let availableHeight = frame.size.height - insets.top - insets.bottom
+		let availableWidth = frame.size.width - insets.left - insets.right
+
+		gameWidth = (availableHeight / (1 + GameScene.hudUnits / (CGFloat(22) * GameScene.playRatio))) / GameScene.playRatio
+		gameWidth = min(gameWidth, availableWidth)
+		// Play area sized from the space actually available, holding a fixed ratio.
+		// Clamped to width so short, wide layouts fall back to taller borders rather
+		// than a reshaped playfield. Solved in closed form because the top bar height
+		// depends on layoutUnit, which depends on gameWidth, which depends on it
+
 		screenBlockSideWidth = (frame.size.width - gameWidth)/2
-		// Same aspect ratio as the iPhone X size phones
 
 		numberOfBrickRows = 22
 		numberOfBrickColumns = numberOfBrickRows/2
@@ -4054,11 +4065,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
 		fontSize = 16
-		screenBlockTopHeight = layoutUnit*3
+		screenBlockTopHeight = insets.top + layoutUnit*GameScene.hudUnits
+		// The bar is the HUD and power-up tray, sitting below the real inset rather than
+		// a fixed multiple guessed from screen height
 
-		if screenSize == "X" {
-			screenBlockTopHeight = layoutUnit*7.4
-		} else if screenSize == "Pad" {
+		if screenSize == "Pad" {
 			pauseButtonSize = layoutUnit*1.5
 			fontSize = fontSize*1.5
 		}
@@ -4076,7 +4087,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			viewInsets.top, viewInsets.bottom, windowInsets.top, windowInsets.bottom,
 			self.view?.window == nil ? "NO" : "YES"))
 		let insets = windowInsets
-		let playHeight = frame.size.height - screenBlockTopHeight
+		let playHeight = frame.size.height - screenBlockTopHeight - insets.bottom
 		let ratio = playHeight / gameWidth
 		print(String(format:
 			"LAYOUT-BASELINE scene=%.0fx%.0f class=%@ insets(t:%.1f b:%.1f l:%.1f r:%.1f) gameWidth=%.2f layoutUnit=%.4f topBar=%.2f playHeight=%.2f ratio=%.4f sideBorder=%.2f",

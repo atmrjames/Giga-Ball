@@ -29,9 +29,18 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     
     let defaults = UserDefaults.standard
         
-    override func viewDidLoad() {
-        super.viewDidLoad()
+    private var hasPresentedScene = false
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard hasPresentedScene == false else { return }
+        hasPresentedScene = true
+        presentGameScene()
+        // Presented here rather than in viewDidLoad so the view is in a window with its
+        // safe area resolved. GameScene reads the insets during didMove to lay itself out
+    }
+
+    func presentGameScene() {
         if let view = self.view as! SKView? {
             // Load the SKScene from 'GameScene.sks'
             if let scene = SKScene(fileNamed: "GameScene") {
