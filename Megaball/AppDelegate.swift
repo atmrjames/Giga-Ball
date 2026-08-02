@@ -18,9 +18,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 
         NSUbiquitousKeyValueStore.default.synchronize()
         
-        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
-        // Ensure audio is played in background by default
-                
+        MusicHandler.sharedHelper.prepareSession()
+        // Ambient by default so other apps' audio keeps playing. Configured off the main
+        // thread by MusicHandler, which owns the audio session from here on
+
         return true
     }
 

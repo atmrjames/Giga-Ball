@@ -23,8 +23,33 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         
     var menuVolumeSet: Float = 0.50
     var gameVolumeSet: Float = 1.00
-    
-    func playMusic(sender: String? = "") {        
+
+    private let sessionQueue = DispatchQueue(label: "com.atmrjames.Megaball.audioSession")
+    // Audio session calls block while the route is established, which iOS warns about when
+    // done on the main thread. They are serialised here instead, off the main thread.
+
+    private func configureSession(_ category: AVAudioSession.Category, activate: Bool, then work: (() -> Void)? = nil) {
+        sessionQueue.async {
+            do {
+                try AVAudioSession.sharedInstance().setCategory(category, mode: .default)
+                if activate {
+                    try AVAudioSession.sharedInstance().setActive(true)
+                }
+            } catch let error {
+                print("Audio session setup failed: ", error.localizedDescription)
+            }
+            work?()
+            // Playback runs here too. AVAudioPlayer implicitly activates the session, which
+            // triggers the same hang warning if play() is called on the main thread
+        }
+    }
+
+    func prepareSession() {
+        configureSession(.ambient, activate: false)
+        // Ambient by default so other apps' audio keeps playing when the game's music is off
+    }
+
+    func playMusic(sender: String? = "") {
         userSettings()
         if musicSetting! == false {
             return
@@ -45,24 +70,21 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         }
         // Only play title theme in main menu
         
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.soloAmbient, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-            player = try AVAudioPlayer(contentsOf: selectedTrackURL!)
-            player!.prepareToPlay()
-            player!.delegate = self
-            player!.numberOfLoops = -1
-            // Loop infinitely
-            DispatchQueue.global().async {
-                self.player!.play()
+        configureSession(.soloAmbient, activate: true) { [weak self] in
+            guard let self = self, let trackURL = selectedTrackURL else { return }
+            do {
+                let player = try AVAudioPlayer(contentsOf: trackURL)
+                player.delegate = self
+                player.numberOfLoops = -1
+                // Loop infinitely
+                player.volume = (self.gameInProgress ?? false) ? self.gameVolumeSet : self.menuVolumeSet
+                player.prepareToPlay()
+                player.play()
+                DispatchQueue.main.async { self.player = player }
+                // Published back on the main queue, where every other method touches it
+            } catch let error {
+                print("Music track failed: ", error.localizedDescription)
             }
-            if gameInProgress! {
-                player!.volume = gameVolumeSet
-            } else {
-                player!.volume = menuVolumeSet
-            }
-        } catch let error {
-            print("Music track failed: ", error.localizedDescription)
         }
     }
     
@@ -77,34 +99,28 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     
     func pauseMusic() {
         userSettings()
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
-        } catch let error {
-            print("Failed to set player to ambient: ", error.localizedDescription)
-        }
         player?.pause()
+        configureSession(.ambient, activate: false)
+        // Drop back to ambient while paused so other apps' audio is not held silent
     }
-    
+
     func resumeMusic() {
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.soloAmbient, mode: .default)
-        } catch let error {
-            print("Failed to set player to solo ambient: ", error.localizedDescription)
+        configureSession(.soloAmbient, activate: true) { [weak self] in
+            self?.player?.play()
         }
-        player?.play()
     }
-    
+
     func menuVolume() {
         userSettings()
         if musicSetting! {
-            player!.volume = menuVolumeSet
+            player?.volume = menuVolumeSet
         }
     }
-    
+
     func gameVolume() {
         userSettings()
         if musicSetting! {
-            player!.volume = gameVolumeSet
+            player?.volume = gameVolumeSet
         }
     }
     
