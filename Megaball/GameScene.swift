@@ -591,9 +591,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 	var countdownStarted: Bool = false
 	
-	var screenRatio: CGFloat = 0.0
-	var screenSize: String = ""
-	
 //MARK: - Animation Setup
 	
 	let timerScaleUp = SKAction.scale(to: 1.25, duration: 0.05)
@@ -1012,7 +1009,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpTray.position.x = 0
 		
 		scoreBacker.isHidden = true
-		
+		// Authored visible in GameScene.sks, so it has to be hidden explicitly. It was a
+		// 20%-black scrim over the top of the playfield, shown on everything except
+		// notched iPhones to separate the HUD from the field. The safe-area rewrite gives
+		// every device the same top chrome, and the darkening is no longer wanted anywhere
+
 		let safeTopEdge = frame.size.height/2 - (self.view?.safeAreaInsets.top ?? 0) - layoutUnit
 		// One layout unit of breathing room below the inset. Without it the score and
 		// multiplier sit hard against the top edge and clip, most visibly on iPad where
@@ -1023,26 +1024,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// One arrangement for every device. Both are measured from safeAreaInsets rather
 		// than the screen edge, so nothing can overhang into the playfield
 		
-		scoreBacker.zPosition = 9
-		scoreBacker.size.width = gameWidth
-		scoreBacker.size.height = pauseButtonSize*2
-		scoreBacker.position.x = 0
-		scoreBacker.position.y = powerUpTray.position.y - powerUpTray.size.height/2 - scoreBacker.size.height/2
-		
 		scoreLabel.position.x = frame.size.width/2 - labelSpacing*2
 		scoreLabel.position.y = pauseButton.position.y + fontSize/4 + labelSpacing/2
 		scoreLabel.fontSize = fontSize
 		scoreLabel.zPosition = 10
 		
-		if screenSize == "Pad" {
+		if isRegularWidth {
 			pauseButton.position.x = sideScreenBlockLeft.position.x + sideScreenBlockLeft.size.width/2 + pauseButton.size.width/2 + layoutUnit/2
 			scoreLabel.position.x = sideScreenBlockRight.position.x - sideScreenBlockRight.size.width/2 - layoutUnit/2
 		}
-		
-		if screenSize != "X" {
-			scoreBacker.isHidden = false
-		}
-		
+		// Anchor the HUD to the playfield edge rather than the screen edge where the side
+		// borders are wide, so it does not drift out into the border
+
 		multiplierLabel.position.x = scoreLabel.position.x
 		multiplierLabel.position.y = scoreLabel.position.y - labelSpacing - fontSize/2
 		multiplierLabel.fontSize = fontSize
@@ -4030,18 +4023,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// between them, in layout units. Must cover everything stacked below the safe area
 	// inset, or the tray overhangs into the playfield
 
+	var isRegularWidth: Bool {
+		self.view?.traitCollection.horizontalSizeClass == .regular
+	}
+	// iPad-class width. Replaces the old screenRatio device-class guess: it is the
+	// supported signal for this, and unlike a ratio test it reports .compact for a
+	// narrow multitasking slot, which is what the HUD placement below actually wants
+
 	func computeLayoutMetrics() {
-		screenRatio = frame.size.height/frame.size.width
-
-		if screenRatio > 2 {
-			screenSize = "X"
-		} else if screenRatio < 1.7 {
-			screenSize = "Pad"
-		} else {
-			screenSize = "8"
-		}
-		// Screen size and device detected
-
 		let insets = self.view?.safeAreaInsets ?? .zero
 		let availableHeight = frame.size.height - insets.top - insets.bottom
 		let availableWidth = frame.size.width - insets.left - insets.right
@@ -4069,7 +4058,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// The bar is the HUD and power-up tray, sitting below the real inset rather than
 		// a fixed multiple guessed from screen height
 
-		if screenSize == "Pad" {
+		if isRegularWidth {
 			pauseButtonSize = layoutUnit*1.5
 			fontSize = fontSize*1.5
 		}

@@ -26,11 +26,7 @@ extension GameScene {
         scoreLabel.position.y = life.position.y-2
         scoreLabel.text = "\(endlessHeight)m"
         // Setup score label for endless mode
-        
-        if screenSize != "X" {
-            scoreBacker.isHidden = false
-        }
-                
+
         height01 = Int.random(in: 0...25)
         height02 = Int.random(in: height01!...50)
         height03 = Int.random(in: height02!...75)
