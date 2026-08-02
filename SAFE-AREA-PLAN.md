@@ -56,6 +56,40 @@ Three conclusions:
    symptoms: content bleeding under the top bar on some devices, and wasted space on
    others.
 
+## Measured baseline
+
+Instrumented build, iPhone 17 Pro, entering endless mode:
+
+```
+LAYOUT-BASELINE scene=402x874 class=X insets(t:0.0 b:0.0 l:0.0 r:0.0)
+                gameWidth=404.63 layoutUnit=18.3923 topBar=136.10
+                playHeight=737.90 ratio=1.8236 sideBorder=-1.31
+```
+
+Matches the computed table exactly, which confirms the model above.
+
+**But note `insets` are all zero.** The geometry is computed in
+`GameScene.didMove(to view:)`, which runs before the view has been laid out, so
+`view.safeAreaInsets` is not yet populated. This is a blocker for the rewrite as
+originally sketched: reading insets at that point would always give zero and silently
+produce the wrong layout.
+
+Options, to decide when implementing:
+
+1. **Read from the window instead.** `view.window?.safeAreaInsets` may be populated
+   earlier, since the window exists before the scene view is laid out. Cheapest change
+   if it works — needs verifying, not assuming.
+2. **Defer the geometry pass.** Move layout out of `didMove(to view:)` into a first
+   `didChangeSize(_:)` or a one-shot on the first `update(_:)`, by which point insets
+   are valid. More correct, and a prerequisite for resizable windows later, but touches
+   more of the setup sequence.
+3. **Recompute on change.** Layout responds to `didChangeSize(_:)` regardless. Needed
+   eventually for iPad multitasking and rotation, so option 2 tends towards this anyway.
+
+Option 2 is the more honest fix and aligns with the follow-on work. Option 1 is worth a
+quick test first: if the window reports correct insets during `didMove`, it is a much
+smaller change for this release.
+
 ## The rewrite
 
 Replace the device-class guess with a measurement. Keep the ratio explicit.

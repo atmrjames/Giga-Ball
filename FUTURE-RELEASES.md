@@ -199,6 +199,18 @@ looking pixelated.
 - Floating-point precision on physics bodies; ball speed below ~150 px/s causes bounce
   gliding
 
+### Liquid Glass across the rest of the UI
+The app icons adopted Icon Composer and Liquid Glass in 1.3. The interface has not.
+
+- In-app icons updated to Liquid Glass versions
+- UI elements adopt standard system controls and Liquid Glass rather than the current
+  custom-drawn styling
+- Menu items and table view cell backgrounds adopt Liquid Glass materials
+
+Sits naturally alongside menu modernisation, and after the safe-area work for the same
+reason: restyling components on top of a layout that is about to be rewritten means
+doing it twice.
+
 ### Menu modernisation
 Best done *after* the 1.3 safe-area work, not before — several of these are symptoms of
 the current fixed layout, and redesigning around a broken foundation wastes the effort.

@@ -824,6 +824,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			fontSize = fontSize*1.5
 		}
 		
+		logLayoutBaseline()
+		// TEMPORARY: records the geometry this build produces so the safe-area rewrite
+		// can be diffed against it. Remove once the rewrite is verified.
+
 		labelSpacing = fontSize/1.5
 		minPaddleGap = brickHeight*4
 		
@@ -4059,6 +4063,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
+	func logLayoutBaseline() {
+		let insets = self.view?.safeAreaInsets ?? .zero
+		let playHeight = frame.size.height - screenBlockTopHeight
+		let ratio = playHeight / gameWidth
+		print(String(format:
+			"LAYOUT-BASELINE scene=%.0fx%.0f class=%@ insets(t:%.1f b:%.1f l:%.1f r:%.1f) gameWidth=%.2f layoutUnit=%.4f topBar=%.2f playHeight=%.2f ratio=%.4f sideBorder=%.2f",
+			frame.size.width, frame.size.height, screenSize,
+			insets.top, insets.bottom, insets.left, insets.right,
+			gameWidth, layoutUnit, screenBlockTopHeight, playHeight, ratio, screenBlockSideWidth))
+	}
+	// TEMPORARY instrumentation for the safe-area rewrite
+
 	func showPauseMenu(sender: String) {
 		
 		self.removeAction(forKey: "gameTimer")
