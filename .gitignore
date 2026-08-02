@@ -1,0 +1,27 @@
+# Large source media kept alongside the project but deliberately not versioned.
+# Around 4 GB in total — a stray `git add -A` will otherwise sweep it all in.
+# These are untracked by choice; back them up separately, not through git.
+Marketing Material/
+App Store Connect Media/
+Audio Files/
+Graphic Files/
+*.pages
+Giga-Ball Blog, September 2020.pdf
+Giga-Ball Premium_promocode.pdf
+
+# Note: "App Icons/" IS tracked — it holds the icon preview images the settings
+# picker loads at runtime, so it must stay in the repository.
+
+# Xcode user state — per-developer, not project configuration
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Build output
+build/
+DerivedData/
+*.xcarchive
+*.ipa
+
+# macOS
+.DS_Store
