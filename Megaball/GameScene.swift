@@ -786,11 +786,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		sideScreenBlockRight.size.width = screenBlockSideWidth
 		sideScreenBlockLeft.position.x = -gameWidth/2-screenBlockSideWidth/2
 		sideScreenBlockRight.position.x = gameWidth/2+screenBlockSideWidth/2
-		
-		logLayoutBaseline()
-		// TEMPORARY: records the geometry this build produces so the safe-area rewrite
-		// can be diffed against it. Remove once the rewrite is verified.
-
 
 		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth)
 		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight)
@@ -4084,23 +4079,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Every size-dependent value derived from the scene bounds. Pure maths, no node
 	// changes, so it is safe to call again whenever the bounds or safe area change.
-
-	func logLayoutBaseline() {
-		let viewInsets = self.view?.safeAreaInsets ?? .zero
-		let windowInsets = self.view?.window?.safeAreaInsets ?? .zero
-		print(String(format: "LAYOUT-INSETS view(t:%.1f b:%.1f) window(t:%.1f b:%.1f) hasWindow=%@",
-			viewInsets.top, viewInsets.bottom, windowInsets.top, windowInsets.bottom,
-			self.view?.window == nil ? "NO" : "YES"))
-		let insets = windowInsets
-		let playHeight = frame.size.height - screenBlockTopHeight - insets.bottom
-		let ratio = playHeight / gameWidth
-		print(String(format:
-			"LAYOUT-BASELINE scene=%.0fx%.0f class=%@ insets(t:%.1f b:%.1f l:%.1f r:%.1f) gameWidth=%.2f layoutUnit=%.4f topBar=%.2f playHeight=%.2f ratio=%.4f sideBorder=%.2f",
-			frame.size.width, frame.size.height, screenSize,
-			insets.top, insets.bottom, insets.left, insets.right,
-			gameWidth, layoutUnit, screenBlockTopHeight, playHeight, ratio, screenBlockSideWidth))
-	}
-	// TEMPORARY instrumentation for the safe-area rewrite
 
 	func showPauseMenu(sender: String) {
 		
