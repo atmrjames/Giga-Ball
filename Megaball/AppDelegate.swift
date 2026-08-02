@@ -32,7 +32,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     @objc func onUbiquitousKeyValueStoreDidChangeExternally(notification:Notification) {
         CloudKitHandler().loadFromiCloud()
-        NotificationCenter.default.post(name: .refreshViewForSync, object: nil)
+        // Reads the key-value store into UserDefaults. No UI, so it stays on whichever
+        // thread the notification arrived on
+
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .refreshViewForSync, object: nil)
+        }
+        // iCloud delivers didChangeExternallyNotification on a background thread, and
+        // NotificationCenter runs observers synchronously on the posting thread. All
+        // twelve observers of this refresh the UI - reloading table views, reapplying
+        // motion effects, reading view frames - so posting from here without hopping to
+        // main touched UIKit off the main thread every time a sync arrived
     }
     // Runs when there's an update to the iCloud database
 }
