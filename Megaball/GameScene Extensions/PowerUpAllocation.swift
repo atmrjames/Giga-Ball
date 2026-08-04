@@ -414,16 +414,20 @@ extension GameScene {
 //        powerUpProbFactor = 2
         // Testing
         
-        for i in powerUpProbArray {
-            if i > totalStatsArray[0].powerUpUnlockedArray.count-1 {
-                return
-            }
-            if totalStatsArray[0].powerUpUnlockedArray[i] == false {
+        let unlocked = totalStatsArray[0].powerUpUnlockedArray
+        for i in powerUpProbArray.indices where i < unlocked.count {
+            if unlocked[i] == false {
                 powerUpProbArray[i] = 0
             }
         }
-        // Check if power-ups have been unlocked, if not, set their probability to zero
-                        
+        // Check if power-ups have been unlocked, if not, set their probability to zero.
+        // Iterates indices: this previously read `for i in powerUpProbArray`, which
+        // walks the probability *values* and used them as indices. No authored weight
+        // exceeds 10, so locking anything above index 10 did nothing, while indices
+        // that happened to coincide with a weight were zeroed whether locked or not.
+        // The bounds check was also a `return`, which skipped the sum below and left it
+        // stale. Inert until now only because every power-up is force-unlocked
+
         powerUpProbSum = powerUpProbArray.reduce(0, +)
     }
 }

@@ -155,50 +155,63 @@ final class PowerUpAllocationTests: XCTestCase {
         return scene.powerUpProbArray
     }
 
-    func testLockingAPowerUpHasNoEffectOnWhetherItDrops() {
-        // CHARACTERISATION TEST - this pins a bug, not intended behaviour.
-        //
-        // The unlock filter reads:
+    func testLockingAPowerUpStopsItDropping() {
+        // Regression test for the unlock filter. It used to read
         //
         //     for i in powerUpProbArray { ... powerUpProbArray[i] = 0 }
         //
-        // `for i in` over an array of Int iterates the *values*. Those values
-        // are probability weights - 0, 1, 3, 5, 7, 10 - and they are then used
-        // as *indices* into both powerUpUnlockedArray and powerUpProbArray. It
-        // should be iterating indices.
+        // which walks the probability *values* - 0, 1, 3, 5, 7, 10 - and uses
+        // them as indices. No authored weight exceeds 10, so locking anything
+        // above index 10 did nothing at all: Lasers at index 22 still dropped
+        // at full probability for a player who had not earned it.
         //
-        // The observable consequence: no authored weight exceeds 10, so locking
-        // any power-up whose index is above 10 changes nothing at all. Lasers
-        // sits at index 22, so a player who has not unlocked Lasers still has
-        // them drop at full probability.
-        //
-        // This is inert today only because checkPremium() force-unlocks
-        // everything, so the filter never finds a locked entry. Removing the
-        // premiumSetting force-unlock switches it on. Fixing the loop to
-        // iterate indices is a no-op right now and a correctness fix later.
+        // Index 22 is the case the old loop could never reach, so it is the one
+        // worth pinning.
         let lasers = 22
         let baseline = table(forLevel: 2, locking: nil)
         let withLasersLocked = table(forLevel: 2, locking: lasers)
 
         XCTAssertGreaterThan(baseline[lasers], 0,
                              "Fixture assumes Lasers can drop on this level")
-        XCTAssertEqual(withLasersLocked, baseline,
-                       "Locking Lasers changed nothing - the filter never sees index 22")
-        XCTAssertGreaterThan(withLasersLocked[lasers], 0,
-                             "A locked power-up still drops at full probability")
+        XCTAssertEqual(withLasersLocked[lasers], 0,
+                       "A locked power-up must not drop")
     }
 
-    func testLockingALowIndexPowerUpDoesReachTheFilter() {
-        // The other half of the same bug: indices that happen to coincide with
-        // a weight value do get zeroed, so the filter looks like it works if
-        // you only ever test the first few power-ups.
-        let lowIndex = 3
-        let baseline = table(forLevel: 2, locking: nil)
-        let locked = table(forLevel: 2, locking: lowIndex)
+    func testLockingAPowerUpAffectsOnlyThatPowerUp() {
+        // The other half of the same bug: indices that coincided with a weight
+        // value were zeroed whether or not they were locked.
+        for locked in [0, 3, 10, 14, 22, 27] {
+            let baseline = table(forLevel: 2, locking: nil)
+            let filtered = table(forLevel: 2, locking: locked)
 
-        XCTAssertGreaterThan(baseline[lowIndex], 0)
-        XCTAssertEqual(locked[lowIndex], 0,
-                       "Index 3 coincides with a weight of 3, so it is reached")
+            var expected = baseline
+            expected[locked] = 0
+            XCTAssertEqual(filtered, expected,
+                           "Locking index \(locked) changed some other power-up")
+        }
+    }
+
+    func testEveryLockedPowerUpIsFilteredOnAFreshInstall() {
+        // The state a player would be in once the premiumSetting force-unlock
+        // is removed: several power-ups genuinely locked.
+        let stats = TotalStats()
+        let scene = makeScene(stats: stats)
+        scene.powerUpProbAllocation(levelNumber: 2)
+
+        let stillDroppable = stats.powerUpUnlockedArray.indices.filter {
+            !stats.powerUpUnlockedArray[$0] && scene.powerUpProbArray[$0] > 0
+        }
+        XCTAssertTrue(stillDroppable.isEmpty,
+                      "Locked power-ups can still drop: \(stillDroppable)")
+    }
+
+    func testSumIsRecalculatedAfterFiltering() {
+        // The bounds check used to be a `return`, which skipped the sum and
+        // left powerUpProbSum stale from the previous level. The draw divides
+        // by that sum.
+        let scene = makeScene(stats: TotalStats())
+        scene.powerUpProbAllocation(levelNumber: 2)
+        XCTAssertEqual(scene.powerUpProbSum, scene.powerUpProbArray.reduce(0, +))
     }
 
     func testUnlockFilterIsInertWhileEverythingIsUnlocked() {
