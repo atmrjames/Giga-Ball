@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF1200000000000 /* LevelPackSetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1100000000000 /* LevelPackSetupTests.swift */; };
+		1AF1200000000001 /* TotalStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1100000000001 /* TotalStatsTests.swift */; };
+		1AF1200000000002 /* UnlockStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1100000000002 /* UnlockStateTests.swift */; };
+		1AF1200000000003 /* PowerUpAllocationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1100000000003 /* PowerUpAllocationTests.swift */; };
+		1AF1200000000004 /* CloudKitHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1100000000004 /* CloudKitHandlerTests.swift */; };
 		1A04BEFA238FE42700EB6150 /* Level009.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A04BEF9238FE42700EB6150 /* Level009.swift */; };
 		1A05BF4D23ED9DD9003E668F /* LevelSelectorTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A05BF4B23ED9DD9003E668F /* LevelSelectorTableViewCell.swift */; };
 		1A05BF4E23ED9DD9003E668F /* LevelSelectorTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */; };
@@ -242,6 +247,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF1100000000000 /* LevelPackSetupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelPackSetupTests.swift; sourceTree = "<group>"; };
+		1AF1100000000001 /* TotalStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalStatsTests.swift; sourceTree = "<group>"; };
+		1AF1100000000002 /* UnlockStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockStateTests.swift; sourceTree = "<group>"; };
+		1AF1100000000003 /* PowerUpAllocationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpAllocationTests.swift; sourceTree = "<group>"; };
+		1AF1100000000004 /* CloudKitHandlerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitHandlerTests.swift; sourceTree = "<group>"; };
+		1AF1000000000002 /* GigaBallTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaBallTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A04BEF9238FE42700EB6150 /* Level009.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level009.swift; sourceTree = "<group>"; };
 		1A05BF4B23ED9DD9003E668F /* LevelSelectorTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelSelectorTableViewCell.swift; sourceTree = "<group>"; };
 		1A05BF4C23ED9DD9003E668F /* LevelSelectorTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LevelSelectorTableViewCell.xib; sourceTree = "<group>"; };
@@ -480,6 +491,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1AF1000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1A5A947E2309E4F30076D635 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -493,6 +511,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1AF100000000000B /* GigaBallTests */ = {
+			isa = PBXGroup;
+			children = (
+				1AF1100000000000 /* LevelPackSetupTests.swift */,
+				1AF1100000000001 /* TotalStatsTests.swift */,
+				1AF1100000000002 /* UnlockStateTests.swift */,
+				1AF1100000000003 /* PowerUpAllocationTests.swift */,
+				1AF1100000000004 /* CloudKitHandlerTests.swift */,
+			);
+			path = GigaBallTests;
+			sourceTree = "<group>";
+		};
 		1A05BF4F23ED9DDD003E668F /* LevelSelectorCustomCell */ = {
 			isa = PBXGroup;
 			children = (
@@ -654,6 +684,7 @@
 			isa = PBXGroup;
 			children = (
 				1A5A94832309E4F30076D635 /* Megaball */,
+				1AF100000000000B /* GigaBallTests */,
 				1A67FCEC245E57EC00BC7129 /* App Icons */,
 				1A5A94822309E4F30076D635 /* Products */,
 				574CE7D6FC78ECBFB980A8C3 /* Frameworks */,
@@ -664,6 +695,7 @@
 			isa = PBXGroup;
 			children = (
 				1A5A94812309E4F30076D635 /* Giga-Ball.app */,
+				1AF1000000000002 /* GigaBallTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -985,6 +1017,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1AF1000000000001 /* GigaBallTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1AF1000000000006 /* Build configuration list for PBXNativeTarget "GigaBallTests" */;
+			buildPhases = (
+				1AF1000000000003 /* Sources */,
+				1AF1000000000004 /* Frameworks */,
+				1AF1000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1AF1000000000009 /* PBXTargetDependency */,
+			);
+			name = GigaBallTests;
+			productName = GigaBallTests;
+			productReference = 1AF1000000000002 /* GigaBallTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		1A5A94802309E4F30076D635 /* Megaball */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1A5A94992309E4F40076D635 /* Build configuration list for PBXNativeTarget "Megaball" */;
@@ -1003,6 +1053,24 @@
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXTargetDependency section */
+		1AF1000000000009 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A5A94802309E4F30076D635 /* Megaball */;
+			targetProxy = 1AF100000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		1AF100000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A5A94792309E4F30076D635 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A5A94802309E4F30076D635;
+			remoteInfo = Megaball;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXProject section */
 		1A5A94792309E4F30076D635 /* Project object */ = {
@@ -1032,11 +1100,19 @@
 			projectRoot = "";
 			targets = (
 				1A5A94802309E4F30076D635 /* Megaball */,
+				1AF1000000000001 /* GigaBallTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1AF1000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1A5A947F2309E4F30076D635 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1123,6 +1199,18 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1AF1000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1AF1200000000000 /* LevelPackSetupTests.swift in Sources */,
+				1AF1200000000001 /* TotalStatsTests.swift in Sources */,
+				1AF1200000000002 /* UnlockStateTests.swift in Sources */,
+				1AF1200000000003 /* PowerUpAllocationTests.swift in Sources */,
+				1AF1200000000004 /* CloudKitHandlerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1A5A947D2309E4F30076D635 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1305,6 +1393,40 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		1AF1000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = ZAGZPD36YG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball.GigaBallTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Giga-Ball.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Giga-Ball";
+			};
+			name = Debug;
+		};
+		1AF1000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = ZAGZPD36YG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball.GigaBallTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Giga-Ball.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Giga-Ball";
+			};
+			name = Release;
+		};
 		1A5A94972309E4F40076D635 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1520,6 +1642,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1AF1000000000006 /* Build configuration list for PBXNativeTarget "GigaBallTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1AF1000000000007 /* Debug */,
+				1AF1000000000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		1A5A947C2309E4F30076D635 /* Build configuration list for PBXProject "Megaball" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
