@@ -25,12 +25,19 @@ import XCTest
 final class UnlockStateTests: XCTestCase {
 
     /// What `MenuViewController.checkPremium()` does to a stats blob, minus the
-    /// UserDefaults writes. Kept here so the tests exercise the same transform
-    /// the app applies, and so the removal has something concrete to compare to.
+    /// UserDefaults writes and the encode. Kept here so the tests exercise the
+    /// same transform the app applies, and so the removal has something
+    /// concrete to compare to.
+    ///
+    /// All five unlock arrays, matching checkPremium() line for line. If that
+    /// function grows a sixth, this must follow it or these tests quietly stop
+    /// describing the app.
     private func applyForceUnlock(to stats: TotalStats) {
         stats.levelPackUnlockedArray = stats.levelPackUnlockedArray.map { _ in true }
         stats.levelUnlockedArray = stats.levelUnlockedArray.map { _ in true }
         stats.powerUpUnlockedArray = stats.powerUpUnlockedArray.map { _ in true }
+        stats.themeUnlockedArray = stats.themeUnlockedArray.map { _ in true }
+        stats.appIconUnlockedArray = stats.appIconUnlockedArray.map { _ in true }
     }
 
     // MARK: - The default state, before any force-unlock
@@ -98,20 +105,34 @@ final class UnlockStateTests: XCTestCase {
         XCTAssertNotEqual(fresh.powerUpUnlockedArray, forced.powerUpUnlockedArray)
     }
 
-    func testForceUnlockLeavesThemesAndIconsAlone() {
-        // checkPremium() rewrites packs, levels and power-ups but NOT themes or
-        // app icons, even though the spec describes all four as unlocked by
-        // completing packs. So themes and icons are still genuinely earned
-        // while everything else is given away. Recorded because it is the kind
-        // of asymmetry that a removal would otherwise quietly normalise in the
-        // wrong direction.
+    func testForceUnlockOpensThemesAndIconsToo() {
+        // checkPremium() rewrites all five arrays, so the progression described
+        // in the specification - complete a pack, earn the next theme and icon
+        // - does not actually gate anything today. Everything is open from
+        // first launch.
         let stats = TotalStats()
         applyForceUnlock(to: stats)
 
-        XCTAssertEqual(stats.themeUnlockedArray.filter { $0 }.count, 1,
-                       "Themes are untouched by the force-unlock")
-        XCTAssertEqual(stats.appIconUnlockedArray.filter { $0 }.count, 1,
-                       "App icons are untouched by the force-unlock")
+        XCTAssertTrue(stats.themeUnlockedArray.allSatisfy { $0 })
+        XCTAssertTrue(stats.appIconUnlockedArray.allSatisfy { $0 })
+    }
+
+    func testNothingIsLeftLockedAfterTheForceUnlock() {
+        // The whole of the player's unlock state, in one assertion. This is the
+        // line the premiumSetting removal must not cross: whatever replaces
+        // checkPremium(), an existing player must not end up with less.
+        let stats = TotalStats()
+        applyForceUnlock(to: stats)
+
+        let stillLocked: [String] = [
+            stats.levelPackUnlockedArray.contains(false) ? "packs" : nil,
+            stats.levelUnlockedArray.contains(false) ? "levels" : nil,
+            stats.powerUpUnlockedArray.contains(false) ? "power-ups" : nil,
+            stats.themeUnlockedArray.contains(false) ? "themes" : nil,
+            stats.appIconUnlockedArray.contains(false) ? "icons" : nil
+        ].compactMap { $0 }
+
+        XCTAssertTrue(stillLocked.isEmpty, "Left locked: \(stillLocked)")
     }
 
     func testForceUnlockIsIdempotent() {

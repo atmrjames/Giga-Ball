@@ -87,7 +87,7 @@ class PreGame: GKState {
             scene.numberOfLives = 3
         }
         // 0 lives for endless mode, 3 for all other levels
-        scene.multiplier = 1.0
+        scene.multiplier = Scoring.multiplierBase
         scene.gameoverStatus = false
         
         scene.deathsPerLevel = 0

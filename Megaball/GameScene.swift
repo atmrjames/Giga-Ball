@@ -1160,8 +1160,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Set default probabilities
 		// Power-up parameters
 		
-		brickDestroyScore = 10
-		levelCompleteScore = 100
+		brickDestroyScore = Scoring.brickDestroyed
+		levelCompleteScore = Scoring.levelCompleted
 		// Score properties
 		
 //MARK: - Score Database Setup
@@ -1574,8 +1574,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Update score
 
-		multiplier = 1.0
-		scoreFactorString = String(format:"%.1f", multiplier)
+		multiplier = Scoring.multiplierBase
+		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
@@ -1954,7 +1954,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		
 		if sprite.texture == brickMultiHit1Texture || sprite.texture == brickMultiHit2Texture || sprite.texture == brickMultiHit3Texture || sprite.isHidden {
-			levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
+			levelScore = levelScore + Scoring.award(brickDestroyScore, multiplier: multiplier)
 			if endlessMode == false {
 				scoreLabel.text = String(totalScore + levelScore)
 			}
@@ -2075,23 +2075,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if sprite.texture != brickIndestructible2Texture && sprite.texture != brickIndestructible1Texture {
 			
-			if brickRemovalCounter == 19 && endlessMode == false {
-				if multiplier < 2.0 {
-					multiplier+=0.1
-				}
+			if brickRemovalCounter == Scoring.bricksPerMultiplierStep - 1 && endlessMode == false {
+				multiplier = Scoring.steppedForBrick(multiplier)
 				brickRemovalCounter = 0
 			} else {
 				brickRemovalCounter+=1
 			}
 			// Update multiplier
 			
-			levelScore = levelScore + Int(Double(brickDestroyScore) * multiplier)
+			levelScore = levelScore + Scoring.award(brickDestroyScore, multiplier: multiplier)
 		}
 		
 		if endlessMode == false {
 			scoreLabel.text = String(totalScore + levelScore)
 		}
-		scoreFactorString = String(format:"%.1f", multiplier)
+		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
@@ -2111,12 +2109,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			checkPaddleHitsAchievement()
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
-			levelTimerBonus = levelTimerBonus - levelTimerValue
-			if levelTimerBonus < 0 {
-				levelTimerBonus = 0
-			}
-			levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
-			levelScore = levelScore + levelCompleteScore
+			levelTimerBonus = Scoring.timerBonus(from: levelTimerBonus, elapsed: levelTimerValue, multiplier: multiplier)
+			levelScore = levelScore + Scoring.levelCompletionAward()
 			scoreLabel.text = String(totalScore + levelScore)
             gameState.enter(InbetweenLevels.self)
 			return
@@ -2268,21 +2262,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Check for endless mode height achievements
 		
-		if multiplier < 2.0 {
-			multiplier = multiplier + 0.1
-			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-			if multiplier >= 2.0 {
-				multiplier = 2.0
-				multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-			}
+		if multiplier < Scoring.multiplierCap {
+			multiplier = Scoring.steppedForBonus(multiplier)
+			multiplierLabel.fontColor = Scoring.isAtCap(multiplier)
+				? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+				: #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		}
 		
-		levelScore = levelScore + Int(100 * multiplier)
+		levelScore = levelScore + Scoring.award(100, multiplier: multiplier)
 		if endlessMode == false {
 			scoreLabel.text = String(totalScore + levelScore)
 		}
 		
-		scoreFactorString = String(format:"%.1f", multiplier)
+		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
@@ -3262,7 +3254,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case powerUpMultiplier:
 		// Multiplier
 			removeAction(forKey: "multiplierAnimation")
-			multiplier = 2.0
+			multiplier = Scoring.multiplierCap
 			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[12]+=1
 			multiplierLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "multiplierAnimation")
@@ -3271,7 +3263,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case powerUpMultiplierReset:
 		// Mutliplier reset to 1
 			removeAction(forKey: "multiplierAnimation")
-			multiplier = 1.0
+			multiplier = Scoring.multiplierBase
 			brickRemovalCounter = 0
 			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[13]+=1
@@ -3284,11 +3276,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			clearSavedGame()
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
-			levelTimerBonus = levelTimerBonus - levelTimerValue
-			if levelTimerBonus < 0 {
-				levelTimerBonus = 0
-			}
-			levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
+			levelTimerBonus = Scoring.timerBonus(from: levelTimerBonus, elapsed: levelTimerValue, multiplier: multiplier)
 			if soundsSetting! {
 				self.run(levelCompleteSound)
 			}
@@ -3413,17 +3401,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Power up set
 			if bricksLeft == 0 && endlessMode == false {
 				checkPaddleHitsAchievement()
-				levelScore = levelScore + levelCompleteScore
+				levelScore = levelScore + Scoring.levelCompletionAward()
 				if endlessMode == false {
 					scoreLabel.text = String(totalScore + levelScore)
 				}
 				self.removeAction(forKey: "gameTimer")
 				// Stop the level timer
-				levelTimerBonus = levelTimerBonus - levelTimerValue
-				if levelTimerBonus < 0 {
-					levelTimerBonus = 0
-				}
-				levelTimerBonus = Int(Double(levelTimerBonus)*multiplier)
+				levelTimerBonus = Scoring.timerBonus(from: levelTimerBonus, elapsed: levelTimerValue, multiplier: multiplier)
 				if soundsSetting! {
 					self.run(levelCompleteSound)
 				}
@@ -3808,23 +3792,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Power-up collection achievements
 
 		powerUpsCollectedPerLevel+=1
-        levelScore = levelScore + Int(Double(powerUpScore) * multiplier)
-		multiplier = multiplier + powerUpMultiplierScore
-		if multiplier < 1.0 {
-			multiplier = 1.0
-			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-		}
-		if multiplier >= 2.0 {
-			multiplier = 2.0
-			multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-		} else {
-			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-		}
+        levelScore = levelScore + Scoring.award(powerUpScore, multiplier: multiplier)
+		multiplier = Scoring.adjusted(multiplier, by: powerUpMultiplierScore)
+		multiplierLabel.fontColor = Scoring.isAtCap(multiplier)
+			? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+			: #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		// Ensure multiplier never goes below 1 or above 2
 		if endlessMode == false {
 			scoreLabel.text = String(totalScore + levelScore)
 		}
-		scoreFactorString = String(format:"%.1f", multiplier)
+		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
@@ -3901,7 +3878,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.removeAllActions()
         // Stop all timers and animations
 		powerUpsOnScreen = 0
-		multiplier = 1.0
+		multiplier = Scoring.multiplierBase
 		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
 		ball.physicsBody!.linearDamping = ballLinearDampening
