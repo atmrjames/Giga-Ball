@@ -1,6 +1,6 @@
 # Endless Mode II — design specification
 
-**Status: draft, revision 3.** Nothing here is built. This is a design document, unlike
+**Status: draft, revision 4.** Nothing here is built. This is a design document, unlike
 [SPECIFICATION.md](SPECIFICATION.md), which describes the app as it stands.
 
 **What this is:** the design for a new game mode, added alongside the existing Classic and
@@ -65,7 +65,34 @@ existing power-ups, unchanged. Paddle, ball, physics, multiplier and scoring rul
 
 ---
 
-## 4. New brick types
+## 4. Brick types
+
+### 4.0 The full set
+
+Existing types are unchanged; the classification is for the registry (§8.4). **Size is a
+separate axis from type** — a Big brick can be Multi-hit, a Tiny brick can be Exploding.
+
+| Type | Status | Behaviour |
+|---|---|---|
+| Normal | Existing | One hit. Carries a colour, which affects its score |
+| Multi-hit | Existing | Four stages; each hit steps it down |
+| Indestructible ×2 | Existing | Not destroyed by a normal ball. Cleared by Zap, Giga-Ball, Wrecking Ball or an explosion |
+| Invisible | Existing | Solid but not drawn until struck |
+| Spinning | New | Rotates; visual only (§4.1) |
+| Flashing | New | Alternates solid and passable (§4.2) |
+| Rounded | New | Circular body, unpredictable deflection (§4.5) |
+| Gravity | New | Falls into gaps below it (§4.6) |
+| Directional | New | Destroyed from one side only (§4.7) |
+| Moving | New | Wanders within a reserved region (§4.8) |
+| Exploding | New | Destroys its eight neighbours (§4.9) |
+| Spawner | New | Creates new bricks when destroyed (§4.10) |
+| Portal | New | Sends the ball elsewhere (§4.11) |
+
+| Size | Status | Occupies |
+|---|---|---|
+| Tiny | New | A quarter cell — half width, half height |
+| Normal | Existing | One cell |
+| Big | New | 2×2 cells |
 
 ### 4.1 Spinning
 Rotates continuously, one direction or the other, at a fixed rate. Visual only — the
@@ -82,16 +109,13 @@ for a few seconds**. Styled like the Giga-Ball glow, yellow-green.
 Solid only while visible. If the ball overlaps the cell at the moment it would turn solid,
 the brick stays passable until the ball has left, so it can never trap the ball.
 
-### 4.3 Big
-Occupies 2×2 cells. **A size, not a type** — a Big brick can be Normal, Multi-hit,
-Indestructible, Spinning, Exploding and so on.
+### 4.3 Big and 4.4 Tiny
+Sizes rather than types (see the table above), so they combine with any type. Big occupies
+2×2 cells, Tiny a quarter cell.
 
-### 4.4 Tiny
-Occupies a quarter cell; four fit where one Normal brick would. Also a size, so it combines
-with types the same way.
-
-*4.3 and 4.4 are the main driver for the playfield abstraction (§8.1). If sub-cell sizing
-proves expensive, Tiny is the one to drop — Big alone still gives the size axis.*
+These are the main driver for the playfield abstraction (§8.1). Handled there by working
+the grid at **half-cell resolution**: Tiny is 1×1 half-cells, Normal 2×2, Big 4×4, so one
+integer grid expresses all three exactly.
 
 ### 4.5 Rounded
 A circular or heavily rounded physics body, so glancing hits deflect at angles a rectangle
@@ -118,6 +142,22 @@ Indestructible.
 **Explosions chain**, each brick detonating at most once per event, resolved in a single
 pass. Exploding bricks are rare enough that a long chain is unlikely — and a rare long
 chain is a good moment, not a problem.
+
+### 4.10 Spawner
+When destroyed, creates new bricks of other types in nearby empty cells. The counterpart
+to Exploding: one clears the field, this one refills it.
+
+**Needs bounding**, or a field can grow faster than it can be cleared. Proposed: spawns a
+fixed small number, never spawns another Spawner, and only into cells that are already
+empty — so it cannot displace anything or cascade.
+
+### 4.11 Portal
+Struck rather than destroyed. The ball entering one leaves from another Portal brick
+elsewhere in the field, keeping its speed.
+
+**Needs a pairing rule** and an exit direction. Proposed: Portals are placed in pairs, the
+ball leaves the far one travelling in the direction it entered, and a brief cooldown stops
+it re-entering the exit immediately and ping-ponging.
 
 ---
 
@@ -159,7 +199,7 @@ Deliberately *not* grouped, because they combine well:
 
 - Magnetism + Inert Paddle — drawn in, but unable to steer. Coherent and interesting
 - Flipped Angle + Magnetism — inverted steering plus attraction
-- Aura + Wrecking Ball — the aura only destroys, it does not bounce, so the rules do not fight
+- Aura + Wrecking Ball — the aura destroys without bouncing, the ball destroys and bounces; the two do different jobs at different radii
 - Portal Paddle + Wrap-Around — both change where the ball reappears, in different axes
 - Trajectory Line + Landing Marker — different information, no conflict
 
@@ -187,7 +227,7 @@ there, and the tier and stacking columns are proposals for review.
 
 | Power-up | Effect | Conflict | Tier | Timed | Stacking |
 |---|---|---|---|---|---|
-| Extra Ball | Gives an extra life | — | Uncommon | No | Repeats. See note |
+| Extra Ball | Gives an extra life | — | — | No | **Excluded from Endless II.** See note |
 | Lose A Ball | Loses the current life. Bad | — | Uncommon | No | Repeats |
 | Slow Ball | Slows the ball | Ball speed axis | Common | Yes | Deepens; Fast cancels |
 | Fast Ball | Speeds the ball up. Bad | Ball speed axis | Common | Yes | Deepens; Slow cancels |
@@ -216,15 +256,14 @@ there, and the tier and stacking columns are proposals for review.
 | Expand Ball | Makes the ball larger | Ball size axis | Common | Yes | Deepens; Shrink cancels |
 | Shrink Ball | Makes the ball smaller | Ball size axis | Common | Yes | Deepens; Expand cancels |
 
-**Two need decisions.**
+**Two are excluded.**
 
-- **Complete Level** has no meaning in a field with no end. **Proposed: excluded from
-  Endless II's drop table**, as it presumably already is from Endless.
-- **Extra Ball is a naming collision.** It grants a *life*; Multi-Ball adds a *ball in
-  play*. With both present in one mode, two power-ups called "ball" do different things.
-  **Proposed: rename the new one "Split Ball"**, which also describes it better — or rename
-  Extra Ball to "Extra Life" everywhere, which is clearer but changes existing modes'
-  wording. Worth a decision before icons are drawn.
+- **Complete Level** has no meaning in a field with no end, so it is not in the drop
+  table.
+- **Extra Ball is excluded from Endless II.** It grants a *life*, which is meaningless
+  where there is exactly one and no way to earn another - and it would have collided with
+  Multi-Ball, which adds a ball in play. Removing it settles the naming question too:
+  Multi-Ball keeps its name.
 
 ### 5.4 The new power-ups
 
@@ -239,11 +278,11 @@ the first is still active.
 | **Magnetism** | — | Uncommon | Yes | Extends, then strengthens | Curves the ball toward the paddle. Strength falls off with distance. Temporary, so it cannot make a run unloseable |
 | **Lock** | — | Rare | Yes | Extends duration | Freezes every active timed power-up; their timers stop. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends by itself, or by Key |
 | **Key** | — | Uncommon | No | n/a | Ends the Lock; timers resume. **Only drops while a Lock is active** — so its weight is set high *within that window*, rare overall but reliably available while it is possible |
-| **Laser Beam** | — | Rare | No | Fires again | One sustained vertical beam destroying a whole column including Indestructible. **Fires from the x-position of the ball nearest the paddle** — there is always at least one, whether in flight or resting on the paddle, or the run has ended |
+| **Laser Beam** | — | Rare | No | Fires again | A sustained vertical beam destroying a whole column including Indestructible. **One beam per ball in play**, each fired from its own x-position — so with four balls it clears four columns at once |
 | **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity |
 | **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other |
 | **Landing Marker** | — | Common | Yes | Extends duration | Marks where the ball will cross the paddle's line |
-| **Wrecking Ball** | `ballHitBehaviour` | Rare | Yes | Extends duration | Destroys any brick in one hit and does not bounce off bricks |
+| **Wrecking Ball** | `ballHitBehaviour` | Rare | Yes | Extends duration | Destroys any brick in one hit regardless of type, and **still bounces off it** — distinct from Giga-Ball, which passes through without destroying everything |
 | **Aura** | — | Uncommon | Yes | Extends, then grows | Glow of twice the ball's radius. Bricks touched by the aura are destroyed; the ball bounces only off bricks it touches itself |
 | **Randomised Bounce** | — | Uncommon | Yes | Extends duration | Bounce angles gain a random offset. Bad |
 | **Inert Paddle** | — | Uncommon | Yes | Extends duration | Paddle no longer influences bounce angle. Bad |
@@ -473,6 +512,9 @@ Settled in review, recorded so they are not re-argued.
 | Introduction schedule length | Tuned by play-testing. **Must not show everything in one run** |
 | Channels | **Replaced** by narrow conflict groups (§5.1) |
 | Level data refactor | **After** Endless II |
+| Complete Level, Extra Ball | **Excluded** from Endless II's drop table |
+| Multi-Ball's name | **Kept** — the collision went with Extra Ball |
+| Laser Beam with several balls | **One beam per ball** |
 
 ## 11. Still open
 
@@ -480,9 +522,4 @@ Settled in review, recorded so they are not re-argued.
    than an addition — the call comes when §8.1 is built, and Big alone still gives the size
    axis if it goes.
 2. **Rarity tuning.** How, rather than whether: §6.4.
-3. **The "ball" naming collision.** Extra Ball grants a life, Multi-Ball adds a ball in
-   play, and both are in Endless II. Proposed: rename the new one **Split Ball**. Needs
-   deciding before its icon is drawn (§5.3).
-4. **Does Extra Ball drop at all in Endless II?** A second life in a one-life mode is a
-   meaningful reward, but it changes what "one life" means. Excluding it keeps the mode
-   honest to its rules; including it makes a rare drop feel enormous.
+

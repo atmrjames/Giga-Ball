@@ -44,7 +44,11 @@ extension UIScrollView {
 final class ContentAwareTableView: UITableView {
 
     /// How far the content fades at an edge that has more beyond it.
-    private static let fadeLength: CGFloat = 28
+    ///
+    /// Deliberately more than half a row, so the fade lands across a cell rather than in
+    /// the gap between two - a partly faded row reads as "there is more" without the list
+    /// having to move.
+    private static let fadeLength: CGFloat = 48
 
     private let fadeMask = CAGradientLayer()
 
