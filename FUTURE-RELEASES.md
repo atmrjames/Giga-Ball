@@ -57,17 +57,27 @@ The ambitious features later in this document — multiplayer, a level editor, n
 types — all land in that 5,600-line file. Building them first recreates exactly the
 situation that made the app unmaintainable enough to break in the first place.
 
-So: **1.3 should be a foundations release.** Little of it is user-visible, but it makes
-1.4 onwards tractable.
+So: **the foundations come first.** Little of that part is user-visible, but it makes
+everything after it tractable — which is why, when 1.4's contents were folded into 1.3,
+they were folded in *after* the foundations rather than interleaved with them.
 
 ---
 
-## 1.3 — Foundations
+## 1.3 — Foundations, and the player-visible work that was 1.4
+
+**Scope note (August 2026).** 1.3 cannot ship until iOS 26 [sic — iOS 27] is released,
+which is several weeks out, so what was planned as 1.4 is folded in here rather than
+held back for a release that would follow immediately after. The foundations still come
+first within it, for the reason argued above: the player-visible work lands on top of
+them.
 
 **Status:** the safe-area rewrite, the monetisation removal, the test target, the audio
-session and the Icon Composer migration have all landed. What remains below is marked.
+session, the Icon Composer migration, the save-game format, the iCloud reset fix and the
+logging sweep have all landed. What remains below is marked.
 
-### ✅ Replace the device-class heuristic with safe-area layout
+### Foundations
+
+#### ✅ Replace the device-class heuristic with safe-area layout
 Done. `computeLayoutMetrics()` solves the play area in closed form from `safeAreaInsets`,
 holding the ratio at 1.8236. `screenSize` is gone; the two remaining iPad values test
 `horizontalSizeClass`. The scene is presented from `viewDidLayoutSubviews`, because insets
@@ -88,7 +98,7 @@ The original case, for reference — one rewrite resolves:
 Drive layout from `safeAreaInsets` and the actual scene size, and let the playfield adapt
 rather than picking from three hardcoded shapes.
 
-### ✅ Finish removing the monetisation architecture
+#### ✅ Finish removing the monetisation architecture
 Done, and the warning was justified. `checkPremium()` turned out to rewrite all five
 unlock arrays to true on every menu refresh, with a second force-unlock hidden in
 `GameScene.powerUpIconReset()` — so progression was entirely decorative. Both removed;
@@ -106,7 +116,7 @@ controller wiring, found only by a clean-install walkthrough.
 Still open: `premiumTableView` outlets, `IAPTableViewCell.xib` and the `ButtonPremium` /
 `iconPremium` assets are unreferenced from Swift but still in Interface Builder.
 
-### ✅ Add a test target and cover what is testable
+#### ✅ Add a test target and cover what is testable
 Done. `GigaBallTests`, 88 tests, about two seconds.
 
 Two things needed extracting before they could be tested, both now pure types with the
@@ -121,7 +131,7 @@ removal would have switched it on.
 Still uncovered: `CloudKitHandler`'s save/load, which needs the key-value store behind a
 protocol first. Worth doing with the save-format work.
 
-### ✅ Audio session off the main thread
+#### ✅ Audio session off the main thread
 `MusicHandler.playMusic()` calls `AVAudioSession.setActive(true)` synchronously from
 `MenuViewController.viewDidLoad`. iOS logs it explicitly:
 
@@ -134,7 +144,7 @@ Move it off the main thread or use the async activation API. While in there:
 `AppDelegate` sets the category to `.ambient`, then `MusicHandler` immediately overrides
 it to `.soloAmbient` — one is redundant.
 
-### Harden the force-unwrapping — mostly done
+#### Harden the force-unwrapping — mostly done
 The save/resume path is done: `SavedGame.load` returns nil rather than trapping, and the
 resume flag is checked alongside the save itself, so a corrupt save is a lost game in
 progress rather than a crash loop. The seventeen settings are non-optional. The 49 live
@@ -146,7 +156,7 @@ declarations, where nil is a broken storyboard connection rather than unexpected
 What is left worth a pass: the remaining 141 `as!` casts and `physicsBody!` in the
 scene.
 
-### ✅ Fix the iCloud data-reset propagation bug
+#### ✅ Fix the iCloud data-reset propagation bug
 *"Data reset on one device updates on another."* Done in 1.3 via a generation
 number (`StatsSync`), incremented on reset and only on reset. The sync merged by
 highest-value in both directions, which cannot express a reset — whether the
@@ -155,7 +165,7 @@ device synced first. A higher generation now means "supersedes", so the sync
 adopts or pushes wholesale instead of merging. Devices that have never reset are
 all at generation zero and merge exactly as before.
 
-### ✅ App icon via Icon Composer (blocked on toolchain)
+#### ✅ App icon via Icon Composer (blocked on toolchain)
 **All thirteen icons are migrated, but they cannot be built by Xcode 26.6** — its `actool`
 crashes on the schema the macOS 27 Icon Composer emits. Xcode 27 beta compiles them fine.
 So an App Store build needs Xcode 27 GA, or the icons re-authored down to the 26.6 subset.
@@ -175,15 +185,33 @@ every required size automatically.
 *To verify: exact mechanics for using Icon Composer documents as alternate app icons in
 Xcode 26.*
 
-### Enable crash reporting — nothing to change in the project
-`DEBUG_INFORMATION_FORMAT` is already `dwarf-with-dsym` for Release, so dSYMs ship. This is
-an Organizer / App Store Connect check rather than work in the repo.
-Xcode Organizer, no SDK, no third-party code, no impact on the "Data Not Collected"
-privacy label. Given how much force-unwrapping the codebase contains, this is the
-difference between fixing the crashes that actually happen and guessing. Should land
-before, or alongside, the hardening work so the data starts accumulating.
+#### ✅ Enable crash reporting — verified, nothing to change in the project
+The claim that there was nothing to do was correct, and is now checked rather than
+assumed. A Release archive was built and inspected:
 
-### ✅ Replace the save-game format
+- `DEBUG_INFORMATION_FORMAT = dwarf-with-dsym`, and the archive does contain
+  `dSYMs/Giga-Ball.app.dSYM`
+- the dSYM's UUID matches the shipped binary's exactly, which is what symbolication
+  actually depends on — a mismatched dSYM is the usual reason Organizer shows
+  unsymbolicated frames
+- the binary is stripped (`STRIP_INSTALLED_PRODUCT`, `STRIP_STYLE = all`) and the
+  symbols survive only in the dSYM, which is the correct arrangement
+- `dwarfdump` resolves `computeLayoutMetrics` back to `GameScene.swift` from the dSYM
+  alone
+- `ENABLE_TESTABILITY = NO` for Release
+
+Also confirmed while there: no SPM or third-party dependencies, `PrivacyInfo.xcprivacy`
+is present and ships inside the app bundle, and the scheme is shared so Xcode Cloud can
+see it. So no SDK, no privacy-label impact, nothing to add.
+
+What remains is outside the repo: tick "Include symbols" when uploading, and read
+Organizer → Crashes. Only users who opted into sharing analytics are represented, which
+is worth remembering before concluding a crash is rare.
+
+One thing this did surface: `MARKETING_VERSION` was still `1.2`, so the archive would
+have gone up carrying the wrong version. Now `1.3`.
+
+#### ✅ Replace the save-game format
 Done in 1.3. `SavedGame` is a versioned `Codable` struct with one-way migration from the
 fourteen legacy keys, behind a `KeyValueStore` seam so it can be tested without touching
 the host app's defaults. The original problem, for the record:
@@ -200,7 +228,7 @@ game simply never adopted it. Move to a versioned `Codable` struct with migratio
 Also a prerequisite for "save ongoing game to iCloud" later; syncing parallel int arrays
 across devices would be painful.
 
-### ✅ Housekeeping
+#### ✅ Housekeeping
 - ✅ `print()` calls — all 102 were on failure paths, so they moved to `os.Logger`
   (`Log.swift`) rather than being deleted. See the commit for why stdout was the wrong
   destination for them.
@@ -209,11 +237,11 @@ across devices would be painful.
 
 ---
 
-## 1.4 — Player-visible improvements
+### Player-visible improvements
 
-Cheap to build once 1.3 lands, and the things players will actually notice.
+Cheap to build once the foundations are in, and the things players will actually notice.
 
-### Accessibility
+#### Accessibility
 There is currently not a single accessibility API in the project. The first three are
 nearly free:
 
@@ -229,13 +257,13 @@ nearly free:
   accessibility, widens the audience, and shares its difficulty-options plumbing with
   speed-run mode.
 
-### Texture atlases
+#### Texture atlases
 There are no atlases in the project at all, so every sprite is its own draw call.
 Batching via `.spriteatlas` is the standard SpriteKit optimisation and is a plausible
 shared cause of two known issues listed separately: iPad stuttering and iPad graphics
 looking pixelated.
 
-### Live bugs worth fixing
+#### Live bugs worth fixing
 - ✅ Table view selection animation appears on the wrong cell. Noted back in 2020 and
   confirmed still present in August 2026. Fixed in 1.3: no cell class implemented
   `prepareForReuse`, so the highlight scale and colour travelled with the reused cell
@@ -254,7 +282,7 @@ looking pixelated.
 - Floating-point precision on physics bodies; ball speed below ~150 px/s causes bounce
   gliding
 
-### Liquid Glass across the rest of the UI
+#### Liquid Glass across the rest of the UI
 The app icons adopted Icon Composer and Liquid Glass in 1.3. The interface has not.
 
 - In-app icons updated to Liquid Glass versions
@@ -264,11 +292,12 @@ The app icons adopted Icon Composer and Liquid Glass in 1.3. The interface has n
 
 Sits naturally alongside menu modernisation, and after the safe-area work for the same
 reason: restyling components on top of a layout that is about to be rewritten means
-doing it twice.
+doing it twice. That ordering still holds now they are in one release.
 
-### Menu modernisation
-Best done *after* the 1.3 safe-area work, not before — several of these are symptoms of
-the current fixed layout, and redesigning around a broken foundation wastes the effort.
+#### Menu modernisation
+Best done *after* the safe-area work, not before — several of these are symptoms of the
+old fixed layout, and redesigning around a broken foundation wastes the effort. The
+container sizing is now fixed, so this is unblocked.
 
 - Bring the menus up to current design language
 - **The Giga-Ball logo on the main menu is clipped by incoming notifications.** It sits
@@ -279,7 +308,7 @@ the current fixed layout, and redesigning around a broken foundation wastes the 
 - Game modes become squares or boxes rather than full-width rows
 - Streamline the level and pack selection menus
 
-### UI
+#### UI
 - Power-up timing bars become circles around the power-up icons
 - Only show timed power-up icons while actually in use; fade in and out
 - Show active power-ups in the pause menu
@@ -290,7 +319,7 @@ the current fixed layout, and redesigning around a broken foundation wastes the 
 - Shadows on paddle, ball, bricks, power-ups and lasers
 - Add an image to the share sheet
 
-### Gameplay
+#### Gameplay
 - Single level completion unlocks the next level even without a pack score (plus the
   intro and warning text changes that go with it)
 - Add a play button to the pack selection view
