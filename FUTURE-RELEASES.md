@@ -147,7 +147,10 @@ it to `.soloAmbient` — one is redundant.
 #### Harden the force-unwrapping — mostly done
 The save/resume path is done: `SavedGame.load` returns nil rather than trapping, and the
 resume flag is checked alongside the save itself, so a corrupt save is a lost game in
-progress rather than a crash loop. The seventeen settings are non-optional. The 49 live
+progress rather than a crash loop. A second round found that `isConsistent` had only
+covered the *parallel* arrays — a short `ballProperties` still trapped at index 4 during
+resume, and did so twice in testing. Worth remembering that the guard is only as good as
+the shapes it actually names. The seventeen settings are non-optional. The 49 live
 cell casts (`cellForRow(at:) as! Cell`) are conditional, so highlighting a row and
 flicking it offscreen no longer traps.
 
@@ -270,14 +273,22 @@ looking pixelated.
 - ✅ Table views in the menus stop short of the screen edge rather than filling it. The
   guess was right — same fixed-layout cause. Every menu screen pinned its container to
   414×736; it now fills the safe area
-- Sticky paddle icon bar not filling correctly when resuming
-- Paddle grows after resuming from pause; sticky texture behaves, paddle does not
+- ✅ Sticky paddle icon bar not filling correctly when resuming. `CGFloat(catches/total)`
+  with both sides `Int` — integer division truncated every state except a full bar to
+  zero. The total was also hardcoded to 6 on resume when it is really 5, 6 or 7; it is
+  saved now
+- Paddle grows after resuming from pause; sticky texture behaves, paddle does not. The
+  resume path was scaling the retro paddle art by the paddle's own factor rather than the
+  reduced one the normal path uses (1.5 → 1.42, 2.0 → 1.82, 2.5 → 2.24), which is fixed —
+  but the report was never reproduced end-to-end, so treat this as a candidate cause
+  rather than a confirmed fix
+- Lasers in flight are not in the save format at all, which is why they vanish on resume.
+  Restoring them needs new fields for their positions — a decision, not just a fix
 - Ball and paddle textures move independently when the paddle is slammed into the frame
   (iPhone X-style devices) — likely the same root cause as being able to nudge the ball
   while it rests on the paddle
 - Ball stuttering on iPad, and iPad graphics looking pixelated — probably the same
   underlying scale/texture issue, worth investigating together
-- Lasers in play are removed when returning from a saved game
 - Ball can hit the paddle after hitting the backstop
 - Floating-point precision on physics bodies; ball speed below ~150 px/s causes bounce
   gliding
