@@ -1012,10 +1012,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// notched iPhones to separate the HUD from the field. The safe-area rewrite gives
 		// every device the same top chrome, and the darkening is no longer wanted anywhere
 
-		let safeTopEdge = frame.size.height/2 - (self.view?.safeAreaInsets.top ?? 0) - layoutUnit
-		// One layout unit of breathing room below the inset. Without it the score and
-		// multiplier sit hard against the top edge and clip, most visibly on iPad where
-		// the status bar is hidden so the inset is minimal
+		let safeTopEdge = frame.size.height/2 - GameScene.hudTopClearance
+		// Measured from the physical top edge, not the safe area inset - see
+		// hudTopClearance. The HUD row must stay clear of the centre for this to be safe
 		pauseButton.position.y = safeTopEdge - pauseButton.size.height/2
 		powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - labelSpacing/2 - powerUpTray.size.height/2
 		// HUD sits directly below the safe area, tray below it, playfield below both.
@@ -1039,12 +1038,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplierLabel.fontSize = fontSize
 		multiplierLabel.zPosition = 10
 		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-		life.position.x = -life.size.width/3
+		life.position.x = pauseButton.position.x + pauseButtonSize/2 + layoutUnit + life.size.width/2
 		life.position.y = pauseButton.position.y
 		life.zPosition = 10
 		life.isHidden = false
-		livesLabel.position.x = life.size.width/3
+		livesLabel.position.x = life.position.x + life.size.width/2 + labelSpacing/2
 		livesLabel.position.y = life.position.y
+		// Beside the pause button rather than centred. The centre of the HUD row is the
+		// one place a notch or Dynamic Island occupies, so keeping it clear is what lets
+		// the row sit above the safe area inset
         livesLabel.fontSize = fontSize
 		livesLabel.horizontalAlignmentMode = .left
 		livesLabel.zPosition = 10
@@ -1070,11 +1072,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 		
-		endlessGameIcon.size.height = pauseButtonSize*1.5
-		endlessGameIcon.size.width = endlessGameIcon.size.height
-		endlessGameIcon.position.x = 0
-		endlessGameIcon.position.y = pauseButton.position.y
-		endlessGameIcon.zPosition = 10
+		endlessGameIcon.isHidden = true
+		// Authored visible in GameScene.sks, so it needs hiding explicitly. It sat in the
+		// centre of the HUD row, directly under the notch, and carried no information the
+		// player did not already have from choosing the mode
 		
 		iconArray = [ballSpeedIcon, paddleSizeIcon, hiddenBricksIcon, stickyPaddleIcon, gravityIcon, gigaBallIcon, lasersIcon, ballSizeIcon]
 		disabledIconTextureArray = [iconBallSpeedDisabledTexture, iconPaddleSizeDisabledTexture, iconHiddenBlocksDisabledTexture, iconStickyPaddleDisabledTexture, iconGravityDisabledTexture, iconGigaBallDisabledTexture, iconLasersDisabledTexture, iconBallSizeDisabledTexture]
@@ -3983,10 +3984,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	static let playRatio: CGFloat = 1.8236
 	// Play height : play width. Measured from the shipping build and held constant on
 	// every device so the game plays identically across a player's devices.
-	static let hudUnits: CGFloat = 6.5
-	// Top margin (1 unit), power-up tray (3 units), HUD row (2 units) and the spacing
-	// between them, in layout units. Must cover everything stacked below the safe area
-	// inset, or the tray overhangs into the playfield
+	static let hudUnits: CGFloat = 5.5
+	// The HUD row (2 units), the power-up tray (3 units) and the spacing between them,
+	// in layout units. Must cover everything stacked below the safe area inset, or the
+	// tray overhangs into the playfield
+
+	static let hudTopClearance: CGFloat = 20
+	// Clearance from the physical top edge to the HUD, in points, used instead of
+	// safeAreaInsets.top.
+	//
+	// The inset is a full-width reservation for the notch or Dynamic Island, but the HUD
+	// only occupies the two top corners - pause button and lives on the left, score and
+	// multiplier on the right - and those are horizontally clear of the housing on every
+	// iPhone. Reserving the full inset therefore cost about 44pt of height on a Dynamic
+	// Island phone, which came straight back as wider side borders, for no benefit.
+	//
+	// 20pt keeps the row clear of the rounded display corners: at y=20 a 55pt corner
+	// radius permits content from x=12.6, and the leftmost HUD element starts at 21pt.
+	// Nothing may be placed in the centre of this row - that is what the inset was
+	// protecting, and it is why the endless-mode logo was removed
 
 	var isRegularWidth: Bool {
 		self.view?.traitCollection.horizontalSizeClass == .regular
@@ -3997,7 +4013,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	func computeLayoutMetrics() {
 		let insets = self.view?.safeAreaInsets ?? .zero
-		let availableHeight = frame.size.height - insets.top - insets.bottom
+		let availableHeight = frame.size.height - GameScene.hudTopClearance - insets.bottom
 		let availableWidth = frame.size.width - insets.left - insets.right
 
 		gameWidth = (availableHeight / (1 + GameScene.hudUnits / (CGFloat(22) * GameScene.playRatio))) / GameScene.playRatio
@@ -4019,7 +4035,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
 		fontSize = 16
-		screenBlockTopHeight = insets.top + layoutUnit*GameScene.hudUnits
+		screenBlockTopHeight = GameScene.hudTopClearance + layoutUnit*GameScene.hudUnits
 		// The bar is the HUD and power-up tray, sitting below the real inset rather than
 		// a fixed multiple guessed from screen height
 

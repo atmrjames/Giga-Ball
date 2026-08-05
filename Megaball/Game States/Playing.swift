@@ -77,7 +77,6 @@ class Playing: GKState {
                 self.scene.life.isHidden = true
                 self.scene.livesLabel.isHidden = true
                 self.scene.multiplierLabel.isHidden = true
-                self.scene.endlessGameIcon.isHidden = false
             }
         })
         // Show game labels
