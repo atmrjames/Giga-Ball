@@ -792,6 +792,8 @@ extension Notification.Name {
     public static let levelIntroDidClear = Notification.Name(rawValue: "levelIntroDidClear")
     /// The scene now has a level in it and is worth looking at.
     public static let levelDidBuild = Notification.Name(rawValue: "levelDidBuild")
+    /// The level intro has finished fading in and is now covering the scene.
+    public static let levelIntroDidAppear = Notification.Name(rawValue: "levelIntroDidAppear")
 }
 // Notification setup for sending information from the end level popup to load the next level
 

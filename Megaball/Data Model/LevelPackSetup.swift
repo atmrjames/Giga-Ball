@@ -113,6 +113,12 @@ class LevelPackSetup {
         UIImage(named:"retroBrickNormal.png")!
     ]
     
+    /// The game scene backgrounds, in the order the setting cycles them.
+    ///
+    /// The asset name is nil for Black - there is no image, the sprite is just filled.
+    let backgroundNameArray: [String] = ["Grid", "Black"]
+    let backgroundTextureArray: [String?] = ["gameBackground", nil]
+
     let appIconNameArray: [String] = [
         "Purple",
         "White",

@@ -34,9 +34,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     private var launchCover: UIView?
     // The scene is drawn as soon as the view has a size, but nothing is put in it until
     // the Playing state runs - so the empty playfield, and then the level building
-    // itself, were visible for a moment before the intro overlay arrived on top. The
-    // intro covers opaquely once it is there; this covers the gap before it, and lifts
-    // when the level is built, which happens on both the fresh and resumed paths.
+    // itself, were visible before the intro arrived on top. This covers that gap.
+    //
+    // It lifts on whichever comes first: the intro finishing its fade in, or the level
+    // finishing building. The intro is the usual case and is what the cover is really
+    // waiting for - it is semi-transparent by design, so it only hides anything once it
+    // is fully faded in. The level-built signal is the fallback for resuming a saved
+    // game, where there is no intro at all and the cover would otherwise never lift.
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -55,15 +59,19 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         view.addSubview(cover)
         launchCover = cover
 
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(levelDidBuildNotificationReceived),
-            name: .levelDidBuild, object: nil)
+        for name in [Notification.Name.levelIntroDidAppear, .levelDidBuild] {
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(removeLaunchCover), name: name, object: nil)
+        }
     }
 
-    @objc func levelDidBuildNotificationReceived(_ notification: Notification) {
+    @objc func removeLaunchCover() {
+        guard launchCover != nil else { return }
         launchCover?.removeFromSuperview()
         launchCover = nil
-        NotificationCenter.default.removeObserver(self, name: .levelDidBuild, object: nil)
+        for name in [Notification.Name.levelIntroDidAppear, .levelDidBuild] {
+            NotificationCenter.default.removeObserver(self, name: name, object: nil)
+        }
     }
 
     func presentGameScene() {

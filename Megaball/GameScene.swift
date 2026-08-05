@@ -465,6 +465,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var backstopCatches: Int = 0
 	var backstopCatchesTotal: Int = 0
     var laserPowerUpIsOn: Bool = false
+    /// How many times the laser power-up has been collected while it was already running.
+    ///
+    /// Each one halves the gap between shots, so collecting it again is worth something
+    /// rather than just resetting the clock. Capped so the rate stays a rate.
+    var laserStacks: Int = 0
+    static let laserBaseInterval: TimeInterval = 0.25
+    static let laserMaxStacks = 2
+    var laserInterval: TimeInterval {
+        GameScene.laserBaseInterval / pow(2, Double(min(laserStacks, GameScene.laserMaxStacks)))
+    }
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
 	var powerUpProximity: Bool = false
@@ -872,6 +882,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		background.position.x = 0
 		background.position.y = -frame.size.height/2
 		background.zPosition = 0
+		applyBackgroundSetting()
 		
 		ball.texture = ballTexture
 		ball.physicsBody = SKPhysicsBody(circleOfRadius: ballSize/2)
@@ -1182,6 +1193,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
 		NotificationCenter.default.addObserver(self, selector: #selector(self.levelIntroDidClearReceived), name: .levelIntroDidClear, object: nil)
+		NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundSettingChangedNotificationReceived), name: .backgroundSettingChanged, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
@@ -3496,6 +3508,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeAction(forKey: "laserTimer")
 			laserTimer?.invalidate()
 			// Remove any current animations and timers
+			laserStacks = laserPowerUpIsOn ? min(laserStacks + 1, GameScene.laserMaxStacks) : 0
+			// Collecting lasers while they are already firing speeds them up
 			lasersIcon.texture = self.iconLasersTexture
 			lasersIconBar.isHidden = false
 			// Show power-up icon timer
@@ -3507,15 +3521,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleLaser.isHidden = true
 			}
 			// retro lasers
-			laserTimer = Timer.scheduledTimer(timeInterval: 0.25, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
+			laserTimer = Timer.scheduledTimer(timeInterval: laserInterval, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[22]+=1
 			powerUpLimit = 4
-            // Power up set - lasers will fire every 0.1s
+            // Power up set - every 0.25s, halving with each stack
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
                 self.laserTimer?.invalidate()
+				self.laserStacks = 0
 				self.paddleLaser.isHidden = true
 				self.paddleRetroLaserTexture.isHidden = true
 				if self.paddleTexture == self.retroPaddle {
@@ -3896,7 +3911,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSpeedIconBar.isHidden = true
 		// Ball speed reset
 		
-		laserTimer?.invalidate()
+laserTimer?.invalidate()
+		laserStacks = 0
 		paddleLaser.isHidden = true
 		paddleRetroLaserTexture.isHidden = true
 		if paddleTexture == retroPaddle {
@@ -4021,12 +4037,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// reads as "no lives left" rather than as a missing element. It grows past three when
 	// lives are gained and never shrinks back below it
 
-	var livesContainerSize: CGSize {
-		CGSize(width: CGFloat(livesSlots - 1)*livesRowSpacing + ballSize + livesRowPadding*2,
+	var livesContainerSize: CGSize { livesContainerSize(forSlots: CGFloat(livesSlots)) }
+
+	func livesContainerSize(forSlots slots: CGFloat) -> CGSize {
+		CGSize(width: (slots - 1)*livesRowSpacing + ballSize + livesRowPadding*2,
 			   height: ballSize + livesRowPadding*2)
 	}
+	// Takes a fractional slot count so the container can be animated between two sizes
+	// rather than snapping when a life is spent
 
 	static let lifeIconAlpha: CGFloat = 0.775
+	/// How long the row takes to close up after a life is spent. Matches the flight to the
+	/// paddle so the two read as one movement.
+	static let livesGapCloseDuration: TimeInterval = 0.25
+	static let livesKnockStagger: TimeInterval = 0.03
 	// Dimmer than the ball in play, so the row reads as a counter rather than as balls
 	// sitting in the play area, but still bright enough to read at a glance
 
@@ -4072,21 +4096,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 
 	func layoutLivesContainer() {
-		let size = livesContainerSize
+		setLivesContainerPath(size: livesContainerSize)
+		livesContainer.position = CGPoint(x: 0, y: livesRowY)
+	}
+
+	func setLivesContainerPath(size: CGSize) {
 		let rect = CGRect(x: -size.width/2, y: -size.height/2, width: size.width, height: size.height)
 		livesContainer.path = CGPath(roundedRect: rect,
 									 cornerWidth: size.height/2,
 									 cornerHeight: size.height/2,
 									 transform: nil)
-		livesContainer.position = CGPoint(x: 0, y: livesRowY)
 	}
+	// Rebuilt rather than scaled: scaling an SKShapeNode would stretch the rounded ends
+	// along with it
 
 	func livesRowHome(index: Int) -> CGPoint {
-		let firstX = -livesContainerSize.width/2 + livesRowPadding + ballSize/2
+		livesRowHome(index: index, containerWidth: livesContainerSize.width)
+	}
+
+	func livesRowHome(index: Int, containerWidth: CGFloat) -> CGPoint {
+		let firstX = -containerWidth/2 + livesRowPadding + ballSize/2
 		return CGPoint(x: firstX + CGFloat(index)*livesRowSpacing, y: livesRowY)
 	}
-	// Filled from the left of a centred container, so losing a life removes the rightmost
-	// ball and leaves the others where they are
+	// Filled from the left of a centred container. The ball that is spent is taken from
+	// the left too - it is the one nearest the paddle - and the rest close up behind it
 
 	func refreshLivesRow() {
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
@@ -4190,7 +4223,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func flyLifeToPaddle() {
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
 		guard shown > 0, shown <= lifeIcons.count else { return }
-		let icon = lifeIcons[shown - 1]
+
+		let icon = lifeIcons[0]
 		icon.removeAllActions()
 		icon.isHidden = false
 
@@ -4201,11 +4235,58 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		icon.run(SKAction.group([fly, shrink])) {
 			icon.isHidden = true
 		}
+
+		closeLivesRowGap(remaining: shown - 1)
 	}
 	// The life being spent travels to where the replacement ball appears, which is what
 	// the ball animation is already doing at the same moment. Deliberately 0.25s, to land
 	// exactly as the ball fades in. The lives count itself is decremented later, on the
-	// existing 0.75s timing, so nothing about the game state moves
+	// existing 0.75s timing, so nothing about the game state moves.
+	//
+	// It is the leftmost ball that goes, not the rightmost - it is the one nearest the
+	// paddle, so the gap it leaves closes in the direction of travel
+
+	/// Slides the remaining lives left into the gap, and shrinks the container to match.
+	///
+	/// The container used to snap to its new size when the count dropped, three quarters
+	/// of a second after the ball had already left. Both now move together, over the same
+	/// window as the flight.
+	func closeLivesRowGap(remaining: Int) {
+		let fromSlots = CGFloat(livesSlots)
+		let toSlots = CGFloat(max(3, min(remaining, GameScene.maxLivesShown)))
+		let toWidth = livesContainerSize(forSlots: toSlots).width
+
+		if fromSlots != toSlots {
+			let duration = GameScene.livesGapCloseDuration
+			livesContainer.run(SKAction.customAction(withDuration: duration) { [weak self] _, elapsed in
+				guard let self else { return }
+				let t = min(1, elapsed/CGFloat(duration))
+				let eased = 1 - pow(1 - t, 3)
+				let slots = fromSlots + (toSlots - fromSlots)*eased
+				self.setLivesContainerPath(size: self.livesContainerSize(forSlots: slots))
+			})
+		}
+		// Only when the container actually changes size - it never shrinks below three
+
+		guard remaining > 0 else { return }
+		for slot in 0..<remaining {
+			let icon = lifeIcons[slot + 1]
+			guard icon.isHidden == false else { continue }
+			icon.removeAllActions()
+
+			// Each ball starts a little after the one to its left, and overshoots by a
+			// fraction of a ball before settling - so the row closes up as a series of
+			// small knocks rather than as one block sliding.
+			let home = livesRowHome(index: slot, containerWidth: toWidth)
+			let overshoot = CGPoint(x: home.x - ballSize*0.12, y: home.y)
+			let delay = SKAction.wait(forDuration: Double(slot)*GameScene.livesKnockStagger)
+			let slide = SKAction.move(to: overshoot, duration: GameScene.livesGapCloseDuration*0.7)
+			slide.timingMode = .easeIn
+			let settle = SKAction.move(to: home, duration: GameScene.livesGapCloseDuration*0.3)
+			settle.timingMode = .easeOut
+			icon.run(SKAction.sequence([delay, slide, settle]))
+		}
+	}
 
 	func computeLayoutMetrics() {
 		let insets = self.view?.safeAreaInsets ?? .zero
@@ -4892,7 +4973,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				powerUpActiveArray?.append("laserTimer")
 				powerUpActiveDurationArray?.append(remainingTime)
 				powerUpActiveTimerArray?.append(Double(laserPowerUp.duration))
-				powerUpActiveMagnitudeArray?.append(0)
+				powerUpActiveMagnitudeArray?.append(laserStacks)
+				// The laser's magnitude was unused, so it carries the fire-rate stacking
 			}
 			if let ballSizePowerUp = self.ballSizeIconBar.action(forKey: "ballSizeTimer") {
 				if ball.xScale != 1.0 {
@@ -5202,6 +5284,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// crosses the screen height in two seconds, so each one resumes at that same speed
 	/// and is removed when it leaves the top, rather than after a fixed two seconds from
 	/// nowhere in particular.
+	/// Paints the playfield background from the setting.
+	///
+	/// Black has no image behind it - the sprite is filled instead, which keeps the node
+	/// and its sizing rather than special-casing an empty background everywhere else.
+	func applyBackgroundSetting() {
+		let setting = defaults.integer(forKey: "backgroundSetting")
+		let textures = LevelPackSetup().backgroundTextureArray
+		guard setting >= 0, setting < textures.count else { return }
+
+		if let name = textures[setting] {
+			background.texture = SKTexture(imageNamed: name)
+			background.color = .clear
+			background.colorBlendFactor = 0
+		} else {
+			background.texture = nil
+			background.color = .black
+			background.colorBlendFactor = 1
+		}
+	}
+
+	@objc func backgroundSettingChangedNotificationReceived(_ notification: Notification) {
+		applyBackgroundSetting()
+	}
+
 	func restoreLasers(from savedGame: SavedGame) {
 		guard let xs = savedGame.laserXPositions, let ys = savedGame.laserYPositions,
 			  xs.count == ys.count, xs.isEmpty == false else { return }
@@ -5519,17 +5625,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					case "laserTimer":
 						lasersIcon.texture = self.iconLasersTexture
 						laserPowerUpIsOn = true
+						laserStacks = min(savedGame.activePowerUpMagnitudes[i], GameScene.laserMaxStacks)
 						paddleLaser.isHidden = false
 						if paddleTexture == retroPaddle {
 							paddleRetroLaserTexture.isHidden = false
 							paddleRetroTexture.isHidden = true
 							paddleLaser.isHidden = true
 						}
-						laserTimer = Timer.scheduledTimer(timeInterval: 0.25, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
+						laserTimer = Timer.scheduledTimer(timeInterval: laserInterval, target: self, selector: #selector(laserGenerator), userInfo: nil, repeats: true)
 						powerUpLimit = 4
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
 							self.laserTimer?.invalidate()
+							self.laserStacks = 0
 							self.paddleLaser.isHidden = true
 							self.paddleRetroLaserTexture.isHidden = true
 							if self.paddleTexture == self.retroPaddle {

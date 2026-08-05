@@ -125,14 +125,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             levelNumber = levelNumber-1
             levelNumberCorrected = levelNumberCorrected-1
 
-            // The level builds behind this overlay while the intro plays, and at 33% the
-            // bricks show through it - most visibly in the quarter second after the
-            // content has faded out and before it has faded back in. Between levels the
-            // translucency is the point, so this applies to the intro only: cover
-            // outright, and let the closing fade be what reveals the level.
-            view.backgroundColor = view.backgroundColor?.withAlphaComponent(1.0)
-            blurView?.isHidden = true
-
             removeAnimate()
         } else {
             startScoreTally()
@@ -144,21 +136,35 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     private var tallyLink: CADisplayLink?
     private var tallyStartedAt: CFTimeInterval = 0
     private var tallyLastTick = -1
+    private var tallyTotalFrom = 0
 
-    /// How long the numbers take to run up. Short on purpose - this sits between the
-    /// player finishing a level and playing the next one, so it should read as a flourish
-    /// rather than something to sit through. A tap finishes it early.
-    private let tallyDuration: CFTimeInterval = 0.55
-    private let tallyHapticTicks = 8
+    /// The level score and the speed bonus run up from zero, and then drain back to zero
+    /// as the total takes them on - so the summary shows where the total came from rather
+    /// than three numbers arriving at once.
+    ///
+    /// Short on purpose: this sits between finishing a level and playing the next one, so
+    /// it should read as a flourish rather than something to sit through. A tap finishes
+    /// it early.
+    private let tallyCountUpDuration: CFTimeInterval = 0.30
+    private let tallyDrainDuration: CFTimeInterval = 0.40
+    private var tallyDuration: CFTimeInterval { tallyCountUpDuration + tallyDrainDuration }
+    private let tallyHapticTicks = 10
 
     private var isTallying: Bool { tallyLink != nil }
 
     private func startScoreTally() {
         guard levelScore > 0 || levelScoreBonus > 0 || totalScore > 0 else { return }
 
+        // totalScore already has this level's score and bonus in it by the time the
+        // summary is shown, so the pre-level figure is what is left after taking them
+        // back off. Clamped because a pack's end-of-pack lives bonus also lands in the
+        // total, and that is not being counted out here.
+        tallyTotalFrom = max(0, totalScore - levelScore - levelScoreBonus)
+
         levelScoreLabel.text = "0"
         speedBonusLabel.text = "+0"
-        totalScoreLabel.text = "0"
+        totalScoreLabel.text = String(tallyTotalFrom)
+        tapLabel.isHidden = true
 
         tallyStartedAt = CACurrentMediaTime()
         tallyLastTick = -1
@@ -174,22 +180,34 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             return
         }
 
-        // Ease out, so the numbers decelerate into their final values rather than
-        // stopping dead.
-        let linear = elapsed / tallyDuration
-        let eased = 1 - pow(1 - linear, 3)
+        if elapsed < tallyCountUpDuration {
+            // Ease out, so the numbers decelerate into their values rather than stopping
+            // dead.
+            let eased = easeOut(elapsed / tallyCountUpDuration)
+            levelScoreLabel.text = String(scaled(levelScore, by: eased))
+            speedBonusLabel.text = "+\(scaled(levelScoreBonus, by: eased))"
+            totalScoreLabel.text = String(tallyTotalFrom)
+        } else {
+            let eased = easeOut((elapsed - tallyCountUpDuration) / tallyDrainDuration)
+            levelScoreLabel.text = String(scaled(levelScore, by: 1 - eased))
+            speedBonusLabel.text = "+\(scaled(levelScoreBonus, by: 1 - eased))"
+            let gained = totalScore - tallyTotalFrom
+            totalScoreLabel.text = String(tallyTotalFrom + scaled(gained, by: eased))
+        }
 
-        levelScoreLabel.text = String(Int((Double(levelScore) * eased).rounded()))
-        speedBonusLabel.text = "+\(Int((Double(levelScoreBonus) * eased).rounded()))"
-        totalScoreLabel.text = String(Int((Double(totalScore) * eased).rounded()))
-
-        let tick = Int(eased * Double(tallyHapticTicks))
+        let tick = Int(elapsed / tallyDuration * Double(tallyHapticTicks))
         if tick != tallyLastTick {
             tallyLastTick = tick
             if hapticsSetting {
                 interfaceHaptic.impactOccurred(intensity: 0.5)
             }
         }
+    }
+
+    private func easeOut(_ t: Double) -> Double { 1 - pow(1 - t, 3) }
+
+    private func scaled(_ value: Int, by fraction: Double) -> Int {
+        Int((Double(value) * fraction).rounded())
     }
 
     /// Snaps the numbers to their final values. Returns whether there was anything to
@@ -204,9 +222,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     private func finishScoreTally() {
         tallyLink?.invalidate()
         tallyLink = nil
-        levelScoreLabel.text = String(levelScore)
-        speedBonusLabel.text = "+\(levelScoreBonus)"
+        levelScoreLabel.text = "0"
+        speedBonusLabel.text = "+0"
         totalScoreLabel.text = String(totalScore)
+        tapLabel.isHidden = false
     }
 
     func userSettings() {
@@ -224,7 +243,12 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         UIView.animate(withDuration: showAnimateDuration, animations: {
             self.view.alpha = 1.0
             self.view.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-            })
+        }, completion: { _ in
+            NotificationCenter.default.post(name: .levelIntroDidAppear, object: nil)
+            // Only now is this actually covering anything. It fades in over a quarter
+            // second, and the launch cover has to stay up for all of it - lifting when
+            // the level finished building was too early and the level flashed through
+        })
     }
     
     func removeAnimate() {

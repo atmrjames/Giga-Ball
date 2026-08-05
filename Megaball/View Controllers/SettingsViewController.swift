@@ -30,6 +30,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var paddleSetting: Int = 0
     var brickSetting: Int = 0
     var appIconSetting: Int = 0
+    var backgroundSetting: Int = 0
     var statsCollapseSetting: Bool = true
     var swipeUpPause: Bool = true
     var appOpenCount: Int = 0
@@ -143,7 +144,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            return 9 - leadingRowsHiddenInGame
+            return 10 - leadingRowsHiddenInGame
     }
     // Set number of cells in table view
     
@@ -179,6 +180,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = ""
 //                }
             case 2:
+            // Game background
+                cell.settingDescription.text = "Game Background"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconTheme.png")!
+                cell.settingState.text = LevelPackSetup().backgroundNameArray[backgroundSetting]
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            case 3:
             // Sounds
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
@@ -190,7 +198,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 3:
+            case 4:
             // Music
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
@@ -202,7 +210,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 4:
+            case 5:
             // Haptics
 //                if screenSize == .Pad || screenSize == .SE {
 //                // No haptics engine
@@ -219,7 +227,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                         cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                     }
 //                }
-            case 5:
+            case 6:
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
@@ -231,7 +239,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 6:
+            case 7:
             // Paddle sensitivity
                 cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
@@ -252,7 +260,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "x3.00"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 }
-            case 7:
+            case 8:
             // Swipe up to pause
                 cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
@@ -264,7 +272,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 8:
+            case 9:
 //                if navigatedFrom! = "PauseMenu" {
                 // Reset game data
 //                    hideCell(cell: cell)
@@ -286,22 +294,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 break
             }
         
-//            if navigatedFrom! == "PauseMenu" {
-//                if (indexPath.row == 0) || (indexPath.row == 1) {
-//                    cell.isHidden = true
-//                } else {
-//                    cell.isHidden = false
-//                }
-//            } else {
-        if navigatedFrom! != "PauseMenu" {
-                if(indexPath.row == 8) {
-                    cell.isHidden = true
-                } else {
-                    cell.isHidden = false
-                }
-        }
-//            }
-        
+        cell.isHidden = settingRow(for: indexPath) == 9 && navigatedFrom != "PauseMenu"
+        // The last row is Reset Ball from the pause menu, which works, and Reset Game
+        // Data from the main menu, which was never implemented - so it is hidden there.
+        // Set on every path rather than only one, or a reused cell keeps the last
+        // value: this was pinned to row 8, and adding a row above it silently hid
+        // Swipe Up To Pause instead
+
         
             UIView.animate(withDuration: 0.2) {
                 cell.cellView2.transform = .identity
@@ -338,10 +337,20 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 hideAnimate()
                 moveToItemDetails(senderID: 1)
             case 2:
+            // Game background
+                backgroundSetting = backgroundSetting + 1
+                if backgroundSetting >= LevelPackSetup().backgroundNameArray.count {
+                    backgroundSetting = 0
+                }
+                defaults.set(backgroundSetting, forKey: "backgroundSetting")
+                NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
+                // The scene is live behind the pause menu, so it repaints rather than
+                // waiting for the next level
+            case 3:
             // Sounds
                 soundsSetting = !soundsSetting
                 defaults.set(soundsSetting, forKey: "soundsSetting")
-            case 3:
+            case 4:
             // Music
                 musicSetting = !musicSetting
 //                soundsSetting = musicSetting
@@ -362,11 +371,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     MusicHandler.sharedHelper.pauseMusic()
                     // Stop music
                 }
-            case 4:
+            case 5:
             // Haptics
                 hapticsSetting = !hapticsSetting
                 defaults.set(hapticsSetting, forKey: "hapticsSetting")
-            case 5:
+            case 6:
             // Parallax
                 parallaxSetting = !parallaxSetting
                 defaults.set(parallaxSetting, forKey: "parallaxSetting")
@@ -377,18 +386,18 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                         backgroundView.removeMotionEffect(group!)
                     }
                 }
-            case 6:
+            case 7:
             // Paddle sensitivity
                 paddleSensitivitySetting = paddleSensitivitySetting+1
                 if paddleSensitivitySetting > 4 {
                     paddleSensitivitySetting = 0
                 }
                 defaults.set(paddleSensitivitySetting, forKey: "paddleSensitivitySetting")
-            case 7:
+            case 8:
             // Swipe up pause
                 swipeUpPause = !swipeUpPause
                 defaults.set(swipeUpPause, forKey: "swipeUpPause")
-            case 8:
+            case 9:
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
                     showWarning(senderID: "resetData")
@@ -485,11 +494,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if settingRow(for: indexPath) != 4 {
+            if settingRow(for: indexPath) != 5 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if settingRow(for: indexPath) == 4 {
+            if settingRow(for: indexPath) == 5 {
                 interfaceHaptic.impactOccurred()
             }
         }
@@ -504,11 +513,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if settingRow(for: indexPath) != 4 {
+            if settingRow(for: indexPath) != 5 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if settingRow(for: indexPath) == 4 {
+            if settingRow(for: indexPath) == 5 {
                 interfaceHaptic.impactOccurred()
             }
         }
@@ -646,6 +655,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         paddleSetting = defaults.integer(forKey: "paddleSetting")
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
+        backgroundSetting = defaults.integer(forKey: "backgroundSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
         appOpenCount = defaults.integer(forKey: "appOpenCount")

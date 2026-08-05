@@ -385,6 +385,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func defaultSettings() {
+        defaults.register(defaults: ["backgroundSetting": 0])
         defaults.register(defaults: ["soundsSetting": true])
         defaults.register(defaults: ["musicSetting": true])
         defaults.register(defaults: ["hapticsSetting": true])
@@ -667,6 +668,8 @@ extension Notification.Name {
     public static let backgroundNotification = Notification.Name(rawValue: "backgroundNotification")
     public static let cancelGameResume = Notification.Name(rawValue: "cancelGameResume")
     public static let refreshViewForSync = Notification.Name(rawValue: "refreshViewForSync")
+    /// The game background was changed in settings, possibly over a live scene.
+    public static let backgroundSettingChanged = Notification.Name(rawValue: "backgroundSettingChanged")
     public static let iAPcompleteNotification = Notification.Name(rawValue: "iAPcompleteNotification")
     public static let iAPIncompleteNotification = Notification.Name(rawValue: "iAPIncompleteNotification")
 }
