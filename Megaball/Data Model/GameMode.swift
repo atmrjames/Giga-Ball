@@ -51,4 +51,20 @@ enum GameMode: Int, CaseIterable {
     /// power-ups - so it gets its own board rather than diluting one people have been
     /// climbing for years.
     var sharesLeaderboardsWithEndless: Bool { self == .endless }
+
+    /// Endless 2.0's Game Center boards.
+    ///
+    /// These have to exist in App Store Connect before scores will post; until they do,
+    /// submission fails silently, which is the same as not submitting.
+    static let endlessIIBestHeightLeaderboard = "leaderboardEndless2BestHeight"
+    static let endlessIITotalHeightLeaderboard = "leaderboardEndless2TotalHeight"
+
+    /// The mode a run belongs to, as stored.
+    static func current(in defaults: UserDefaults = .standard) -> GameMode {
+        GameMode(rawValue: defaults.integer(forKey: defaultsKey)) ?? .classic
+    }
+
+    func makeCurrent(in defaults: UserDefaults = .standard) {
+        defaults.set(rawValue, forKey: GameMode.defaultsKey)
+    }
 }

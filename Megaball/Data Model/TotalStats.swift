@@ -44,6 +44,21 @@ class TotalStats: Codable {
     
     var endlessModeHeight: [Int] = []
     var endlessModeHeightDate: [Date] = []
+
+    /// Endless 2.0's runs, kept apart from the original mode's.
+    ///
+    /// A different game - different bricks, different power-ups - so mixing its heights
+    /// into the array above would rewrite the history of a mode people have been playing
+    /// for years, and make the average meaningless.
+    ///
+    /// Optional because this file is decoded with the synthesised initialiser, which
+    /// requires every non-optional key to be present. A stats file written before these
+    /// existed would fail to decode outright, which is every player's stats gone.
+    var endlessIIModeHeight: [Int]?
+    var endlessIIModeHeightDate: [Date]?
+
+    /// Endless 2.0's runs, with the absent-means-none case already handled.
+    var endlessIIHeights: [Int] { endlessIIModeHeight ?? [] }
     
     var levelPackUnlockedArray: [Bool] = [
         true, // Tutorial

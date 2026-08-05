@@ -178,8 +178,16 @@ class InbetweenLevels: GKState {
     
     func saveGameData() {
         if scene.endlessMode {
-            scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
-            scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
+            if scene.gameMode == .endlessII {
+                // Kept apart from the original mode's runs, which are a different game
+                scene.totalStatsArray[0].endlessIIModeHeight =
+                    scene.totalStatsArray[0].endlessIIHeights + [scene.endlessHeight]
+                scene.totalStatsArray[0].endlessIIModeHeightDate =
+                    (scene.totalStatsArray[0].endlessIIModeHeightDate ?? []) + [Date()]
+            } else {
+                scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
+                scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
+            }
         } else {
             var packEndLivesBonus = 0
             if scene.levelNumber == scene.endLevelNumber && scene.gameoverStatus == false && scene.numberOfLevels != 1 {

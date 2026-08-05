@@ -563,6 +563,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var killBall: Bool = false
 	var endlessMode: Bool = false
+	/// Which mode this run belongs to.
+	///
+	/// Read from the stored setting rather than inferred from the level number, which is
+	/// how the two existing modes were told apart and cannot distinguish a third that
+	/// plays the same and scores separately.
+	var gameMode: GameMode = .classic
 	var gigaBallDeactivate: Bool = false
 	var gravityDeactivate: Bool = false
 	var deathsPerLevel: Int = 0
@@ -682,6 +688,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
 		
 //MARK: - Scene Setup
+
+		gameMode = GameMode.current(in: defaults)
+		// Set by whichever menu launched the run, and remembered so a resumed one knows
+		// what it is
 		
 		if #available(iOS 13.0, *) {
 			softHaptic = UIImpactFeedbackGenerator(style: .soft)

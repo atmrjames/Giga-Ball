@@ -60,6 +60,12 @@ final class GameCenterHandler: NSObject {
         // Leaderboard Endless Total Height
         // Endless mode leaderboards
 
+        if let best = totalStatsArray[0].endlessIIHeights.max(), best > 0 {
+            submit(best, to: GameMode.endlessIIBestHeightLeaderboard)
+            submit(totalStatsArray[0].endlessIIHeights.reduce(0, +), to: GameMode.endlessIITotalHeightLeaderboard)
+        }
+        // Endless 2.0's own boards. Not comparable to the originals, so not posted to them
+
         var arrayIndex = 0
         let leaderboardIdentifierArray = ["leaderboardClassicPackScore", "leaderboardSpacePackScore", "leaderboardNaturePackScore", "leaderboardUrbanPackScore", "leaderboardFoodPackScore", "leaderboardComputerPackScore", "leaderboardBodyPackScore", "leaderboardWorldPackScore", "leaderboardEmojiPackScore", "leaderboardNumbersPackScore", "leaderboardChallengePackScore"]
         while arrayIndex <= 10 {

@@ -190,7 +190,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 2
+        return GameMode.allCases.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -202,18 +202,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             modeSelectTableView.rowHeight = 150.0
         }
                 
-        switch indexPath.row {
-        case 0:
-            cell.modeImageIcon.image = UIImage(named:"ClassicIcon.png")
-            cell.modeTextLabel.text = "Classic Mode"
-            
-        case 1:
-            cell.modeImageIcon.image = UIImage(named:"EndlessIcon.png")
-            cell.modeTextLabel.text = "Endless Mode"
-
-        default:
-            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-            break
+        let mode = GameMode(rawValue: indexPath.row) ?? .classic
+        cell.modeTextLabel.text = mode.name
+        switch mode {
+        case .classic:
+            cell.modeImageIcon.image = UIImage(named: "ClassicIcon.png")
+        case .endless, .endlessII:
+            cell.modeImageIcon.image = UIImage(named: "EndlessIcon.png")
+            // Endless 2.0 shares the endless icon until it has one of its own
         }
         
         UIView.animate(withDuration: 0.1) {
@@ -232,14 +228,21 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             }
         }
 
-        if indexPath.row == 0 {
-        // Classic mode
+        let mode = GameMode(rawValue: indexPath.row) ?? .classic
+        mode.makeCurrent(in: defaults)
+        // Recorded before the run starts, so the scene and the stats know which mode this
+        // is without having to infer it from a level number
+
+        switch mode {
+        case .classic:
             moveToPackSelector()
-        }
-        
-        if indexPath.row == 1 {
-        // Endless mode
-            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1], levelNumber: LevelPackSetup().startLevelNumber[1], packNumber: 1)
+        case .endless, .endlessII:
+            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1],
+                             levelNumber: LevelPackSetup().startLevelNumber[1],
+                             packNumber: 1)
+            // Endless 2.0 plays the endless field for now, and differs only in what it
+            // records and where it posts. The new bricks and power-ups come in later
+            // phases
         }
         
         tableView.deselectRow(at: indexPath, animated: true)

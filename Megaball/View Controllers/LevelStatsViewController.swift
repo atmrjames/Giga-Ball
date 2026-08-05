@@ -355,6 +355,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func updateLabels() {
         levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber!].uppercased()
         if levelNumber == 0 {
+            levelNameLabel.text = GameMode.current(in: defaults).name.uppercased()
+            // Both endless modes share level 0, so the name comes from the mode
             packNameAndLevelNumberLabel.text = ""
             // No sub-heading in endless mode
         } else {
@@ -369,12 +371,14 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         levelImageView.layer.shadowRadius = 10
         
         if levelNumber == 0 {
+            let mode = GameMode.current(in: defaults)
             highscoreTitleLabel.text = "Best Height"
-            if let bestHeight = totalStatsArray[0].endlessModeHeight.max() {
-                highscoreLabel.text = String(bestHeight) + "m"
-            } else {
-                highscoreLabel.text = "0m"
-            }
+            // Each endless mode's own runs. Sharing the figure would show a player a best
+            // height they set in a different game
+            let runs = mode == .endlessII
+                ? totalStatsArray[0].endlessIIHeights
+                : totalStatsArray[0].endlessModeHeight
+            highscoreLabel.text = String(runs.max() ?? 0) + "m"
         } else {
             highscoreTitleLabel.text = "Highscore"
             if packLevelHighScoresArray![packNumber!-2][levelNumber!-startLevel!] > 0 {
