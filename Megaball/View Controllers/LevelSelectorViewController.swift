@@ -114,19 +114,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func premiumTableViewHideShow() {
-        var allUnlockedBool = false
-        if totalStatsArray[0].levelUnlockedArray.count == totalStatsArray[0].levelUnlockedArray.filter({$0 == true}).count {
-            allUnlockedBool = true
-        }
-        if allUnlockedBool == false {
-            premiumTableView.isHidden = false
-            premiumTableCollapsed.isActive = false
-            premiumTableExpanded.isActive = true
-        } else {
-            premiumTableView.isHidden = true
-            premiumTableExpanded.isActive = false
-            premiumTableCollapsed.isActive = true
-        }
+        premiumTableView.isHidden = true
+        premiumTableExpanded.isActive = false
+        premiumTableCollapsed.isActive = true
+        // The promo table advertised an in-app purchase that no longer exists. It was
+        // already unreachable - its condition required premiumSetting to be false, and
+        // that flag was forced true - so it stays collapsed unconditionally. Its cell
+        // identifier is not registered, so showing it traps in dequeueReusableCell
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {

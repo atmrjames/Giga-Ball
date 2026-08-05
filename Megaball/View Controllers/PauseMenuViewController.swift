@@ -305,6 +305,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if newItemsBool {
                 newItemsLabel.isHidden = false
             }
+            // Previously also required premiumSetting to be false, which it never was,
+            // so this never showed. Now that pack completion genuinely unlocks a theme,
+            // an icon and two power-ups again, announcing it is the intended behaviour
         }
     
         if endlessMode {

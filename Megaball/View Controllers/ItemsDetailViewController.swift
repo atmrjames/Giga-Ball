@@ -96,41 +96,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         premiumTableExpanded.isActive = false
         premiumTableView.isHidden = true
         premiumTableCollapsed.isActive = true
-        
-        var allPUsUnlockedBool = false
-        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
-            allPUsUnlockedBool = true
-        }
-        var allIconsUnlockedBool = false
-        if totalStatsArray[0].appIconUnlockedArray.count == totalStatsArray[0].appIconUnlockedArray.filter({$0 == true}).count {
-            allIconsUnlockedBool = true
-        }
-        var themeUnlockedArray = false
-        if totalStatsArray[0].themeUnlockedArray.count == totalStatsArray[0].themeUnlockedArray.filter({$0 == true}).count {
-            themeUnlockedArray = true
-        }
-        
-        if false && senderID! <= 3 {
-            if senderID == 0 && allIconsUnlockedBool == false {
-                premiumTableView.isHidden = false
-                premiumTableCollapsed.isActive = false
-                premiumTableExpanded.isActive = true
-                
-            }
-            if senderID == 1 && themeUnlockedArray == false {
-                premiumTableView.isHidden = false
-                premiumTableCollapsed.isActive = false
-                premiumTableExpanded.isActive = true
-                
-            }
-            if senderID == 2 && allPUsUnlockedBool == false {
-                premiumTableView.isHidden = false
-                premiumTableCollapsed.isActive = false
-                premiumTableExpanded.isActive = true
-            }
-        }
+        // The promo table advertised an in-app purchase that no longer exists. Its
+        // condition required premiumSetting to be false and that flag was forced true,
+        // so it has been unreachable for some time. Collapsed unconditionally
     }
-    
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tableView == self.premiumTableView {
             return 1
