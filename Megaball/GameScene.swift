@@ -620,6 +620,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
 	var endlessIIPortalCooldown: TimeInterval = 0
+	var endlessIIPendingPortalExit: CGPoint?
 	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
 	var endlessIIPendingBigColumn: Int?
 	var endlessIIPendingSpinColumn: Int?
@@ -1592,6 +1593,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
     
+    override func didSimulatePhysics() {
+        applyEndlessIIPortalExit()
+    }
+    // The one place a physics body can be moved from. Anything written to one during contact
+    // resolution is undone by the rest of the step
+
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
 

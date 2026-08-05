@@ -463,19 +463,36 @@ extension GameScene {
         endlessIIPortalCooldown = GameScene.endlessIIPortalCooldownSeconds
 
         let from = ball.position
-        let velocity = ball.physicsBody?.velocity ?? .zero
-        ball.position = CGPoint(x: ball.position.x,
-                                y: yBrickOffsetEndless + brickHeight/2 - ballSize)
-        // Just below the top of the playfield, not above it. The old figure was the
-        // underside of the top screen block plus a ball, which put the ball inside a solid
-        // body and left the physics to shove it back out
-        ball.physicsBody?.velocity = velocity
+        let to = CGPoint(x: ball.position.x,
+                         y: yBrickOffsetEndless + brickHeight/2 - ballSize)
+        // Just below the top of the playfield, not above it. An earlier version put the ball
+        // inside the top screen block and left the physics to shove it back out
 
-        endlessIIShowPortalJump(from: from, to: ball.position)
+        endlessIIPendingPortalExit = to
+        // Not moved here. This runs from `didBegin`, which SpriteKit calls in the middle of
+        // simulating the physics step - a position written to a dynamic body at that point is
+        // overwritten when the step finishes resolving, so the ball never went anywhere. The
+        // effects showed because they are separate nodes and nothing was undoing them.
+        // Applied in `didSimulatePhysics` instead, which is the first moment after the step
+
+        endlessIIShowPortalJump(from: from, to: to)
         if hapticsSetting { mediumHaptic.impactOccurred() }
 
         brick.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                              .fadeAlpha(to: 1, duration: 0.12)]))
+    }
+
+    /// Moves the ball to a portal's exit, once the physics step is out of the way.
+    func applyEndlessIIPortalExit() {
+        guard let exit = endlessIIPendingPortalExit else { return }
+        endlessIIPendingPortalExit = nil
+
+        let velocity = ball.physicsBody?.velocity ?? .zero
+        ball.position = exit
+        ball.physicsBody?.velocity = CGVector(dx: velocity.dx, dy: -abs(velocity.dy))
+        // Downward, whichever way it was going. Arriving at the top still travelling up only
+        // buys an immediate bounce off the ceiling; sending it down means the jump hands the
+        // player a run back through the whole field, which is the point of going up there
     }
 
     /// Marks both ends of a portal jump.
@@ -583,6 +600,7 @@ extension GameScene {
         endlessIIWanderers.removeAll()
         endlessIIFallers.removeAll()
         endlessIIPortalCooldown = 0
+        endlessIIPendingPortalExit = nil
     }
 }
 
