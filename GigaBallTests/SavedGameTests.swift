@@ -239,6 +239,25 @@ final class SavedGameTests: XCTestCase {
         XCTAssertEqual(SavedGame.load(from: defaults), game)
     }
 
+    // MARK: - The positional shim
+
+    func testLegacyProgressArrayHasTheOriginalOrder() {
+        // The read path still hands this to consumers that index positionally.
+        // Getting the order wrong would restore the score as the life count.
+        let progress = sampleGame().legacyProgressArray
+        XCTAssertEqual(progress.count, 17)
+        XCTAssertEqual(progress, [7, 10, 2, 120, 3_400, 2, 0, 10, 45, 300,
+                                  1, 3, 4, 2, 20, 11, 33])
+    }
+
+    func testLegacyProgressArrayRoundTripsThroughMigration() {
+        // Writing the old format, migrating it and rebuilding the array must
+        // give back exactly what went in.
+        writeLegacySave()
+        let original = defaults.object(forKey: "saveGameSaveArray") as! [Int]
+        XCTAssertEqual(SavedGame.load(from: defaults)?.legacyProgressArray, original)
+    }
+
     // MARK: - Versioning
 
     func testASaveCarriesTheCurrentVersion() {

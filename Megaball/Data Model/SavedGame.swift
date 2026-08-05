@@ -187,6 +187,21 @@ struct SavedGame: Codable, Equatable {
         return game.isConsistent ? game : nil
     }
 
+    // MARK: - Compatibility
+
+    /// The seventeen progress values in their old positional order.
+    ///
+    /// A shim while the read path moves over ahead of the write path. The
+    /// consumers still index this array; they move to the named fields once
+    /// saving uses SavedGame too, and then this goes away.
+    var legacyProgressArray: [Int] {
+        [levelNumber, endLevelNumber, packNumber, levelScore, totalScore,
+         numberOfLives, endlessHeight, numberOfLevels, levelTimerValue,
+         packTimerValue, deathsPerLevel, deathsPerPack,
+         powerUpsGeneratedPerLevel, powerUpsCollectedPerLevel,
+         powerUpsGeneratedPerPack, powerUpsCollectedPerPack, paddleHitsPerLevel]
+    }
+
     // MARK: - Storage
 
     /// The saved game, or nil if there is none or it cannot be read.

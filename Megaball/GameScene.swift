@@ -4305,20 +4305,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		firstPause = defaults.bool(forKey: "firstPause")
 		// User settings
 		
-		saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
-        saveMultiplier = defaults.double(forKey: "saveMultiplier")
-        saveBrickTextureArray = defaults.object(forKey: "saveBrickTextureArray") as! [Int]?
-        saveBrickColourArray = defaults.object(forKey: "saveBrickColourArray") as! [Int]?
-        saveBrickXPositionArray = defaults.object(forKey: "saveBrickXPositionArray") as! [Int]?
-        saveBrickYPositionArray = defaults.object(forKey: "saveBrickYPositionArray") as! [Int]?
-		saveBallPropertiesArray = defaults.object(forKey: "saveBallPropertiesArray") as! [Double]?
-		savePowerUpFallingXPositionArray = defaults.object(forKey: "savePowerUpFallingXPositionArray") as! [Int]?
-		savePowerUpFallingYPositionArray = defaults.object(forKey: "savePowerUpFallingYPositionArray") as! [Int]?
-		savePowerUpFallingArray = defaults.object(forKey: "savePowerUpFallingArray") as! [Int]?
-		savePowerUpActiveArray = defaults.object(forKey: "savePowerUpActiveArray") as! [String]?
-		savePowerUpActiveDurationArray = defaults.object(forKey: "savePowerUpActiveDurationArray") as! [Double]?
-		savePowerUpActiveTimerArray = defaults.object(forKey: "savePowerUpActiveTimerArray") as! [Double]?
-		savePowerUpActiveMagnitudeArray = defaults.object(forKey: "savePowerUpActiveMagnitudeArray") as! [Int]?
+		let restoredGame = SavedGame.load()
+		// One safe read replaces the force-cast of every key. A save that cannot be
+		// read comes back nil and reads as "no game in progress"
+		saveGameSaveArray = restoredGame?.legacyProgressArray ?? []
+		saveBrickTextureArray = restoredGame?.brickTextures ?? []
+		saveBrickColourArray = restoredGame?.brickColours ?? []
+		saveBrickXPositionArray = restoredGame?.brickXPositions ?? []
+		saveBrickYPositionArray = restoredGame?.brickYPositions ?? []
+		saveBallPropertiesArray = restoredGame?.ballProperties ?? []
+		savePowerUpFallingXPositionArray = restoredGame?.fallingPowerUpXPositions ?? []
+		savePowerUpFallingYPositionArray = restoredGame?.fallingPowerUpYPositions ?? []
+		savePowerUpFallingArray = restoredGame?.fallingPowerUps ?? []
+		savePowerUpActiveArray = restoredGame?.activePowerUps ?? []
+		savePowerUpActiveDurationArray = restoredGame?.activePowerUpDurations ?? []
+		savePowerUpActiveTimerArray = restoredGame?.activePowerUpTimers ?? []
+		savePowerUpActiveMagnitudeArray = restoredGame?.activePowerUpMagnitudes ?? []
+		saveMultiplier = restoredGame?.multiplier ?? 1.0
         // Game save settings
 		
 		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)

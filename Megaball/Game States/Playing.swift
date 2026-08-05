@@ -67,8 +67,16 @@ class Playing: GKState {
 
     func reloadUI() {
         scene.livesAwaitingRollIn = true
-        // reloadUI only runs coming from PreGame or InbetweenLevels, which are exactly
-        // the cases where a level intro is shown and the roll-in will follow
+        // Held hidden until the level intro clears and the roll-in takes over.
+
+        scene.run(SKAction.wait(forDuration: 3.0)) { [weak scene] in
+            guard let scene else { return }
+            if scene.livesAwaitingRollIn { scene.rollInLivesRow() }
+        }
+        // Fallback, because not every path through here shows an intro. A resumed game
+        // goes straight to the pause menu, so .levelIntroDidClear never arrives and
+        // without this the row stays permanently empty. rollInLivesRow clears the flag,
+        // so on the normal path this finds nothing to do
 
         let wait = SKAction.wait(forDuration: 0.35)
         self.scene.run(wait, completion: {

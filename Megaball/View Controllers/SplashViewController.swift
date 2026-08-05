@@ -262,7 +262,10 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     func userSettings() {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
-        saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
+        let restoredGame = SavedGame.load()
+        // One safe read replaces the force-cast of every key. A save that cannot be
+        // read comes back nil and reads as "no game in progress"
+        saveGameSaveArray = restoredGame?.legacyProgressArray ?? []
         // Load user settings
     }
 }
