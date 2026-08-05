@@ -49,9 +49,8 @@ class PreGame: GKState {
         scene.multiplierLabel.isHidden = true
         scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         scene.pauseButton.isHidden = true
-        scene.livesLabel.isHidden = true
         scene.endlessGameIcon.isHidden = true
-        scene.life.isHidden = true
+        scene.setLivesRowHidden(true)
         scene.ballIsOnPaddle = true
         // Hide labels
         

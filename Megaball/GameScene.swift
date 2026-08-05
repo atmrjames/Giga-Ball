@@ -58,6 +58,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var ball = SKSpriteNode()
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
+	var lifeIcons: [SKSpriteNode] = []
+	static let maxLivesShown = 10
+	// The lives row sits below the paddle rather than in the HUD. The HUD's centre is
+	// where a notch or Dynamic Island lives, and an expanded Live Activity would draw
+	// straight over a counter placed beside it. Below the paddle it is always visible,
+	// and it reads better - the balls you have left, next to the one in play.
+	//
+	// Capped because the row has to fit the play width. Past ten, the exact count is not
+	// something a player is tracking.
 	var topScreenBlock = SKSpriteNode()
 	var bottomScreenBlock = SKSpriteNode()
 	var sideScreenBlockLeft = SKSpriteNode()
@@ -791,6 +800,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		life.texture = ballTexture
 		life.size.width = ballSize*1.5
 		life.size.height = ballSize*1.5
+		buildLivesRow()
 		
 		paddleWidth = ballSize*7.5
 		paddleHeight = ballSize
@@ -1038,18 +1048,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplierLabel.fontSize = fontSize
 		multiplierLabel.zPosition = 10
 		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-		life.position.x = pauseButton.position.x + pauseButtonSize/2 + layoutUnit + life.size.width/2
-		life.position.y = pauseButton.position.y
-		life.zPosition = 10
-		life.isHidden = false
-		livesLabel.position.x = life.position.x + life.size.width/2 + labelSpacing/2
-		livesLabel.position.y = life.position.y
-		// Beside the pause button rather than centred. The centre of the HUD row is the
-		// one place a notch or Dynamic Island occupies, so keeping it clear is what lets
-		// the row sit above the safe area inset
-        livesLabel.fontSize = fontSize
-		livesLabel.horizontalAlignmentMode = .left
-		livesLabel.zPosition = 10
+		life.isHidden = true
+		livesLabel.isHidden = true
+		// Both retired in favour of the lives row below the paddle. They are authored in
+		// GameScene.sks so they have to be hidden explicitly, and it has to happen here -
+		// the earlier sizing block runs before livesLabel is bound, so hiding it there
+		// only hides the placeholder
 		buildLabel.position.x = -gameWidth/2 + labelSpacing
 		buildLabel.position.y = -frame.size.height/2 + labelSpacing*2
 		buildLabel.fontSize = fontSize/3*2
@@ -1603,18 +1607,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
         if numberOfLives > 0 {
 			
-			life.removeAllActions()
-            
-            let fadeOutLife = SKAction.fadeOut(withDuration: 0.25)
-            let scaleDownLife = SKAction.scale(to: 0, duration: 0.25)
-            let waitTimeLife = SKAction.wait(forDuration: 0.25)
-            let fadeInLife = SKAction.fadeIn(withDuration: 0.5)
-			let scaleUpLife = SKAction.scale(to: 1, duration: 0.5)
-			let largeLife = SKAction.scale(to: 1.5, duration: 0)
-            let lifeLostGroup = SKAction.group([fadeOutLife, scaleDownLife, waitTimeLife])
-            let resetLifeGroup = SKAction.group([scaleUpLife, fadeInLife])
-            // Setup life lost animation
-            
+			flyLifeToPaddle()
+			// The spent life travels to the paddle as the replacement ball appears there
+			
             let fadeOutBall = SKAction.fadeOut(withDuration: 0)
             let scaleDownBall = SKAction.scale(to: 0, duration: 0)
             let waitTimeBall = SKAction.wait(forDuration: 0.25)
@@ -1624,18 +1619,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let ballGroup = SKAction.group([fadeInBall, scaleUpBall])
             // Setup ball animation
             
-            self.life.run(waitTimeLife, completion: {
-                self.life.run(lifeLostGroup, completion: {
-					self.life.run(waitTimeLife, completion: {
-						self.life.run(largeLife, completion: {
-							self.life.run(resetLifeGroup)
-							self.numberOfLives -= 1
-							self.livesLabel.text = "x\(self.numberOfLives)"
-						})
-					})
-                })
+            self.run(SKAction.wait(forDuration: 0.75), completion: {
+                self.numberOfLives -= 1
+                self.refreshLivesRow()
             })
-            // Update number of lives
+            // Unchanged 0.75s before the count drops - other code reads numberOfLives
+            // synchronously around here and the timing is load-bearing
             
             ball.run(resetBallGroup, completion: {
                 self.ball.isHidden = false
@@ -2832,7 +2821,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case powerUpGetALife:
         // Get a life
             numberOfLives+=1
-            livesLabel.text = "x\(numberOfLives)"
+            refreshLivesRow()
 			
 			life.removeAllActions()
 			
@@ -4011,6 +4000,83 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// supported signal for this, and unlike a ratio test it reports .compact for a
 	// narrow multitasking slot, which is what the HUD placement below actually wants
 
+	func buildLivesRow() {
+		lifeIcons.forEach { $0.removeFromParent() }
+		lifeIcons = (0..<GameScene.maxLivesShown).map { _ in
+			let icon = SKSpriteNode(texture: ballTexture)
+			icon.size = CGSize(width: ballSize, height: ballSize)
+			icon.zPosition = 10
+			icon.isHidden = true
+			addChild(icon)
+			return icon
+		}
+		layoutLivesRow()
+	}
+	// One sprite per displayable life, reused rather than created per ball lost so the
+	// flight animation always has a node to move
+
+	func layoutLivesRow() {
+		let spacing = ballSize*1.6
+		let rowY = paddle.position.y - paddleHeight/2 - layoutUnit*2
+		for (index, icon) in lifeIcons.enumerated() {
+			icon.size = CGSize(width: ballSize, height: ballSize)
+			icon.position = livesRowHome(index: index, spacing: spacing, rowY: rowY)
+		}
+	}
+
+	func livesRowHome(index: Int, spacing: CGFloat, rowY: CGFloat) -> CGPoint {
+		let shown = max(1, min(numberOfLives, GameScene.maxLivesShown))
+		let totalWidth = CGFloat(shown - 1) * spacing
+		return CGPoint(x: -totalWidth/2 + CGFloat(index)*spacing, y: rowY)
+	}
+	// Centred on the play area, so the row grows outwards from the middle as lives are
+	// gained rather than shifting the ones already there
+
+	func refreshLivesRow() {
+		let spacing = ballSize*1.6
+		let rowY = paddle.position.y - paddleHeight/2 - layoutUnit*2
+		let shown = min(numberOfLives, GameScene.maxLivesShown)
+		for (index, icon) in lifeIcons.enumerated() {
+			icon.removeAllActions()
+			icon.position = livesRowHome(index: index, spacing: spacing, rowY: rowY)
+			icon.setScale(1)
+			icon.alpha = 1
+			icon.texture = ballTexture
+			icon.isHidden = endlessMode || index >= shown
+		}
+	}
+	// Endless mode has a single life and no counter, so the row is hidden there
+
+	func setLivesRowHidden(_ hidden: Bool) {
+		if hidden {
+			lifeIcons.forEach { $0.isHidden = true }
+		} else {
+			refreshLivesRow()
+		}
+	}
+	// Follows the same lifecycle as the rest of the HUD: hidden during the level intro,
+	// shown while playing and paused
+
+	func flyLifeToPaddle() {
+		let shown = min(numberOfLives, GameScene.maxLivesShown)
+		guard shown > 0, shown <= lifeIcons.count else { return }
+		let icon = lifeIcons[shown - 1]
+		icon.removeAllActions()
+		icon.isHidden = false
+
+		let target = CGPoint(x: paddle.position.x, y: ballStartingPositionY)
+		let fly = SKAction.move(to: target, duration: 0.25)
+		fly.timingMode = .easeIn
+		let shrink = SKAction.scale(to: 0.6, duration: 0.25)
+		icon.run(SKAction.group([fly, shrink])) {
+			icon.isHidden = true
+		}
+	}
+	// The life being spent travels to where the replacement ball appears, which is what
+	// the ball animation is already doing at the same moment. Deliberately 0.25s, to land
+	// exactly as the ball fades in. The lives count itself is decremented later, on the
+	// existing 0.75s timing, so nothing about the game state moves
+
 	func computeLayoutMetrics() {
 		let insets = self.view?.safeAreaInsets ?? .zero
 		let availableHeight = frame.size.height - GameScene.hudTopClearance - insets.bottom
@@ -4066,8 +4132,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             scoreLabel.isHidden = true
             multiplierLabel.isHidden = true
             pauseButton.isHidden = true
-            livesLabel.isHidden = true
-            life.isHidden = true
+            setLivesRowHidden(true)
 			endlessGameIcon.isHidden = true
 			// Hide UI
 		}

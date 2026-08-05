@@ -83,11 +83,8 @@ class Paused: GKState {
         scene.scoreLabel.isHidden = false
         scene.multiplierLabel.isHidden = false
         scene.pauseButton.isHidden = false
-        scene.livesLabel.isHidden = false
-        scene.life.isHidden = false
+        scene.setLivesRowHidden(false)
         if scene.endlessMode {
-            scene.life.isHidden = true
-            scene.livesLabel.isHidden = true
             scene.multiplierLabel.isHidden = true
         }
         

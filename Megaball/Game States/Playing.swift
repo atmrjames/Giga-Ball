@@ -71,11 +71,8 @@ class Playing: GKState {
             self.scene.scoreLabel.isHidden = false
             self.scene.multiplierLabel.isHidden = false
             self.scene.pauseButton.isHidden = false
-            self.scene.livesLabel.isHidden = false
-            self.scene.life.isHidden = false
+            self.scene.setLivesRowHidden(false)
             if self.scene.endlessMode {
-                self.scene.life.isHidden = true
-                self.scene.livesLabel.isHidden = true
                 self.scene.multiplierLabel.isHidden = true
             }
         })
@@ -83,7 +80,7 @@ class Playing: GKState {
         
         scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
-        scene.livesLabel.text = "x\(scene.numberOfLives)"
+        scene.refreshLivesRow()
         // Reset labels
         
         scene.powerUpIconReset(sender: "")
@@ -111,7 +108,7 @@ class Playing: GKState {
         scene.scoreLabel.text = String(scene.totalScore)
         scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
         scene.multiplierLabel.text = "x\(scene.scoreFactorString)"
-        scene.livesLabel.text = "x\(self.scene.numberOfLives)"
+        scene.refreshLivesRow()
         // Update number of lives label
 
         scene.ball.removeAllActions()

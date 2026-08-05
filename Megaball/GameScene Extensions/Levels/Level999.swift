@@ -16,14 +16,13 @@ extension GameScene {
         endlessMoveInProgress = false
         endlessHeight = height
 
-        life.isHidden = true
-        livesLabel.isHidden = true
+        setLivesRowHidden(true)
         multiplierLabel.isHidden = true
         // Remove classic mode labels
         
         scoreLabel.fontSize = fontSize*1.5
         scoreLabel.horizontalAlignmentMode = .right
-        scoreLabel.position.y = life.position.y-2
+        scoreLabel.position.y = pauseButton.position.y
         scoreLabel.text = "\(endlessHeight)m"
         // Setup score label for endless mode
 
