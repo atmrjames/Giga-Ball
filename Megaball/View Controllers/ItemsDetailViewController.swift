@@ -45,6 +45,17 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
 
+    /// What this screen is showing, which depends on the list that opened it.
+    private var detailTitle: String {
+        switch senderID {
+        case 0: return "APP ICONS"
+        case 1: return "BALL & PADDLE"
+        case 2: return "POWER-UPS"
+        case 3: return "ACHIEVEMENTS"
+        default: return "ITEM DETAILS"
+        }
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -57,6 +68,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
         
+        titleLabel.text = detailTitle
+        // The outlet existed but was never assigned, so every one of the four lists this
+        // screen serves showed the storyboard's placeholder, "ITEM DETAILS"
+
         itemsTableView.delegate = self
         itemsTableView.dataSource = self
         itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
