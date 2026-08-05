@@ -140,10 +140,14 @@ Optionals are force-unwrapped throughout the view controllers (`premiumSetting!`
 degradation. Prioritise the save/resume path, where a corrupt or partial save currently
 means a crash loop on launch.
 
-### Fix the iCloud data-reset propagation bug
-*"Data reset on one device updates on another."* This is the closest thing to a
-data-loss bug on the list and should not wait. Needs a sync tracker so a local reset
-isn't replayed onto other devices as authoritative.
+### ✅ Fix the iCloud data-reset propagation bug
+*"Data reset on one device updates on another."* Done in 1.3 via a generation
+number (`StatsSync`), incremented on reset and only on reset. The sync merged by
+highest-value in both directions, which cannot express a reset — whether the
+zeros stuck or the other device's old stats came back depended purely on which
+device synced first. A higher generation now means "supersedes", so the sync
+adopts or pushes wholesale instead of merging. Devices that have never reset are
+all at generation zero and merge exactly as before.
 
 ### ✅ App icon via Icon Composer (blocked on toolchain)
 **All thirteen icons are migrated, but they cannot be built by Xcode 26.6** — its `actool`

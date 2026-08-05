@@ -105,6 +105,13 @@ final class CloudKitHandler: NSObject {
         }
     }
     
+    /// Whether this sync should merge as usual, or defer to a reset on one side.
+    func statsSyncResolution(against iCloudStore: NSUbiquitousKeyValueStore) -> SyncResolution {
+        StatsSync.resolve(
+            localGeneration: defaults.integer(forKey: StatsSync.generationKey),
+            cloudGeneration: Int(iCloudStore.longLong(forKey: StatsSync.generationKey)))
+    }
+
     func saveToiCloud() {
         loadLocalData()
         isiCloudContainerAvailable()
@@ -116,7 +123,22 @@ final class CloudKitHandler: NSObject {
     
     func updateToiCloud() {
         let iCloudStore = NSUbiquitousKeyValueStore.default
-        
+
+        switch statsSyncResolution(against: iCloudStore) {
+        case .adoptCloud:
+            // Another device has reset since this one. Pushing would merge the
+            // stats it cleared straight back into iCloud.
+            loadDataReset()
+            return
+        case .pushLocal:
+            // This device reset last, so its lower numbers are the current
+            // ones and merging would restore what the reset cleared.
+            pushLocalDataWholesale()
+            return
+        case .merge:
+            break
+        }
+
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         let appOpenCountCloud = Int(iCloudStore.longLong(forKey: "appOpenCount"))
         if appOpenCount > appOpenCountCloud {
@@ -546,7 +568,20 @@ final class CloudKitHandler: NSObject {
     
     func updateFromiCloud() {
         let iCloudStore = NSUbiquitousKeyValueStore.default
-        
+
+        switch statsSyncResolution(against: iCloudStore) {
+        case .adoptCloud:
+            loadDataReset()
+            return
+        case .pushLocal:
+            // A reset here has not reached iCloud yet. Pulling would merge the
+            // stats it cleared back onto this device.
+            pushLocalDataWholesale()
+            return
+        case .merge:
+            break
+        }
+
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         let appOpenCountCloud = Int(iCloudStore.longLong(forKey: "appOpenCount"))
         if appOpenCountCloud > appOpenCount {
@@ -912,13 +947,39 @@ final class CloudKitHandler: NSObject {
     
     func saveDataReset () {
         loadLocalData()
+
+        // Mark this state as superseding whatever is in iCloud. Without it the
+        // zeros written below are just small numbers, and the next device to
+        // sync merges its own larger ones back over them.
+        //
+        // This happens whether or not syncing is on. A player who resets with
+        // iCloud off and turns it on later would otherwise still be at
+        // generation zero, and the stats they cleared would flow straight back
+        // down on the first sync.
+        let iCloudStore = NSUbiquitousKeyValueStore.default
+        let generation = StatsSync.generationAfterReset(
+            localGeneration: defaults.integer(forKey: StatsSync.generationKey),
+            cloudGeneration: Int(iCloudStore.longLong(forKey: StatsSync.generationKey)))
+        defaults.set(generation, forKey: StatsSync.generationKey)
+
         isiCloudContainerAvailable()
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         if !iCloudSetting {
             return
         }
+
+        pushLocalDataWholesale()
+        loadDataReset()
+    }
+
+    /// Writes local stats over iCloud without merging, so values that went
+    /// down are not treated as losing to the larger ones already there.
+    ///
+    /// Assumes the caller has already run loadLocalData() and confirmed
+    /// iCloudSetting, as the two sync paths do.
+    func pushLocalDataWholesale() {
         let iCloudStore = NSUbiquitousKeyValueStore.default
-        
+
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         firstPause = defaults.bool(forKey: "firstPause")
         
@@ -1002,9 +1063,14 @@ final class CloudKitHandler: NSObject {
         iCloudStore.set(pack9LevelHighScores, forKey: "pack9LevelHighScores")
         iCloudStore.set(pack10LevelHighScores, forKey: "pack10LevelHighScores")
         iCloudStore.set(pack11LevelHighScores, forKey: "pack11LevelHighScores")
-        
+
+        // iCloud now holds this device's state, so it holds its generation too.
+        // Leaving the cloud behind would make every later sync push wholesale
+        // again and never merge another device's play.
+        iCloudStore.set(Int64(defaults.integer(forKey: StatsSync.generationKey)),
+                        forKey: StatsSync.generationKey)
+
         iCloudStore.synchronize()
-        loadDataReset()
     }
 
     func loadDataReset() {
@@ -1176,6 +1242,12 @@ final class CloudKitHandler: NSObject {
         if self.pack11LevelHighScores != nil {
             totalStatsArray[0].pack11LevelHighScores = pack11LevelHighScores!
         }
+
+        // Having taken the cloud state whole, this device is caught up. Without
+        // recording that, every later sync would adopt it again and discard
+        // anything played since.
+        defaults.set(Int(iCloudStore.longLong(forKey: StatsSync.generationKey)),
+                     forKey: StatsSync.generationKey)
 
         saveLocalData()
     }

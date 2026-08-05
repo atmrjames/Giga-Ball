@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		1AF1700000000004 /* SavedGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000003 /* SavedGameTests.swift */; };
+		1AF1700000000014 /* StatsSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000013 /* StatsSyncTests.swift */; };
 		1AF1700000000002 /* SavedGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000001 /* SavedGame.swift */; };
+		1AF1700000000012 /* StatsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000011 /* StatsSync.swift */; };
 		1AF1600000000002 /* ProgressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1600000000001 /* ProgressionTests.swift */; };
 		1AF1500000000002 /* Progression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1500000000001 /* Progression.swift */; };
 		1AF1400000000002 /* ScoringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1400000000001 /* ScoringTests.swift */; };
@@ -254,7 +256,9 @@
 
 /* Begin PBXFileReference section */
 		1AF1700000000003 /* SavedGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGameTests.swift; sourceTree = "<group>"; };
+		1AF1700000000013 /* StatsSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSyncTests.swift; sourceTree = "<group>"; };
 		1AF1700000000001 /* SavedGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGame.swift; sourceTree = "<group>"; };
+		1AF1700000000011 /* StatsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSync.swift; sourceTree = "<group>"; };
 		1AF1600000000001 /* ProgressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressionTests.swift; sourceTree = "<group>"; };
 		1AF1500000000001 /* Progression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Progression.swift; sourceTree = "<group>"; };
 		1AF1400000000001 /* ScoringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringTests.swift; sourceTree = "<group>"; };
@@ -530,6 +534,7 @@
 				1AF1100000000001 /* TotalStatsTests.swift */,
 				1AF1400000000001 /* ScoringTests.swift */,
 				1AF1700000000003 /* SavedGameTests.swift */,
+				1AF1700000000013 /* StatsSyncTests.swift */,
 				1AF1600000000001 /* ProgressionTests.swift */,
 				1AF1100000000002 /* UnlockStateTests.swift */,
 				1AF1100000000003 /* PowerUpAllocationTests.swift */,
@@ -1016,6 +1021,7 @@
 				1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */,
 				1AF1300000000001 /* Scoring.swift */,
 				1AF1700000000001 /* SavedGame.swift */,
+				1AF1700000000011 /* StatsSync.swift */,
 				1AF1500000000001 /* Progression.swift */,
 				1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */,
 			);
@@ -1225,6 +1231,7 @@
 				1AF1200000000001 /* TotalStatsTests.swift in Sources */,
 				1AF1400000000002 /* ScoringTests.swift in Sources */,
 				1AF1700000000004 /* SavedGameTests.swift in Sources */,
+				1AF1700000000014 /* StatsSyncTests.swift in Sources */,
 				1AF1600000000002 /* ProgressionTests.swift in Sources */,
 				1AF1200000000002 /* UnlockStateTests.swift in Sources */,
 				1AF1200000000003 /* PowerUpAllocationTests.swift in Sources */,
@@ -1333,6 +1340,7 @@
 				1A57A2AC23F592FB004D7AC2 /* TotalStats.swift in Sources */,
 				1AF1300000000002 /* Scoring.swift in Sources */,
 				1AF1700000000002 /* SavedGame.swift in Sources */,
+				1AF1700000000012 /* StatsSync.swift in Sources */,
 				1AF1500000000002 /* Progression.swift in Sources */,
 				1A2A387C23DDEEDF001BD200 /* SettingsTableViewCell.swift in Sources */,
 				1A31941724441CD5004917D0 /* Level044.swift in Sources */,
