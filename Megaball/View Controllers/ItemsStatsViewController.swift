@@ -235,7 +235,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {
-                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData).map { $0.makeAchievementArraysConsistent(); return $0 }
             } catch {
                 Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }

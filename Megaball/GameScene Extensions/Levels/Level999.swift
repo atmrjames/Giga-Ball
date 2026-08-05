@@ -81,6 +81,9 @@ extension GameScene {
                 if i == 21 && j == 5 {
                     brick.texture = brickNormalTexture
                     brick.color = brickGreenGigaball
+                    brick.endlessIIStaysPlain = true
+                    // The brick the run opens on. Giga-Ball green to say so, and plain
+                    // whatever Endless 2.0 is doing to everything around it
                 }
 
                 brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffsetEndless - brickHeight*CGFloat(i))

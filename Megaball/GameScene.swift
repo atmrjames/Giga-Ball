@@ -1280,7 +1280,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func loadGameData() {
 		if let totalData = try? Data(contentsOf: totalStatsStore!) {
 			do {
-				totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
+				totalStatsArray = try decoder.decode([TotalStats].self, from: totalData).map { $0.makeAchievementArraysConsistent(); return $0 }
 			} catch {
 				Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
 			}
@@ -3548,6 +3548,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Remove indestructible bricks
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
+				guard node.endlessIIRole != .portal else { return }
+				// A Portal is built on the Indestructible texture but it is not one of them.
+				// It is never destroyed by anything - clearing the indestructibles would
+				// take the way out of the field with them
 				if temporarySprite.texture == self.brickIndestructible2Texture || temporarySprite.texture == self.brickIndestructible1Texture {
 					temporarySprite.isHidden = true
 					if temporarySprite.texture == self.brickIndestructible1Texture {
@@ -4570,6 +4574,9 @@ laserTimer?.invalidate()
 	func ballStuck() {
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			let temporarySprite = node as! SKSpriteNode
+			guard node.endlessIIRole != .portal else { return }
+			// A Portal cannot be what trapped the ball - it sends it to the top - so there
+			// is nothing to gain by clearing it, and it is never destroyed by anything
 			if temporarySprite.texture == self.brickIndestructible1Texture || temporarySprite.texture == self.brickIndestructible2Texture {
 				temporarySprite.texture = self.brickNullTexture
 				self.removeBrick(node: node, sprite: temporarySprite)

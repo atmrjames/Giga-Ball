@@ -160,7 +160,14 @@ extension GameScene {
 
     // MARK: - Moving
 
-    /// Wanders left and right across two cells.
+    /// Slides sideways until something stops it, then goes the other way.
+    ///
+    /// The limits are not fixed when it is created - they are whatever is beside it right
+    /// now. It travels until it reaches another brick or the wall, turns round, and does the
+    /// same the other way. A brick with a neighbour on both sides simply does not move, and
+    /// starts moving the moment one of them goes. That makes it part of the field rather
+    /// than something overlapping it: it can never end up sitting on top of another brick,
+    /// and clearing beside one visibly gives it room.
     ///
     /// Horizontally only, where the spec asks for a 2x2 region. A brick that left its row
     /// centre would break the one thing the descent and the bottom-row check rely on - see
@@ -186,9 +193,33 @@ extension GameScene {
         addGlyph(arrows, to: brick, filled: false)
 
         endlessIIWanderers.append(EndlessIIWander(brick: brick,
-                                                  home: brick.position.x,
-                                                  reach: brickWidth/2,
                                                   direction: Bool.random() ? 1 : -1))
+    }
+
+    /// How far a wandering brick may travel before something is in the way.
+    ///
+    /// Measured from what is actually beside it, so it re-reads the field rather than
+    /// trusting limits worked out when the brick was made - the field it sits in changes
+    /// constantly underneath it.
+    func endlessIIWanderLimits(for brick: SKSpriteNode) -> (left: CGFloat, right: CGFloat) {
+        let geometry = endlessIIGeometry
+        let cell = geometry.cell(at: brick.position)
+        let occupied = endlessIIOccupancy()
+        let halfWidth = brick.size.width/2
+
+        var leftLimit = -gameWidth/2 + halfWidth
+        var rightLimit = gameWidth/2 - halfWidth
+        // The walls, until a brick gets in the way first
+
+        if let blocker = occupied[EndlessIICell(column: cell.column - 1, row: cell.row)],
+           blocker !== brick {
+            leftLimit = max(leftLimit, blocker.position.x + blocker.size.width/2 + halfWidth)
+        }
+        if let blocker = occupied[EndlessIICell(column: cell.column + 1, row: cell.row)],
+           blocker !== brick {
+            rightLimit = min(rightLimit, blocker.position.x - blocker.size.width/2 - halfWidth)
+        }
+        return (leftLimit, rightLimit)
     }
 
     // MARK: - Directional
@@ -253,6 +284,43 @@ extension GameScene {
         addGlyph(burst, to: brick, filled: false)
     }
 
+    /// Shows what an explosion is about to take.
+    ///
+    /// Brief and small: a ring stepping outward from the brick over the cells it is claiming,
+    /// and a flash on each of them. Long enough to see the connection between the brick that
+    /// went and the ones going with it, short enough not to become a cutscene.
+    func endlessIIShowBlast(at centre: CGPoint, over victims: [SKSpriteNode]) {
+        let reach = max(brickWidth, brickHeight)*1.5
+
+        let ring = SKShapeNode(circleOfRadius: reach)
+        ring.position = centre
+        ring.zPosition = 2
+        ring.fillColor = .clear
+        ring.strokeColor = GameScene.explodingBrickColour
+        ring.lineWidth = 3
+        ring.setScale(0.15)
+        addChild(ring)
+        ring.run(.sequence([.group([.scale(to: 1, duration: 0.18),
+                                    .fadeOut(withDuration: 0.18)]),
+                            .removeFromParent()]))
+
+        for victim in victims {
+            let flash = SKSpriteNode(color: GameScene.explodingBrickColour, size: victim.size)
+            flash.position = victim.position
+            flash.anchorPoint = victim.anchorPoint
+            flash.zPosition = 2
+            flash.alpha = 0.9
+            addChild(flash)
+            flash.run(.sequence([.group([.fadeOut(withDuration: 0.22),
+                                         .scale(to: 1.3, duration: 0.22)]),
+                                 .removeFromParent()]))
+        }
+        // Drawn as separate nodes rather than on the bricks themselves, because the bricks
+        // are about to be removed and would take the animation with them
+
+        if hapticsSetting { heavyHaptic.impactOccurred() }
+    }
+
     /// Runs an explosion, and any it sets off.
     ///
     /// One pass over a queue with a set of everything already caught, so a brick detonates
@@ -277,6 +345,9 @@ extension GameScene {
             }
         }
 
+        if destroyed.isEmpty == false {
+            endlessIIShowBlast(at: brick.position, over: destroyed)
+        }
         for victim in destroyed { endlessIIDestroy(victim) }
         if destroyed.isEmpty == false { countBricks() }
     }
@@ -391,16 +462,54 @@ extension GameScene {
         guard endlessIIPortalCooldown <= 0 else { return }
         endlessIIPortalCooldown = GameScene.endlessIIPortalCooldownSeconds
 
+        let from = ball.position
         let velocity = ball.physicsBody?.velocity ?? .zero
         ball.position = CGPoint(x: ball.position.x,
-                                y: yBrickOffsetEndless + brickHeight/2 + ballSize)
+                                y: yBrickOffsetEndless + brickHeight/2 - ballSize)
+        // Just below the top of the playfield, not above it. The old figure was the
+        // underside of the top screen block plus a ball, which put the ball inside a solid
+        // body and left the physics to shove it back out
         ball.physicsBody?.velocity = velocity
 
+        endlessIIShowPortalJump(from: from, to: ball.position)
         if hapticsSetting { mediumHaptic.impactOccurred() }
 
-        let flash = SKAction.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
-                                       .fadeAlpha(to: 1, duration: 0.12)])
-        brick.run(flash)
+        brick.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
+                             .fadeAlpha(to: 1, duration: 0.12)]))
+    }
+
+    /// Marks both ends of a portal jump.
+    ///
+    /// Without this the jump is easy to miss entirely, and it was: bricks sit near the top of
+    /// the field, so a Portal among them sends the ball a short distance, and a ball that
+    /// moves half a screen in one frame with nothing to say why just looks like a bad bounce.
+    /// A ring collapsing where it left and one opening where it arrives is the whole story.
+    func endlessIIShowPortalJump(from: CGPoint, to: CGPoint) {
+        for (position, collapsing) in [(from, true), (to, false)] {
+            let ring = SKShapeNode(circleOfRadius: ballSize*1.8)
+            ring.position = position
+            ring.zPosition = 3
+            ring.fillColor = .clear
+            ring.strokeColor = GameScene.portalBrickColour
+            ring.lineWidth = 3
+            ring.setScale(collapsing ? 1 : 0.2)
+            addChild(ring)
+            ring.run(.sequence([.group([.scale(to: collapsing ? 0.2 : 1, duration: 0.22),
+                                        .fadeOut(withDuration: 0.22)]),
+                                .removeFromParent()]))
+        }
+
+        let streak = SKShapeNode(rect: CGRect(x: -1.5, y: min(from.y, to.y),
+                                              width: 3, height: abs(to.y - from.y)))
+        streak.position = CGPoint(x: from.x, y: 0)
+        streak.zPosition = 2
+        streak.fillColor = GameScene.portalBrickColour
+        streak.strokeColor = .clear
+        streak.alpha = 0.5
+        addChild(streak)
+        streak.run(.sequence([.fadeOut(withDuration: 0.25), .removeFromParent()]))
+        // A line joining the two, so the eye is taken from one end to the other rather than
+        // having to find the ball again
     }
 
     static let endlessIIPortalCooldownSeconds: TimeInterval = 0.5
@@ -436,13 +545,17 @@ extension GameScene {
         endlessIIWanderers.removeAll { $0.brick.parent == nil }
         for index in endlessIIWanderers.indices {
             var wanderer = endlessIIWanderers[index]
+            let limits = endlessIIWanderLimits(for: wanderer.brick)
+            guard limits.right - limits.left > 0.5 else { continue }
+            // Penned in on both sides. It waits, and sets off again the moment one goes
+
             let step = GameScene.movingSpeed*brickWidth*CGFloat(delta)*wanderer.direction
             var x = wanderer.brick.position.x + step
-            if x > wanderer.home + wanderer.reach {
-                x = wanderer.home + wanderer.reach
+            if x >= limits.right {
+                x = limits.right
                 wanderer.direction = -1
-            } else if x < wanderer.home - wanderer.reach {
-                x = wanderer.home - wanderer.reach
+            } else if x <= limits.left {
+                x = limits.left
                 wanderer.direction = 1
             }
             wanderer.brick.position.x = x
@@ -479,11 +592,12 @@ struct EndlessIIFall {
     let targetY: CGFloat
 }
 
-/// A Moving brick and the span it wanders across.
+/// A Moving brick and the way it is currently heading.
+///
+/// It carries no limits of its own. Where it can get to is whatever is beside it at the
+/// moment it is asked, which is the only answer that stays true in a field that is being
+/// cleared out from under it.
 struct EndlessIIWander {
     let brick: SKSpriteNode
-    /// The x it was generated at, and how far either side of it it may go.
-    let home: CGFloat
-    let reach: CGFloat
     var direction: CGFloat
 }

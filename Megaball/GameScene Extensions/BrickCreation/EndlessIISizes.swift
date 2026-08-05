@@ -155,6 +155,7 @@ extension GameScene {
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
             guard brick.texture == brickNormalTexture else { continue }
+            guard brick.endlessIIStaysPlain == false else { continue }
             guard isOrdinaryCellSized(brick) else { continue }
             // Already resized - the Big brick this row built comes through here too
             guard Int.random(in: 1...100) <= GameScene.endlessIITinyChance else { continue }

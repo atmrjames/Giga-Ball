@@ -480,3 +480,36 @@ class TotalStats: Codable {
         Date() // 65 thousandPacksComplete
     ]
 }
+
+extension TotalStats {
+
+    /// Brings the fixed-length arrays back up to the length the game indexes them at.
+    ///
+    /// These are decoded from a file written by whichever version of the app last saved it.
+    /// Every release that adds an achievement leaves each older file one entry short, and
+    /// the achievement code indexes these arrays directly - `achievementsUnlockedArray[41]`
+    /// and so on. The first time a player earned an achievement past the end of their file's
+    /// array, the app would go out of bounds and stop dead, at the exact moment of doing
+    /// something well.
+    ///
+    /// Padded from a freshly built TotalStats rather than from a hard-coded length, so
+    /// adding an achievement needs nothing here changed to stay safe.
+    func makeAchievementArraysConsistent() {
+        let fresh = TotalStats()
+        achievementsUnlockedArray = TotalStats.padded(achievementsUnlockedArray,
+                                                      like: fresh.achievementsUnlockedArray)
+        achievementDates = TotalStats.padded(achievementDates,
+                                             like: fresh.achievementDates)
+        achievementsPercentageCompleteArray =
+            TotalStats.padded(achievementsPercentageCompleteArray,
+                              like: fresh.achievementsPercentageCompleteArray)
+    }
+
+    /// Only ever lengthens. A file with more entries than this build knows about was written
+    /// by a newer version, and throwing the extras away would lose that player's progress
+    /// the moment they opened an older build.
+    static func padded<T>(_ value: [T], like template: [T]) -> [T] {
+        guard value.count < template.count else { return value }
+        return value + template[value.count...]
+    }
+}

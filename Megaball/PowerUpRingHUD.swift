@@ -234,6 +234,10 @@ final class PowerUpRingHUD: SKNode {
         let gap = min(sweep*0.22, 0.28)
         for index in 0..<lit {
             let start = CGFloat.pi/2 - sweep*CGFloat(index) - gap/2
+            // Moved to before each arc, not just drawn. `addArc` joins to whatever the
+            // current point is, so without this every gap is filled in by the line
+            // connecting one segment to the next and the ring reads as solid
+            path.move(to: CGPoint(x: cos(start)*radius(), y: sin(start)*radius()))
             path.addArc(center: .zero, radius: radius(),
                         startAngle: start, endAngle: start - (sweep - gap), clockwise: true)
         }

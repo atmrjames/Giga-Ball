@@ -87,7 +87,7 @@ remove, presenting a different angle every time the ball reaches it.
 | Standard | Destroyed. Carries a colour, which affects its score |
 | Multi-hit | Four stages; each hit steps it down, the fourth destroys it |
 | Indestructible ×1 | Becomes Indestructible ×2 |
-| Indestructible ×2 | Nothing. Cleared only by Zap, Giga-Ball, Wrecking Ball or an explosion |
+| Indestructible ×2 | Nothing. Cleared only by Zap, Wrecking Ball or an explosion. Giga-Ball passes straight through one but leaves it standing |
 | Invisible | Solid but not drawn until struck, then behaves as Standard |
 
 **Styles** (new)
@@ -142,6 +142,43 @@ each other rather than the ones that are merely strange.
 **Sizes** combine with every behaviour and every style, with one exception: a Big brick
 cannot be Spinning, because the clearance a full-size brick needs to turn is already two
 cells in each direction and a Big one would need four.
+
+### 4.0.2 Stacking two styles
+
+A brick may carry more than one style where the two do not fight over the same thing. An
+Indestructible brick that is rounded *and* spinning is the example worth building for: you
+cannot remove it, it presents a different angle every time, and the angles it presents are
+ones a rectangle never would.
+
+What decides it is what each style owns. Two styles that both rewrite a brick's shape, or
+both decide whether it is solid, or both move it, cannot be combined — the second would
+simply undo the first.
+
+| | Rounded | Spinning | Flashing | Gravity | Moving | Directional | Exploding | Spawner | Portal |
+|---|---|---|---|---|---|---|---|---|---|
+| **Rounded** | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Spinning** | ✓ | — | ✓ | ✓ | ✗ ¹ | ✗ ² | ✓ | ✓ | ✓ |
+| **Flashing** | ✓ | ✓ | — | ✓ | ✓ | ✗ ³ | ✓ | ✓ | ✗ ⁴ |
+| **Gravity** | ✓ | ✓ | ✓ | — | ✗ ¹ | ✓ | ✓ | ✓ | ✓ |
+| **Moving** | ✓ | ✗ ¹ | ✓ | ✗ ¹ | — | ✗ ² | ✓ | ✓ | ✓ |
+| **Directional** | ✓ | ✗ ² | ✗ ³ | ✓ | ✗ ² | — | ✓ | ✓ | ✗ ⁴ |
+| **Exploding** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✗ ⁵ | ✗ ⁴ |
+| **Spawner** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ ⁵ | — | ✗ ⁴ |
+| **Portal** | ✓ | ✓ | ✗ ⁴ | ✓ | ✓ | ✗ ⁴ | ✗ ⁴ | ✗ ⁴ | — |
+
+1. Both want to say where the brick is. Two things moving one brick is one of them losing.
+2. A Directional brick's vulnerable side has to be findable. On something that turns or
+   slides, "the left side" is not a thing the player can aim at.
+3. Same reason from the other end: a brick that keeps vanishing cannot also be asking you to
+   read which of its edges is the soft one.
+4. Portal is never damaged and never destroyed, so anything about being destroyed or about
+   being solid has nothing to attach to.
+5. Both fire on destruction and do opposite things — one clears the neighbourhood, the other
+   fills it. Whichever ran second would decide, which is not a rule anyone could read.
+
+**How many.** Two at most. Three is not ruled out by the grid, but a brick doing three
+things is one nobody can read at a glance, and legibility is what makes the combinations fun
+rather than noisy.
 
 ### 4.1 Spinning
 Rotates continuously, one direction or the other, at a fixed rate. It keeps the shape of an
@@ -337,6 +374,7 @@ the first is still active.
 | **Magnetism** | — | Uncommon | Yes | Extends, then strengthens | Curves the ball toward the paddle. Strength falls off with distance. Temporary, so it cannot make a run unloseable |
 | **Lock** | — | Rare | Yes | Extends duration | Freezes every active timed power-up; their timers stop. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends by itself, or by Key |
 | **Key** | — | Uncommon | No | n/a | Ends the Lock; timers resume. **Only drops while a Lock is active** — so its weight is set high *within that window*, rare overall but reliably available while it is possible |
+| **Cull** | — | Rare | No | Fires again | Destroys half the remaining bricks, chosen at random, of any type including Indestructible. Scored as destroyed. Its value is highest exactly when the field is worst, which is when a run is most likely to end - and being random rather than chosen means it relieves the pressure without deciding the shape of what is left |
 | **Laser Beam** | — | Rare | No | Fires again | A sustained vertical beam destroying a whole column including Indestructible. **One beam per ball in play**, each fired from its own x-position — so with four balls it clears four columns at once |
 | **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity |
 | **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other |

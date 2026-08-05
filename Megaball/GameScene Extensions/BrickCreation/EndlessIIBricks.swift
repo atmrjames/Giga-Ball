@@ -125,6 +125,7 @@ extension GameScene {
     /// and Rounded and Spinning both assume a sprite centred on its node, which a Big
     /// brick's is not.
     func endlessIICanTake(_ style: EndlessIIStyle, _ brick: SKSpriteNode) -> Bool {
+        guard brick.endlessIIStaysPlain == false else { return false }
         guard let behaviour = endlessIIBehaviour(of: brick) else { return false }
         guard brick.endlessIIRole == nil, endlessIIIsPlain(brick) else { return false }
 
@@ -242,7 +243,10 @@ extension GameScene {
     }
 
     /// How much of a brick's short side is taken up by each rounded corner.
-    static let roundedBrickCornerFraction: CGFloat = 0.32
+    ///
+    /// A half, so the two short ends are full semicircles and the brick is a stadium - round
+    /// at the sides rather than merely softened at the corners.
+    static let roundedBrickCornerFraction: CGFloat = 0.5
 
     /// Keeps a rounded brick's face showing what the brick is.
     ///

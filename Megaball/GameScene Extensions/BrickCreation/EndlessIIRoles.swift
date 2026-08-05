@@ -82,6 +82,7 @@ extension SKNode {
 
     private static let roleKey = "endlessIIRole"
     private static let sideKey = "endlessIISide"
+    private static let plainKey = "endlessIIStaysPlain"
 
     /// What this brick does, if it does anything. Nil for every brick in every other mode,
     /// which is what keeps the phase 5 hooks inert outside Endless 2.0.
@@ -93,6 +94,20 @@ extension SKNode {
         set {
             if userData == nil { userData = NSMutableDictionary() }
             userData?[SKNode.roleKey] = newValue?.rawValue
+        }
+    }
+
+    /// Whether this brick must never be given a style.
+    ///
+    /// Endless 2.0's starting brick is the one the first ball is aimed at. Whatever else the
+    /// field does, that one has to be a brick and nothing else - a run that opens on a
+    /// Portal, or on something that flashes out of the way, opens on a puzzle instead of on
+    /// a shot.
+    var endlessIIStaysPlain: Bool {
+        get { userData?[SKNode.plainKey] as? Bool ?? false }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?[SKNode.plainKey] = newValue
         }
     }
 
