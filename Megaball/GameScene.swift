@@ -77,6 +77,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var sideScreenBlockLeft = SKSpriteNode()
 	var sideScreenBlockRight = SKSpriteNode()
 	var background = SKSpriteNode()
+	/// Carries the Solid, Gradient and Black backgrounds. Created on demand rather than
+	/// living in the scene file, so it is ours to set.
+	var backgroundOverlay: SKSpriteNode?
 	var directionMarker = SKSpriteNode()
 	var backstop = SKSpriteNode()
     // Define objects
@@ -473,7 +476,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     static let laserBaseInterval: TimeInterval = 0.25
     static let laserMaxStacks = 2
     var laserInterval: TimeInterval {
-        GameScene.laserBaseInterval / pow(2, Double(min(laserStacks, GameScene.laserMaxStacks)))
+        let stacked = GameScene.laserBaseInterval / pow(2, Double(min(laserStacks, GameScene.laserMaxStacks)))
+        return stacked * ballSpeedPowerUpFactor
+    }
+
+    /// How the ball-speed power-ups lean on everything else that is timed.
+    ///
+    /// Slow ball is the good one and fast ball is the bad one, which is the opposite of
+    /// what the names suggest - so slow ball makes lasers fire faster, and fast ball makes
+    /// them fire slower. Below 1 means "sooner".
+    var ballSpeedPowerUpFactor: Double {
+        if ballSpeedLimit == ballSpeedSlow { return 0.85 }
+        if ballSpeedLimit == ballSpeedSlowest { return 0.75 }
+        if ballSpeedLimit == ballSpeedFast { return 1.15 }
+        if ballSpeedLimit == ballSpeedFastest { return 1.25 }
+        return 1.0
     }
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
@@ -2898,10 +2915,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
 			if ballSpeedLimit == ballSpeedNominal {
 				ballSpeedLimit = ballSpeedSlow
+				refreshLaserFiringRate()
 			} else if ballSpeedLimit < ballSpeedNominal {
 				ballSpeedLimit = ballSpeedSlowest
+				refreshLaserFiringRate()
 			} else if ballSpeedLimit > ballSpeedNominal {
 				ballSpeedLimit = ballSpeedNominal
+				refreshLaserFiringRate()
 				ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				ballSpeedIconBar.isHidden = true
 			}
@@ -2913,6 +2933,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
 				self.ballSpeedLimit = self.ballSpeedNominal
+				self.refreshLaserFiringRate()
 				self.ballSpeedControl()
 				self.ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				self.ballSpeedIconBar.isHidden = true
@@ -2939,10 +2960,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
 			if ballSpeedLimit == ballSpeedNominal {
 				ballSpeedLimit = ballSpeedFast
+				refreshLaserFiringRate()
 			} else if ballSpeedLimit > ballSpeedNominal {
 				ballSpeedLimit = ballSpeedFastest
+				refreshLaserFiringRate()
 			} else if ballSpeedLimit < ballSpeedNominal {
 				ballSpeedLimit = ballSpeedNominal
+				refreshLaserFiringRate()
 				ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				ballSpeedIconBar.isHidden = true
 			}
@@ -2954,6 +2978,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
 				self.ballSpeedLimit = self.ballSpeedNominal
+				self.refreshLaserFiringRate()
 				self.ballSpeedControl()
 				self.ballSpeedIcon.texture = self.iconBallSpeedDisabledTexture
 				self.ballSpeedIconBar.isHidden = true
@@ -5284,24 +5309,94 @@ laserTimer?.invalidate()
 	/// crosses the screen height in two seconds, so each one resumes at that same speed
 	/// and is removed when it leaves the top, rather than after a fixed two seconds from
 	/// nowhere in particular.
+	/// Restarts the laser timer at the current rate.
+	///
+	/// The rate depends on the ball-speed power-up, which can be collected while lasers
+	/// are already firing - and a Timer's interval cannot be changed once it is
+	/// scheduled, so it is replaced.
+	func refreshLaserFiringRate() {
+		guard laserPowerUpIsOn, laserTimer != nil else { return }
+		laserTimer?.invalidate()
+		laserTimer = Timer.scheduledTimer(timeInterval: laserInterval, target: self,
+										  selector: #selector(laserGenerator),
+										  userInfo: nil, repeats: true)
+	}
+
+	/// The purple at the top of the Classic background, which the drawn backgrounds match.
+	static let backgroundPurple = UIColor(red: 22/255, green: 0, blue: 32/255, alpha: 1)
+
 	/// Paints the playfield background from the setting.
 	///
-	/// Black has no image behind it - the sprite is filled instead, which keeps the node
-	/// and its sizing rather than special-casing an empty background everywhere else.
+	/// Classic is the artwork on the scene's own background node. The other three are
+	/// drawn onto a sprite created here instead, sitting just above it - assigning a new
+	/// texture to the node the scene file owns does not take, though clearing it does,
+	/// and a node we make ourselves avoids the question entirely.
 	func applyBackgroundSetting() {
 		let setting = defaults.integer(forKey: "backgroundSetting")
-		let textures = LevelPackSetup().backgroundTextureArray
-		guard setting >= 0, setting < textures.count else { return }
 
-		if let name = textures[setting] {
-			background.texture = SKTexture(imageNamed: name)
-			background.color = .clear
-			background.colorBlendFactor = 0
-		} else {
-			background.texture = nil
-			background.color = .black
-			background.colorBlendFactor = 1
+		let overlay = backgroundOverlay ?? {
+			let node = SKSpriteNode()
+			node.zPosition = 0.5
+			node.anchorPoint = background.anchorPoint
+			addChild(node)
+			backgroundOverlay = node
+			return node
+		}()
+
+		overlay.size = background.size
+		overlay.position = background.position
+
+		switch setting {
+		case 1:
+			overlay.isHidden = false
+			overlay.texture = nil
+			overlay.color = GameScene.backgroundPurple
+			overlay.colorBlendFactor = 1
+		case 2:
+			overlay.isHidden = false
+			overlay.colorBlendFactor = 0
+			overlay.color = .clear
+			overlay.texture = gradientBackgroundTexture(size: overlay.size)
+		case 3:
+			overlay.isHidden = false
+			overlay.texture = nil
+			overlay.color = .black
+			overlay.colorBlendFactor = 1
+		default:
+			overlay.isHidden = true
 		}
+		background.isHidden = setting != 0
+	}
+
+	/// Purple down to the paddle, then away to near black by the bottom of the playfield.
+	///
+	/// The fade starts at the paddle rather than at the top so the part of the field the
+	/// bricks occupy stays an even colour, which is how the Classic artwork reads.
+	func gradientBackgroundTexture(size: CGSize) -> SKTexture? {
+		guard size.width > 0, size.height > 0 else { return nil }
+
+		// Where the paddle sits within the background, measured from its bottom.
+		let bottom = background.frame.minY
+		let paddleFraction = min(max((paddlePositionY - bottom)/size.height, 0), 1)
+
+		let renderer = UIGraphicsImageRenderer(size: size)
+		let image = renderer.image { context in
+			let colours = [GameScene.backgroundPurple.cgColor,
+						   GameScene.backgroundPurple.cgColor,
+						   UIColor(red: 2/255, green: 0, blue: 3/255, alpha: 1).cgColor]
+			// UIKit's y runs down the image, so the paddle's fraction is measured from
+			// the top here rather than from the bottom.
+			let stops: [CGFloat] = [0, 1 - paddleFraction, 1]
+			guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+											colors: colours as CFArray,
+											locations: stops) else { return }
+			context.cgContext.drawLinearGradient(
+				gradient,
+				start: CGPoint(x: 0, y: 0),
+				end: CGPoint(x: 0, y: size.height),
+				options: [])
+		}
+		return SKTexture(image: image)
 	}
 
 	@objc func backgroundSettingChangedNotificationReceived(_ notification: Notification) {

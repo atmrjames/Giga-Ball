@@ -47,6 +47,12 @@ class SettingsTableViewCell: UITableViewCell {
         
         settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         settingDescription.font = settingDescription.font.withSize(18)
+
+        settingState.numberOfLines = 1
+        settingState.adjustsFontSizeToFitWidth = true
+        settingState.minimumScaleFactor = 0.7
+        // The state column is sized for "on" and "x1.50". A longer value - "Gradient" -
+        // wrapped onto a second line rather than being allowed to shrink
         
         decriptionFullWidthConstraint.isActive = false
         descriptionTickWidthConstraint.isActive = false

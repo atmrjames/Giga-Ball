@@ -52,6 +52,9 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         // safe area resolved. GameScene reads the insets during didMove to lay itself out
     }
 
+    private var levelHasBuilt = false
+    private var introHasAppeared = false
+
     private func addLaunchCover() {
         let cover = UIView(frame: view.bounds)
         cover.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
@@ -59,19 +62,48 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         view.addSubview(cover)
         launchCover = cover
 
-        for name in [Notification.Name.levelIntroDidAppear, .levelDidBuild] {
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(removeLaunchCover), name: name, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(levelDidBuildReceived), name: .levelDidBuild, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(introDidAppearReceived), name: .levelIntroDidAppear, object: nil)
+
+        // Resuming a saved game has no intro at all, so the level building is the only
+        // signal that will ever arrive. Without this the cover would sit there forever.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.introHasAppeared = true
+            self?.liftLaunchCoverIfReady()
         }
     }
 
-    @objc func removeLaunchCover() {
-        guard launchCover != nil else { return }
-        launchCover?.removeFromSuperview()
+    @objc func levelDidBuildReceived() {
+        levelHasBuilt = true
+        liftLaunchCoverIfReady()
+    }
+
+    @objc func introDidAppearReceived() {
+        introHasAppeared = true
+        liftLaunchCoverIfReady()
+    }
+
+    /// Fades the cover away once there is something worth seeing behind it.
+    ///
+    /// Both signals matter, and lifting on the first one was the flash. The level starts
+    /// building a tenth of a second in, well before the intro has finished fading in - so
+    /// removing the cover then showed the bricks arriving through a half-faded,
+    /// semi-transparent intro. Waiting for both, then crossfading rather than cutting,
+    /// is what makes it read as intentional.
+    private func liftLaunchCoverIfReady() {
+        guard levelHasBuilt, introHasAppeared, let cover = launchCover else { return }
         launchCover = nil
-        for name in [Notification.Name.levelIntroDidAppear, .levelDidBuild] {
-            NotificationCenter.default.removeObserver(self, name: name, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .levelDidBuild, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .levelIntroDidAppear, object: nil)
+
+        UIView.animate(withDuration: 0.4, delay: 0.15, options: [.curveEaseInOut]) {
+            cover.alpha = 0
+        } completion: { _ in
+            cover.removeFromSuperview()
         }
+        // The short delay lets the brick build animation settle before it is revealed
     }
 
     func presentGameScene() {

@@ -180,13 +180,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = ""
 //                }
             case 2:
-            // Game background
-                cell.settingDescription.text = "Game Background"
-                cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconTheme.png")!
-                cell.settingState.text = LevelPackSetup().backgroundNameArray[backgroundSetting]
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-            case 3:
             // Sounds
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
@@ -198,7 +191,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 4:
+            case 3:
             // Music
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
@@ -210,7 +203,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 }
-            case 5:
+            case 4:
             // Haptics
 //                if screenSize == .Pad || screenSize == .SE {
 //                // No haptics engine
@@ -227,6 +220,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                         cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                     }
 //                }
+            case 5:
+            // Game background
+                cell.settingDescription.text = "Game Background"
+                cell.centreLabel.text = ""
+                cell.iconImage.image = UIImage(named:"iconBackground.png")!
+                cell.settingState.text = LevelPackSetup().backgroundNameArray[backgroundSetting]
+                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             case 6:
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
@@ -337,20 +337,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 hideAnimate()
                 moveToItemDetails(senderID: 1)
             case 2:
-            // Game background
-                backgroundSetting = backgroundSetting + 1
-                if backgroundSetting >= LevelPackSetup().backgroundNameArray.count {
-                    backgroundSetting = 0
-                }
-                defaults.set(backgroundSetting, forKey: "backgroundSetting")
-                NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
-                // The scene is live behind the pause menu, so it repaints rather than
-                // waiting for the next level
-            case 3:
             // Sounds
                 soundsSetting = !soundsSetting
                 defaults.set(soundsSetting, forKey: "soundsSetting")
-            case 4:
+            case 3:
             // Music
                 musicSetting = !musicSetting
 //                soundsSetting = musicSetting
@@ -371,10 +361,20 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     MusicHandler.sharedHelper.pauseMusic()
                     // Stop music
                 }
-            case 5:
+            case 4:
             // Haptics
                 hapticsSetting = !hapticsSetting
                 defaults.set(hapticsSetting, forKey: "hapticsSetting")
+            case 5:
+            // Game background
+                backgroundSetting = backgroundSetting + 1
+                if backgroundSetting >= LevelPackSetup().backgroundNameArray.count {
+                    backgroundSetting = 0
+                }
+                defaults.set(backgroundSetting, forKey: "backgroundSetting")
+                NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
+                // The scene is live behind the pause menu, so it repaints rather than
+                // waiting for the next level
             case 6:
             // Parallax
                 parallaxSetting = !parallaxSetting
@@ -494,11 +494,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if settingRow(for: indexPath) != 5 {
+            if settingRow(for: indexPath) != 4 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if settingRow(for: indexPath) == 5 {
+            if settingRow(for: indexPath) == 4 {
                 interfaceHaptic.impactOccurred()
             }
         }
@@ -513,11 +513,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if settingRow(for: indexPath) != 5 {
+            if settingRow(for: indexPath) != 4 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if settingRow(for: indexPath) == 5 {
+            if settingRow(for: indexPath) == 4 {
                 interfaceHaptic.impactOccurred()
             }
         }

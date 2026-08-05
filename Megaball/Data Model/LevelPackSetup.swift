@@ -115,9 +115,10 @@ class LevelPackSetup {
     
     /// The game scene backgrounds, in the order the setting cycles them.
     ///
-    /// The asset name is nil for Black - there is no image, the sprite is just filled.
-    let backgroundNameArray: [String] = ["Grid", "Black"]
-    let backgroundTextureArray: [String?] = ["gameBackground", nil]
+    /// Only Classic is an image. The rest are drawn at runtime from the colour sampled
+    /// off the top of that image, so they sit at whatever size the playfield is rather
+    /// than needing an asset per device.
+    let backgroundNameArray: [String] = ["Classic", "Solid", "Gradient", "Black"]
 
     let appIconNameArray: [String] = [
         "Purple",
