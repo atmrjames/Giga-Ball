@@ -299,4 +299,24 @@ final class SavedGameTests: XCTestCase {
         writeLegacySave()
         XCTAssertEqual(SavedGame.load(from: defaults)?.version, SavedGame.currentVersion)
     }
+
+    // MARK: - Lives
+
+    func testANegativeLifeCountIsClampedRatherThanRestored() {
+        // Builds before the count was clamped could walk it past zero, and a restored
+        // save in that state can never reach game over - the check is for zero.
+        var game = sampleGame()
+        game.numberOfLives = -9
+        game.save(to: defaults)
+
+        XCTAssertEqual(SavedGame.load(from: defaults)?.numberOfLives, 0)
+    }
+
+    func testAValidLifeCountIsLeftAlone() {
+        var game = sampleGame()
+        game.numberOfLives = 3
+        game.save(to: defaults)
+
+        XCTAssertEqual(SavedGame.load(from: defaults)?.numberOfLives, 3)
+    }
 }

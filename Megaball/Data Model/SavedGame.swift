@@ -196,8 +196,12 @@ struct SavedGame: Codable, Equatable {
     /// that is not there, which loses a game in progress but not the app.
     static func load(from defaults: KeyValueStore = UserDefaults.standard) -> SavedGame? {
         if let data = defaults.data(forKey: defaultsKey) {
-            if let game = try? PropertyListDecoder().decode(SavedGame.self, from: data),
+            if var game = try? PropertyListDecoder().decode(SavedGame.self, from: data),
                game.version == currentVersion, game.isConsistent {
+                game.numberOfLives = max(0, game.numberOfLives)
+                // Builds before the life count was clamped could walk it past zero, and
+                // such a save can never reach game over once restored. Rejecting it would
+                // throw away the game; clamping lets the next lost ball end it.
                 return game
             }
             return nil

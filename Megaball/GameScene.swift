@@ -1616,11 +1616,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             self.run(SKAction.wait(forDuration: 0.75), completion: {
                 self.livesAwaitingRollIn = false
-                self.numberOfLives -= 1
+                self.numberOfLives = max(0, self.numberOfLives - 1)
                 self.refreshLivesRow()
             })
             // Unchanged 0.75s before the count drops - other code reads numberOfLives
-            // synchronously around here and the timing is load-bearing
+            // synchronously around here and the timing is load-bearing.
+            //
+            // The count is clamped because the drop is delayed but the game-over check
+            // below is not: two losses inside the same 0.75s each schedule a decrement
+            // while the check still sees the old count, so the count walks past zero and
+            // "== 0" never matches again. A save with negative lives can then never
+            // reach game over - the resume screen was reading back "-9 lives left".
             
             ball.run(resetBallGroup, completion: {
                 self.ball.isHidden = false
@@ -1629,7 +1635,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Animate ball back onto paddle and loss of a life
         }
 		
-        if numberOfLives == 0 {
+        if numberOfLives <= 0 {
             gameoverStatus = true
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
@@ -4721,7 +4727,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	func saveCurrentGame() {
 				
-		if numberOfLives == 0 && ballLostBool && ballIsOnPaddle == false {
+		if numberOfLives <= 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
 			return
 		}
