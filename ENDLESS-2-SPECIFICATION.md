@@ -1,6 +1,6 @@
 # Endless Mode II — design specification
 
-**Status: draft, revision 2.** Nothing here is built. This is a design document, unlike
+**Status: draft, revision 3.** Nothing here is built. This is a design document, unlike
 [SPECIFICATION.md](SPECIFICATION.md), which describes the app as it stands.
 
 **What this is:** the design for a new game mode, added alongside the existing Classic and
@@ -126,38 +126,50 @@ chain is a good moment, not a problem.
 ### 5.1 Conflicts, not channels
 
 The first draft proposed broad channels with one active power-up each. **That was wrong.**
-It would have stopped Magnetism combining with Inert Paddle, or Aura with Wrap-Around —
-and those combinations are the fun.
+It would have stopped Magnetism combining with Inert Paddle, or Aura with Wrap-Around, and
+those combinations are the fun.
 
-The model instead: **power-ups combine by default.** Exclusion is declared only where two
-power-ups set *the same single value* and cannot both be honoured.
+**Power-ups combine by default.** There are only two kinds of exception.
 
-| Conflict group | Why it cannot combine | Members |
+**Stepped axes.** Some pairs already share a value and already resolve sensibly: collecting
+the same one again deepens the effect, collecting its opposite steps back toward normal.
+This is existing behaviour and is kept exactly as it is.
+
+| Axis | Steps | Opposite cancels toward |
 |---|---|---|
-| `ballSpeed` | One speed limit | Slow Ball, Fast Ball |
-| `ballSize` | One ball radius | Expand Ball, Shrink Ball |
-| `paddleSize` | One paddle scale | Expand Paddle, Shrink Paddle |
-| `ballHitBehaviour` | One rule for what the ball does on contact with a brick | Giga-Ball, Wrecking Ball, Inert Ball |
+| Ball speed | Slowest ← Slow ← Nominal → Fast → Fastest | Nominal |
+| Ball size | Smaller ← Nominal → Larger | Nominal |
+| Paddle size | 0.5 ← 0.75 ← 1.0 → 1.5 → 2.0 → 2.5 | 1.0 |
+
+So Slow Ball collected while Fast Ball is active returns the ball to normal speed; collected
+while Slow is active it goes slower still. Nothing new is needed for these.
+
+**True conflicts.** Two groups where two power-ups set the same single rule and cannot both
+be honoured. **The one collected later supersedes the earlier, which ends immediately** —
+they cancel rather than combine.
+
+| Conflict group | Why | Members |
+|---|---|---|
+| `ballHitBehaviour` | One rule for what the ball does on contact with a brick | Giga-Ball, Inert Ball, Wrecking Ball |
 | `launchControl` | One thing can own the launch | Sticky Paddle, Aimed Sticky |
 
-That is the whole list. Five groups, fifteen power-ups. **Everything else composes.**
-
-Within a group, the later collection **replaces** the earlier one, which ends immediately.
+That is the whole list. **Everything else composes.**
 
 Deliberately *not* grouped, because they combine well:
-- Magnetism + Inert Paddle — the ball is drawn in but the paddle cannot steer it. Coherent
-  and interesting.
-- Flipped Angle + Magnetism — inverted steering plus attraction.
-- Aura + Wrecking Ball — a large destroy-everything ball. Powerful; the aura already only
-  destroys, it does not bounce, so the rules do not fight.
-- Portal Paddle + Wrap-Around — both change where the ball reappears, in different axes.
-- Trajectory Line + Landing Marker — different information, no conflict.
+
+- Magnetism + Inert Paddle — drawn in, but unable to steer. Coherent and interesting
+- Flipped Angle + Magnetism — inverted steering plus attraction
+- Aura + Wrecking Ball — the aura only destroys, it does not bounce, so the rules do not fight
+- Portal Paddle + Wrap-Around — both change where the ball reappears, in different axes
+- Trajectory Line + Landing Marker — different information, no conflict
+
+**All power-ups act on every ball in play at once.** A speed change, an aura, a wrecking
+ball applies to all of them; there is no per-ball state to track.
 
 ### 5.2 Rarity
 
 Three tiers, governing which power-ups are *eligible*, not how often power-ups drop.
-Roughly 60 / 30 / 10 as a starting point, **to be tuned per power-up once they exist and
-can be played**.
+Roughly 60 / 30 / 10 as a starting point. How these get from a guess to a balance is §6.5.
 
 | Tier | Character |
 |---|---|
@@ -167,7 +179,54 @@ can be played**.
 
 Rarity is independent of depth (§6.2).
 
-### 5.3 The new power-ups
+### 5.3 The existing power-ups, classified
+
+The twenty-eight that already exist, placed into the same scheme so there is one table
+rather than two. **Behaviour is unchanged** — this is a classification of what is already
+there, and the tier and stacking columns are proposals for review.
+
+| Power-up | Effect | Conflict | Tier | Timed | Stacking |
+|---|---|---|---|---|---|
+| Extra Ball | Gives an extra life | — | Uncommon | No | Repeats. See note |
+| Lose A Ball | Loses the current life. Bad | — | Uncommon | No | Repeats |
+| Slow Ball | Slows the ball | Ball speed axis | Common | Yes | Deepens; Fast cancels |
+| Fast Ball | Speeds the ball up. Bad | Ball speed axis | Common | Yes | Deepens; Slow cancels |
+| Expand Paddle | Widens the paddle | Paddle size axis | Common | Yes | Deepens; Shrink cancels |
+| Shrink Paddle | Narrows the paddle. Bad | Paddle size axis | Common | Yes | Deepens; Expand cancels |
+| Sticky Paddle | Ball sticks to the paddle | `launchControl` | Uncommon | Catches | Adds catches |
+| Gravity Field | Applies gravity to the ball. Bad | — | Uncommon | Yes | Extends |
+| +100 Points | Adds 100 × multiplier | — | Common | No | Repeats |
+| −100 Points | Removes 100 × multiplier. Bad | — | Common | No | Repeats |
+| +1000 Points | Adds 1000 × multiplier | — | Uncommon | No | Repeats |
+| −1000 Points | Removes 1000 × multiplier. Bad | — | Uncommon | No | Repeats |
+| Max Multiplier | Sets the multiplier to its maximum | — | Uncommon | No | No further effect |
+| Reset Multiplier | Sets the multiplier to its minimum. Bad | — | Uncommon | No | No further effect |
+| Complete Level | Moves to the next level | — | — | No | **Excluded from Endless II.** See note |
+| Show Bricks | Reveals hidden bricks | — | Uncommon | No | Repeats |
+| Hide Bricks | Hides standard and invisible bricks. Bad | — | Uncommon | Yes | Extends |
+| Clear Multi-Hit | Reduces multi-hit bricks to one hit | — | Uncommon | No | Repeats |
+| Reset Multi-Hit | Restores multi-hit bricks. Bad | — | Uncommon | No | Repeats |
+| Zap Indestructible | Removes all indestructible bricks | — | Uncommon | No | Repeats |
+| Giga-Ball | Ball passes through all bricks | `ballHitBehaviour` | Rare | Yes | Extends |
+| Inert Ball | Ball stops removing bricks. Bad | `ballHitBehaviour` | Uncommon | Yes | Extends |
+| Lasers | Fires lasers from the paddle | — | Uncommon | Yes | Extends, then fires faster |
+| Quicksand | Moves all bricks down. Bad | — | Uncommon | No | Repeats |
+| Mystery | Applies a random power-up | — | Uncommon | No | Repeats |
+| Backstop | A net below the paddle, saves one ball | — | Uncommon | Catches | Adds a catch |
+| Expand Ball | Makes the ball larger | Ball size axis | Common | Yes | Deepens; Shrink cancels |
+| Shrink Ball | Makes the ball smaller | Ball size axis | Common | Yes | Deepens; Expand cancels |
+
+**Two need decisions.**
+
+- **Complete Level** has no meaning in a field with no end. **Proposed: excluded from
+  Endless II's drop table**, as it presumably already is from Endless.
+- **Extra Ball is a naming collision.** It grants a *life*; Multi-Ball adds a *ball in
+  play*. With both present in one mode, two power-ups called "ball" do different things.
+  **Proposed: rename the new one "Split Ball"**, which also describes it better — or rename
+  Extra Ball to "Extra Life" everywhere, which is clearer but changes existing modes'
+  wording. Worth a decision before icons are drawn.
+
+### 5.4 The new power-ups
 
 **Timed** — whether it runs on a clock. **Stacking** — what a second collection does while
 the first is still active.
@@ -180,7 +239,7 @@ the first is still active.
 | **Magnetism** | — | Uncommon | Yes | Extends, then strengthens | Curves the ball toward the paddle. Strength falls off with distance. Temporary, so it cannot make a run unloseable |
 | **Lock** | — | Rare | Yes | Extends duration | Freezes every active timed power-up; their timers stop. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends by itself, or by Key |
 | **Key** | — | Uncommon | No | n/a | Ends the Lock; timers resume. **Only drops while a Lock is active** — so its weight is set high *within that window*, rare overall but reliably available while it is possible |
-| **Laser Beam** | — | Rare | No | Fires again | One sustained vertical beam destroying a whole column including Indestructible. **Fires from the ball's x-position** if a ball is in play, otherwise the paddle centre — so it rewards positioning |
+| **Laser Beam** | — | Rare | No | Fires again | One sustained vertical beam destroying a whole column including Indestructible. **Fires from the x-position of the ball nearest the paddle** — there is always at least one, whether in flight or resting on the paddle, or the run has ended |
 | **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity |
 | **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other |
 | **Landing Marker** | — | Common | Yes | Extends duration | Marks where the ball will cross the paddle's line |
@@ -189,7 +248,7 @@ the first is still active.
 | **Randomised Bounce** | — | Uncommon | Yes | Extends duration | Bounce angles gain a random offset. Bad |
 | **Inert Paddle** | — | Uncommon | Yes | Extends duration | Paddle no longer influences bounce angle. Bad |
 | **Flipped Angle** | — | Uncommon | Yes | Extends duration | Paddle's angular influence inverted. Bad |
-| **Multi-Ball** | — | Uncommon | No | Adds another ball | Adds a ball. §5.4 |
+| **Multi-Ball** | — | Uncommon | No | Adds another ball, to a maximum of four | Adds a ball. **Weight drops to zero while four are in play**, so it stops being offered rather than being collected for nothing. §5.4 |
 | **Wipe** | — | Uncommon | No | n/a | Ends every active power-up immediately. Bad. **Does not remove a Lock** — otherwise Wipe is strictly better than Key and Key never drops |
 | **Paddle Halo** | — | Rare | Yes | Extends, then reaches further | Semicircular glow from the paddle into the lower rows, destroying bricks it touches |
 | **Reversed Controls** | — | Uncommon | Yes | Extends duration | Paddle moves opposite to the player's touch. Bad |
@@ -204,7 +263,7 @@ deducts.
 power-up **extends** its duration rather than restarting it, and where a magnitude makes
 sense a third collection may deepen it. Instant power-ups simply happen again.
 
-### 5.4 Multi-Ball
+### 5.5 Multi-Ball
 
 **In.** The rule: **the run continues while at least one ball is in play**; the life is lost
 when the last one goes.
@@ -218,7 +277,7 @@ untouched — but the scene must hold a *collection* of balls rather than one, w
 - the ball-speed power-ups, which set a single shared limit — proposed: shared across all
   balls, as one value, matching the `ballSpeed` conflict group
 
-### 5.5 Interaction rules not covered by §5.1
+### 5.6 Interaction rules not covered by §5.1
 
 - **Lock and Key are the only conditional drops.** Eligibility depends on live game state,
   which the allocation table cannot express today — a specific requirement on §8.2.
@@ -238,9 +297,10 @@ one when there is room to see what it does.
 
 ### 6.2 Phases
 
-Stretches of **10–20 metres** with a character of their own, randomly ordered and never
-twice in a row, with **rarity weights** and some **gated behind a minimum height** so the
-opening stays gentle.
+Phases are short stretches of **5–25 metres**, each length drawn at random, punctuating
+longer runs of ordinary randomly generated field. They are the seasoning, not the meal.
+
+Each has a **weight** and some a **minimum height**, so the opening stays gentle.
 
 | Phase | Character | Gate |
 |---|---|---|
@@ -259,8 +319,10 @@ opening stays gentle.
 | Monolith | One enormous Big brick formation with a narrow route | High |
 | Static | Flashing bricks, all in phase, so the whole field blinks together | High |
 
-**Breathers are deliberate.** Quiet phases are scheduled rather than left to chance — an
-intense phase should not follow another intense phase without a break between.
+**Breathers are weighted, not scheduled.** Quiet simply carries a higher weight than the
+rest, so breaks arrive often without being predictable. A Quiet phase is **not empty** — a
+sparse field would just fly past. It is lower density and easier brick types, so it still
+has to be played, just with room to breathe.
 
 ### 6.3 Exposure
 
@@ -275,7 +337,38 @@ it *possible*. After a first appearance, an element returns at its normal weight
 elements to fill the first 200–300 m, drawn from a pool that changes each run. How far
 ahead to plan and how much to include is explicitly a tuning question for play-testing.
 
-### 6.4 Randomness
+### 6.4 How rarity gets tuned
+
+The tiers above are a starting guess, and a guess is all they can be before the power-ups
+exist. What matters is that tuning is **cheap and evidence-led** rather than a rebuild.
+
+**The knobs.** Each power-up carries its own weight, not just a tier — the tier is a
+default the weight starts from. Weights live in the registry (§8.4) as data, so changing
+one is an edit to a table, not to behaviour. Three modifiers sit on top: a minimum height,
+a conditional predicate (Lock and Key), and a phase multiplier so a phase can make its own
+elements more likely without changing the global mix.
+
+**What we are tuning toward.** Three questions, in order:
+
+1. *Does it appear?* Anything a player never meets in twenty runs is too rare to justify
+   the work — either raise it or cut it.
+2. *Is it legible?* If it appears and players cannot tell what happened, that is a
+   presentation problem (§7.3), not a rarity one. Rarity should not be used to hide a
+   power-up that does not read.
+3. *Is it fun at that frequency?* The rules-changing ones are the ones this matters for. A
+   Rare power-up that is annoying is worse the more often it appears; one that is
+   delightful is wasted at 2%.
+
+**How.** Play-test with the tier weights as written, note which power-ups were never seen
+and which were seen too often to stay interesting, and adjust. Because Endless II runs are
+short and single-life, a session produces a lot of runs quickly — this is one of the few
+things about the mode that is easy to gather evidence on.
+
+**What would make this rigorous, if it is worth it later:** the stats system already
+records power-up usage. Recording per-power-up collection counts against runs would turn
+"felt about right" into a distribution to look at. Not needed for the first pass.
+
+### 6.5 Randomness
 
 Seeded per run. Drawn without replacement within a phase, so a phase does not repeat one
 brick type while omitting another. The existing `PowerUpAllocation` weighting is kept and
@@ -358,9 +451,10 @@ and backgrounds, which are also tables.
 
 ### 9.3 Pause and resume
 **In scope.** A run cannot be abandoned and returned to from within the app, but it must
-survive pausing *and* the app being quit — the same guarantee Classic has. The save format
-needs the ball array (§5.4), active power-up state including Lock, the generated field, and
-the phase and schedule position so generation resumes coherently.
+survive pausing *and* the app being quit — the same guarantee Classic has. The save format needs the ball array (§5.5), active power-up state including Lock, the
+generated field as it stands, and the phase and schedule position so generation continues
+coherently. Generation does not need to be reproducible from a seed - the field is stored
+as it is today, and only one phase is planned ahead.
 
 ---
 
@@ -382,11 +476,13 @@ Settled in review, recorded so they are not re-argued.
 
 ## 11. Still open
 
-1. **How far ahead does generation plan?** The schedule and phase order need a horizon —
-   generating 100 m ahead is cheap, 1000 m is not, and resume (§9.3) has to store whatever
-   is planned. Proposed: plan one phase ahead and store the seed plus position, so the
-   whole run is reproducible from a few numbers rather than a stored field.
-2. **Does Tiny survive?** Depends on what sub-cell sizing costs in §8.1.
-3. **Rarity tuning** per power-up, once they can be played.
-4. **How many balls can Multi-Ball reach?** Uncapped becomes chaos and a performance
-   question; proposed cap of four.
+1. **Does Tiny survive?** Kept unless sub-cell sizing turns out to be a rewrite rather
+   than an addition — the call comes when §8.1 is built, and Big alone still gives the size
+   axis if it goes.
+2. **Rarity tuning.** How, rather than whether: §6.4.
+3. **The "ball" naming collision.** Extra Ball grants a life, Multi-Ball adds a ball in
+   play, and both are in Endless II. Proposed: rename the new one **Split Ball**. Needs
+   deciding before its icon is drawn (§5.3).
+4. **Does Extra Ball drop at all in Endless II?** A second life in a one-life mode is a
+   meaningful reward, but it changes what "one life" means. Excluding it keeps the mode
+   honest to its rules; including it makes a rare drop feel enormous.
