@@ -81,8 +81,11 @@ extension GameScene {
             
         }
 
+        applyEndlessIISizes(to: brickBuildArray)
         applyEndlessIIBehaviours(to: brickBuildArray)
-        // Endless 2.0 only, and after the animation above, which resets the colour blend
+        // Endless 2.0 only, and after the animation above, which resets the colour blend.
+        // Sizes here means Tiny only - Big is built by the row generator, which is the only
+        // place that can leave itself the room
 
         if hapticsSetting {
             interfaceHaptic.impactOccurred()

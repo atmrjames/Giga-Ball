@@ -116,10 +116,17 @@ extension GameScene {
             guard brick.texture == brickNormalTexture else { continue }
             guard Int.random(in: 1...100) <= GameScene.endlessIIBehaviourChance else { continue }
 
+            // Spinning replaces the brick's size and Rounded replaces its body, and both
+            // assume the sprite is centred on the node. A Big brick is neither, so it only
+            // takes Flashing - which touches nothing but alpha and the collision mask.
+            // Sizes and behaviours are meant to combine; making the other two follow an
+            // offset sprite is worth doing once there is more than one thing that needs it.
+            let centred = abs(brick.anchorPoint.x - 0.5) < 0.01
+                && abs(brick.anchorPoint.y - 0.5) < 0.01
             switch Int.random(in: 0...2) {
-            case 0: makeSpinning(brick)
-            case 1: makeFlashing(brick)
-            default: makeRounded(brick)
+            case 0 where centred && isOrdinaryCellSized(brick): makeSpinning(brick)
+            case 2 where centred: makeRounded(brick)
+            default: makeFlashing(brick)
             }
         }
     }
@@ -181,7 +188,7 @@ extension GameScene {
 
     /// The collision settings every brick body shares, so a replacement body behaves exactly
     /// like the one the generator built.
-    private func brickBody(_ body: SKPhysicsBody) -> SKPhysicsBody {
+    func brickBody(_ body: SKPhysicsBody) -> SKPhysicsBody {
         body.allowsRotation = false
         body.friction = 0.0
         body.affectedByGravity = false
@@ -221,6 +228,7 @@ extension GameScene {
     func resetEndlessIIBricks() {
         endlessIISpinners.removeAll()
         endlessIIFlashers.removeAll()
+        endlessIIPendingBigColumn = nil
         endlessIILastTick = 0
     }
 

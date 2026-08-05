@@ -55,9 +55,13 @@ extension GameScene {
         powerUpProbArray[19] = 5 // Remove Indestructible Bricks
         powerUpProbArray[21] = 3 // Undestructi-Ball
         
+        let endlessII = endlessIIReserveOrBuildBig()
+        // Endless 2.0 only. Either this row leaves a gap for a Big brick, or it builds the
+        // one the row before it left a gap for
+
         for j in 0..<numberOfBrickColumns {
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
-            
+
             normalProb = 0
             mHThreeProb = 0
             mHTwoProb = 0
@@ -547,13 +551,19 @@ extension GameScene {
                 }
             }
             
+            if endlessII.skip.contains(j) {
+                brick.texture = brickNullTexture
+            }
+            // Kept clear for a Big brick. Null bricks are already removed after the row's
+            // animation and are not counted, so nothing else has to know why
+
             if brick.texture == brickNormalTexture {
                 brick.color = brickWhite
                 if endlessHeight >= 1000 {
                     brick.color = brickGreenGigaball
                 }
             }
-            
+
             if brick.texture == brickInvisibleTexture {
                 brick.isHidden = true
             }
@@ -576,10 +586,15 @@ extension GameScene {
             brick.physicsBody!.usesPreciseCollisionDetection = true
             addChild(brick)
             brickArray.append(brick)
-                        
+
         }
         // Define brick properties
-        
+
+        if let leftColumn = endlessII.dueAt {
+            brickArray.append(endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless))
+        }
+        // Appended with the rest so it animates in and is counted like any other brick
+
         let startingScale = SKAction.scale(to: 0.8, duration: 0)
         let startingFade = SKAction.fadeOut(withDuration: 0)
         let scaleUp = SKAction.scale(to: 1, duration: 0.05)
@@ -620,6 +635,7 @@ extension GameScene {
             // Run animation for each brick
         }
 
+        applyEndlessIISizes(to: brickArray)
         applyEndlessIIBehaviours(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend
 

@@ -611,6 +611,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFlashers: [EndlessIIFlasher] = []
 	var endlessIILastTick: TimeInterval = 0
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
+	var endlessIIPendingBigColumn: Int?
+	// A Big brick reserved by one row and built by the next, which is the only way a brick
+	// two rows tall can be made when rows arrive one at a time from the top
 	var endlessBrickMode01: Int?
 	var endlessBrickMode02: Int?
 	var endlessBrickMode03: Int?
@@ -2265,18 +2268,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 		endlessMoveInProgress = true
 						
+		let moveBricksDown = SKAction.moveBy(x: 0, y: -brickHeight, duration: 0.05)
+
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-			let brickSprite = node as! SKSpriteNode
-			
 			if node.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
 				node.removeFromParent()
 			}
 			// Count number of active bricks in bottom row of bricks in endless mode
-			
-			let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height, duration: 0.05)
+
 			node.run(moveBricksDown)
 		}
-		// Move bricks down
+		// Move bricks down. By a row, not by each brick's own height - those were the same
+		// number while every brick was exactly one cell, but a brick that is any other size
+		// would drift out of step with the field it belongs to
 		
 		if soundsSetting {
 			self.run(endlessRowDownSound)
