@@ -93,10 +93,11 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+            }
         }
     }
     
@@ -104,10 +105,11 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
+                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            }
         }
     }
     

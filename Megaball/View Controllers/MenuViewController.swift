@@ -227,9 +227,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
-            cell.cellView1.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+        if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView1.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+            }
         }
 
         if indexPath.row == 0 {
@@ -251,10 +252,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
-            cell.cellView1.transform = .init(scaleX: 0.95, y: 0.95)
-            cell.cellView1.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView1.transform = .init(scaleX: 0.95, y: 0.95)
+                cell.cellView1.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -262,10 +264,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.modeSelectTableView.cellForRow(at: indexPath) as! ModeSelectTableViewCell
-            cell.cellView1.transform = .identity
-            cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView1.transform = .identity
+                cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     
@@ -331,51 +334,53 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.iconCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+        if let cell = self.iconCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
+                switch indexPath.row {
+                case 0:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
+                case 1:
+                    cell.iconImage.image = nil
+                case 2:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-                cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
-            case 1:
-                cell.iconImage.image = nil
-            case 2:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.iconCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
+        if let cell = self.iconCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
+                switch indexPath.row {
+                case 0:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+                case 1:
+                    cell.iconImage.image = nil
+                case 2:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-                cell.iconImage.image = UIImage(named:"ButtonInfo.png")
-            case 1:
-                cell.iconImage.image = nil
-            case 2:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonSettings.png")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }

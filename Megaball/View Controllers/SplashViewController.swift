@@ -26,12 +26,6 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var scoreLabel: UILabel!
 
-    let scoreTitleLabel = UILabel()
-    let livesLabel = UILabel()
-    // Added in code rather than the storyboard, as on the pause screen: the labels there
-    // are wired through outlets and constraints and adding more by hand risks a layout
-    // that works
-    
     @IBAction func tapGesture(_ sender: Any) {
         if self.resumeInProgress == false {
             removeAnimate(duration: 0.1)
@@ -69,12 +63,13 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         creatorLabel.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         // Pre animation setup
         
-        setUpResumeDetailLabels()
-
         cancelResumeButton.delegate = self
         cancelResumeButton.dataSource = self
         cancelResumeButton.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         
+        scoreLabel.numberOfLines = 0
+        // The storyboard has it at one line; the resume detail needs three
+
         if gameToResume == true {
             userSettings()
         }
@@ -101,62 +96,67 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 packNameLabel.text = "Single Level Mode"
                 levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[currentLevelNumber])"
             }
-            scoreLabel.text = "\(score)"
-            scoreTitleLabel.text = "Score"
             let lives = savedGame.numberOfLives
-            livesLabel.text = lives == 1 ? "1 life left" : "\(lives) lives left"
-            livesLabel.isHidden = false
-            
             if currentLevelNumber == 0 {
                 packNameLabel.text = ""
                 levelNumberLabel.text = "Endless Mode"
-                scoreLabel.text = "\(height)m"
-                scoreTitleLabel.text = "Height"
-                livesLabel.isHidden = true
+                scoreLabel.attributedText = resumeDetail(title: "Height", value: "\(height)m", footnote: nil)
                 // Endless has a single life and no counter anywhere else
+            } else {
+                scoreLabel.attributedText = resumeDetail(
+                    title: "Score",
+                    value: "\(score)",
+                    footnote: lives == 1 ? "1 life left" : "\(lives) lives left")
             }
             
             packNameLabel.isHidden = false
             levelNumberLabel.isHidden = false
             scoreLabel.isHidden = false
-            scoreTitleLabel.isHidden = false
         } else {
             resumingLabel.isHidden = true
             cancelResumeButton.isHidden = true
             packNameLabel.isHidden = true
             levelNumberLabel.isHidden = true
             scoreLabel.isHidden = true
-            scoreTitleLabel.isHidden = true
-            livesLabel.isHidden = true
         }
         // Show or hide resume label to reflect if a previous saved game is being loaded
     }
     
-    func setUpResumeDetailLabels() {
-        for label in [scoreTitleLabel, livesLabel] {
-            label.translatesAutoresizingMaskIntoConstraints = false
-            label.textAlignment = scoreLabel.textAlignment
-            label.font = packNameLabel.font
-            label.textColor = packNameLabel.textColor
-            label.isHidden = true
-            scoreLabel.superview?.addSubview(label)
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: scoreLabel.centerXAnchor)
-            ])
+
+    private func resumeDetail(title: String, value: String, footnote: String?) -> NSAttributedString {
+        // The score, its title and the life count go in one label rather than three.
+        // The storyboard runs resuming -> pack -> level -> score -> cancel as a single
+        // chain, and only its bottom is anchored, so a taller score label pushes the
+        // block upwards - whereas splicing extra views into the chain fought constraints
+        // that the nib reinstates, and silently flattened them to nothing.
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = scoreLabel.textAlignment
+
+        let detail: [NSAttributedString.Key: Any] = [
+            .font: packNameLabel.font as Any,
+            .foregroundColor: packNameLabel.textColor as Any,
+            .paragraphStyle: paragraph
+        ]
+        let headline: [NSAttributedString.Key: Any] = [
+            .font: scoreLabel.font as Any,
+            .foregroundColor: scoreLabel.textColor as Any,
+            .paragraphStyle: paragraph
+        ]
+
+        let text = NSMutableAttributedString(string: title + "\n", attributes: detail)
+        text.append(NSAttributedString(string: value, attributes: headline))
+        if let footnote {
+            text.append(NSAttributedString(string: "\n" + footnote, attributes: detail))
         }
-        NSLayoutConstraint.activate([
-            scoreTitleLabel.bottomAnchor.constraint(equalTo: scoreLabel.topAnchor, constant: -2),
-            livesLabel.topAnchor.constraint(equalTo: scoreLabel.bottomAnchor, constant: 10)
-        ])
+        return text
     }
-    // Titles the score and adds the life count, so the resume screen says the same things
-    // the pause screen does rather than showing a bare number
+    // Says the same things the pause screen does, rather than showing a bare number
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         fadeObjectsIn()
     }
-    
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 1
     }
@@ -194,10 +194,11 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         gameToResume = false        
         removeAnimate(duration: 0.25)
                 
-        UIView.animate(withDuration: 0.2) {
-            let cell = self.cancelResumeButton.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+        if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            }
         }
         
         tableView.deselectRow(at: indexPath, animated: true)
@@ -214,10 +215,11 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         gameToResume = false
         removeAnimate(duration: 0.25)
                 
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.cancelResumeButton.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -225,10 +227,11 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.cancelResumeButton.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     

@@ -217,10 +217,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         if tableView == self.levelsTableView {
             
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
-                cell.cellView3.transform = .init(scaleX: 0.99, y: 0.99)
-                cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+            if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
+                UIView.animate(withDuration: 0.1) {
+                    cell.cellView3.transform = .init(scaleX: 0.99, y: 0.99)
+                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+                }
             }
             
             if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] {
@@ -240,10 +241,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             if hapticsSetting {
                 interfaceHaptic.impactOccurred()
             }
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
-                cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView3.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
+                UIView.animate(withDuration: 0.1) {
+                    cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
+                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+                }
             }
         }
     }
@@ -254,10 +256,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             if hapticsSetting {
                 interfaceHaptic.impactOccurred()
             }
-            UIView.animate(withDuration: 0.1) {
-                let cell = self.levelsTableView.cellForRow(at: indexPath) as! LevelSelectorTableViewCell
-                cell.cellView3.transform = .identity
-                cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
+                UIView.animate(withDuration: 0.1) {
+                    cell.cellView3.transform = .identity
+                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                }
             }
         }
     }
@@ -331,65 +334,67 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
-            case 1:
-                if self.gameCenterSetting {
+                switch indexPath.row {
+                case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
+                case 1:
+                    if self.gameCenterSetting {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                    }
+                case 2:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-            case 2:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonClose")
-            case 1:
-                if self.gameCenterSetting {
+                switch indexPath.row {
+                case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.iconImage.image = UIImage(named:"ButtonClose")
+                case 1:
+                    if self.gameCenterSetting {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                    }
+                case 2:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlay")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-            case 2:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonPlay")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }

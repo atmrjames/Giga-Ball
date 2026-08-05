@@ -229,10 +229,11 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -240,10 +241,11 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     
@@ -303,45 +305,47 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
+                switch indexPath.row {
+                case 0:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
+                case 1:
+                     cell.iconImage.image = UIImage(named:"ButtonNull")
+                case 2:
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
-            case 1:
-                 cell.iconImage.image = UIImage(named:"ButtonNull")
-            case 2:
-                cell.iconImage.image = UIImage(named:"ButtonNull")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
+                switch indexPath.row {
+                case 0:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonClose")
+                case 1:
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                case 2:
+                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-                cell.iconImage.image = UIImage(named:"ButtonClose")
-            case 1:
-                cell.iconImage.image = UIImage(named:"ButtonNull")
-            case 2:
-                cell.iconImage.image = UIImage(named:"ButtonNull")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }

@@ -24,4 +24,14 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         iconImage.layer.shadowRadius = 4
     }
 
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        // Highlighting scales the cell view and recolours it, and that state lives on the
+        // cell rather than in the data - so without this a cell highlighted on one row
+        // carries the scale and colour to whichever row it is reused for, and the wrong
+        // row appears to animate.
+        view.transform = .identity
+    }
+
 }

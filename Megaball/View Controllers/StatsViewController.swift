@@ -445,59 +445,61 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
-            case 1:
-                if self.gameCenterSetting {
+                switch indexPath.row {
+                case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
-                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
+                case 1:
+                    if self.gameCenterSetting {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                    }
+                case 2:
                     cell.iconImage.image = UIImage(named:"ButtonNull")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-            case 2:
-                cell.iconImage.image = UIImage(named:"ButtonNull")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonClose")
-            case 1:
-                if self.gameCenterSetting {
+                switch indexPath.row {
+                case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
-                } else {
+                    cell.iconImage.image = UIImage(named:"ButtonClose")
+                case 1:
+                    if self.gameCenterSetting {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                    }
+                case 2:
                     cell.iconImage.image = UIImage(named:"ButtonNull")
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-            case 2:
-                cell.iconImage.image = UIImage(named:"ButtonNull")
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }

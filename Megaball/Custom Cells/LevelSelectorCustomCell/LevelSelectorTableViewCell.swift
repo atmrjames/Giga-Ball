@@ -68,4 +68,15 @@ class LevelSelectorTableViewCell: UITableViewCell {
         // Keep the frame of the blurView consistent with that of the associated view.
     }
     
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        // Highlighting scales cellView3 and recolours it, and that state lives on the
+        // cell rather than in the data - so without this a cell highlighted on one row
+        // carries the scale and colour to whichever row it is reused for, and the wrong
+        // row appears to animate.
+        cellView3.transform = .identity
+        cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+    }
+
 }

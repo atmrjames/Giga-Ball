@@ -305,10 +305,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.2) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+        if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.2) {
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            }
         }
         
         if senderID == 0 {
@@ -367,10 +368,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+        if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+            }
         }
     }
     
@@ -378,10 +380,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.cellView2.transform = .identity
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
     }
     
@@ -434,10 +437,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-            cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+            }
         }
     }
     
@@ -445,10 +449,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
+                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            }
         }
     }
     

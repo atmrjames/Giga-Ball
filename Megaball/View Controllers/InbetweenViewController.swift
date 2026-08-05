@@ -126,6 +126,15 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             showAnimateDuration = 0
             levelNumber = levelNumber-1
             levelNumberCorrected = levelNumberCorrected-1
+
+            // The level builds behind this overlay while the intro plays, and at 33% the
+            // bricks show through it - most visibly in the quarter second after the
+            // content has faded out and before it has faded back in. Between levels the
+            // translucency is the point, so this applies to the intro only: cover
+            // outright, and let the closing fade be what reveals the level.
+            view.backgroundColor = view.backgroundColor?.withAlphaComponent(1.0)
+            blurView?.isHidden = true
+
             removeAnimate()
         }
     }

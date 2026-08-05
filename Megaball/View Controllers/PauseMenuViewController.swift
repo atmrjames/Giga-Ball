@@ -219,75 +219,77 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.buttonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
+        if let cell = self.buttonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonHomeHighlighted.png")
-            case 1:
-                if self.sender == "Pause" {
+                switch indexPath.row {
+                case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    cell.iconImage.image = UIImage(named:"ButtonHomeHighlighted.png")
+                case 1:
+                    if self.sender == "Pause" {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    }
+                case 2:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    if self.sender == "Pause" {
+                        cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonRestartHighlighted.png")
+                    }
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-            case 2:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                if self.sender == "Pause" {
-                    cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonRestartHighlighted.png")
-                }
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
         
-        UIView.animate(withDuration: 0.1) {
-            let cell = self.buttonCollectionView.cellForItem(at: indexPath) as! MainMenuCollectionViewCell
-            cell.view.transform = .identity
+        if let cell = self.buttonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
+            UIView.animate(withDuration: 0.1) {
+                cell.view.transform = .identity
             
             
-            switch indexPath.row {
-            case 0:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                cell.iconImage.image = UIImage(named:"ButtonHome.png")
-            case 1:
-                if self.sender == "Pause" {
+                switch indexPath.row {
+                case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonPlay.png")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    cell.iconImage.image = UIImage(named:"ButtonHome.png")
+                case 1:
+                    if self.sender == "Pause" {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    }
+                case 2:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    if self.sender == "Pause" {
+                        cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonRestart.png")
+                    }
+                default:
+                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+                    break
                 }
-            case 2:
-                if self.hapticsSetting {
-                    self.interfaceHaptic.impactOccurred()
-                }
-                if self.sender == "Pause" {
-                    cell.iconImage.image = UIImage(named:"ButtonSettings.png")
-                } else {
-                    cell.iconImage.image = UIImage(named:"ButtonRestart.png")
-                }
-            default:
-                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                break
             }
         }
     }
