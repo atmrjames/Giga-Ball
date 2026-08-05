@@ -607,6 +607,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var finalBrickRowHeight: CGFloat = 0
 	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
+	var endlessIISpinners: [EndlessIISpinner] = []
+	var endlessIIFlashers: [EndlessIIFlasher] = []
+	var endlessIILastTick: TimeInterval = 0
+	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessBrickMode01: Int?
 	var endlessBrickMode02: Int?
 	var endlessBrickMode03: Int?
@@ -1548,6 +1552,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if gameMode == .endlessII {
 			powerUpRings.update(with: activePowerUpEntries())
+			tickEndlessIIBricks(currentTime)
 		}
 		
 		if gameState.currentState is Paused {

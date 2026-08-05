@@ -14,6 +14,7 @@ extension GameScene {
     func prepEndlessMode(height: Int) {
         endlessMode = true
         endlessMoveInProgress = false
+        resetEndlessIIBricks()
         endlessHeight = height
 
         setLivesRowHidden(true)

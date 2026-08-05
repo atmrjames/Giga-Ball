@@ -619,7 +619,10 @@ extension GameScene {
             })
             // Run animation for each brick
         }
-        
+
+        applyEndlessIIBehaviours(to: brickArray)
+        // Endless 2.0 only, and after the animation above, which resets the colour blend
+
         if hapticsSetting {
             lightHaptic.impactOccurred()
         }
