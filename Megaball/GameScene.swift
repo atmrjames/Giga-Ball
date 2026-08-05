@@ -156,6 +156,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Power-up empty progress bars
 	
 	var powerUpTray = SKSpriteNode()
+	/// Endless 2.0's power-up display. The tray above is left untouched for the modes that
+	/// already use it.
+	let powerUpRings = PowerUpRingHUD()
 	var scoreBacker = SKSpriteNode()
 	
 	var screenBlockArray: [SKSpriteNode] = []
@@ -1156,6 +1159,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Power-up progress icon definition and setup
 
+		powerUpRings.iconSize = iconSize
+		powerUpRings.spacing = iconSize*0.4
+		powerUpRings.position = CGPoint(x: 0, y: powerUpTray.position.y)
+		powerUpRings.zPosition = 3
+		powerUpRings.isHidden = gameMode != .endlessII
+		if powerUpRings.parent == nil { addChild(powerUpRings) }
+
+		if gameMode == .endlessII {
+			powerUpTray.isHidden = true
+			// Made invisible rather than hidden. isHidden on the timer bars is what the
+			// activation code sets to mean "this power-up is running", and it is what the
+			// rings read - hiding them here would have switched off the very signal the
+			// new display depends on.
+			iconArray.forEach { $0.alpha = 0 }
+			iconEmptyTimerArray.forEach { $0.alpha = 0 }
+			iconTimerArray.forEach { $0.alpha = 0 }
+		}
+		// Endless 2.0 shows only what is running, as rings. Forty-six power-ups will not
+		// fit a fixed row of eight, and most of that row would be empty anyway
+
 //MARK: - Game Properties Initialisation
         
 		ballSpeedNominal = ballSize * 37.5
@@ -1522,6 +1545,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+
+		if gameMode == .endlessII {
+			powerUpRings.update(with: activePowerUpEntries())
+		}
 		
 		if gameState.currentState is Paused {
 			if self.isPaused == false && countdownStarted == false {
@@ -5324,6 +5351,24 @@ laserTimer?.invalidate()
 	/// The rate depends on the ball-speed power-up, which can be collected while lasers
 	/// are already firing - and a Timer's interval cannot be changed once it is
 	/// scheduled, so it is replaced.
+	/// What is running, read from the tray's own state.
+	///
+	/// A timed power-up shows its bar and scales it from one down to zero as it drains,
+	/// which is already how the save format works out the time remaining. Reading the same
+	/// thing here means no activation code has to be touched to add a second display -
+	/// which is what keeps Classic and Endless out of this entirely.
+	func activePowerUpEntries() -> [PowerUpRingHUD.Entry] {
+		var entries: [PowerUpRingHUD.Entry] = []
+		for index in 0..<iconArray.count {
+			let bar = iconTimerArray[index]
+			guard bar.isHidden == false, bar.xScale > 0.001 else { continue }
+			entries.append(PowerUpRingHUD.Entry(id: "tray\(index)",
+											    texture: iconArray[index].texture ?? SKTexture(),
+											    remaining: bar.xScale))
+		}
+		return entries
+	}
+
 	func refreshLaserFiringRate() {
 		guard laserPowerUpIsOn, laserTimer != nil else { return }
 		laserTimer?.invalidate()
