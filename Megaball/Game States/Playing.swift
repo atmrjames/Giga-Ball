@@ -198,6 +198,7 @@ class Playing: GKState {
         if (scene.savedGame?.brickXPositions.isEmpty == false) {
             scene.resumeBrickCreation()
             // Load saved level
+            NotificationCenter.default.post(name: .levelDidBuild, object: nil)
         } else {
             scene.levelTimerBonus = 500
             scene.levelTimerValue = 0
@@ -473,6 +474,7 @@ class Playing: GKState {
                     break
                 }
                 // Load level in
+                NotificationCenter.default.post(name: .levelDidBuild, object: nil)
             })
         }
     }

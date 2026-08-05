@@ -128,8 +128,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     
     
+    /// The app icon and the ball and paddle theme, which the pause menu does not offer.
+    ///
+    /// Both restyle a game already in progress, and both lead into a picker that does not
+    /// belong over live gameplay. They are dropped from the front of the list rather than
+    /// hidden in place, which would leave two blank rows where they used to be.
+    private var leadingRowsHiddenInGame: Int {
+        navigatedFrom == "PauseMenu" ? 2 : 0
+    }
+
+    /// The row as the switches below number them, which is the main menu's numbering.
+    private func settingRow(for indexPath: IndexPath) -> Int {
+        indexPath.row + leadingRowsHiddenInGame
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            return 9
+            return 9 - leadingRowsHiddenInGame
     }
     // Set number of cells in table view
     
@@ -141,7 +155,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.isHidden = false
             
-            switch indexPath.row {
+            switch settingRow(for: indexPath) {
 
             case 0:
             // App icon
@@ -314,7 +328,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-            switch indexPath.row {
+            switch settingRow(for: indexPath) {
             case 0:
             // App icon
                 hideAnimate()
@@ -471,11 +485,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if indexPath.row != 4 {
+            if settingRow(for: indexPath) != 4 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if indexPath.row == 4 {
+            if settingRow(for: indexPath) == 4 {
                 interfaceHaptic.impactOccurred()
             }
         }
@@ -490,11 +504,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if indexPath.row != 4 {
+            if settingRow(for: indexPath) != 4 {
                 interfaceHaptic.impactOccurred()
             }
         } else {
-            if indexPath.row == 4 {
+            if settingRow(for: indexPath) == 4 {
                 interfaceHaptic.impactOccurred()
             }
         }

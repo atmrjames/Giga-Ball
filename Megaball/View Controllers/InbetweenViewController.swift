@@ -74,12 +74,14 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
+        if finishScoreTallyIfRunning() { return }
         removeAnimate()
     }
     @IBAction func tapBackgroundGestureAction(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
+        if finishScoreTallyIfRunning() { return }
         removeAnimate()
     }
     
@@ -132,7 +134,79 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             blurView?.isHidden = true
 
             removeAnimate()
+        } else {
+            startScoreTally()
         }
+    }
+
+    // MARK: - Score tally
+
+    private var tallyLink: CADisplayLink?
+    private var tallyStartedAt: CFTimeInterval = 0
+    private var tallyLastTick = -1
+
+    /// How long the numbers take to run up. Short on purpose - this sits between the
+    /// player finishing a level and playing the next one, so it should read as a flourish
+    /// rather than something to sit through. A tap finishes it early.
+    private let tallyDuration: CFTimeInterval = 0.55
+    private let tallyHapticTicks = 8
+
+    private var isTallying: Bool { tallyLink != nil }
+
+    private func startScoreTally() {
+        guard levelScore > 0 || levelScoreBonus > 0 || totalScore > 0 else { return }
+
+        levelScoreLabel.text = "0"
+        speedBonusLabel.text = "+0"
+        totalScoreLabel.text = "0"
+
+        tallyStartedAt = CACurrentMediaTime()
+        tallyLastTick = -1
+        let link = CADisplayLink(target: self, selector: #selector(stepScoreTally))
+        link.add(to: .main, forMode: .common)
+        tallyLink = link
+    }
+
+    @objc private func stepScoreTally() {
+        let elapsed = CACurrentMediaTime() - tallyStartedAt
+        guard elapsed < tallyDuration else {
+            finishScoreTally()
+            return
+        }
+
+        // Ease out, so the numbers decelerate into their final values rather than
+        // stopping dead.
+        let linear = elapsed / tallyDuration
+        let eased = 1 - pow(1 - linear, 3)
+
+        levelScoreLabel.text = String(Int((Double(levelScore) * eased).rounded()))
+        speedBonusLabel.text = "+\(Int((Double(levelScoreBonus) * eased).rounded()))"
+        totalScoreLabel.text = String(Int((Double(totalScore) * eased).rounded()))
+
+        let tick = Int(eased * Double(tallyHapticTicks))
+        if tick != tallyLastTick {
+            tallyLastTick = tick
+            if hapticsSetting {
+                interfaceHaptic.impactOccurred(intensity: 0.5)
+            }
+        }
+    }
+
+    /// Snaps the numbers to their final values. Returns whether there was anything to
+    /// finish, so a tap that lands mid-tally is spent on skipping rather than dismissing.
+    @discardableResult
+    private func finishScoreTallyIfRunning() -> Bool {
+        guard isTallying else { return false }
+        finishScoreTally()
+        return true
+    }
+
+    private func finishScoreTally() {
+        tallyLink?.invalidate()
+        tallyLink = nil
+        levelScoreLabel.text = String(levelScore)
+        speedBonusLabel.text = "+\(levelScoreBonus)"
+        totalScoreLabel.text = String(totalScore)
     }
 
     func userSettings() {
@@ -154,6 +228,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
     
     func removeAnimate() {
+        finishScoreTallyIfRunning()
         UIView.animate(withDuration: showAnimateDuration, animations: {
             self.contentView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.contentView.alpha = 0.0})

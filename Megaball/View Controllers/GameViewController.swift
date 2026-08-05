@@ -31,13 +31,39 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         
     private var hasPresentedScene = false
 
+    private var launchCover: UIView?
+    // The scene is drawn as soon as the view has a size, but nothing is put in it until
+    // the Playing state runs - so the empty playfield, and then the level building
+    // itself, were visible for a moment before the intro overlay arrived on top. The
+    // intro covers opaquely once it is there; this covers the gap before it, and lifts
+    // when the level is built, which happens on both the fresh and resumed paths.
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         guard hasPresentedScene == false else { return }
         hasPresentedScene = true
+        addLaunchCover()
         presentGameScene()
         // Presented here rather than in viewDidLoad so the view is in a window with its
         // safe area resolved. GameScene reads the insets during didMove to lay itself out
+    }
+
+    private func addLaunchCover() {
+        let cover = UIView(frame: view.bounds)
+        cover.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(cover)
+        launchCover = cover
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(levelDidBuildNotificationReceived),
+            name: .levelDidBuild, object: nil)
+    }
+
+    @objc func levelDidBuildNotificationReceived(_ notification: Notification) {
+        launchCover?.removeFromSuperview()
+        launchCover = nil
+        NotificationCenter.default.removeObserver(self, name: .levelDidBuild, object: nil)
     }
 
     func presentGameScene() {

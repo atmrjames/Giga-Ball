@@ -122,6 +122,15 @@ struct SavedGame: Codable, Equatable {
     var activePowerUpTimers: [Double]
     var activePowerUpMagnitudes: [Int]
 
+    // MARK: - Lasers in flight
+    // Two arrays indexed together, one entry per laser still travelling up the screen.
+    //
+    // Optional so saves written before lasers were kept still decode - those restore
+    // with no lasers, which is what every save did before.
+
+    var laserXPositions: [Int]?
+    var laserYPositions: [Int]?
+
     /// What the sticky paddle's remaining catches count down from.
     ///
     /// Its catches start at `4 + multiplier`, so the total is 5, 6 or 7 depending on the
@@ -157,8 +166,9 @@ struct SavedGame: Codable, Equatable {
         // to index 4 during resume, which traps at launch.
         let ballIsWholeOrAbsent = ballProperties.isEmpty
             || ballProperties.count == SavedGame.ballPropertiesCount
+        let lasersAgree = (laserXPositions?.count ?? 0) == (laserYPositions?.count ?? 0)
         return brickCounts.count == 1 && fallingCounts.count == 1 && activeCounts.count == 1
-            && ballIsWholeOrAbsent
+            && ballIsWholeOrAbsent && lasersAgree
     }
 
     // MARK: - Legacy migration

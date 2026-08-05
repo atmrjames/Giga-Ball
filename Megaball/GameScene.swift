@@ -513,6 +513,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var endLevelNumber: Int = 0
 	var mysteryPowerUp: Bool = false
 	var ballLostBool: Bool = true
+	/// Whether a lost ball's life has been counted yet.
+	///
+	/// The count drops 0.75s after the ball is lost, so a save taken inside that window
+	/// would record a life that is about to go. saveCurrentGame used to compensate by
+	/// checking ballLostBool - but that flag also means "the ball is sitting on the
+	/// paddle", which is true from the moment a level starts and stays true until the
+	/// player launches. So every save taken before launching wrote one life fewer, and
+	/// quitting and resuming repeatedly walked the count down.
+	var lifeLossPending: Bool = false
 	var powerUpsOnScreen: Int = 0
 	var powerUpLimit: Int = 0
 	
@@ -1614,9 +1623,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let ballGroup = SKAction.group([fadeInBall, scaleUpBall])
             // Setup ball animation
             
+            lifeLossPending = true
             self.run(SKAction.wait(forDuration: 0.75), completion: {
                 self.livesAwaitingRollIn = false
                 self.numberOfLives = max(0, self.numberOfLives - 1)
+                self.lifeLossPending = false
                 self.refreshLivesRow()
             })
             // Unchanged 0.75s before the count drops - other code reads numberOfLives
@@ -4769,10 +4780,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		var currentMultiplier = multiplier
 		
-		if ballLostBool {
-			currentNumberOfLives-=1
+		if lifeLossPending {
+			currentNumberOfLives = max(0, currentNumberOfLives - 1)
 		}
-		// If ball is lost on pause, update properties to reflect that when reloading the game
+		// Only when a loss has been counted against the ball but not yet against the
+		// count. ballLostBool is not that condition - see lifeLossPending
 		
 		if ballLostBool || gameState.currentState is InbetweenLevels {
 			currentMultiplier = 1.0
@@ -4785,6 +4797,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var brickYPositionArray: [Int]? = []
 		var ballPropertiesArray: [Double]? = []
 		
+		var laserXPositionArray: [Int] = []
+		var laserYPositionArray: [Int] = []
+
 		var powerUpFallingXPositionArray: [Int]? = []
 		var powerUpFallingYPositionArray: [Int]? = []
 		var powerUpFallingArray: [Int]? = []
@@ -5035,6 +5050,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Only save ball properties if ball is in play and not on paddle
 			
+			enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
+				laserXPositionArray.append(Int(node.position.x))
+				laserYPositionArray.append(Int(node.position.y))
+			}
+			// Lasers still travelling up the screen
+
 			enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
 				var powerUpTextureIndex: Int = 0
@@ -5156,6 +5177,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			activePowerUpDurations: powerUpActiveArray != [] ? powerUpActiveDurationArray! : previous?.activePowerUpDurations ?? [],
 			activePowerUpTimers: powerUpActiveArray != [] ? powerUpActiveTimerArray! : previous?.activePowerUpTimers ?? [],
 			activePowerUpMagnitudes: powerUpActiveArray != [] ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? [],
+			laserXPositions: laserXPositionArray,
+			laserYPositions: laserYPositionArray,
 			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal
 		)
 		savedGame?.save()
@@ -5172,6 +5195,51 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		SavedGame.clear()
 	}
 	
+	/// Puts back the lasers that were still travelling up the screen when the game was
+	/// saved.
+	///
+	/// They were simply dropped before - the save format had nowhere to put them. A laser
+	/// crosses the screen height in two seconds, so each one resumes at that same speed
+	/// and is removed when it leaves the top, rather than after a fixed two seconds from
+	/// nowhere in particular.
+	func restoreLasers(from savedGame: SavedGame) {
+		guard let xs = savedGame.laserXPositions, let ys = savedGame.laserYPositions,
+			  xs.count == ys.count, xs.isEmpty == false else { return }
+
+		let pointsPerSecond = frame.height / 2
+
+		for i in 0..<xs.count {
+			let laser = SKSpriteNode(imageNamed: "laserNormal")
+			laser.texture = laserNormalTexture
+			laser.position = CGPoint(x: CGFloat(xs[i]), y: CGFloat(ys[i]))
+			laser.zPosition = 2
+			laser.name = LaserCategoryName
+
+			laser.physicsBody = SKPhysicsBody(rectangleOf: laser.frame.size)
+			laser.physicsBody!.allowsRotation = false
+			laser.physicsBody!.friction = 0.0
+			laser.physicsBody!.affectedByGravity = false
+			laser.physicsBody!.isDynamic = true
+			laser.physicsBody!.categoryBitMask = CollisionTypes.laserCategory.rawValue
+			laser.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+			laser.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
+
+			if ball.texture == gigaBallTexture {
+				laser.physicsBody!.collisionBitMask = 0
+				laser.texture = laserGigaTexture
+			}
+			// Matches the generator: giga-lasers pass through bricks
+
+			addChild(laser)
+
+			let remaining = frame.maxY - laser.position.y + laser.size.height
+			let move = SKAction.moveBy(x: 0, y: remaining, duration: Double(remaining / pointsPerSecond))
+			laser.run(move, completion: {
+				laser.removeFromParent()
+			})
+		}
+	}
+
 	func resumeGame() {
 		guard let savedGame else { return }
 		// Bound once, shadowing the property, rather than force-unwrapped at each of the
@@ -5558,6 +5626,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 			}
 			// Load active power-ups if any saved
+
+			restoreLasers(from: savedGame)
+			// After the active power-ups, so the giga-ball state they set is known
+
 			resumeGameToLoad = false
 			defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
 			self.gameState.enter(Paused.self)
