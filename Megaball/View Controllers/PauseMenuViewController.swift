@@ -352,8 +352,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             levelNameLabelNormalConstraint.isActive = false
             levelTitleLowerConstraint.isActive = true
             
+            let mode = GameMode.current(in: defaults)
+            let runs = mode == .endlessII
+                ? totalStatsArray[0].endlessIIHeights
+                : totalStatsArray[0].endlessModeHeight
+            // Each endless mode's own runs. Reading the original mode's array here showed
+            // an Endless 2.0 player a best height they set in a different game
+
             packNameLabel.text = ""
-            levelNumberLabel.text = String(LevelPackSetup().levelNameArray[levelNumber])
+            levelNumberLabel.text = mode.isEndless
+                ? mode.name
+                : String(LevelPackSetup().levelNameArray[levelNumber])
             levelNameLabel.text = ""
             
             scoreLabelTitle.text = "Height"
@@ -361,8 +370,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             highscoreLabelTitle.text = "Best"
             
             var heightBest = 0
-            if totalStatsArray[0].endlessModeHeight.count > 0 {
-                heightBest = totalStatsArray[0].endlessModeHeight.max()!
+            if runs.count > 0 {
+                heightBest = runs.max()!
                 highscoreLabel.text = "\(heightBest)m"
             }
             
@@ -373,12 +382,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 }
                 highscoreLabel.text = "\(heightBest)m"
             } else {
-                if totalStatsArray[0].endlessModeHeight.count <= 1 {
+                if runs.count <= 1 {
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
                     highscoreLabel.text = "0m"
                 } else {
-                    var heightsArray = totalStatsArray[0].endlessModeHeight
+                    var heightsArray = runs
                     heightsArray.sort(by: >)
                     let previousBestHeight = heightsArray[1]
                     if height > previousBestHeight {
