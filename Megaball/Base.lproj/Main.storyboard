@@ -82,29 +82,15 @@
                         <viewLayoutGuide key="safeArea" id="1R6-p5-C1Q"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="iE5-gF-frm" firstAttribute="centerX" secondItem="vRC-Mi-Or5" secondAttribute="centerX" id="QhX-Wg-Vdz"/>
-                            <constraint firstItem="iE5-gF-frm" firstAttribute="leading" secondItem="vRC-Mi-Or5" secondAttribute="leading" id="ndV-tm-Vee"/>
+                            <constraint firstItem="iE5-gF-frm" firstAttribute="leading" secondItem="1R6-p5-C1Q" secondAttribute="leading" id="ndV-tm-Vee"/>
 
-                            <constraint firstItem="1R6-p5-C1Q" firstAttribute="bottom" secondItem="iE5-gF-frm" secondAttribute="bottom" id="Gb9-fs-a09"/>                            <constraint firstItem="iE5-gF-frm" firstAttribute="top" secondItem="1R6-p5-C1Q" secondAttribute="top" id="wpA-B7-Sah"/>
+                            <constraint firstItem="1R6-p5-C1Q" firstAttribute="bottom" secondItem="iE5-gF-frm" secondAttribute="bottom" id="Gb9-fs-a09"/>                            <constraint firstItem="1R6-p5-C1Q" firstAttribute="trailing" secondItem="iE5-gF-frm" secondAttribute="trailing" id="Gt9-fs-t09"/>
+                            <constraint firstItem="iE5-gF-frm" firstAttribute="top" secondItem="1R6-p5-C1Q" secondAttribute="top" id="wpA-B7-Sah"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="ndV-tm-Vee"/>
-                                <exclude reference="wpA-B7-Sah"/>
-                            </mask>
-                        </variation>
-                        <variation key="heightClass=regular-widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="ndV-tm-Vee"/>
-                                <include reference="wpA-B7-Sah"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="0MV-n0-yXz" id="BTY-yR-POe"/>
                         <outlet property="backgroundView" destination="iE5-gF-frm" id="gFc-w7-VyU"/>
-                        <outlet property="backgroundViewLeading" destination="ndV-tm-Vee" id="Sq3-w0-pX1"/>
-                        <outlet property="backgroundViewTop" destination="wpA-B7-Sah" id="T0e-Xl-1KN"/>
                         <outlet property="settingsTableView" destination="d3U-8J-yMb" id="1wA-xd-eyc"/>
                         <outlet property="settingsView" destination="vRC-Mi-Or5" id="EN6-Vm-vPl"/>
                     </connections>
@@ -218,21 +204,9 @@
                         <constraints>
                             <constraint firstItem="uLs-Na-H9n" firstAttribute="leading" secondItem="rdW-H6-Zvv" secondAttribute="leading" id="lU7-OA-2MK"/>
 
-                            <constraint firstItem="rdW-H6-Zvv" firstAttribute="bottom" secondItem="uLs-Na-H9n" secondAttribute="bottom" id="Gb6-fs-a06"/>                            <constraint firstItem="uLs-Na-H9n" firstAttribute="top" secondItem="rdW-H6-Zvv" secondAttribute="top" id="sG4-mO-u6f"/>
-                            <constraint firstItem="uLs-Na-H9n" firstAttribute="centerX" secondItem="SCp-xE-EHy" secondAttribute="centerX" id="yIq-eQ-RhG"/>
+                            <constraint firstItem="rdW-H6-Zvv" firstAttribute="bottom" secondItem="uLs-Na-H9n" secondAttribute="bottom" id="Gb6-fs-a06"/>                            <constraint firstItem="rdW-H6-Zvv" firstAttribute="trailing" secondItem="uLs-Na-H9n" secondAttribute="trailing" id="Gt6-fs-t06"/>
+                            <constraint firstItem="uLs-Na-H9n" firstAttribute="top" secondItem="rdW-H6-Zvv" secondAttribute="top" id="sG4-mO-u6f"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="lU7-OA-2MK"/>
-                                <exclude reference="sG4-mO-u6f"/>
-                            </mask>
-                        </variation>
-                        <variation key="heightClass=regular-widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="lU7-OA-2MK"/>
-                                <include reference="sG4-mO-u6f"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="uiC-AD-aNn" id="CxK-df-ANY"/>
@@ -336,21 +310,9 @@
                         <constraints>
                             <constraint firstItem="n2C-i0-ee2" firstAttribute="leading" secondItem="6pT-nd-tRM" secondAttribute="leading" id="NWc-Hg-OYh"/>
 
-                            <constraint firstItem="6pT-nd-tRM" firstAttribute="bottom" secondItem="n2C-i0-ee2" secondAttribute="bottom" id="Gb7-fs-a07"/>                            <constraint firstItem="n2C-i0-ee2" firstAttribute="top" secondItem="6pT-nd-tRM" secondAttribute="top" id="QMa-Jp-d8C"/>
-                            <constraint firstItem="n2C-i0-ee2" firstAttribute="centerX" secondItem="6sf-fY-6HP" secondAttribute="centerX" id="RZY-EY-14n"/>
+                            <constraint firstItem="6pT-nd-tRM" firstAttribute="bottom" secondItem="n2C-i0-ee2" secondAttribute="bottom" id="Gb7-fs-a07"/>                            <constraint firstItem="6pT-nd-tRM" firstAttribute="trailing" secondItem="n2C-i0-ee2" secondAttribute="trailing" id="Gt7-fs-t07"/>
+                            <constraint firstItem="n2C-i0-ee2" firstAttribute="top" secondItem="6pT-nd-tRM" secondAttribute="top" id="QMa-Jp-d8C"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="NWc-Hg-OYh"/>
-                                <exclude reference="QMa-Jp-d8C"/>
-                            </mask>
-                        </variation>
-                        <variation key="widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="NWc-Hg-OYh"/>
-                                <include reference="QMa-Jp-d8C"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backCollectionView" destination="zVQ-iV-kyi" id="fqo-vN-Dj7"/>
@@ -502,21 +464,9 @@
                         <constraints>
                             <constraint firstItem="tuY-8q-Jn4" firstAttribute="leading" secondItem="faD-yg-kA9" secondAttribute="leading" id="Kdq-ce-0dE"/>
 
-                            <constraint firstItem="faD-yg-kA9" firstAttribute="bottom" secondItem="tuY-8q-Jn4" secondAttribute="bottom" id="Gb1-fs-a01"/>                            <constraint firstItem="tuY-8q-Jn4" firstAttribute="top" secondItem="faD-yg-kA9" secondAttribute="top" id="NpH-gC-l07"/>
-                            <constraint firstItem="tuY-8q-Jn4" firstAttribute="centerX" secondItem="lxw-lU-i2a" secondAttribute="centerX" id="ScA-N9-GJZ"/>
+                            <constraint firstItem="faD-yg-kA9" firstAttribute="bottom" secondItem="tuY-8q-Jn4" secondAttribute="bottom" id="Gb1-fs-a01"/>                            <constraint firstItem="faD-yg-kA9" firstAttribute="trailing" secondItem="tuY-8q-Jn4" secondAttribute="trailing" id="Gt1-fs-t01"/>
+                            <constraint firstItem="tuY-8q-Jn4" firstAttribute="top" secondItem="faD-yg-kA9" secondAttribute="top" id="NpH-gC-l07"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="Kdq-ce-0dE"/>
-                                <exclude reference="NpH-gC-l07"/>
-                            </mask>
-                        </variation>
-                        <variation key="widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="Kdq-ce-0dE"/>
-                                <include reference="NpH-gC-l07"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="aboutView" destination="tuY-8q-Jn4" id="5G0-HY-wSW"/>
@@ -885,23 +835,11 @@
                         <viewLayoutGuide key="safeArea" id="5ih-yp-2sn"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="f1v-ap-PyS" firstAttribute="centerX" secondItem="0MV-1E-fMv" secondAttribute="centerX" id="RZ4-gg-f0l"/>
 
-                            <constraint firstItem="5ih-yp-2sn" firstAttribute="bottom" secondItem="f1v-ap-PyS" secondAttribute="bottom" id="Gb4-fs-a04"/>                            <constraint firstItem="f1v-ap-PyS" firstAttribute="top" secondItem="5ih-yp-2sn" secondAttribute="top" id="cui-gr-C4R"/>
+                            <constraint firstItem="5ih-yp-2sn" firstAttribute="bottom" secondItem="f1v-ap-PyS" secondAttribute="bottom" id="Gb4-fs-a04"/>                            <constraint firstItem="5ih-yp-2sn" firstAttribute="trailing" secondItem="f1v-ap-PyS" secondAttribute="trailing" id="Gt4-fs-t04"/>
+                            <constraint firstItem="f1v-ap-PyS" firstAttribute="top" secondItem="5ih-yp-2sn" secondAttribute="top" id="cui-gr-C4R"/>
                             <constraint firstItem="f1v-ap-PyS" firstAttribute="leading" secondItem="5ih-yp-2sn" secondAttribute="leading" id="rZV-SF-qvu"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="rZV-SF-qvu"/>
-                                <exclude reference="cui-gr-C4R"/>
-                            </mask>
-                        </variation>
-                        <variation key="widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="rZV-SF-qvu"/>
-                                <include reference="cui-gr-C4R"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="PeC-7V-ov2" id="xe4-ZJ-rsl"/>
@@ -988,22 +926,10 @@
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
 
-                            <constraint firstItem="sry-RN-qaF" firstAttribute="bottom" secondItem="lMs-7N-jq9" secondAttribute="bottom" id="Gb2-fs-a02"/>                            <constraint firstItem="lMs-7N-jq9" firstAttribute="top" secondItem="sry-RN-qaF" secondAttribute="top" id="Au1-aG-gDX"/>
-                            <constraint firstItem="lMs-7N-jq9" firstAttribute="centerX" secondItem="FFC-QC-Vqf" secondAttribute="centerX" id="Bw2-uh-3mp"/>
+                            <constraint firstItem="sry-RN-qaF" firstAttribute="bottom" secondItem="lMs-7N-jq9" secondAttribute="bottom" id="Gb2-fs-a02"/>                            <constraint firstItem="sry-RN-qaF" firstAttribute="trailing" secondItem="lMs-7N-jq9" secondAttribute="trailing" id="Gt2-fs-t02"/>
+                            <constraint firstItem="lMs-7N-jq9" firstAttribute="top" secondItem="sry-RN-qaF" secondAttribute="top" id="Au1-aG-gDX"/>
                             <constraint firstItem="lMs-7N-jq9" firstAttribute="leading" secondItem="sry-RN-qaF" secondAttribute="leading" id="JTl-as-5qB"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="JTl-as-5qB"/>
-                                <exclude reference="Au1-aG-gDX"/>
-                            </mask>
-                        </variation>
-                        <variation key="heightClass=regular-widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="JTl-as-5qB"/>
-                                <include reference="Au1-aG-gDX"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="42m-LF-o0w" id="X2k-qh-Iwc"/>
@@ -1106,25 +1032,13 @@
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
 
-                            <constraint firstItem="UHL-wx-6z2" firstAttribute="bottom" secondItem="s59-XW-biX" secondAttribute="bottom" id="Gb3-fs-a03"/>                            <constraint firstItem="s59-XW-biX" firstAttribute="top" secondItem="UHL-wx-6z2" secondAttribute="top" id="fMU-7W-IPP"/>
+                            <constraint firstItem="UHL-wx-6z2" firstAttribute="bottom" secondItem="s59-XW-biX" secondAttribute="bottom" id="Gb3-fs-a03"/>                            <constraint firstItem="UHL-wx-6z2" firstAttribute="trailing" secondItem="s59-XW-biX" secondAttribute="trailing" id="Gt3-fs-t03"/>
+                            <constraint firstItem="s59-XW-biX" firstAttribute="top" secondItem="UHL-wx-6z2" secondAttribute="top" id="fMU-7W-IPP"/>
                             <constraint firstItem="s59-XW-biX" firstAttribute="leading" secondItem="UHL-wx-6z2" secondAttribute="leading" id="h7A-Ga-JT5"/>
-                            <constraint firstItem="s59-XW-biX" firstAttribute="centerX" secondItem="SW8-BK-MxC" secondAttribute="centerX" id="whW-Ej-FBP"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="h7A-Ga-JT5"/>
-                                <exclude reference="fMU-7W-IPP"/>
-                            </mask>
-                        </variation>
                         <variation key="widthClass=regular">
                             <mask key="constraints">
                                 <include reference="whW-Ej-FBP"/>
-                            </mask>
-                        </variation>
-                        <variation key="heightClass=regular-widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="h7A-Ga-JT5"/>
-                                <include reference="fMU-7W-IPP"/>
                             </mask>
                         </variation>
                     </view>
@@ -1211,23 +1125,11 @@
                         <viewLayoutGuide key="safeArea" id="tvd-dw-8Ig"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="AW2-GX-Y5z" firstAttribute="centerX" secondItem="5BE-gH-B0u" secondAttribute="centerX" id="Rdp-cn-G8r"/>
                             <constraint firstItem="AW2-GX-Y5z" firstAttribute="leading" secondItem="tvd-dw-8Ig" secondAttribute="leading" id="lvE-up-T82"/>
 
-                            <constraint firstItem="tvd-dw-8Ig" firstAttribute="bottom" secondItem="AW2-GX-Y5z" secondAttribute="bottom" id="Gb10-fs-a10"/>                            <constraint firstItem="AW2-GX-Y5z" firstAttribute="top" secondItem="tvd-dw-8Ig" secondAttribute="top" id="snc-tE-oIz"/>
+                            <constraint firstItem="tvd-dw-8Ig" firstAttribute="bottom" secondItem="AW2-GX-Y5z" secondAttribute="bottom" id="Gb10-fs-a10"/>                            <constraint firstItem="tvd-dw-8Ig" firstAttribute="trailing" secondItem="AW2-GX-Y5z" secondAttribute="trailing" id="Gt10-fs-t10"/>
+                            <constraint firstItem="AW2-GX-Y5z" firstAttribute="top" secondItem="tvd-dw-8Ig" secondAttribute="top" id="snc-tE-oIz"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="lvE-up-T82"/>
-                                <exclude reference="snc-tE-oIz"/>
-                            </mask>
-                        </variation>
-                        <variation key="heightClass=regular-widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="lvE-up-T82"/>
-                                <include reference="snc-tE-oIz"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="pou-tv-flm" id="nLY-VK-dsv"/>
@@ -1324,23 +1226,11 @@
                         <viewLayoutGuide key="safeArea" id="9la-Ua-dVp"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="JLZ-FJ-btm" firstAttribute="centerX" secondItem="6tW-0N-nMZ" secondAttribute="centerX" id="fif-Cy-Tkw"/>
                             <constraint firstItem="JLZ-FJ-btm" firstAttribute="leading" secondItem="9la-Ua-dVp" secondAttribute="leading" id="nBJ-1L-RdU"/>
 
-                            <constraint firstItem="9la-Ua-dVp" firstAttribute="bottom" secondItem="JLZ-FJ-btm" secondAttribute="bottom" id="Gb5-fs-a05"/>                            <constraint firstItem="JLZ-FJ-btm" firstAttribute="top" secondItem="9la-Ua-dVp" secondAttribute="top" id="xAG-0E-mEp"/>
+                            <constraint firstItem="9la-Ua-dVp" firstAttribute="bottom" secondItem="JLZ-FJ-btm" secondAttribute="bottom" id="Gb5-fs-a05"/>                            <constraint firstItem="9la-Ua-dVp" firstAttribute="trailing" secondItem="JLZ-FJ-btm" secondAttribute="trailing" id="Gt5-fs-t05"/>
+                            <constraint firstItem="JLZ-FJ-btm" firstAttribute="top" secondItem="9la-Ua-dVp" secondAttribute="top" id="xAG-0E-mEp"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="nBJ-1L-RdU"/>
-                                <exclude reference="xAG-0E-mEp"/>
-                            </mask>
-                        </variation>
-                        <variation key="heightClass=regular-widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="nBJ-1L-RdU"/>
-                                <include reference="xAG-0E-mEp"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="P5o-gM-Z15" id="tIz-NN-nOV"/>
@@ -1427,23 +1317,11 @@
                         <viewLayoutGuide key="safeArea" id="gId-kG-svg"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstItem="ksA-xB-moz" firstAttribute="centerX" secondItem="7Pw-Ca-8Ns" secondAttribute="centerX" id="5Ij-og-IHy"/>
                             <constraint firstItem="ksA-xB-moz" firstAttribute="leading" secondItem="gId-kG-svg" secondAttribute="leading" id="DPf-Ae-BDC"/>
 
-                            <constraint firstItem="gId-kG-svg" firstAttribute="bottom" secondItem="ksA-xB-moz" secondAttribute="bottom" id="Gb8-fs-a08"/>                            <constraint firstItem="ksA-xB-moz" firstAttribute="top" secondItem="gId-kG-svg" secondAttribute="top" id="aJp-EC-X9b"/>
+                            <constraint firstItem="gId-kG-svg" firstAttribute="bottom" secondItem="ksA-xB-moz" secondAttribute="bottom" id="Gb8-fs-a08"/>                            <constraint firstItem="gId-kG-svg" firstAttribute="trailing" secondItem="ksA-xB-moz" secondAttribute="trailing" id="Gt8-fs-t08"/>
+                            <constraint firstItem="ksA-xB-moz" firstAttribute="top" secondItem="gId-kG-svg" secondAttribute="top" id="aJp-EC-X9b"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="DPf-Ae-BDC"/>
-                                <exclude reference="aJp-EC-X9b"/>
-                            </mask>
-                        </variation>
-                        <variation key="widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="DPf-Ae-BDC"/>
-                                <include reference="aJp-EC-X9b"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backButtonCollectionView" destination="iCK-vh-uNC" id="PrA-Ft-c6t"/>

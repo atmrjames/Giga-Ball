@@ -59,8 +59,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     @IBOutlet var backgroundView: UIView!
     @IBOutlet weak var settingsTableView: UITableView!
     
-    @IBOutlet var backgroundViewLeading: NSLayoutConstraint!
-    @IBOutlet var backgroundViewTop: NSLayoutConstraint!
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
@@ -90,7 +88,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             screenSize = .X
         } else if screenRatio < 1.7  {
             screenSize = .Pad
-            ipadCompatibility()
         } else if self.view.frame.size.width <= 320 {
             screenSize = .SE
         }
@@ -683,13 +680,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
         }
         // Load the total stats array from the NSCoder data store
-    }
-    
-    func ipadCompatibility() {
-        backgroundViewLeading.isActive = false
-        backgroundViewTop.isActive = false
-        backgroundView.frame.size.height = 896
-        backgroundView.frame.size.width = 414
     }
     
     func showWarning(senderID: String) {
