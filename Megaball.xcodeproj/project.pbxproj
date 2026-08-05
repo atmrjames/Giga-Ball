@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF1600000000002 /* ProgressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1600000000001 /* ProgressionTests.swift */; };
+		1AF1500000000002 /* Progression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1500000000001 /* Progression.swift */; };
 		1AF1400000000002 /* ScoringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1400000000001 /* ScoringTests.swift */; };
 		1AF1300000000002 /* Scoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1300000000001 /* Scoring.swift */; };
 		1AF1200000000000 /* LevelPackSetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1100000000000 /* LevelPackSetupTests.swift */; };
@@ -249,6 +251,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF1600000000001 /* ProgressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressionTests.swift; sourceTree = "<group>"; };
+		1AF1500000000001 /* Progression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Progression.swift; sourceTree = "<group>"; };
 		1AF1400000000001 /* ScoringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoringTests.swift; sourceTree = "<group>"; };
 		1AF1300000000001 /* Scoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scoring.swift; sourceTree = "<group>"; };
 		1AF1100000000000 /* LevelPackSetupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelPackSetupTests.swift; sourceTree = "<group>"; };
@@ -521,6 +525,7 @@
 				1AF1100000000000 /* LevelPackSetupTests.swift */,
 				1AF1100000000001 /* TotalStatsTests.swift */,
 				1AF1400000000001 /* ScoringTests.swift */,
+				1AF1600000000001 /* ProgressionTests.swift */,
 				1AF1100000000002 /* UnlockStateTests.swift */,
 				1AF1100000000003 /* PowerUpAllocationTests.swift */,
 				1AF1100000000004 /* CloudKitHandlerTests.swift */,
@@ -1005,6 +1010,7 @@
 			children = (
 				1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */,
 				1AF1300000000001 /* Scoring.swift */,
+				1AF1500000000001 /* Progression.swift */,
 				1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */,
 			);
 			path = "Data Model";
@@ -1212,6 +1218,7 @@
 				1AF1200000000000 /* LevelPackSetupTests.swift in Sources */,
 				1AF1200000000001 /* TotalStatsTests.swift in Sources */,
 				1AF1400000000002 /* ScoringTests.swift in Sources */,
+				1AF1600000000002 /* ProgressionTests.swift in Sources */,
 				1AF1200000000002 /* UnlockStateTests.swift in Sources */,
 				1AF1200000000003 /* PowerUpAllocationTests.swift in Sources */,
 				1AF1200000000004 /* CloudKitHandlerTests.swift in Sources */,
@@ -1318,6 +1325,7 @@
 				1A31941924441CDA004917D0 /* Level045.swift in Sources */,
 				1A57A2AC23F592FB004D7AC2 /* TotalStats.swift in Sources */,
 				1AF1300000000002 /* Scoring.swift in Sources */,
+				1AF1500000000002 /* Progression.swift in Sources */,
 				1A2A387C23DDEEDF001BD200 /* SettingsTableViewCell.swift in Sources */,
 				1A31941724441CD5004917D0 /* Level044.swift in Sources */,
 				1A31941124441CC3004917D0 /* Level041.swift in Sources */,

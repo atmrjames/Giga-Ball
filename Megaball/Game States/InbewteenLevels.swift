@@ -195,7 +195,10 @@ class InbetweenLevels: GKState {
 
         if scene.gameoverStatus == false && scene.endlessMode == false && scene.numberOfLevels != 1 {
             if scene.levelNumber != scene.endLevelNumber {
-                scene.totalStatsArray[0].levelUnlockedArray[scene.levelNumber+1] = true
+                if let next = Progression.nextLevelIndex(after: scene.levelNumber,
+                                                        endLevelNumber: scene.endLevelNumber) {
+                    scene.totalStatsArray[0].levelUnlockedArray[next] = true
+                }
                 scene.numberOfLives+=1
             }
             // Unlock next level and add extra life if next level exists
@@ -548,196 +551,33 @@ class InbetweenLevels: GKState {
             }
             // Pack score achievements
             
-            if scene.levelNumber == 10 && scene.totalStatsArray[0].achievementsUnlockedArray[6] == false {
+            if let reward = Progression.reward(forLevel: scene.levelNumber),
+               scene.totalStatsArray[0].achievementsUnlockedArray[reward.achievementIndex] == false {
                 scene.newItemsBool = true
-                
-                if scene.totalStatsArray[0].achievementsUnlockedArray[8] && scene.totalStatsArray[0].achievementsUnlockedArray[7] && scene.totalStatsArray[0].achievementsUnlockedArray[6] {
-                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+
+                if let nextPack = reward.nextPackIndex {
+                    scene.totalStatsArray[0].levelPackUnlockedArray[nextPack] = true
                 }
-                // Only unlock pack 4[5] if first 3 packs have been completed
-                scene.totalStatsArray[0].appIconUnlockedArray[1] = true
-                scene.totalStatsArray[0].themeUnlockedArray[1] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[6] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[7] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[6] = true
-                scene.totalStatsArray[0].achievementDates[6] = Date()
-                let achievementPack = GKAchievement(identifier: "classicPackComplete")
+                scene.totalStatsArray[0].appIconUnlockedArray[reward.appIconIndex] = true
+                scene.totalStatsArray[0].themeUnlockedArray[reward.themeIndex] = true
+                for powerUp in reward.powerUpIndexes {
+                    scene.totalStatsArray[0].powerUpUnlockedArray[powerUp] = true
+                }
+                scene.totalStatsArray[0].achievementsUnlockedArray[reward.achievementIndex] = true
+                scene.totalStatsArray[0].achievementDates[reward.achievementIndex] = Date()
+
+                let achievementPack = GKAchievement(identifier: reward.achievementIdentifier)
                 if achievementPack.isCompleted == false {
                     achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting classicPackComplete achievement")
+                        print(error?.localizedDescription ?? "Error reporting \(reward.achievementIdentifier) achievement")
                     }
                 }
             }
-            if scene.levelNumber == 20 && scene.totalStatsArray[0].achievementsUnlockedArray[7] == false {
-                scene.newItemsBool = true
-                
-                if scene.totalStatsArray[0].achievementsUnlockedArray[8] && scene.totalStatsArray[0].achievementsUnlockedArray[7] && scene.totalStatsArray[0].achievementsUnlockedArray[6] {
-                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
-                }
-                // Only unlock pack 4[5] if first 3 packs have been completed
-                scene.totalStatsArray[0].appIconUnlockedArray[2] = true
-                scene.totalStatsArray[0].themeUnlockedArray[2] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[10] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[11] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[7] = true
-                scene.totalStatsArray[0].achievementDates[7] = Date()
-                let achievementPack = GKAchievement(identifier: "spacePackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting spacePackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 30 && scene.totalStatsArray[0].achievementsUnlockedArray[8] == false {
-                scene.newItemsBool = true
-                
-                if scene.totalStatsArray[0].achievementsUnlockedArray[8] && scene.totalStatsArray[0].achievementsUnlockedArray[7] && scene.totalStatsArray[0].achievementsUnlockedArray[6] {
-                    scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
-                }
-                // Only unlock pack 4[5] if first 3 packs have been completed
-                scene.totalStatsArray[0].appIconUnlockedArray[3] = true
-                scene.totalStatsArray[0].themeUnlockedArray[3] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[12] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[13] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[8] = true
-                scene.totalStatsArray[0].achievementDates[8] = Date()
-                let achievementPack = GKAchievement(identifier: "naturePackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting naturePackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 40 && scene.totalStatsArray[0].achievementsUnlockedArray[9] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[6] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[4] = true
-                scene.totalStatsArray[0].themeUnlockedArray[4] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[20] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[21] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[9] = true
-                scene.totalStatsArray[0].achievementDates[9] = Date()
-                let achievementPack = GKAchievement(identifier: "urbanPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting urbanPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 50 && scene.totalStatsArray[0].achievementsUnlockedArray[10] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[7] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[5] = true
-                scene.totalStatsArray[0].themeUnlockedArray[5] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[22] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[23] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[10] = true
-                scene.totalStatsArray[0].achievementDates[10] = Date()
-                let achievementPack = GKAchievement(identifier: "foodPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting foodPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 60 && scene.totalStatsArray[0].achievementsUnlockedArray[11] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[8] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[6] = true
-                scene.totalStatsArray[0].themeUnlockedArray[6] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[24] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[25] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[11] = true
-                scene.totalStatsArray[0].achievementDates[11] = Date()
-                let achievementPack = GKAchievement(identifier: "computerPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting computerPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 70 && scene.totalStatsArray[0].achievementsUnlockedArray[12] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[9] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[7] = true
-                scene.totalStatsArray[0].themeUnlockedArray[7] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[26] = true
-                scene.totalStatsArray[0].powerUpUnlockedArray[27] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[12] = true
-                scene.totalStatsArray[0].achievementDates[12] = Date()
-                let achievementPack = GKAchievement(identifier: "bodyPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting bodyPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 80 && scene.totalStatsArray[0].achievementsUnlockedArray[13] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[10] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[8] = true
-                scene.totalStatsArray[0].themeUnlockedArray[8] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[13] = true
-                scene.totalStatsArray[0].achievementDates[13] = Date()
-                let achievementPack = GKAchievement(identifier: "worldPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting worldPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 90 && scene.totalStatsArray[0].achievementsUnlockedArray[14] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[11] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[9] = true
-                scene.totalStatsArray[0].themeUnlockedArray[9] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[14] = true
-                scene.totalStatsArray[0].achievementDates[14] = Date()
-                let achievementPack = GKAchievement(identifier: "emojiPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting emojiPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 100 && scene.totalStatsArray[0].achievementsUnlockedArray[15] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].levelPackUnlockedArray[12] = true
-                scene.totalStatsArray[0].appIconUnlockedArray[10] = true
-                scene.totalStatsArray[0].themeUnlockedArray[10] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[15] = true
-                scene.totalStatsArray[0].achievementDates[15] = Date()
-                let achievementPack = GKAchievement(identifier: "numbersPackComplete")
-                if achievementPack.isCompleted == false {
-                    achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting numbersPackComplete achievement")
-                    }
-                }
-            }
-            if scene.levelNumber == 110 && scene.totalStatsArray[0].achievementsUnlockedArray[16] == false {
-                scene.newItemsBool = true
-                scene.totalStatsArray[0].appIconUnlockedArray[11] = true
-                scene.totalStatsArray[0].themeUnlockedArray[11] = true
-                scene.totalStatsArray[0].achievementsUnlockedArray[16] = true
-                scene.totalStatsArray[0].achievementDates[16] = Date()
-                let achievementPack = GKAchievement(identifier: "challengePackComplete")
-                if achievementPack.isCompleted == false {
-                                        achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting challengePackComplete achievement")
-                    }
-                }
-            }
+            // Pack completion rewards. Was eleven near-identical blocks; the table now
+            // lives in Progression so the indices can be tested. City is not opened here
+            // - the first three packs can be played in any order, so it is gated on all
+            // three best times below
             // Level pack complete achievements & pack unlocks
 
             if scene.deathsPerPack == 0 && scene.totalStatsArray[0].achievementsUnlockedArray[54] == false {
@@ -801,8 +641,8 @@ class InbetweenLevels: GKState {
             }
             // Pack speed achievement
             
-            if scene.totalStatsArray[0].packBestTimes[0] > 0 && scene.totalStatsArray[0].packBestTimes[1] > 0 && scene.totalStatsArray[0].packBestTimes[2] > 0 {
-                scene.totalStatsArray[0].levelPackUnlockedArray[5] = true
+            if Progression.unlocksCityPack(packBestTimes: scene.totalStatsArray[0].packBestTimes) {
+                scene.totalStatsArray[0].levelPackUnlockedArray[Progression.cityPackIndex] = true
             }
                         
             if scene.totalStatsArray[0].packHighScores[scene.packNumber-2] > 0 && scene.totalStatsArray[0].achievementsUnlockedArray[62] == false {
