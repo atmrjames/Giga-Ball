@@ -1181,6 +1181,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Sets up an observer to watch for notifications to check if the user has restarted the game
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
+		NotificationCenter.default.addObserver(self, selector: #selector(self.levelIntroDidClearReceived), name: .levelIntroDidClear, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
@@ -4103,6 +4104,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Follows the same lifecycle as the rest of the HUD: hidden during the level intro,
 	// shown while playing and paused
+
+	@objc func levelIntroDidClearReceived(notification: Notification) {
+		rollInLivesRow()
+	}
+	// The level intro posts this when its view is finally removed. Keying the roll-in to
+	// .continueToNextLevel instead would fire two seconds early, while the overlay is
+	// still dismissing, and the whole animation would play behind it
 
 	func rollInLivesRow() {
 		let shown = min(numberOfLives, GameScene.maxLivesShown)

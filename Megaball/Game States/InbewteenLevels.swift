@@ -789,6 +789,7 @@ class InbetweenLevels: GKState {
 
 extension Notification.Name {
     public static let continueToNextLevel = Notification.Name(rawValue: "continueToNextLevel")
+    public static let levelIntroDidClear = Notification.Name(rawValue: "levelIntroDidClear")
 }
 // Notification setup for sending information from the end level popup to load the next level
 

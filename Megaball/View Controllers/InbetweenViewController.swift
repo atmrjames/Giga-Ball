@@ -186,7 +186,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                                 { (finished: Bool) in
                                     if (finished) {
                                         self.view.removeFromSuperview()
-                                        // Send notification to unpause the game
+                                        NotificationCenter.default.post(name: .levelIntroDidClear, object: nil)
+                                        // The scene waits for this before rolling the lives
+                                        // in. .continueToNextLevel fires two seconds
+                                        // earlier, at the start of this dismissal, so
+                                        // anything keyed to that plays behind the overlay
                                     }
                                 }
                             }

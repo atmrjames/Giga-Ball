@@ -72,8 +72,6 @@ class Playing: GKState {
             self.scene.multiplierLabel.isHidden = false
             self.scene.pauseButton.isHidden = false
             self.scene.setLivesRowHidden(false)
-            self.scene.rollInLivesRow()
-            // Rolls in once the level intro has cleared and the HUD appears
             if self.scene.endlessMode {
                 self.scene.multiplierLabel.isHidden = true
             }
