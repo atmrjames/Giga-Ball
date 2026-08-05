@@ -41,8 +41,22 @@ extension UIViewController {
         let horizontal = max(0, (available.width - UIViewController.menuMaximumSize.width)/2)
         let vertical = max(0, (available.height - UIViewController.menuMaximumSize.height)/2)
 
-        let wanted = UIEdgeInsets(top: vertical, left: horizontal,
-                                  bottom: vertical, right: horizontal)
+        // Only make up the difference. Menus open on top of one another as child view
+        // controllers filling their parent, so a child inherits the inset its parent
+        // already applied - and adding the full amount again on top halved the content at
+        // every level down. Subtracting what is already there makes this idempotent
+        // however deep the stack goes.
+        let inherited = UIEdgeInsets(
+            top: view.safeAreaInsets.top - additionalSafeAreaInsets.top,
+            left: view.safeAreaInsets.left - additionalSafeAreaInsets.left,
+            bottom: view.safeAreaInsets.bottom - additionalSafeAreaInsets.bottom,
+            right: view.safeAreaInsets.right - additionalSafeAreaInsets.right)
+
+        let wanted = UIEdgeInsets(top: max(0, vertical - inherited.top),
+                                  left: max(0, horizontal - inherited.left),
+                                  bottom: max(0, vertical - inherited.bottom),
+                                  right: max(0, horizontal - inherited.right))
+
         guard additionalSafeAreaInsets != wanted else { return }
         // Setting this triggers another layout pass, so assigning unconditionally would
         // loop for as long as the screen is on

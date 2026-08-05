@@ -108,6 +108,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        collectionViewLayout()
     }
 
     
@@ -253,16 +254,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionViewLayout() {
-        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        var viewWidth = view.frame.size.width
-        if view.frame.size.width > 414 {
-            viewWidth = levelSelectView.frame.size.width
-        }
+        let layout = UICollectionViewFlowLayout()
         let cellWidth: CGFloat = 50
-        let cellSpacing = (viewWidth - cellWidth*3)/3
+        let available = backButtonCollectionView.frame.size.width
+        // Spread across the width the buttons actually occupy. This used to measure the
+        // whole screen, or the container, neither of which is the row the buttons are in
+        // once the content is capped - so on iPad they bunched to one side.
+        let cellSpacing = max(0, (available - cellWidth*3)/3)
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
-        backButtonCollectionView!.collectionViewLayout = layout
+        backButtonCollectionView.collectionViewLayout = layout
     }
     // Set the spacing between collection view cells
     

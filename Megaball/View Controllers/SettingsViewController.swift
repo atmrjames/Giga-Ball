@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreHaptics
 
 enum device {
     case Pad
@@ -132,32 +133,50 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     
     
+    /// Whether this device can produce haptics at all.
+    ///
+    /// iPads have no taptic engine, so the setting is offered and does nothing. Asked of
+    /// CoreHaptics rather than inferred from the idiom, which would be a guess that goes
+    /// stale the moment Apple ships an iPad that can.
+    static let deviceHasHaptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
+
     /// The app icon and the ball and paddle theme, which the pause menu does not offer.
     ///
     /// Both restyle a game already in progress, and both lead into a picker that does not
     /// belong over live gameplay. They are dropped from the front of the list rather than
     /// hidden in place, which would leave two blank rows where they used to be.
-    private var leadingRowsHiddenInGame: Int {
-        navigatedFrom == "PauseMenu" ? 2 : 0
+    /// The settings this screen offers, in order, already filtered to what applies.
+    enum SettingRow: Int {
+        case appIcon, theme, sounds, music, haptics, background, perspective
+        case paddleSpeed, swipeUpToPause, reset
     }
 
-    /// The last row, which is Reset Ball from the pause menu and Reset Game Data from the
-    /// main menu. The latter was never implemented, so the main menu does not offer it.
-    ///
-    /// Dropped from the count rather than hidden in place: a hidden cell still takes up
-    /// its row, which left the list 70 points taller than its content and scrolling for
-    /// a row nobody could see.
-    private var trailingRowsHiddenOutOfGame: Int {
-        navigatedFrom == "PauseMenu" ? 0 : 1
+    var settingRows: [SettingRow] {
+        var rows: [SettingRow] = [.appIcon, .theme]
+        if navigatedFrom == "PauseMenu" { rows = [] }
+        // The app icon and the ball and paddle theme restyle a game already in progress,
+        // and open a picker that does not belong over live gameplay
+
+        rows += [.sounds, .music]
+        if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
+        rows += [.background, .perspective, .paddleSpeed, .swipeUpToPause]
+
+        if navigatedFrom == "PauseMenu" { rows.append(.reset) }
+        // Reset Ball from the pause menu, which works. From the main menu the same row is
+        // Reset Game Data, which was never implemented
+
+        return rows
     }
+
+
 
     /// The row as the switches below number them, which is the main menu's numbering.
     private func settingRow(for indexPath: IndexPath) -> Int {
-        indexPath.row + leadingRowsHiddenInGame
+        settingRows[indexPath.row].rawValue
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            return 10 - leadingRowsHiddenInGame - trailingRowsHiddenOutOfGame
+            return settingRows.count
     }
     // Set number of cells in table view
     
@@ -308,9 +327,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             }
         
         cell.isHidden = false
-        // Rows that are not offered are left out of the count instead - see
-        // trailingRowsHiddenOutOfGame. Still reset here, or a cell reused from when this
-        // did hide rows would come back invisible
+        // Rows that are not offered are left out of the list instead - see
+        // settingRows. Still reset here, or a cell reused from when this did hide rows
+        // would come back invisible
 
         
             UIView.animate(withDuration: 0.2) {
