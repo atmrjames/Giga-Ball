@@ -4000,6 +4000,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// supported signal for this, and unlike a ratio test it reports .compact for a
 	// narrow multitasking slot, which is what the HUD placement below actually wants
 
+	var livesRowSpacing: CGFloat { ballSize*1.6 }
+
+	var livesRowY: CGFloat {
+		let paddleBottom = paddle.position.y - paddleHeight/2
+		let safeBottom = -frame.size.height/2 + (self.view?.safeAreaInsets.bottom ?? 0)
+		return paddleBottom + (safeBottom - paddleBottom)*0.6
+	}
+	// Sixty per cent of the way from the paddle down to the safe area, rather than a
+	// fixed gap below the paddle. Close to the paddle the row read as playable - another
+	// row of balls just under the one in play - so it sits nearer the bottom edge, well
+	// clear of the paddle and still above the home indicator on every device
+
 	func buildLivesRow() {
 		lifeIcons.forEach { $0.removeFromParent() }
 		lifeIcons = (0..<GameScene.maxLivesShown).map { _ in
@@ -4016,29 +4028,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// flight animation always has a node to move
 
 	func layoutLivesRow() {
-		let spacing = ballSize*1.6
-		let rowY = paddle.position.y - paddleHeight/2 - layoutUnit*2
 		for (index, icon) in lifeIcons.enumerated() {
 			icon.size = CGSize(width: ballSize, height: ballSize)
-			icon.position = livesRowHome(index: index, spacing: spacing, rowY: rowY)
+			icon.position = livesRowHome(index: index)
 		}
 	}
 
-	func livesRowHome(index: Int, spacing: CGFloat, rowY: CGFloat) -> CGPoint {
+	func livesRowHome(index: Int) -> CGPoint {
 		let shown = max(1, min(numberOfLives, GameScene.maxLivesShown))
-		let totalWidth = CGFloat(shown - 1) * spacing
-		return CGPoint(x: -totalWidth/2 + CGFloat(index)*spacing, y: rowY)
+		let totalWidth = CGFloat(shown - 1) * livesRowSpacing
+		return CGPoint(x: -totalWidth/2 + CGFloat(index)*livesRowSpacing, y: livesRowY)
 	}
 	// Centred on the play area, so the row grows outwards from the middle as lives are
 	// gained rather than shifting the ones already there
 
 	func refreshLivesRow() {
-		let spacing = ballSize*1.6
-		let rowY = paddle.position.y - paddleHeight/2 - layoutUnit*2
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
 		for (index, icon) in lifeIcons.enumerated() {
 			icon.removeAllActions()
-			icon.position = livesRowHome(index: index, spacing: spacing, rowY: rowY)
+			icon.position = livesRowHome(index: index)
 			icon.setScale(1)
 			icon.alpha = 1
 			icon.texture = ballTexture
