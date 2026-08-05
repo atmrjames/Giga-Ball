@@ -25,6 +25,12 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBOutlet var packNameLabel: UILabel!
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var scoreLabel: UILabel!
+
+    let scoreTitleLabel = UILabel()
+    let livesLabel = UILabel()
+    // Added in code rather than the storyboard, as on the pause screen: the labels there
+    // are wired through outlets and constraints and adding more by hand risks a layout
+    // that works
     
     @IBAction func tapGesture(_ sender: Any) {
         if self.resumeInProgress == false {
@@ -63,6 +69,8 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         creatorLabel.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         // Pre animation setup
         
+        setUpResumeDetailLabels()
+
         cancelResumeButton.delegate = self
         cancelResumeButton.dataSource = self
         cancelResumeButton.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
@@ -86,26 +94,56 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[currentLevelNumber])"
             }
             scoreLabel.text = "\(score)"
+            scoreTitleLabel.text = "Score"
+            let lives = savedGame!.numberOfLives
+            livesLabel.text = lives == 1 ? "1 life left" : "\(lives) lives left"
+            livesLabel.isHidden = false
             
             if currentLevelNumber == 0 {
                 packNameLabel.text = ""
                 levelNumberLabel.text = "Endless Mode"
                 scoreLabel.text = "\(height)m"
+                scoreTitleLabel.text = "Height"
+                livesLabel.isHidden = true
+                // Endless has a single life and no counter anywhere else
             }
             
             packNameLabel.isHidden = false
             levelNumberLabel.isHidden = false
             scoreLabel.isHidden = false
+            scoreTitleLabel.isHidden = false
         } else {
             resumingLabel.isHidden = true
             cancelResumeButton.isHidden = true
             packNameLabel.isHidden = true
             levelNumberLabel.isHidden = true
             scoreLabel.isHidden = true
+            scoreTitleLabel.isHidden = true
+            livesLabel.isHidden = true
         }
         // Show or hide resume label to reflect if a previous saved game is being loaded
     }
     
+    func setUpResumeDetailLabels() {
+        for label in [scoreTitleLabel, livesLabel] {
+            label.translatesAutoresizingMaskIntoConstraints = false
+            label.textAlignment = scoreLabel.textAlignment
+            label.font = packNameLabel.font
+            label.textColor = packNameLabel.textColor
+            label.isHidden = true
+            scoreLabel.superview?.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: scoreLabel.centerXAnchor)
+            ])
+        }
+        NSLayoutConstraint.activate([
+            scoreTitleLabel.bottomAnchor.constraint(equalTo: scoreLabel.topAnchor, constant: -2),
+            livesLabel.topAnchor.constraint(equalTo: scoreLabel.bottomAnchor, constant: 10)
+        ])
+    }
+    // Titles the score and adds the life count, so the resume screen says the same things
+    // the pause screen does rather than showing a bare number
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         fadeObjectsIn()
