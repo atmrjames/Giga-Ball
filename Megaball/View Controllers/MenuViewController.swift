@@ -22,8 +22,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Game view properties
     
     let defaults = UserDefaults.standard
-    var premiumSetting: Bool?
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -316,11 +314,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonInfo.png")
         case 1:
-            if premiumSetting! {
-                cell.iconImage.image = nil
-            } else {
-                cell.iconImage.image = UIImage(named:"ButtonPremium.png")
-            }
+            cell.iconImage.image = nil
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonSettings.png")
         default:
@@ -339,11 +333,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         if indexPath.row == 0 {
             moveToItems()
-        }
-        if indexPath.row == 1 {
-            if !premiumSetting! {
-                moveToSettings()
-            }
         }
         if indexPath.row == 2 {
             moveToSettings()
@@ -366,14 +355,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 }
                 cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
             case 1:
-                if self.premiumSetting! {
-                    cell.iconImage.image = nil
-                } else {
-                    if self.hapticsSetting! {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPremiumHighlighted.png")
-                }
+                cell.iconImage.image = nil
             case 2:
                 if self.hapticsSetting! {
                     self.interfaceHaptic.impactOccurred()
@@ -398,14 +380,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 }
                 cell.iconImage.image = UIImage(named:"ButtonInfo.png")
             case 1:
-                if self.premiumSetting! {
-                    cell.iconImage.image = nil
-                } else {
-                    if self.hapticsSetting! {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPremium.png")
-                }
+                cell.iconImage.image = nil
             case 2:
                 if self.hapticsSetting! {
                     self.interfaceHaptic.impactOccurred()
@@ -419,8 +394,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func defaultSettings() {
-        defaults.register(defaults: ["premiumSetting": false])
-        defaults.register(defaults: ["adsSetting": true])
         defaults.register(defaults: ["soundsSetting": true])
         defaults.register(defaults: ["musicSetting": true])
         defaults.register(defaults: ["hapticsSetting": true])
@@ -550,8 +523,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func userSettings() {
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -587,29 +558,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         savePowerUpActiveTimerArray = defaults.object(forKey: "savePowerUpActiveTimerArray") as! [Double]?
         savePowerUpActiveMagnitudeArray = defaults.object(forKey: "savePowerUpActiveMagnitudeArray") as! [Int]?
         // Game save settings
-    }
-    
-    func checkPremium() {
-        premiumSetting = true
-        adsSetting = false
-        defaults.set(premiumSetting!, forKey: "premiumSetting")
-        defaults.set(adsSetting!, forKey: "adsSetting")
-        
-        totalStatsArray[0].levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray.map { _ in true }
-        totalStatsArray[0].levelUnlockedArray = totalStatsArray[0].levelUnlockedArray.map { _ in true }
-        totalStatsArray[0].powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray.map { _ in true }
-        totalStatsArray[0].themeUnlockedArray = totalStatsArray[0].themeUnlockedArray.map { _ in true }
-        totalStatsArray[0].appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray.map { _ in true }
-        totalStatsArray[0].dateSaved = Date()
-        do {
-            let data = try encoder.encode(self.totalStatsArray)
-            try data.write(to: totalStatsStore!)
-        } catch {
-            print("Error encoding total stats, \(error)")
-        }
-        
-        CloudKitHandler().saveToiCloud()
-        // Save total stats
     }
     
     func authGCPlayer() {
@@ -652,12 +600,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if parallaxSetting! {
             addParallaxToView()
         }
-//        if premiumSetting! {
-            checkPremium()
-//        } else {
-//            getProducts()
-//        }
-        
         modeSelectTableView.reloadData()
         iconCollectionView.reloadData()
     }

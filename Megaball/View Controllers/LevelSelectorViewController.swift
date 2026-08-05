@@ -12,7 +12,6 @@ import GameKit
 class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -20,7 +19,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var paddleSensitivitySetting: Int?
     var gameCenterSetting: Bool?
     var statsCollapseSetting: Bool?
-    var premiumSetting: Bool?
     var IAPLocalPrice: String?
     // User settings
     
@@ -120,7 +118,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if totalStatsArray[0].levelUnlockedArray.count == totalStatsArray[0].levelUnlockedArray.filter({$0 == true}).count {
             allUnlockedBool = true
         }
-        if premiumSetting! == false && allUnlockedBool == false {
+        if allUnlockedBool == false {
             premiumTableView.isHidden = false
             premiumTableCollapsed.isActive = false
             premiumTableExpanded.isActive = true
@@ -447,7 +445,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -455,7 +452,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
         IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }

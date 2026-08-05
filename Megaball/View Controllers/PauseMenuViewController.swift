@@ -22,8 +22,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
-    var premiumSetting: Bool?
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -279,8 +277,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func userSettings() {
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -306,7 +302,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             titleLabel.text = "G A M E   O V E R"
         } else if sender == "Complete" {
             titleLabel.text = "C O M P L E T E"
-            if newItemsBool && premiumSetting! == false {
+            if newItemsBool {
                 newItemsLabel.isHidden = false
             }
         }

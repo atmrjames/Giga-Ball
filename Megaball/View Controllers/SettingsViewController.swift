@@ -20,8 +20,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var navigatedFrom: String?
     
     let defaults = UserDefaults.standard
-    var premiumSetting: Bool?
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -358,20 +356,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
             switch indexPath.row {
-//            case 0:
-//            // Premium
-//                premiumSetting = !premiumSetting!
-//                defaults.set(premiumSetting!, forKey: "premiumSetting")
-//                if premiumSetting! {
-//                    adsSetting = false
-//                } else {
-//                    adsSetting = true
-//                }
-//                defaults.set(adsSetting!, forKey: "adsSetting")
-//            case 1:
-//            // Ads
-//                adsSetting = !adsSetting!
-//                defaults.set(adsSetting!, forKey: "adsSetting")
             case 0:
             // App icon
                 hideAnimate()
@@ -674,8 +658,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func userSettings() {
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -737,12 +719,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func resetData() {
-        premiumSetting = true
-        defaults.set(premiumSetting!, forKey: "premiumSetting")
-        adsSetting = false
-        defaults.set(adsSetting!, forKey: "adsSetting")
-        // All content is free since the IAP was removed, so a reset must not put the
-        // app back into the locked, ad-supported state it can no longer leave
         soundsSetting = true
         defaults.set(soundsSetting!, forKey: "soundsSetting")
         musicSetting = true

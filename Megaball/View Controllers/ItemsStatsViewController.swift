@@ -11,7 +11,6 @@ import UIKit
 class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -216,7 +215,6 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")

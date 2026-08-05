@@ -2,21 +2,22 @@
 //  UnlockStateTests.swift
 //  GigaBallTests
 //
-//  The baseline for removing the premiumSetting gating.
+//  What a player can reach, and when.
 //
-//  premiumSetting is unconditionally forced true, but checkPremium() does more
-//  than set a flag: it rewrites the persisted unlock arrays in TotalStats,
-//  mapping every entry to true on each menu refresh. So the live unlock state
-//  of any player who has launched a recent build is "everything unlocked",
-//  regardless of what they actually earned.
+//  These started as the baseline for removing the premiumSetting gating.
+//  checkPremium() used to rewrite all five unlock arrays to true on every menu
+//  refresh, so nothing was actually gated. With that removed, the defaults in
+//  TotalStats are the live starting state and the progression in
+//  InbewteenLevels is what opens the rest.
 //
-//  That matters because the failure mode of removing the gating is silent. No
-//  crash, no error - content the player had access to yesterday is simply
-//  locked today. These tests record what the unlock state is now, so the
-//  removal can be diffed against it rather than eyeballed.
+//  The failure mode here is silent - no crash, no error, just content a player
+//  cannot reach - so these pin the starting state precisely. Existing players
+//  are unaffected: their arrays were already persisted as all-true by the old
+//  force-unlock, and nothing re-locks them.
 //
-//  They deliberately assert current behaviour, including behaviour that is
-//  arguably wrong. Where that is the case it is called out in the test.
+//  Not covered: the pack-completion unlocks themselves. They live in
+//  InbewteenLevels, a GKState that mutates the scene, and cannot be exercised
+//  without one. Extracting them is the natural next step.
 //
 
 import XCTest
@@ -24,23 +25,7 @@ import XCTest
 
 final class UnlockStateTests: XCTestCase {
 
-    /// What `MenuViewController.checkPremium()` does to a stats blob, minus the
-    /// UserDefaults writes and the encode. Kept here so the tests exercise the
-    /// same transform the app applies, and so the removal has something
-    /// concrete to compare to.
-    ///
-    /// All five unlock arrays, matching checkPremium() line for line. If that
-    /// function grows a sixth, this must follow it or these tests quietly stop
-    /// describing the app.
-    private func applyForceUnlock(to stats: TotalStats) {
-        stats.levelPackUnlockedArray = stats.levelPackUnlockedArray.map { _ in true }
-        stats.levelUnlockedArray = stats.levelUnlockedArray.map { _ in true }
-        stats.powerUpUnlockedArray = stats.powerUpUnlockedArray.map { _ in true }
-        stats.themeUnlockedArray = stats.themeUnlockedArray.map { _ in true }
-        stats.appIconUnlockedArray = stats.appIconUnlockedArray.map { _ in true }
-    }
-
-    // MARK: - The default state, before any force-unlock
+    // MARK: - The state a new player starts in
 
     func testFreshInstallUnlocksTheFirstThreePacks() {
         // Tutorial, endless mode, Classic, Space and Nature start unlocked;
@@ -81,68 +66,27 @@ final class UnlockStateTests: XCTestCase {
                           "Some power-ups are earned, so the default is not all-true")
     }
 
-    // MARK: - What the force-unlock actually changes
-
-    func testForceUnlockOpensEverythingItTouches() {
+    func testAFreshInstallIsPlayable() {
+        // The starting state has to leave something to play. With the
+        // force-unlock gone, this is what stands between a new player and an
+        // empty menu.
         let stats = TotalStats()
-        applyForceUnlock(to: stats)
-
-        XCTAssertTrue(stats.levelPackUnlockedArray.allSatisfy { $0 })
-        XCTAssertTrue(stats.levelUnlockedArray.allSatisfy { $0 })
-        XCTAssertTrue(stats.powerUpUnlockedArray.allSatisfy { $0 })
+        XCTAssertTrue(stats.levelPackUnlockedArray.contains(true))
+        XCTAssertTrue(stats.levelUnlockedArray.contains(true))
+        XCTAssertTrue(stats.themeUnlockedArray[0])
+        XCTAssertTrue(stats.appIconUnlockedArray[0])
     }
 
-    func testForceUnlockIsNotAnIdentityOnAFreshInstall() {
-        // The point of the whole exercise: the default state and the state the
-        // app actually runs with are different. Removing the gating without
-        // replacing this transform locks content that players currently have.
-        let fresh = TotalStats()
-        let forced = TotalStats()
-        applyForceUnlock(to: forced)
-
-        XCTAssertNotEqual(fresh.levelPackUnlockedArray, forced.levelPackUnlockedArray)
-        XCTAssertNotEqual(fresh.levelUnlockedArray, forced.levelUnlockedArray)
-        XCTAssertNotEqual(fresh.powerUpUnlockedArray, forced.powerUpUnlockedArray)
-    }
-
-    func testForceUnlockOpensThemesAndIconsToo() {
-        // checkPremium() rewrites all five arrays, so the progression described
-        // in the specification - complete a pack, earn the next theme and icon
-        // - does not actually gate anything today. Everything is open from
-        // first launch.
+    func testNothingUnlocksEverythingAtOnce() {
+        // Regression guard for the force-unlock coming back. If any of these
+        // arrays is all-true on a fresh TotalStats, progression has stopped
+        // gating and the pack-completion rewards mean nothing.
         let stats = TotalStats()
-        applyForceUnlock(to: stats)
-
-        XCTAssertTrue(stats.themeUnlockedArray.allSatisfy { $0 })
-        XCTAssertTrue(stats.appIconUnlockedArray.allSatisfy { $0 })
-    }
-
-    func testNothingIsLeftLockedAfterTheForceUnlock() {
-        // The whole of the player's unlock state, in one assertion. This is the
-        // line the premiumSetting removal must not cross: whatever replaces
-        // checkPremium(), an existing player must not end up with less.
-        let stats = TotalStats()
-        applyForceUnlock(to: stats)
-
-        let stillLocked: [String] = [
-            stats.levelPackUnlockedArray.contains(false) ? "packs" : nil,
-            stats.levelUnlockedArray.contains(false) ? "levels" : nil,
-            stats.powerUpUnlockedArray.contains(false) ? "power-ups" : nil,
-            stats.themeUnlockedArray.contains(false) ? "themes" : nil,
-            stats.appIconUnlockedArray.contains(false) ? "icons" : nil
-        ].compactMap { $0 }
-
-        XCTAssertTrue(stillLocked.isEmpty, "Left locked: \(stillLocked)")
-    }
-
-    func testForceUnlockIsIdempotent() {
-        let stats = TotalStats()
-        applyForceUnlock(to: stats)
-        let afterFirst = stats.levelUnlockedArray
-        applyForceUnlock(to: stats)
-
-        XCTAssertEqual(stats.levelUnlockedArray, afterFirst,
-                       "Runs on every menu refresh, so it must be safe to repeat")
+        XCTAssertTrue(stats.levelPackUnlockedArray.contains(false))
+        XCTAssertTrue(stats.levelUnlockedArray.contains(false))
+        XCTAssertTrue(stats.powerUpUnlockedArray.contains(false))
+        XCTAssertTrue(stats.themeUnlockedArray.contains(false))
+        XCTAssertTrue(stats.appIconUnlockedArray.contains(false))
     }
 
     // MARK: - Survives persistence
@@ -150,9 +94,14 @@ final class UnlockStateTests: XCTestCase {
     func testUnlockStateSurvivesEncodingRoundTrip() throws {
         // The unlock arrays are what actually reaches iCloud and the stats
         // plist. If they did not round-trip, a synced device would disagree
-        // with the local one about what is unlocked.
+        // with the local one about what is unlocked. Uses a part-way state,
+        // since that is now what a real player has.
         let stats = TotalStats()
-        applyForceUnlock(to: stats)
+        stats.levelPackUnlockedArray[5] = true
+        stats.levelUnlockedArray[2] = true
+        stats.themeUnlockedArray[1] = true
+        stats.appIconUnlockedArray[1] = true
+        stats.powerUpUnlockedArray[6] = true
 
         let data = try PropertyListEncoder().encode(stats)
         let decoded = try PropertyListDecoder().decode(TotalStats.self, from: data)

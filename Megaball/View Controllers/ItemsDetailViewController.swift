@@ -11,7 +11,6 @@ import UIKit
 class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -21,7 +20,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var paddleSetting: Int?
     var brickSetting: Int?
     var appIconSetting: Int?
-    var premiumSetting: Bool?
     var IAPLocalPrice: String?
     // User settings
     
@@ -112,7 +110,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             themeUnlockedArray = true
         }
         
-        if premiumSetting! == false && senderID! <= 3 {
+        if false && senderID! <= 3 {
             if senderID == 0 && allIconsUnlockedBool == false {
                 premiumTableView.isHidden = false
                 premiumTableCollapsed.isActive = false
@@ -496,7 +494,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -506,7 +503,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         paddleSetting = defaults.integer(forKey: "paddleSetting")
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
         IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }

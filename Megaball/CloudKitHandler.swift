@@ -20,8 +20,6 @@ final class CloudKitHandler: NSObject {
     
     let defaults = UserDefaults.standard
     // User settings
-    var premiumSetting: Bool?
-    var adsSetting: Bool?
     var appOpenCount: Int?
     var resumeGameToLoad: Bool?
     var firstPause: Bool?
@@ -118,14 +116,6 @@ final class CloudKitHandler: NSObject {
     
     func updateToiCloud() {
         let iCloudStore = NSUbiquitousKeyValueStore.default
-        
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
-        let premiumSettingCloud = iCloudStore.bool(forKey: "premiumSetting")
-        if premiumSetting! || premiumSetting! != premiumSettingCloud {
-            iCloudStore.set(true, forKey: "premiumSetting")
-        } else {
-            iCloudStore.set(false, forKey: "premiumSetting")
-        }
         
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         let appOpenCountCloud = Int(iCloudStore.longLong(forKey: "appOpenCount"))
@@ -557,19 +547,6 @@ final class CloudKitHandler: NSObject {
     func updateFromiCloud() {
         let iCloudStore = NSUbiquitousKeyValueStore.default
         
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
-        let premiumSettingCloud = iCloudStore.bool(forKey: "premiumSetting")
-        if premiumSetting! || premiumSetting! != premiumSettingCloud {
-            premiumSetting = true
-        } else {
-            premiumSetting = false
-        }
-        if self.premiumSetting != nil {
-            adsSetting = !premiumSetting!
-            self.defaults.set(self.premiumSetting!, forKey: "premiumSetting")
-            self.defaults.set(self.adsSetting!, forKey: "adsSetting")
-        }
-        
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         let appOpenCountCloud = Int(iCloudStore.longLong(forKey: "appOpenCount"))
         if appOpenCountCloud > appOpenCount! {
@@ -944,7 +921,6 @@ final class CloudKitHandler: NSObject {
         }
         let iCloudStore = NSUbiquitousKeyValueStore.default
         
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         firstPause = defaults.bool(forKey: "firstPause")
         
@@ -987,7 +963,6 @@ final class CloudKitHandler: NSObject {
         pack10LevelHighScores = totalStatsArray[0].pack10LevelHighScores
         pack11LevelHighScores = totalStatsArray[0].pack11LevelHighScores
         
-        iCloudStore.set(premiumSetting, forKey: "premiumSetting")
         iCloudStore.set(appOpenCount, forKey: "appOpenCount")
         iCloudStore.set(firstPause, forKey: "firstPause")
         
@@ -1044,7 +1019,6 @@ final class CloudKitHandler: NSObject {
         }
         let iCloudStore = NSUbiquitousKeyValueStore.default
         
-        premiumSetting = iCloudStore.bool(forKey: "premiumSetting")
         appOpenCount = Int(iCloudStore.longLong(forKey: "appOpenCount"))
         firstPause = iCloudStore.bool(forKey: "firstPause")
         
@@ -1087,11 +1061,6 @@ final class CloudKitHandler: NSObject {
         pack10LevelHighScores = iCloudStore.array(forKey: "pack10LevelHighScores") as? [Int]
         pack11LevelHighScores = iCloudStore.array(forKey: "pack11LevelHighScores") as? [Int]
         
-        if self.premiumSetting != nil {
-            adsSetting = !premiumSetting!
-            self.defaults.set(self.premiumSetting!, forKey: "premiumSetting")
-            self.defaults.set(self.adsSetting!, forKey: "adsSetting")
-        }
         if self.appOpenCount != nil {
             self.defaults.set(self.appOpenCount!, forKey: "appOpenCount")
         }

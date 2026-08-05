@@ -11,13 +11,11 @@ import UIKit
 class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource  {
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
-    var premiumSetting: Bool?
     var IAPLocalPrice: String?
     // User settings
     
@@ -90,7 +88,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         if totalStatsArray[0].levelPackUnlockedArray.count == totalStatsArray[0].levelPackUnlockedArray.filter({$0 == true}).count {
             allUnlockedBool = true
         }
-        if premiumSetting! == false && allUnlockedBool == false {
+        if allUnlockedBool == false {
             premiumTableView.isHidden = false
             premiumTableCollapsed.isActive = false
             premiumTableExpanded.isActive = true
@@ -295,13 +293,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     // Segue to LevelSelectorViewController
     
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
         IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }

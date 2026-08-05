@@ -34,13 +34,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     var showAnimateDuration = 0.25
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
     var parallaxSetting: Bool?
     var paddleSensitivitySetting: Int?
-    var premiumSetting: Bool?
     var IAPLocalPrice: String?
     // User settings
     
@@ -126,11 +124,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
                 
         
-        if premiumSetting! {
-            premiumTableView.isHidden = true
-        } else {
-            premiumTableView.isHidden = false
-        }
+        premiumTableView.isHidden = true
         
         if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
             allPUsUnlockedBool = true
@@ -153,13 +147,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
 
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
         IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
@@ -326,9 +318,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        if premiumSetting! {
-            premiumTableView.isHidden = true
-        }
+        premiumTableView.isHidden = true
     }
     // Runs when the NSUbiquitousKeyValueStore changes
 }

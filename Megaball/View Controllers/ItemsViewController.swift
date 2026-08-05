@@ -13,7 +13,6 @@ import GameKit
 class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -22,7 +21,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var gameCenterSetting: Bool?
     var ballSetting: Int?
     var paddleSetting: Int?
-    var premiumSetting: Bool?
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -122,13 +120,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             cell.settingDescription.text = "Quick Start Guide"
             cell.iconImage.image = UIImage(named:"iconTutorial.png")!
         case 5:
-            if premiumSetting! {
-                hideCell(cell: cell)
-                return cell
-            } else {
-                cell.settingDescription.text = "Giga-Ball Premium"
-                cell.iconImage.image = UIImage(named:"iconPremium.png")!
-            }
+            hideCell(cell: cell)
+            return cell
         case 6:
             cell.settingDescription.text = "SoundCloud Link"
             cell.iconImage.image = UIImage(named:"iconMusic.png")!
@@ -367,7 +360,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     // Show game center view controller
         
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -376,7 +368,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         ballSetting = defaults.integer(forKey: "ballSetting")
         paddleSetting = defaults.integer(forKey: "paddleSetting")
-        premiumSetting = defaults.bool(forKey: "premiumSetting")
         // Load user settings
     }
     

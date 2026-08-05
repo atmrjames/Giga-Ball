@@ -246,8 +246,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var firstLevel: Bool = false
     // Setup score properties
 	
-	var premiumSetting: Bool?
-	var adsSetting: Bool?
 	var soundsSetting: Bool?
 	var musicSetting: Bool?
 	var hapticsSetting: Bool?
@@ -3842,16 +3840,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	func powerUpIconReset(sender: String) {
 		// speed[2], paddle size[4], hide[16], sticky[6], gravity[7], giga[20], laser[22], size[26]
-		if premiumSetting! {
-			totalStatsArray[0].powerUpUnlockedArray[2] = true
-			totalStatsArray[0].powerUpUnlockedArray[4] = true
-			totalStatsArray[0].powerUpUnlockedArray[16] = true
-			totalStatsArray[0].powerUpUnlockedArray[6] = true
-			totalStatsArray[0].powerUpUnlockedArray[7] = true
-			totalStatsArray[0].powerUpUnlockedArray[20] = true
-			totalStatsArray[0].powerUpUnlockedArray[22] = true
-			totalStatsArray[0].powerUpUnlockedArray[26] = true
-		}
 		iconUnlockedBool = [totalStatsArray[0].powerUpUnlockedArray[2], totalStatsArray[0].powerUpUnlockedArray[4], totalStatsArray[0].powerUpUnlockedArray[16], totalStatsArray[0].powerUpUnlockedArray[6], totalStatsArray[0].powerUpUnlockedArray[7], totalStatsArray[0].powerUpUnlockedArray[20], totalStatsArray[0].powerUpUnlockedArray[22], totalStatsArray[0].powerUpUnlockedArray[26]]
 		for i in 1...iconArray.count {
             let index = i-1
@@ -4094,8 +4082,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Recentre ball if it isn't on smaller paddle
 	
 	func userSettings() {
-		premiumSetting = defaults.bool(forKey: "premiumSetting")
-		adsSetting = defaults.bool(forKey: "adsSetting")
 		soundsSetting = defaults.bool(forKey: "soundsSetting")
 		musicSetting = defaults.bool(forKey: "musicSetting")
 		hapticsSetting = defaults.bool(forKey: "hapticsSetting")

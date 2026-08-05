@@ -12,7 +12,6 @@ import GameKit
 class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
-    var adsSetting: Bool?
     var soundsSetting: Bool?
     var musicSetting: Bool?
     var hapticsSetting: Bool?
@@ -256,7 +255,6 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     
     func userSettings() {
-        adsSetting = defaults.bool(forKey: "adsSetting")
         soundsSetting = defaults.bool(forKey: "soundsSetting")
         musicSetting = defaults.bool(forKey: "musicSetting")
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
