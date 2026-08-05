@@ -134,11 +134,17 @@ Move it off the main thread or use the async activation API. While in there:
 `AppDelegate` sets the category to `.ambient`, then `MusicHandler` immediately overrides
 it to `.soloAmbient` — one is redundant.
 
-### Harden the force-unwrapping
-Optionals are force-unwrapped throughout the view controllers (`premiumSetting!`,
-`gameToResume!`, `saveGameSaveArray!`). Any unexpected state is a crash rather than a
-degradation. Prioritise the save/resume path, where a corrupt or partial save currently
-means a crash loop on launch.
+### Harden the force-unwrapping — mostly done
+The save/resume path is done: `SavedGame.load` returns nil rather than trapping, and the
+resume flag is checked alongside the save itself, so a corrupt save is a lost game in
+progress rather than a crash loop. The seventeen settings are non-optional. The 49 live
+cell casts (`cellForRow(at:) as! Cell`) are conditional, so highlighting a row and
+flicking it offscreen no longer traps.
+
+The count is down from 1508 to 1168, and 162 of what remains are `@IBOutlet`
+declarations, where nil is a broken storyboard connection rather than unexpected data.
+What is left worth a pass: the remaining 141 `as!` casts and `physicsBody!` in the
+scene.
 
 ### ✅ Fix the iCloud data-reset propagation bug
 *"Data reset on one device updates on another."* Done in 1.3 via a generation
@@ -177,8 +183,10 @@ privacy label. Given how much force-unwrapping the codebase contains, this is th
 difference between fixing the crashes that actually happen and guessing. Should land
 before, or alongside, the hardening work so the data starts accumulating.
 
-### Replace the save-game format
-The most likely crash in the app:
+### ✅ Replace the save-game format
+Done in 1.3. `SavedGame` is a versioned `Codable` struct with one-way migration from the
+fourteen legacy keys, behind a `KeyValueStore` seam so it can be tested without touching
+the host app's defaults. The original problem, for the record:
 
 ```swift
 saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
@@ -228,11 +236,12 @@ shared cause of two known issues listed separately: iPad stuttering and iPad gra
 looking pixelated.
 
 ### Live bugs worth fixing
-- Table view selection animation appears on the wrong cell. Noted back in 2020 and
-  confirmed still present in August 2026
-- Table views in the menus stop short of the screen edge rather than filling it. Assess
-  during the 1.3 safe-area work rather than fixing separately — it is probably the same
-  fixed-layout cause
+- ✅ Table view selection animation appears on the wrong cell. Noted back in 2020 and
+  confirmed still present in August 2026. Fixed in 1.3: no cell class implemented
+  `prepareForReuse`, so the highlight scale and colour travelled with the reused cell
+- ✅ Table views in the menus stop short of the screen edge rather than filling it. The
+  guess was right — same fixed-layout cause. Every menu screen pinned its container to
+  414×736; it now fills the safe area
 - Sticky paddle icon bar not filling correctly when resuming
 - Paddle grows after resuming from pause; sticky texture behaves, paddle does not
 - Ball and paddle textures move independently when the paddle is slammed into the frame
