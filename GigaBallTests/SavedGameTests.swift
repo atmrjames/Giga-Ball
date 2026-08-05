@@ -47,7 +47,7 @@ final class SavedGameTests: XCTestCase {
             multiplier: 1.4,
             brickTextures: [1, 2, 3], brickColours: [0, 1, 2],
             brickXPositions: [10, 20, 30], brickYPositions: [40, 50, 60],
-            ballProperties: [12.5, 300.0, -120.0, 240.0],
+            ballProperties: [12.5, 300.0, -120.0, 240.0, 30.0],
             fallingPowerUpXPositions: [15], fallingPowerUpYPositions: [200],
             fallingPowerUps: [7],
             activePowerUps: ["laserTimer"], activePowerUpDurations: [4.2],
@@ -65,7 +65,7 @@ final class SavedGameTests: XCTestCase {
         defaults.set([0, 1, 2], forKey: "saveBrickColourArray")
         defaults.set([10, 20, 30], forKey: "saveBrickXPositionArray")
         defaults.set([40, 50, 60], forKey: "saveBrickYPositionArray")
-        defaults.set([12.5, 300.0, -120.0, 240.0], forKey: "saveBallPropertiesArray")
+        defaults.set([12.5, 300.0, -120.0, 240.0, 30.0], forKey: "saveBallPropertiesArray")
         defaults.set([15], forKey: "savePowerUpFallingXPositionArray")
         defaults.set([200], forKey: "savePowerUpFallingYPositionArray")
         defaults.set([7], forKey: "savePowerUpFallingArray")
@@ -99,7 +99,7 @@ final class SavedGameTests: XCTestCase {
         XCTAssertEqual(loaded?.multiplier, 1.4)
         XCTAssertEqual(loaded?.brickTextures, [1, 2, 3])
         XCTAssertEqual(loaded?.activePowerUps, ["laserTimer"])
-        XCTAssertEqual(loaded?.ballProperties, [12.5, 300.0, -120.0, 240.0])
+        XCTAssertEqual(loaded?.ballProperties, [12.5, 300.0, -120.0, 240.0, 30.0])
     }
 
     func testNoSavedGameLoadsAsNil() {
@@ -298,6 +298,62 @@ final class SavedGameTests: XCTestCase {
     func testMigratedSavesCarryTheCurrentVersion() {
         writeLegacySave()
         XCTAssertEqual(SavedGame.load(from: defaults)?.version, SavedGame.currentVersion)
+    }
+
+    // MARK: - Ball properties
+
+    func testASaveWithAPartialBallIsRejected() {
+        // ballProperties is read positionally up to index 4 during resume. A short array
+        // traps there - at launch, mid-resume - which is the crash this format exists to
+        // prevent. Two of them happened in testing before this guard went in.
+        for count in 1...(SavedGame.ballPropertiesCount - 1) {
+            var game = sampleGame()
+            game.ballProperties = Array(repeating: 1.0, count: count)
+            game.save(to: defaults)
+
+            XCTAssertNil(SavedGame.load(from: defaults),
+                         "\(count) of \(SavedGame.ballPropertiesCount) ball values should not load")
+        }
+    }
+
+    func testASaveWithNoBallInPlayStillLoads() {
+        // Empty is the legitimate case: the ball was sitting on the paddle.
+        var game = sampleGame()
+        game.ballProperties = []
+        game.save(to: defaults)
+
+        XCTAssertEqual(SavedGame.load(from: defaults)?.ballProperties, [])
+    }
+
+    func testASaveWithAWholeBallLoads() {
+        var game = sampleGame()
+        game.ballProperties = [1, 2, 3, 4, 5]
+        game.save(to: defaults)
+
+        XCTAssertEqual(SavedGame.load(from: defaults)?.ballProperties, [1, 2, 3, 4, 5])
+    }
+
+    // MARK: - Sticky paddle
+
+    func testTheStickyPaddleTotalRoundTrips() {
+        // The catches start at 4 + multiplier, so the total is 5, 6 or 7. Resume used to
+        // assume 6 and the icon bar came back the wrong length.
+        var game = sampleGame()
+        game.stickyPaddleCatchesTotal = 7
+        game.save(to: defaults)
+
+        XCTAssertEqual(SavedGame.load(from: defaults)?.stickyPaddleCatchesTotal, 7)
+    }
+
+    func testASaveWrittenWithoutTheStickyTotalStillLoads() {
+        // The field is optional so saves written before it existed still decode.
+        var game = sampleGame()
+        game.stickyPaddleCatchesTotal = nil
+        game.save(to: defaults)
+
+        let loaded = SavedGame.load(from: defaults)
+        XCTAssertNotNil(loaded)
+        XCTAssertNil(loaded?.stickyPaddleCatchesTotal)
     }
 
     // MARK: - Lives

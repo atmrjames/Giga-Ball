@@ -5155,7 +5155,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			activePowerUps: powerUpActiveArray != [] ? powerUpActiveArray! : previous?.activePowerUps ?? [],
 			activePowerUpDurations: powerUpActiveArray != [] ? powerUpActiveDurationArray! : previous?.activePowerUpDurations ?? [],
 			activePowerUpTimers: powerUpActiveArray != [] ? powerUpActiveTimerArray! : previous?.activePowerUpTimers ?? [],
-			activePowerUpMagnitudes: powerUpActiveArray != [] ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? []
+			activePowerUpMagnitudes: powerUpActiveArray != [] ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? [],
+			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal
 		)
 		savedGame?.save()
 		
@@ -5177,7 +5178,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// twenty-odd uses below. Nothing here is reachable without a save, but that was
 		// implied by the guards rather than stated, and this path runs at launch
 		if resumeGameToLoad {
-			if (savedGame.ballProperties.isEmpty == false) {
+			if savedGame.ballProperties.count >= SavedGame.ballPropertiesCount {
+				// Read positionally up to index 4 below. isEmpty was not a strong enough
+				// guard - a short array traps here, during resume, at launch.
 				ballIsOnPaddle = false
 				ballLostBool = false
 				ball.position.x = CGFloat(savedGame.ballProperties[0])
@@ -5282,34 +5285,46 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.run(sequence, withKey: "powerUpDecreaseBallSpeed")
 						
 					case "paddleSizeTimer":
+						// The retro paddle art is a wider asset than the default one, so
+						// playing normally scales it by its own factor - 1.5 on the paddle
+						// is 1.42 on the retro texture. Resume used to apply the paddle's
+						// scale to both, leaving the retro paddle wider than it should be
+						// for every size except 1.0.
 						var setScale: CGFloat?
+						var retroScale: CGFloat?
 						switch savedGame.activePowerUpMagnitudes[i] {
 						case 0:
 							setScale = 0.5
+							retroScale = 0.59
 							paddleSizeIcon.texture = self.iconDecreasePaddleSizeTexture
 						case 1:
 							setScale = 0.75
+							retroScale = 0.79
 							paddleSizeIcon.texture = self.iconDecreasePaddleSizeTexture
 						case 2:
 							setScale = 1.5
+							retroScale = 1.42
 							paddleSizeIcon.texture = self.iconIncreasePaddleSizeTexture
 						case 3:
 							setScale = 2.0
+							retroScale = 1.82
 							paddleSizeIcon.texture = self.iconIncreasePaddleSizeTexture
 						case 4:
 							setScale = 2.5
+							retroScale = 2.24
 							paddleSizeIcon.texture = self.iconIncreasePaddleSizeTexture
 						default:
 							break
 						}
+						guard let setScale, let retroScale else { break }
 						paddleCenterRectPlus()
-						paddle.run(SKAction.scaleX(to: setScale!, duration: 0.0))
+						paddle.run(SKAction.scaleX(to: setScale, duration: 0.0))
 						paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
-						paddleLaser.run(SKAction.scaleX(to: setScale!, duration: 0.0))
-						paddleSticky.run(SKAction.scaleX(to: setScale!, duration: 0.0))
-						paddleRetroTexture.run(SKAction.scaleX(to: setScale!, duration: 0.0))
-						paddleRetroLaserTexture.run(SKAction.scaleX(to: setScale!, duration: 0.0))
-						paddleRetroStickyTexture.run(SKAction.scaleX(to: setScale!, duration: 0.0))
+						paddleLaser.run(SKAction.scaleX(to: setScale, duration: 0.0))
+						paddleSticky.run(SKAction.scaleX(to: setScale, duration: 0.0))
+						paddleRetroTexture.run(SKAction.scaleX(to: retroScale, duration: 0.0))
+						paddleRetroLaserTexture.run(SKAction.scaleX(to: retroScale, duration: 0.0))
+						paddleRetroStickyTexture.run(SKAction.scaleX(to: retroScale, duration: 0.0))
 						
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
@@ -5511,8 +5526,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						
 					case "stickyPaddle":
 						stickyPaddleCatches = savedGame.activePowerUpMagnitudes[i]
-						stickyPaddleCatchesTotal = 6
-						let scale: CGFloat = CGFloat(stickyPaddleCatches/stickyPaddleCatchesTotal)
+						stickyPaddleCatchesTotal = savedGame.stickyPaddleCatchesTotal ?? stickyPaddleCatches
+						// Both are Int, so CGFloat(a/b) truncated to zero for every state
+						// except a full bar - which is why the bar came back empty
+						let scale: CGFloat = stickyPaddleCatchesTotal > 0
+							? CGFloat(stickyPaddleCatches) / CGFloat(stickyPaddleCatchesTotal)
+							: 0
 						stickyPaddleIcon.texture = self.iconStickyPaddleTexture
 						stickyPaddleIconBar.isHidden = false
 						stickyPaddleIconBar.run(SKAction.scaleX(to: scale, duration: 0.01))

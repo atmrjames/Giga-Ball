@@ -122,9 +122,24 @@ struct SavedGame: Codable, Equatable {
     var activePowerUpTimers: [Double]
     var activePowerUpMagnitudes: [Int]
 
+    /// What the sticky paddle's remaining catches count down from.
+    ///
+    /// Its catches start at `4 + multiplier`, so the total is 5, 6 or 7 depending on the
+    /// multiplier when it was collected. Without it, resume had to guess - it assumed 6 -
+    /// and the icon bar came back the wrong length. It sits outside the parallel active
+    /// power-up arrays because only this one power-up has a total worth keeping.
+    ///
+    /// Optional so saves written before it existed still decode. Those fall back to the
+    /// remaining count, which shows a full bar rather than a wrong one.
+    var stickyPaddleCatchesTotal: Int?
+
     // MARK: - Consistency
 
-    /// Whether the parallel arrays agree in length.
+    /// The five values `ballProperties` carries when a ball is in play:
+    /// x, y, dx, dy, and the paddle's x.
+    static let ballPropertiesCount = 5
+
+    /// Whether the arrays hold the shapes the resume path reads them at.
     ///
     /// Nothing enforced this before. A brick array one entry short of the
     /// others meant an out-of-range trap while rebuilding the field, again
@@ -137,7 +152,13 @@ struct SavedGame: Codable, Equatable {
                                  fallingPowerUps.count])
         let activeCounts = Set([activePowerUps.count, activePowerUpDurations.count,
                                 activePowerUpTimers.count, activePowerUpMagnitudes.count])
+        // ballProperties is either absent - the ball was sitting on the paddle when the
+        // game was saved - or all five values. Anything between is read positionally up
+        // to index 4 during resume, which traps at launch.
+        let ballIsWholeOrAbsent = ballProperties.isEmpty
+            || ballProperties.count == SavedGame.ballPropertiesCount
         return brickCounts.count == 1 && fallingCounts.count == 1 && activeCounts.count == 1
+            && ballIsWholeOrAbsent
     }
 
     // MARK: - Legacy migration
