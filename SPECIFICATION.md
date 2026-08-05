@@ -8,8 +8,8 @@ you in six months — can understand the app without reading 5,600 lines of `Gam
 [FUTURE-RELEASES.md](FUTURE-RELEASES.md). Where current behaviour is awkward, that is
 recorded here as fact, not as a proposal.
 
-Current version 1.2 (August 2026). Bundle ID `com.atmrjames.Megaball`, product name
-`Giga-Ball`, Apple ID `1494628204`.
+Current version 1.2 (August 2026), with 1.3 in progress on `release-1.3`. Bundle ID
+`com.atmrjames.Megaball`, product name `Giga-Ball`, Apple ID `1494628204`.
 
 ---
 
@@ -40,8 +40,13 @@ syncs across the player's devices via iCloud, and scores post to Game Center.
 | Persistence | `UserDefaults`, a `Codable` plist in Documents, `NSUbiquitousKeyValueStore` |
 | Services | Game Center (leaderboards, achievements), CloudKit (availability check only) |
 
-There is **no test target**, no dependency manager, and no analytics or crash-reporting
-SDK.
+There is no dependency manager and no analytics or crash-reporting SDK.
+
+`GigaBallTests` is a host-app unit test bundle covering the data model — `LevelPackSetup`
+array alignment, `TotalStats` coding, `Scoring`, `Progression`, power-up allocation and
+the starting unlock state. It runs in about two seconds. Physics, rendering and the view
+controllers are not covered; neither is `CloudKitHandler`'s save/load, which reads and
+writes the `UserDefaults` and key-value-store singletons with no seam to inject a double.
 
 ### Project layout
 
@@ -60,11 +65,14 @@ Megaball/
                                names, achievement names, themes, icons, leaderboard IDs
     TotalStats.swift           The persisted stats model
     TotalScore.swift
+    Scoring.swift              Score and multiplier rules, pure
+    Progression.swift          What completing a pack unlocks, pure
   View Controllers/            All UIKit screens
   Custom Cells/                Table and collection view cells with .xib files
   CloudKitHandler.swift        iCloud sync via key-value store
   GameCenterHandler.swift      Leaderboard submission
   MusicHandler.swift           Background music
+GigaBallTests/                 Unit tests for the data model
 ```
 
 ### Game state machine
@@ -154,23 +162,34 @@ prevent the ball settling into a flat, unwinnable path.
 1.0, clears active power-ups, and returns the ball to the paddle. Losing the last life
 ends the run.
 
-**Scoring.** Everything is multiplied by the current multiplier at the moment it is
-awarded:
+**Scoring.** The rules live in `Scoring` and are covered by tests.
 
-| Event | Base value |
-|---|---|
-| Brick destroyed | 10 |
-| Level completed | 100 |
-| Timer bonus | starts at 500, reduced by time taken, floored at 0 |
-| Point power-ups | ±100, ±1000 |
+| Event | Base value | Multiplied? |
+|---|---|---|
+| Brick destroyed | 10 | yes |
+| Level completed | 100 | **no** |
+| Timer bonus | starts at 500, less one point per second taken, floored at 0 | yes |
+| Point power-ups | ±100, ±1000 | yes |
 
 Brick score is flat regardless of colour or type — colour is decorative and used for
-save/restore indexing, not scoring.
+save/restore indexing, not scoring. Awards truncate toward zero rather than rounding, so
+a half point is always lost.
 
-The **multiplier** rises by 0.1 per brick destroyed, caps at **2.0**, and resets to 1.0
-whenever a ball is lost. It is displayed as `x1.0` … `x2.0`. Because the timer bonus is
-also multiplied, finishing a level quickly while holding a high multiplier is worth
-considerably more than the brick score alone.
+The **multiplier** starts at 1.0, caps at **2.0**, and resets to 1.0 whenever a ball is
+lost. It is displayed as `x1.0` … `x2.0`. Because the timer bonus is multiplied,
+finishing a level quickly while holding a high multiplier is worth considerably more than
+the brick score alone.
+
+Three details are easy to get wrong and are pinned by tests:
+
+- It rises **once per twenty bricks destroyed**, not once per brick.
+- Level completion is the one award that is *not* multiplied.
+- There are three paths that move it — bricks, bonuses and power-ups — and they do not
+  agree. The brick path steps only while below the cap and does not snap to it, so ten
+  steps from 1.0 land on 1.9999999999999998 rather than 2.0. The other two snap exactly.
+  The drift is invisible (the label formats to one decimal place, and the cap test is
+  `>=`) but a brick-driven 2.0 and a bonus-driven 2.0 are different numbers. Unifying
+  them would change scores, so it is a deliberate decision rather than a tidy-up.
 
 ---
 
@@ -228,9 +247,24 @@ gated in a fixed order:
 Themes change the appearance of the ball, paddle and bricks; each is selectable
 independently. App icons use the iOS alternate-icon mechanism.
 
-*(Note: `premiumSetting` still gates unlock logic across 12 files, but is unconditionally
-forced true on every menu refresh, so everything is effectively unlocked. It is dead
-weight from the removed in-app purchase.)*
+**What a new player starts with.** Classic, Space and Nature, plus endless mode and the
+tutorial. The first level of each starting pack. The Classic theme, the Purple icon, and
+14 of the 28 power-ups.
+
+**What completing a pack grants.** The reward table lives in `Progression` and is applied
+by `InbetweenLevels`: the next theme, the next app icon, two power-ups for the first seven
+packs, the pack-completion achievement, and the next pack. Finishing a level unlocks the
+next level in the same pack.
+
+**City is gated differently.** The first three packs can be played in any order, so no
+single completion knows it was the last. City opens once all three have a recorded best
+time. Between the starting state and the reward table, every theme, icon, power-up and
+pack is accounted for exactly once — asserted by `ProgressionTests`.
+
+*(Until 1.3, `premiumSetting` made all of this decorative: `checkPremium()` rewrote all
+five unlock arrays to true on every menu refresh, and a second force-unlock in
+`GameScene.powerUpIconReset()` opened eight power-ups. Both are gone. Players who ran an
+earlier build keep everything, because their arrays were already persisted as all-true.)*
 
 ---
 
@@ -322,11 +356,15 @@ Game Center can be disabled in settings.
 
 Things a newcomer would otherwise have to discover the hard way.
 
-**Layout is a device-class guess, not safe areas.** `GameScene` computes an aspect ratio
-and sorts every device into one of three buckets — `"X"`, `"Pad"`, `"8"` — then branches
-on that string in six places. There is **no `safeAreaInsets` usage anywhere in the
-project**. This is why the main menu logo is clipped by notification banners and why
-power-ups can bleed through the top bar.
+**Layout is measured, not guessed.** `computeLayoutMetrics()` solves the play area in
+closed form from `safeAreaInsets` and the scene bounds, holding the play ratio at a fixed
+1.8236 on every device. The scene is presented from `viewDidLayoutSubviews` rather than
+`viewDidLoad`, because the insets are not resolved until the view is in a window. The old
+three-way device-class string is gone; the two remaining iPad-specific values test
+`horizontalSizeClass == .regular`.
+
+The main menu logo being clipped by notification banners is *not* fixed — it is a UIKit
+screen, and the safe-area work covered the SpriteKit scene only.
 
 **`GameScene.swift` is ~5,600 lines** and holds nearly all gameplay logic, UI wiring and
 persistence calls.
@@ -334,10 +372,14 @@ persistence calls.
 **Force-unwrapping is pervasive.** Settings and saved-game values are read as `x!`
 throughout. Unexpected state crashes rather than degrades.
 
+**Dead promo UI remains in Interface Builder.** `premiumTableView` outlets,
+`IAPTableViewCell.xib` and the `ButtonPremium` / `iconPremium` assets are no longer
+referenced from Swift but still exist in the storyboard and xibs. The promo table's cell
+identifier is not registered, so showing it traps in `dequeueReusableCell` — it is
+collapsed unconditionally.
+
 **Levels are code, not data.** 110 Swift files, ~10,500 lines, compiled into the binary.
 Each is a function that assigns textures across the grid.
-
-**`premiumSetting` is vestigial** but still threaded through the unlock paths.
 
 **`UIRequiresFullScreen` is still true**, so the app does not participate in iPadOS
 multitasking. Deprecated but currently honoured.
@@ -353,9 +395,23 @@ notification name, not following a call stack.
 
 ## 13. Build and release
 
-- Built and archived via **Xcode Cloud** (workflow on branch `finalBranch`), because the
-  local Mac runs a beta macOS which caused App Store validation to reject locally-built
-  binaries with ITMS-90111.
+- Built and archived via **Xcode Cloud**, because the local Mac runs a beta macOS which
+  caused App Store validation to reject locally-built binaries with ITMS-90111. 1.2 shipped
+  from a workflow on `finalBranch`; 1.3 is on `release-1.3`.
+- **The Icon Composer icons cannot be built by Xcode 26.6.** All thirteen `.icon`
+  documents were authored by the Icon Composer that ships with macOS 27, and use schema
+  keys — `features`, group `specular` and `lighting`, layer `fill-specializations` and
+  `blend-mode` — that 26.6's `actool` cannot parse. It does not error, it crashes:
+
+  ```
+  error: Exception while running actool: *** -[__NSPlaceholderArray initWithObjects:count:]:
+         attempt to insert nil object from objects[0]
+  ```
+
+  Reproducible with `actool` alone; the trigger is `--output-partial-info-plist`, which
+  every real build passes. Xcode 27 beta compiles them. So local builds must use the beta
+  toolchain, and an App Store build needs either Xcode 27 GA or the icons re-authored down
+  to the 26.6 subset. Deferred until macOS 27 ships.
 - Xcode Cloud assigns its own build numbers; `CFBundleVersion` cannot be overridden from
   a pre-build script.
 - Signing is automatic, team `ZAGZPD36YG`.

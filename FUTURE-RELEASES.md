@@ -64,8 +64,19 @@ So: **1.3 should be a foundations release.** Little of it is user-visible, but i
 
 ## 1.3 — Foundations
 
-### Replace the device-class heuristic with safe-area layout
-The highest-leverage change on this list. One rewrite resolves:
+**Status:** the safe-area rewrite, the monetisation removal, the test target, the audio
+session and the Icon Composer migration have all landed. What remains below is marked.
+
+### ✅ Replace the device-class heuristic with safe-area layout
+Done. `computeLayoutMetrics()` solves the play area in closed form from `safeAreaInsets`,
+holding the ratio at 1.8236. `screenSize` is gone; the two remaining iPad values test
+`horizontalSizeClass`. The scene is presented from `viewDidLayoutSubviews`, because insets
+are not resolved before the view is in a window.
+
+One item below did **not** get fixed by it: the main menu logo clipped by notification
+banners is a UIKit screen, and the rewrite covered the SpriteKit scene only.
+
+The original case, for reference — one rewrite resolves:
 
 - "Work UI around the notch"
 - "Power-ups and balls can show through the top bar on non-iPhone X style devices" *(a
@@ -77,19 +88,40 @@ The highest-leverage change on this list. One rewrite resolves:
 Drive layout from `safeAreaInsets` and the actual scene size, and let the playfield adapt
 rather than picking from three hardcoded shapes.
 
-### Finish removing the monetisation architecture
-`premiumSetting` across 12 files, plus the leftover `adsSetting`. Everything is free and
-`checkPremium()` forces the flag true on every menu refresh, so the gates are decorative —
-but removing them is a behavioural refactor. Test the unlock paths: one gate backwards
-silently locks content for real users.
+### ✅ Finish removing the monetisation architecture
+Done, and the warning was justified. `checkPremium()` turned out to rewrite all five
+unlock arrays to true on every menu refresh, with a second force-unlock hidden in
+`GameScene.powerUpIconReset()` — so progression was entirely decorative. Both removed;
+pack completion now gates content again, and existing players keep everything because
+their arrays were already persisted as all-true.
 
-### Add a test target and cover what is testable
-There is no test target at all. Start where the value is highest and the coupling lowest:
-`LevelPackSetup`, `TotalStats`, `TotalScore`, scoring and multiplier maths, power-up
-allocation probabilities, and `CloudKitHandler` serialisation. Physics and rendering can
-wait; the data model cannot.
+`adsSetting` went with it: 29 lines across 15 files, branched on nowhere.
 
-### Audio session off the main thread
+The gate-backwards failure happened, exactly as predicted. Three conditions of the form
+`premiumSetting! == false && x` were reduced by dropping the always-false term and keeping
+the survivor, which turns a dead branch live. The result was a crash on the first tap into
+Classic Mode from a clean install. Unit tests were green throughout — it was view-
+controller wiring, found only by a clean-install walkthrough.
+
+Still open: `premiumTableView` outlets, `IAPTableViewCell.xib` and the `ButtonPremium` /
+`iconPremium` assets are unreferenced from Swift but still in Interface Builder.
+
+### ✅ Add a test target and cover what is testable
+Done. `GigaBallTests`, 88 tests, about two seconds.
+
+Two things needed extracting before they could be tested, both now pure types with the
+behaviour pinned exactly: `Scoring` (the multiplier was mutated inline at six sites) and
+`Progression` (the unlock chain was eleven near-identical blocks inside a `GKState`).
+
+It paid for itself immediately by finding a real bug: the power-up unlock filter iterated
+the probability *values* and used them as indices, so locking any power-up above index 10
+did nothing. Inert only because everything was force-unlocked — the `premiumSetting`
+removal would have switched it on.
+
+Still uncovered: `CloudKitHandler`'s save/load, which needs the key-value store behind a
+protocol first. Worth doing with the save-format work.
+
+### ✅ Audio session off the main thread
 `MusicHandler.playMusic()` calls `AVAudioSession.setActive(true)` synchronously from
 `MenuViewController.viewDidLoad`. iOS logs it explicitly:
 
@@ -113,7 +145,13 @@ means a crash loop on launch.
 data-loss bug on the list and should not wait. Needs a sync tracker so a local reset
 isn't replayed onto other devices as authoritative.
 
-### App icon via Icon Composer
+### ✅ App icon via Icon Composer (blocked on toolchain)
+**All thirteen icons are migrated, but they cannot be built by Xcode 26.6** — its `actool`
+crashes on the schema the macOS 27 Icon Composer emits. Xcode 27 beta compiles them fine.
+So an App Store build needs Xcode 27 GA, or the icons re-authored down to the 26.6 subset.
+Deferred until macOS 27 ships. Details in SPECIFICATION.md section 13.
+
+The original plan:
 An Icon Composer version of the primary icon already exists. The coloured variants stay —
 reauthored as Icon Composer documents so they pick up the current icon styles, including
 Liquid Glass, and added as asset-catalog alternate icons rather than the loose PNGs used
@@ -127,7 +165,9 @@ every required size automatically.
 *To verify: exact mechanics for using Icon Composer documents as alternate app icons in
 Xcode 26.*
 
-### Enable crash reporting
+### Enable crash reporting — nothing to change in the project
+`DEBUG_INFORMATION_FORMAT` is already `dwarf-with-dsym` for Release, so dSYMs ship. This is
+an Organizer / App Store Connect check rather than work in the repo.
 Xcode Organizer, no SDK, no third-party code, no impact on the "Data Not Collected"
 privacy label. Given how much force-unwrapping the codebase contains, this is the
 difference between fixing the crashes that actually happen and guessing. Should land
@@ -148,7 +188,7 @@ game simply never adopted it. Move to a versioned `Codable` struct with migratio
 Also a prerequisite for "save ongoing game to iCloud" later; syncing parallel int arrays
 across devices would be painful.
 
-### Housekeeping
+### Housekeeping — still open
 - 117 `print()` calls — sweep them
 - Add a `.gitignore`; ~4 GB of marketing media sits untracked in the repo root, and
   `xcuserdata` is tracked and generates churn
@@ -349,7 +389,8 @@ Removed with reasons, so these don't quietly reappear.
 - "Remove cocoapods" — the project has never used CocoaPods
 
 ### Already done
-- Remove IAP, ads, non-premium code *(all but the `premiumSetting` gating, in 1.3)*
+- Remove IAP, ads, non-premium code *(completed in 1.3, including `premiumSetting`
+  and `adsSetting`)*
 - Update app and about-view version and build numbers
 - Remove social media links
 - New iPhone size compatibility *(as far as scene adoption goes; the layout rewrite in
