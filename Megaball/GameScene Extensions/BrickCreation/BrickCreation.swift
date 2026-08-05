@@ -46,7 +46,7 @@ extension GameScene {
             
             bricksLeft += 1
             
-            if brickCurrent.texture == brickInvisibleTexture && saveGameSaveArray! == [] {
+            if brickCurrent.texture == brickInvisibleTexture && savedGame == nil {
                 brick.isHidden = true
             }
             
@@ -62,7 +62,7 @@ extension GameScene {
             }
             // Remove null bricks & discount indestructible bricks
             
-            if saveGameSaveArray! == [] {
+            if savedGame == nil {
                 let startingScale = SKAction.scale(to: 0.8, duration: 0)
                 let startingFade = SKAction.fadeOut(withDuration: 0)
                 let scaleUp = SKAction.scale(to: 1, duration: 0.25)

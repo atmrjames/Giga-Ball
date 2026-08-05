@@ -104,10 +104,10 @@ class Playing: GKState {
         // Reset counters & scores
         
         if scene.resumeGameToLoad! {
-            scene.levelScore = scene.saveGameSaveArray![3]
-            scene.totalScore = scene.saveGameSaveArray![4]
-            scene.numberOfLives = scene.saveGameSaveArray![5]
-            scene.multiplier = scene.saveMultiplier!
+            scene.levelScore = scene.savedGame!.levelScore
+            scene.totalScore = scene.savedGame!.totalScore
+            scene.numberOfLives = scene.savedGame!.numberOfLives
+            scene.multiplier = scene.savedGame!.multiplier
         }
         // If resuming a game, reset counters and scores to saved values
         
@@ -179,9 +179,9 @@ class Playing: GKState {
             }
             scene.totalScore = scene.totalScore - scene.levelScore
             
-            if scene.saveBallPropertiesArray != [] {
-                scene.pauseBallVelocityX = CGFloat(scene.saveBallPropertiesArray![2])
-                scene.pauseBallVelocityY = CGFloat(scene.saveBallPropertiesArray![3])
+            if (scene.savedGame?.ballProperties.isEmpty == false) {
+                scene.pauseBallVelocityX = CGFloat(scene.savedGame!.ballProperties[2])
+                scene.pauseBallVelocityY = CGFloat(scene.savedGame!.ballProperties[3])
                             
                 if sqrt(scene.pauseBallVelocityX*scene.pauseBallVelocityX) + sqrt(scene.pauseBallVelocityY*scene.pauseBallVelocityY) == 0 {
                     scene.ballLaunchAngleRad = scene.straightLaunchAngleRad + scene.minLaunchAngleRad
@@ -193,7 +193,7 @@ class Playing: GKState {
         }
         // Reset total score to reflect pre-save value
             
-        if scene.saveBrickXPositionArray != [] {
+        if (scene.savedGame?.brickXPositions.isEmpty == false) {
             scene.resumeBrickCreation()
             // Load saved level
         } else {

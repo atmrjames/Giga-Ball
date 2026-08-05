@@ -239,23 +239,32 @@ final class SavedGameTests: XCTestCase {
         XCTAssertEqual(SavedGame.load(from: defaults), game)
     }
 
-    // MARK: - The positional shim
+    // MARK: - Index mapping
 
-    func testLegacyProgressArrayHasTheOriginalOrder() {
-        // The read path still hands this to consumers that index positionally.
-        // Getting the order wrong would restore the score as the life count.
-        let progress = sampleGame().legacyProgressArray
-        XCTAssertEqual(progress.count, 17)
-        XCTAssertEqual(progress, [7, 10, 2, 120, 3_400, 2, 0, 10, 45, 300,
-                                  1, 3, 4, 2, 20, 11, 33])
-    }
+    func testMigrationMapsEveryIndexToTheRightField() {
+        // The old format packed these seventeen values positionally. Getting one
+        // pair the wrong way round would restore the score as the life count,
+        // silently, on every existing player's next launch.
+        defaults.set(Array(0..<17), forKey: "saveGameSaveArray")
+        guard let g = SavedGame.load(from: defaults) else { return XCTFail("no save") }
 
-    func testLegacyProgressArrayRoundTripsThroughMigration() {
-        // Writing the old format, migrating it and rebuilding the array must
-        // give back exactly what went in.
-        writeLegacySave()
-        let original = defaults.object(forKey: "saveGameSaveArray") as! [Int]
-        XCTAssertEqual(SavedGame.load(from: defaults)?.legacyProgressArray, original)
+        XCTAssertEqual(g.levelNumber, 0)
+        XCTAssertEqual(g.endLevelNumber, 1)
+        XCTAssertEqual(g.packNumber, 2)
+        XCTAssertEqual(g.levelScore, 3)
+        XCTAssertEqual(g.totalScore, 4)
+        XCTAssertEqual(g.numberOfLives, 5)
+        XCTAssertEqual(g.endlessHeight, 6)
+        XCTAssertEqual(g.numberOfLevels, 7)
+        XCTAssertEqual(g.levelTimerValue, 8)
+        XCTAssertEqual(g.packTimerValue, 9)
+        XCTAssertEqual(g.deathsPerLevel, 10)
+        XCTAssertEqual(g.deathsPerPack, 11)
+        XCTAssertEqual(g.powerUpsGeneratedPerLevel, 12)
+        XCTAssertEqual(g.powerUpsCollectedPerLevel, 13)
+        XCTAssertEqual(g.powerUpsGeneratedPerPack, 14)
+        XCTAssertEqual(g.powerUpsCollectedPerPack, 15)
+        XCTAssertEqual(g.paddleHitsPerLevel, 16)
     }
 
     // MARK: - Versioning

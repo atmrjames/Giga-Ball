@@ -275,20 +275,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var resumeGameToLoad: Bool?
 	var firstPause: Bool?
 	// User settings
-	var saveGameSaveArray: [Int]?
-    var saveMultiplier: Double?
-    var saveBrickTextureArray: [Int]?
-    var saveBrickColourArray: [Int]?
-    var saveBrickXPositionArray: [Int]?
-    var saveBrickYPositionArray: [Int]?
-	var saveBallPropertiesArray: [Double]?
-	var savePowerUpFallingXPositionArray: [Int]?
-	var savePowerUpFallingYPositionArray: [Int]?
-	var savePowerUpFallingArray: [Int]?
-	var savePowerUpActiveArray: [String]?
-	var savePowerUpActiveDurationArray: [Double]?
-	var savePowerUpActiveTimerArray: [Double]?
-	var savePowerUpActiveMagnitudeArray: [Int]?
+	var savedGame: SavedGame?
     // Game save settings
     
     var brickNormalTexture: SKTexture = SKTexture(imageNamed: "BrickNormal")
@@ -4305,23 +4292,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		firstPause = defaults.bool(forKey: "firstPause")
 		// User settings
 		
-		let restoredGame = SavedGame.load()
-		// One safe read replaces the force-cast of every key. A save that cannot be
-		// read comes back nil and reads as "no game in progress"
-		saveGameSaveArray = restoredGame?.legacyProgressArray ?? []
-		saveBrickTextureArray = restoredGame?.brickTextures ?? []
-		saveBrickColourArray = restoredGame?.brickColours ?? []
-		saveBrickXPositionArray = restoredGame?.brickXPositions ?? []
-		saveBrickYPositionArray = restoredGame?.brickYPositions ?? []
-		saveBallPropertiesArray = restoredGame?.ballProperties ?? []
-		savePowerUpFallingXPositionArray = restoredGame?.fallingPowerUpXPositions ?? []
-		savePowerUpFallingYPositionArray = restoredGame?.fallingPowerUpYPositions ?? []
-		savePowerUpFallingArray = restoredGame?.fallingPowerUps ?? []
-		savePowerUpActiveArray = restoredGame?.activePowerUps ?? []
-		savePowerUpActiveDurationArray = restoredGame?.activePowerUpDurations ?? []
-		savePowerUpActiveTimerArray = restoredGame?.activePowerUpTimers ?? []
-		savePowerUpActiveMagnitudeArray = restoredGame?.activePowerUpMagnitudes ?? []
-		saveMultiplier = restoredGame?.multiplier ?? 1.0
+		savedGame = SavedGame.load()
         // Game save settings
 		
 		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
@@ -5142,47 +5113,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Save bricks, ball and power-ups if playing or paused
 
-		saveGameSaveArray! = gameSaveArray
-		saveMultiplier! = currentMultiplier
-		
-		if brickXPositionArray != [] {
-			saveBrickTextureArray! = brickTextureArray!
-			saveBrickColourArray! = brickColourArray!
-			saveBrickXPositionArray! = brickXPositionArray!
-			saveBrickYPositionArray! = brickYPositionArray!
-		}
-		
-		if ballPropertiesArray != [] {
-			saveBallPropertiesArray! = ballPropertiesArray!
-		}
-		
-		if powerUpFallingXPositionArray != [] {
-			savePowerUpFallingXPositionArray! = powerUpFallingXPositionArray!
-			savePowerUpFallingYPositionArray! = powerUpFallingYPositionArray!
-			savePowerUpFallingArray! = powerUpFallingArray!
-		}
-		
-		if powerUpActiveArray != [] {
-			savePowerUpActiveArray! = powerUpActiveArray!
-			savePowerUpActiveDurationArray! = powerUpActiveDurationArray!
-			savePowerUpActiveTimerArray! = powerUpActiveTimerArray!
-			savePowerUpActiveMagnitudeArray! = powerUpActiveMagnitudeArray!
-		}
-		
-		defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
-		defaults.set(saveMultiplier!, forKey: "saveMultiplier")
-		defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
-		defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
-		defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
-		defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
-		defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
-		defaults.set(savePowerUpFallingXPositionArray!, forKey: "savePowerUpFallingXPositionArray")
-		defaults.set(savePowerUpFallingYPositionArray!, forKey: "savePowerUpFallingYPositionArray")
-		defaults.set(savePowerUpFallingArray!, forKey: "savePowerUpFallingArray")
-		defaults.set(savePowerUpActiveArray!, forKey: "savePowerUpActiveArray")
-		defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
-		defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
-		defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
+		let previous = savedGame
+		// The arrays are only rebuilt while playing or paused. Saving from between levels
+		// leaves them empty, and the original code left the stored values untouched in
+		// that case, so the last snapshot survives. Preserved here by falling back to the
+		// previous save field by field
+
+		savedGame = SavedGame(
+			levelNumber: currentLevelNumber,
+			endLevelNumber: currentEndLevelNumber,
+			packNumber: currentPackNumber,
+			levelScore: currentLevelScore,
+			totalScore: currentTotalScore,
+			numberOfLives: currentNumberOfLives,
+			endlessHeight: currentHeight,
+			numberOfLevels: currentNumberOfLevels,
+			levelTimerValue: currentLevelTimerValue,
+			packTimerValue: currentPackTimerValue,
+			deathsPerLevel: currentDeathsPerLevel,
+			deathsPerPack: currentDeathsPerPack,
+			powerUpsGeneratedPerLevel: currentpowerUpsGeneratedPerLevel,
+			powerUpsCollectedPerLevel: currentpowerUpsCollectedPerLevel,
+			powerUpsGeneratedPerPack: currentpowerUpsGeneratedPerPack,
+			powerUpsCollectedPerPack: currentpowerUpsCollectedPerPack,
+			paddleHitsPerLevel: currentpaddleHitsPerLevel,
+			multiplier: currentMultiplier,
+			brickTextures: brickXPositionArray != [] ? brickTextureArray! : previous?.brickTextures ?? [],
+			brickColours: brickXPositionArray != [] ? brickColourArray! : previous?.brickColours ?? [],
+			brickXPositions: brickXPositionArray != [] ? brickXPositionArray! : previous?.brickXPositions ?? [],
+			brickYPositions: brickXPositionArray != [] ? brickYPositionArray! : previous?.brickYPositions ?? [],
+			ballProperties: ballPropertiesArray != [] ? ballPropertiesArray! : previous?.ballProperties ?? [],
+			fallingPowerUpXPositions: powerUpFallingXPositionArray != [] ? powerUpFallingXPositionArray! : previous?.fallingPowerUpXPositions ?? [],
+			fallingPowerUpYPositions: powerUpFallingXPositionArray != [] ? powerUpFallingYPositionArray! : previous?.fallingPowerUpYPositions ?? [],
+			fallingPowerUps: powerUpFallingXPositionArray != [] ? powerUpFallingArray! : previous?.fallingPowerUps ?? [],
+			activePowerUps: powerUpActiveArray != [] ? powerUpActiveArray! : previous?.activePowerUps ?? [],
+			activePowerUpDurations: powerUpActiveArray != [] ? powerUpActiveDurationArray! : previous?.activePowerUpDurations ?? [],
+			activePowerUpTimers: powerUpActiveArray != [] ? powerUpActiveTimerArray! : previous?.activePowerUpTimers ?? [],
+			activePowerUpMagnitudes: powerUpActiveArray != [] ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? []
+		)
+		savedGame?.save()
 		
 		resumeGameToLoad = true
 		defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
@@ -5192,45 +5161,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		userSettings()
 		resumeGameToLoad = false
 		defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
-		saveGameSaveArray! = []
-		saveMultiplier! = 1.0
-		saveBrickTextureArray! = []
-		saveBrickColourArray! = []
-		saveBrickXPositionArray! = []
-		saveBrickYPositionArray! = []
-		saveBallPropertiesArray! = []
-		savePowerUpFallingXPositionArray! = []
-		savePowerUpFallingYPositionArray! = []
-		savePowerUpFallingArray! = []
-		savePowerUpActiveArray! = []
-		savePowerUpActiveDurationArray! = []
-		savePowerUpActiveTimerArray! = []
-		savePowerUpActiveMagnitudeArray! = []
-		
-		defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
-		defaults.set(saveMultiplier!, forKey: "saveMultiplier")
-		defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
-		defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
-		defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
-		defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
-		defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
-		defaults.set(savePowerUpFallingXPositionArray!, forKey: "savePowerUpFallingXPositionArray")
-		defaults.set(savePowerUpFallingYPositionArray!, forKey: "savePowerUpFallingYPositionArray")
-		defaults.set(savePowerUpFallingArray!, forKey: "savePowerUpFallingArray")
-		defaults.set(savePowerUpActiveArray!, forKey: "savePowerUpActiveArray")
-		defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
-		defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
-		defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
+		savedGame = nil
+		SavedGame.clear()
 	}
 	
 	func resumeGame() {
 		if resumeGameToLoad! {
-			if saveBallPropertiesArray != [] {
+			if (savedGame?.ballProperties.isEmpty == false) {
 				ballIsOnPaddle = false
 				ballLostBool = false
-				ball.position.x = CGFloat(saveBallPropertiesArray![0])
-				ball.position.y = CGFloat(saveBallPropertiesArray![1])
-				paddle.position.x = CGFloat(saveBallPropertiesArray![4])
+				ball.position.x = CGFloat(savedGame!.ballProperties[0])
+				ball.position.y = CGFloat(savedGame!.ballProperties[1])
+				paddle.position.x = CGFloat(savedGame!.ballProperties[4])
 				paddleLaser.position.x = paddle.position.x
 				paddleLaser.position.y = paddle.position.y - paddleHeight/2
 				paddleSticky.position.x = paddle.position.x
@@ -5241,27 +5183,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleRetroLaserTexture.position.y = paddle.position.y
 				paddleRetroStickyTexture.position.x = paddle.position.x
 				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
-				numberOfLevels = saveGameSaveArray![7]
-				levelTimerValue = saveGameSaveArray![8]
-				packTimerValue = saveGameSaveArray![9]
-				deathsPerLevel = saveGameSaveArray![10]
-				deathsPerPack = saveGameSaveArray![11]
-				powerUpsGeneratedPerLevel = saveGameSaveArray![12]
-				powerUpsCollectedPerLevel = saveGameSaveArray![13]
-				powerUpsGeneratedPerPack = saveGameSaveArray![14]
-				powerUpsCollectedPerPack = saveGameSaveArray![15]
-				paddleHitsPerLevel = saveGameSaveArray![16]
+				numberOfLevels = savedGame!.numberOfLevels
+				levelTimerValue = savedGame!.levelTimerValue
+				packTimerValue = savedGame!.packTimerValue
+				deathsPerLevel = savedGame!.deathsPerLevel
+				deathsPerPack = savedGame!.deathsPerPack
+				powerUpsGeneratedPerLevel = savedGame!.powerUpsGeneratedPerLevel
+				powerUpsCollectedPerLevel = savedGame!.powerUpsCollectedPerLevel
+				powerUpsGeneratedPerPack = savedGame!.powerUpsGeneratedPerPack
+				powerUpsCollectedPerPack = savedGame!.powerUpsCollectedPerPack
+				paddleHitsPerLevel = savedGame!.paddleHitsPerLevel
 				levelTimerBonus = 500
 			} else {
 				saveCurrentGame()
 			}
 			// Load ball position and velocity if it has been saved
 			
-			if savePowerUpFallingArray != [] {
-				for i in 0..<savePowerUpFallingArray!.count {
+			if (savedGame?.fallingPowerUps.isEmpty == false) {
+				for i in 0..<savedGame!.fallingPowerUps.count {
 					
-					let powerUpPositionX = savePowerUpFallingXPositionArray![i]
-					let powerUpPositionY = savePowerUpFallingYPositionArray![i]
+					let powerUpPositionX = savedGame!.fallingPowerUpXPositions[i]
+					let powerUpPositionY = savedGame!.fallingPowerUpYPositions[i]
 
 					let powerUp = SKSpriteNode(imageNamed: "PowerUpPreSet")
 					powerUp.size.width = brickWidth*0.85
@@ -5280,7 +5222,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					powerUp.zPosition = 2
 					addChild(powerUp)
 					
-					powerUp.texture = powerUpTextureArray[savePowerUpFallingArray![i]]
+					powerUp.texture = powerUpTextureArray[savedGame!.fallingPowerUps[i]]
 					let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
 					powerUp.run(move, withKey: "PowerUpDrop")
 					powerUpsOnScreen+=1
@@ -5288,16 +5230,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Load power-up position and texture if it has been saved
 			}
 			
-			if savePowerUpActiveArray != [] {
-				for i in 0..<savePowerUpActiveArray!.count {
+			if (savedGame?.activePowerUps.isEmpty == false) {
+				for i in 0..<savedGame!.activePowerUps.count {
 					
-					let remainingTime: Double = savePowerUpActiveDurationArray![i]
-					let totalTime: Double = savePowerUpActiveTimerArray![i]
+					let remainingTime: Double = savedGame!.activePowerUpDurations[i]
+					let totalTime: Double = savedGame!.activePowerUpTimers[i]
 					let scale: CGFloat = CGFloat(remainingTime/totalTime)
 					
-					switch savePowerUpActiveArray![i] {
+					switch savedGame!.activePowerUps[i] {
 					case "ballSpeedTimer":
-						switch savePowerUpActiveMagnitudeArray![i] {
+						switch savedGame!.activePowerUpMagnitudes[i] {
 						case 0:
 							ballSpeedLimit = ballSpeedSlowest
 							ballSpeedIcon.texture = self.iconDecreaseBallSpeedTexture
@@ -5331,7 +5273,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						
 					case "paddleSizeTimer":
 						var setScale: CGFloat?
-						switch savePowerUpActiveMagnitudeArray![i] {
+						switch savedGame!.activePowerUpMagnitudes[i] {
 						case 0:
 							setScale = 0.5
 							paddleSizeIcon.texture = self.iconDecreasePaddleSizeTexture
@@ -5442,7 +5384,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						
 					case "gigaBallTimer":
 						gigaBallDeactivate = false
-						switch savePowerUpActiveMagnitudeArray![i] {
+						switch savedGame!.activePowerUpMagnitudes[i] {
 						case 0:
 							gigaBallIcon.texture = self.iconGigaBallTexture
 							ball.texture = gigaBallTexture
@@ -5517,7 +5459,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					case "ballSizeTimer":
 						ballSizeIconBar.isHidden = false
 						var setScale: CGFloat?
-						switch savePowerUpActiveMagnitudeArray![i] {
+						switch savedGame!.activePowerUpMagnitudes[i] {
 						case 0:
 							setScale = 0.5
 							ballSizeIcon.texture = self.iconBallSizeSmallTexture
@@ -5558,7 +5500,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.run(sequence, withKey: "powerUpIncreaseBallSize")
 						
 					case "stickyPaddle":
-						stickyPaddleCatches = savePowerUpActiveMagnitudeArray![i]
+						stickyPaddleCatches = savedGame!.activePowerUpMagnitudes[i]
 						stickyPaddleCatchesTotal = 6
 						let scale: CGFloat = CGFloat(stickyPaddleCatches/stickyPaddleCatchesTotal)
 						stickyPaddleIcon.texture = self.iconStickyPaddleTexture

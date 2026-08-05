@@ -36,13 +36,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var firstPause: Bool?
     var IAPLocalPrice: String?
     // User settings
-    var saveGameSaveArray: [Int]?
-    var saveMultiplier: Double?
-    var saveBrickTextureArray: [Int]?
-    var saveBrickColourArray: [Int]?
-    var saveBrickXPositionArray: [Int]?
-    var saveBrickYPositionArray: [Int]?
-    var saveBallPropertiesArray: [Double]?
+    var savedGame: SavedGame?
     // Game save settings
     
     
@@ -641,16 +635,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // User settings
         
-        let restoredGame = SavedGame.load()
-        // One safe read replaces the force-cast of every key. A save that cannot be
-        // read comes back nil and reads as "no game in progress"
-        saveGameSaveArray = restoredGame?.legacyProgressArray ?? []
-        saveBrickTextureArray = restoredGame?.brickTextures ?? []
-        saveBrickColourArray = restoredGame?.brickColours ?? []
-        saveBrickXPositionArray = restoredGame?.brickXPositions ?? []
-        saveBrickYPositionArray = restoredGame?.brickYPositions ?? []
-        saveBallPropertiesArray = restoredGame?.ballProperties ?? []
-        saveMultiplier = restoredGame?.multiplier ?? 1.0
+        savedGame = SavedGame.load()
         // Game save settings
     }
     
@@ -725,20 +710,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         firstPause = true
         defaults.set(firstPause!, forKey: "firstPause")
         
-        saveGameSaveArray = []
-        defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
-        saveMultiplier = 1.0
-        defaults.set(saveMultiplier!, forKey: "saveMultiplier")
-        saveBrickTextureArray = []
-        defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
-        saveBrickColourArray = []
-        defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
-        saveBrickXPositionArray = []
-        defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
-        saveBrickYPositionArray = []
-        defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
-        saveBallPropertiesArray = []
-        defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
+        savedGame = nil
+        SavedGame.clear()
         // Reset user settings to defaults
         
         totalStatsArray[0] = TotalStats()

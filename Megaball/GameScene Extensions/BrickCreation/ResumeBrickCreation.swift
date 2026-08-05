@@ -13,7 +13,7 @@ extension GameScene {
     func resumeBrickCreation() {
         
         if levelNumber == 0 {
-            prepEndlessMode(height: saveGameSaveArray![6])
+            prepEndlessMode(height: savedGame!.endlessHeight)
         }
 
         powerUpProbAllocation(levelNumber: levelNumber)
@@ -21,11 +21,11 @@ extension GameScene {
         var brickArray: [SKNode] = []
         // Array to store all bricks
         
-        for i in 0..<saveBrickTextureArray!.count {
+        for i in 0..<savedGame!.brickTextures.count {
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
                         
             var brickTexture: SKTexture?
-            switch saveBrickTextureArray![i] {
+            switch savedGame!.brickTextures[i] {
             case 0:
                 brickTexture = brickNormalTexture
                 brick.isHidden = false
@@ -57,9 +57,9 @@ extension GameScene {
             }
             brick.texture = brickTexture!
             
-            if saveBrickColourArray!.count > 0 {
+            if savedGame!.brickColours.count > 0 {
                 var brickColour: UIColor?
-                switch saveBrickColourArray![i] {
+                switch savedGame!.brickColours[i] {
                 case 0:
                     brickColour = brickBlue
                 case 1:
@@ -118,8 +118,8 @@ extension GameScene {
             }
             // Assign brick texture & colour
             
-            let brickPositionX = saveBrickXPositionArray![i]
-            let brickPositionY = saveBrickYPositionArray![i]
+            let brickPositionX = savedGame!.brickXPositions[i]
+            let brickPositionY = savedGame!.brickYPositions[i]
             brick.position = CGPoint(x: gameWidth/2 - brickWidth/2 - brickWidth*CGFloat(brickPositionX), y: yBrickOffset - brickHeight*CGFloat(brickPositionY))
             // Assign brick position
             

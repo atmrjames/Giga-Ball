@@ -33,7 +33,7 @@ class Paused: GKState {
         NotificationCenter.default.addObserver(self, selector: #selector(self.unpauseNotificationKeyReceived), name: .unpause, object: nil)
         // Sets up an observer to watch for notifications to check if the user has pressed unpause on the pause menu
         
-        if scene.saveBallPropertiesArray == [] {
+        if (scene.savedGame?.ballProperties.isEmpty != false) {
             
             scene.pauseBallVelocityX = scene.ball.physicsBody!.velocity.dx
             scene.pauseBallVelocityY = scene.ball.physicsBody!.velocity.dy

@@ -35,7 +35,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool?
-    var saveGameSaveArray: [Int]?
+    var savedGame: SavedGame?
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     // User settings
     
@@ -72,11 +72,11 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             resumingLabel.isHidden = false
             cancelResumeButton.isHidden = false
             
-            let currentLevelNumber = saveGameSaveArray![0]
-            let currentPackNumber = saveGameSaveArray![2]
-            let score = saveGameSaveArray![4]
-            let height = saveGameSaveArray![6]
-            let numberOfLevels = saveGameSaveArray![7]
+            let currentLevelNumber = savedGame!.levelNumber
+            let currentPackNumber = savedGame!.packNumber
+            let score = savedGame!.totalScore
+            let height = savedGame!.endlessHeight
+            let numberOfLevels = savedGame!.numberOfLevels
             
             if numberOfLevels > 1 {
                 packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[currentPackNumber])"
@@ -262,10 +262,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     
     func userSettings() {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
-        let restoredGame = SavedGame.load()
-        // One safe read replaces the force-cast of every key. A save that cannot be
-        // read comes back nil and reads as "no game in progress"
-        saveGameSaveArray = restoredGame?.legacyProgressArray ?? []
+        savedGame = SavedGame.load()
         // Load user settings
     }
 }

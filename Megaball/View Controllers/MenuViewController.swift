@@ -41,20 +41,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var firstPause: Bool?
     var IAPLocalPrice: String?
     // User settings
-    var saveGameSaveArray: [Int]?
-    var saveMultiplier: Double?
-    var saveBrickTextureArray: [Int]?
-    var saveBrickColourArray: [Int]?
-    var saveBrickXPositionArray: [Int]?
-    var saveBrickYPositionArray: [Int]?
-    var saveBallPropertiesArray: [Double]?
-    var savePowerUpFallingXPositionArray: [Int]?
-    var savePowerUpFallingYPositionArray: [Int]?
-    var savePowerUpFallingArray: [Int]?
-    var savePowerUpActiveArray: [String]?
-    var savePowerUpActiveDurationArray: [Double]?
-    var savePowerUpActiveTimerArray: [Double]?
-    var savePowerUpActiveMagnitudeArray: [Int]?
+    var savedGame: SavedGame?
     // Game save settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -419,20 +406,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["IAPLocalPrice": ""])
         // User settings
         
-        defaults.register(defaults: ["saveGameSaveArray": []])
-        defaults.register(defaults: ["saveMultiplier": 1.0])
-        defaults.register(defaults: ["saveBrickTextureArray": []])
-        defaults.register(defaults: ["saveBrickColourArray": []])
-        defaults.register(defaults: ["saveBrickXPositionArray": []])
-        defaults.register(defaults: ["saveBrickYPositionArray": []])
-        defaults.register(defaults: ["saveBallPropertiesArray": []])
-        defaults.register(defaults: ["savePowerUpFallingXPositionArray": []])
-        defaults.register(defaults: ["savePowerUpFallingYPositionArray": []])
-        defaults.register(defaults: ["savePowerUpFallingArray": []])
-        defaults.register(defaults: ["savePowerUpActiveArray": []])
-        defaults.register(defaults: ["savePowerUpActiveDurationArray": []])
-        defaults.register(defaults: ["savePowerUpActiveTimerArray": []])
-        defaults.register(defaults: ["savePowerUpActiveMagnitudeArray": []])
         // Game save settings
         
     }
@@ -543,23 +516,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // User settings
                 
-        let restoredGame = SavedGame.load()
-        // One safe read replaces the force-cast of every key. A save that cannot be
-        // read comes back nil and reads as "no game in progress"
-        saveGameSaveArray = restoredGame?.legacyProgressArray ?? []
-        saveBrickTextureArray = restoredGame?.brickTextures ?? []
-        saveBrickColourArray = restoredGame?.brickColours ?? []
-        saveBrickXPositionArray = restoredGame?.brickXPositions ?? []
-        saveBrickYPositionArray = restoredGame?.brickYPositions ?? []
-        saveBallPropertiesArray = restoredGame?.ballProperties ?? []
-        savePowerUpFallingXPositionArray = restoredGame?.fallingPowerUpXPositions ?? []
-        savePowerUpFallingYPositionArray = restoredGame?.fallingPowerUpYPositions ?? []
-        savePowerUpFallingArray = restoredGame?.fallingPowerUps ?? []
-        savePowerUpActiveArray = restoredGame?.activePowerUps ?? []
-        savePowerUpActiveDurationArray = restoredGame?.activePowerUpDurations ?? []
-        savePowerUpActiveTimerArray = restoredGame?.activePowerUpTimers ?? []
-        savePowerUpActiveMagnitudeArray = restoredGame?.activePowerUpMagnitudes ?? []
-        saveMultiplier = restoredGame?.multiplier ?? 1.0
+        savedGame = SavedGame.load()
         // Game save settings
     }
     
@@ -685,41 +642,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         userSettings()
         resumeGameToLoad = false
         defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
-        saveGameSaveArray! = []
-        saveMultiplier! = 1.0
-        saveBrickTextureArray! = []
-        saveBrickColourArray! = []
-        saveBrickXPositionArray! = []
-        saveBrickYPositionArray! = []
-        saveBallPropertiesArray! = []
-        savePowerUpFallingXPositionArray! = []
-        savePowerUpFallingYPositionArray! = []
-        savePowerUpFallingArray! = []
-        savePowerUpActiveArray! = []
-        savePowerUpActiveDurationArray! = []
-        savePowerUpActiveTimerArray! = []
-        savePowerUpActiveMagnitudeArray! = []
-
-        defaults.set(saveGameSaveArray!, forKey: "saveGameSaveArray")
-        defaults.set(saveMultiplier!, forKey: "saveMultiplier")
-        defaults.set(saveBrickTextureArray!, forKey: "saveBrickTextureArray")
-        defaults.set(saveBrickColourArray!, forKey: "saveBrickColourArray")
-        defaults.set(saveBrickXPositionArray!, forKey: "saveBrickXPositionArray")
-        defaults.set(saveBrickYPositionArray!, forKey: "saveBrickYPositionArray")
-        defaults.set(saveBallPropertiesArray!, forKey: "saveBallPropertiesArray")
-        defaults.set(savePowerUpFallingXPositionArray!, forKey: "savePowerUpFallingXPositionArray")
-        defaults.set(savePowerUpFallingYPositionArray!, forKey: "savePowerUpFallingYPositionArray")
-        defaults.set(savePowerUpFallingArray!, forKey: "savePowerUpFallingArray")
-        defaults.set(savePowerUpActiveArray!, forKey: "savePowerUpActiveArray")
-        defaults.set(savePowerUpActiveDurationArray!, forKey: "savePowerUpActiveDurationArray")
-        defaults.set(savePowerUpActiveTimerArray!, forKey: "savePowerUpActiveTimerArray")
-        defaults.set(savePowerUpActiveMagnitudeArray!, forKey: "savePowerUpActiveMagnitudeArray")
+        savedGame = nil
+        SavedGame.clear()
     }
     
     func loadSavedGame() {
         levelSender = "MainMenu"
-        numberOfLevels = saveGameSaveArray![1] - saveGameSaveArray![0] + 1
-        moveToGame(selectedLevel: saveGameSaveArray![0], numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: saveGameSaveArray![2])
+        numberOfLevels = savedGame!.endLevelNumber - savedGame!.levelNumber + 1
+        moveToGame(selectedLevel: savedGame!.levelNumber, numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: savedGame!.packNumber)
     }
     
 }
