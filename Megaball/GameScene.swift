@@ -611,6 +611,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFlashers: [EndlessIIFlasher] = []
 	var endlessIILastTick: TimeInterval = 0
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
+	var endlessIIWanderers: [EndlessIIWander] = []
+	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
+	var endlessIIPortalCooldown: TimeInterval = 0
+	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
 	var endlessIIPendingBigColumn: Int?
 	// A Big brick reserved by one row and built by the next, which is the only way a brick
 	// two rows tall can be made when rows arrive one at a time from the top
@@ -1861,7 +1865,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.brickCategory.rawValue {
 				var brickNodeShare: SKNode?
                 if let brickNode = secondBody.node {
-                    hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode)
+					let struckSprite = brickNode as! SKSpriteNode
+					let struckSide = EndlessIIImpact.side(ballAt: ball.position,
+														 brickAt: struckSprite.position,
+														 brickSize: struckSprite.size)
+					// Worked out here, where the ball's position is still the one it had on
+					// contact, rather than inside hitBrick which is also reached by lasers
+                    hitBrick(node: brickNode, sprite: struckSprite, hitFrom: struckSide)
 					brickNodeShare = brickNode
                 }
 				let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
@@ -1892,7 +1902,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if firstBody.categoryBitMask == CollisionTypes.brickCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
                 if let brickNode = firstBody.node {
 					totalStatsArray[0].lasersHit+=1
-					hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode))
+					hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode), hitFrom: .bottom)
+					// Lasers only ever arrive from underneath
                 }
             }
             // Laser hits Brick
@@ -2011,8 +2022,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gravityActivated = false
 	}
 	
-    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
-		
+    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil) {
+
+		if sprite.endlessIIRole == .portal {
+			laserNode?.removeFromParent()
+			endlessIIEnterPortal(sprite)
+			return
+		}
+		// A Portal is struck rather than damaged, so it never reaches the type switch
+
+		if endlessIIAcceptsHit(sprite, from: hitFrom) == false {
+			laserNode?.removeFromParent()
+			if hapticsSetting {
+				lightHaptic.impactOccurred()
+			}
+			if soundsSetting {
+				self.run(brickHitNormalSound)
+			}
+			brickBounceCounter += 1
+			return
+		}
+		// Directional brick struck on one of its armoured sides: it bounces, nothing else
+
         if hapticsSetting {
 			lightHaptic.impactOccurred()
 		}
@@ -2145,7 +2176,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			})
 			// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
 		}
-		
+
+		endlessIIBrickDestroyed(sprite)
+		// Endless 2.0's Exploding and Spawner bricks act now, and anything that falls
+		// settles into the space this brick just left. Run before the count, so the count
+		// sees the field as it ends up rather than as it was mid-change
+
 		countBricks()
 		
 		if sprite.texture != brickIndestructible2Texture && sprite.texture != brickIndestructible1Texture {

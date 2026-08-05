@@ -12,6 +12,7 @@
 		1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000023 /* PowerUpCatalogueTests.swift */; };
 		1AF1700000000028 /* GameModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000027 /* GameModeTests.swift */; };
 		1AF1700000000030 /* EndlessIIBrickTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000031 /* EndlessIIBrickTests.swift */; };
+		1AF1700000000034 /* EndlessIIFieldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000035 /* EndlessIIFieldTests.swift */; };
 		1AF1700000000032 /* EndlessIISizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000033 /* EndlessIISizeTests.swift */; };
 		1AF1700000000014 /* StatsSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000013 /* StatsSyncTests.swift */; };
 		1AF1700000000002 /* SavedGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000001 /* SavedGame.swift */; };
@@ -236,6 +237,9 @@
 		1ACC0F3C23FD59EE00B7EFE9 /* Level999.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACC0F3923FD56F200B7EFE9 /* Level999.swift */; };
 		1ACC0F3E23FDA3B000B7EFE9 /* EndlessRowCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */; };
 		1AE2B3010000000000000301 /* EndlessIIBricks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000302 /* EndlessIIBricks.swift */; };
+		1AE2B3010000000000000505 /* EndlessIIBehaviourBricks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000506 /* EndlessIIBehaviourBricks.swift */; };
+		1AE2B3010000000000000503 /* EndlessIIRoles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000504 /* EndlessIIRoles.swift */; };
+		1AE2B3010000000000000501 /* EndlessIIField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000502 /* EndlessIIField.swift */; };
 		1AE2B3010000000000000401 /* EndlessIISizes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000402 /* EndlessIISizes.swift */; };
 		1ACFFDB824752D6300AF2C43 /* PowerUpAllocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACFFDB724752D6300AF2C43 /* PowerUpAllocation.swift */; };
 		1AD4686723ED6BC6004EF873 /* LevelPackSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */; };
@@ -274,6 +278,7 @@
 		1AF1700000000023 /* PowerUpCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogueTests.swift; sourceTree = "<group>"; };
 		1AF1700000000027 /* GameModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000031 /* EndlessIIBrickTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBrickTests.swift; sourceTree = "<group>"; };
+		1AF1700000000035 /* EndlessIIFieldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFieldTests.swift; sourceTree = "<group>"; };
 		1AF1700000000033 /* EndlessIISizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISizeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000013 /* StatsSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSyncTests.swift; sourceTree = "<group>"; };
 		1AF1700000000001 /* SavedGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGame.swift; sourceTree = "<group>"; };
@@ -502,6 +507,9 @@
 		1ACC0F3923FD56F200B7EFE9 /* Level999.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level999.swift; sourceTree = "<group>"; };
 		1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessRowCreation.swift; sourceTree = "<group>"; };
 		1AE2B3010000000000000302 /* EndlessIIBricks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBricks.swift; sourceTree = "<group>"; };
+		1AE2B3010000000000000506 /* EndlessIIBehaviourBricks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBehaviourBricks.swift; sourceTree = "<group>"; };
+		1AE2B3010000000000000504 /* EndlessIIRoles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIRoles.swift; sourceTree = "<group>"; };
+		1AE2B3010000000000000502 /* EndlessIIField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIField.swift; sourceTree = "<group>"; };
 		1AE2B3010000000000000402 /* EndlessIISizes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISizes.swift; sourceTree = "<group>"; };
 		1ACFFDB724752D6300AF2C43 /* PowerUpAllocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpAllocation.swift; sourceTree = "<group>"; };
 		1AD4686623ED6BC6004EF873 /* LevelPackSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelPackSetup.swift; sourceTree = "<group>"; };
@@ -566,6 +574,7 @@
 				1AF1700000000023 /* PowerUpCatalogueTests.swift */,
 				1AF1700000000027 /* GameModeTests.swift */,
 				1AF1700000000031 /* EndlessIIBrickTests.swift */,
+				1AF1700000000035 /* EndlessIIFieldTests.swift */,
 				1AF1700000000033 /* EndlessIISizeTests.swift */,
 				1AF1700000000013 /* StatsSyncTests.swift */,
 				1AF1600000000001 /* ProgressionTests.swift */,
@@ -823,6 +832,9 @@
 			children = (
 				1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */,
 				1AE2B3010000000000000302 /* EndlessIIBricks.swift */,
+				1AE2B3010000000000000506 /* EndlessIIBehaviourBricks.swift */,
+				1AE2B3010000000000000504 /* EndlessIIRoles.swift */,
+				1AE2B3010000000000000502 /* EndlessIIField.swift */,
 				1AE2B3010000000000000402 /* EndlessIISizes.swift */,
 				1AE92C25240177AF00F25A84 /* BrickCreation.swift */,
 				1A601CA32433566B000A4616 /* ResumeBrickCreation.swift */,
@@ -1277,6 +1289,7 @@
 				1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */,
 				1AF1700000000028 /* GameModeTests.swift in Sources */,
 				1AF1700000000030 /* EndlessIIBrickTests.swift in Sources */,
+				1AF1700000000034 /* EndlessIIFieldTests.swift in Sources */,
 				1AF1700000000032 /* EndlessIISizeTests.swift in Sources */,
 				1AF1700000000014 /* StatsSyncTests.swift in Sources */,
 				1AF1600000000002 /* ProgressionTests.swift in Sources */,
@@ -1325,6 +1338,9 @@
 				1A94364D245D600D00388D6C /* Level093.swift in Sources */,
 				1ACC0F3E23FDA3B000B7EFE9 /* EndlessRowCreation.swift in Sources */,
 				1AE2B3010000000000000301 /* EndlessIIBricks.swift in Sources */,
+				1AE2B3010000000000000505 /* EndlessIIBehaviourBricks.swift in Sources */,
+				1AE2B3010000000000000503 /* EndlessIIRoles.swift in Sources */,
+				1AE2B3010000000000000501 /* EndlessIIField.swift in Sources */,
 				1AE2B3010000000000000401 /* EndlessIISizes.swift in Sources */,
 				1A31941B24441CDF004917D0 /* Level046.swift in Sources */,
 				1A31940824440BB6004917D0 /* Level037.swift in Sources */,

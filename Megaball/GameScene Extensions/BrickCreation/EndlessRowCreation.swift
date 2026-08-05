@@ -637,6 +637,7 @@ extension GameScene {
 
         applyEndlessIISizes(to: brickArray)
         applyEndlessIIBehaviours(to: brickArray)
+        applyEndlessIIRoles(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend
 
         if hapticsSetting {

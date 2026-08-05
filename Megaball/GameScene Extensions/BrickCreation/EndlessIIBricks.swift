@@ -221,6 +221,8 @@ extension GameScene {
         for index in endlessIIFlashers.indices {
             advanceFlasher(at: index, by: delta)
         }
+
+        tickEndlessIIRoles(delta)
     }
 
     /// Clears the tracked bricks. For starting a run, not for a brick being destroyed -
@@ -230,6 +232,7 @@ extension GameScene {
         endlessIIFlashers.removeAll()
         endlessIIPendingBigColumn = nil
         endlessIILastTick = 0
+        resetEndlessIIRoles()
     }
 
     private func advanceFlasher(at index: Int, by delta: TimeInterval) {
