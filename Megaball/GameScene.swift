@@ -59,6 +59,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
+	var livesContainer = SKShapeNode()
 	static let maxLivesShown = 10
 	// The lives row sits below the paddle rather than in the HUD. The HUD's centre is
 	// where a notch or Dynamic Island lives, and an expanded Live Activity would draw
@@ -4001,6 +4002,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// narrow multitasking slot, which is what the HUD placement below actually wants
 
 	var livesRowSpacing: CGFloat { ballSize*1.6 }
+	var livesRowPadding: CGFloat { ballSize*0.55 }
+
+	var livesSlots: Int { max(3, min(numberOfLives, GameScene.maxLivesShown)) }
+	// The container holds at least the three lives a pack starts with, so an empty one
+	// reads as "no lives left" rather than as a missing element. It grows past three when
+	// lives are gained and never shrinks back below it
+
+	var livesContainerSize: CGSize {
+		CGSize(width: CGFloat(livesSlots - 1)*livesRowSpacing + ballSize + livesRowPadding*2,
+			   height: ballSize + livesRowPadding*2)
+	}
+
+	static let lifeIconAlpha: CGFloat = 0.55
+	// Dimmer than the ball in play, so the row reads as a counter rather than as balls
+	// sitting in the play area
 
 	var livesRowY: CGFloat {
 		let paddleBottom = paddle.position.y - paddleHeight/2
@@ -4013,6 +4029,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// clear of the paddle and still above the home indicator on every device
 
 	func buildLivesRow() {
+		livesContainer.removeFromParent()
+		livesContainer = SKShapeNode()
+		livesContainer.fillColor = UIColor(white: 1.0, alpha: 0.10)
+		livesContainer.strokeColor = .clear
+		livesContainer.zPosition = 9
+		livesContainer.isHidden = true
+		addChild(livesContainer)
+
 		lifeIcons.forEach { $0.removeFromParent() }
 		lifeIcons = (0..<GameScene.maxLivesShown).map { _ in
 			let icon = SKSpriteNode(texture: ballTexture)
@@ -4028,27 +4052,39 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// flight animation always has a node to move
 
 	func layoutLivesRow() {
+		layoutLivesContainer()
 		for (index, icon) in lifeIcons.enumerated() {
 			icon.size = CGSize(width: ballSize, height: ballSize)
 			icon.position = livesRowHome(index: index)
 		}
 	}
 
-	func livesRowHome(index: Int) -> CGPoint {
-		let shown = max(1, min(numberOfLives, GameScene.maxLivesShown))
-		let totalWidth = CGFloat(shown - 1) * livesRowSpacing
-		return CGPoint(x: -totalWidth/2 + CGFloat(index)*livesRowSpacing, y: livesRowY)
+	func layoutLivesContainer() {
+		let size = livesContainerSize
+		let rect = CGRect(x: -size.width/2, y: -size.height/2, width: size.width, height: size.height)
+		livesContainer.path = CGPath(roundedRect: rect,
+									 cornerWidth: size.height/2,
+									 cornerHeight: size.height/2,
+									 transform: nil)
+		livesContainer.position = CGPoint(x: 0, y: livesRowY)
 	}
-	// Centred on the play area, so the row grows outwards from the middle as lives are
-	// gained rather than shifting the ones already there
+
+	func livesRowHome(index: Int) -> CGPoint {
+		let firstX = -livesContainerSize.width/2 + livesRowPadding + ballSize/2
+		return CGPoint(x: firstX + CGFloat(index)*livesRowSpacing, y: livesRowY)
+	}
+	// Filled from the left of a centred container, so losing a life removes the rightmost
+	// ball and leaves the others where they are
 
 	func refreshLivesRow() {
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
+		layoutLivesContainer()
+		livesContainer.isHidden = endlessMode
 		for (index, icon) in lifeIcons.enumerated() {
 			icon.removeAllActions()
 			icon.position = livesRowHome(index: index)
 			icon.setScale(1)
-			icon.alpha = 1
+			icon.alpha = GameScene.lifeIconAlpha
 			icon.texture = ballTexture
 			icon.isHidden = endlessMode || index >= shown
 		}
@@ -4057,6 +4093,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	func setLivesRowHidden(_ hidden: Bool) {
 		if hidden {
+			livesContainer.isHidden = true
 			lifeIcons.forEach { $0.isHidden = true }
 		} else {
 			refreshLivesRow()
