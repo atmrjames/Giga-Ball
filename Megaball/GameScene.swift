@@ -5362,12 +5362,24 @@ laserTimer?.invalidate()
 		for index in 0..<iconArray.count {
 			let bar = iconTimerArray[index]
 			guard bar.isHidden == false, bar.xScale > 0.001 else { continue }
+
+			// The sticky paddle counts catches rather than seconds, so its ring is
+			// segmented - three marks say "three catches" where a smooth arc only says
+			// "about half". Every other tray entry is timed.
+			let segments = index == GameScene.stickyPaddleTrayIndex && stickyPaddleCatchesTotal > 0
+				? stickyPaddleCatchesTotal
+				: nil
+
 			entries.append(PowerUpRingHUD.Entry(id: "tray\(index)",
 											    texture: iconArray[index].texture ?? SKTexture(),
-											    remaining: bar.xScale))
+											    remaining: bar.xScale,
+											    segments: segments))
 		}
 		return entries
 	}
+
+	/// Where the sticky paddle sits in the tray arrays.
+	static let stickyPaddleTrayIndex = 3
 
 	func refreshLaserFiringRate() {
 		guard laserPowerUpIsOn, laserTimer != nil else { return }
