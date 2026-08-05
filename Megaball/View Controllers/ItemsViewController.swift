@@ -81,8 +81,55 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         showAnimate()
     }
     
+
+    /// The rows the information screen offers, already filtered to what is available.
+    ///
+    /// The screen used to number its rows by hand and blank out the ones it did not want
+    /// - the removed Premium entry, and Game Center when it is switched off. A blanked
+    /// cell still takes up a row, so there was a gap between Quick Start Guide and the
+    /// SoundCloud link. Rows that are not offered are now simply not in the list.
+    enum InfoRow {
+        case powerUps, achievements, statistics, gameCenter, quickStart, soundCloud
+        case rate, share, about
+
+        var title: String {
+            switch self {
+            case .powerUps: return "Power-Ups"
+            case .achievements: return "Achievements"
+            case .statistics: return "Statistics"
+            case .gameCenter: return "Game Center"
+            case .quickStart: return "Quick Start Guide"
+            case .soundCloud: return "SoundCloud Link"
+            case .rate: return "Rate Giga-Ball"
+            case .share: return "Share"
+            case .about: return "About"
+            }
+        }
+
+        var iconName: String {
+            switch self {
+            case .powerUps: return "iconPowerUp.png"
+            case .achievements: return "iconAchievements.png"
+            case .statistics: return "iconStats.png"
+            case .gameCenter: return "iconGameCenter.png"
+            case .quickStart: return "iconTutorial.png"
+            case .soundCloud: return "iconMusic.png"
+            case .rate: return "iconReview.png"
+            case .share: return "iconShare.png"
+            case .about: return "iconAbout.png"
+            }
+        }
+    }
+
+    var infoRows: [InfoRow] {
+        var rows: [InfoRow] = [.powerUps, .achievements, .statistics]
+        if gameCenterSetting { rows.append(.gameCenter) }
+        rows += [.quickStart, .soundCloud, .rate, .share, .about]
+        return rows
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 10
+        return infoRows.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -98,65 +145,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         cell.descriptionTickWidthConstraint.isActive = false
         cell.decriptionFullWidthConstraint.isActive = true
         
-        switch indexPath.row {
-        case 0:
-            cell.settingDescription.text = "Power-Ups"
-            cell.iconImage.image = UIImage(named:"iconPowerUp.png")!
-        case 1:
-            cell.settingDescription.text = "Achievements"
-            cell.iconImage.image = UIImage(named:"iconAchievements.png")!
-        case 2:
-            cell.settingDescription.text = "Statistics"
-            cell.iconImage.image = UIImage(named:"iconStats.png")!
-        case 3:
-            if gameCenterSetting {
-                cell.settingDescription.text = "Game Center"
-                cell.iconImage.image = UIImage(named:"iconGameCenter.png")!
-            } else {
-                hideCell(cell: cell)
-                return cell
-            }
-        case 4:
-            cell.settingDescription.text = "Quick Start Guide"
-            cell.iconImage.image = UIImage(named:"iconTutorial.png")!
-        case 5:
-            hideCell(cell: cell)
-            return cell
-        case 6:
-            cell.settingDescription.text = "SoundCloud Link"
-            cell.iconImage.image = UIImage(named:"iconMusic.png")!
-//            hideCell(cell: cell)
-//            return cell
-        case 7:
-            cell.settingDescription.text = "Rate Giga-Ball"
-            cell.iconImage.image = UIImage(named:"iconReview.png")!
-        case 8:
-            cell.settingDescription.text = "Share"
-            cell.iconImage.image = UIImage(named:"iconShare.png")!
-        case 9:
-            cell.settingDescription.text = "About"
-            cell.iconImage.image = UIImage(named:"iconAbout.png")!
-        
-        default:
-            break
-        }
-        
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-        }
-        
+        let row = infoRows[indexPath.row]
+        cell.settingDescription.text = row.title
+        cell.iconImage.image = UIImage(named: row.iconName)
+
         return cell
     }
-    
-    func hideCell(cell: SettingsTableViewCell) {
-        cell.centreLabel.text = ""
-        cell.settingState.text = ""
-        cell.settingDescription.text = ""
-        cell.iconImage.image = nil
-        itemsTableView.rowHeight = 0.0
-    }
-    
+    // Add content to cells
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
         UIView.animate(withDuration: 0.2) {
@@ -164,37 +160,26 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
         }
         
-        switch indexPath.row {
-        case 0:
-        // Power-ups
+        switch infoRows[indexPath.row] {
+        case .powerUps:
             moveToItemDetails(senderID: 2)
-        case 1:
-        // Achievements
+        case .achievements:
             moveToItemDetails(senderID: 3)
-        case 2:
-        // Stats
+        case .statistics:
             moveToStats()
-        case 3:
-        // Game Center
+        case .gameCenter:
             showGameCenterLeaderboards()
-        case 4:
-        // Tutorial
+        case .quickStart:
             moveToIntro()
-        case 5:
-        // Premium
-            break
-        case 6:
-        // Purchase soundtrack
+        case .soundCloud:
             if let purchaseSoundTrackURL = URL(string: "https://soundcloud.com/user-371123791/sets/giga-ball-original-sound-track?ref=clipboard&p=i&c=1") {
                 UIApplication.shared.open(purchaseSoundTrackURL)
             }
-        case 7:
-        // Review
+        case .rate:
             guard let writeReviewURL = URL(string: "https://apps.apple.com/app/id1494628204?action=write-review")
                 else { fatalError("Expected a valid URL") }
             UIApplication.shared.open(writeReviewURL, options: [:], completionHandler: nil)
-        case 8:
-        // Share
+        case .share:
             let shareURL: [Any] = ["Check out Giga-Ball on the App Store", URL(string: "https://apps.apple.com/app/id1494628204")!]
             let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
             
@@ -213,11 +198,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             // Determine where to display the share sheet on iPads
             
             self.present(shareSheet, animated: true, completion: nil)
-        case 9:
-        // About
+        case .about:
             moveToAbout()
-        default:
-            break
         }
         
         tableView.deselectRow(at: indexPath, animated: true)

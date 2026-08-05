@@ -5324,6 +5324,8 @@ laserTimer?.invalidate()
 
 	/// The purple at the top of the Classic background, which the drawn backgrounds match.
 	static let backgroundPurple = UIColor(red: 22/255, green: 0, blue: 32/255, alpha: 1)
+	/// The side borders' purple, which the gradient starts from.
+	static let borderPurple = UIColor(red: 41/255, green: 0, blue: 60/255, alpha: 1)
 
 	/// Paints the playfield background from the setting.
 	///
@@ -5368,10 +5370,12 @@ laserTimer?.invalidate()
 		background.isHidden = setting != 0
 	}
 
-	/// Purple down to the paddle, then away to near black by the bottom of the playfield.
+	/// The borders' purple at the top, the Classic background's purple by the paddle, then
+	/// away to near black at the bottom of the playfield.
 	///
-	/// The fade starts at the paddle rather than at the top so the part of the field the
-	/// bricks occupy stays an even colour, which is how the Classic artwork reads.
+	/// Two fades rather than one. The upper half lifts the brick field slightly and ties
+	/// it to the side borders, and only below the paddle does it fall away - which is how
+	/// the Classic artwork reads.
 	func gradientBackgroundTexture(size: CGSize) -> SKTexture? {
 		guard size.width > 0, size.height > 0 else { return nil }
 
@@ -5381,7 +5385,7 @@ laserTimer?.invalidate()
 
 		let renderer = UIGraphicsImageRenderer(size: size)
 		let image = renderer.image { context in
-			let colours = [GameScene.backgroundPurple.cgColor,
+			let colours = [GameScene.borderPurple.cgColor,
 						   GameScene.backgroundPurple.cgColor,
 						   UIColor(red: 2/255, green: 0, blue: 3/255, alpha: 1).cgColor]
 			// UIKit's y runs down the image, so the paddle's fraction is measured from

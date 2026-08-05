@@ -330,6 +330,30 @@ container sizing is now fixed, so this is unblocked.
 - Shadows on paddle, ball, bricks, power-ups and lasers
 - Add an image to the share sheet
 
+#### Power-up interactions — deferred, and why
+Two of three requested interactions between the ball-speed power-ups and everything else
+are **not built**. The third is: slow ball makes lasers fire faster, fast ball slower
+(slow ball is the good one, which is the opposite of what the names suggest).
+
+Not done, and the reason:
+
+- **Slow ball should make good power-ups drain slower and bad ones faster; fast ball the
+  reverse.** Mechanically possible — every timed power-up runs a keyed `SKAction`, and a
+  running action's `speed` can be changed, so one helper could scale all of them plus
+  their icon bars whenever the ball speed changes. What stops it being a small change is
+  the save format: remaining time is reconstructed as `duration × iconBar.xScale`, and
+  once an action's speed has been altered, `duration` is no longer wall-clock. Resume
+  would restore the wrong remaining times. Needs the timers to record real elapsed time
+  rather than inferring it, which is a change to how every power-up is saved.
+- **Slow ball should slow the power-up drop rate, fast ball raise it.** Small in itself,
+  and only left out because it belongs with the item above.
+
+Both are balance changes that want playtesting to tune, and they land in the least-tested
+part of the codebase. Worth doing after the power-up system is table-driven rather than
+eleven near-identical switch cases — see the refactor note below.
+
+Green power-ups are the good ones and award points; red ones deduct.
+
 #### Gameplay
 - Single level completion unlocks the next level even without a pack score (plus the
   intro and warning text changes that go with it)
