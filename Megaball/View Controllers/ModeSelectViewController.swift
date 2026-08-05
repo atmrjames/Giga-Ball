@@ -16,8 +16,8 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     var levelPack: Int?
     
     let defaults = UserDefaults.standard
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
@@ -42,7 +42,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
 
         userSettings()
         setBlur()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         backCollectionView.reloadData()
@@ -134,7 +134,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -145,7 +145,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -180,7 +180,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -191,7 +191,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {

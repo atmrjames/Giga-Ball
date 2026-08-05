@@ -34,11 +34,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     var showAnimateDuration = 0.25
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
     var IAPLocalPrice: String?
     // User settings
     
@@ -73,13 +73,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBOutlet var packAndLevelConstriant: NSLayoutConstraint!
         
     @IBAction func tapGestureAction(_ sender: Any) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
     }
     @IBAction func tapBackgroundGestureAction(_ sender: Any) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
@@ -93,7 +93,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         loadData()
         userSettings()
         setBlur()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         updateLabels()

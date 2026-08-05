@@ -12,13 +12,13 @@ import GameKit
 class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var gameCenterSetting: Bool?
-    var statsCollapseSetting: Bool?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var gameCenterSetting: Bool = false
+    var statsCollapseSetting: Bool = true
     var IAPLocalPrice: String?
     // User settings
     
@@ -85,7 +85,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         } else {
             gameCenterSetting = false
         }
-        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
         
         statsTableView.delegate = self
         statsTableView.dataSource = self
@@ -103,7 +103,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         premiumTableViewHideShow()
         
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         updateLabels()
@@ -237,7 +237,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         
         if tableView == self.levelsTableView {
-            if hapticsSetting! {
+            if hapticsSetting {
                 interfaceHaptic.impactOccurred()
             }
             UIView.animate(withDuration: 0.1) {
@@ -251,7 +251,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
        
         if tableView == self.levelsTableView {
-            if hapticsSetting! {
+            if hapticsSetting {
                 interfaceHaptic.impactOccurred()
             }
             UIView.animate(withDuration: 0.1) {
@@ -292,7 +292,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
-            if gameCenterSetting! {
+            if gameCenterSetting {
                 cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull")
@@ -317,7 +317,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             NotificationCenter.default.post(name: .returnPackSelectNotification, object: nil)
         }
         if indexPath.row == 1 {
-            if gameCenterSetting! {
+            if gameCenterSetting {
                 showGameCenterLeaderboards()
             }
         }
@@ -337,13 +337,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
-                if self.gameCenterSetting! {
-                    if self.hapticsSetting! {
+                if self.gameCenterSetting {
+                    if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
@@ -351,7 +351,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
@@ -369,13 +369,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
-                if self.gameCenterSetting! {
-                    if self.hapticsSetting! {
+                if self.gameCenterSetting {
+                    if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
@@ -383,7 +383,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonPlay")
@@ -548,7 +548,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func showGameCenterLeaderboards() {
-        if gameCenterSetting! {
+        if gameCenterSetting {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
@@ -571,7 +571,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true, completion: nil)
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
     }

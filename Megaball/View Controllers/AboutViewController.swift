@@ -11,11 +11,11 @@ import UIKit
 class AboutViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
     
     var sender: String?
     
@@ -52,7 +52,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             setBlur()
         }
         
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         backButtonCollectionView.reloadData()
@@ -90,7 +90,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -101,7 +101,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {

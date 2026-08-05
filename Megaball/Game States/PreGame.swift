@@ -24,7 +24,7 @@ class PreGame: GKState {
         let wait = SKAction.wait(forDuration: 1.0)
         // Add slight delay when moving in from main menu
         scene.self.run(wait, completion: {
-            if self.scene.musicSetting! {
+            if self.scene.musicSetting {
                 MusicHandler.sharedHelper.stopMusic()
                 MusicHandler.sharedHelper.playMusic(sender: "PreGame")
             }
@@ -41,7 +41,7 @@ class PreGame: GKState {
     
     func resetGame() {
         
-        if scene.musicSetting! {
+        if scene.musicSetting {
             MusicHandler.sharedHelper.menuVolume()
         }
         

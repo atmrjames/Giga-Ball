@@ -620,7 +620,7 @@ extension GameScene {
             // Run animation for each brick
         }
         
-        if hapticsSetting! {
+        if hapticsSetting {
             lightHaptic.impactOccurred()
         }
     }

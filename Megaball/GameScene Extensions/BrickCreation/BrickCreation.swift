@@ -80,7 +80,7 @@ extension GameScene {
             // Don't animate if resuming game
             
         }
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         

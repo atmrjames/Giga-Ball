@@ -11,11 +11,11 @@ import UIKit
 class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource  {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
     var IAPLocalPrice: String?
     // User settings
     
@@ -71,7 +71,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         premiumTableViewHideShow()
         
         setBlur()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         showAnimate()
@@ -206,7 +206,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -217,7 +217,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -253,7 +253,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -264,7 +264,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {

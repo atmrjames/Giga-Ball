@@ -11,15 +11,15 @@ import UIKit
 class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var ballSetting: Int?
-    var paddleSetting: Int?
-    var brickSetting: Int?
-    var appIconSetting: Int?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var ballSetting: Int = 0
+    var paddleSetting: Int = 0
+    var brickSetting: Int = 0
+    var appIconSetting: Int = 0
     var IAPLocalPrice: String?
     // User settings
     
@@ -78,7 +78,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         userSettings()
         loadData()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         premiumTableViewHideShow()
@@ -315,7 +315,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // App icon
             if totalStatsArray[0].appIconUnlockedArray[indexPath.row] {
                 appIconSetting = indexPath.row
-                defaults.set(appIconSetting!, forKey: "appIconSetting")
+                defaults.set(appIconSetting, forKey: "appIconSetting")
                 changeIcon(to: LevelPackSetup().appIconNameArray[indexPath.row])
             }
             // Don't allow selection if app icon is locked
@@ -327,14 +327,14 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 ballSetting = indexPath.row
                 paddleSetting = indexPath.row
                 brickSetting = 0
-                defaults.set(ballSetting!, forKey: "ballSetting")
-                defaults.set(paddleSetting!, forKey: "paddleSetting")
-                defaults.set(brickSetting!, forKey: "brickSetting")
+                defaults.set(ballSetting, forKey: "ballSetting")
+                defaults.set(paddleSetting, forKey: "paddleSetting")
+                defaults.set(brickSetting, forKey: "brickSetting")
 
                 
                 if indexPath.row == 11 {
                     brickSetting = 1
-                    defaults.set(brickSetting!, forKey: "brickSetting")
+                    defaults.set(brickSetting, forKey: "brickSetting")
                 }
             }
             // Don't allow selection if theme is locked
@@ -364,7 +364,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -375,7 +375,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -431,7 +431,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -442,7 +442,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {

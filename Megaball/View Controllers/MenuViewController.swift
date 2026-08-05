@@ -22,23 +22,23 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     // Game view properties
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var gameCenterSetting: Bool?
-    var ballSetting: Int?
-    var paddleSetting: Int?
-    var brickSetting: Int?
-    var appIconSetting: Int?
-    var statsCollapseSetting: Bool?
-    var swipeUpPause: Bool?
-    var appOpenCount: Int?
-    var gameInProgress: Bool?
-    var resumeGameToLoad: Bool?
-    var iCloudSetting: Bool?
-    var firstPause: Bool?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var gameCenterSetting: Bool = false
+    var ballSetting: Int = 0
+    var paddleSetting: Int = 0
+    var brickSetting: Int = 0
+    var appIconSetting: Int = 0
+    var statsCollapseSetting: Bool = true
+    var swipeUpPause: Bool = true
+    var appOpenCount: Int = 0
+    var gameInProgress: Bool = false
+    var resumeGameToLoad: Bool = false
+    var iCloudSetting: Bool = false
+    var firstPause: Bool = true
     var IAPLocalPrice: String?
     // User settings
     var savedGame: SavedGame?
@@ -116,7 +116,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         collectionViewLayout()
         authGCPlayer()
         
-        if musicSetting! {
+        if musicSetting {
             MusicHandler.sharedHelper.playMusic(sender: "Menu")
         }
 
@@ -177,7 +177,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             let splashView = self.storyboard?.instantiateViewController(withIdentifier: "splashView") as! SplashViewController
             
             userSettings()
-            if resumeGameToLoad! {
+            if resumeGameToLoad {
                 splashView.gameToResume = true
             } else {
                 splashView.gameToResume = false
@@ -248,7 +248,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -259,7 +259,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -337,14 +337,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
             case 1:
                 cell.iconImage.image = nil
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
@@ -362,14 +362,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonInfo.png")
             case 1:
                 cell.iconImage.image = nil
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
@@ -536,7 +536,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         } else {
             gameCenterSetting = false
         }
-        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
     }
     // Sets up game center
     
@@ -546,7 +546,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         } else {
             gameCenterSetting = false
         }
-        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
     }
     // Sets up game center
     
@@ -557,7 +557,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if blurViewLayer == nil {
             setBlur()
         }
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         modeSelectTableView.reloadData()
@@ -578,7 +578,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
         refreshView()
         MusicHandler.sharedHelper.stopMusic()
-        if musicSetting! {
+        if musicSetting {
             MusicHandler.sharedHelper.playMusic(sender: "Menu")
         }
     }
@@ -587,11 +587,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         updateGCAuth()
         refreshView()
         
-        if resumeGameToLoad! {
+        if resumeGameToLoad {
             loadSavedGame()
         } else {
             let rand = Int.random(in: 1...10)
-            if appOpenCount! > 10 && totalStatsArray[0].playTimeSecs > 60*10 && rand == 1 {
+            if appOpenCount > 10 && totalStatsArray[0].playTimeSecs > 60*10 && rand == 1 {
                 if let windowScene = view.window?.windowScene {
                     if #available(iOS 16.0, *) {
                         AppStore.requestReview(in: windowScene)
@@ -606,8 +606,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if appOpenCount == 0 {
             moveToIntro()
         }
-        appOpenCount!+=1
-        defaults.set(appOpenCount!, forKey: "appOpenCount")
+        appOpenCount+=1
+        defaults.set(appOpenCount, forKey: "appOpenCount")
         CloudKitHandler().saveToiCloud()
         // Present onboarding screen if first time opening app
     }
@@ -622,7 +622,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
         authGCPlayer()
         refreshView()
-        if musicSetting! {
+        if musicSetting {
             MusicHandler.sharedHelper.resumeMusic()
         }
     }
@@ -641,7 +641,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func clearSavedGame() {
         userSettings()
         resumeGameToLoad = false
-        defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
+        defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
         savedGame = nil
         SavedGame.clear()
     }

@@ -16,8 +16,8 @@ struct IntroScene {
 class IntroViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
     
     let defaults = UserDefaults.standard
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
     // User settings
     
     var sender: String?
@@ -41,7 +41,7 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
         // Collection view setup
         
         userSettings()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         if sender == "Main" {
@@ -75,7 +75,7 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -86,7 +86,7 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {

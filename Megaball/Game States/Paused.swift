@@ -20,7 +20,7 @@ class Paused: GKState {
 
     override func didEnter(from previousState: GKState?) {
         
-        if scene.musicSetting! {
+        if scene.musicSetting {
             MusicHandler.sharedHelper.menuVolume()
         }
                 
@@ -54,7 +54,7 @@ class Paused: GKState {
         scene.isPaused = true
         // Pause game, pause all nodes and scene
         
-        if scene.hapticsSetting! {
+        if scene.hapticsSetting {
             scene.interfaceHaptic.impactOccurred()
         }
         scene.saveCurrentGame()

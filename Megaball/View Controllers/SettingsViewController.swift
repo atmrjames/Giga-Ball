@@ -20,20 +20,20 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var navigatedFrom: String?
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var gameCenterSetting: Bool?
-    var ballSetting: Int?
-    var paddleSetting: Int?
-    var brickSetting: Int?
-    var appIconSetting: Int?
-    var statsCollapseSetting: Bool?
-    var swipeUpPause: Bool?
-    var appOpenCount: Int?
-    var firstPause: Bool?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var gameCenterSetting: Bool = false
+    var ballSetting: Int = 0
+    var paddleSetting: Int = 0
+    var brickSetting: Int = 0
+    var appIconSetting: Int = 0
+    var statsCollapseSetting: Bool = true
+    var swipeUpPause: Bool = true
+    var appOpenCount: Int = 0
+    var firstPause: Bool = true
     var IAPLocalPrice: String?
     // User settings
     var savedGame: SavedGame?
@@ -109,7 +109,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         userSettings()
         loadData()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         if navigatedFrom! == "MainMenu" {
@@ -170,7 +170,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconSound.png")!
-                if soundsSetting! {
+                if soundsSetting {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 } else {
@@ -182,7 +182,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconMusic.png")!
-                if musicSetting! {
+                if musicSetting {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 } else {
@@ -198,7 +198,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingDescription.text = "Haptics"
                     cell.centreLabel.text = ""
                     cell.iconImage.image = UIImage(named:"iconHaptics.png")!
-                    if hapticsSetting! {
+                    if hapticsSetting {
                         cell.settingState.text = "on"
                         cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                     } else {
@@ -211,7 +211,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconParallax.png")!
-                if parallaxSetting! {
+                if parallaxSetting {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 } else {
@@ -244,7 +244,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconPause.png")!
-                if swipeUpPause! {
+                if swipeUpPause {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                 } else {
@@ -326,15 +326,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 moveToItemDetails(senderID: 1)
             case 2:
             // Sounds
-                soundsSetting = !soundsSetting!
-                defaults.set(soundsSetting!, forKey: "soundsSetting")
+                soundsSetting = !soundsSetting
+                defaults.set(soundsSetting, forKey: "soundsSetting")
             case 3:
             // Music
-                musicSetting = !musicSetting!
+                musicSetting = !musicSetting
 //                soundsSetting = musicSetting
-                defaults.set(musicSetting!, forKey: "musicSetting")
-//                defaults.set(soundsSetting!, forKey: "soundsSetting")
-                if musicSetting! {
+                defaults.set(musicSetting, forKey: "musicSetting")
+//                defaults.set(soundsSetting, forKey: "soundsSetting")
+                if musicSetting {
                     if musicPausedBool {
                         MusicHandler.sharedHelper.resumeMusic()
                     } else {
@@ -351,30 +351,30 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 4:
             // Haptics
-                hapticsSetting = !hapticsSetting!
-                defaults.set(hapticsSetting!, forKey: "hapticsSetting")
+                hapticsSetting = !hapticsSetting
+                defaults.set(hapticsSetting, forKey: "hapticsSetting")
             case 5:
             // Parallax
-                parallaxSetting = !parallaxSetting!
-                defaults.set(parallaxSetting!, forKey: "parallaxSetting")
-                if parallaxSetting! {
+                parallaxSetting = !parallaxSetting
+                defaults.set(parallaxSetting, forKey: "parallaxSetting")
+                if parallaxSetting {
                     addParallaxToView()
-                } else if parallaxSetting! == false {
+                } else if parallaxSetting == false {
                     if group != nil {
                         backgroundView.removeMotionEffect(group!)
                     }
                 }
             case 6:
             // Paddle sensitivity
-                paddleSensitivitySetting = paddleSensitivitySetting!+1
-                if paddleSensitivitySetting! > 4 {
+                paddleSensitivitySetting = paddleSensitivitySetting+1
+                if paddleSensitivitySetting > 4 {
                     paddleSensitivitySetting = 0
                 }
-                defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
+                defaults.set(paddleSensitivitySetting, forKey: "paddleSensitivitySetting")
             case 7:
             // Swipe up pause
-                swipeUpPause = !swipeUpPause!
-                defaults.set(swipeUpPause!, forKey: "swipeUpPause")
+                swipeUpPause = !swipeUpPause
+                defaults.set(swipeUpPause, forKey: "swipeUpPause")
             case 8:
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
@@ -446,14 +446,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func relockAllItems() {
         ballSetting = 0
-        defaults.set(ballSetting!, forKey: "ballSetting")
+        defaults.set(ballSetting, forKey: "ballSetting")
         paddleSetting = 0
-        defaults.set(paddleSetting!, forKey: "paddleSetting")
+        defaults.set(paddleSetting, forKey: "paddleSetting")
         brickSetting = 0
-        defaults.set(brickSetting!, forKey: "brickSetting")
+        defaults.set(brickSetting, forKey: "brickSetting")
         if appIconSetting != 0 {
             appIconSetting = 0
-            defaults.set(appIconSetting!, forKey: "appIconSetting")
+            defaults.set(appIconSetting, forKey: "appIconSetting")
             changeIcon(to: LevelPackSetup().appIconNameArray[0])
         }
         
@@ -470,7 +470,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             if indexPath.row != 4 {
                 interfaceHaptic.impactOccurred()
             }
@@ -488,7 +488,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             if indexPath.row != 4 {
                 interfaceHaptic.impactOccurred()
             }
@@ -533,7 +533,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -544,7 +544,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -674,41 +674,41 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func resetData() {
         soundsSetting = true
-        defaults.set(soundsSetting!, forKey: "soundsSetting")
+        defaults.set(soundsSetting, forKey: "soundsSetting")
         musicSetting = true
-        defaults.set(musicSetting!, forKey: "musicSetting")
+        defaults.set(musicSetting, forKey: "musicSetting")
         hapticsSetting = true
-        defaults.set(hapticsSetting!, forKey: "hapticsSetting")
+        defaults.set(hapticsSetting, forKey: "hapticsSetting")
         parallaxSetting = true
-        defaults.set(parallaxSetting!, forKey: "parallaxSetting")
+        defaults.set(parallaxSetting, forKey: "parallaxSetting")
         if view.frame.size.width > 450 {
             paddleSensitivitySetting = 3
         } else {
             paddleSensitivitySetting = 2
         }
-        defaults.set(paddleSensitivitySetting!, forKey: "paddleSensitivitySetting")
+        defaults.set(paddleSensitivitySetting, forKey: "paddleSensitivitySetting")
         
         gameCenterSetting = false
-        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
         ballSetting = 0
-        defaults.set(ballSetting!, forKey: "ballSetting")
+        defaults.set(ballSetting, forKey: "ballSetting")
         paddleSetting = 0
-        defaults.set(paddleSetting!, forKey: "paddleSetting")
+        defaults.set(paddleSetting, forKey: "paddleSetting")
         brickSetting = 0
-        defaults.set(brickSetting!, forKey: "brickSetting")
+        defaults.set(brickSetting, forKey: "brickSetting")
         if appIconSetting != 0 {
             appIconSetting = 0
-            defaults.set(appIconSetting!, forKey: "appIconSetting")
+            defaults.set(appIconSetting, forKey: "appIconSetting")
             changeIcon(to: LevelPackSetup().appIconNameArray[0])
         }
         statsCollapseSetting = true
-        defaults.set(statsCollapseSetting!, forKey: "statsCollapseSetting")
+        defaults.set(statsCollapseSetting, forKey: "statsCollapseSetting")
         swipeUpPause = true
-        defaults.set(swipeUpPause!, forKey: "swipeUpPause")
+        defaults.set(swipeUpPause, forKey: "swipeUpPause")
         appOpenCount = 0
-        defaults.set(appOpenCount!, forKey: "appOpenCount")
+        defaults.set(appOpenCount, forKey: "appOpenCount")
         firstPause = true
-        defaults.set(firstPause!, forKey: "firstPause")
+        defaults.set(firstPause, forKey: "firstPause")
         
         savedGame = nil
         SavedGame.clear()
@@ -753,7 +753,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         resetData()
         userSettings()
         loadData()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         settingsTableView.reloadData()
@@ -762,7 +762,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     @objc func returnNotificiationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         settingsTableView.reloadData()
@@ -771,7 +771,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     @objc func reanimateNotificiationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         settingsTableView.reloadData()

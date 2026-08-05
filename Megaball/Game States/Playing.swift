@@ -20,12 +20,12 @@ class Playing: GKState {
     override func didEnter(from previousState: GKState?) {
         
         scene.gameInProgress = true
-        scene.defaults.set(scene.gameInProgress!, forKey: "gameInProgress")
+        scene.defaults.set(scene.gameInProgress, forKey: "gameInProgress")
         
         scene.userSettings()
         // Set user settings
         
-        if scene.musicSetting! {
+        if scene.musicSetting {
             if scene.ballIsOnPaddle == false {
                 MusicHandler.sharedHelper.gameVolume()
             } else {
@@ -139,7 +139,7 @@ class Playing: GKState {
         scene.ball.position.y = scene.ballStartingPositionY
         // Reset ball and paddle
 
-        if scene.resumeGameToLoad! == false {
+        if scene.resumeGameToLoad == false {
             let startingScale = SKAction.scale(to: 0.8, duration: 0)
             let startingScalePaddle = SKAction.scaleX(to: 0.0, duration: 0)
             let startingFade = SKAction.fadeOut(withDuration: 0)
@@ -173,7 +173,7 @@ class Playing: GKState {
             }
             // Animate paddle and ball in
         // Don't animate if resuming from save
-        } else if scene.resumeGameToLoad! {
+        } else if scene.resumeGameToLoad {
             scene.ball.isHidden = false
             scene.paddle.isHidden = false
             if scene.paddleTexture == scene.retroPaddle {
@@ -479,7 +479,7 @@ class Playing: GKState {
     
     override func willExit(to nextState: GKState) {
         scene.gameInProgress = false
-        scene.defaults.set(scene.gameInProgress!, forKey: "gameInProgress")
+        scene.defaults.set(scene.gameInProgress, forKey: "gameInProgress")
     }
     
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {

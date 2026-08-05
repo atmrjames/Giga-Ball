@@ -13,14 +13,14 @@ import GameKit
 class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var gameCenterSetting: Bool?
-    var ballSetting: Int?
-    var paddleSetting: Int?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var gameCenterSetting: Bool = false
+    var ballSetting: Int = 0
+    var paddleSetting: Int = 0
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -69,9 +69,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         } else {
             gameCenterSetting = false
         }
-        defaults.set(gameCenterSetting!, forKey: "gameCenterSetting")
+        defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
         
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         setBlur()
@@ -109,7 +109,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             cell.settingDescription.text = "Statistics"
             cell.iconImage.image = UIImage(named:"iconStats.png")!
         case 3:
-            if gameCenterSetting! {
+            if gameCenterSetting {
                 cell.settingDescription.text = "Game Center"
                 cell.iconImage.image = UIImage(named:"iconGameCenter.png")!
             } else {
@@ -226,7 +226,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -237,7 +237,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {
@@ -309,7 +309,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
@@ -331,7 +331,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
@@ -347,7 +347,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func showGameCenterLeaderboards() {
-        if gameCenterSetting! {
+        if gameCenterSetting {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
@@ -502,7 +502,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func showGameCenterAchievements() {
-        if gameCenterSetting! {
+        if gameCenterSetting {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
@@ -516,7 +516,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true, completion: nil)
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
     }

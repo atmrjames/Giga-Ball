@@ -12,12 +12,12 @@ import GameKit
 class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var gameCenterSetting: Bool?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var gameCenterSetting: Bool = false
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -78,7 +78,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         }
         // Only set blur when entering from endless mode otherwise, remove it
         
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallax()
         }
         updateLabels()
@@ -118,7 +118,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
             if packNumber == 1 {
-                if gameCenterSetting! {
+                if gameCenterSetting {
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                 } else {
                     cell.iconImage.image = UIImage(named:"ButtonNull")
@@ -147,7 +147,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             NotificationCenter.default.post(name: .returnLevelSelectFromStatsNotification, object: nil)
         }
         if indexPath.row == 1 {
-            if gameCenterSetting! && packNumber == 1 {
+            if gameCenterSetting && packNumber == 1 {
                 showGameCenterLeaderboards()
             }
             // Only show leaderboard button for endless mode
@@ -173,13 +173,13 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
             case 1:
-                if self.gameCenterSetting! && self.packNumber == 1 {
-                    if self.hapticsSetting! {
+                if self.gameCenterSetting && self.packNumber == 1 {
+                    if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
@@ -187,7 +187,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
@@ -205,13 +205,13 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonClose")
             case 1:
-                if self.gameCenterSetting! && self.packNumber == 1 {
-                    if self.hapticsSetting! {
+                if self.gameCenterSetting && self.packNumber == 1 {
+                    if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
@@ -219,7 +219,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 }
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonPlay")
@@ -378,7 +378,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func showGameCenterLeaderboards() {
-        if gameCenterSetting! {
+        if gameCenterSetting {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
@@ -394,7 +394,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true, completion: nil)
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
     }

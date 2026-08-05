@@ -11,12 +11,12 @@ import UIKit
 class WarningViewController: UIViewController {
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
-    var firstPause: Bool?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
+    var firstPause: Bool = true
     // User settings
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -35,14 +35,14 @@ class WarningViewController: UIViewController {
     @IBOutlet var leftButton: UIButton!
     
     @IBAction func cancelButton(_ sender: Any) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         removeAnimate()
         NotificationCenter.default.post(name: .returnNotificiation, object: nil)
     }
     @IBAction func okButton(_ sender: Any) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         if senderID == "killBall" {
@@ -61,9 +61,9 @@ class WarningViewController: UIViewController {
     @IBAction func centerButton(_ sender: Any) {
         if senderID == "firstPause" {
             firstPause = false
-            defaults.set(firstPause!, forKey: "firstPause")
+            defaults.set(firstPause, forKey: "firstPause")
             CloudKitHandler().saveToiCloud()
-            if hapticsSetting! {
+            if hapticsSetting {
                 interfaceHaptic.impactOccurred()
             }
             removeAnimate()
@@ -76,7 +76,7 @@ class WarningViewController: UIViewController {
         
         userSettings()
         setBlur()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         updateLabels()

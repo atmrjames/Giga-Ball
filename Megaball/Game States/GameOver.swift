@@ -19,7 +19,7 @@ class GameOver: GKState {
     
     override func didEnter(from previousState: GKState?) {
         
-        if scene.musicSetting! {
+        if scene.musicSetting {
             MusicHandler.sharedHelper.menuVolume()
         }
         

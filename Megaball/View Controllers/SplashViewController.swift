@@ -40,7 +40,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     // Tap to dismiss splash screen
     
     let defaults = UserDefaults.standard
-    var hapticsSetting: Bool?
+    var hapticsSetting: Bool = true
     var savedGame: SavedGame?
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     // User settings
@@ -206,7 +206,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         
@@ -222,7 +222,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting! {
+        if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         UIView.animate(withDuration: 0.1) {

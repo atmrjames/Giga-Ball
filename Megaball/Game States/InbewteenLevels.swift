@@ -34,7 +34,7 @@ class InbetweenLevels: GKState {
 //    // This function runs when this state is entered.
     
     func inbetweenLevels() {
-        if scene.musicSetting! {
+        if scene.musicSetting {
             MusicHandler.sharedHelper.menuVolume()
         }
         
@@ -42,7 +42,7 @@ class InbetweenLevels: GKState {
         saveGameData()
         achievementsCheck()
         scene.saveGameStats()
-        if scene.gameCenterSetting! {
+        if scene.gameCenterSetting {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center
@@ -122,7 +122,7 @@ class InbetweenLevels: GKState {
         scene.powerUpsReset()
         // Reset any power ups
         
-        if scene.soundsSetting! {
+        if scene.soundsSetting {
             if scene.gameoverStatus || scene.endlessMode {
                 self.scene.run(scene.gameOverSound)
             } else {
@@ -249,7 +249,7 @@ class InbetweenLevels: GKState {
         
         scene.saveGameStats()
         // Save total stats
-        if scene.gameCenterSetting! {
+        if scene.gameCenterSetting {
             GameCenterHandler().gameCenterSave()
         }
         // Save scores to game center

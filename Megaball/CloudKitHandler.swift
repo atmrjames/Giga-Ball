@@ -20,11 +20,11 @@ final class CloudKitHandler: NSObject {
     
     let defaults = UserDefaults.standard
     // User settings
-    var appOpenCount: Int?
-    var resumeGameToLoad: Bool?
-    var firstPause: Bool?
+    var appOpenCount: Int = 0
+    var resumeGameToLoad: Bool = false
+    var firstPause: Bool = true
     
-    var iCloudSetting: Bool?
+    var iCloudSetting: Bool = false
 
     // Total Stats
     var dateSaved: Date?
@@ -97,10 +97,10 @@ final class CloudKitHandler: NSObject {
         CKContainer(identifier: CloudKitHandler.containerIdentifier).accountStatus { (accountStatus, error) in
             if case .available = accountStatus {
                 self.iCloudSetting = true
-                self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")
+                self.defaults.set(self.iCloudSetting, forKey: "iCloudSetting")
             } else {
                 self.iCloudSetting = false
-                self.defaults.set(self.iCloudSetting!, forKey: "iCloudSetting")
+                self.defaults.set(self.iCloudSetting, forKey: "iCloudSetting")
             }
         }
     }
@@ -109,7 +109,7 @@ final class CloudKitHandler: NSObject {
         loadLocalData()
         isiCloudContainerAvailable()
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
-        if iCloudSetting! {
+        if iCloudSetting {
             updateToiCloud()
         }
     }
@@ -119,13 +119,13 @@ final class CloudKitHandler: NSObject {
         
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         let appOpenCountCloud = Int(iCloudStore.longLong(forKey: "appOpenCount"))
-        if appOpenCount! > appOpenCountCloud {
+        if appOpenCount > appOpenCountCloud {
             iCloudStore.set(appOpenCount, forKey: "appOpenCount")
         }
         
         firstPause = defaults.bool(forKey: "firstPause")
         let firstPauseCloud = iCloudStore.bool(forKey: "firstPause")
-        if firstPause! == false || firstPause! != firstPauseCloud {
+        if firstPause == false || firstPause != firstPauseCloud {
             iCloudStore.set(false, forKey: "firstPause")
         } else {
             iCloudStore.set(true, forKey: "firstPause")
@@ -539,7 +539,7 @@ final class CloudKitHandler: NSObject {
         loadLocalData()
         isiCloudContainerAvailable()
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
-        if iCloudSetting! {
+        if iCloudSetting {
             updateFromiCloud()
         }
     }
@@ -549,20 +549,18 @@ final class CloudKitHandler: NSObject {
         
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         let appOpenCountCloud = Int(iCloudStore.longLong(forKey: "appOpenCount"))
-        if appOpenCountCloud > appOpenCount! {
+        if appOpenCountCloud > appOpenCount {
             self.defaults.set(appOpenCountCloud, forKey: "appOpenCount")
         }
         
         firstPause = defaults.bool(forKey: "firstPause")
         let firstPauseCloud = iCloudStore.bool(forKey: "firstPause")
-        if firstPause! == false || firstPause! != firstPauseCloud {
+        if firstPause == false || firstPause != firstPauseCloud {
             firstPause = false
         } else {
             firstPause = true
         }
-        if self.firstPause != nil {
-            self.defaults.set(self.firstPause!, forKey: "firstPause")
-        }
+        self.defaults.set(self.firstPause, forKey: "firstPause")
     
         cumulativeScore = totalStatsArray[0].cumulativeScore
         let cumulativeScoreCloud = Int(iCloudStore.longLong(forKey: "cumulativeScore"))
@@ -916,7 +914,7 @@ final class CloudKitHandler: NSObject {
         loadLocalData()
         isiCloudContainerAvailable()
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
-        if !iCloudSetting! {
+        if !iCloudSetting {
             return
         }
         let iCloudStore = NSUbiquitousKeyValueStore.default
@@ -1014,7 +1012,7 @@ final class CloudKitHandler: NSObject {
         loadLocalData()
         isiCloudContainerAvailable()
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
-        if !iCloudSetting! {
+        if !iCloudSetting {
             return
         }
         let iCloudStore = NSUbiquitousKeyValueStore.default
@@ -1061,12 +1059,8 @@ final class CloudKitHandler: NSObject {
         pack10LevelHighScores = iCloudStore.array(forKey: "pack10LevelHighScores") as? [Int]
         pack11LevelHighScores = iCloudStore.array(forKey: "pack11LevelHighScores") as? [Int]
         
-        if self.appOpenCount != nil {
-            self.defaults.set(self.appOpenCount!, forKey: "appOpenCount")
-        }
-        if self.firstPause != nil {
-            self.defaults.set(self.firstPause!, forKey: "firstPause")
-        }
+        self.defaults.set(self.appOpenCount, forKey: "appOpenCount")
+        self.defaults.set(self.firstPause, forKey: "firstPause")
         
         if self.dateSaved != nil {
             totalStatsArray[0].dateSaved = dateSaved!

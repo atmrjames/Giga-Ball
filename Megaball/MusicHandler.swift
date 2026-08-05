@@ -13,8 +13,8 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     static let sharedHelper = MusicHandler()
     
     let defaults = UserDefaults.standard
-    var musicSetting: Bool?
-    var gameInProgress: Bool?
+    var musicSetting: Bool = true
+    var gameInProgress: Bool = false
     // User settings
     
     var player: AVAudioPlayer?
@@ -51,7 +51,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
 
     func playMusic(sender: String? = "") {
         userSettings()
-        if musicSetting! == false {
+        if musicSetting == false {
             return
         }
         // Check if music setting is on
@@ -112,14 +112,14 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
 
     func menuVolume() {
         userSettings()
-        if musicSetting! {
+        if musicSetting {
             player?.volume = menuVolumeSet
         }
     }
 
     func gameVolume() {
         userSettings()
-        if musicSetting! {
+        if musicSetting {
             player?.volume = gameVolumeSet
         }
     }

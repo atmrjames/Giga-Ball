@@ -23,11 +23,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
-    var soundsSetting: Bool?
-    var musicSetting: Bool?
-    var hapticsSetting: Bool?
-    var parallaxSetting: Bool?
-    var paddleSensitivitySetting: Int?
+    var soundsSetting: Bool = true
+    var musicSetting: Bool = true
+    var hapticsSetting: Bool = true
+    var parallaxSetting: Bool = true
+    var paddleSensitivitySetting: Int = 2
     // User settings
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
@@ -91,7 +91,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         
         userSettings()
         setBlur()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         }
         setUpLivesLabel()
@@ -225,13 +225,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonHomeHighlighted.png")
             case 1:
                 if self.sender == "Pause" {
-                    if self.hapticsSetting! {
+                    if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
@@ -239,7 +239,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 }
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 if self.sender == "Pause" {
@@ -263,13 +263,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
             switch indexPath.row {
             case 0:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 cell.iconImage.image = UIImage(named:"ButtonHome.png")
             case 1:
                 if self.sender == "Pause" {
-                    if self.hapticsSetting! {
+                    if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonPlay.png")
@@ -277,7 +277,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 }
             case 2:
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
                     self.interfaceHaptic.impactOccurred()
                 }
                 if self.sender == "Pause" {
@@ -530,7 +530,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         userSettings()
         updateLabels()
         collectionViewLayout()
-        if parallaxSetting! {
+        if parallaxSetting {
             addParallaxToView()
         } else if group != nil {
             containterView.removeMotionEffect(group!)

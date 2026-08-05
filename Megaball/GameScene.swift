@@ -260,20 +260,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var firstLevel: Bool = false
     // Setup score properties
 	
-	var soundsSetting: Bool?
-	var musicSetting: Bool?
-	var hapticsSetting: Bool?
-	var parallaxSetting: Bool?
-	var paddleSensitivitySetting: Int?
-	var gameCenterSetting: Bool?
-	var ballSetting: Int?
-	var paddleSetting: Int?
-	var brickSetting: Int?
-    var appIconSetting: Int?
-	var swipeUpPause: Bool?
-	var gameInProgress: Bool?
-	var resumeGameToLoad: Bool?
-	var firstPause: Bool?
+	var soundsSetting: Bool = true
+	var musicSetting: Bool = true
+	var hapticsSetting: Bool = true
+	var parallaxSetting: Bool = true
+	var paddleSensitivitySetting: Int = 2
+	var gameCenterSetting: Bool = false
+	var ballSetting: Int = 0
+	var paddleSetting: Int = 0
+	var brickSetting: Int = 0
+    var appIconSetting: Int = 0
+	var swipeUpPause: Bool = true
+	var gameInProgress: Bool = false
+	var resumeGameToLoad: Bool = false
+	var firstPause: Bool = true
 	// User settings
 	var savedGame: SavedGame?
     // Game save settings
@@ -680,9 +680,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let ballUndestructiTextureArray = [undestructiballTexture, threeDBallUndestructi, iceBallUndestructi, outlineBallUndestructi, squareBallUndestructi, glassBallUndestructi, pixelBallUndestructi, splitBallUndestructi, candyBallUndestructi, undestructiballTexture, rainbowBallUndestructi, retroBallUndestructi]
 		// ball texture arrays
 		
-		ballTexture = ballTextureArray[ballSetting!]
-		gigaBallTexture = ballGigaTextureArray[ballSetting!]
-		undestructiballTexture = ballUndestructiTextureArray[ballSetting!]
+		ballTexture = ballTextureArray[ballSetting]
+		gigaBallTexture = ballGigaTextureArray[ballSetting]
+		undestructiballTexture = ballUndestructiTextureArray[ballSetting]
 		// ball texture set
 		
 		let paddleTextureArray = [paddleTexture, threeDPaddle, icePaddle, outlinePaddle, squarePaddle, glassPaddle, pixelPaddle, splitPaddle, candyPaddle, gigaPaddle, rainbowPaddle, retroPaddle]
@@ -690,9 +690,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let stickyPaddleTextureArray = [stickyPaddleTexture, threeDStickyPaddleTexture, glassStickyPaddleTexture, outlineStickyPaddleTexture, squareStickyPaddleTexture, glassStickyPaddleTexture, pixelStickyPaddleTexture, splitStickyPaddleTexture, candyStickyPaddleTexture, gigaStickyPaddleTexture, rainbowStickyPaddleTexture, retroStickyPaddleTexture]
 		// paddle texture arrays
 		
-		paddleTexture = paddleTextureArray[paddleSetting!]
-		laserPaddleTexture = laserPaddleTextureArray[paddleSetting!]
-		stickyPaddleTexture = stickyPaddleTextureArray[paddleSetting!]
+		paddleTexture = paddleTextureArray[paddleSetting]
+		laserPaddleTexture = laserPaddleTextureArray[paddleSetting]
+		stickyPaddleTexture = stickyPaddleTextureArray[paddleSetting]
 		// paddle texture set
 				
 		let laserTextureArray = [laserNormalTexture, laser3D, laserIce, laserOutline, laserSquare, laserGlass, laserPixel, laserSplit, laserRed, laserGigaNormal, laserRed, laserRetroPink]
@@ -702,11 +702,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		stripyLaserArray = [laserRed, laserNormalTexture]
 		retroLaserArray = [laserRetroPink, laserRetroBlue]
 		
-		laserNormalTexture = laserTextureArray[paddleSetting!]
-		laserGigaTexture = laserGigaTextureArray[paddleSetting!]
+		laserNormalTexture = laserTextureArray[paddleSetting]
+		laserGigaTexture = laserGigaTextureArray[paddleSetting]
 		// laser texture set
 		
-		if brickSetting! == 1 {
+		if brickSetting == 1 {
 			brickNormalTexture = retroBrickNormalTexture
 			brickInvisibleTexture = retroBrickInvisibleTexture
 			brickMultiHit1Texture = retroBrickMultiHit1Texture
@@ -1457,17 +1457,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
         // Launches ball
 		
-		if soundsSetting! {
+		if soundsSetting {
 			self.run(ballReleaseSound)
 		}
 		
 		startLevelTimer()
 		// restart timer
 
-		if hapticsSetting! {
+		if hapticsSetting {
 			lightHaptic.impactOccurred()
 		}
-		if musicSetting! {
+		if musicSetting {
 			MusicHandler.sharedHelper.gameVolume()
 		}
     }
@@ -1517,7 +1517,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballLost() {
-		if hapticsSetting! {
+		if hapticsSetting {
 			softHaptic.impactOccurred()
 		}
 		totalStatsArray[0].ballsLost+=1
@@ -1642,7 +1642,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballLostAnimation() {
-		if soundsSetting! {
+		if soundsSetting {
 			if numberOfLives > 0 {
 				self.run(ballLostSound)
 			} else {
@@ -1650,7 +1650,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		// Ball lost sound
-		if musicSetting! {
+		if musicSetting {
 			MusicHandler.sharedHelper.menuVolume()
 		}
 		ballLostBool = true
@@ -1702,7 +1702,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// Size icon timer based on number of catches remaining
 				
 				if backstopCatches == 0 {
-					if hapticsSetting! {
+					if hapticsSetting {
 						heavyHaptic.impactOccurred()
 					}
 					self.run(SKAction.wait(forDuration: 0.025), completion: {
@@ -1922,7 +1922,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil) {
 		
-        if hapticsSetting! {
+        if hapticsSetting {
 			lightHaptic.impactOccurred()
 		}
 
@@ -2004,7 +2004,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				removeBrick(node: node, sprite: sprite)
 			}
         }
-		if self.soundsSetting! {
+		if self.soundsSetting {
 			self.run(brickHitNormalSound)
 		}
 		// Brick hit sound
@@ -2086,7 +2086,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Update score
         
         if bricksLeft == 0 && endlessMode == false {
-			if soundsSetting! {
+			if soundsSetting {
 				self.run(levelCompleteSound)
 			}
 			clearSavedGame()
@@ -2190,7 +2190,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Move bricks down
 		
-		if soundsSetting! {
+		if soundsSetting {
 			self.run(endlessRowDownSound)
 		}
 		
@@ -2274,7 +2274,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func ballBackstopHit() {
-		if soundsSetting! {
+		if soundsSetting {
 			self.run(ballPaddleHitSound)
 		}
 		// Play paddle hit sound
@@ -2303,7 +2303,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return
 		}
 		
-        if hapticsSetting! {
+        if hapticsSetting {
 			lightHaptic.impactOccurred()
 		}
 				
@@ -2336,7 +2336,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Paddle bounce angle rules are slightly different for square paddle due to lack of round edges
 				
-		if soundsSetting! {
+		if soundsSetting {
 			if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && stickyPaddleCatches != 0 {
 				self.run(stickyPaddleHitSound)
 			} else {
@@ -2362,7 +2362,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ball.position.y = ballStartingPositionY
 			invisibleBrickFlash()
 			
-			if musicSetting! {
+			if musicSetting {
 				MusicHandler.sharedHelper.menuVolume()
 			}
 			return
@@ -2764,11 +2764,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Don't apply the power up if the ball has been lost
 		
-		if hapticsSetting! {
+		if hapticsSetting {
 			rigidHaptic.impactOccurred()
 		}
 		
-		if soundsSetting! {
+		if soundsSetting {
 			self.run(powerUpSound)
 		}
 		// Power-up applied sound
@@ -3018,7 +3018,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
 				self.paddleCenterRectPlus()
-				if self.hapticsSetting! {
+				if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
 				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
@@ -3122,7 +3122,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
 				self.paddleCenterRectPlus()
-                if self.hapticsSetting! {
+                if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
 				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
@@ -3261,7 +3261,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
 			levelTimerBonus = Scoring.timerBonus(from: levelTimerBonus, elapsed: levelTimerValue, multiplier: multiplier)
-			if soundsSetting! {
+			if soundsSetting {
 				self.run(levelCompleteSound)
 			}
             gameState.enter(InbetweenLevels.self)
@@ -3392,7 +3392,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.removeAction(forKey: "gameTimer")
 				// Stop the level timer
 				levelTimerBonus = Scoring.timerBonus(from: levelTimerBonus, elapsed: levelTimerValue, multiplier: multiplier)
-				if soundsSetting! {
+				if soundsSetting {
 					self.run(levelCompleteSound)
 				}
 				gameState.enter(InbetweenLevels.self)
@@ -3622,7 +3622,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
-				if self.hapticsSetting! {
+				if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
 				self.ball.run(SKAction.scale(to: 1, duration: 0.2), completion: {
@@ -3689,7 +3689,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
-				if self.hapticsSetting! {
+				if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
 				self.ball.run(SKAction.scale(to: 1, duration: 0.2), completion: {
@@ -4253,7 +4253,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore, livesRemaining: numberOfLives)
 		// Pass over highscore data to pause menu
 		
-		if firstPause! && sender == "Pause" {
+		if firstPause && sender == "Pause" {
 			gameViewControllerDelegate?.showWarning(senderID: "firstPause")
 		}
 		// Pop-up to explain swipe up to pause
@@ -4656,7 +4656,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			addChild(laser)
 			totalStatsArray[0].lasersFired+=1
 			
-			if soundsSetting! {
+			if soundsSetting {
 				self.run(laserFiredSound)
 			}
 			// Laser fired sound
@@ -4701,7 +4701,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-		if endlessMoveInProgress == false && gameState.currentState is Playing && swipeUpPause! {
+		if endlessMoveInProgress == false && gameState.currentState is Playing && swipeUpPause {
 			clearSavedGame()
 			gameState.enter(Paused.self)
 		}
@@ -5154,13 +5154,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		savedGame?.save()
 		
 		resumeGameToLoad = true
-		defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
+		defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
 	}
 	
 	func clearSavedGame() {
 		userSettings()
 		resumeGameToLoad = false
-		defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
+		defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
 		savedGame = nil
 		SavedGame.clear()
 	}
@@ -5170,7 +5170,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Bound once, shadowing the property, rather than force-unwrapped at each of the
 		// twenty-odd uses below. Nothing here is reachable without a save, but that was
 		// implied by the guards rather than stated, and this path runs at launch
-		if resumeGameToLoad! {
+		if resumeGameToLoad {
 			if (savedGame.ballProperties.isEmpty == false) {
 				ballIsOnPaddle = false
 				ballLostBool = false
@@ -5308,7 +5308,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
 							self.paddleCenterRectPlus()
-							if self.hapticsSetting! {
+							if self.hapticsSetting {
 								self.rigidHaptic.impactOccurred()
 							}
 							self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
@@ -5485,7 +5485,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
-							if self.hapticsSetting! {
+							if self.hapticsSetting {
 								self.rigidHaptic.impactOccurred()
 							}
 							self.ball.run(SKAction.scale(to: 1, duration: 0.2), completion: {
@@ -5534,7 +5534,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Load active power-ups if any saved
 			resumeGameToLoad = false
-			defaults.set(resumeGameToLoad!, forKey: "resumeGameToLoad")
+			defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
 			self.gameState.enter(Paused.self)
 		}
 	}
@@ -5578,7 +5578,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.goCountdown.run(animationIn2, completion: {
 							self.gameState.enter(Playing.self)
 							// Restart playing
-							if self.hapticsSetting! {
+							if self.hapticsSetting {
 								self.lightHaptic.impactOccurred()
 							}
 							self.goCountdown.run(animationOut, completion: {
