@@ -1,6 +1,6 @@
 # Endless Mode II — design specification
 
-**Status: draft for review.** Nothing here is built. This is a design document, unlike
+**Status: draft, revision 2.** Nothing here is built. This is a design document, unlike
 [SPECIFICATION.md](SPECIFICATION.md), which describes the app as it stands.
 
 **What this is:** the design for a new game mode, added alongside the existing Classic and
@@ -16,270 +16,270 @@ players never reach. Endless II keeps the shape and makes variety the point.
 
 ## 1. Constraints
 
-These are fixed and everything below respects them.
-
 - **The existing Endless Mode does not change.** Same rules, same generation, same
-  leaderboards, same achievements. It keeps its place on the main menu. General
-  improvements already made in 1.3 (safe-area layout, lives row, save format) apply to it
-  as they do everywhere.
-- **New leaderboards and achievements.** Endless II scores are not comparable to Endless
-  scores, so they do not share a board. Existing player progress is untouched.
-- **The play zone keeps its fixed 1.8236 aspect ratio**, as everywhere else in the app.
-- **Additive only.** Every brick type and power-up the existing modes use behaves
-  identically in Endless II. Nothing existing is rebalanced to suit the new mode.
-- **No monetisation, no ads, no data collection.** Unchanged.
+  leaderboards, same achievements, same place on the main menu.
+- **New leaderboards and achievements.** Endless II scores are not comparable, so they do
+  not share a board.
+- **The play zone keeps its fixed 1.8236 aspect ratio**, as everywhere else.
+- **Additive only.** Every existing brick type and power-up behaves identically in Endless
+  II. Nothing existing is rebalanced to suit the new mode.
+- **Improvements flow forward.** Future work on shared mechanics — physics, scoring,
+  paddle, save format — applies to all three modes. Only *new* Endless II features are
+  exclusive to it.
+- **No monetisation, no ads, no data collection.**
 
 ---
 
 ## 2. Design pillars
 
 **Variety over escalation.** The existing mode's only axis is *harder*. This one's main
-axis is *different*. A run should show a player things they have not seen, early, and in
-a different order next time.
+axis is *different*.
 
-**Reachable novelty.** New elements must not be gated so deep that most players never see
-them. Depth still governs difficulty; it does not govern *exposure* (§6.2).
+**Reachable novelty.** Rare elements stay rare, but rarity must not mean *deep*. A player
+who never gets far still meets them (§6.2).
 
-**The drop rate does not go up.** Power-ups fall no more often than they do today. The
-variety comes from *which* ones fall, not how many.
+**The drop rate does not go up.** Power-ups fall no more often than today. The variety is
+in *which* ones fall.
 
-**Legibility.** A player must be able to tell what just happened. This is the binding
-constraint on the rules-changing power-ups (§5.3) — if the paddle stops working and the
-player cannot see why, that is a bug report, not a mechanic.
+**Interactions are the fun.** Power-ups should combine wherever combining is coherent.
+Mutual exclusion is the exception, not the model (§5.1).
 
-**Fun is a play-test question.** Nothing in this document settles whether the mode is
-enjoyable. It settles what gets built so it can be played and judged.
+**Legibility.** A player must be able to tell what just happened.
+
+**Extensibility is a feature, not a nicety.** Brick types, power-ups, phases and
+backgrounds will keep being added. Each must be a data entry plus its own behaviour, never
+an edit to a shared switch. This is the single most important constraint on how §8 is
+built — see §8.4.
+
+**Fun is a play-test question.** This document settles what gets built so it can be judged.
 
 ---
 
 ## 3. What carries over
 
 All existing brick types (Normal, Multi-hit, Indestructible ×2, Invisible) and all 28
-existing power-ups are available in Endless II, with unchanged behaviour. The paddle,
-ball, physics, multiplier, scoring and lives rules are those in
+existing power-ups, unchanged. Paddle, ball, physics, multiplier and scoring rules as in
 [SPECIFICATION.md §4](SPECIFICATION.md).
 
-**Lives.** One, as in Endless. Open question in §10.
-
-**Score.** Height in metres, as in Endless. Open question in §10.
+**Lives.** One, as in Endless. **Score.** Height in metres, as in Endless.
 
 ---
 
 ## 4. New brick types
 
-Nine. Each entry gives the rule, then what has to be true for it to work.
-
 ### 4.1 Spinning
-Rotates continuously, one direction or the other, at a fixed rate. Purely visual — the
+Rotates continuously, one direction or the other, at a fixed rate. Visual only — the
 physics body does not rotate, so bounces are unchanged.
 
-*Needs:* nothing structural. Cheapest of the nine and a good first one to build.
+**Clearance:** a spinning brick's corners sweep outside its cell, so the generator reserves
+the cells it would overlap. Simplest rule: no brick directly adjacent on the four sides.
 
 ### 4.2 Flashing
-Fades in and out on a cycle, glowing at full opacity. **Only solid while visible** — the
-ball passes through it while faded. The cycle is slow enough to read and to time a shot
-against; it is a timing element, not a coin flip.
+Alternates between solid-and-visible and passable-and-invisible. **The transition is fast**
+— a quick fade, not a slow one — so its state is never ambiguous, and it **holds each state
+for a few seconds**. Styled like the Giga-Ball glow, yellow-green.
 
-*Needs:* physics body enabled and disabled in step with the fade. Must not be able to
-strand the ball inside a brick that becomes solid around it — if the ball overlaps at the
-moment it would turn solid, the brick stays passable until the ball has left.
+Solid only while visible. If the ball overlaps the cell at the moment it would turn solid,
+the brick stays passable until the ball has left, so it can never trap the ball.
 
 ### 4.3 Big
-Occupies 2×2 grid cells. One hit destroys it, as a Normal brick.
+Occupies 2×2 cells. **A size, not a type** — a Big brick can be Normal, Multi-hit,
+Indestructible, Spinning, Exploding and so on.
 
 ### 4.4 Tiny
-Occupies a quarter cell. Four fit where one Normal brick would.
+Occupies a quarter cell; four fit where one Normal brick would. Also a size, so it combines
+with types the same way.
 
-*4.3 and 4.4 need:* a grid that can express occupancy other than one-brick-one-cell. This
-is the main reason for the playfield abstraction (§8).
+*4.3 and 4.4 are the main driver for the playfield abstraction (§8.1). If sub-cell sizing
+proves expensive, Tiny is the one to drop — Big alone still gives the size axis.*
 
 ### 4.5 Rounded
-A brick with a circular or heavily rounded physics body, so glancing hits deflect at
-angles a rectangle never produces.
-
-*Needs:* a per-type physics body rather than the shared rectangle. Watch for the ball
-resting on top of a circle and losing horizontal speed.
+A circular or heavily rounded physics body, so glancing hits deflect at angles a rectangle
+never produces. Watch for the ball resting on top and losing horizontal speed.
 
 ### 4.6 Gravity
-When the field descends, a gravity brick falls into any empty cell below it, and keeps
-falling until it rests on a brick or reaches the lowest row. If the brick supporting it is
-destroyed, it resumes falling.
-
-*Needs:* the grid to answer "what is below this cell", and a settle pass after every
-destruction. Falls should be animated, not teleports. Two gravity bricks falling into the
-same column must resolve in order, not overlap.
+Falls into any empty cell below it and keeps falling until it rests on a brick or reaches
+the lowest row. If its support is destroyed, it resumes falling. Falls are animated. Two
+falling into the same column resolve in order.
 
 ### 4.7 Directional
-Destroyed only when struck from one particular side — top, bottom, left or right. Hits
-from any other side bounce with no damage. The permitted side is marked on the brick.
-
-*Needs:* the contact normal at the moment of impact, which the physics contact already
-carries. The marking must be readable at brick size — an arrow or a heavier edge, not a
-colour.
+Destroyed only when struck from one side; other sides bounce without damage. **Drawn as the
+Indestructible brick with one edge in the standard brick's material**, so the hittable side
+is read from the artwork rather than from a colour.
 
 ### 4.8 Moving
-Occupies one cell but wanders within a 2×2 region, moving continuously. The region is
-reserved: no other brick may occupy the other three cells.
-
-*Needs:* the generator to reserve regions, and the grid to model a brick whose position is
-not its cell.
+Occupies one cell but wanders within a reserved 2×2 region. No other brick may occupy the
+other three cells.
 
 ### 4.9 Exploding
-When destroyed, destroys all eight adjacent bricks regardless of type — including
+When destroyed, destroys all eight adjacent bricks regardless of type, including
 Indestructible.
 
-*Needs:* an explicit rule for chains. **Proposed: explosions do chain**, so an exploding
-brick caught in another's blast also detonates, but each brick detonates at most once per
-event, and the chain resolves in one pass rather than recursively over several frames.
-This is deliberately powerful — it is the answer to a field that has become too dense.
+**Explosions chain**, each brick detonating at most once per event, resolved in a single
+pass. Exploding bricks are rare enough that a long chain is unlikely — and a rare long
+chain is a good moment, not a problem.
 
 ---
 
 ## 5. New power-ups
 
-Eighteen, on top of the existing 28. That total is the reason for §5.1 and §5.2 — at
-forty-six power-ups, "what happens when I collect this while that is active" cannot be
-answered pair by pair.
+### 5.1 Conflicts, not channels
 
-### 5.1 Channels
+The first draft proposed broad channels with one active power-up each. **That was wrong.**
+It would have stopped Magnetism combining with Inert Paddle, or Aura with Wrap-Around —
+and those combinations are the fun.
 
-Every power-up declares one **channel**. **Only one power-up may be active per channel at
-a time; collecting a second displaces the first**, which ends immediately.
+The model instead: **power-ups combine by default.** Exclusion is declared only where two
+power-ups set *the same single value* and cannot both be honoured.
 
-| Channel | Governs | Examples |
+| Conflict group | Why it cannot combine | Members |
 |---|---|---|
-| `ballMotion` | How the ball travels | Slow/Fast Ball, Gravity Field, Wrap-Around, Randomised Bounce, Portal Paddle |
-| `ballBody` | What the ball is | Giga-Ball, Expand/Shrink Ball, Aura, Wrecking Ball |
-| `paddleBehaviour` | How the paddle acts on the ball | Sticky, Aimed Sticky, Magnetism, Inert Paddle, Flipped Angle |
-| `paddleForm` | The paddle's shape and reach | Expand/Shrink Paddle, Halo |
-| `armament` | What the paddle fires | Lasers, Laser Beam |
-| `field` | The brick field itself | Descent, Hide/Show Bricks, Quicksand |
-| `vision` | Information shown to the player | Trajectory Line, Landing Marker |
-| `instant` | Resolve immediately, hold no state | Points, Multiplier, Extra Ball, Complete Level, Zap, Multi-Ball |
-| `meta` | Act on other power-ups | Lock, Key, Wipe, Mystery |
+| `ballSpeed` | One speed limit | Slow Ball, Fast Ball |
+| `ballSize` | One ball radius | Expand Ball, Shrink Ball |
+| `paddleSize` | One paddle scale | Expand Paddle, Shrink Paddle |
+| `ballHitBehaviour` | One rule for what the ball does on contact with a brick | Giga-Ball, Wrecking Ball, Inert Ball |
+| `launchControl` | One thing can own the launch | Sticky Paddle, Aimed Sticky |
 
-`instant` power-ups do not displace anything and cannot be displaced. Everything else is
-mutually exclusive within its channel.
+That is the whole list. Five groups, fifteen power-ups. **Everything else composes.**
 
-This one rule replaces the pairwise decisions: Inert Paddle displaces Magnetism because
-both are `paddleBehaviour`; Trajectory Line displaces Landing Marker because both are
-`vision`; Wrecking Ball displaces Giga-Ball because both are `ballBody`. Nothing needs to
-know about anything else.
+Within a group, the later collection **replaces** the earlier one, which ends immediately.
 
-**Exception, declared explicitly:** Multi-Ball is `instant` and adds a ball rather than
-changing one, so it composes with everything.
+Deliberately *not* grouped, because they combine well:
+- Magnetism + Inert Paddle — the ball is drawn in but the paddle cannot steer it. Coherent
+  and interesting.
+- Flipped Angle + Magnetism — inverted steering plus attraction.
+- Aura + Wrecking Ball — a large destroy-everything ball. Powerful; the aura already only
+  destroys, it does not bounce, so the rules do not fight.
+- Portal Paddle + Wrap-Around — both change where the ball reappears, in different axes.
+- Trajectory Line + Landing Marker — different information, no conflict.
 
 ### 5.2 Rarity
 
-Three tiers, governing how often a power-up is *eligible* to drop — not how often
-power-ups drop at all, which is unchanged.
+Three tiers, governing which power-ups are *eligible*, not how often power-ups drop.
+Roughly 60 / 30 / 10 as a starting point, **to be tuned per power-up once they exist and
+can be played**.
 
-| Tier | Character | Roughly |
-|---|---|---|
-| Common | Numeric. Changes a value | 60% |
-| Uncommon | Behavioural. Changes how something behaves, within the existing rules | 30% |
-| Rare | Rules-changing. Suspends or inverts a rule the player relies on | 10% |
+| Tier | Character |
+|---|---|
+| Common | Numeric. Changes a value |
+| Uncommon | Behavioural. Changes how something behaves within the existing rules |
+| Rare | Rules-changing. Suspends or inverts a rule the player relies on |
 
-Rare being 10% of drops, not 10% of runs, is the point: a typical run should show two or
-three rules-changing power-ups. They must be memorable, not mythical.
+Rarity is independent of depth (§6.2).
 
 ### 5.3 The new power-ups
 
-Channel, tier, and the interactions that are not covered by §5.1.
+**Timed** — whether it runs on a clock. **Stacking** — what a second collection does while
+the first is still active.
 
-| Power-up | Channel | Tier | Behaviour and notes |
-|---|---|---|---|
-| **Descent** | `field` | Uncommon | The field moves down continuously for a period. Bricks passing the lower limit are destroyed, not scored. Ends early if the field empties. Suspends the normal descent cadence while active |
-| **Trajectory Line** | `vision` | Uncommon | Draws the ball's path ahead for a fixed distance, reflecting off walls. Does not predict brick collisions — it stops at the first brick it would meet |
-| **Aimed Sticky** | `paddleBehaviour` | Uncommon | The ball is held; the player drags to choose the launch angle, shown by an arrow. Replaces the automatic launch for the duration |
-| **Magnetism** | `paddleBehaviour` | Uncommon | Curves the ball towards the paddle's horizontal position. Strength must fall off with distance, or the ball can never be lost and the run cannot end |
-| **Lock** | `meta` | Rare | Freezes every active timed power-up: their timers stop draining. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends by itself after a period, or by Key |
-| **Key** | `meta` | Rare | **Only drops while a Lock is active.** Ends the Lock; timers resume |
-| **Laser Beam** | `armament` | Rare | One sustained vertical beam that destroys an entire column, including Indestructible. Single use, then the power-up ends |
-| **Portal Paddle** | `ballMotion` | Rare | The ball entering the paddle re-enters at the top of the field, keeping its horizontal velocity. For a period |
-| **Wrap-Around** | `ballMotion` | Rare | The ball leaving one side re-enters the other. For a period |
-| **Landing Marker** | `vision` | Common | Marks where the ball will cross the paddle's line. For a period |
-| **Wrecking Ball** | `ballBody` | Rare | Destroys any brick in one hit regardless of type, and does not bounce off bricks. Distinct from Giga-Ball, which bounces |
-| **Aura** | `ballBody` | Uncommon | A glow of twice the ball's radius. Bricks touched by the aura are destroyed; the ball only bounces off bricks it touches itself |
-| **Randomised Bounce** | `ballMotion` | Uncommon | Bounce angles gain a random offset. Bad power-up: deducts points |
-| **Inert Paddle** | `paddleBehaviour` | Uncommon | The paddle no longer influences the bounce angle; the ball reflects straight. Bad |
-| **Flipped Angle** | `paddleBehaviour` | Uncommon | The paddle's angular influence is inverted. Bad |
-| **Multi-Ball** | `instant` | Uncommon | Adds a ball. See §5.4 |
-| **Wipe** | `meta` | Uncommon | Ends every active power-up immediately. Bad |
-| **Paddle Halo** | `paddleForm` | Rare | A semicircular glow extending from the paddle into the lower rows, destroying bricks it touches. For a period |
+| Power-up | Conflict | Tier | Timed | Stacking | Behaviour and notes |
+|---|---|---|---|---|---|
+| **Descent** | — | Uncommon | Yes | Extends duration | Field moves down continuously. Bricks past the lower limit are destroyed, not scored. Suspends the normal descent cadence while active |
+| **Trajectory Line** | — | Uncommon | Yes | Extends, then lengthens the line | Draws the ball's path ahead, reflecting off walls, stopping at the first brick it would meet |
+| **Aimed Sticky** | `launchControl` | Uncommon | Yes | Extends duration | Ball is held; drag to choose the launch angle, shown by an arrow. **The default angle is the angle the ball would have bounced at anyway**, so releasing without dragging changes nothing |
+| **Magnetism** | — | Uncommon | Yes | Extends, then strengthens | Curves the ball toward the paddle. Strength falls off with distance. Temporary, so it cannot make a run unloseable |
+| **Lock** | — | Rare | Yes | Extends duration | Freezes every active timed power-up; their timers stop. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends by itself, or by Key |
+| **Key** | — | Uncommon | No | n/a | Ends the Lock; timers resume. **Only drops while a Lock is active** — so its weight is set high *within that window*, rare overall but reliably available while it is possible |
+| **Laser Beam** | — | Rare | No | Fires again | One sustained vertical beam destroying a whole column including Indestructible. **Fires from the ball's x-position** if a ball is in play, otherwise the paddle centre — so it rewards positioning |
+| **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity |
+| **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other |
+| **Landing Marker** | — | Common | Yes | Extends duration | Marks where the ball will cross the paddle's line |
+| **Wrecking Ball** | `ballHitBehaviour` | Rare | Yes | Extends duration | Destroys any brick in one hit and does not bounce off bricks |
+| **Aura** | — | Uncommon | Yes | Extends, then grows | Glow of twice the ball's radius. Bricks touched by the aura are destroyed; the ball bounces only off bricks it touches itself |
+| **Randomised Bounce** | — | Uncommon | Yes | Extends duration | Bounce angles gain a random offset. Bad |
+| **Inert Paddle** | — | Uncommon | Yes | Extends duration | Paddle no longer influences bounce angle. Bad |
+| **Flipped Angle** | — | Uncommon | Yes | Extends duration | Paddle's angular influence inverted. Bad |
+| **Multi-Ball** | — | Uncommon | No | Adds another ball | Adds a ball. §5.4 |
+| **Wipe** | — | Uncommon | No | n/a | Ends every active power-up immediately. Bad. **Does not remove a Lock** — otherwise Wipe is strictly better than Key and Key never drops |
+| **Paddle Halo** | — | Rare | Yes | Extends, then reaches further | Semicircular glow from the paddle into the lower rows, destroying bricks it touches |
+| **Reversed Controls** | — | Uncommon | Yes | Extends duration | Paddle moves opposite to the player's touch. Bad |
+| **Ball Steering** | — | Rare | Yes | Extends duration | Moving the paddle steers the ball's x-position in flight |
+| **Clear And Retreat** | — | Uncommon | No | Repeats | Destroys the lowest occupied row and pushes the field up one row |
+| **Infill** | — | Uncommon | No | Repeats | Adds bricks in random empty cells. Bad |
 
-Colour convention is unchanged: green power-ups are beneficial and award points, red ones
-are harmful and deduct them.
+Colour convention unchanged: green is beneficial and awards points, red is harmful and
+deducts.
+
+**Default stacking**, unless the table says otherwise: a second collection of a timed
+power-up **extends** its duration rather than restarting it, and where a magnitude makes
+sense a third collection may deepen it. Instant power-ups simply happen again.
 
 ### 5.4 Multi-Ball
 
-The one addition that touches everything, and the largest single piece of work here.
+**In.** The rule: **the run continues while at least one ball is in play**; the life is lost
+when the last one goes.
 
-The game currently assumes exactly one ball — `ball` is a stored property read in dozens of
-places, and the save format stores one ball's position and velocity. Multi-Ball requires a
-*collection* of balls, with:
+Only Endless II uses it. Classic and Endless keep a single ball, so the existing modes are
+untouched — but the scene must hold a *collection* of balls rather than one, which touches:
 
-- losing a life only when the **last** ball is lost
-- the ball-lost animation, sticky paddle, aura and trajectory line each acting per ball
-- the save format storing an array
+- ball-lost handling, which currently ends the life on any loss
+- per-ball state: sticky, aura, trajectory line, landing marker each act on their own ball
+- the save format, which stores one ball's position and velocity (§9.3)
+- the ball-speed power-ups, which set a single shared limit — proposed: shared across all
+  balls, as one value, matching the `ballSpeed` conflict group
 
-**Proposed: Multi-Ball is deferred out of the first version** and the collection-of-balls
-refactor is scheduled with it. Everything else here works with one ball. Recorded as a
-decision in §10 rather than assumed.
+### 5.5 Interaction rules not covered by §5.1
 
-### 5.5 Interaction rules not covered by channels
-
-- **Lock and Key are the only conditional drops.** Their eligibility depends on game
-  state, which the allocation table cannot currently express — see §8.
-- **Wipe does not remove a Lock.** Otherwise Wipe is strictly better than Key and Key
-  never drops.
-- **Bad power-ups do not drop while the field is nearly clear.** Losing a run to a
-  Randomised Bounce collected on the last brick reads as unfair.
+- **Lock and Key are the only conditional drops.** Eligibility depends on live game state,
+  which the allocation table cannot express today — a specific requirement on §8.2.
+- Bad power-ups drop freely regardless of how clear the field is. In an endless mode there
+  is no "last brick", so the Classic-mode concern does not apply.
 
 ---
 
 ## 6. Game dynamics
 
-### 6.1 Descent and difficulty
+### 6.1 Progression
 
-Rows descend as they do today, and density and speed rise with depth. Endless II adds
-**phases**: stretches of a few hundred metres with a character of their own, drawn at
-random and never twice in a row.
+**The start is gentle.** A run opens with simple brick types, low density and common
+power-ups, and builds: more brick types, rising density, rare power-ups becoming more
+likely. **New brick types are introduced before density rises far**, so a player meets each
+one when there is room to see what it does.
 
-| Phase | Character |
-|---|---|
-| Standard | The baseline mix |
-| Swarm | Many Tiny bricks, sparse |
-| Fortress | Big and Indestructible, few gaps, one clear route |
-| Flicker | Flashing bricks dominant |
-| Cascade | Gravity bricks, so the field reshapes as it is cleared |
-| Minefield | Exploding bricks scattered through ordinary ones |
-| Drift | Moving bricks, wide spacing |
-| Quiet | Low density, higher power-up drop chance — a breather |
+### 6.2 Phases
 
-Phases are the main lever for making a run feel varied, and the main thing to tune during
-play-testing.
+Stretches of **10–20 metres** with a character of their own, randomly ordered and never
+twice in a row, with **rarity weights** and some **gated behind a minimum height** so the
+opening stays gentle.
 
-### 6.2 Exposure
+| Phase | Character | Gate |
+|---|---|---|
+| Standard | The baseline mix | — |
+| Quiet | Low density, a breather | — |
+| Swarm | Many Tiny bricks, sparse | — |
+| Drift | Moving bricks, wide spacing | Low |
+| Flicker | Flashing bricks dominant | Low |
+| Cascade | Gravity bricks, field reshapes as it is cleared | Medium |
+| Minefield | Exploding bricks scattered through ordinary ones | Medium |
+| Fortress | Big and Indestructible, few gaps, one clear route | Medium |
+| Gauntlet | Directional bricks, one approach angle works | High |
+| Carousel | Spinning and Rounded, unpredictable bounces | High |
+| Downpour | Descent runs faster for the phase | High |
+| Windfall | Normal density, noticeably more power-ups | — |
+| Monolith | One enormous Big brick formation with a narrow route | High |
+| Static | Flashing bricks, all in phase, so the whole field blinks together | High |
 
-The requirement is that a player who never gets deep still sees the new elements. Depth
-alone cannot do that.
+**Breathers are deliberate.** Quiet phases are scheduled rather than left to chance — an
+intense phase should not follow another intense phase without a break between.
 
-**Proposed: an introduction schedule.** Every new brick type and every Uncommon and Rare
-power-up is placed in a shuffled order at the start of each run, and introduced at
-intervals through the first stretch of the run — the first appearance of each is
-guaranteed, the order is different every time. After the schedule is exhausted,
-generation is fully random and depth-weighted as usual.
+### 6.3 Exposure
 
-This gives a player who reaches only a modest height a different subset each run, and a
-player who goes deep everything. It is also the mechanism for the mode teaching itself
-without a tutorial.
+**The introduction schedule.** Every new brick type and every Uncommon and Rare power-up is
+shuffled at the start of a run and introduced at intervals, so a player who never gets deep
+still meets a different subset each time, and the mode teaches itself without a tutorial.
 
-### 6.3 Randomness
+**Rarity is preserved.** Being introduced early does not make something common — it makes
+it *possible*. After a first appearance, an element returns at its normal weight.
 
-Random selection is seeded per run and drawn without replacement within a phase, so a
-phase does not repeat the same brick type three times while omitting another. The existing
-`PowerUpAllocation` weighting is kept and extended with tier and channel filters.
+**It does not show everything in one run.** The schedule covers a subset — proposed: enough
+elements to fill the first 200–300 m, drawn from a pool that changes each run. How far
+ahead to plan and how much to include is explicitly a tuning question for play-testing.
+
+### 6.4 Randomness
+
+Seeded per run. Drawn without replacement within a phase, so a phase does not repeat one
+brick type while omitting another. The existing `PowerUpAllocation` weighting is kept and
+extended with tier, conflict-group and conditional filters.
 
 ---
 
@@ -287,82 +287,106 @@ phase does not repeat the same brick type three times while omitting another. Th
 
 ### 7.1 The power-up HUD
 
-The current tray shows a fixed row of eight icons with a depleting bar beneath each,
-including power-ups that are not active and ones not yet unlocked. At forty-six power-ups
-that does not scale.
+The current tray shows a fixed row of eight icons with a bar beneath each, including
+power-ups that are not active. At this many power-ups that does not scale.
 
-**Proposed:**
-- Show **only active** power-ups.
-- The timer becomes a **ring around the icon** rather than a bar beneath it.
-- Icons appear when collected and fade out when they expire.
-- The row is centred and grows from the middle, so its width tracks what is active.
-- A Locked power-up (§5.3) shows its ring frozen, visibly distinct from a draining one.
+- Show **only active** power-ups
+- Timer becomes a **ring around the icon**
+- Icons appear on collection and fade out on expiry
+- Centred, growing from the middle
+- A Locked power-up shows its ring frozen, visibly distinct from a draining one
 
-This replaces the existing tray in Endless II. Whether it replaces it in Classic and
-Endless too is an open question — it is better, but it changes a screen players know.
+**Endless II only for now.** Classic and Endless keep the existing tray until this has been
+played and judged.
 
 ### 7.2 Dynamic backgrounds
 
-The background scrolls with the field, so descent is visible in the backdrop rather than
-only in the bricks. Built on the four backgrounds added in 1.3 — but note that the
-background node in `GameScene.sks` will not accept a new texture at runtime (see the
-1.3 commit history), so the scrolling background must be a code-owned node from the start.
+The background scrolls with the field. This needs **new backgrounds built to loop** — the
+existing four do not tile, and only Classic's grid would even come close.
 
-### 7.3 Legibility of rules-changing power-ups
+- A repeating grid in the Classic style, seamlessly tiling vertically
+- A slow colour cycle that shifts hue as depth increases
 
-Each Rare power-up needs a visual that is unmistakable while it is active, beyond its HUD
-icon: Wrap-Around marks the side walls, Portal Paddle marks the paddle and the top of the
-field, Inert Paddle and Flipped Angle change the paddle's appearance, Halo is its own
-visual. A player should be able to tell what is happening without looking at the HUD.
+The existing four remain available and simply do not scroll. Note the background node in
+`GameScene.sks` will not accept a new texture at runtime, so the scrolling background must
+be a code-owned node from the start.
+
+### 7.3 Legibility
+
+Each Rare power-up needs an unmistakable visual while active, beyond its HUD icon:
+Wrap-Around marks the side walls, Portal Paddle marks the paddle and the top of the field,
+Inert Paddle and Flipped Angle change the paddle's appearance, Halo is its own visual.
+
+**Icons.** Each new power-up needs one in the existing style — rounded square, green for
+beneficial and magenta for harmful, white glyph. These can be generated to match and then
+tuned by hand.
+
+**The power-ups information page lists them all**, with a description of what each does,
+and the Endless II ones **explicitly marked as exclusive to that mode**.
 
 ---
 
 ## 8. What has to be built underneath
 
-Three pieces of groundwork, in order. None are Endless II features; all are prerequisites.
+### 8.1 The playfield and brick grid
+Brick size and position are computed inline against a fixed 22-column layout, and nothing
+can answer what occupies a cell. Needed by Big, Tiny, Moving, Gravity and Exploding.
+Requires: cell occupancy, adjacency, sub-cell and multi-cell sizes, region reservation, a
+settle pass after destruction, and clearance rules for Spinning.
 
-**1. The playfield and brick grid.** Brick size and position are computed inline today
-against a fixed 22-column layout, and there is no way to ask what occupies a cell.
-Required by Big, Tiny, Moving, Gravity and Exploding bricks. Needs: cell occupancy,
-adjacency, sub-cell sizes, region reservation, and a settle pass.
+### 8.2 The power-up system as data
+Near-identical switch cases today, each declaring icon, bar, timer and expiry inline.
+Needed by conflict groups, tiers, stacking rules, conditional drops and the ring HUD.
 
-**2. The power-up system as data.** Eleven near-identical switch cases today, each
-declaring icon, bar, timer and expiry inline. Required by channels, tiers, conditional
-drops and the ring HUD. Adding eighteen power-ups to the current structure means eighteen
-more copies of the same sixty lines.
+### 8.3 Level data out of code
+**Deferred until after Endless II.** Endless II generates its field and does not need it.
 
-**3. Level data out of code.** 110 `loadLevelN()` methods differing only in data. Not
-required by Endless II, which generates its field — but it is what makes `GameScene`
-tractable, and the brick-layout tests added in 1.3 make it safe to do.
+### 8.4 Extensibility
+Both 8.1 and 8.2 are built so that a new brick type or power-up is **a data entry plus one
+implementation**, with no edits to shared code. Concretely: a registry each, where an entry
+declares its identity, artwork, rarity, conflict group and behaviour hooks. Adding the
+twenty-third power-up must cost the same as adding the third. The same applies to phases
+and backgrounds, which are also tables.
 
 ---
 
 ## 9. Out of scope for the first version
 
-Recorded so they are decisions rather than omissions.
+- **A separate descent-pressure mode** — where the field reaching the paddle is the core
+  threat. A different game; parked as a future mode.
+- **iPad-specific layout** beyond the fixed ratio.
 
-- **Multi-Ball** and the collection-of-balls refactor (§5.4).
-- **A separate descent-pressure mode.** The idea of making the field reaching the paddle
-  the core threat is a different game, not a variant of this one. Parked deliberately.
-- **Saving a run in progress.** Endless II runs are single-life and self-contained;
-  resume can come later if runs turn out to be long.
-- **iPad-specific layout** beyond what the fixed ratio already gives.
+### 9.3 Pause and resume
+**In scope.** A run cannot be abandoned and returned to from within the app, but it must
+survive pausing *and* the app being quit — the same guarantee Classic has. The save format
+needs the ball array (§5.4), active power-up state including Lock, the generated field, and
+the phase and schedule position so generation resumes coherently.
 
 ---
 
-## 10. Open questions
+## 10. Decisions
 
-For review. Each changes what gets built.
+Settled in review, recorded so they are not re-argued.
 
-1. **Lives.** One, like Endless? Or three, given the mode is more chaotic and a Rare
-   power-up can end a run through no fault of the player?
-2. **Score.** Height alone, like Endless? Or height plus points, so clearing bricks and
-   surviving are both rewarded? This decides the leaderboards.
-3. **Name.** "Endless Mode II" is a working title. It sits on the main menu next to
-   "Classic Mode" and "Endless Mode", so it needs to read as a third mode, not a sequel to
-   one of them.
-4. **Does the ring HUD replace the tray everywhere,** or only in Endless II?
-5. **Multi-Ball in or out of the first version** (§5.4).
-6. **Explosion chaining** — confirmed as proposed in §4.9?
-7. **How long is the introduction schedule** (§6.2)? Long enough to show everything, short
-   enough that a deep run stops feeling scripted.
+| Question | Decision |
+|---|---|
+| Lives | **One**, exactly as Endless |
+| Score | **Height alone** |
+| Name | **Endless 2.0** for now |
+| Ring HUD | **Endless II only** initially; may extend to other modes later |
+| Multi-Ball | **In** |
+| Explosion chaining | **Yes**, chains |
+| Introduction schedule length | Tuned by play-testing. **Must not show everything in one run** |
+| Channels | **Replaced** by narrow conflict groups (§5.1) |
+| Level data refactor | **After** Endless II |
+
+## 11. Still open
+
+1. **How far ahead does generation plan?** The schedule and phase order need a horizon —
+   generating 100 m ahead is cheap, 1000 m is not, and resume (§9.3) has to store whatever
+   is planned. Proposed: plan one phase ahead and store the seed plus position, so the
+   whole run is reproducible from a few numbers rather than a stored field.
+2. **Does Tiny survive?** Depends on what sub-cell sizing costs in §8.1.
+3. **Rarity tuning** per power-up, once they can be played.
+4. **How many balls can Multi-Ball reach?** Uncapped becomes chaos and a performance
+   question; proposed cap of four.
