@@ -1,0 +1,220 @@
+//
+//  SavedGame.swift
+//  Megaball
+//
+//  The in-progress game, as a versioned Codable value.
+//
+//  It replaces fourteen separate UserDefaults keys holding parallel arrays,
+//  read back with force-casts:
+//
+//      saveGameSaveArray = defaults.object(forKey: "saveGameSaveArray") as! [Int]?
+//
+//  That runs at launch while restoring, so a corrupt or stale value is not a
+//  degraded resume, it is a crash on every launch until the app is deleted.
+//  Seventeen game properties were also packed positionally into one [Int], so
+//  adding a field meant renumbering the read sites and nothing would catch a
+//  mistake.
+//
+//  Decoding here throws instead, and `migrated(from:)` reads the old format so
+//  players with a game in progress keep it.
+//
+
+import Foundation
+
+/// The subset of UserDefaults the saved game needs.
+///
+/// It exists so tests can supply an in-memory double. UserDefaults(suiteName:)
+/// is not isolation: its search list still includes the host application's own
+/// domain, so a test using one reads whatever the app happens to have stored.
+protocol KeyValueStore: AnyObject {
+    func object(forKey defaultName: String) -> Any?
+    func data(forKey defaultName: String) -> Data?
+    func set(_ value: Any?, forKey defaultName: String)
+    func removeObject(forKey defaultName: String)
+}
+
+extension UserDefaults: KeyValueStore {}
+
+/// A dictionary-backed store, for tests and for anywhere a real save would be
+/// unwanted.
+final class InMemoryKeyValueStore: KeyValueStore {
+    private var values: [String: Any] = [:]
+
+    init(_ initial: [String: Any] = [:]) { values = initial }
+
+    func object(forKey defaultName: String) -> Any? { values[defaultName] }
+    func data(forKey defaultName: String) -> Data? { values[defaultName] as? Data }
+    func set(_ value: Any?, forKey defaultName: String) {
+        if let value { values[defaultName] = value } else { values.removeValue(forKey: defaultName) }
+    }
+    func removeObject(forKey defaultName: String) { values.removeValue(forKey: defaultName) }
+}
+
+struct SavedGame: Codable, Equatable {
+
+    /// Bumped when the shape changes. `load` refuses anything it does not know,
+    /// which is a discarded save rather than a crash or a misread one.
+    static let currentVersion = 1
+
+    /// The key the encoded value lives under.
+    static let defaultsKey = "savedGame"
+
+    /// The fourteen keys the old format used. Cleared once migrated.
+    static let legacyKeys = [
+        "saveGameSaveArray", "saveMultiplier",
+        "saveBrickTextureArray", "saveBrickColourArray",
+        "saveBrickXPositionArray", "saveBrickYPositionArray",
+        "saveBallPropertiesArray",
+        "savePowerUpFallingXPositionArray", "savePowerUpFallingYPositionArray",
+        "savePowerUpFallingArray",
+        "savePowerUpActiveArray", "savePowerUpActiveDurationArray",
+        "savePowerUpActiveTimerArray", "savePowerUpActiveMagnitudeArray"
+    ]
+
+    var version: Int = SavedGame.currentVersion
+
+    // MARK: - Progress
+    // Previously indices 0...16 of a single [Int], in this order.
+
+    var levelNumber: Int
+    var endLevelNumber: Int
+    var packNumber: Int
+    var levelScore: Int
+    var totalScore: Int
+    var numberOfLives: Int
+    var endlessHeight: Int
+    var numberOfLevels: Int
+    var levelTimerValue: Int
+    var packTimerValue: Int
+    var deathsPerLevel: Int
+    var deathsPerPack: Int
+    var powerUpsGeneratedPerLevel: Int
+    var powerUpsCollectedPerLevel: Int
+    var powerUpsGeneratedPerPack: Int
+    var powerUpsCollectedPerPack: Int
+    var paddleHitsPerLevel: Int
+
+    var multiplier: Double
+
+    // MARK: - The brick field
+    // Four arrays indexed together, one entry per surviving brick.
+
+    var brickTextures: [Int]
+    var brickColours: [Int]
+    var brickXPositions: [Int]
+    var brickYPositions: [Int]
+
+    /// Ball position and velocity, flattened.
+    var ballProperties: [Double]
+
+    // MARK: - Power-ups in flight
+    // Three arrays indexed together, one entry per falling power-up.
+
+    var fallingPowerUpXPositions: [Int]
+    var fallingPowerUpYPositions: [Int]
+    var fallingPowerUps: [Int]
+
+    // MARK: - Power-ups in effect
+    // Four arrays indexed together, one entry per active power-up.
+
+    var activePowerUps: [String]
+    var activePowerUpDurations: [Double]
+    var activePowerUpTimers: [Double]
+    var activePowerUpMagnitudes: [Int]
+
+    // MARK: - Consistency
+
+    /// Whether the parallel arrays agree in length.
+    ///
+    /// Nothing enforced this before. A brick array one entry short of the
+    /// others meant an out-of-range trap while rebuilding the field, again
+    /// during resume.
+    var isConsistent: Bool {
+        let brickCounts = Set([brickTextures.count, brickColours.count,
+                               brickXPositions.count, brickYPositions.count])
+        let fallingCounts = Set([fallingPowerUpXPositions.count,
+                                 fallingPowerUpYPositions.count,
+                                 fallingPowerUps.count])
+        let activeCounts = Set([activePowerUps.count, activePowerUpDurations.count,
+                                activePowerUpTimers.count, activePowerUpMagnitudes.count])
+        return brickCounts.count == 1 && fallingCounts.count == 1 && activeCounts.count == 1
+    }
+
+    // MARK: - Legacy migration
+
+    /// Reads the fourteen-key format. Returns nil when there is no saved game,
+    /// or when what is there cannot be trusted.
+    ///
+    /// Every read is optional. The old code force-cast all fourteen, so a value
+    /// of the wrong type - written by an older build, or corrupted - crashed
+    /// rather than being discarded.
+    static func migrated(from defaults: KeyValueStore) -> SavedGame? {
+        guard let progress = defaults.object(forKey: "saveGameSaveArray") as? [Int],
+              progress.count == 17 else { return nil }
+
+        let game = SavedGame(
+            levelNumber: progress[0],
+            endLevelNumber: progress[1],
+            packNumber: progress[2],
+            levelScore: progress[3],
+            totalScore: progress[4],
+            numberOfLives: progress[5],
+            endlessHeight: progress[6],
+            numberOfLevels: progress[7],
+            levelTimerValue: progress[8],
+            packTimerValue: progress[9],
+            deathsPerLevel: progress[10],
+            deathsPerPack: progress[11],
+            powerUpsGeneratedPerLevel: progress[12],
+            powerUpsCollectedPerLevel: progress[13],
+            powerUpsGeneratedPerPack: progress[14],
+            powerUpsCollectedPerPack: progress[15],
+            paddleHitsPerLevel: progress[16],
+            multiplier: defaults.object(forKey: "saveMultiplier") as? Double ?? 1.0,
+            brickTextures: defaults.object(forKey: "saveBrickTextureArray") as? [Int] ?? [],
+            brickColours: defaults.object(forKey: "saveBrickColourArray") as? [Int] ?? [],
+            brickXPositions: defaults.object(forKey: "saveBrickXPositionArray") as? [Int] ?? [],
+            brickYPositions: defaults.object(forKey: "saveBrickYPositionArray") as? [Int] ?? [],
+            ballProperties: defaults.object(forKey: "saveBallPropertiesArray") as? [Double] ?? [],
+            fallingPowerUpXPositions: defaults.object(forKey: "savePowerUpFallingXPositionArray") as? [Int] ?? [],
+            fallingPowerUpYPositions: defaults.object(forKey: "savePowerUpFallingYPositionArray") as? [Int] ?? [],
+            fallingPowerUps: defaults.object(forKey: "savePowerUpFallingArray") as? [Int] ?? [],
+            activePowerUps: defaults.object(forKey: "savePowerUpActiveArray") as? [String] ?? [],
+            activePowerUpDurations: defaults.object(forKey: "savePowerUpActiveDurationArray") as? [Double] ?? [],
+            activePowerUpTimers: defaults.object(forKey: "savePowerUpActiveTimerArray") as? [Double] ?? [],
+            activePowerUpMagnitudes: defaults.object(forKey: "savePowerUpActiveMagnitudeArray") as? [Int] ?? []
+        )
+        return game.isConsistent ? game : nil
+    }
+
+    // MARK: - Storage
+
+    /// The saved game, or nil if there is none or it cannot be read.
+    ///
+    /// Prefers the current format, falls back to migrating the old one, and
+    /// never throws out to the caller - a save that cannot be read is a save
+    /// that is not there, which loses a game in progress but not the app.
+    static func load(from defaults: KeyValueStore = UserDefaults.standard) -> SavedGame? {
+        if let data = defaults.data(forKey: defaultsKey) {
+            if let game = try? PropertyListDecoder().decode(SavedGame.self, from: data),
+               game.version == currentVersion, game.isConsistent {
+                return game
+            }
+            return nil
+        }
+        return migrated(from: defaults)
+    }
+
+    /// Writes the current format and removes the old keys.
+    func save(to defaults: KeyValueStore = UserDefaults.standard) {
+        guard let data = try? PropertyListEncoder().encode(self) else { return }
+        defaults.set(data, forKey: SavedGame.defaultsKey)
+        SavedGame.legacyKeys.forEach { defaults.removeObject(forKey: $0) }
+    }
+
+    /// Removes the saved game in both formats.
+    static func clear(from defaults: KeyValueStore = UserDefaults.standard) {
+        defaults.removeObject(forKey: defaultsKey)
+        legacyKeys.forEach { defaults.removeObject(forKey: $0) }
+    }
+}
