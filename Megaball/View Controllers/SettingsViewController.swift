@@ -59,16 +59,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var group: UIMotionEffectGroup?
     var blurView: UIVisualEffectView?
     
-    var premiumTagLineArray: [String] = [
-        "Support The App",
-        "Unlock All Power-Ups",
-        "Remove Ads",
-        "Unlock All Levels & Packs",
-        "Unlock All Customisations",
-        "Unlock All Content"
-    ]
-    var tagline = ""
-    
     var musicPausedBool: Bool = false
     
     @IBOutlet var settingsView: UIView!
@@ -131,30 +121,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if navigatedFrom! == "MainMenu" {
             setBlur()
         }
-        var allPacksUnlockedBool = false
-        if totalStatsArray[0].levelPackUnlockedArray.count == totalStatsArray[0].levelPackUnlockedArray.filter({$0 == true}).count {
-            allPacksUnlockedBool = true
-        }
-        var allCustomUnlockedBool = false
-        if totalStatsArray[0].themeUnlockedArray.count == totalStatsArray[0].themeUnlockedArray.filter({$0 == true}).count && totalStatsArray[0].appIconUnlockedArray.count == totalStatsArray[0].appIconUnlockedArray.filter({$0 == true}).count {
-            allCustomUnlockedBool = true
-        }
-        var allPUsUnlockedBool = false
-        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
-            allPUsUnlockedBool = true
-        }
-        
-        if allCustomUnlockedBool {
-            premiumTagLineArray.remove(at: 5)
-        }
-        if allPacksUnlockedBool {
-            premiumTagLineArray.remove(at: 3)
-        }
-        if allPUsUnlockedBool {
-            premiumTagLineArray.remove(at: 1)
-        }
-        tagline = premiumTagLineArray.randomElement()!
-
         backButtonCollectionView.reloadData()
         settingsTableView.reloadData()
         DispatchQueue.main.async {

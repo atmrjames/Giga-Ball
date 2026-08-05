@@ -42,13 +42,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     var IAPLocalPrice: String?
     // User settings
     
-    var premiumTagLineArray: [String] = [
-        "Unlock All Power-Ups",
-        "Remove Ads",
-    ]
-    var allPUsUnlockedBool = false
-    var tagline = ""
-
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
     
     var group: UIMotionEffectGroup?
@@ -125,15 +118,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                 
         
         premiumTableView.isHidden = true
-        
-        if totalStatsArray[0].powerUpUnlockedArray.count == totalStatsArray[0].powerUpUnlockedArray.filter({$0 == true}).count {
-            allPUsUnlockedBool = true
-        }
-        if allPUsUnlockedBool {
-            premiumTagLineArray.remove(at: 0)
-        }
-        tagline = premiumTagLineArray.randomElement()!
-        // Don't show premium tags if packs or power-ups all unlocked
         
         showAnimate()
         

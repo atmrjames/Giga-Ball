@@ -73,7 +73,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         premiumTableView.delegate = self
         premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
         
         itemsTableView.rowHeight = 70.0
         
