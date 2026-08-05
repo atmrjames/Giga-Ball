@@ -59,6 +59,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
+	var livesAwaitingRollIn = false
+	// Set while a level intro is on screen. The intro fades out over its last quarter
+	// second, so without this the settled balls are visible through the fade and then
+	// jump back to the start of the roll-in
 	var livesContainer = SKShapeNode()
 	static let maxLivesShown = 10
 	// The lives row sits below the paddle rather than in the HUD. The HUD's centre is
@@ -1624,6 +1628,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Setup ball animation
             
             self.run(SKAction.wait(forDuration: 0.75), completion: {
+                self.livesAwaitingRollIn = false
                 self.numberOfLives -= 1
                 self.refreshLivesRow()
             })
@@ -4089,7 +4094,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			icon.setScale(1)
 			icon.alpha = GameScene.lifeIconAlpha
 			icon.texture = ballTexture
-			icon.isHidden = endlessMode || index >= shown
+			icon.isHidden = endlessMode || index >= shown || livesAwaitingRollIn
 		}
 	}
 	// Endless mode has a single life and no counter, so the row is hidden there
@@ -4113,8 +4118,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// still dismissing, and the whole animation would play behind it
 
 	func rollInLivesRow() {
+		livesAwaitingRollIn = false
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
-		guard shown > 0, !endlessMode else { return }
+		guard shown > 0, !endlessMode else { refreshLivesRow(); return }
 		for index in 0..<shown {
 			rollInLife(at: index, delay: Double(index)*0.11)
 		}
@@ -4124,6 +4130,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// other rather than landing at random
 
 	func rollInGainedLife() {
+		livesAwaitingRollIn = false
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
 		guard shown > 0, !endlessMode else { refreshLivesRow(); return }
 

@@ -66,6 +66,10 @@ class Playing: GKState {
     // This function runs when this state is entered.
 
     func reloadUI() {
+        scene.livesAwaitingRollIn = true
+        // reloadUI only runs coming from PreGame or InbetweenLevels, which are exactly
+        // the cases where a level intro is shown and the roll-in will follow
+
         let wait = SKAction.wait(forDuration: 0.35)
         self.scene.run(wait, completion: {
             self.scene.scoreLabel.isHidden = false
