@@ -801,7 +801,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		life.texture = ballTexture
 		life.size.width = ballSize*1.5
 		life.size.height = ballSize*1.5
-		buildLivesRow()
 		
 		paddleWidth = ballSize*7.5
 		paddleHeight = ballSize
@@ -860,6 +859,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		directionMarker.zPosition = 9
 		// Object positioning definition
 		
+		buildLivesRow()
+		// After the paddle is positioned, since the row is placed relative to it
+
 		bottomScreenBlock.size.height = frame.size.height/8
 		bottomScreenBlock.size.width = frame.size.width
 		bottomScreenBlock.position.x = 0
@@ -2822,7 +2824,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case powerUpGetALife:
         // Get a life
             numberOfLives+=1
-            refreshLivesRow()
+            rollInGainedLife()
 			
 			life.removeAllActions()
 			
@@ -4014,9 +4016,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			   height: ballSize + livesRowPadding*2)
 	}
 
-	static let lifeIconAlpha: CGFloat = 0.55
+	static let lifeIconAlpha: CGFloat = 0.775
 	// Dimmer than the ball in play, so the row reads as a counter rather than as balls
-	// sitting in the play area
+	// sitting in the play area, but still bright enough to read at a glance
 
 	var livesRowY: CGFloat {
 		let paddleBottom = paddle.position.y - paddleHeight/2
@@ -4101,6 +4103,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Follows the same lifecycle as the rest of the HUD: hidden during the level intro,
 	// shown while playing and paused
+
+	func rollInLivesRow() {
+		let shown = min(numberOfLives, GameScene.maxLivesShown)
+		guard shown > 0, !endlessMode else { return }
+		for index in 0..<shown {
+			rollInLife(at: index, delay: Double(index)*0.11)
+		}
+	}
+	// Every ball rolls in at the start of a level. The leftmost sets off first and
+	// travels furthest, so they arrive in order and appear to stack up against each
+	// other rather than landing at random
+
+	func rollInGainedLife() {
+		let shown = min(numberOfLives, GameScene.maxLivesShown)
+		guard shown > 0, !endlessMode else { refreshLivesRow(); return }
+
+		layoutLivesContainer()
+		livesContainer.isHidden = false
+		for index in 0..<max(0, shown-1) {
+			let icon = lifeIcons[index]
+			icon.removeAllActions()
+			icon.isHidden = false
+			icon.alpha = GameScene.lifeIconAlpha
+			icon.setScale(1)
+			icon.run(SKAction.move(to: livesRowHome(index: index), duration: 0.18))
+		}
+		for index in shown..<lifeIcons.count {
+			lifeIcons[index].isHidden = true
+		}
+		rollInLife(at: shown-1, delay: 0)
+	}
+	// A gained life rolls into the free slot on the right. Past three the container grows,
+	// which shifts the balls already there, so those slide across rather than jumping
+
+	func rollInLife(at index: Int, delay: TimeInterval) {
+		guard index < lifeIcons.count else { return }
+		let icon = lifeIcons[index]
+		let home = livesRowHome(index: index)
+
+		icon.removeAllActions()
+		icon.isHidden = false
+		icon.alpha = GameScene.lifeIconAlpha
+		icon.setScale(1)
+		icon.zRotation = 0
+		icon.position = CGPoint(x: home.x + ballSize*1.4, y: home.y)
+
+		let arrive = SKAction.moveTo(x: home.x - ballSize*0.30, duration: 0.16)
+		arrive.timingMode = .easeOut
+		let rebound = SKAction.moveTo(x: home.x + ballSize*0.13, duration: 0.10)
+		rebound.timingMode = .easeInEaseOut
+		let settle = SKAction.moveTo(x: home.x, duration: 0.08)
+		settle.timingMode = .easeOut
+		// Rolls in a short way from the right, knocks against the ball ahead and rocks to
+		// a stop. Enough to read as rolling without travelling across the screen
+
+		let spin = SKAction.rotate(byAngle: -ballSize*1.7/(ballSize/2), duration: 0.34)
+		spin.timingMode = .easeOut
+		// Reads as rolling on themes whose ball texture has detail
+
+		icon.run(SKAction.sequence([
+			SKAction.wait(forDuration: delay),
+			SKAction.group([SKAction.sequence([arrive, rebound, settle]), spin])
+		]))
+	}
 
 	func flyLifeToPaddle() {
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
