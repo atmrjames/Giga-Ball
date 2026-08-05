@@ -138,13 +138,23 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         navigatedFrom == "PauseMenu" ? 2 : 0
     }
 
+    /// The last row, which is Reset Ball from the pause menu and Reset Game Data from the
+    /// main menu. The latter was never implemented, so the main menu does not offer it.
+    ///
+    /// Dropped from the count rather than hidden in place: a hidden cell still takes up
+    /// its row, which left the list 70 points taller than its content and scrolling for
+    /// a row nobody could see.
+    private var trailingRowsHiddenOutOfGame: Int {
+        navigatedFrom == "PauseMenu" ? 0 : 1
+    }
+
     /// The row as the switches below number them, which is the main menu's numbering.
     private func settingRow(for indexPath: IndexPath) -> Int {
         indexPath.row + leadingRowsHiddenInGame
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            return 10 - leadingRowsHiddenInGame
+            return 10 - leadingRowsHiddenInGame - trailingRowsHiddenOutOfGame
     }
     // Set number of cells in table view
     
@@ -294,12 +304,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 break
             }
         
-        cell.isHidden = settingRow(for: indexPath) == 9 && navigatedFrom != "PauseMenu"
-        // The last row is Reset Ball from the pause menu, which works, and Reset Game
-        // Data from the main menu, which was never implemented - so it is hidden there.
-        // Set on every path rather than only one, or a reused cell keeps the last
-        // value: this was pinned to row 8, and adding a row above it silently hid
-        // Swipe Up To Pause instead
+        cell.isHidden = false
+        // Rows that are not offered are left out of the count instead - see
+        // trailingRowsHiddenOutOfGame. Still reset here, or a cell reused from when this
+        // did hide rows would come back invisible
 
         
             UIView.animate(withDuration: 0.2) {

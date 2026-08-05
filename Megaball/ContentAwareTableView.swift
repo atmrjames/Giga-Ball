@@ -22,19 +22,32 @@ extension UIScrollView {
 
     /// Matches scrolling and the scroll indicator to whether the content overflows.
     func applyScrollAffordance() {
-        // A hair of tolerance: content that fits exactly should not count as overflowing,
-        // and heights land on fractional values often enough to matter.
-        let overflows = contentSize.height > bounds.height - adjustedContentInset.top
-            - adjustedContentInset.bottom + 0.5
+        // Judge against the frame itself. Measuring against the frame less the adjusted
+        // content inset counted the safe-area padding as content that did not fit, so a
+        // list whose rows were all visible still had a few points of scroll in it - and
+        // with alwaysBounceVertical set in the storyboard, that read as a list that
+        // scrolls for no reason.
+        let overflows = contentSize.height > bounds.height + 0.5
 
         isScrollEnabled = overflows
         showsVerticalScrollIndicator = overflows
+        alwaysBounceVertical = overflows
+        // Otherwise a list that fits still rubber-bands, which looks like it scrolls
+
         indicatorStyle = .white
         // The menus are dark, and the default indicator is nearly invisible on them
     }
 }
 
 final class ContentAwareTableView: UITableView {
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        contentInsetAdjustmentBehavior = .never
+        // These tables sit inside a container that already keeps clear of the safe area,
+        // so an adjusted inset on top of that is padding nothing and only muddies the
+        // question of whether the content fits
+    }
 
     override func layoutSubviews() {
         super.layoutSubviews()
