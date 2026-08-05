@@ -39,7 +39,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     var resumeGameToLoad: Bool = false
     var iCloudSetting: Bool = false
     var firstPause: Bool = true
-    var IAPLocalPrice: String?
     // User settings
     var savedGame: SavedGame?
     // Game save settings
@@ -408,7 +407,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["resumeGameToLoad": false])
         defaults.register(defaults: ["iCloudSetting": false])
         defaults.register(defaults: ["firstPause": true])
-        defaults.register(defaults: ["IAPLocalPrice": ""])
         // User settings
         
         // Game save settings
@@ -518,7 +516,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         resumeGameToLoad = defaults.bool(forKey: "resumeGameToLoad")
         iCloudSetting = defaults.bool(forKey: "iCloudSetting")
         firstPause = defaults.bool(forKey: "firstPause")
-        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // User settings
                 
         savedGame = SavedGame.load()

@@ -20,7 +20,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var paddleSetting: Int = 0
     var brickSetting: Int = 0
     var appIconSetting: Int = 0
-    var IAPLocalPrice: String?
     // User settings
     
     
@@ -45,9 +44,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
-    @IBOutlet var premiumTableView: UITableView!
-    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
-    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -71,8 +67,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
-        premiumTableView.delegate = self
-        premiumTableView.dataSource = self
         
         itemsTableView.rowHeight = 70.0
         
@@ -81,45 +75,31 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if parallaxSetting {
             addParallax()
         }
-        premiumTableViewHideShow()
         itemsTableView.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        premiumTableViewHideShow()
     }
     
-    func premiumTableViewHideShow() {
-        premiumTableExpanded.isActive = false
-        premiumTableView.isHidden = true
-        premiumTableCollapsed.isActive = true
-        // The promo table advertised an in-app purchase that no longer exists. Its
-        // condition required premiumSetting to be false and that flag was forced true,
-        // so it has been unreachable for some time. Collapsed unconditionally
-    }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if tableView == self.premiumTableView {
-            return 1
+        if senderID == 0 {
+        // App icons
+            return totalStatsArray[0].appIconUnlockedArray.count
+        } else if senderID == 1 {
+        // Theme
+            return totalStatsArray[0].themeUnlockedArray.count
+        } else if senderID == 2 {
+        // Power-ups
+            return totalStatsArray[0].powerUpUnlockedArray.count
+        } else if senderID == 3 {
+        // Achievements
+            return LevelPackSetup().achievementsNameArray.count
         } else {
-            if senderID == 0 {
-            // App icons
-                return totalStatsArray[0].appIconUnlockedArray.count
-            } else if senderID == 1 {
-            // Theme
-                return totalStatsArray[0].themeUnlockedArray.count
-            } else if senderID == 2 {
-            // Power-ups
-                return totalStatsArray[0].powerUpUnlockedArray.count
-            } else if senderID == 3 {
-            // Achievements
-                return LevelPackSetup().achievementsNameArray.count
-            } else {
-            // default
-                return 1
-            }
+        // default
+            return 1
         }
     }
     
@@ -477,7 +457,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         paddleSetting = defaults.integer(forKey: "paddleSetting")
         brickSetting = defaults.integer(forKey: "brickSetting")
         appIconSetting = defaults.integer(forKey: "appIconSetting")
-        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
     
@@ -565,16 +544,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     @objc func iAPcompleteNotificationKeyReceived(_ notification: Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow()
-        premiumTableView.reloadData()
         itemsTableView.reloadData()
     }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow()
-        premiumTableView.reloadData()
         itemsTableView.reloadData()
         backButtonCollectionView.reloadData()
     }

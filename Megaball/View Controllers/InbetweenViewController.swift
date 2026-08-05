@@ -39,7 +39,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     var hapticsSetting: Bool = true
     var parallaxSetting: Bool = true
     var paddleSensitivitySetting: Int = 2
-    var IAPLocalPrice: String?
     // User settings
     
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -64,7 +63,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     
     @IBOutlet var tapLabel: UILabel!
     
-    @IBOutlet var premiumTableView: UITableView!
     
     @IBOutlet var totalScoreNoSpeedBonus: NSLayoutConstraint!
     @IBOutlet var totalScoreSpeedBonus: NSLayoutConstraint!
@@ -117,12 +115,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
                 
         
-        premiumTableView.isHidden = true
         
         showAnimate()
         
         if (levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel) || (levelNumber == 0 && firstLevel) || firstLevel {
-            premiumTableView.isHidden = true
             showAnimateDuration = 0
             levelNumber = levelNumber-1
             levelNumberCorrected = levelNumberCorrected-1
@@ -145,7 +141,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
-        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
 
@@ -159,7 +154,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
     
     func removeAnimate() {
-        premiumTableView.isHidden = true
         UIView.animate(withDuration: showAnimateDuration, animations: {
             self.contentView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
             self.contentView.alpha = 0.0})
@@ -315,7 +309,6 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        premiumTableView.isHidden = true
     }
     // Runs when the NSUbiquitousKeyValueStore changes
 }

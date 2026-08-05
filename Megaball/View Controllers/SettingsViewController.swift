@@ -34,7 +34,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     var swipeUpPause: Bool = true
     var appOpenCount: Int = 0
     var firstPause: Bool = true
-    var IAPLocalPrice: String?
     // User settings
     var savedGame: SavedGame?
     // Game save settings
@@ -637,7 +636,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         swipeUpPause = defaults.bool(forKey: "swipeUpPause")
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         firstPause = defaults.bool(forKey: "firstPause")
-        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // User settings
         
         savedGame = SavedGame.load()

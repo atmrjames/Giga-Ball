@@ -19,7 +19,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     var paddleSensitivitySetting: Int = 2
     var gameCenterSetting: Bool = false
     var statsCollapseSetting: Bool = true
-    var IAPLocalPrice: String?
     // User settings
     
     
@@ -56,9 +55,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     @IBOutlet var collapsedStatsTableViewHeight: NSLayoutConstraint!
     // Stats table view constraints
     
-    @IBOutlet var premiumTableView: UITableView!
-    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
-    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -97,11 +93,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         levelsTableView.register(UINib(nibName: "LevelSelectorTableViewCell", bundle: nil), forCellReuseIdentifier: "levelSelectorCell")
         // Levels tableView setup
         
-        premiumTableView.delegate = self
-        premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
         
-        premiumTableViewHideShow()
         
         if parallaxSetting {
             addParallax()
@@ -113,21 +105,10 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         reloadData()
     }
     
-    func premiumTableViewHideShow() {
-        premiumTableView.isHidden = true
-        premiumTableExpanded.isActive = false
-        premiumTableCollapsed.isActive = true
-        // The promo table advertised an in-app purchase that no longer exists. It was
-        // already unreachable - its condition required premiumSetting to be false, and
-        // that flag was forced true - so it stays collapsed unconditionally. Its cell
-        // identifier is not registered, so showing it traps in dequeueReusableCell
-    }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tableView == self.statsTableView {
             return 2
-        } else if tableView == self.premiumTableView {
-            return 1
         } else {
             return numberOfLevels!
         }
@@ -451,7 +432,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
         gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         statsCollapseSetting = defaults.bool(forKey: "statsCollapseSetting")
-        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
     
@@ -603,8 +583,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         userSettings()
         loadData()
         updateLabels()
-        premiumTableViewHideShow()
-        premiumTableView.reloadData()
         reloadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes

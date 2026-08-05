@@ -16,7 +16,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     var hapticsSetting: Bool = true
     var parallaxSetting: Bool = true
     var paddleSensitivitySetting: Int = 2
-    var IAPLocalPrice: String?
     // User settings
     
     
@@ -37,9 +36,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var packTableView: UITableView!
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
-    @IBOutlet var premiumTableView: UITableView!
-    @IBOutlet var premiumTableCollapsed: NSLayoutConstraint!
-    @IBOutlet var premiumTableExpanded: NSLayoutConstraint!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -64,11 +60,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
-        premiumTableView.delegate = self
-        premiumTableView.dataSource = self
-        premiumTableView.register(UINib(nibName: "IAPTableViewCell", bundle: nil), forCellReuseIdentifier: "iAPCell")
         
-        premiumTableViewHideShow()
         
         setBlur()
         if parallaxSetting {
@@ -80,25 +72,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        premiumTableViewHideShow()
     }
     
-    func premiumTableViewHideShow() {
-        premiumTableView.isHidden = true
-        premiumTableExpanded.isActive = false
-        premiumTableCollapsed.isActive = true
-        // The promo table advertised an in-app purchase that no longer exists. It was
-        // already unreachable - its condition required premiumSetting to be false, and
-        // that flag was forced true - so it stays collapsed unconditionally. Its cell
-        // identifier is not registered, so showing it traps in dequeueReusableCell
-    }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if tableView == self.premiumTableView {
-            return 1
-        } else {
-            return 11
-        }
+        return 11
     }
     // Set number of cells in table views
     
@@ -297,7 +275,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
-        IAPLocalPrice = defaults.string(forKey: "IAPLocalPrice")
         // Load user settings
     }
     
@@ -403,8 +380,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        premiumTableViewHideShow()
-        premiumTableView.reloadData()
         packTableView.reloadData()
         backButtonCollectionView.reloadData()
     }
