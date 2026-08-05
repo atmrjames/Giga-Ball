@@ -916,7 +916,7 @@ final class CloudKitHandler: NSObject {
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         
@@ -928,7 +928,7 @@ final class CloudKitHandler: NSObject {
                 let data = try encoder.encode(totalStatsArray)
                 try data.write(to: totalStatsStore!)
             } catch {
-                print("Error setting up total stats array, \(error)")
+                Log.data.error("Error setting up total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Fill the empty array with 0s on first opening after app deleted and re-installed and don't save to allow icloud data to fill in
@@ -940,7 +940,7 @@ final class CloudKitHandler: NSObject {
             let data = try encoder.encode(self.totalStatsArray)
             try data.write(to: totalStatsStore!)
         } catch {
-            print("Error encoding total stats, \(error)")
+            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
         // Save total stats changes
     }

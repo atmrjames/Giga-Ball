@@ -129,7 +129,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonPlay")
         default:
-            print("Error: Out of range")
+            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
         }
         
@@ -192,7 +192,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 }
                 cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -224,7 +224,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 }
                 cell.iconImage.image = UIImage(named:"ButtonPlay")
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -269,7 +269,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         

@@ -178,7 +178,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             }
             cell.widthConstraint.constant = 40
         default:
-            print("Error: Out of range")
+            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
         }
 
@@ -248,7 +248,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     cell.iconImage.image = UIImage(named:"ButtonRestartHighlighted.png")
                 }
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -286,7 +286,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     cell.iconImage.image = UIImage(named:"ButtonRestart.png")
                 }
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -516,7 +516,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         

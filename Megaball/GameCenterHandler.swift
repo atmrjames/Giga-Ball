@@ -28,7 +28,7 @@ final class GameCenterHandler: NSObject {
                 self.viewController?.present(vc, animated: true)
             }
             else {
-                print("Error authentication to GameCenter: " + "\(error?.localizedDescription ?? "none")")
+                Log.gameCenter.error("Error authenticating to Game Center: \(error?.localizedDescription ?? "none", privacy: .public)")
             }
         }
     }
@@ -82,7 +82,7 @@ final class GameCenterHandler: NSObject {
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Load the total stats array from the NSCoder data store

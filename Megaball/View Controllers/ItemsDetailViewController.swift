@@ -394,7 +394,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         UIApplication.shared.setAlternateIconName(iconName, completionHandler: { (error) in
         // Change the icon to an image with specific name
             if let error = error {
-            print("App icon failed to change due to \(error.localizedDescription)")
+            Log.ui.error("App icon failed to change due to \(error.localizedDescription, privacy: .public)")
             }
         })
     }
@@ -482,7 +482,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Load the total stats array from the NSCoder data store

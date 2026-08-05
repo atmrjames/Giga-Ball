@@ -113,7 +113,7 @@ class InbetweenLevels: GKState {
             if achievement.isCompleted == false {
                 achievement.showsCompletionBanner = true
                 GKAchievement.report([achievement]) { (error) in
-                    print(error?.localizedDescription ?? "Error reporting endBackstop achievement")
+                    Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endBackstop achievement", privacy: .public)")
                 }
             }
         }
@@ -279,7 +279,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting fiveKPointsLevel achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fiveKPointsLevel achievement", privacy: .public)")
                     }
                 }
             }
@@ -290,7 +290,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting tenKPointsLevel achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenKPointsLevel achievement", privacy: .public)")
                     }
                 }
             }
@@ -311,7 +311,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting hundredKTotalScore achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting hundredKTotalScore achievement", privacy: .public)")
                     }
                 }
             }
@@ -330,7 +330,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting fiveHundredKTotalScore achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fiveHundredKTotalScore achievement", privacy: .public)")
                     }
                 }
             }
@@ -349,7 +349,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting millTotalScore achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting millTotalScore achievement", privacy: .public)")
                     }
                 }
             }
@@ -365,7 +365,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting noBallsLost achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noBallsLost achievement", privacy: .public)")
                     }
                 }
             }
@@ -376,7 +376,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting threeBallsLost achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting threeBallsLost achievement", privacy: .public)")
                     }
                 }
             }
@@ -391,7 +391,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting allLevelPowerUps achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting allLevelPowerUps achievement", privacy: .public)")
                     }
                 }
             }
@@ -402,7 +402,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting noLevelPowerUps achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noLevelPowerUps achievement", privacy: .public)")
                     }
                 }
             }
@@ -418,7 +418,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting oneLevelsComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting oneLevelsComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -437,7 +437,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting tenLevelsComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenLevelsComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -456,7 +456,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting hunderdLevelsComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting hunderdLevelsComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -475,7 +475,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting oneKLevelsComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting oneKLevelsComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -494,7 +494,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting tenKLevelsComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenKLevelsComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -507,7 +507,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting quickLevelComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting quickLevelComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -523,7 +523,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting tenKPointsPack achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenKPointsPack achievement", privacy: .public)")
                     }
                 }
             }
@@ -534,7 +534,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting twoFiveKPointsPack achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting twoFiveKPointsPack achievement", privacy: .public)")
                     }
                 }
             }
@@ -545,7 +545,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting fiftyKPointsPack achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fiftyKPointsPack achievement", privacy: .public)")
                     }
                 }
             }
@@ -570,7 +570,7 @@ class InbetweenLevels: GKState {
                 if achievementPack.isCompleted == false {
                     achievementPack.showsCompletionBanner = true
                     GKAchievement.report([achievementPack]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting \(reward.achievementIdentifier) achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(reward.achievementIdentifier) achievement", privacy: .public)")
                     }
                 }
             }
@@ -587,7 +587,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting noBallsLostPack achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noBallsLostPack achievement", privacy: .public)")
                     }
                 }
             }
@@ -598,7 +598,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting tenBallsLostPack achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenBallsLostPack achievement", privacy: .public)")
                     }
                 }
             }
@@ -611,7 +611,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting allPackPowerUps achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting allPackPowerUps achievement", privacy: .public)")
                     }
                 }
             }
@@ -622,7 +622,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting noPackPowerUps achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noPackPowerUps achievement", privacy: .public)")
                     }
                 }
             }
@@ -635,7 +635,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting quickPackComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting quickPackComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -652,7 +652,7 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting onePacksComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting onePacksComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -671,7 +671,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting tenPacksComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenPacksComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -690,7 +690,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting hundredPacksComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting hundredPacksComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -709,7 +709,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting thousandPacksComplete achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting thousandPacksComplete achievement", privacy: .public)")
                     }
                 }
             }
@@ -732,7 +732,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting achievementEndlessFiveK achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessFiveK achievement", privacy: .public)")
                     }
                 }
             }
@@ -751,7 +751,7 @@ class InbetweenLevels: GKState {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
                     GKAchievement.report([achievement]) { (error) in
-                        print(error?.localizedDescription ?? "Error reporting achievementEndlessTenK achievement")
+                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessTenK achievement", privacy: .public)")
                     }
                 }
             }

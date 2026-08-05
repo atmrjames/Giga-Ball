@@ -269,7 +269,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.centreLabel.textColor = #colorLiteral(red: 1, green: 0.1764705882, blue: 0.3333333333, alpha: 1)
 //                }
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         
@@ -439,7 +439,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             let data = try encoder.encode(self.totalStatsArray)
             try data.write(to: totalStatsStore!)
         } catch {
-            print("Error encoding total stats, \(error)")
+            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
         CloudKitHandler().saveToiCloud()
     }
@@ -463,7 +463,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             let data = try encoder.encode(self.totalStatsArray)
             try data.write(to: totalStatsStore!)
         } catch {
-            print("Error encoding total stats, \(error)")
+            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
         CloudKitHandler().saveDataReset()
         // Save to iCloud
@@ -644,7 +644,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Load the total stats array from the NSCoder data store
@@ -721,7 +721,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             totalStatsArray[0].dateSaved = Date()
             try data.write(to: totalStatsStore!)
         } catch {
-            print("Error encoding total stats, \(error)")
+            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
         CloudKitHandler().saveDataReset()
     }
@@ -735,7 +735,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         UIApplication.shared.setAlternateIconName(iconName, completionHandler: { (error) in
         // Change the icon to an image with specific name
             if let error = error {
-            print("App icon failed to change due to \(error.localizedDescription)")
+            Log.ui.error("App icon failed to change due to \(error.localizedDescription, privacy: .public)")
             }
         })
     }

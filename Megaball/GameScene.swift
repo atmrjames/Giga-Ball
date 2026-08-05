@@ -1189,7 +1189,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			do {
 				totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
 			} catch {
-				print("Error decoding total stats array, \(error)")
+				Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
 			}
 		}
 		
@@ -1218,7 +1218,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting endlessOneMins achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessOneMins achievement", privacy: .public)")
 				}
 			}
 		}
@@ -1229,7 +1229,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting endlessFiveMins achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessFiveMins achievement", privacy: .public)")
 				}
 			}
 		}
@@ -1240,7 +1240,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting endlessTenMins achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessTenMins achievement", privacy: .public)")
 				}
 			}
 		}
@@ -1251,7 +1251,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting endlessThirtyMins achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessThirtyMins achievement", privacy: .public)")
 				}
 			}
 		}
@@ -1262,7 +1262,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting endlessSixtyMins achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessSixtyMins achievement", privacy: .public)")
 				}
 			}
 		}
@@ -1297,7 +1297,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if achievement.isCompleted == false {
 					achievement.showsCompletionBanner = true
 					GKAchievement.report([achievement]) { (error) in
-						print(error?.localizedDescription ?? "Error reporting paddleSpeed achievement")
+						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting paddleSpeed achievement", privacy: .public)")
 					}
 				}
 			}
@@ -1875,7 +1875,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						achievement.percentComplete = percentComplete
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting powerUpLeaverHundred achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpLeaverHundred achievement", privacy: .public)")
 						}
 					}
 				}
@@ -1894,7 +1894,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						achievement.percentComplete = percentComplete
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting powerUpLeaverThousand achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpLeaverThousand achievement", privacy: .public)")
 						}
 					}
 				}
@@ -2111,7 +2111,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if achievement.isCompleted == false {
 					achievement.showsCompletionBanner = true
 					GKAchievement.report([achievement]) { (error) in
-						print(error?.localizedDescription ?? "Error reporting fivePaddleHits achievement")
+						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fivePaddleHits achievement", privacy: .public)")
 					}
 				}
 			}
@@ -2122,7 +2122,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if achievement.isCompleted == false {
 					achievement.showsCompletionBanner = true
 					GKAchievement.report([achievement]) { (error) in
-						print(error?.localizedDescription ?? "Error reporting tenPaddleHits achievement")
+						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenPaddleHits achievement", privacy: .public)")
 					}
 				}
 			}
@@ -2161,7 +2161,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting endlessCleared achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessCleared achievement", privacy: .public)")
 				}
 			}
 		}
@@ -2207,7 +2207,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting achievementEndlessTen achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessTen achievement", privacy: .public)")
 				}
 			}
 		}
@@ -2218,7 +2218,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting achievementEndlessHundred achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessHundred achievement", privacy: .public)")
 				}
 			}
 		}
@@ -2229,7 +2229,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting achievementEndlessFiveHundred achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessFiveHundred achievement", privacy: .public)")
 				}
 			}
 		}
@@ -2240,7 +2240,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting achievementEndlessOneK achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessOneK achievement", privacy: .public)")
 				}
 			}
 		}
@@ -2806,7 +2806,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievementPowerUp.isCompleted == false {
 				achievementPowerUp.showsCompletionBanner = true
 				GKAchievement.report([achievementPowerUp]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting firstPowerUp achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting firstPowerUp achievement", privacy: .public)")
 				}
 			}
 		}
@@ -2997,7 +2997,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting maxPaddleSize achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting maxPaddleSize achievement", privacy: .public)")
 						}
 					}
 				}
@@ -3075,7 +3075,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting minPaddleSize achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting minPaddleSize achievement", privacy: .public)")
 						}
 					}
 				}
@@ -3540,7 +3540,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if achievementMystery.isCompleted == false {
 					achievementMystery.showsCompletionBanner = true
 					GKAchievement.report([achievementMystery]) { (error) in
-						print(error?.localizedDescription ?? "Error reporting mysteryPowerUp achievement")
+						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting mysteryPowerUp achievement", privacy: .public)")
 					}
 				}
 			}
@@ -3602,7 +3602,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting maxBallSize achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting maxBallSize achievement", privacy: .public)")
 						}
 					}
 				}
@@ -3669,7 +3669,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting minBallSize achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting minBallSize achievement", privacy: .public)")
 						}
 					}
 				}
@@ -3729,7 +3729,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting favouritePowerUp achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting favouritePowerUp achievement", privacy: .public)")
 				}
 			}
 		}
@@ -3750,7 +3750,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting powerUpCollectorHundred achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpCollectorHundred achievement", privacy: .public)")
 				}
 			}
 		}
@@ -3769,7 +3769,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
 				GKAchievement.report([achievement]) { (error) in
-					print(error?.localizedDescription ?? "Error reporting powerUpCollectorThousand achievement")
+					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpCollectorThousand achievement", privacy: .public)")
 				}
 			}
 		}
@@ -4645,7 +4645,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
 						GKAchievement.report([achievement]) { (error) in
-							print(error?.localizedDescription ?? "Error reporting gigaLasers achievement")
+							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting gigaLasers achievement", privacy: .public)")
 						}
 					}
 				}
@@ -4713,7 +4713,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let data = try encoder.encode(self.totalStatsArray)
             try data.write(to: totalStatsStore!)
         } catch {
-            print("Error encoding total stats, \(error)")
+            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
 		CloudKitHandler().saveToiCloud()
         // Save total stats

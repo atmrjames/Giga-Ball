@@ -36,7 +36,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
                     try AVAudioSession.sharedInstance().setActive(true)
                 }
             } catch let error {
-                print("Audio session setup failed: ", error.localizedDescription)
+                Log.audio.error("Audio session setup failed: \(error.localizedDescription, privacy: .public)")
             }
             work?()
             // Playback runs here too. AVAudioPlayer implicitly activates the session, which
@@ -83,7 +83,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
                 DispatchQueue.main.async { self.player = player }
                 // Published back on the main queue, where every other method touches it
             } catch let error {
-                print("Music track failed: ", error.localizedDescription)
+                Log.audio.error("Music track failed: \(error.localizedDescription, privacy: .public)")
             }
         }
     }

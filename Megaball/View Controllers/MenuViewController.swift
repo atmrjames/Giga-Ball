@@ -213,7 +213,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             cell.modeTextLabel.text = "Endless Mode"
 
         default:
-            print("Error: Out of range")
+            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
         }
         
@@ -305,7 +305,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonSettings.png")
         default:
-            print("Error: Out of range")
+            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
         }
         
@@ -349,7 +349,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 }
                 cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -374,7 +374,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 }
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -475,7 +475,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Load the total stats array from the NSCoder data store
@@ -488,7 +488,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 let data = try encoder.encode(totalStatsArray)
                 try data.write(to: totalStatsStore!)
             } catch {
-                print("Error setting up total stats array, \(error)")
+                Log.data.error("Error setting up total stats array, \(String(describing: error), privacy: .public)")
             }
             CloudKitHandler().saveToiCloud()
         }

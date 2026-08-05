@@ -296,7 +296,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Load the total stats array from the NSCoder data store

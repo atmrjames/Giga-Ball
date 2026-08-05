@@ -420,7 +420,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonNull")
         default:
-            print("Error: Out of range")
+            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
         }
         
@@ -467,7 +467,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -496,7 +496,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             case 2:
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             default:
-                print("Error: Out of range")
+                Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                 break
             }
         }
@@ -517,7 +517,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData)
             } catch {
-                print("Error decoding total stats array, \(error)")
+                Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
         }
         // Load the total stats array from the NSCoder data store
