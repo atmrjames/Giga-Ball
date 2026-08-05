@@ -19,6 +19,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     var gameoverBool: Bool = false
     var newItemsBool: Bool = false
     var previousHighscore: Int = 0
+    var livesRemaining: Int = 0
     // Properties to store passed over data
     
     let defaults = UserDefaults.standard
@@ -57,6 +58,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     @IBOutlet var levelNameLabel: UILabel!
     @IBOutlet var newItemsLabel: UILabel!
     
+    let livesLabel = UILabel()
+    // Added in code rather than the storyboard: the pause screen's labels are all wired
+    // through outlets and constraints there, and adding one more by hand risks the
+    // layout of a screen that is otherwise working
+
     @IBOutlet var levelTitleLowerConstraint: NSLayoutConstraint!
     @IBOutlet var levelNameLabelNormalConstraint: NSLayoutConstraint!
     
@@ -88,6 +94,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         if parallaxSetting! {
             addParallaxToView()
         }
+        setUpLivesLabel()
         loadData()
         updateLabels()
         collectionViewLayout()
@@ -95,6 +102,33 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         showAnimate()
     }
     
+    func setUpLivesLabel() {
+        livesLabel.translatesAutoresizingMaskIntoConstraints = false
+        livesLabel.textAlignment = .center
+        livesLabel.font = highscoreLabelTitle.font
+        livesLabel.textColor = highscoreLabelTitle.textColor
+        livesLabel.isHidden = true
+        containterView.addSubview(livesLabel)
+
+        NSLayoutConstraint.activate([
+            livesLabel.centerXAnchor.constraint(equalTo: highscoreLabel.centerXAnchor),
+            livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16)
+        ])
+    }
+    // Matches the "Previous Highscore" title's font and colour, so it reads as another
+    // line of the same block rather than something bolted on
+
+    func updateLivesLabel() {
+        guard sender == "Pause", !endlessMode else {
+            livesLabel.isHidden = true
+            return
+        }
+        livesLabel.isHidden = false
+        livesLabel.text = livesRemaining == 1 ? "1 life left" : "\(livesRemaining) lives left"
+    }
+    // Only while paused mid-game. On game over the count is zero and saying so is just
+    // rubbing it in, and endless mode has a single life and no counter anywhere else
+
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         
@@ -295,6 +329,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func updateLabels() {
+        updateLivesLabel()
+
         newItemsLabel.isHidden = true
         if sender == "Pause" {
             titleLabel.text = "P A U S E D"

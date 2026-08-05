@@ -72,7 +72,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     }
     // Segue to MenuViewController
     
-    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int) {
+    func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int, livesRemaining: Int) {
         let pauseMenuVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "pauseMenuVC") as! PauseMenuViewController
         pauseMenuVC.levelNumber = levelNumber
         pauseMenuVC.numberOfLevels = numberOfLevels
@@ -82,6 +82,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         pauseMenuVC.sender = sender
         pauseMenuVC.gameoverBool = gameoverBool
         pauseMenuVC.newItemsBool = newItemsBool
+        pauseMenuVC.livesRemaining = livesRemaining
         pauseMenuVC.previousHighscore = previousHighscore
         // Update pause menu view controller properties with function input values
         self.addChild(pauseMenuVC)

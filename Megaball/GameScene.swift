@@ -36,7 +36,7 @@ enum CollisionTypes: UInt32 {
 
 protocol GameViewControllerDelegate: AnyObject {
 	func moveToMainMenu()
-	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int)
+	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int, livesRemaining: Int)
 	func showWarning(senderID: String)
 	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
 	var selectedLevel: Int? { get set }
@@ -4263,7 +4263,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Hide UI
 		}
 				
-		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore)
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore, livesRemaining: numberOfLives)
 		// Pass over highscore data to pause menu
 		
 		if firstPause! && sender == "Pause" {
