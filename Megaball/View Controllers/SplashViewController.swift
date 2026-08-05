@@ -75,16 +75,24 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         cancelResumeButton.dataSource = self
         cancelResumeButton.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         
-        if gameToResume! {
+        if gameToResume == true {
             userSettings()
+        }
+        // userSettings loads savedGame, so it has to run before the save is bound below
+
+        if gameToResume == true, let savedGame {
+            // Both conditions matter. resumeGameToLoad is a separate flag from the save
+            // itself, so a save that fails to decode leaves the flag true and nothing to
+            // resume. Showing the prompt then unwrapping would trap at launch - the crash
+            // loop this format was meant to end
             resumingLabel.isHidden = false
             cancelResumeButton.isHidden = false
             
-            let currentLevelNumber = savedGame!.levelNumber
-            let currentPackNumber = savedGame!.packNumber
-            let score = savedGame!.totalScore
-            let height = savedGame!.endlessHeight
-            let numberOfLevels = savedGame!.numberOfLevels
+            let currentLevelNumber = savedGame.levelNumber
+            let currentPackNumber = savedGame.packNumber
+            let score = savedGame.totalScore
+            let height = savedGame.endlessHeight
+            let numberOfLevels = savedGame.numberOfLevels
             
             if numberOfLevels > 1 {
                 packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[currentPackNumber])"
@@ -95,7 +103,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             }
             scoreLabel.text = "\(score)"
             scoreTitleLabel.text = "Score"
-            let lives = savedGame!.numberOfLives
+            let lives = savedGame.numberOfLives
             livesLabel.text = lives == 1 ? "1 life left" : "\(lives) lives left"
             livesLabel.isHidden = false
             

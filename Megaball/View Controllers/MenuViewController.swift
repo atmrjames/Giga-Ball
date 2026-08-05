@@ -647,9 +647,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func loadSavedGame() {
+        guard let savedGame else { return }
+        // Reached from the resume prompt, so there is always a save - but returning
+        // quietly beats trapping if the prompt is ever shown without one
         levelSender = "MainMenu"
-        numberOfLevels = savedGame!.endLevelNumber - savedGame!.levelNumber + 1
-        moveToGame(selectedLevel: savedGame!.levelNumber, numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: savedGame!.packNumber)
+        numberOfLevels = savedGame.endLevelNumber - savedGame.levelNumber + 1
+        moveToGame(selectedLevel: savedGame.levelNumber, numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: savedGame.packNumber)
     }
     
 }

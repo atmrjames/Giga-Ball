@@ -11,9 +11,12 @@ import GameplayKit
 
 extension GameScene {
     func resumeBrickCreation() {
+        guard let savedGame else { return }
+        // Same as resumeGame: bound once instead of unwrapped at every use
+
         
         if levelNumber == 0 {
-            prepEndlessMode(height: savedGame!.endlessHeight)
+            prepEndlessMode(height: savedGame.endlessHeight)
         }
 
         powerUpProbAllocation(levelNumber: levelNumber)
@@ -21,11 +24,11 @@ extension GameScene {
         var brickArray: [SKNode] = []
         // Array to store all bricks
         
-        for i in 0..<savedGame!.brickTextures.count {
+        for i in 0..<savedGame.brickTextures.count {
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
                         
             var brickTexture: SKTexture?
-            switch savedGame!.brickTextures[i] {
+            switch savedGame.brickTextures[i] {
             case 0:
                 brickTexture = brickNormalTexture
                 brick.isHidden = false
@@ -57,9 +60,9 @@ extension GameScene {
             }
             brick.texture = brickTexture!
             
-            if savedGame!.brickColours.count > 0 {
+            if savedGame.brickColours.count > 0 {
                 var brickColour: UIColor?
-                switch savedGame!.brickColours[i] {
+                switch savedGame.brickColours[i] {
                 case 0:
                     brickColour = brickBlue
                 case 1:
@@ -118,8 +121,8 @@ extension GameScene {
             }
             // Assign brick texture & colour
             
-            let brickPositionX = savedGame!.brickXPositions[i]
-            let brickPositionY = savedGame!.brickYPositions[i]
+            let brickPositionX = savedGame.brickXPositions[i]
+            let brickPositionY = savedGame.brickYPositions[i]
             brick.position = CGPoint(x: gameWidth/2 - brickWidth/2 - brickWidth*CGFloat(brickPositionX), y: yBrickOffset - brickHeight*CGFloat(brickPositionY))
             // Assign brick position
             

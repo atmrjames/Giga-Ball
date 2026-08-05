@@ -267,6 +267,28 @@ final class SavedGameTests: XCTestCase {
         XCTAssertEqual(g.paddleHitsPerLevel, 16)
     }
 
+    // MARK: - The resume flag and the save are separate
+
+    func testACorruptSaveLoadsAsNothingToResume() {
+        // resumeGameToLoad is its own UserDefaults flag. A save that fails to
+        // decode leaves it set with nothing behind it, and the resume path runs
+        // at launch - so "flag set, load returns nil" has to be a state the app
+        // survives rather than one it traps on.
+        defaults.set(true, forKey: "resumeGameToLoad")
+        defaults.set(Data([0xDE, 0xAD, 0xBE, 0xEF]), forKey: SavedGame.defaultsKey)
+
+        XCTAssertNil(SavedGame.load(from: defaults))
+        XCTAssertEqual(defaults.object(forKey: "resumeGameToLoad") as? Bool, true,
+                       "The flag survives independently, which is why callers must check both")
+    }
+
+    func testATruncatedLegacySaveWithTheFlagSetLoadsAsNothing() {
+        defaults.set(true, forKey: "resumeGameToLoad")
+        writeLegacySave(progress: [1, 2, 3])
+
+        XCTAssertNil(SavedGame.load(from: defaults))
+    }
+
     // MARK: - Versioning
 
     func testASaveCarriesTheCurrentVersion() {

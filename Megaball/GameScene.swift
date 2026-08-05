@@ -5166,13 +5166,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func resumeGame() {
+		guard let savedGame else { return }
+		// Bound once, shadowing the property, rather than force-unwrapped at each of the
+		// twenty-odd uses below. Nothing here is reachable without a save, but that was
+		// implied by the guards rather than stated, and this path runs at launch
 		if resumeGameToLoad! {
-			if (savedGame?.ballProperties.isEmpty == false) {
+			if (savedGame.ballProperties.isEmpty == false) {
 				ballIsOnPaddle = false
 				ballLostBool = false
-				ball.position.x = CGFloat(savedGame!.ballProperties[0])
-				ball.position.y = CGFloat(savedGame!.ballProperties[1])
-				paddle.position.x = CGFloat(savedGame!.ballProperties[4])
+				ball.position.x = CGFloat(savedGame.ballProperties[0])
+				ball.position.y = CGFloat(savedGame.ballProperties[1])
+				paddle.position.x = CGFloat(savedGame.ballProperties[4])
 				paddleLaser.position.x = paddle.position.x
 				paddleLaser.position.y = paddle.position.y - paddleHeight/2
 				paddleSticky.position.x = paddle.position.x
@@ -5183,27 +5187,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				paddleRetroLaserTexture.position.y = paddle.position.y
 				paddleRetroStickyTexture.position.x = paddle.position.x
 				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
-				numberOfLevels = savedGame!.numberOfLevels
-				levelTimerValue = savedGame!.levelTimerValue
-				packTimerValue = savedGame!.packTimerValue
-				deathsPerLevel = savedGame!.deathsPerLevel
-				deathsPerPack = savedGame!.deathsPerPack
-				powerUpsGeneratedPerLevel = savedGame!.powerUpsGeneratedPerLevel
-				powerUpsCollectedPerLevel = savedGame!.powerUpsCollectedPerLevel
-				powerUpsGeneratedPerPack = savedGame!.powerUpsGeneratedPerPack
-				powerUpsCollectedPerPack = savedGame!.powerUpsCollectedPerPack
-				paddleHitsPerLevel = savedGame!.paddleHitsPerLevel
+				numberOfLevels = savedGame.numberOfLevels
+				levelTimerValue = savedGame.levelTimerValue
+				packTimerValue = savedGame.packTimerValue
+				deathsPerLevel = savedGame.deathsPerLevel
+				deathsPerPack = savedGame.deathsPerPack
+				powerUpsGeneratedPerLevel = savedGame.powerUpsGeneratedPerLevel
+				powerUpsCollectedPerLevel = savedGame.powerUpsCollectedPerLevel
+				powerUpsGeneratedPerPack = savedGame.powerUpsGeneratedPerPack
+				powerUpsCollectedPerPack = savedGame.powerUpsCollectedPerPack
+				paddleHitsPerLevel = savedGame.paddleHitsPerLevel
 				levelTimerBonus = 500
 			} else {
 				saveCurrentGame()
 			}
 			// Load ball position and velocity if it has been saved
 			
-			if (savedGame?.fallingPowerUps.isEmpty == false) {
-				for i in 0..<savedGame!.fallingPowerUps.count {
+			if (savedGame.fallingPowerUps.isEmpty == false) {
+				for i in 0..<savedGame.fallingPowerUps.count {
 					
-					let powerUpPositionX = savedGame!.fallingPowerUpXPositions[i]
-					let powerUpPositionY = savedGame!.fallingPowerUpYPositions[i]
+					let powerUpPositionX = savedGame.fallingPowerUpXPositions[i]
+					let powerUpPositionY = savedGame.fallingPowerUpYPositions[i]
 
 					let powerUp = SKSpriteNode(imageNamed: "PowerUpPreSet")
 					powerUp.size.width = brickWidth*0.85
@@ -5222,7 +5226,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					powerUp.zPosition = 2
 					addChild(powerUp)
 					
-					powerUp.texture = powerUpTextureArray[savedGame!.fallingPowerUps[i]]
+					powerUp.texture = powerUpTextureArray[savedGame.fallingPowerUps[i]]
 					let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
 					powerUp.run(move, withKey: "PowerUpDrop")
 					powerUpsOnScreen+=1
@@ -5230,16 +5234,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Load power-up position and texture if it has been saved
 			}
 			
-			if (savedGame?.activePowerUps.isEmpty == false) {
-				for i in 0..<savedGame!.activePowerUps.count {
+			if (savedGame.activePowerUps.isEmpty == false) {
+				for i in 0..<savedGame.activePowerUps.count {
 					
-					let remainingTime: Double = savedGame!.activePowerUpDurations[i]
-					let totalTime: Double = savedGame!.activePowerUpTimers[i]
+					let remainingTime: Double = savedGame.activePowerUpDurations[i]
+					let totalTime: Double = savedGame.activePowerUpTimers[i]
 					let scale: CGFloat = CGFloat(remainingTime/totalTime)
 					
-					switch savedGame!.activePowerUps[i] {
+					switch savedGame.activePowerUps[i] {
 					case "ballSpeedTimer":
-						switch savedGame!.activePowerUpMagnitudes[i] {
+						switch savedGame.activePowerUpMagnitudes[i] {
 						case 0:
 							ballSpeedLimit = ballSpeedSlowest
 							ballSpeedIcon.texture = self.iconDecreaseBallSpeedTexture
@@ -5273,7 +5277,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						
 					case "paddleSizeTimer":
 						var setScale: CGFloat?
-						switch savedGame!.activePowerUpMagnitudes[i] {
+						switch savedGame.activePowerUpMagnitudes[i] {
 						case 0:
 							setScale = 0.5
 							paddleSizeIcon.texture = self.iconDecreasePaddleSizeTexture
@@ -5384,7 +5388,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						
 					case "gigaBallTimer":
 						gigaBallDeactivate = false
-						switch savedGame!.activePowerUpMagnitudes[i] {
+						switch savedGame.activePowerUpMagnitudes[i] {
 						case 0:
 							gigaBallIcon.texture = self.iconGigaBallTexture
 							ball.texture = gigaBallTexture
@@ -5459,7 +5463,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					case "ballSizeTimer":
 						ballSizeIconBar.isHidden = false
 						var setScale: CGFloat?
-						switch savedGame!.activePowerUpMagnitudes[i] {
+						switch savedGame.activePowerUpMagnitudes[i] {
 						case 0:
 							setScale = 0.5
 							ballSizeIcon.texture = self.iconBallSizeSmallTexture
@@ -5500,7 +5504,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						self.run(sequence, withKey: "powerUpIncreaseBallSize")
 						
 					case "stickyPaddle":
-						stickyPaddleCatches = savedGame!.activePowerUpMagnitudes[i]
+						stickyPaddleCatches = savedGame.activePowerUpMagnitudes[i]
 						stickyPaddleCatchesTotal = 6
 						let scale: CGFloat = CGFloat(stickyPaddleCatches/stickyPaddleCatchesTotal)
 						stickyPaddleIcon.texture = self.iconStickyPaddleTexture

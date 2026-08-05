@@ -103,12 +103,14 @@ class Playing: GKState {
         scene.levelScore = 0
         // Reset counters & scores
         
-        if scene.resumeGameToLoad! {
-            scene.levelScore = scene.savedGame!.levelScore
-            scene.totalScore = scene.savedGame!.totalScore
-            scene.numberOfLives = scene.savedGame!.numberOfLives
-            scene.multiplier = scene.savedGame!.multiplier
+        if scene.resumeGameToLoad == true, let saved = scene.savedGame {
+            scene.levelScore = saved.levelScore
+            scene.totalScore = saved.totalScore
+            scene.numberOfLives = saved.numberOfLives
+            scene.multiplier = saved.multiplier
         }
+        // The flag and the save are separate, so a save that fails to decode leaves the
+        // flag set with nothing behind it
         // If resuming a game, reset counters and scores to saved values
         
         scene.scoreLabel.text = String(scene.totalScore)
@@ -180,8 +182,8 @@ class Playing: GKState {
             scene.totalScore = scene.totalScore - scene.levelScore
             
             if (scene.savedGame?.ballProperties.isEmpty == false) {
-                scene.pauseBallVelocityX = CGFloat(scene.savedGame!.ballProperties[2])
-                scene.pauseBallVelocityY = CGFloat(scene.savedGame!.ballProperties[3])
+                scene.pauseBallVelocityX = CGFloat(scene.savedGame?.ballProperties[2] ?? 0)
+                scene.pauseBallVelocityY = CGFloat(scene.savedGame?.ballProperties[3] ?? 0)
                             
                 if sqrt(scene.pauseBallVelocityX*scene.pauseBallVelocityX) + sqrt(scene.pauseBallVelocityY*scene.pauseBallVelocityY) == 0 {
                     scene.ballLaunchAngleRad = scene.straightLaunchAngleRad + scene.minLaunchAngleRad
