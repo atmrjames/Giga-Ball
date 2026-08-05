@@ -119,6 +119,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         }
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     override func viewWillAppear(_ animated: Bool) {
         

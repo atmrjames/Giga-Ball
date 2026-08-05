@@ -86,6 +86,12 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         backButtonCollectionView.reloadData()
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()

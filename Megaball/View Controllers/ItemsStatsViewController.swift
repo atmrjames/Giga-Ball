@@ -72,6 +72,12 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         showAnimate()
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if sender == "Power-Ups" {
             return 5

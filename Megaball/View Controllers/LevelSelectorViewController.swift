@@ -104,6 +104,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         showAnimate()
         reloadData()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {

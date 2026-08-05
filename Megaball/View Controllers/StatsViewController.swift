@@ -82,6 +82,12 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         backButtonCollectionView.reloadData()
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 25

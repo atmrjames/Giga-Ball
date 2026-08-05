@@ -58,6 +58,12 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         backButtonCollectionView.reloadData()
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     override func viewDidAppear(_ animated: Bool) {
         backButtonCollectionView.reloadData()

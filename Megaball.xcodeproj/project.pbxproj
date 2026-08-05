@@ -14,6 +14,7 @@
 		1AF170000000001C /* BrickGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001B /* BrickGrid.swift */; };
 		1AF1700000000016 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000015 /* Log.swift */; };
 		1AF170000000001A /* ContentAwareTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000019 /* ContentAwareTableView.swift */; };
+		1AF1700000000020 /* MenuLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001F /* MenuLayout.swift */; };
 		1AF1700000000012 /* StatsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000011 /* StatsSync.swift */; };
 		1AF1600000000002 /* ProgressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1600000000001 /* ProgressionTests.swift */; };
 		1AF1500000000002 /* Progression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1500000000001 /* Progression.swift */; };
@@ -467,6 +468,7 @@
 		1AAB8FC724CBE2B100C87D3D /* IconPreviewRetro@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "IconPreviewRetro@3x.png"; sourceTree = "<group>"; };
 		1AB3CAE024DEA50F005DCBFB /* CloudKitHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitHandler.swift; sourceTree = "<group>"; };
 		1AF1700000000019 /* ContentAwareTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentAwareTableView.swift; sourceTree = "<group>"; };
+		1AF170000000001F /* MenuLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLayout.swift; sourceTree = "<group>"; };
 		1AC08AD923FC25FC00B4BC32 /* WarningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WarningViewController.swift; path = Megaball/WarningViewController.swift; sourceTree = SOURCE_ROOT; };
 		1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
 		1AC5AA3324D6A55E00CA9414 /* ballLostSound.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ballLostSound.mp3; sourceTree = "<group>"; };
@@ -773,6 +775,7 @@
 				1A82B52124299C8100694B67 /* GameCenterHandler.swift */,
 				1AB3CAE024DEA50F005DCBFB /* CloudKitHandler.swift */,
 				1AF1700000000019 /* ContentAwareTableView.swift */,
+				1AF170000000001F /* MenuLayout.swift */,
 				1AC5AA6924D9586A00CA9414 /* MusicHandler.swift */,
 				1A408A4C247BC8010009BA8F /* Sounds */,
 				1A408A4D247BC8130009BA8F /* Music */,
@@ -1356,6 +1359,7 @@
 				1AF170000000001C /* BrickGrid.swift in Sources */,
 				1AF1700000000016 /* Log.swift in Sources */,
 				1AF170000000001A /* ContentAwareTableView.swift in Sources */,
+				1AF1700000000020 /* MenuLayout.swift in Sources */,
 				1AF1700000000012 /* StatsSync.swift in Sources */,
 				1AF1500000000002 /* Progression.swift in Sources */,
 				1A2A387C23DDEEDF001BD200 /* SettingsTableViewCell.swift in Sources */,

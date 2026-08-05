@@ -94,6 +94,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         backButtonCollectionView.reloadData()
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     override func viewWillAppear(_ animated: Bool) {
     }

@@ -80,6 +80,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         backButtonCollectionView.reloadData()
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
 
     /// The rows the information screen offers, already filtered to what is available.

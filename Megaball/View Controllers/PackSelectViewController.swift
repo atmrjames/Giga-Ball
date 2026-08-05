@@ -70,6 +70,12 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         packTableView.reloadData()
         backButtonCollectionView.reloadData()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     override func viewWillAppear(_ animated: Bool) {
     }

@@ -49,6 +49,12 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         modeSelectTableView.reloadData()
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+    }
+
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 2
