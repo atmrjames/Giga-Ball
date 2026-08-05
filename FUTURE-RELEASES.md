@@ -192,10 +192,12 @@ game simply never adopted it. Move to a versioned `Codable` struct with migratio
 Also a prerequisite for "save ongoing game to iCloud" later; syncing parallel int arrays
 across devices would be painful.
 
-### Housekeeping — still open
-- 117 `print()` calls — sweep them
-- Add a `.gitignore`; ~4 GB of marketing media sits untracked in the repo root, and
-  `xcuserdata` is tracked and generates churn
+### ✅ Housekeeping
+- ✅ `print()` calls — all 102 were on failure paths, so they moved to `os.Logger`
+  (`Log.swift`) rather than being deleted. See the commit for why stdout was the wrong
+  destination for them.
+- ✅ `.gitignore` added; the ~4 GB of marketing media stays untracked by choice and
+  `xcuserdata` no longer generates churn
 
 ---
 
