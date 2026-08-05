@@ -10,10 +10,12 @@
 		1AF1700000000004 /* SavedGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000003 /* SavedGameTests.swift */; };
 		1AF170000000001E /* BrickGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001D /* BrickGridTests.swift */; };
 		1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000023 /* PowerUpCatalogueTests.swift */; };
+		1AF1700000000028 /* GameModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000027 /* GameModeTests.swift */; };
 		1AF1700000000014 /* StatsSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000013 /* StatsSyncTests.swift */; };
 		1AF1700000000002 /* SavedGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000001 /* SavedGame.swift */; };
 		1AF170000000001C /* BrickGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001B /* BrickGrid.swift */; };
 		1AF1700000000022 /* PowerUpCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000021 /* PowerUpCatalogue.swift */; };
+		1AF1700000000026 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000025 /* GameMode.swift */; };
 		1AF1700000000016 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000015 /* Log.swift */; };
 		1AF170000000001A /* ContentAwareTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000019 /* ContentAwareTableView.swift */; };
 		1AF1700000000020 /* MenuLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001F /* MenuLayout.swift */; };
@@ -265,10 +267,12 @@
 		1AF1700000000003 /* SavedGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGameTests.swift; sourceTree = "<group>"; };
 		1AF170000000001D /* BrickGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickGridTests.swift; sourceTree = "<group>"; };
 		1AF1700000000023 /* PowerUpCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogueTests.swift; sourceTree = "<group>"; };
+		1AF1700000000027 /* GameModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000013 /* StatsSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSyncTests.swift; sourceTree = "<group>"; };
 		1AF1700000000001 /* SavedGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGame.swift; sourceTree = "<group>"; };
 		1AF170000000001B /* BrickGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickGrid.swift; sourceTree = "<group>"; };
 		1AF1700000000021 /* PowerUpCatalogue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogue.swift; sourceTree = "<group>"; };
+		1AF1700000000025 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		1AF1700000000015 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		1AF1700000000011 /* StatsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSync.swift; sourceTree = "<group>"; };
 		1AF1600000000001 /* ProgressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressionTests.swift; sourceTree = "<group>"; };
@@ -550,6 +554,7 @@
 				1AF1700000000003 /* SavedGameTests.swift */,
 				1AF170000000001D /* BrickGridTests.swift */,
 				1AF1700000000023 /* PowerUpCatalogueTests.swift */,
+				1AF1700000000027 /* GameModeTests.swift */,
 				1AF1700000000013 /* StatsSyncTests.swift */,
 				1AF1600000000001 /* ProgressionTests.swift */,
 				1AF1100000000002 /* UnlockStateTests.swift */,
@@ -1041,6 +1046,7 @@
 				1AF1700000000001 /* SavedGame.swift */,
 				1AF170000000001B /* BrickGrid.swift */,
 				1AF1700000000021 /* PowerUpCatalogue.swift */,
+				1AF1700000000025 /* GameMode.swift */,
 				1AF1700000000015 /* Log.swift */,
 				1AF1700000000011 /* StatsSync.swift */,
 				1AF1500000000001 /* Progression.swift */,
@@ -1254,6 +1260,7 @@
 				1AF1700000000004 /* SavedGameTests.swift in Sources */,
 				1AF170000000001E /* BrickGridTests.swift in Sources */,
 				1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */,
+				1AF1700000000028 /* GameModeTests.swift in Sources */,
 				1AF1700000000014 /* StatsSyncTests.swift in Sources */,
 				1AF1600000000002 /* ProgressionTests.swift in Sources */,
 				1AF1200000000002 /* UnlockStateTests.swift in Sources */,
@@ -1365,6 +1372,7 @@
 				1AF1700000000002 /* SavedGame.swift in Sources */,
 				1AF170000000001C /* BrickGrid.swift in Sources */,
 				1AF1700000000022 /* PowerUpCatalogue.swift in Sources */,
+				1AF1700000000026 /* GameMode.swift in Sources */,
 				1AF1700000000016 /* Log.swift in Sources */,
 				1AF170000000001A /* ContentAwareTableView.swift in Sources */,
 				1AF1700000000020 /* MenuLayout.swift in Sources */,

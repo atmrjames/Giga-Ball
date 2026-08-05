@@ -523,3 +523,25 @@ Settled in review, recorded so they are not re-argued.
    axis if it goes.
 2. **Rarity tuning.** How, rather than whether: §6.4.
 
+---
+
+## 12. Build phases
+
+Each phase ends in something playable, so the mode can be judged as it grows rather than
+only at the end. Nothing in a later phase is a prerequisite for testing an earlier one.
+
+| Phase | What lands | What you can test |
+|---|---|---|
+| **1. The mode exists** | Endless 2.0 on the main menu, playing exactly as Endless does today, with its own stats and leaderboard | That it launches, plays and scores - and that Endless and Classic are untouched |
+| **2. The ring HUD** | Only-active power-ups, ring timers, in Endless 2.0 only | Whether the ring reads better than the tray, side by side with the old one |
+| **3. Simple bricks** | Spinning, Flashing, Rounded - no grid changes needed | Whether they read clearly and whether Flashing is fair |
+| **4. Sizes** | Big and Tiny, on the brick grid | Whether Tiny is worth its cost, which is the open question in §11 |
+| **5. Behavioural bricks** | Gravity, Moving, Directional, Exploding, Spawner, Portal | Whether explosions and cascades feel good or chaotic |
+| **6. Generation** | Phases, the introduction schedule, gentle opening | The heart of it: whether a run feels varied and whether the pacing works |
+| **7. Multi-Ball** | The collection of balls, and the run continuing while one survives | Performance with four balls, and whether it is as fun as it sounds |
+| **8. New power-ups** | In batches, simplest first: vision, then paddle, then rules-changing | Each batch on its own, which is the only way to tune rarity |
+| **9. Presentation** | Scrolling backgrounds, icons, the information page | The finish |
+
+Phases 3 to 5 can be reordered freely - they are independent. Phase 6 is where the mode
+stops being Endless with extra bricks and starts being its own thing, so it is worth
+reaching before judging whether the whole idea works.
