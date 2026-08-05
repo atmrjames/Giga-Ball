@@ -552,6 +552,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// player launches. So every save taken before launching wrote one life fewer, and
 	/// quitting and resuming repeatedly walked the count down.
 	var lifeLossPending: Bool = false
+	var ballIsReturning: Bool = false
+	/// How long the ball stays away after being lost, before it reappears on the paddle.
+	///
+	/// Long enough to register as a beat rather than a flicker - losing a ball should land.
+	/// A tap cuts it short for anyone who would rather get on with it.
+	static let ballReturnPause: TimeInterval = 0.65
 	var powerUpsOnScreen: Int = 0
 	var powerUpLimit: Int = 0
 	
@@ -616,6 +622,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalCooldown: TimeInterval = 0
 	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
 	var endlessIIPendingBigColumn: Int?
+	var endlessIIPendingSpinColumn: Int?
+	var endlessIIPendingClearColumn: Int?
+	// A spinning brick needs the cells above, below and either side of it empty, and rows
+	// arrive one at a time, so it takes three of them: leave the cell below, place the
+	// spinner with its sides clear, leave the cell above
 	// A Big brick reserved by one row and built by the next, which is the only way a brick
 	// two rows tall can be made when rows arrive one at a time from the top
 	var endlessBrickMode01: Int?
@@ -1456,11 +1467,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if ballIsReturning && gameState.currentState is Playing {
+            finishBallReturn()
+            touchBeganWhilstPlaying = false
+            return
+        }
+        // A tap while the ball is coming back is spent bringing it back now, not launching
+        // it. The pause after losing a ball is there to be felt, but a player who does not
+        // want it should not have to spend the skip and the launch on the same tap
+
         if ballIsOnPaddle && touchBeganWhilstPlaying && paddleMoved == false && gameState.currentState is Playing {
             releaseBall()
         }
         touchBeganWhilstPlaying = false
         // Release the ball from the paddle only if the paddle has not been moved
+    }
+
+    /// Puts the ball on the paddle immediately, wherever its return animation had got to.
+    func finishBallReturn() {
+        ballIsReturning = false
+        ball.removeAllActions()
+        ball.isHidden = false
+        ball.alpha = 1
+        ball.setScale(1)
+        ball.position.x = paddle.position.x
+        setBallStartingPositionY()
+        ball.position.y = ballStartingPositionY
+
+        if let icon = lifeIcons.first, icon.hasActions() {
+            icon.removeAllActions()
+            icon.isHidden = true
+        }
+        // The spent life was flying to meet the ball, so it arrives now too
     }
     
     func releaseBall() {
@@ -1694,12 +1732,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
             let fadeOutBall = SKAction.fadeOut(withDuration: 0)
             let scaleDownBall = SKAction.scale(to: 0, duration: 0)
-            let waitTimeBall = SKAction.wait(forDuration: 0.25)
+            let waitTimeBall = SKAction.wait(forDuration: GameScene.ballReturnPause)
             let fadeInBall = SKAction.fadeIn(withDuration: 0.25)
             let scaleUpBall = SKAction.scale(to: 1, duration: 0.25)
             let resetBallGroup = SKAction.group([fadeOutBall, scaleDownBall, waitTimeBall])
             let ballGroup = SKAction.group([fadeInBall, scaleUpBall])
             // Setup ball animation
+
+            ballIsReturning = true
+            // A tap during this lands the ball on the paddle rather than launching it
             
             lifeLossPending = true
             self.run(SKAction.wait(forDuration: 0.75), completion: {
@@ -1719,7 +1760,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             ball.run(resetBallGroup, completion: {
                 self.ball.isHidden = false
-                self.ball.run(ballGroup)
+                self.ball.run(ballGroup) {
+                    self.ballIsReturning = false
+                }
             })
             // Animate ball back onto paddle and loss of a life
         }
@@ -4336,19 +4379,22 @@ laserTimer?.invalidate()
 		icon.isHidden = false
 
 		let target = CGPoint(x: paddle.position.x, y: ballStartingPositionY)
-		let fly = SKAction.move(to: target, duration: 0.25)
+		let flightTime: TimeInterval = 0.25
+		let fly = SKAction.move(to: target, duration: flightTime)
 		fly.timingMode = .easeIn
-		let shrink = SKAction.scale(to: 0.6, duration: 0.25)
-		icon.run(SKAction.group([fly, shrink])) {
+		let shrink = SKAction.scale(to: 0.6, duration: flightTime)
+		let leadIn = SKAction.wait(forDuration: max(0, GameScene.ballReturnPause - flightTime))
+		icon.run(SKAction.sequence([leadIn, .group([fly, shrink])])) {
 			icon.isHidden = true
 		}
 
 		closeLivesRowGap(remaining: shown - 1)
 	}
 	// The life being spent travels to where the replacement ball appears, which is what
-	// the ball animation is already doing at the same moment. Deliberately 0.25s, to land
-	// exactly as the ball fades in. The lives count itself is decremented later, on the
-	// existing 0.75s timing, so nothing about the game state moves.
+	// the ball animation is already doing at the same moment. It waits out most of the
+	// ball's pause first so that it still lands exactly as the ball fades in, however long
+	// that pause is. The lives count itself is decremented later, on the existing 0.75s
+	// timing, so nothing about the game state moves.
 	//
 	// It is the leftmost ball that goes, not the rightmost - it is the one nearest the
 	// paddle, so the gap it leaves closes in the direction of travel

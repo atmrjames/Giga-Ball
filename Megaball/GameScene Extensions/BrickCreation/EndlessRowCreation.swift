@@ -635,6 +635,15 @@ extension GameScene {
             // Run animation for each brick
         }
 
+        if let column = endlessII.spinAt,
+           let brick = brickArray.compactMap({ $0 as? SKSpriteNode })
+            .first(where: { abs($0.position.x - (-gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(column))) < 1 }),
+           endlessIICanTake(.spinning, brick) {
+            makeSpinning(brick)
+        }
+        // The clearance around it was reserved two rows ago; whatever brick the generator
+        // put here is the one that turns, whatever type it happens to be
+
         applyEndlessIISizes(to: brickArray)
         applyEndlessIIBehaviours(to: brickArray)
         applyEndlessIIRoles(to: brickArray)

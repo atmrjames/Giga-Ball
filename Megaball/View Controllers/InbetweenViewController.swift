@@ -138,16 +138,22 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     private var tallyLastTick = -1
     private var tallyTotalFrom = 0
 
-    /// The level score and the speed bonus run up from zero, and then drain back to zero
-    /// as the total takes them on - so the summary shows where the total came from rather
-    /// than three numbers arriving at once.
+    /// Three counts, one after another: the level score, then the speed bonus, then the
+    /// total taking both on top of what it was when the level started.
+    ///
+    /// Each number stays where it lands. They used to drain back to zero once the total had
+    /// taken them, which read as though the level had been worth nothing - you finished a
+    /// level and the number showing beside it was 0.
     ///
     /// Short on purpose: this sits between finishing a level and playing the next one, so
     /// it should read as a flourish rather than something to sit through. A tap finishes
     /// it early.
-    private let tallyCountUpDuration: CFTimeInterval = 0.30
-    private let tallyDrainDuration: CFTimeInterval = 0.40
-    private var tallyDuration: CFTimeInterval { tallyCountUpDuration + tallyDrainDuration }
+    private let tallyLevelDuration: CFTimeInterval = 0.28
+    private let tallyBonusDuration: CFTimeInterval = 0.22
+    private let tallyTotalDuration: CFTimeInterval = 0.36
+    private var tallyBonusStart: CFTimeInterval { tallyLevelDuration }
+    private var tallyTotalStart: CFTimeInterval { tallyBonusStart + tallyBonusDuration }
+    private var tallyDuration: CFTimeInterval { tallyTotalStart + tallyTotalDuration }
     private let tallyHapticTicks = 10
 
     private var isTallying: Bool { tallyLink != nil }
@@ -180,17 +186,23 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             return
         }
 
-        if elapsed < tallyCountUpDuration {
-            // Ease out, so the numbers decelerate into their values rather than stopping
-            // dead.
-            let eased = easeOut(elapsed / tallyCountUpDuration)
+        // Ease out, so each number decelerates into its value rather than stopping dead.
+        // Whatever a phase has not reached yet reads zero, and whatever it has finished
+        // stays at its full value - the sequence is the point, so nothing runs backwards.
+        if elapsed < tallyBonusStart {
+            let eased = easeOut(elapsed / tallyLevelDuration)
             levelScoreLabel.text = String(scaled(levelScore, by: eased))
+            speedBonusLabel.text = "+0"
+            totalScoreLabel.text = String(tallyTotalFrom)
+        } else if elapsed < tallyTotalStart {
+            let eased = easeOut((elapsed - tallyBonusStart) / tallyBonusDuration)
+            levelScoreLabel.text = String(levelScore)
             speedBonusLabel.text = "+\(scaled(levelScoreBonus, by: eased))"
             totalScoreLabel.text = String(tallyTotalFrom)
         } else {
-            let eased = easeOut((elapsed - tallyCountUpDuration) / tallyDrainDuration)
-            levelScoreLabel.text = String(scaled(levelScore, by: 1 - eased))
-            speedBonusLabel.text = "+\(scaled(levelScoreBonus, by: 1 - eased))"
+            let eased = easeOut((elapsed - tallyTotalStart) / tallyTotalDuration)
+            levelScoreLabel.text = String(levelScore)
+            speedBonusLabel.text = "+\(levelScoreBonus)"
             let gained = totalScore - tallyTotalFrom
             totalScoreLabel.text = String(tallyTotalFrom + scaled(gained, by: eased))
         }
@@ -222,8 +234,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     private func finishScoreTally() {
         tallyLink?.invalidate()
         tallyLink = nil
-        levelScoreLabel.text = "0"
-        speedBonusLabel.text = "+0"
+        levelScoreLabel.text = String(levelScore)
+        speedBonusLabel.text = "+\(levelScoreBonus)"
         totalScoreLabel.text = String(totalScore)
         tapLabel.isHidden = false
     }

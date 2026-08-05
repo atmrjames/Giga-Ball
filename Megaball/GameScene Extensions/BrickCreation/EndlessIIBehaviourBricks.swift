@@ -50,17 +50,24 @@ extension GameScene {
 
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
-            guard brick.texture == brickNormalTexture else { continue }
-            guard brick.endlessIIRole == nil else { continue }
-            guard endlessIIIsPlain(brick) else { continue }
             guard Int.random(in: 1...100) <= GameScene.endlessIIRoleChance else { continue }
 
-            switch Int.random(in: 0...5) {
-            case 0: makeGravity(brick)
-            case 1: makeMoving(brick)
-            case 2: makeDirectional(brick)
-            case 3: makeExploding(brick)
-            case 4: makeSpawner(brick)
+            let styles: [EndlessIIStyle] = [.gravity, .moving, .directional,
+                                            .exploding, .spawner, .portal]
+            guard let wanted = styles.randomElement(),
+                  endlessIICanTake(wanted, brick) else { continue }
+            // Rolled first and then checked, rather than picking from what fits. A brick
+            // that cannot take the style it drew simply stays plain, which keeps each
+            // style's frequency the same wherever it appears - otherwise a field of
+            // Indestructible bricks would be all Gravity and Moving, because those are
+            // the only two left once the rest are ruled out
+
+            switch wanted {
+            case .gravity: makeGravity(brick)
+            case .moving: makeMoving(brick)
+            case .directional: makeDirectional(brick)
+            case .exploding: makeExploding(brick)
+            case .spawner: makeSpawner(brick)
             default: makePortal(brick)
             }
         }

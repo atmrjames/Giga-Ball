@@ -16,6 +16,48 @@
 
 import SpriteKit
 
+/// What a hit does to a brick - the axis the game has always had.
+///
+/// Read from the texture, because that is where the rest of the game keeps it. Nothing here
+/// changes that; this only gives it a name so style compatibility can be reasoned about.
+enum EndlessIIBehaviour {
+    case standard
+    case multiHit
+    case indestructibleOnce
+    case indestructibleAlways
+    case invisible
+}
+
+/// What a brick does beyond being hit - the axis Endless 2.0 adds.
+///
+/// Independent of behaviour, so a spinning Indestructible brick is a thing that can exist:
+/// an obstacle you cannot remove, presenting a different angle every time the ball reaches
+/// it. See §4.0 of the specification for the full grid.
+enum EndlessIIStyle: CaseIterable {
+    case rounded, spinning, flashing
+    case gravity, moving, directional, exploding, spawner, portal
+
+    /// Whether this style contradicts a behaviour, rather than merely being strange with it.
+    func suits(_ behaviour: EndlessIIBehaviour) -> Bool {
+        switch self {
+        case .flashing:
+            // Both are about whether the brick can be seen; together there is no readable
+            // state
+            return behaviour != .invisible
+        case .directional, .exploding, .spawner:
+            // Each fires when the brick is destroyed, or says how it is destroyed. On one
+            // that never is, they never happen
+            return behaviour != .indestructibleAlways
+        case .portal:
+            // Struck rather than damaged, so its behaviour has to be the one that already
+            // means a hit does nothing
+            return behaviour == .indestructibleAlways
+        case .rounded, .spinning, .gravity, .moving:
+            return true
+        }
+    }
+}
+
 enum EndlessIIRole: String {
     /// Falls into empty cells below it (§4.6).
     case gravity

@@ -67,39 +67,96 @@ existing power-ups, unchanged. Paddle, ball, physics, multiplier and scoring rul
 
 ## 4. Brick types
 
-### 4.0 The full set
+### 4.0 Two axes: behaviour and style
 
-Existing types are unchanged; the classification is for the registry (§8.4). **Size is a
-separate axis from type** — a Big brick can be Multi-hit, a Tiny brick can be Exploding.
+A brick is described by two independent things, and **any behaviour can carry any style**.
 
-| Type | Status | Behaviour |
+**Behaviour** is what happens when the ball arrives — the axis the game has always had, and
+the one every existing level is built from. **Style** is everything else: what the brick
+looks like, where it sits, whether it moves, and what it does to the field around it. Style
+is entirely new to Endless 2.0.
+
+Splitting them this way is what makes a spinning Indestructible brick possible, and a
+spinning Indestructible brick is chaos of exactly the right kind: an obstacle you cannot
+remove, presenting a different angle every time the ball reaches it.
+
+**Behaviours** (existing, unchanged)
+
+| Behaviour | What a hit does |
+|---|---|
+| Standard | Destroyed. Carries a colour, which affects its score |
+| Multi-hit | Four stages; each hit steps it down, the fourth destroys it |
+| Indestructible ×1 | Becomes Indestructible ×2 |
+| Indestructible ×2 | Nothing. Cleared only by Zap, Giga-Ball, Wrecking Ball or an explosion |
+| Invisible | Solid but not drawn until struck, then behaves as Standard |
+
+**Styles** (new)
+
+| Style | What it adds | §  |
 |---|---|---|
-| Normal | Existing | One hit. Carries a colour, which affects its score |
-| Multi-hit | Existing | Four stages; each hit steps it down |
-| Indestructible ×2 | Existing | Not destroyed by a normal ball. Cleared by Zap, Giga-Ball, Wrecking Ball or an explosion |
-| Invisible | Existing | Solid but not drawn until struck |
-| Spinning | New | Rotates; visual only (§4.1) |
-| Flashing | New | Alternates solid and passable (§4.2) |
-| Rounded | New | Circular body, unpredictable deflection (§4.5) |
-| Gravity | New | Falls into gaps below it (§4.6) |
-| Directional | New | Destroyed from one side only (§4.7) |
-| Moving | New | Wanders within a reserved region (§4.8) |
-| Exploding | New | Destroys its eight neighbours (§4.9) |
-| Spawner | New | Creates new bricks when destroyed (§4.10) |
-| Portal | New | Sends the ball elsewhere (§4.11) |
+| Plain | Nothing. What every brick in Classic and Endless is | — |
+| Rounded | Rounded-rectangle body, so glancing hits deflect unpredictably | 4.5 |
+| Spinning | Rotates on the spot; the bounce angle changes with it | 4.1 |
+| Flashing | Alternates solid-and-visible with passable-and-faded | 4.2 |
+| Gravity | Falls into empty cells below it | 4.6 |
+| Moving | Wanders within a reserved region | 4.8 |
+| Directional | Only takes its behaviour's damage from one side | 4.7 |
+| Exploding | Destroys its eight neighbours when destroyed | 4.9 |
+| Spawner | Fills its empty neighbours when destroyed | 4.10 |
+| Portal | Sends the ball elsewhere; never damaged | 4.11 |
 
-| Size | Status | Occupies |
-|---|---|---|
-| Tiny | New | A quarter cell — half width, half height |
-| Normal | Existing | One cell |
-| Big | New | 2×2 cells |
+**Size** is a third, smaller axis that combines with both. It is separate because it changes
+how much of the field a brick occupies rather than what it is.
+
+| Size | Occupies |
+|---|---|
+| Tiny | A quarter cell — half width, half height |
+| Normal | One cell |
+| Big | 2×2 cells |
+
+### 4.0.1 Which combinations work
+
+Most do. The ones that do not are the ones where the style and the behaviour contradict
+each other rather than the ones that are merely strange.
+
+| Style | Standard | Multi-hit | Indest. ×1 | Indest. ×2 | Invisible |
+|---|---|---|---|---|---|
+| Rounded | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Spinning | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Flashing | ✓ | ✓ | ✓ | ✓ | ✗ ¹ |
+| Gravity | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Moving | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Directional | ✓ | ✓ | ✓ | ✗ ² | ✓ |
+| Exploding | ✓ | ✓ | ✓ | ✗ ² | ✓ |
+| Spawner | ✓ | ✓ | ✓ | ✗ ² | ✓ |
+| Portal | ✗ ³ | ✗ ³ | ✗ ³ | ✓ | ✗ ³ |
+
+1. Both are about whether the brick can be seen. A brick that is invisible until struck and
+   also fades in and out has no readable state.
+2. Each of these fires when the brick is destroyed, or describes how it is destroyed. On a
+   brick that can never be destroyed they can never happen.
+3. A Portal is struck rather than damaged, so its behaviour has to be the one that already
+   means "a hit does nothing". Building it on Indestructible ×2 is not a limitation — it is
+   what makes the rest of the game treat it correctly for free.
+
+**Sizes** combine with every behaviour and every style, with one exception: a Big brick
+cannot be Spinning, because the clearance a full-size brick needs to turn is already two
+cells in each direction and a Big one would need four.
 
 ### 4.1 Spinning
-Rotates continuously, one direction or the other, at a fixed rate. Visual only — the
-physics body does not rotate, so bounces are unchanged.
+Rotates continuously, one direction or the other, at a fixed rate. It keeps the shape of an
+ordinary brick — the turning is only interesting because the thing turning is oblong, and a
+brick shrunk to a square to make room reads as a different kind of brick rather than as a
+familiar one behaving strangely.
 
-**Clearance:** a spinning brick's corners sweep outside its cell, so the generator reserves
-the cells it would overlap. Simplest rule: no brick directly adjacent on the four sides.
+The body turns with it, so the bounce genuinely changes with the angle. That is the point of
+the brick.
+
+**Clearance:** a brick twice as wide as it is tall sweeps a circle of radius ≈1.12 cells as
+it turns, so it needs the cell above, the cell below and both side cells left empty. The
+generator commits to this across three rows: the row below is left empty, the spinner is
+placed in the next row with its side cells empty, and the row after leaves the cell above
+empty.
 
 ### 4.2 Flashing
 Alternates between solid-and-visible and passable-and-invisible. **The transition is fast**
@@ -118,8 +175,10 @@ the grid at **half-cell resolution**: Tiny is 1×1 half-cells, Normal 2×2, Big 
 integer grid expresses all three exactly.
 
 ### 4.5 Rounded
-A circular or heavily rounded physics body, so glancing hits deflect at angles a rectangle
-never produces. Watch for the ball resting on top and losing horizontal speed.
+An ordinary brick with rounded corners — the same oblong shape, not a circle. The body is
+the rounded rectangle, so glancing hits near a corner deflect at angles a sharp rectangle
+never produces, while a hit anywhere along the flat of an edge behaves exactly as it always
+has. Watch for the ball resting on top and losing horizontal speed.
 
 ### 4.6 Gravity
 Falls into any empty cell below it and keeps falling until it rests on a brick or reaches

@@ -101,10 +101,55 @@ extension GameScene {
 
     // MARK: - Applying
 
-    /// Gives each new brick one of Endless 2.0's behaviours, sometimes.
+    /// What a brick is, as the rest of the game understands it.
     ///
-    /// Only plain single-hit bricks are eligible. A spinning indestructible brick is a later
-    /// phase's problem, and a flashing multi-hit brick would be unreadable.
+    /// Read from the texture rather than stored, because the texture is where every other
+    /// part of the game keeps this and two copies of the same fact would eventually differ.
+    func endlessIIBehaviour(of brick: SKSpriteNode) -> EndlessIIBehaviour? {
+        switch brick.texture {
+        case brickNormalTexture: return .standard
+        case brickMultiHit1Texture, brickMultiHit2Texture,
+             brickMultiHit3Texture, brickMultiHit4Texture: return .multiHit
+        case brickIndestructible1Texture: return .indestructibleOnce
+        case brickIndestructible2Texture: return .indestructibleAlways
+        case brickInvisibleTexture: return .invisible
+        default: return nil
+        }
+    }
+
+    /// Whether a brick can take a style on top of what it already is.
+    ///
+    /// Two questions, and they are different. Whether the style suits the behaviour is a
+    /// design rule and lives in `EndlessIIStyle.suits`. Whether this particular sprite can
+    /// carry it is a mechanical one: a brick already wearing a style should not wear two,
+    /// and Rounded and Spinning both assume a sprite centred on its node, which a Big
+    /// brick's is not.
+    func endlessIICanTake(_ style: EndlessIIStyle, _ brick: SKSpriteNode) -> Bool {
+        guard let behaviour = endlessIIBehaviour(of: brick) else { return false }
+        guard brick.endlessIIRole == nil, endlessIIIsPlain(brick) else { return false }
+
+        if style == .portal {
+            // Portal does not need to find an Indestructible brick, it makes one: it takes
+            // the behaviour over, because "a hit does nothing" is part of what a Portal is.
+            // Everything else has to fit the behaviour already there.
+            return behaviour != .invisible
+        }
+        guard style.suits(behaviour) else { return false }
+
+        let centred = abs(brick.anchorPoint.x - 0.5) < 0.01
+            && abs(brick.anchorPoint.y - 0.5) < 0.01
+        switch style {
+        case .rounded: return centred
+        case .spinning: return centred && isOrdinaryCellSized(brick)
+        default: return true
+        }
+    }
+
+    /// Gives each new brick one of the appearance styles, sometimes.
+    ///
+    /// Any behaviour can take any of these now, so a Multi-hit brick can flash and an
+    /// Indestructible one can turn. Spinning is applied by the generator instead, because
+    /// it is the one style that needs cells reserved around it.
     ///
     /// Called after the row's arrival animation has been set up, because that animation
     /// resets the colour blend on every normal brick and would undo the tinting here.
@@ -113,41 +158,37 @@ extension GameScene {
 
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
-            guard brick.texture == brickNormalTexture else { continue }
             guard Int.random(in: 1...100) <= GameScene.endlessIIBehaviourChance else { continue }
 
-            // Spinning replaces the brick's size and Rounded replaces its body, and both
-            // assume the sprite is centred on the node. A Big brick is neither, so it only
-            // takes Flashing - which touches nothing but alpha and the collision mask.
-            // Sizes and behaviours are meant to combine; making the other two follow an
-            // offset sprite is worth doing once there is more than one thing that needs it.
-            let centred = abs(brick.anchorPoint.x - 0.5) < 0.01
-                && abs(brick.anchorPoint.y - 0.5) < 0.01
-            switch Int.random(in: 0...2) {
-            case 0 where centred && isOrdinaryCellSized(brick): makeSpinning(brick)
-            case 2 where centred: makeRounded(brick)
-            default: makeFlashing(brick)
+            let wanted: EndlessIIStyle = Bool.random() ? .flashing : .rounded
+            guard endlessIICanTake(wanted, brick) else { continue }
+            switch wanted {
+            case .flashing: makeFlashing(brick)
+            default: makeRounded(brick)
             }
         }
     }
 
-    /// Turns a brick into a small square that rotates.
+    /// Sets a brick turning, at the shape and size it already is.
     ///
-    /// A static body still follows its node's rotation, so the bounce really does change
-    /// with the angle - that is the whole point of the brick. The size is what keeps that
-    /// safe: a full-width brick swings its corners deep into the rows above and below as it
-    /// turns, and the ball can end up pinched in the gap that leaves. Shrunk to a square
-    /// narrower than the row is tall, everything it sweeps stays inside its own row.
+    /// A static body follows its node's rotation, so the bounce genuinely changes with the
+    /// angle - which is the whole point, and only interesting because the thing turning is
+    /// oblong. It used to shrink to a square so its corners could not reach the rows above
+    /// and below, and that read as a different, smaller kind of brick rather than as a
+    /// familiar one behaving strangely. The room it needs comes from the generator leaving
+    /// its four neighbouring cells empty instead - see `endlessIISpinnerClearance`.
     func makeSpinning(_ brick: SKSpriteNode) {
-        let side = brickHeight*0.7
-        brick.size = CGSize(width: side, height: side)
-        brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: brick.size))
-
         let direction: CGFloat = Bool.random() ? 1 : -1
         let secondsPerTurn = CGFloat.random(in: 2.5...4.5)
         endlessIISpinners.append(EndlessIISpinner(brick: brick,
                                                   rate: direction*(.pi*2)/secondsPerTurn))
     }
+
+    /// How far a turning brick reaches, in cells.
+    ///
+    /// A brick twice as wide as it is tall sweeps a circle of radius √5/2 ≈ 1.12 cell
+    /// heights, so the cell above, the cell below and both side cells have to be empty.
+    static let endlessIISpinnerClearance = 1
 
     /// Fades a brick out and back, solid only while it is visible.
     ///
@@ -165,25 +206,58 @@ extension GameScene {
         // Staggered starts, or a whole row would breathe in unison
     }
 
-    /// Gives a brick a circular body, so glancing hits deflect at angles a rectangle never
-    /// produces.
+    /// Rounds a brick's corners - the same oblong shape, not a circle.
     ///
-    /// There is no artwork for a round brick, so the circle is drawn over the sprite. It has
-    /// to be visible: a brick that looks square and bounces round is a bug as far as the
-    /// player is concerned.
+    /// It was a circle, and a circle is a different brick: it reads as something new sitting
+    /// where a brick should be, and it throws the ball off even on a square-on hit along
+    /// what looks like a flat edge. Rounded corners keep every straight hit exactly as it
+    /// has always been and change only the glancing ones near a corner, which is the
+    /// interesting part.
+    ///
+    /// There is no artwork for it, so the face is drawn: a rounded-rectangle shape filled
+    /// with the brick's own texture and colour, so a Multi-hit or Indestructible brick keeps
+    /// its own look and only loses its corners. The sprite behind it is shrunk rather than
+    /// hidden - hiding it would hide the face too, since that is its child - and shrunk by
+    /// `size` rather than by scale, which children would inherit.
     func makeRounded(_ brick: SKSpriteNode) {
-        let radius = min(brick.size.width, brick.size.height)/2
-        brick.physicsBody = brickBody(SKPhysicsBody(circleOfRadius: radius))
+        let face = brick.size
+        let radius = min(face.width, face.height)*GameScene.roundedBrickCornerFraction
+        let path = CGPath(roundedRect: CGRect(x: -face.width/2, y: -face.height/2,
+                                              width: face.width, height: face.height),
+                          cornerWidth: radius, cornerHeight: radius, transform: nil)
 
-        let outline = SKShapeNode(circleOfRadius: radius)
-        // Dark, not light. Bricks are pale against a dark field, and a white circle on a
-        // white brick is no circle at all.
-        outline.strokeColor = UIColor(white: 0, alpha: 0.55)
-        outline.lineWidth = 2.5
-        outline.fillColor = .clear
-        outline.zPosition = 1
-        outline.name = GameScene.roundedBrickOutlineName
-        brick.addChild(outline)
+        brick.physicsBody = brickBody(SKPhysicsBody(polygonFrom: path))
+        // A rounded rectangle is convex, which is all a polygon body asks for
+
+        let shape = SKShapeNode(path: path)
+        shape.fillTexture = brick.texture
+        shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
+        shape.strokeColor = .clear
+        shape.zPosition = 0.1
+        shape.name = GameScene.roundedBrickOutlineName
+        brick.addChild(shape)
+
+        brick.size = CGSize(width: face.width*0.78, height: face.height*0.78)
+        // Small enough to sit entirely inside the rounded face, so no square corner shows
+    }
+
+    /// How much of a brick's short side is taken up by each rounded corner.
+    static let roundedBrickCornerFraction: CGFloat = 0.32
+
+    /// Keeps a rounded brick's face showing what the brick is.
+    ///
+    /// A Multi-hit brick steps down through four textures as it is hit, and the face is a
+    /// separate node that would otherwise still be showing the first one.
+    func refreshEndlessIIRoundedFaces() {
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode,
+                  let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName)
+                    as? SKShapeNode else { return }
+            if shape.fillTexture !== brick.texture {
+                shape.fillTexture = brick.texture
+                shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
+            }
+        }
     }
 
     /// The collision settings every brick body shares, so a replacement body behaves exactly
@@ -223,6 +297,7 @@ extension GameScene {
         }
 
         tickEndlessIIRoles(delta)
+        refreshEndlessIIRoundedFaces()
     }
 
     /// Clears the tracked bricks. For starting a run, not for a brick being destroyed -
@@ -231,6 +306,8 @@ extension GameScene {
         endlessIISpinners.removeAll()
         endlessIIFlashers.removeAll()
         endlessIIPendingBigColumn = nil
+        endlessIIPendingSpinColumn = nil
+        endlessIIPendingClearColumn = nil
         endlessIILastTick = 0
         resetEndlessIIRoles()
     }
