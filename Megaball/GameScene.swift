@@ -632,6 +632,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIProgression = EndlessIIProgression.make()
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
+	var endlessIISetRowQueue: [String] = []
+	// The rows of a designed pattern still to come, one per generated row
 	var endlessIIPhaseBehaviour: EndlessIIBehaviour?
 	var endlessIIPhaseStyles: [EndlessIIStyle] = []
 	// What a uniform phase settled on when it started, so every brick in it matches

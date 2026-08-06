@@ -157,6 +157,39 @@ extension GameScene {
         }
     }
 
+    /// How often a designed pattern starts, when nothing else has the generator busy.
+    static let endlessIISetRowChance = 7
+
+    /// Takes the next row of a designed pattern, starting one if it is time.
+    ///
+    /// Returns nil for an ordinary generated row, which is most of them.
+    func endlessIINextSetRow(reservationPending: Bool) -> String? {
+        guard gameMode == .endlessII else { return nil }
+
+        if endlessIISetRowQueue.isEmpty {
+            guard reservationPending == false else { return nil }
+            // A Big brick or a spinner is already shaping this row and the next. Two things
+            // arranging the same cells would leave neither shape intact
+            guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else { return nil }
+            let choices = EndlessIISetRow.available(at: endlessHeight)
+            guard let pattern = choices.randomElement() else { return nil }
+            endlessIISetRowQueue = pattern.rows
+        }
+        return endlessIISetRowQueue.removeFirst()
+    }
+
+    /// What a designed row puts in one of its columns.
+    func endlessIISetRowTexture(_ row: String, column: Int) -> SKTexture {
+        switch EndlessIISetRow.character(in: row, column: column) {
+        case "N": return brickNormalTexture
+        case "M": return brickMultiHit3Texture
+        case "i": return brickIndestructible1Texture
+        case "I": return brickIndestructible2Texture
+        case "?": return endlessIIBrickTexture()
+        default: return brickNullTexture
+        }
+    }
+
     /// Moves the run on to the next phase when the current one has run its length.
     ///
     /// A uniform phase settles what it is made of once, here, rather than per brick - that
@@ -502,6 +535,7 @@ extension GameScene {
         endlessIIPendingClearColumn = nil
         endlessIIProgression = EndlessIIProgression.make()
         clearEndlessIIMarkers()
+        endlessIISetRowQueue = []
         endlessIIPhase = .standard
         endlessIIPhaseEndsAt = 0
         endlessIIPhaseBehaviour = nil

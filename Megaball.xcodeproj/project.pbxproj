@@ -12,6 +12,7 @@
 		1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000023 /* PowerUpCatalogueTests.swift */; };
 		1AF1700000000028 /* GameModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000027 /* GameModeTests.swift */; };
 		1AF1700000000030 /* EndlessIIBrickTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000031 /* EndlessIIBrickTests.swift */; };
+		1AF1700000000042 /* EndlessIISetRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000043 /* EndlessIISetRowTests.swift */; };
 		1AF1700000000040 /* EndlessIIProgressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000041 /* EndlessIIProgressionTests.swift */; };
 		1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000039 /* TotalStatsConsistencyTests.swift */; };
 		1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000037 /* EndlessIIStyleTests.swift */; };
@@ -23,6 +24,7 @@
 		1AF1700000000022 /* PowerUpCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000021 /* PowerUpCatalogue.swift */; };
 		1AF1700000000026 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000025 /* GameMode.swift */; };
 		1AE2B3010000000000000601 /* EndlessIIProgression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000602 /* EndlessIIProgression.swift */; };
+		1AE2B3010000000000000901 /* EndlessIISetRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000902 /* EndlessIISetRows.swift */; };
 		1AF1700000000016 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000015 /* Log.swift */; };
 		1AF170000000001A /* ContentAwareTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000019 /* ContentAwareTableView.swift */; };
 		1AF1700000000020 /* MenuLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001F /* MenuLayout.swift */; };
@@ -283,6 +285,7 @@
 		1AF1700000000023 /* PowerUpCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogueTests.swift; sourceTree = "<group>"; };
 		1AF1700000000027 /* GameModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000031 /* EndlessIIBrickTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBrickTests.swift; sourceTree = "<group>"; };
+		1AF1700000000043 /* EndlessIISetRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISetRowTests.swift; sourceTree = "<group>"; };
 		1AF1700000000041 /* EndlessIIProgressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIProgressionTests.swift; sourceTree = "<group>"; };
 		1AF1700000000039 /* TotalStatsConsistencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalStatsConsistencyTests.swift; sourceTree = "<group>"; };
 		1AF1700000000037 /* EndlessIIStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStyleTests.swift; sourceTree = "<group>"; };
@@ -294,6 +297,7 @@
 		1AF1700000000021 /* PowerUpCatalogue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogue.swift; sourceTree = "<group>"; };
 		1AF1700000000025 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		1AE2B3010000000000000602 /* EndlessIIProgression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIProgression.swift; sourceTree = "<group>"; };
+		1AE2B3010000000000000902 /* EndlessIISetRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISetRows.swift; sourceTree = "<group>"; };
 		1AF1700000000015 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		1AF1700000000011 /* StatsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSync.swift; sourceTree = "<group>"; };
 		1AF1600000000001 /* ProgressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressionTests.swift; sourceTree = "<group>"; };
@@ -584,6 +588,7 @@
 				1AF1700000000023 /* PowerUpCatalogueTests.swift */,
 				1AF1700000000027 /* GameModeTests.swift */,
 				1AF1700000000031 /* EndlessIIBrickTests.swift */,
+				1AF1700000000043 /* EndlessIISetRowTests.swift */,
 				1AF1700000000041 /* EndlessIIProgressionTests.swift */,
 				1AF1700000000039 /* TotalStatsConsistencyTests.swift */,
 				1AF1700000000037 /* EndlessIIStyleTests.swift */,
@@ -1089,6 +1094,7 @@
 				1AF1700000000021 /* PowerUpCatalogue.swift */,
 				1AF1700000000025 /* GameMode.swift */,
 				1AE2B3010000000000000602 /* EndlessIIProgression.swift */,
+				1AE2B3010000000000000902 /* EndlessIISetRows.swift */,
 				1AF1700000000015 /* Log.swift */,
 				1AF1700000000011 /* StatsSync.swift */,
 				1AF1500000000001 /* Progression.swift */,
@@ -1304,6 +1310,7 @@
 				1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */,
 				1AF1700000000028 /* GameModeTests.swift in Sources */,
 				1AF1700000000030 /* EndlessIIBrickTests.swift in Sources */,
+				1AF1700000000042 /* EndlessIISetRowTests.swift in Sources */,
 				1AF1700000000040 /* EndlessIIProgressionTests.swift in Sources */,
 				1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */,
 				1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */,
@@ -1358,6 +1365,7 @@
 				1AE2B3010000000000000301 /* EndlessIIBricks.swift in Sources */,
 				1AE2B3010000000000000801 /* EndlessIIMarkers.swift in Sources */,
 				1AE2B3010000000000000601 /* EndlessIIProgression.swift in Sources */,
+				1AE2B3010000000000000901 /* EndlessIISetRows.swift in Sources */,
 				1AE2B3010000000000000505 /* EndlessIIBehaviourBricks.swift in Sources */,
 				1AE2B3010000000000000503 /* EndlessIIRoles.swift in Sources */,
 				1AE2B3010000000000000501 /* EndlessIIField.swift in Sources */,

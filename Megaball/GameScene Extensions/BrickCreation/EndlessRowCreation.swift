@@ -59,6 +59,9 @@ extension GameScene {
         // Checked per row, so a phase ends where it ends rather than on a schedule
 
         let endlessII = endlessIIReserveOrBuildBig()
+        let setRow = endlessIINextSetRow(reservationPending: endlessII.skip.isEmpty == false)
+        // Asked after the reservation so a pattern never starts on a row that is already
+        // being shaped by a Big brick or a spinner
         // Endless 2.0 only. Either this row leaves a gap for a Big brick, or it builds the
         // one the row before it left a gap for
 
@@ -554,7 +557,12 @@ extension GameScene {
                 }
             }
             
-            if gameMode == .endlessII {
+            if let setRow {
+                brick.texture = endlessIISetRowTexture(setRow, column: j)
+                brick.endlessIIStaysPlain = true
+                // A designed row stays as designed. Styling it would be overwriting the one
+                // thing that makes it different from the rows either side
+            } else if gameMode == .endlessII {
                 brick.texture = endlessIIBrickTexture()
             }
             // Endless 2.0 generates its own mix. The inherited height bands were built for a

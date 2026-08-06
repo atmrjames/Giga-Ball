@@ -755,7 +755,6 @@ introduction schedule. Everything below is what remains, in the order it is wort
 | Item | Notes |
 |---|---|
 | Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
-| Set rows | Deliberately designed 1–3 row patterns, alongside phases. A couple already exist, such as the alternating indestructible row |
 | Fixed brick | Specced at §4.11a. Two open questions: what happens when one reaches the bottom row, and whether a Big or Moving one can be fixed |
 | Build-in animation | Bricks build in from the top at the start of a run, quickly, skippable with a tap |
 | Ring bar styling | The progress ring sits outside the icon; the icons have room for it to sit inside. Giga-Ball colour and glow |
