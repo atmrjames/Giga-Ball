@@ -251,7 +251,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     }
 
     private func updateLabels() {
-        nameLabel.text = selected.name
+        nameLabel.text = selected.name.uppercased()
         pageControl.currentPage = selected.rawValue
     }
 

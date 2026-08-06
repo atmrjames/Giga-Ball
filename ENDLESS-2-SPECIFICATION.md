@@ -748,6 +748,12 @@ page and to the progression, and to neither pool, so no brick could ever be give
 outside that is indistinguishable from a style that is simply very rare, which is why it went
 unnoticed for so long.
 
+**A contact reports the velocity *after* the bounce.** SpriteKit calls the contact handler
+partway through resolving the step, so a ball's velocity read there is the one it is leaving
+with, not the one it arrived with. Anything that needs the approach — which face was struck,
+which way a Portal should send the ball on — has to sample it in `update`, before the physics
+runs. `ballStateBeforeStep` is that sample.
+
 **Adjacent bricks have a seam.** Every brick is its own body, so a ball landing exactly on the
 join between two of them is resolved against both at once and leaves off a corner rather than
 off the flat face. `BrickSeamBounce` catches it: two bricks struck in one step are treated as

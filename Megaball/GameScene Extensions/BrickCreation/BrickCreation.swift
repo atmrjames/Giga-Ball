@@ -65,8 +65,11 @@ extension GameScene {
             if savedGame == nil {
                 let startingScale = SKAction.scale(to: 0.8, duration: 0)
                 let startingFade = SKAction.fadeOut(withDuration: 0)
-                let scaleUp = SKAction.scale(to: 1, duration: 0.25)
-                let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+                let arrival = gameMode == .endlessII
+                    ? GameScene.endlessIIBuildInFade
+                    : 0.25
+                let scaleUp = SKAction.scale(to: 1, duration: arrival)
+                let fadeIn = SKAction.fadeIn(withDuration: arrival)
                 let wait = SKAction.wait(forDuration: 0.25)
                 let startingGroup = SKAction.group([startingScale, startingFade])
                 let brickGroup = SKAction.group([scaleUp, fadeIn])

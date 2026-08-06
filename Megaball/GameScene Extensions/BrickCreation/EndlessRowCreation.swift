@@ -58,8 +58,13 @@ extension GameScene {
         advanceEndlessIIPhase()
         // Checked per row, so a phase ends where it ends rather than on a schedule
 
+        let milestoneRow = endlessIIRowIsMilestone
         let endlessII = endlessIIReserveOrBuildBig()
-        let setRow = endlessIINextSetRow(reservationPending: endlessII.skip.isEmpty == false)
+        let setRow = milestoneRow
+            ? nil
+            : endlessIINextSetRow(reservationPending: endlessII.skip.isEmpty == false)
+        // A designed pattern is not started on a row that is about to be emptied, or its first
+        // row would be thrown away and the rest would arrive without it
         // Asked after the reservation so a pattern never starts on a row that is already
         // being shaped by a Big brick or a spinner
         // Endless 2.0 only. Either this row leaves a gap for a Big brick, or it builds the
@@ -557,7 +562,11 @@ extension GameScene {
                 }
             }
             
-            if let setRow {
+            if milestoneRow {
+                brick.texture = brickNullTexture
+                // The row a hundred-metre line is about to arrive in, left empty so the line
+                // can be read. Everything else about generation carries on around it
+            } else if let setRow {
                 brick.texture = endlessIISetRowTexture(setRow, column: j)
                 brick.endlessIIStaysPlain = true
                 // A designed row stays as designed. Styling it would be overwriting the one

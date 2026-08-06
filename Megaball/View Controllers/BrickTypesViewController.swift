@@ -46,7 +46,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         // Sets up an observer to watch for notifications to check if the user has returned
         // from another view
 
-        titleLabel.text = "BRICK TYPES"
+        titleLabel.text = "BRICKS"
 
         itemsTableView.delegate = self
         itemsTableView.dataSource = self

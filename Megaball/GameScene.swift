@@ -640,6 +640,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalKeepsHeading = false
 	/// Which ball is waiting to be moved to a portal's exit. Not always the first one.
 	weak var endlessIIPortalTraveller: SKSpriteNode?
+	/// What it should be travelling at when it gets there - the heading it arrived with,
+	/// turned round only if carrying on would have taken it out of the field.
+	var endlessIIPortalExitVelocity: CGVector?
 	var endlessIIProgression = EndlessIIProgression.make()
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
@@ -4860,20 +4863,26 @@ laserTimer?.invalidate()
 			}
 			// Apply a random angle factor
 					
+			// Pushed off horizontal by a little more than the minimum, and by a different
+			// little each time. Snapping to exactly the minimum is what let the ball settle
+			// into a loop: rescued at exactly ten degrees, it bounces symmetrically and comes
+			// back at exactly ten degrees, over and over. The escape has to not repeat
+			let escape = minAngleDeg + Double.random(in: 0...GameScene.horizontalEscapeJitter)
+
 			if angleDeg <= minAngleDeg && angleDeg > 0 {
-				angleDeg = minAngleDeg
+				angleDeg = escape
 			}
 			// Up and right
 			if angleDeg >= -minAngleDeg && angleDeg <= 0 {
-				angleDeg = -minAngleDeg
+				angleDeg = -escape
 			}
 			// Down and right
 			if angleDeg <= 180+minAngleDeg && angleDeg >= 180-minAngleDeg {
-				angleDeg = 180-minAngleDeg
+				angleDeg = 180-escape
 			}
 			// Up and left
 			if angleDeg >= -180-minAngleDeg && angleDeg <= -180+minAngleDeg {
-				angleDeg = -180+minAngleDeg
+				angleDeg = -180+escape
 			}
 			// Down and left
 			
@@ -5019,6 +5028,14 @@ laserTimer?.invalidate()
 	/// wall a few frames later at the same angle, and again - so it runs up the side of the
 	/// screen in a stack of tiny bounces that reads as the ball having stuck to it.
 	static let minWallAngleDeg: Double = 12
+
+	/// How much more than the minimum a ball gets when it is pushed off horizontal.
+	///
+	/// Small, and random, so no two escapes are the same. A fixed escape angle is a loop
+	/// waiting to happen - the ball leaves at exactly the minimum, bounces symmetrically, and
+	/// arrives back at exactly the minimum, which is how a ball ends up crossing the screen
+	/// horizontally for a dozen bounces before something else knocks it out of it.
+	static let horizontalEscapeJitter: Double = 6
 
 	/// Turns a ball leaving a wall far enough away from vertical to actually leave it.
 	///

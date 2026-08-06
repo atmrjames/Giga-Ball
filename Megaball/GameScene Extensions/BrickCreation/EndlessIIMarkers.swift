@@ -52,10 +52,14 @@ extension GameScene {
 
         let marker = SKNode()
         marker.name = GameScene.endlessIIMarkerName
-        marker.position = CGPoint(x: 0, y: yBrickOffsetEndless + brickHeight/2)
+        marker.position = CGPoint(x: 0, y: yBrickOffsetEndless)
         marker.zPosition = 0.6
         // Above the background and below the bricks, which sit at 1. A marker in front of the
-        // field would be something to look past rather than something to notice
+        // field would be something to look past rather than something to notice.
+        //
+        // On the row's centre line rather than its top edge, because the row it arrives in is
+        // generated empty for it - see `endlessIIRowIsMilestone`. A line drawn across the
+        // middle of a row with nothing in it is a line you can read
         addChild(marker)
 
         let colour = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.3)
@@ -104,6 +108,26 @@ extension GameScene {
     /// How far a tick reaches in from each wall, as a fraction of the play area's width.
     static let endlessIITickLength: CGFloat = 0.045
 
+    /// Whether the row being generated right now is the one a milestone marker will arrive in.
+    ///
+    /// Asked during row generation, which happens before the height is incremented - so the row
+    /// being built is the one that will be labelled a field's depth from now.
+    ///
+    /// A hundred-metre line, or a personal best, is the thing on that row worth reading, and a
+    /// row of bricks drawn over it hides most of it. The row is generated empty instead. What
+    /// arrives there later is fair game: a Gravity brick can fall into it and a Spawner can
+    /// fill it, and that is a field doing what fields do rather than a marker being born
+    /// covered up.
+    var endlessIIRowIsMilestone: Bool {
+        guard gameMode == .endlessII else { return false }
+        let arriving = endlessHeight + 1 + GameScene.endlessIIMarkerLead
+        guard arriving > 0 else { return false }
+
+        if arriving % GameScene.endlessIIMarkerSpacing == 0 { return true }
+        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
+        return best > 0 && arriving == best
+    }
+
     /// Puts the marks that are already in the opening field there.
     ///
     /// Every other marker enters at the top and descends into place, which works for heights
@@ -122,7 +146,7 @@ extension GameScene {
             guard height % GameScene.endlessIITickSpacing == 0 else { continue }
             guard height % GameScene.endlessIIMarkerSpacing != 0 || height == 0 else { continue }
 
-            let y = yBrickOffsetEndless - brickHeight*CGFloat(row) + brickHeight/2
+            let y = yBrickOffsetEndless - brickHeight*CGFloat(row)
             addEndlessIITick(at: y)
         }
         // Only the tens. A hundred-metre line cannot already be in the opening field, and 0m
@@ -143,7 +167,7 @@ extension GameScene {
         guard arriving % GameScene.endlessIIMarkerSpacing != 0 else { return }
         // A hundred is a hundred, not a hundred and a tick
 
-        addEndlessIITick(at: yBrickOffsetEndless + brickHeight/2)
+        addEndlessIITick(at: yBrickOffsetEndless)
     }
 
     func addEndlessIITick(at y: CGFloat) {
@@ -204,9 +228,20 @@ extension GameScene {
 
     /// How long the whole cascade takes, top row to bottom.
     ///
-    /// Short. It is a flourish before a run, not a title sequence, and anybody past their
-    /// first few games wants to be playing.
-    static let endlessIIBuildInSweep: TimeInterval = 0.35
+    /// Short - it is a flourish before a run, not a title sequence, and anybody past their
+    /// first few games wants to be playing. But it was 0.35s, which over twenty-two rows is
+    /// sixteen milliseconds a row against a quarter-second fade on each brick: every row was
+    /// still arriving while every other row was arriving, so the wave was there in the code
+    /// and invisible on the screen. Long enough now to read as sweeping downward, and still
+    /// over before a player has finished deciding where to aim.
+    static let endlessIIBuildInSweep: TimeInterval = 0.9
+
+    /// How long one brick takes to arrive once its turn comes.
+    ///
+    /// Shorter than the sweep by enough that the rows are distinct. A brick that fades in over
+    /// longer than the gap between rows blurs into the ones after it, which is the whole
+    /// difference between a cascade and everything appearing at once slightly unevenly.
+    static let endlessIIBuildInFade: TimeInterval = 0.16
 
     /// When a brick in the opening field should appear.
     ///

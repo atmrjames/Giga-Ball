@@ -213,7 +213,7 @@ final class EndlessIINeighbourTests: XCTestCase {
             for heading in [CGVector(dx: 300, dy: 0), CGVector(dx: -300, dy: 0),
                             CGVector(dx: 300, dy: 200), CGVector(dx: -300, dy: -200),
                             CGVector(dx: 0, dy: 300), CGVector(dx: 0, dy: -300)] {
-                let exit = scene.endlessIIPortalExit(from: portal, heading: heading)
+                let exit = scene.endlessIIPortalExit(from: portal, heading: heading).point
                 XCTAssertTrue(playable.contains(exit),
                               "column \(column), heading \(heading): \(exit)")
             }
@@ -228,8 +228,10 @@ final class EndlessIINeighbourTests: XCTestCase {
         let portal = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
 
         let exit = scene.endlessIIPortalExit(from: portal, heading: CGVector(dx: 300, dy: 0))
-        XCTAssertGreaterThan(exit.x, portal.position.x)
-        XCTAssertEqual(exit.y, portal.position.y, accuracy: 0.001)
+        XCTAssertGreaterThan(exit.point.x, portal.position.x)
+        XCTAssertEqual(exit.point.y, portal.position.y, accuracy: 0.001)
+        XCTAssertEqual(exit.heading.dx, 300, accuracy: 0.001, "it carries on the way it went in")
+        XCTAssertEqual(exit.heading.dy, 0, accuracy: 0.001)
     }
 
     func testABallLeavingAPortalIsClearOfTheBrick() {
@@ -238,11 +240,35 @@ final class EndlessIINeighbourTests: XCTestCase {
 
         for heading in [CGVector(dx: 300, dy: 0), CGVector(dx: 0, dy: -300),
                         CGVector(dx: -200, dy: 200)] {
-            let exit = scene.endlessIIPortalExit(from: portal, heading: heading)
+            let exit = scene.endlessIIPortalExit(from: portal, heading: heading).point
             XCTAssertFalse(portal.frame.insetBy(dx: -scene.ballSize/2,
                                                 dy: -scene.ballSize/2).contains(exit),
                            "\(heading)")
         }
+    }
+
+    func testABallBouncesOutOfAPortalOnlyWhenCarryingOnWouldLoseIt() {
+        // A pair is a doorway: what goes in one end comes out of the other going the same way,
+        // and the player can aim through it. The exception is a far end against a wall, where
+        // carrying on would put the ball outside the field - there it turns round instead,
+        // which is a thing that can be read where vanishing is not
+        let scene = makeScene()
+        let middle = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        let heading = CGVector(dx: 300, dy: 120)
+
+        let clear = scene.endlessIIPortalExit(from: middle, heading: heading)
+        XCTAssertEqual(clear.heading.dx, heading.dx, accuracy: 0.001)
+        XCTAssertEqual(clear.heading.dy, heading.dy, accuracy: 0.001)
+        middle.removeFromParent()
+
+        let atTheWall = addBrick(scene, at: CGPoint(x: scene.gameWidth/2 - cell.width/2, y: 200),
+                                 size: cell)
+        let bounced = scene.endlessIIPortalExit(from: atTheWall, heading: heading)
+        XCTAssertLessThan(bounced.heading.dx, 0, "turned back into the field")
+        XCTAssertTrue(scene.endlessIIPlayableRect.contains(bounced.point))
+        XCTAssertEqual(hypot(bounced.heading.dx, bounced.heading.dy),
+                       hypot(heading.dx, heading.dy), accuracy: 0.5,
+                       "a bounce is a change of direction, not of speed")
     }
 
     // MARK: - Markers

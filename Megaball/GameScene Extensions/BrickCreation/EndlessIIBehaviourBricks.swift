@@ -634,12 +634,22 @@ extension GameScene {
         endlessIIPortalTraveller = ball
         // The ball that arrived, which with more than one in play is not always the first
         let from = ball.position
-        let velocity = ball.physicsBody?.velocity ?? .zero
+
+        // How it was travelling *before* this step, not now. A Portal is built on an
+        // Indestructible brick, so by the time the contact is reported the engine has already
+        // bounced the ball off it - and reading the velocity here got the reflection rather
+        // than the approach, which is why a ball going up and to the right came out of the far
+        // end going up and to the left
+        let velocity = ballStateBeforeStep[ObjectIdentifier(ball)]?.velocity
+            ?? ball.physicsBody?.velocity ?? .zero
         let partner = endlessIIPortals().first { $0 !== brick }
 
         let to: CGPoint
+        var leaving = velocity
         if let partner {
-            to = endlessIIPortalExit(from: partner, heading: velocity)
+            let exit = endlessIIPortalExit(from: partner, heading: velocity)
+            to = exit.point
+            leaving = exit.heading
         } else {
             to = CGPoint(x: ball.position.x,
                          y: yBrickOffsetEndless + brickHeight/2 - ballSize)
@@ -648,6 +658,7 @@ extension GameScene {
             // physics to shove it back out
         }
         endlessIIPortalKeepsHeading = partner != nil
+        endlessIIPortalExitVelocity = leaving
 
         endlessIIPendingPortalExit = to
         // Not moved here. This runs from `didBegin`, which SpriteKit calls in the middle of
@@ -712,31 +723,46 @@ extension GameScene {
     /// ball leaves vertically instead, which is always available to a brick in the field, and
     /// keeps the sense of the journey - it carries on up, or on down. The velocity is never
     /// touched: which way the ball is going is the one thing a doorway must not change.
-    func endlessIIPortalExit(from partner: SKSpriteNode, heading velocity: CGVector) -> CGPoint {
+    func endlessIIPortalExit(from partner: SKSpriteNode,
+                            heading velocity: CGVector) -> (point: CGPoint, heading: CGVector) {
         let brick = partner.frame
         let centre = CGPoint(x: brick.midX, y: brick.midY)
         let clearance = max(brick.width, brick.height)/2 + ballSize*1.5
         let playable = endlessIIPlayableRect
 
         let speed = max(1, hypot(velocity.dx, velocity.dy))
-        let vertical: CGFloat = velocity.dy >= 0 ? 1 : -1
-        let horizontal: CGFloat = velocity.dx >= 0 ? 1 : -1
+        let unit = CGVector(dx: velocity.dx/speed, dy: velocity.dy/speed)
 
-        let headings = [CGVector(dx: velocity.dx/speed, dy: velocity.dy/speed),
-                        CGVector(dx: 0, dy: vertical),
-                        CGVector(dx: -horizontal, dy: vertical),
-                        CGVector(dx: 0, dy: -vertical)]
+        // What comes out of the far end is what went into the near one. That is what makes a
+        // pair a doorway: a ball crossing the field from bottom left to top right carries on
+        // from bottom left to top right, and the player can aim through it
+        if playable.contains(CGPoint(x: centre.x + unit.dx*clearance,
+                                     y: centre.y + unit.dy*clearance)) {
+            return (CGPoint(x: centre.x + unit.dx*clearance, y: centre.y + unit.dy*clearance),
+                    velocity)
+        }
 
-        for heading in headings {
+        // Unless carrying on would put it outside the field, which happens when the far end is
+        // against a wall or in the bottom row. Then it bounces: the component that would have
+        // taken it out is turned round, and the ball leaves the way it would have if it had
+        // arrived there and hit the wall - which is a thing the player can read, where
+        // vanishing is not
+        let mirrored = [CGVector(dx: -unit.dx, dy: unit.dy),
+                        CGVector(dx: unit.dx, dy: -unit.dy),
+                        CGVector(dx: -unit.dx, dy: -unit.dy)]
+
+        for heading in mirrored {
             let exit = CGPoint(x: centre.x + heading.dx*clearance,
                                y: centre.y + heading.dy*clearance)
-            if playable.contains(exit) { return exit }
+            guard playable.contains(exit) else { continue }
+            return (exit, CGVector(dx: heading.dx*speed, dy: heading.dy*speed))
         }
 
         // A Portal with no clear side at all, which takes a field that has boxed it in on
         // every one. Put the ball where it can go: still in play beats still travelling
-        return CGPoint(x: min(max(centre.x, playable.minX), playable.maxX),
-                       y: min(max(centre.y, playable.minY), playable.maxY))
+        return (CGPoint(x: min(max(centre.x, playable.minX), playable.maxX),
+                        y: min(max(centre.y, playable.minY), playable.maxY)),
+                velocity)
     }
 
     /// Where the ball can be set down and still be in the game.
@@ -761,7 +787,9 @@ extension GameScene {
         guard ball.parent != nil else { return }
         // The traveller can be lost between entering a portal and the step finishing
 
-        let velocity = ball.physicsBody?.velocity ?? .zero
+        let velocity = endlessIIPortalExitVelocity
+            ?? ball.physicsBody?.velocity ?? .zero
+        endlessIIPortalExitVelocity = nil
         ball.position = exit
         if endlessIIPortalKeepsHeading {
             ball.physicsBody?.velocity = velocity
@@ -796,17 +824,22 @@ extension GameScene {
                                 .removeFromParent()]))
         }
 
-        let streak = SKShapeNode(rect: CGRect(x: -1.5, y: min(from.y, to.y),
-                                              width: 3, height: abs(to.y - from.y)))
-        streak.position = CGPoint(x: from.x, y: 0)
+        let path = CGMutablePath()
+        path.move(to: from)
+        path.addLine(to: to)
+        let streak = SKShapeNode(path: path)
         streak.zPosition = 2
-        streak.fillColor = GameScene.portalBrickColour
-        streak.strokeColor = .clear
+        streak.strokeColor = GameScene.portalBrickColour
+        streak.lineWidth = 3
+        streak.lineCap = .round
         streak.alpha = 0.5
         addChild(streak)
         streak.run(.sequence([.fadeOut(withDuration: 0.25), .removeFromParent()]))
         // A line joining the two, so the eye is taken from one end to the other rather than
-        // having to find the ball again
+        // having to find the ball again. Drawn between the actual points rather than as a
+        // vertical bar: a lone Portal is a lift and its journey really is straight up, but a
+        // pair can be anywhere, and a vertical line between two ends that are not vertically
+        // apart points at neither of them
     }
 
     static let endlessIIPortalCooldownSeconds: TimeInterval = 0.5
