@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A2 /* EndlessIIClusterTests.swift */; };
+		1AF17000000000A1 /* EndlessIIClusters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A0 /* EndlessIIClusters.swift */; };
 		1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000094 /* EndlessIIBallsTests.swift */; };
 		1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000092 /* EndlessIIMultiBall.swift */; };
 		1AF1700000000091 /* EndlessIIBalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000090 /* EndlessIIBalls.swift */; };
@@ -295,6 +297,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF17000000000A2 /* EndlessIIClusterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusterTests.swift; sourceTree = "<group>"; };
+		1AF17000000000A0 /* EndlessIIClusters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusters.swift; sourceTree = "<group>"; };
 		1AF1700000000094 /* EndlessIIBallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBallsTests.swift; sourceTree = "<group>"; };
 		1AF1700000000092 /* EndlessIIMultiBall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIMultiBall.swift; sourceTree = "<group>"; };
 		1AF1700000000090 /* EndlessIIBalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBalls.swift; sourceTree = "<group>"; };
@@ -610,6 +614,7 @@
 		1AF100000000000B /* GigaBallTests */ = {
 			isa = PBXGroup;
 			children = (
+				1AF17000000000A2 /* EndlessIIClusterTests.swift */,
 				1AF1700000000094 /* EndlessIIBallsTests.swift */,
 				1AF1700000000080 /* EndlessIINeighbourTests.swift */,
 				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
@@ -1128,6 +1133,7 @@
 		1AFF33C623EC42CB0033F485 /* Data Model */ = {
 			isa = PBXGroup;
 			children = (
+				1AF17000000000A0 /* EndlessIIClusters.swift */,
 				1AF1700000000090 /* EndlessIIBalls.swift */,
 				1AF1700000000068 /* BrickTypeCatalogue.swift */,
 				1AF1700000000062 /* GameSceneLayout.swift */,
@@ -1347,6 +1353,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */,
 				1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */,
 				1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */,
 				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
@@ -1378,6 +1385,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF17000000000A1 /* EndlessIIClusters.swift in Sources */,
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,
 				1AF1700000000091 /* EndlessIIBalls.swift in Sources */,
 				1AF170000000006D /* BrickTypesViewController.swift in Sources */,

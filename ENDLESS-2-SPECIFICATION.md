@@ -507,6 +507,60 @@ rest, so breaks arrive often without being predictable. A Quiet phase is **not e
 sparse field would just fly past. It is lower density and easier brick types, so it still
 has to be played, just with room to breathe.
 
+### 6.2.1 Clusters
+
+Phases decide what a long stretch is made of. Set rows decide what one row is. **A cluster is
+a shape sitting *in* a row that is otherwise whatever it was going to be** — three or four
+columns wide, dropped at a column the generator picks, with ordinary field either side of it.
+
+That difference is the whole point. A set row says "the next row is this". A cluster says
+"there is a thing over there", and the field carries on around it — which is what makes it
+read as an object in the field rather than as a change of subject. It is also why clusters
+need no machinery of their own: a cluster is written as a small grid and expanded into
+full-width rows whose every other column is `?`, "whatever the generator would have put
+there", and from that point on it is a set row.
+
+**The grid is not square.** A cell is twice as wide as it is tall, because a brick is. So a
+shape that is square *in cells* is a 2:1 rectangle on screen, and anything meant to read as a
+circle, a diamond, a ring or a staircase needs roughly twice as many rows as columns. Every
+shape below is drawn for that, which is why they all look tall written down and correct in
+the game.
+
+**Three kinds of contents**, and most clusters are one of the first two:
+
+- **A set formation of undesigned bricks** — the shape is designed, the contents are not, so
+  the same ring is a different problem each time. Written with `?`
+- **A set formation of particular bricks** — where the *type* is the idea. An indestructible
+  lid, a multi-hit shell
+- **Both** — a shell of something specific around contents that vary
+
+| Cluster | Shape | Gate | Why |
+|---|---|---|---|
+| Block | 2×2, undesigned | — | The simplest thing a cluster can be, and the one that teaches a player that clusters exist |
+| Slab | 4×2, undesigned | 40 | |
+| Tower | 2×4, undesigned | 60 | |
+| Chequer | 3×3 alternating | 50 | Solid enough to matter, open enough to be threaded |
+| Wedge | A right triangle | 70 | A slope. Everything that hits it is sent the same way |
+| Diamond | Points at top and bottom | 80 | |
+| Cross | A plus | 90 | |
+| Hoop | A ring with nothing in it | 110 | The inside is reachable and worth nothing, so the shape itself is the obstacle rather than a wrapper round a prize |
+| Arrowhead | A chevron with a hollow | 130 | |
+| Circle | An approximation, six rows deep | 150 | |
+| Staircase | Three steps, two rows each | 170 | Two rows per step, so the steps are square on screen |
+| Anvil | Indestructible lid over undesigned bricks | 190 | Has to be played around rather than through |
+| Studs | Spaced Indestructible ×1 posts | 200 | What it leaves behind is decided by which ones the player chose to hit |
+| Vault | Indestructible ring around undesigned bricks | 220 | The way in is the gaps at the corners |
+| Core | Multi-hit shell around something ordinary | 240 | Slow to open and quick to finish |
+
+**Rarity works as it does everywhere else.** Each carries a weight as well as a gate, and the
+plain blocks carry the highest — a run that kept serving set pieces would be a run of set
+pieces, which is the same rule the uniform phases follow. Height raises what is *possible*
+rather than what is guaranteed.
+
+**They never fit half-way.** A shape that runs off the side of the field is not the shape, and
+the wall would be doing the part of the work the design was for. A cluster is only placed at a
+column where it fits whole.
+
 ### 6.3 Exposure
 
 **The introduction schedule.** Every new brick type and every Uncommon and Rare power-up is

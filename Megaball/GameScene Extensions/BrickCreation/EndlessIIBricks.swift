@@ -184,9 +184,23 @@ extension GameScene {
     /// How often a designed pattern starts, when nothing else has the generator busy.
     static let endlessIISetRowChance = 7
 
+    /// How often a cluster starts, when nothing else has the generator busy.
+    ///
+    /// Higher than a set row's chance, because a cluster is a smaller event: a set row decides
+    /// what the whole next row is, where a cluster is a thing sitting in a row that is
+    /// otherwise whatever it was going to be.
+    static let endlessIIClusterChance = 11
+
     /// Takes the next row of a designed pattern, starting one if it is time.
     ///
     /// Returns nil for an ordinary generated row, which is most of them.
+    ///
+    /// Clusters and set rows share this queue and everything downstream of it. A cluster is
+    /// written as a small shape and expanded here into full-width rows whose every other
+    /// column is `?` - "whatever the generator would have put there" - so the field carries on
+    /// either side of it. That one character is the whole difference between the two, and it
+    /// is why a cluster needs no new pipeline: the reservation guard, the height gating and
+    /// the row-to-texture mapping all already do the right thing.
     func endlessIINextSetRow(reservationPending: Bool) -> String? {
         guard gameMode == .endlessII else { return nil }
 
@@ -194,12 +208,32 @@ extension GameScene {
             guard reservationPending == false else { return nil }
             // A Big brick or a spinner is already shaping this row and the next. Two things
             // arranging the same cells would leave neither shape intact
-            guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else { return nil }
-            let choices = EndlessIISetRow.available(at: endlessHeight)
-            guard let pattern = choices.randomElement() else { return nil }
-            endlessIISetRowQueue = pattern.rows
+
+            if Int.random(in: 1...100) <= GameScene.endlessIIClusterChance,
+               let queued = endlessIIStartCluster() {
+                endlessIISetRowQueue = queued
+            } else {
+                guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else {
+                    return nil
+                }
+                let choices = EndlessIISetRow.available(at: endlessHeight)
+                guard let pattern = choices.randomElement() else { return nil }
+                endlessIISetRowQueue = pattern.rows
+            }
         }
         return endlessIISetRowQueue.removeFirst()
+    }
+
+    /// Picks a cluster and a column for it, and writes it out as rows.
+    func endlessIIStartCluster() -> [String]? {
+        guard let cluster = EndlessIICluster.pick(at: endlessHeight,
+                                                  roll: { Int.random(in: 0..<$0) }) else {
+            return nil
+        }
+        let places = EndlessIICluster.placements(width: cluster.width,
+                                                 in: numberOfBrickColumns)
+        guard let column = places.randomElement() else { return nil }
+        return cluster.expanded(atColumn: column, fieldWidth: numberOfBrickColumns)
     }
 
     /// What a designed row puts in one of its columns.
