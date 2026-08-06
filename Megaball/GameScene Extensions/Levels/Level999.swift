@@ -67,13 +67,21 @@ extension GameScene {
                 let brick = SKSpriteNode(imageNamed: "BrickNormal")
                 brick.texture = brickNullTexture
                 
-                let randomBrick = Int.random(in: 1...100)
-                if randomBrick <= 5 {
-                    brick.texture = brickNormalTexture
-                    brick.color = brickWhite
-                } else if randomBrick > 5 && randomBrick <= 6 {
-                    brick.texture = brickMultiHit3Texture
+                if gameMode == .endlessII {
+                    brick.texture = endlessIIBrickTexture()
+                    if brick.texture == brickNormalTexture { brick.color = brickWhite }
+                } else {
+                    let randomBrick = Int.random(in: 1...100)
+                    if randomBrick <= 5 {
+                        brick.texture = brickNormalTexture
+                        brick.color = brickWhite
+                    } else if randomBrick > 5 && randomBrick <= 6 {
+                        brick.texture = brickMultiHit3Texture
+                    }
                 }
+                // The opening field is generated the same way every later row is, so a run
+                // starts as sparse and as plain as the progression says it should - rather
+                // than from a fixed mix that had to be guessed separately
                 
                 if i >= 19 {
                     brick.texture = brickNullTexture

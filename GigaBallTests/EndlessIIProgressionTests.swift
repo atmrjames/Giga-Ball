@@ -169,3 +169,114 @@ final class EndlessIIProgressionTests: XCTestCase {
         }
     }
 }
+
+extension EndlessIIProgressionTests {
+
+    // MARK: - Density
+
+    func testARunOpensNearlyEmpty() {
+        // The complaint this fixes: a first row with several kinds of brick in it teaches a
+        // player nothing, because everything arrives at once and none of it is legible.
+        XCTAssertLessThan(progression.density(at: 0), 0.12)
+    }
+
+    func testDensityClimbsAndThenStops() {
+        let p = progression
+        XCTAssertLessThan(p.density(at: 0), p.density(at: 100))
+        XCTAssertLessThan(p.density(at: 100), p.density(at: 400))
+        XCTAssertEqual(p.density(at: EndlessIIProgression.densityCapMetres),
+                       p.density(at: 5000), accuracy: 0.0001)
+    }
+
+    func testTheFieldNeverFillsUp() {
+        // Past the cap what changes is what the bricks are, not how many. A field that kept
+        // filling would end as a wall.
+        let p = progression
+        for height in stride(from: 0, through: 2000, by: 25) {
+            for phase in EndlessIIPhase.allCases {
+                XCTAssertLessThanOrEqual(p.density(at: height, phase: phase), 0.6,
+                                         "\(height) / \(phase)")
+            }
+        }
+    }
+
+    func testDensityStopsClimbingLongBeforeTheRestOfTheRampDoes() {
+        // Deliberate: the field stops getting fuller around 500m and carries on getting
+        // stranger for another 500 after that.
+        XCTAssertLessThan(EndlessIIProgression.densityCapMetres, EndlessIIProgression.rampMetres)
+    }
+
+    func testAQuietPhaseIsThinnerAndABusyOneIsFuller() {
+        let p = progression
+        let plain = p.density(at: 300, phase: .standard)
+        XCTAssertLessThan(p.density(at: 300, phase: .quiet), plain)
+        XCTAssertGreaterThan(p.density(at: 300, phase: .fortress), plain)
+    }
+
+    func testAQuietPhaseIsStillWorthPlaying() {
+        // Lower density and easier bricks, not an empty screen - a sparse field would just
+        // fly past.
+        XCTAssertGreaterThan(progression.density(at: 300, phase: .quiet), 0.1)
+    }
+
+    // MARK: - What the bricks are
+
+    func testTheOpeningIsAlmostAllPlainBricks() {
+        let weights = progression.behaviourWeights(at: 0)
+        let standard = weights.first { $0.0 == .standard }?.1 ?? 0
+        let rest = weights.filter { $0.0 != .standard }.reduce(0) { $0 + $1.1 }
+        XCTAssertGreaterThan(standard, rest*5)
+    }
+
+    func testByAThousandMetresAPlainBrickIsTheMinority() {
+        let weights = progression.behaviourWeights(at: 1000)
+        let standard = weights.first { $0.0 == .standard }?.1 ?? 0
+        let rest = weights.filter { $0.0 != .standard }.reduce(0) { $0 + $1.1 }
+        XCTAssertLessThan(standard, rest)
+    }
+
+    func testEveryBehaviourIsReachableAtEveryDepth() {
+        let p = progression
+        for height in [0, 50, 500, 1500] {
+            for (_, weight) in p.behaviourWeights(at: height) {
+                XCTAssertGreaterThan(weight, 0, "at \(height)")
+            }
+        }
+    }
+
+    // MARK: - Phases
+
+    func testTheOpeningOnlyOffersThePlainPhases() {
+        // Nothing with a character of its own until a player has seen an ordinary field.
+        for phase in EndlessIIPhase.allCases where phase.minimumHeight == 0 {
+            XCTAssertTrue([.standard, .quiet].contains(phase), "\(phase)")
+        }
+    }
+
+    func testBreathersAreTheMostLikelySinglePhase() {
+        // Weighted rather than scheduled, so breaks arrive often without being predictable.
+        let others = EndlessIIPhase.allCases.filter { $0 != .quiet }
+        for phase in others {
+            XCTAssertGreaterThanOrEqual(EndlessIIPhase.quiet.weight, phase.weight, "\(phase)")
+        }
+    }
+
+    func testAPhasePickedIsAlwaysOneAllowedAtThatHeight() {
+        let p = progression
+        for height in [0, 30, 100, 300, 900] {
+            for roll in [0, 3, 17, 61, 250] {
+                let phase = p.pickPhase(at: height, roll: { _ in roll })
+                XCTAssertLessThanOrEqual(phase.minimumHeight, height, "\(height)/\(roll)")
+            }
+        }
+    }
+
+    // MARK: - Motion
+
+    func testMovingPartsStartSlowAndSpeedUp() {
+        let p = progression
+        XCTAssertLessThan(p.motionRate(at: 0), 1.0)
+        XCTAssertLessThan(p.motionRate(at: 0), p.motionRate(at: 500))
+        XCTAssertGreaterThan(p.motionRate(at: 1000), 1.0)
+    }
+}

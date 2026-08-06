@@ -584,6 +584,24 @@ and backgrounds, which are also tables.
 
 ---
 
+## 8.5 Art and audio still to make
+
+Everything new in Endless 2.0 is currently wearing a placeholder: the brick styles are
+ordinary brick artwork tinted a distinct colour with a shape drawn over it, and none of them
+has a sound of its own. That has been good enough to build and judge the mechanics against —
+each one is legible and tells you what it does — but it is not what ships.
+
+**Needed before release:** artwork for the nine brick styles and the three sizes, artwork for
+the new power-ups in the existing icon style, and sound effects for the events that currently
+borrow the ordinary brick-hit sound — an explosion, a spawn, a portal jump, a gravity brick
+landing, a flashing brick turning solid.
+
+Deliberately last. A placeholder that reads correctly is worth more during design than
+finished art for a mechanic that might still change, and several of these bricks have already
+changed shape twice.
+
+---
+
 ## 9. Out of scope for the first version
 
 - **A separate descent-pressure mode** — where the field reaching the paddle is the core

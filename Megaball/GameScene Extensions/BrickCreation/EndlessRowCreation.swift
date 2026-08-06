@@ -55,6 +55,9 @@ extension GameScene {
         powerUpProbArray[19] = 5 // Remove Indestructible Bricks
         powerUpProbArray[21] = 3 // Undestructi-Ball
         
+        advanceEndlessIIPhase()
+        // Checked per row, so a phase ends where it ends rather than on a schedule
+
         let endlessII = endlessIIReserveOrBuildBig()
         // Endless 2.0 only. Either this row leaves a gap for a Big brick, or it builds the
         // one the row before it left a gap for
@@ -551,6 +554,14 @@ extension GameScene {
                 }
             }
             
+            if gameMode == .endlessII {
+                brick.texture = endlessIIBrickTexture()
+            }
+            // Endless 2.0 generates its own mix. The inherited height bands were built for a
+            // mode that starts at its full density and only varies which bricks fill it;
+            // this one has to start nearly empty and grow, and has its own idea of what a
+            // deep field is made of
+
             if endlessII.skip.contains(j) {
                 brick.texture = brickNullTexture
             }

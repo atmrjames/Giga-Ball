@@ -99,6 +99,39 @@ extension GameScene {
     /// brick through several cycles at once.
     private static let maximumTickInterval: TimeInterval = 1.0/20.0
 
+    // MARK: - Generating
+
+    /// Picks what a single cell of a new Endless 2.0 row holds.
+    ///
+    /// Two questions, in order: is there a brick here at all, and if so what kind. Density
+    /// and composition are separate because they change at different rates - the field stops
+    /// getting fuller around 500m, and carries on getting stranger for another 500 after
+    /// that.
+    func endlessIIBrickTexture() -> SKTexture {
+        let progression = endlessIIProgression
+        guard Double.random(in: 0..<1) < progression.density(at: endlessHeight,
+                                                             phase: endlessIIPhase) else {
+            return brickNullTexture
+        }
+
+        switch progression.pickBehaviour(at: endlessHeight) {
+        case .multiHit: return brickMultiHit3Texture
+        case .indestructibleOnce: return brickIndestructible1Texture
+        case .indestructibleAlways: return brickIndestructible2Texture
+        case .invisible: return brickInvisibleTexture
+        case .standard: return brickNormalTexture
+        }
+    }
+
+    /// Moves the run on to the next phase when the current one has run its length.
+    func advanceEndlessIIPhase() {
+        guard gameMode == .endlessII else { return }
+        guard endlessHeight >= endlessIIPhaseEndsAt else { return }
+
+        endlessIIPhase = endlessIIProgression.pickPhase(at: endlessHeight)
+        endlessIIPhaseEndsAt = endlessHeight + Int.random(in: EndlessIIPhase.shortest...EndlessIIPhase.longest)
+    }
+
     // MARK: - Applying
 
     /// What a brick is, as the rest of the game understands it.
@@ -160,6 +193,7 @@ extension GameScene {
         guard worn.count < GameScene.endlessIIMaximumStyles else { return false }
         guard worn.allSatisfy({ $0.stacksWith(style) }) else { return false }
 
+        if style == .portal, endlessIIHasPortal() { return false }
         if style == .portal {
             // Portal does not need to find an Indestructible brick, it makes one: it takes
             // the behaviour over, because "a hit does nothing" is part of what a Portal is.
@@ -378,6 +412,8 @@ extension GameScene {
         endlessIIPendingSpinColumn = nil
         endlessIIPendingClearColumn = nil
         endlessIIProgression = EndlessIIProgression.make()
+        endlessIIPhase = .standard
+        endlessIIPhaseEndsAt = 0
         endlessIILastTick = 0
         resetEndlessIIRoles()
     }

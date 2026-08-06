@@ -403,6 +403,22 @@ extension GameScene {
     /// which buys the two rules that matter for free: the hit path already refuses to damage
     /// it, and the bottom-row check already ignores it. A Portal that counted would sit in
     /// the last row forever, waiting to be cleared, and no row would ever be generated again.
+    /// Whether the field already has a Portal on it.
+    ///
+    /// One at a time. Two of them facing each other is a loop the ball can fall into and not
+    /// come out of, and no amount of cooldown fixes a trap that is re-armed every time it
+    /// fires.
+    func endlessIIHasPortal() -> Bool {
+        var found = false
+        enumerateChildNodes(withName: BrickCategoryName) { node, stop in
+            if node.endlessIIRole == .portal {
+                found = true
+                stop.initialize(to: true)
+            }
+        }
+        return found
+    }
+
     func makePortal(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .portal
         brick.texture = brickIndestructible2Texture
@@ -557,6 +573,10 @@ extension GameScene {
     func tickEndlessIIRoles(_ delta: TimeInterval) {
         endlessIIPortalCooldown = max(0, endlessIIPortalCooldown - delta)
 
+        let rate = CGFloat(endlessIIProgression.motionRate(at: endlessHeight))
+        // Everything that moves starts slow and speeds up. A spinning brick at full rate in
+        // the first ten metres is noise; the same brick at 40% is something to read
+
         endlessIIWanderers.removeAll { $0.brick.parent == nil }
         for index in endlessIIWanderers.indices {
             var wanderer = endlessIIWanderers[index]
@@ -564,7 +584,7 @@ extension GameScene {
             guard limits.right - limits.left > 0.5 else { continue }
             // Penned in on both sides. It waits, and sets off again the moment one goes
 
-            let step = GameScene.movingSpeed*brickWidth*CGFloat(delta)*wanderer.direction
+            let step = GameScene.movingSpeed*rate*brickWidth*CGFloat(delta)*wanderer.direction
             var x = wanderer.brick.position.x + step
             if x >= limits.right {
                 x = limits.right

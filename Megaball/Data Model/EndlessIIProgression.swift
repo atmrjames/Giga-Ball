@@ -137,3 +137,167 @@ struct EndlessIIProgression {
         return opening + Int((Double(deep - opening)*progress).rounded())
     }
 }
+
+// MARK: - What the field is made of
+
+/// A stretch of field with a character of its own.
+///
+/// Phases are the seasoning, not the meal: short runs of something particular punctuating
+/// ordinary generated field. They exist so density ebbs and flows rather than sitting on
+/// whatever the ramp says, because a field that is always exactly as full as its height
+/// dictates reads as a machine.
+enum EndlessIIPhase: String, CaseIterable {
+    case standard, quiet, swarm, drift, flicker
+    case cascade, minefield, fortress, gauntlet, carousel
+
+    /// How much this phase multiplies the height's density by.
+    var densityFactor: Double {
+        switch self {
+        case .quiet: return 0.45
+        case .drift, .flicker, .carousel: return 0.8
+        case .swarm: return 1.15
+        case .fortress, .minefield: return 1.25
+        case .standard, .cascade, .gauntlet: return 1.0
+        }
+    }
+
+    /// The styles this phase leans on, if any. Empty means the ordinary mix.
+    var favours: [EndlessIIStyle] {
+        switch self {
+        case .drift: return [.moving]
+        case .flicker: return [.flashing]
+        case .cascade: return [.gravity]
+        case .minefield: return [.exploding]
+        case .gauntlet: return [.directional]
+        case .carousel: return [.spinning, .rounded]
+        case .standard, .quiet, .swarm, .fortress: return []
+        }
+    }
+
+    /// How likely this phase is to be drawn. Quiet is the most likely single outcome, so
+    /// breathers arrive often without ever being scheduled.
+    var weight: Int {
+        switch self {
+        case .quiet: return 26
+        case .standard: return 22
+        default: return 8
+        }
+    }
+
+    /// The height below which this phase does not appear, keeping the opening plain.
+    var minimumHeight: Int {
+        switch self {
+        case .standard, .quiet: return 0
+        case .swarm, .drift, .flicker: return 40
+        case .cascade, .minefield: return 120
+        case .fortress, .gauntlet, .carousel: return 250
+        }
+    }
+
+    /// How long a phase lasts, in metres.
+    static let shortest = 5
+    static let longest = 25
+}
+
+extension EndlessIIProgression {
+
+    // MARK: - Density
+
+    /// How full the field should be at this height, as a fraction of its cells.
+    ///
+    /// The opening is nearly empty on purpose. A first row that already has several kinds of
+    /// brick in it gives a player nothing to learn from - everything arrives at once and
+    /// none of it is legible. Starting near-empty means the first unusual brick somebody
+    /// sees is the only unusual thing on screen.
+    ///
+    /// It climbs far more slowly than the style ramp and stops climbing much earlier: past
+    /// the cap what keeps changing is *what* the bricks are, not how many. A field that kept
+    /// filling would end as a wall.
+    static let openingDensity = 0.07
+    static let cappedDensity = 0.42
+    static let densityCapMetres = 500
+
+    func density(at height: Int, phase: EndlessIIPhase = .standard) -> Double {
+        let base: Double
+        if height <= 0 {
+            base = EndlessIIProgression.openingDensity
+        } else if height >= EndlessIIProgression.densityCapMetres {
+            base = EndlessIIProgression.cappedDensity
+        } else {
+            let progress = Double(height)/Double(EndlessIIProgression.densityCapMetres)
+            base = EndlessIIProgression.openingDensity
+                + (EndlessIIProgression.cappedDensity - EndlessIIProgression.openingDensity)*progress
+        }
+        return min(0.6, base*phase.densityFactor)
+        // Capped again after the phase multiplies it, so a dense phase deep in a run cannot
+        // put up a solid wall
+    }
+
+    // MARK: - Which brick
+
+    /// How strongly each behaviour should be drawn at this height.
+    ///
+    /// Standard starts as almost the only thing there is and becomes one option among many -
+    /// by a thousand metres a plain white brick is a minority of what arrives. That is the
+    /// other half of not going stale: if the field only ever got fuller, a deep run would be
+    /// the opening with more of it.
+    func behaviourWeights(at height: Int) -> [(EndlessIIBehaviour, Int)] {
+        let toward = { (opening: Int, deep: Int) in
+            EndlessIIProgression.ramped(from: opening, to: deep, at: height)
+        }
+        return [
+            (.standard, toward(100, 30)),
+            (.multiHit, toward(6, 26)),
+            (.indestructibleOnce, toward(1, 16)),
+            (.indestructibleAlways, toward(1, 14)),
+            (.invisible, toward(1, 14)),
+        ]
+    }
+
+    func pickBehaviour(at height: Int,
+                       roll: (Int) -> Int = { Int.random(in: 0..<$0) }) -> EndlessIIBehaviour {
+        let weights = behaviourWeights(at: height)
+        let total = weights.reduce(0) { $0 + $1.1 }
+        guard total > 0 else { return .standard }
+        var remaining = roll(total)
+        for (behaviour, weight) in weights {
+            remaining -= weight
+            if remaining < 0 { return behaviour }
+        }
+        return .standard
+    }
+
+    // MARK: - Phases
+
+    /// Draws a phase that is allowed at this height.
+    func pickPhase(at height: Int,
+                   roll: (Int) -> Int = { Int.random(in: 0..<$0) }) -> EndlessIIPhase {
+        let allowed = EndlessIIPhase.allCases.filter { height >= $0.minimumHeight }
+        let total = allowed.reduce(0) { $0 + $1.weight }
+        guard total > 0 else { return .standard }
+        var remaining = roll(total)
+        for phase in allowed {
+            remaining -= phase.weight
+            if remaining < 0 { return phase }
+        }
+        return .standard
+    }
+
+    // MARK: - How fast things move
+
+    /// How quickly the moving parts move, as a multiple of their base rate.
+    ///
+    /// A spinning brick at full speed in the first ten metres is just noise. Starting slow
+    /// gives a player time to read what the brick is doing before it starts doing it
+    /// quickly, and speeding up is a way for a deep field to feel different without another
+    /// brick in it.
+    static let openingMotionRate = 0.55
+    static let deepMotionRate = 1.6
+
+    func motionRate(at height: Int) -> Double {
+        let scaled = EndlessIIProgression.ramped(
+            from: Int(EndlessIIProgression.openingMotionRate*100),
+            to: Int(EndlessIIProgression.deepMotionRate*100), at: height)
+        return Double(scaled)/100
+    }
+}
