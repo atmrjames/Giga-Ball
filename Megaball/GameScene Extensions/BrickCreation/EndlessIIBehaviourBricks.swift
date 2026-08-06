@@ -46,31 +46,8 @@ extension GameScene {
     /// read. Sizes are the exception and combine freely, which is the point of size being a
     /// separate axis.
     func applyEndlessIIRoles(to bricks: [SKNode]) {
-        guard gameMode == .endlessII else { return }
-
-        for node in bricks {
-            guard let brick = node as? SKSpriteNode else { continue }
-            guard Int.random(in: 1...100) <= GameScene.endlessIIRoleChance else { continue }
-
-            let styles: [EndlessIIStyle] = [.gravity, .moving, .directional,
-                                            .exploding, .spawner, .portal]
-            guard let wanted = styles.randomElement(),
-                  endlessIICanTake(wanted, brick) else { continue }
-            // Rolled first and then checked, rather than picking from what fits. A brick
-            // that cannot take the style it drew simply stays plain, which keeps each
-            // style's frequency the same wherever it appears - otherwise a field of
-            // Indestructible bricks would be all Gravity and Moving, because those are
-            // the only two left once the rest are ruled out
-
-            switch wanted {
-            case .gravity: makeGravity(brick)
-            case .moving: makeMoving(brick)
-            case .directional: makeDirectional(brick)
-            case .exploding: makeExploding(brick)
-            case .spawner: makeSpawner(brick)
-            default: makePortal(brick)
-            }
-        }
+        applyEndlessIIStyles([.gravity, .moving, .directional,
+                              .exploding, .spawner, .portal], to: bricks)
     }
 
     /// Whether a brick is still plain enough to be given a role.

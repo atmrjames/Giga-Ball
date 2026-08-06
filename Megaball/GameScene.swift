@@ -621,6 +621,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
 	var endlessIIPortalCooldown: TimeInterval = 0
 	var endlessIIPendingPortalExit: CGPoint?
+	var endlessIIProgression = EndlessIIProgression.make()
+	// Shuffled once per run, so two runs to the same height meet a different subset
 	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
 	var endlessIIPendingBigColumn: Int?
 	var endlessIIPendingSpinColumn: Int?

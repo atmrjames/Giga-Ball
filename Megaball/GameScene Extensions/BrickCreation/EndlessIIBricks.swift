@@ -186,18 +186,49 @@ extension GameScene {
     /// Called after the row's arrival animation has been set up, because that animation
     /// resets the colour blend on every normal brick and would undo the tinting here.
     func applyEndlessIIBehaviours(to bricks: [SKNode]) {
+        applyEndlessIIStyles([.rounded, .flashing], to: bricks)
+    }
+
+    /// Offers each brick a style from a pool, at whatever rate the run's depth calls for.
+    ///
+    /// The depth ramp lives here rather than in each style, so the two pools - the ones that
+    /// change how a brick looks and the ones that change what it does to the field - get the
+    /// same treatment without agreeing on anything.
+    func applyEndlessIIStyles(_ pool: [EndlessIIStyle], to bricks: [SKNode]) {
         guard gameMode == .endlessII else { return }
+
+        let progression = endlessIIProgression
+        let height = endlessHeight
 
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
-            guard Int.random(in: 1...100) <= GameScene.endlessIIBehaviourChance else { continue }
 
-            let wanted: EndlessIIStyle = Bool.random() ? .flashing : .rounded
-            guard endlessIICanTake(wanted, brick) else { continue }
-            switch wanted {
-            case .flashing: makeFlashing(brick)
-            default: makeRounded(brick)
-            }
+            // A brick already carrying something has to clear the stacking roll as well.
+            // Both are chances rather than gates, so a stack is possible from the first
+            // metre and simply unlikely
+            let alreadyStyled = endlessIIStyles(on: brick).isEmpty == false
+            let chance = alreadyStyled
+                ? progression.stackChance(at: height)
+                : progression.styleChance(at: height)
+            guard Int.random(in: 1...100) <= chance else { continue }
+
+            guard let wanted = progression.pickStyle(from: pool, at: height),
+                  endlessIICanTake(wanted, brick) else { continue }
+            applyEndlessIIStyle(wanted, to: brick)
+        }
+    }
+
+    func applyEndlessIIStyle(_ style: EndlessIIStyle, to brick: SKSpriteNode) {
+        switch style {
+        case .rounded: makeRounded(brick)
+        case .spinning: makeSpinning(brick)
+        case .flashing: makeFlashing(brick)
+        case .gravity: makeGravity(brick)
+        case .moving: makeMoving(brick)
+        case .directional: makeDirectional(brick)
+        case .exploding: makeExploding(brick)
+        case .spawner: makeSpawner(brick)
+        case .portal: makePortal(brick)
         }
     }
 
@@ -346,6 +377,7 @@ extension GameScene {
         endlessIIPendingBigColumn = nil
         endlessIIPendingSpinColumn = nil
         endlessIIPendingClearColumn = nil
+        endlessIIProgression = EndlessIIProgression.make()
         endlessIILastTick = 0
         resetEndlessIIRoles()
     }
