@@ -107,9 +107,6 @@ final class GameSceneMockView: UIView {
         }
     }
 
-    /// The colour of the bar above the playfield, as authored in `GameScene.sks`.
-    private static let topBarColour = UIColor(red: 36/255, green: 0, blue: 52/255, alpha: 1)
-
     // MARK: - Drawing
 
     override func draw(_ rect: CGRect) {
@@ -120,9 +117,10 @@ final class GameSceneMockView: UIView {
         let layout = GameSceneLayout(screen: screen, bottomInset: bottomInset)
         guard layout.gameWidth > 0 else { return }
 
-        let scale = min(bounds.width/screen.width, bounds.height/screen.height)
-        let inset = CGPoint(x: (bounds.width - screen.width*scale)/2,
-                            y: (bounds.height - screen.height*scale)/2)
+        let model = modelledSize
+        let scale = min(bounds.width/model.width, bounds.height/model.height)
+        let inset = CGPoint(x: (bounds.width - model.width*scale)/2,
+                            y: (bounds.height - model.height*scale)/2)
 
         context.saveGState()
         context.translateBy(x: inset.x, y: inset.y)
@@ -130,13 +128,28 @@ final class GameSceneMockView: UIView {
         // Everything below is in the modelled screen's own points, so it reads the same way
         // as the scene it is a model of
 
+        context.translateBy(x: 0, y: -layout.topBarHeight)
+        // The model starts below the HUD bar. What is above it - the pause button, the score,
+        // the power-up row - is the same on every background and is not what is being chosen
+        // between, so showing it spends a quarter of a small picture saying nothing
+
         drawBackground(layout, in: context)
         drawWalls(layout)
         drawBricks(layout)
         drawPaddleAndBall(layout)
-        drawTopBar(layout, in: context)
 
         context.restoreGState()
+    }
+
+    /// The size of what is actually drawn: the playfield, not the whole screen.
+    ///
+    /// The view is shaped to this, so the picture fills its card exactly rather than sitting
+    /// letterboxed inside one.
+    var modelledSize: CGSize {
+        guard screen.width > 0, screen.height > 0 else { return CGSize(width: 1, height: 1) }
+        let layout = GameSceneLayout(screen: screen, bottomInset: bottomInset)
+        return CGSize(width: screen.width,
+                      height: max(1, screen.height - layout.topBarHeight))
     }
 
     private func drawBackground(_ layout: GameSceneLayout, in context: CGContext) {
@@ -259,28 +272,6 @@ final class GameSceneMockView: UIView {
         }
     }
 
-    private func drawTopBar(_ layout: GameSceneLayout, in context: CGContext) {
-        let bar = CGRect(x: 0, y: 0, width: screen.width, height: layout.topBarHeight)
-        GameSceneMockView.topBarColour.setFill()
-        context.fill(bar)
-
-        let clearance = GameSceneLayout.hudTopClearance
-        let button = layout.layoutUnit*2
-        let inner = max((screen.width - layout.gameWidth)/2, 0) + layout.layoutUnit/2
-
-        UIImage(named: "ButtonPause")?.draw(in: CGRect(x: inner, y: clearance,
-                                                       width: button, height: button))
-
-        let score = "1200"
-        let font = UIFont(name: "FugazOne-Regular", size: 16)
-            ?? UIFont.systemFont(ofSize: 16, weight: .black)
-        let attributes: [NSAttributedString.Key: Any] = [.font: font,
-                                                         .foregroundColor: UIColor.white]
-        let measured = score.size(withAttributes: attributes)
-        score.draw(at: CGPoint(x: screen.width - inner - measured.width,
-                               y: clearance + (button - measured.height)/2),
-                   withAttributes: attributes)
-    }
 }
 
 extension UIImage {

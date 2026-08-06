@@ -54,28 +54,64 @@ enum BrickTypeIcons {
 
     // MARK: - Behaviours
 
-    private static func draw(_ behaviour: EndlessIIBehaviour, in context: CGContext) {
-        let frame = centred(feature)
+    /// The states a behaviour passes through, in the order a player meets them.
+    ///
+    /// A brick that changes as it is hit is not one picture, it is the sequence - a Multi-Hit
+    /// brick's whole identity is that it steps down, and an Indestructible ×1 is only
+    /// interesting because of what it turns into. So they get one row each showing every
+    /// state, rather than a row per state showing a brick with no explanation of where it came
+    /// from.
+    static func states(of behaviour: EndlessIIBehaviour) -> [String] {
         switch behaviour {
-        case .standard:
-            // Standard bricks carry a colour, and the colour is the point of them, so the
-            // picture has to have one. Green because it is the one the field opens with
-            artwork("BrickNormal")?.tinted(standardColour).draw(in: frame)
-        case .multiHit:
-            artwork("BrickMultiHit3")?.draw(in: frame)
-        case .indestructibleOnce:
-            artwork("BrickIndestructible1")?.draw(in: frame)
-        case .indestructibleAlways:
-            artwork("BrickIndestructible2")?.draw(in: frame)
-        case .invisible:
-            // Drawn as it looks once it has been struck, faded, because a picture of a brick
-            // that is not drawn is an empty square
-            artwork("BrickInvisible")?.draw(in: frame, blendMode: .normal, alpha: 0.5)
-            outline(frame, in: context)
+        case .standard: return ["BrickNormal"]
+        case .multiHit: return ["BrickMultiHit1", "BrickMultiHit2",
+                                "BrickMultiHit3", "BrickMultiHit4"]
+        case .indestructibleOnce, .indestructibleAlways:
+            return ["BrickIndestructible1", "BrickIndestructible2"]
+        case .invisible: return ["BrickInvisible"]
         }
     }
 
-    private static let standardColour = #colorLiteral(red: 0.1137254902, green: 0.6156862745, blue: 0.1058823529, alpha: 1)
+    private static func draw(_ behaviour: EndlessIIBehaviour, in context: CGContext) {
+        let states = states(of: behaviour)
+        let frames = row(of: states.count)
+
+        for (index, name) in states.enumerated() {
+            let frame = frames[index]
+            switch behaviour {
+            case .standard:
+                // White. A Standard brick is coloured by the level it is in rather than by
+                // being a Standard brick, and the artwork is white before anything tints it
+                artwork(name)?.tinted(standardColour).draw(in: frame)
+            case .invisible:
+                // Drawn as it looks once it has been struck, faded, because a picture of a
+                // brick that is not drawn is an empty square
+                artwork(name)?.draw(in: frame, blendMode: .normal, alpha: 0.5)
+                outline(frame, in: context)
+            default:
+                artwork(name)?.draw(in: frame)
+            }
+        }
+    }
+
+    /// Where each of several states sits, laid out left to right across the canvas.
+    ///
+    /// Shrunk to fit rather than overflowing, so a four-state brick and a one-state brick are
+    /// the same picture width and the rows read as a list.
+    private static func row(of count: Int) -> [CGRect] {
+        guard count > 1 else { return [centred(feature)] }
+
+        let gap = canvas.width*0.03
+        let width = (canvas.width - gap*CGFloat(count - 1))/CGFloat(count)
+        let height = min(width/2, feature.height)
+        let y = (canvas.height - height)/2
+
+        return (0..<count).map { index in
+            CGRect(x: (width + gap)*CGFloat(index), y: y, width: width, height: height)
+        }
+    }
+
+    private static let standardColour = UIColor.white
 
     // MARK: - Styles
 
@@ -301,7 +337,28 @@ enum BrickTypeIcons {
         context.restoreGState()
     }
 
+    /// The artwork, in whichever brick set the player has chosen.
+    ///
+    /// The Retro theme swaps the brick textures out in the scene, so a reference page still
+    /// showing the standard ones is a page of bricks the player does not have. It swaps
+    /// exactly what the scene swaps - Normal, Invisible and the four Multi-Hit stages - and
+    /// leaves the rest, because there is no Retro Indestructible artwork and inventing a
+    /// substitute here would be the page disagreeing with the game again.
     private static func artwork(_ named: String) -> UIImage? {
-        UIImage(named: named)
+        UIImage(named: retroName(for: named) ?? named)
+    }
+
+    /// What the Retro theme calls a brick, if it has its own.
+    static func retroName(for named: String) -> String? {
+        guard UserDefaults.standard.integer(forKey: "brickSetting") == 1 else { return nil }
+        switch named {
+        case "BrickNormal": return "retroBrickNormal"
+        case "BrickInvisible": return "retroBrickInvisible"
+        case "BrickMultiHit1": return "RetroBrickMultiHit1"
+        case "BrickMultiHit2": return "RetroBrickMultiHit2"
+        case "BrickMultiHit3": return "RetroBrickMultiHit3"
+        case "BrickMultiHit4": return "RetroBrickMultiHit4"
+        default: return nil
+        }
     }
 }

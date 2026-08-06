@@ -9,9 +9,9 @@
 //  three of the four are shades of the same purple and a name does not distinguish them - the
 //  only way to see what you were choosing was to start a level.
 //
-//  So the screen swipes between scale models of the game scene, one per background, drawn at
-//  this device's proportions (`GameSceneMockView`). The one on screen is the one selected: the
-//  choice is made by looking, which is the only way this choice was ever going to be made.
+//  One game view, and swiping swaps the background under it. The scene is the constant and the
+//  background is the variable, so a row of four scenes said the opposite of what the screen is
+//  for - and made the picture of each a quarter of the size it could be.
 //
 
 import UIKit
@@ -32,12 +32,14 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     /// Which background is showing, and therefore which is chosen.
     private var selected: GameBackground = .classic
 
+    private let mock = GameSceneMockView()
+    private var mockAspect: NSLayoutConstraint?
+
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var contentView: UIView!
     @IBOutlet var titleLabel: UILabel!
-    @IBOutlet var mockCollectionView: UICollectionView!
+    @IBOutlet var mockContainer: UIView!
     @IBOutlet var nameLabel: UILabel!
-    @IBOutlet var summaryLabel: UILabel!
     @IBOutlet var pageControl: UIPageControl!
     @IBOutlet var backButtonCollectionView: UICollectionView!
 
@@ -52,19 +54,6 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
         titleLabel.text = "BACKGROUND"
 
-        mockCollectionView.delegate = self
-        mockCollectionView.dataSource = self
-        mockCollectionView.register(BackgroundMockCell.self,
-                                    forCellWithReuseIdentifier: BackgroundMockCell.identifier)
-        mockCollectionView.showsHorizontalScrollIndicator = false
-        mockCollectionView.backgroundColor = .clear
-        mockCollectionView.decelerationRate = .fast
-        mockCollectionView.contentInsetAdjustmentBehavior = .never
-        // Snapping is done by hand rather than with `isPagingEnabled`, which can only page a
-        // full view's width. The cards are narrower than that so the next one shows at the
-        // edge - a screen where something is clearly waiting to the right is one people swipe,
-        // and this one is no use to anybody who does not
-
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil),
@@ -73,141 +62,162 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
         pageControl.numberOfPages = GameBackground.allCases.count
         pageControl.isUserInteractionEnabled = false
-        // The dots say where you are in the row; the row itself is how you move
-
-        summaryLabel.numberOfLines = 2
-        summaryLabel.adjustsFontSizeToFitWidth = true
-        summaryLabel.minimumScaleFactor = 0.8
-        // Held at two lines' height by a constraint, so a one-line summary does not shorten
-        // the row of cards and move every card up as you swipe onto it
+        // The dots say which of the four is showing, and that there are four. The picture
+        // itself is how you move between them
 
         userSettings()
         selected = GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))
 
+        buildMock()
         if parallaxSetting {
             addParallax()
         }
         updateLabels()
+        backButtonCollectionView.reloadData()
         showAnimate()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
-
-        applyCardLayout()
         backButtonCollectionView.collectionViewLayout = closeButtonLayout()
+        refreshMockShape()
     }
 
-    // MARK: - The row of cards
+    // MARK: - The model
 
-    /// The most of the collection view's width one card may take.
+    private func buildMock() {
+        mock.translatesAutoresizingMaskIntoConstraints = false
+        mock.background = selected
+        mock.themeIndex = ballSetting
+        mock.layer.cornerRadius = 12
+        mock.layer.cornerCurve = .continuous
+        mock.layer.masksToBounds = true
+        mockContainer.addSubview(mock)
+
+        mockContainer.layer.masksToBounds = false
+        mockContainer.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        mockContainer.layer.shadowOffset = CGSize(width: 0, height: 0)
+        mockContainer.layer.shadowOpacity = 0.5
+        mockContainer.layer.shadowRadius = 6
+
+        NSLayoutConstraint.activate([
+            mock.centerXAnchor.constraint(equalTo: mockContainer.centerXAnchor),
+            mock.centerYAnchor.constraint(equalTo: mockContainer.centerYAnchor),
+            mock.topAnchor.constraint(equalTo: mockContainer.topAnchor),
+            mock.bottomAnchor.constraint(equalTo: mockContainer.bottomAnchor),
+            mock.widthAnchor.constraint(lessThanOrEqualTo: mockContainer.widthAnchor)
+        ])
+
+        for direction in [UISwipeGestureRecognizer.Direction.left, .right] {
+            let swipe = UISwipeGestureRecognizer(target: self, action: #selector(swiped))
+            swipe.direction = direction
+            mockContainer.addGestureRecognizer(swipe)
+        }
+    }
+
+    /// Shapes the model to the playfield it is a model of.
     ///
-    /// Enough short of the full width that the neighbouring cards show at both edges.
-    private static let cardFraction: CGFloat = 0.76
-    private static let cardSpacing: CGFloat = 14
+    /// The picture is the device's own play area, so the card is that shape rather than the
+    /// card being a shape and the picture sitting letterboxed inside it.
+    private func refreshMockShape() {
+        mock.screen = view.window?.bounds.size ?? view.bounds.size
+        mock.bottomInset = view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
 
-    /// A card is exactly as wide as the picture in it.
+        let modelled = mock.modelledSize
+        let ratio = modelled.width/max(modelled.height, 1)
+        guard abs((mockAspect?.multiplier ?? 0) - ratio) > 0.001 else { return }
+
+        mockAspect?.isActive = false
+        let aspect = mock.widthAnchor.constraint(equalTo: mock.heightAnchor, multiplier: ratio)
+        aspect.priority = .required
+        aspect.isActive = true
+        mockAspect = aspect
+    }
+
+    // MARK: - Choosing
+
+    @objc private func swiped(_ gesture: UISwipeGestureRecognizer) {
+        let step = gesture.direction == .left ? 1 : -1
+        let wanted = selected.rawValue + step
+        guard GameBackground.allCases.indices.contains(wanted) else {
+            nudge(towards: step)
+            return
+        }
+        show(GameBackground.allCases[wanted])
+    }
+
+    /// Swaps the background under the scene, and takes it as the choice.
     ///
-    /// The model keeps the device's shape whatever it is given, so a card wider than that
-    /// would be a rounded rectangle with the picture letterboxed inside it - and the empty
-    /// margins would be what shows at the edges of the screen instead of the next background.
-    private var cardWidth: CGFloat {
-        let screen = modelledScreen
-        guard screen.height > 0 else { return 0 }
-        let byHeight = mockCollectionView.bounds.height*(screen.width/screen.height)
-        let byWidth = mockCollectionView.bounds.width*BackgroundSelectViewController.cardFraction
-        return min(byHeight, byWidth).rounded()
+    /// Committing on arrival rather than on a confirm button: the background you are looking
+    /// at is the answer to the question the screen is asking.
+    private func show(_ background: GameBackground) {
+        selected = background
+        defaults.set(background.rawValue, forKey: "backgroundSetting")
+        NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
+        // The scene is live behind the pause menu, so it repaints rather than waiting for
+        // the next level
+
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        updateLabels()
+
+        UIView.transition(with: mock, duration: 0.22,
+                          options: [.transitionCrossDissolve, .allowUserInteraction]) {
+            self.mock.background = background
+        }
+        // Crossfaded rather than cut. Between Solid and Classic a hard swap reads as the
+        // screen having flickered rather than as something having changed
     }
 
-    /// How far the row moves between one card being centred and the next.
-    private var pageWidth: CGFloat {
-        max(cardWidth + BackgroundSelectViewController.cardSpacing, 1)
+    /// A small push back at either end of the list, so a swipe with nowhere to go says so
+    /// rather than appearing not to have registered.
+    private func nudge(towards step: Int) {
+        UIView.animate(withDuration: 0.12, animations: {
+            self.mock.transform = CGAffineTransform(translationX: CGFloat(-step*12), y: 0)
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.18) { self.mock.transform = .identity }
+        })
     }
 
-    /// Lays the cards out centred, with the first and last able to reach the middle.
-    ///
-    /// Re-applied only when the size it would produce has actually changed - laying out a
-    /// collection view sets a new layout, which lays it out again.
-    private func applyCardLayout() {
-        let size = CGSize(width: cardWidth, height: mockCollectionView.bounds.height)
-        guard size.width > 0, size.height > 0, size != appliedCardSize else { return }
-        appliedCardSize = size
-
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        layout.itemSize = size
-        layout.minimumLineSpacing = BackgroundSelectViewController.cardSpacing
-        layout.minimumInteritemSpacing = 0
-
-        let margin = (mockCollectionView.bounds.width - size.width)/2
-        layout.sectionInset = UIEdgeInsets(top: 0, left: margin, bottom: 0, right: margin)
-        // With this inset a card is centred exactly when the offset is a whole number of
-        // pages, which is what lets the snapping below be arithmetic rather than a search
-
-        mockCollectionView.collectionViewLayout = layout
-        mockCollectionView.reloadData()
-        mockCollectionView.layoutIfNeeded()
-        mockCollectionView.contentOffset = CGPoint(x: CGFloat(selected.rawValue)*pageWidth, y: 0)
-        // Opens on the background in use, and comes back to it after a rotation - assigning a
-        // layout puts the row back to the start
+    private func updateLabels() {
+        nameLabel.text = selected.name
+        pageControl.currentPage = selected.rawValue
     }
 
-    private var appliedCardSize: CGSize = .zero
-
-    // MARK: - The models
-
-    /// The screen the models are of.
-    ///
-    /// The device's own, so the shapes shown are the shapes the player will get. Falls back to
-    /// the view's own size before there is a window to ask.
-    private var modelledScreen: CGSize {
-        view.window?.bounds.size ?? view.bounds.size
+    private func close() {
+        removeAnimate()
+        NotificationCenter.default.post(name: .reanimateNotificiation, object: nil)
     }
 
-    private var modelledBottomInset: CGFloat {
-        view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
-    }
+    // MARK: - The close button
 
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
-        collectionView === backButtonCollectionView ? 1 : GameBackground.allCases.count
+        1
     }
 
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard collectionView === mockCollectionView else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell",
-                                                          for: indexPath) as! MainMenuCollectionViewCell
-            cell.frame.size.height = 50
-            cell.frame.size.width = cell.frame.size.height
-            cell.widthConstraint.constant = 40
-            cell.iconImage.image = UIImage(named: "ButtonClose.png")
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell",
+                                                      for: indexPath) as! MainMenuCollectionViewCell
+        cell.frame.size.height = 50
+        cell.frame.size.width = cell.frame.size.height
+        cell.widthConstraint.constant = 40
+        cell.iconImage.image = UIImage(named: "ButtonClose.png")
 
-            UIView.animate(withDuration: 0.1) {
-                cell.view.transform = .identity
-            }
-            return cell
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
         }
-
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: BackgroundMockCell.identifier,
-                                                      for: indexPath) as! BackgroundMockCell
-        cell.show(GameBackground.allCases[indexPath.item],
-                  screen: modelledScreen,
-                  bottomInset: modelledBottomInset,
-                  theme: ballSetting)
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard collectionView === backButtonCollectionView else { return }
         close()
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        guard collectionView === backButtonCollectionView else { return }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
@@ -220,7 +230,6 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     }
 
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        guard collectionView === backButtonCollectionView else { return }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
@@ -238,106 +247,6 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         layout.minimumLineSpacing = 0
         layout.minimumInteritemSpacing = 0
         return layout
-    }
-
-    // MARK: - Choosing
-
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard scrollView === mockCollectionView else { return }
-        // The dots follow the finger rather than waiting for the page to settle, so the swipe
-        // has something to answer it while it is happening
-        pageControl.currentPage = page(in: scrollView)
-    }
-
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        guard scrollView === mockCollectionView else { return }
-        commit(page(in: scrollView))
-    }
-
-    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
-        guard scrollView === mockCollectionView else { return }
-        commit(page(in: scrollView))
-    }
-
-    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        guard scrollView === mockCollectionView, decelerate == false else { return }
-        commit(page(in: scrollView))
-        // A slow drag that lands without any momentum never decelerates, so it would
-        // otherwise change the picture without changing the setting
-    }
-
-    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        guard scrollView === mockCollectionView else { return }
-        pageAtDragStart = page(in: scrollView)
-    }
-
-    /// Stops the row on a card rather than wherever the flick ran out.
-    ///
-    /// One card per gesture, however hard the swipe: four options do not need to be flicked
-    /// past, and a picker that overshoots the one you were aiming at is a picker you fight.
-    ///
-    /// Counted from where the drag started rather than from where the row is now. A quick
-    /// swipe has already carried the row most of a card by the time it ends, so "the page it
-    /// is on, plus one" was two pages from where the finger went down.
-    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint,
-                                   targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        guard scrollView === mockCollectionView else { return }
-
-        var wanted: Int
-        if velocity.x > 0.2 {
-            wanted = pageAtDragStart + 1
-        } else if velocity.x < -0.2 {
-            wanted = pageAtDragStart - 1
-        } else {
-            // A slow drag goes wherever it was let go of, which may be the card it started on
-            wanted = page(at: targetContentOffset.pointee.x)
-        }
-        wanted = min(max(wanted, 0), GameBackground.allCases.count - 1)
-        targetContentOffset.pointee = CGPoint(x: CGFloat(wanted)*pageWidth, y: 0)
-    }
-
-    private var pageAtDragStart = 0
-
-    private func page(in scrollView: UIScrollView) -> Int {
-        page(at: scrollView.contentOffset.x)
-    }
-
-    private func page(at offset: CGFloat) -> Int {
-        let page = Int((offset/pageWidth).rounded())
-        return min(max(page, 0), GameBackground.allCases.count - 1)
-    }
-
-    /// Takes the background now on screen as the chosen one.
-    ///
-    /// Committing on arrival rather than on a confirm button: the page you are looking at is
-    /// the answer to the question the screen is asking, and there is nothing a confirmation
-    /// step would add except a way to leave with the wrong one selected.
-    private func commit(_ page: Int) {
-        let background = GameBackground.allCases[page]
-        pageControl.currentPage = page
-        guard background != selected else { return }
-
-        selected = background
-        defaults.set(background.rawValue, forKey: "backgroundSetting")
-        NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
-        // The scene is live behind the pause menu, so it repaints rather than waiting for
-        // the next level
-
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
-        updateLabels()
-    }
-
-    private func updateLabels() {
-        nameLabel.text = selected.name
-        summaryLabel.text = selected.summary
-        pageControl.currentPage = selected.rawValue
-    }
-
-    private func close() {
-        removeAnimate()
-        NotificationCenter.default.post(name: .reanimateNotificiation, object: nil)
     }
 
     // MARK: - Housekeeping
@@ -396,50 +305,8 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
     @objc func refreshViewForSyncNotificationKeyReceived(notification: Notification) {
         userSettings()
-        mockCollectionView.reloadData()
+        mock.themeIndex = ballSetting
         backButtonCollectionView.reloadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes
-}
-
-/// One page of the picker: a model of the scene, with a shadow so it reads as a card lying on
-/// the blurred menu behind rather than as a hole cut in it.
-final class BackgroundMockCell: UICollectionViewCell {
-
-    static let identifier = "backgroundMockCell"
-
-    private let mock = GameSceneMockView()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        contentView.addSubview(mock)
-        mock.translatesAutoresizingMaskIntoConstraints = false
-        mock.layer.cornerRadius = 12
-        mock.layer.cornerCurve = .continuous
-        mock.layer.masksToBounds = true
-
-        contentView.layer.masksToBounds = false
-        contentView.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        contentView.layer.shadowOffset = CGSize(width: 0, height: 0)
-        contentView.layer.shadowOpacity = 0.5
-        contentView.layer.shadowRadius = 6
-
-        NSLayoutConstraint.activate([
-            mock.topAnchor.constraint(equalTo: contentView.topAnchor),
-            mock.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            mock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            mock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func show(_ background: GameBackground, screen: CGSize, bottomInset: CGFloat, theme: Int) {
-        mock.background = background
-        mock.screen = screen
-        mock.bottomInset = bottomInset
-        mock.themeIndex = theme
-    }
 }

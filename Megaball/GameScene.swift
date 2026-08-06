@@ -2477,6 +2477,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		refreshEndlessIIBest()
 		moveEndlessIIMarkersDown()
 		addEndlessIIMarkerIfDue()
+		addEndlessIITickIfDue()
 		// Existing markers move first, then the new one is placed - otherwise the line just
 		// added would immediately travel a row and sit against the wrong height
 		
@@ -2745,7 +2746,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
 		powerUp.size.width = brickWidth*0.85
         powerUp.size.height = powerUp.size.width
-        powerUp.position = CGPoint(x: sprite.position.x, y: sprite.position.y)
+
+		// Centred on the brick, but never over the wall. A power-up is nearly a cell wide and
+		// a Tiny brick is a quarter of one, so a Tiny brick in the outermost column drops a
+		// power-up whose outer half is behind the border - visible enough to be seen and cut
+		// in half. Shifted inside instead, which costs nothing: it still falls from the brick
+		// that dropped it
+		let inset = powerUp.size.width/2
+		let x = min(max(sprite.position.x, -gameWidth/2 + inset), gameWidth/2 - inset)
+        powerUp.position = CGPoint(x: x, y: sprite.position.y)
         powerUp.physicsBody = SKPhysicsBody(rectangleOf: powerUp.frame.size)
         powerUp.physicsBody!.allowsRotation = false
         powerUp.physicsBody!.friction = 0.0

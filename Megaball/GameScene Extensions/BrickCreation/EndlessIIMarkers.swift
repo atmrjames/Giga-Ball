@@ -59,29 +59,80 @@ extension GameScene {
         addChild(marker)
 
         let colour = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.3)
-        let label = SKLabelNode(fontNamed: scoreLabel.fontName)
-        label.text = isBest ? "BEST \(best)m" : "\(arriving)m"
-        label.fontSize = fontSize*0.6
-        label.fontColor = colour
-        label.horizontalAlignmentMode = .left
-        label.verticalAlignmentMode = .center
-        label.position = CGPoint(x: -gameWidth/2 + labelSpacing, y: 0)
-        marker.addChild(label)
-        // On the line rather than sitting above it, so the two read as one marking. The line
-        // breaks around it rather than running underneath, which is what stops the text
-        // fighting a rule drawn through its middle
+        let text = isBest ? "BEST \(best)m" : "\(arriving)m"
 
-        let gap = label.frame.width + labelSpacing*1.5
-        let left = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: -0.5,
-                                            width: labelSpacing/2, height: 1))
-        let right = SKShapeNode(rect: CGRect(x: -gameWidth/2 + gap, y: -0.5,
-                                             width: gameWidth - gap, height: 1))
-        for line in [left, right] {
+        // Both ends. A marker spends its whole life behind the field, and a label at one edge
+        // is a label a brick can sit on top of - two of them makes it far more likely that
+        // one is readable, and costs a label
+        var textWidth: CGFloat = 0
+        for alignment in [SKLabelHorizontalAlignmentMode.left, .right] {
+            let label = SKLabelNode(fontNamed: scoreLabel.fontName)
+            label.text = text
+            label.fontSize = fontSize*0.6
+            label.fontColor = colour
+            label.horizontalAlignmentMode = alignment
+            label.verticalAlignmentMode = .center
+            label.position = CGPoint(x: alignment == .left
+                                        ? -gameWidth/2 + labelSpacing
+                                        : gameWidth/2 - labelSpacing,
+                                     y: 0)
+            marker.addChild(label)
+            textWidth = max(textWidth, label.frame.width)
+        }
+        // On the line rather than sitting above it, so the two read as one marking. The line
+        // breaks around each label rather than running underneath, which is what stops the
+        // text fighting a rule drawn through its middle
+
+        let gap = textWidth + labelSpacing*1.5
+        let middle = SKShapeNode(rect: CGRect(x: -gameWidth/2 + gap, y: -0.5,
+                                              width: max(0, gameWidth - gap*2), height: 1))
+        let leftStub = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: -0.5,
+                                                width: labelSpacing/2, height: 1))
+        let rightStub = SKShapeNode(rect: CGRect(x: gameWidth/2 - labelSpacing/2, y: -0.5,
+                                                 width: labelSpacing/2, height: 1))
+        for line in [middle, leftStub, rightStub] {
             line.fillColor = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.16)
             line.strokeColor = .clear
             line.alpha = isBest ? 0.5 : 1
             marker.addChild(line)
         }
+    }
+
+    /// How often the small unlabelled ticks appear.
+    static let endlessIITickSpacing = 10
+
+    /// How far a tick reaches in from each wall, as a fraction of the play area's width.
+    static let endlessIITickLength: CGFloat = 0.045
+
+    /// Adds a pair of short marks at the sides for the tens.
+    ///
+    /// The hundreds say how far you have come; these say how fast it is going past. A run
+    /// spends most of its time between two hundred-metre lines with nothing moving to measure
+    /// the descent against, and a tick every ten metres gives the field a scale without adding
+    /// anything to read - which is why they carry no label and stop well short of the bricks.
+    func addEndlessIITickIfDue() {
+        guard gameMode == .endlessII else { return }
+
+        let arriving = endlessHeight + GameScene.endlessIIMarkerLead
+        guard arriving > 0, arriving % GameScene.endlessIITickSpacing == 0 else { return }
+        guard arriving % GameScene.endlessIIMarkerSpacing != 0 else { return }
+        // A hundred is a hundred, not a hundred and a tick
+
+        let tick = SKNode()
+        tick.name = GameScene.endlessIIMarkerName
+        tick.position = CGPoint(x: 0, y: yBrickOffsetEndless + brickHeight/2)
+        tick.zPosition = 0.6
+        addChild(tick)
+
+        let length = gameWidth*GameScene.endlessIITickLength
+        for x in [-gameWidth/2, gameWidth/2 - length] {
+            let line = SKShapeNode(rect: CGRect(x: x, y: -0.5, width: length, height: 1))
+            line.fillColor = UIColor(white: 1, alpha: 0.11)
+            line.strokeColor = .clear
+            tick.addChild(line)
+        }
+        // Dimmer than a hundred-metre line and a twentieth of its width. They are meant to be
+        // felt at the edge of vision rather than looked at
     }
 
     /// Moves the markers down with the field, and clears the ones that have left it.

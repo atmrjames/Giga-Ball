@@ -25,11 +25,44 @@ final class BrickTypeCatalogueTests: XCTestCase {
     }
 
     func testEverySizeAndBehaviourIsListed() {
+        // Five behaviours exist, and the compatibility lines still name all five - but the
+        // page shows four rows, because the two Indestructible states are one brick that
+        // changes rather than two bricks
         XCTAssertEqual(BrickTypeCatalogue.allBehaviours.count, 5)
         XCTAssertEqual(Set(BrickTypeCatalogue.allBehaviours).count, 5)
+        XCTAssertEqual(BrickTypeCatalogue.sections[0].entries.count, 4)
 
         let sizes = BrickTypeCatalogue.sections.last?.entries.count
         XCTAssertEqual(sizes, BrickSize.allCases.count)
+    }
+
+    func testABrickThatChangesShowsEveryStateItPassesThrough() {
+        // The whole identity of a Multi-Hit brick is that it steps down, and an
+        // Indestructible x1 is only interesting because of what it turns into
+        XCTAssertEqual(BrickTypeIcons.states(of: .multiHit).count, 4)
+        XCTAssertEqual(BrickTypeIcons.states(of: .indestructibleOnce).count, 2)
+        XCTAssertEqual(BrickTypeIcons.states(of: .indestructibleAlways).count, 2)
+        XCTAssertEqual(BrickTypeIcons.states(of: .standard).count, 1)
+        XCTAssertEqual(BrickTypeIcons.states(of: .invisible).count, 1)
+    }
+
+    func testTheRetroThemeIsRespected() {
+        // The Retro theme swaps the brick textures in the scene, so a page still showing the
+        // standard ones is a page of bricks the player does not have
+        let defaults = UserDefaults.standard
+        let saved = defaults.integer(forKey: "brickSetting")
+        defer { defaults.set(saved, forKey: "brickSetting") }
+
+        defaults.set(0, forKey: "brickSetting")
+        XCTAssertNil(BrickTypeIcons.retroName(for: "BrickNormal"))
+
+        defaults.set(1, forKey: "brickSetting")
+        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickNormal"), "retroBrickNormal")
+        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickMultiHit3"), "RetroBrickMultiHit3")
+        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickInvisible"), "retroBrickInvisible")
+        // There is no Retro Indestructible artwork, and the scene does not swap it either -
+        // inventing a substitute here would be the page disagreeing with the game
+        XCTAssertNil(BrickTypeIcons.retroName(for: "BrickIndestructible1"))
     }
 
     func testTheThreeSectionsAccountForEveryEntry() {
@@ -38,7 +71,7 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
                        sections.reduce(0) { $0 + $1.entries.count })
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
-                       5 + EndlessIIStyle.allCases.count + BrickSize.allCases.count)
+                       4 + EndlessIIStyle.allCases.count + BrickSize.allCases.count)
     }
 
     func testEveryEntryHasSomethingToSay() {
