@@ -10,6 +10,27 @@ import Foundation
 import CloudKit
 
 final class CloudKitHandler: NSObject {
+
+    /// Lengthens an array that came from iCloud to match the one this build uses.
+    ///
+    /// Every one of these arrays is one entry per power-up, per achievement, per level or per
+    /// pack, and iCloud holds whatever the last version to write it had. Adding the
+    /// twenty-ninth power-up made the local array longer than the stored one, and every merge
+    /// loop walks the local length while reading the stored array - so the first launch after
+    /// the update read one past the end and crashed, on the device of somebody with years of
+    /// synced progress.
+    ///
+    /// `TotalStats.padded` does exactly this for the file on disk. The same hazard was in the
+    /// cloud copy and was missed, because the file is the one that looks like a save.
+    ///
+    /// The new entries take their values from the local array, which is what a brand-new
+    /// power-up should sync as: whatever this device thinks of something the cloud has never
+    /// heard of.
+    static func padded<T>(_ cloud: [T], toMatch local: [T]) -> [T] {
+        guard cloud.count < local.count else { return cloud }
+        return cloud + local[cloud.count...]
+    }
+
     typealias CompletionBlock = (Error?) -> Void
     static let helper = CloudKitHandler()
 
@@ -186,7 +207,8 @@ final class CloudKitHandler: NSObject {
         powerupsCollected = totalStatsArray[0].powerupsCollected
         if let powerupsCollectedCloudCheck = iCloudStore.array(forKey: "powerupsCollected") as? [Int] {
             var powerupsCollectedCloud = powerupsCollectedCloudCheck
-            for i in 0..<powerupsCollected!.count {
+            powerupsCollectedCloud = CloudKitHandler.padded(powerupsCollectedCloud, toMatch: powerupsCollected!)
+            for i in 0..<min(powerupsCollected!.count, powerupsCollectedCloud.count) {
                 if powerupsCollected![i] > powerupsCollectedCloud[i] {
                     powerupsCollectedCloud[i] = powerupsCollected![i]
                 }
@@ -200,7 +222,8 @@ final class CloudKitHandler: NSObject {
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
         if let powerupsGeneratedCloudCheck = iCloudStore.array(forKey: "powerupsGenerated") as? [Int] {
             var powerupsGeneratedCloud = powerupsGeneratedCloudCheck
-            for i in 0..<powerupsGenerated!.count {
+            powerupsGeneratedCloud = CloudKitHandler.padded(powerupsGeneratedCloud, toMatch: powerupsGenerated!)
+            for i in 0..<min(powerupsGenerated!.count, powerupsGeneratedCloud.count) {
                 if powerupsGenerated![i] > powerupsGeneratedCloud[i] {
                     powerupsGeneratedCloud[i] = powerupsGenerated![i]
                 }
@@ -213,7 +236,8 @@ final class CloudKitHandler: NSObject {
         bricksHit = totalStatsArray[0].bricksHit
         if let bricksHitCloudCheck = iCloudStore.array(forKey: "bricksHit") as? [Int] {
             var bricksHitCloud = bricksHitCloudCheck
-            for i in 0..<bricksHit!.count {
+            bricksHitCloud = CloudKitHandler.padded(bricksHitCloud, toMatch: bricksHit!)
+            for i in 0..<min(bricksHit!.count, bricksHitCloud.count) {
                 if bricksHit![i] > bricksHitCloud[i] {
                     bricksHitCloud[i] = bricksHit![i]
                 }
@@ -226,7 +250,8 @@ final class CloudKitHandler: NSObject {
         bricksDestroyed = totalStatsArray[0].bricksDestroyed
         if let bricksDestroyedCloudCheck = iCloudStore.array(forKey: "bricksDestroyed") as? [Int] {
             var bricksDestroyedCloud = bricksDestroyedCloudCheck
-            for i in 0..<bricksDestroyed!.count {
+            bricksDestroyedCloud = CloudKitHandler.padded(bricksDestroyedCloud, toMatch: bricksDestroyed!)
+            for i in 0..<min(bricksDestroyed!.count, bricksDestroyedCloud.count) {
                 if bricksDestroyed![i] > bricksDestroyedCloud[i] {
                     bricksDestroyedCloud[i] = bricksDestroyed![i]
                 }
@@ -278,7 +303,8 @@ final class CloudKitHandler: NSObject {
         levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray
         if let levelPackUnlockedArrayCloudCheck = iCloudStore.array(forKey: "levelPackUnlockedArray") as? [Bool] {
             var levelPackUnlockedArrayCloud = levelPackUnlockedArrayCloudCheck
-            for i in 0..<levelPackUnlockedArray!.count {
+            levelPackUnlockedArrayCloud = CloudKitHandler.padded(levelPackUnlockedArrayCloud, toMatch: levelPackUnlockedArray!)
+            for i in 0..<min(levelPackUnlockedArray!.count, levelPackUnlockedArrayCloud.count) {
                 if levelPackUnlockedArray![i] || levelPackUnlockedArray![i] != levelPackUnlockedArrayCloud[i] {
                     levelPackUnlockedArrayCloud[i] = true
                 } else {
@@ -293,7 +319,8 @@ final class CloudKitHandler: NSObject {
         themeUnlockedArray = totalStatsArray[0].themeUnlockedArray
         if let themeUnlockedArrayCloudCheck = iCloudStore.array(forKey: "themeUnlockedArray") as? [Bool] {
             var themeUnlockedArrayCloud = themeUnlockedArrayCloudCheck
-            for i in 0..<themeUnlockedArray!.count {
+            themeUnlockedArrayCloud = CloudKitHandler.padded(themeUnlockedArrayCloud, toMatch: themeUnlockedArray!)
+            for i in 0..<min(themeUnlockedArray!.count, themeUnlockedArrayCloud.count) {
                 if themeUnlockedArray![i] || themeUnlockedArray![i] != themeUnlockedArrayCloud[i] {
                     themeUnlockedArrayCloud[i] = true
                 } else {
@@ -308,7 +335,8 @@ final class CloudKitHandler: NSObject {
         appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray
         if let appIconUnlockedArrayCloudCheck = iCloudStore.array(forKey: "appIconUnlockedArray") as? [Bool] {
             var appIconUnlockedArrayCloud = appIconUnlockedArrayCloudCheck
-            for i in 0..<appIconUnlockedArray!.count {
+            appIconUnlockedArrayCloud = CloudKitHandler.padded(appIconUnlockedArrayCloud, toMatch: appIconUnlockedArray!)
+            for i in 0..<min(appIconUnlockedArray!.count, appIconUnlockedArrayCloud.count) {
                 if appIconUnlockedArray![i] || appIconUnlockedArray![i] != appIconUnlockedArrayCloud[i] {
                     appIconUnlockedArrayCloud[i] = true
                 } else {
@@ -323,7 +351,8 @@ final class CloudKitHandler: NSObject {
         levelUnlockedArray = totalStatsArray[0].levelUnlockedArray
         if let levelUnlockedArrayCloudCheck = iCloudStore.array(forKey: "levelUnlockedArray") as? [Bool] {
             var levelUnlockedArrayCloud = levelUnlockedArrayCloudCheck
-            for i in 0..<levelUnlockedArray!.count {
+            levelUnlockedArrayCloud = CloudKitHandler.padded(levelUnlockedArrayCloud, toMatch: levelUnlockedArray!)
+            for i in 0..<min(levelUnlockedArray!.count, levelUnlockedArrayCloud.count) {
                 if levelUnlockedArray![i] || levelUnlockedArray![i] != levelUnlockedArrayCloud[i] {
                     levelUnlockedArrayCloud[i] = true
                 } else {
@@ -338,7 +367,8 @@ final class CloudKitHandler: NSObject {
         powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray
         if let powerUpUnlockedArrayCloudCheck = iCloudStore.array(forKey: "powerUpUnlockedArray") as? [Bool] {
             var powerUpUnlockedArrayCloud = powerUpUnlockedArrayCloudCheck
-            for i in 0..<powerUpUnlockedArray!.count {
+            powerUpUnlockedArrayCloud = CloudKitHandler.padded(powerUpUnlockedArrayCloud, toMatch: powerUpUnlockedArray!)
+            for i in 0..<min(powerUpUnlockedArray!.count, powerUpUnlockedArrayCloud.count) {
                 if powerUpUnlockedArray![i] || powerUpUnlockedArray![i] != powerUpUnlockedArrayCloud[i] {
                     powerUpUnlockedArrayCloud[i] = true
                 } else {
@@ -353,7 +383,8 @@ final class CloudKitHandler: NSObject {
         achievementsUnlockedArray = totalStatsArray[0].achievementsUnlockedArray
         if let achievementsUnlockedArrayCloudCheck = iCloudStore.array(forKey: "achievementsUnlockedArray") as? [Bool] {
             var achievementsUnlockedArrayCloud = achievementsUnlockedArrayCloudCheck
-            for i in 0..<achievementsUnlockedArray!.count {
+            achievementsUnlockedArrayCloud = CloudKitHandler.padded(achievementsUnlockedArrayCloud, toMatch: achievementsUnlockedArray!)
+            for i in 0..<min(achievementsUnlockedArray!.count, achievementsUnlockedArrayCloud.count) {
                 if achievementsUnlockedArray![i] || achievementsUnlockedArray![i] != achievementsUnlockedArrayCloud[i] {
                     achievementsUnlockedArrayCloud[i] = true
                 } else {
@@ -370,8 +401,9 @@ final class CloudKitHandler: NSObject {
         achievementDates = totalStatsArray[0].achievementDates
         if let achievementsPercentageCompleteArrayCloudCheck = iCloudStore.array(forKey: "achievementsUnlockedArray") as? [String] {
             var achievementsPercentageCompleteArrayCloud = achievementsPercentageCompleteArrayCloudCheck
+            achievementsPercentageCompleteArrayCloud = CloudKitHandler.padded(achievementsPercentageCompleteArrayCloud, toMatch: achievementsPercentageCompleteArray!)
             var achievementDatesCloud = iCloudStore.array(forKey: "achievementDates") as? [Date]
-            for i in 0..<achievementsPercentageCompleteArray!.count {
+            for i in 0..<min(achievementsPercentageCompleteArray!.count, achievementsPercentageCompleteArrayCloud.count) {
                 if achievementsPercentageCompleteArray![i] != "" && achievementsPercentageCompleteArray![i] != "0.0%" {
                     achievementsPercentageCompleteArrayCloud[i] = achievementsPercentageCompleteArray![i]
                     achievementDatesCloud![i] = achievementDates![i]
@@ -387,7 +419,8 @@ final class CloudKitHandler: NSObject {
         packHighScores = totalStatsArray[0].packHighScores
         if let packHighScoresCloudCheck = iCloudStore.array(forKey: "packHighScores") as? [Int] {
             var packHighScoresCloud = packHighScoresCloudCheck
-            for i in 0..<packHighScores!.count {
+            packHighScoresCloud = CloudKitHandler.padded(packHighScoresCloud, toMatch: packHighScores!)
+            for i in 0..<min(packHighScores!.count, packHighScoresCloud.count) {
                 if packHighScores![i] > packHighScoresCloud[i] {
                     packHighScoresCloud[i] = packHighScores![i]
                 }
@@ -400,7 +433,8 @@ final class CloudKitHandler: NSObject {
         packBestTimes = totalStatsArray[0].packBestTimes
         if let packBestTimesCloudCheck = iCloudStore.array(forKey: "packBestTimes") as? [Int] {
             var packBestTimesCloud = packBestTimesCloudCheck
-            for i in 0..<packBestTimes!.count {
+            packBestTimesCloud = CloudKitHandler.padded(packBestTimesCloud, toMatch: packBestTimes!)
+            for i in 0..<min(packBestTimes!.count, packBestTimesCloud.count) {
                 if packBestTimes![i] > packBestTimesCloud[i] {
                     packBestTimesCloud[i] = packBestTimes![i]
                 }
@@ -413,7 +447,8 @@ final class CloudKitHandler: NSObject {
         pack1LevelHighScores = totalStatsArray[0].pack1LevelHighScores
         if let pack1LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack1LevelHighScores") as? [Int] {
             var pack1LevelHighScoresCloud = pack1LevelHighScoresCloudCheck
-            for i in 0..<pack1LevelHighScores!.count {
+            pack1LevelHighScoresCloud = CloudKitHandler.padded(pack1LevelHighScoresCloud, toMatch: pack1LevelHighScores!)
+            for i in 0..<min(pack1LevelHighScores!.count, pack1LevelHighScoresCloud.count) {
                 if pack1LevelHighScores![i] > pack1LevelHighScoresCloud[i] {
                     pack1LevelHighScoresCloud[i] = pack1LevelHighScores![i]
                 }
@@ -426,7 +461,8 @@ final class CloudKitHandler: NSObject {
         pack2LevelHighScores = totalStatsArray[0].pack2LevelHighScores
         if let pack2LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack2LevelHighScores") as? [Int] {
         var pack2LevelHighScoresCloud = pack2LevelHighScoresCloudCheck
-            for i in 0..<pack2LevelHighScores!.count {
+        pack2LevelHighScoresCloud = CloudKitHandler.padded(pack2LevelHighScoresCloud, toMatch: pack2LevelHighScores!)
+            for i in 0..<min(pack2LevelHighScores!.count, pack2LevelHighScoresCloud.count) {
                 if pack2LevelHighScores![i] > pack2LevelHighScoresCloud[i] {
                     pack2LevelHighScoresCloud[i] = pack2LevelHighScores![i]
                 }
@@ -439,7 +475,8 @@ final class CloudKitHandler: NSObject {
         pack3LevelHighScores = totalStatsArray[0].pack3LevelHighScores
         if let pack3LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack3LevelHighScores") as? [Int] {
         var pack3LevelHighScoresCloud = pack3LevelHighScoresCloudCheck
-            for i in 0..<pack3LevelHighScores!.count {
+        pack3LevelHighScoresCloud = CloudKitHandler.padded(pack3LevelHighScoresCloud, toMatch: pack3LevelHighScores!)
+            for i in 0..<min(pack3LevelHighScores!.count, pack3LevelHighScoresCloud.count) {
                 if pack3LevelHighScores![i] > pack3LevelHighScoresCloud[i] {
                     pack3LevelHighScoresCloud[i] = pack3LevelHighScores![i]
                 }
@@ -452,7 +489,8 @@ final class CloudKitHandler: NSObject {
         pack4LevelHighScores = totalStatsArray[0].pack4LevelHighScores
         if let pack4LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack4LevelHighScores") as? [Int] {
         var pack4LevelHighScoresCloud = pack4LevelHighScoresCloudCheck
-            for i in 0..<pack4LevelHighScores!.count {
+        pack4LevelHighScoresCloud = CloudKitHandler.padded(pack4LevelHighScoresCloud, toMatch: pack4LevelHighScores!)
+            for i in 0..<min(pack4LevelHighScores!.count, pack4LevelHighScoresCloud.count) {
                 if pack4LevelHighScores![i] > pack4LevelHighScoresCloud[i] {
                     pack4LevelHighScoresCloud[i] = pack4LevelHighScores![i]
                 }
@@ -465,7 +503,8 @@ final class CloudKitHandler: NSObject {
         pack5LevelHighScores = totalStatsArray[0].pack5LevelHighScores
         if let pack5LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack5LevelHighScores") as? [Int] {
         var pack5LevelHighScoresCloud = pack5LevelHighScoresCloudCheck
-            for i in 0..<pack5LevelHighScores!.count {
+        pack5LevelHighScoresCloud = CloudKitHandler.padded(pack5LevelHighScoresCloud, toMatch: pack5LevelHighScores!)
+            for i in 0..<min(pack5LevelHighScores!.count, pack5LevelHighScoresCloud.count) {
                 if pack5LevelHighScores![i] > pack5LevelHighScoresCloud[i] {
                     pack5LevelHighScoresCloud[i] = pack5LevelHighScores![i]
                 }
@@ -478,7 +517,8 @@ final class CloudKitHandler: NSObject {
         pack6LevelHighScores = totalStatsArray[0].pack6LevelHighScores
         if let pack6LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack6LevelHighScores") as? [Int] {
         var pack6LevelHighScoresCloud = pack6LevelHighScoresCloudCheck
-            for i in 0..<pack6LevelHighScores!.count {
+        pack6LevelHighScoresCloud = CloudKitHandler.padded(pack6LevelHighScoresCloud, toMatch: pack6LevelHighScores!)
+            for i in 0..<min(pack6LevelHighScores!.count, pack6LevelHighScoresCloud.count) {
                 if pack6LevelHighScores![i] > pack6LevelHighScoresCloud[i] {
                     pack6LevelHighScoresCloud[i] = pack6LevelHighScores![i]
                 }
@@ -491,7 +531,8 @@ final class CloudKitHandler: NSObject {
         pack7LevelHighScores = totalStatsArray[0].pack7LevelHighScores
         if let pack7LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack7LevelHighScores") as? [Int] {
         var pack7LevelHighScoresCloud = pack7LevelHighScoresCloudCheck
-            for i in 0..<pack7LevelHighScores!.count {
+        pack7LevelHighScoresCloud = CloudKitHandler.padded(pack7LevelHighScoresCloud, toMatch: pack7LevelHighScores!)
+            for i in 0..<min(pack7LevelHighScores!.count, pack7LevelHighScoresCloud.count) {
                 if pack7LevelHighScores![i] > pack7LevelHighScoresCloud[i] {
                     pack7LevelHighScoresCloud[i] = pack7LevelHighScores![i]
                 }
@@ -504,7 +545,8 @@ final class CloudKitHandler: NSObject {
         pack8LevelHighScores = totalStatsArray[0].pack8LevelHighScores
         if let pack8LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack8LevelHighScores") as? [Int] {
         var pack8LevelHighScoresCloud = pack8LevelHighScoresCloudCheck
-            for i in 0..<pack8LevelHighScores!.count {
+        pack8LevelHighScoresCloud = CloudKitHandler.padded(pack8LevelHighScoresCloud, toMatch: pack8LevelHighScores!)
+            for i in 0..<min(pack8LevelHighScores!.count, pack8LevelHighScoresCloud.count) {
                 if pack8LevelHighScores![i] > pack8LevelHighScoresCloud[i] {
                     pack8LevelHighScoresCloud[i] = pack8LevelHighScores![i]
                 }
@@ -517,7 +559,8 @@ final class CloudKitHandler: NSObject {
         pack9LevelHighScores = totalStatsArray[0].pack9LevelHighScores
         if let pack9LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack9LevelHighScores") as? [Int] {
         var pack9LevelHighScoresCloud = pack9LevelHighScoresCloudCheck
-            for i in 0..<pack9LevelHighScores!.count {
+        pack9LevelHighScoresCloud = CloudKitHandler.padded(pack9LevelHighScoresCloud, toMatch: pack9LevelHighScores!)
+            for i in 0..<min(pack9LevelHighScores!.count, pack9LevelHighScoresCloud.count) {
                 if pack9LevelHighScores![i] > pack9LevelHighScoresCloud[i] {
                     pack9LevelHighScoresCloud[i] = pack9LevelHighScores![i]
                 }
@@ -530,7 +573,8 @@ final class CloudKitHandler: NSObject {
         pack10LevelHighScores = totalStatsArray[0].pack10LevelHighScores
         if let pack10LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack10LevelHighScores") as? [Int] {
         var pack10LevelHighScoresCloud = pack10LevelHighScoresCloudCheck
-            for i in 0..<pack10LevelHighScores!.count {
+        pack10LevelHighScoresCloud = CloudKitHandler.padded(pack10LevelHighScoresCloud, toMatch: pack10LevelHighScores!)
+            for i in 0..<min(pack10LevelHighScores!.count, pack10LevelHighScoresCloud.count) {
                 if pack10LevelHighScores![i] > pack10LevelHighScoresCloud[i] {
                     pack10LevelHighScoresCloud[i] = pack10LevelHighScores![i]
                 }
@@ -543,7 +587,8 @@ final class CloudKitHandler: NSObject {
         pack11LevelHighScores = totalStatsArray[0].pack11LevelHighScores
         if let pack11LevelHighScoresCloudCheck = iCloudStore.array(forKey: "pack11LevelHighScores") as? [Int] {
         var pack11LevelHighScoresCloud = pack11LevelHighScoresCloudCheck
-            for i in 0..<pack11LevelHighScores!.count {
+        pack11LevelHighScoresCloud = CloudKitHandler.padded(pack11LevelHighScoresCloud, toMatch: pack11LevelHighScores!)
+            for i in 0..<min(pack11LevelHighScores!.count, pack11LevelHighScoresCloud.count) {
                 if pack11LevelHighScores![i] > pack11LevelHighScoresCloud[i] {
                     pack11LevelHighScoresCloud[i] = pack11LevelHighScores![i]
                 }
@@ -629,7 +674,7 @@ final class CloudKitHandler: NSObject {
         
         powerupsCollected = totalStatsArray[0].powerupsCollected
         if let powerupsCollectedCloud = iCloudStore.array(forKey: "powerupsCollected") as? [Int] {
-            for i in 0..<powerupsCollectedCloud.count {
+            for i in 0..<min(powerupsCollectedCloud.count, powerupsCollected!.count) {
                 if powerupsCollectedCloud[i] > powerupsCollected![i] {
                     powerupsCollected![i] = powerupsCollectedCloud[i]
                 }
@@ -639,7 +684,7 @@ final class CloudKitHandler: NSObject {
         
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
         if let powerupsGeneratedCloud = iCloudStore.array(forKey: "powerupsGenerated") as? [Int] {
-            for i in 0..<powerupsGeneratedCloud.count {
+            for i in 0..<min(powerupsGeneratedCloud.count, powerupsGenerated!.count) {
                 if powerupsGeneratedCloud[i] > powerupsGenerated![i] {
                     powerupsGenerated![i] = powerupsGeneratedCloud[i]
                 }
@@ -649,7 +694,7 @@ final class CloudKitHandler: NSObject {
         
         bricksHit = totalStatsArray[0].bricksHit
         if let bricksHitCloud = iCloudStore.array(forKey: "bricksHit") as? [Int] {
-            for i in 0..<bricksHitCloud.count {
+            for i in 0..<min(bricksHitCloud.count, bricksHit!.count) {
                 if bricksHitCloud[i] > bricksHit![i] {
                     bricksHit![i] = bricksHitCloud[i]
                 }
@@ -659,7 +704,7 @@ final class CloudKitHandler: NSObject {
         
         bricksDestroyed = totalStatsArray[0].bricksDestroyed
         if let bricksDestroyedCloud = iCloudStore.array(forKey: "bricksDestroyed") as? [Int] {
-            for i in 0..<bricksDestroyedCloud.count {
+            for i in 0..<min(bricksDestroyedCloud.count, bricksDestroyed!.count) {
                 if bricksDestroyedCloud[i] > bricksDestroyed![i] {
                     powerupsCollected![i] = bricksDestroyedCloud[i]
                 }
@@ -707,7 +752,7 @@ final class CloudKitHandler: NSObject {
 
         levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray
         if let levelPackUnlockedArrayCloud = iCloudStore.array(forKey: "levelPackUnlockedArray") as? [Bool] {
-            for i in 0..<levelPackUnlockedArray!.count {
+            for i in 0..<min(levelPackUnlockedArray!.count, levelPackUnlockedArrayCloud.count) {
                 if levelPackUnlockedArrayCloud[i] || levelPackUnlockedArray![i] != levelPackUnlockedArrayCloud[i] {
                     levelPackUnlockedArray![i] = true
                 } else {
@@ -719,7 +764,7 @@ final class CloudKitHandler: NSObject {
         
         themeUnlockedArray = totalStatsArray[0].themeUnlockedArray
         if let themeUnlockedArrayCloud = iCloudStore.array(forKey: "themeUnlockedArray") as? [Bool] {
-            for i in 0..<themeUnlockedArray!.count {
+            for i in 0..<min(themeUnlockedArray!.count, themeUnlockedArrayCloud.count) {
                 if themeUnlockedArrayCloud[i] || themeUnlockedArray![i] != themeUnlockedArrayCloud[i] {
                     themeUnlockedArray![i] = true
                 } else {
@@ -731,7 +776,7 @@ final class CloudKitHandler: NSObject {
         
         appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray
         if let appIconUnlockedArrayCloud = iCloudStore.array(forKey: "appIconUnlockedArray") as? [Bool] {
-            for i in 0..<appIconUnlockedArray!.count {
+            for i in 0..<min(appIconUnlockedArray!.count, appIconUnlockedArrayCloud.count) {
                 if appIconUnlockedArrayCloud[i] || appIconUnlockedArray![i] != appIconUnlockedArrayCloud[i] {
                     appIconUnlockedArray![i] = true
                 } else {
@@ -743,7 +788,7 @@ final class CloudKitHandler: NSObject {
         
         levelUnlockedArray = totalStatsArray[0].levelUnlockedArray
         if let levelUnlockedArrayCloud = iCloudStore.array(forKey: "levelUnlockedArray") as? [Bool] {
-            for i in 0..<levelUnlockedArray!.count {
+            for i in 0..<min(levelUnlockedArray!.count, levelUnlockedArrayCloud.count) {
                 if levelUnlockedArrayCloud[i] || levelUnlockedArray![i] != levelUnlockedArrayCloud[i] {
                     levelUnlockedArray![i] = true
                 } else {
@@ -755,7 +800,7 @@ final class CloudKitHandler: NSObject {
         
         powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray
         if let powerUpUnlockedArrayCloud = iCloudStore.array(forKey: "powerUpUnlockedArray") as? [Bool] {
-            for i in 0..<powerUpUnlockedArray!.count {
+            for i in 0..<min(powerUpUnlockedArray!.count, powerUpUnlockedArrayCloud.count) {
                 if powerUpUnlockedArrayCloud[i] || powerUpUnlockedArray![i] != powerUpUnlockedArrayCloud[i] {
                     powerUpUnlockedArray![i] = true
                 } else {
@@ -767,7 +812,7 @@ final class CloudKitHandler: NSObject {
         
         achievementsUnlockedArray = totalStatsArray[0].achievementsUnlockedArray
         if let achievementsUnlockedArrayCloud = iCloudStore.array(forKey: "achievementsUnlockedArray") as? [Bool] {
-            for i in 0..<achievementsUnlockedArray!.count {
+            for i in 0..<min(achievementsUnlockedArray!.count, achievementsUnlockedArrayCloud.count) {
                 if achievementsUnlockedArrayCloud[i] || achievementsUnlockedArray![i] != achievementsUnlockedArrayCloud[i] {
                     achievementsUnlockedArray![i] = true
                 } else {
@@ -779,7 +824,7 @@ final class CloudKitHandler: NSObject {
 
         packHighScores = totalStatsArray[0].packHighScores
         if let packHighScoresCloud = iCloudStore.array(forKey: "packHighScores") as? [Int] {
-            for i in 0..<packHighScoresCloud.count {
+            for i in 0..<min(packHighScoresCloud.count, packHighScores!.count) {
                 if packHighScoresCloud[i] > packHighScores![i] {
                     packHighScores![i] = packHighScoresCloud[i]
                 }
@@ -789,7 +834,7 @@ final class CloudKitHandler: NSObject {
         
         packBestTimes = totalStatsArray[0].packBestTimes
         if let packBestTimesCloud = iCloudStore.array(forKey: "packBestTimes") as? [Int] {
-            for i in 0..<packBestTimesCloud.count {
+            for i in 0..<min(packBestTimesCloud.count, packBestTimes!.count) {
                 if packBestTimesCloud[i] > packBestTimes![i] {
                     packBestTimes![i] = packBestTimesCloud[i]
                 }
@@ -799,7 +844,7 @@ final class CloudKitHandler: NSObject {
         
         pack1LevelHighScores = totalStatsArray[0].pack1LevelHighScores
         if let pack1LevelHighScoresCloud = iCloudStore.array(forKey: "pack1LevelHighScores") as? [Int] {
-            for i in 0..<pack1LevelHighScoresCloud.count {
+            for i in 0..<min(pack1LevelHighScoresCloud.count, pack1LevelHighScores!.count) {
                 if pack1LevelHighScoresCloud[i] > pack1LevelHighScores![i] {
                     pack1LevelHighScores![i] = pack1LevelHighScoresCloud[i]
                 }
@@ -809,7 +854,7 @@ final class CloudKitHandler: NSObject {
         
         pack2LevelHighScores = totalStatsArray[0].pack2LevelHighScores
         if let pack2LevelHighScoresCloud = iCloudStore.array(forKey: "pack2LevelHighScores") as? [Int] {
-            for i in 0..<pack2LevelHighScoresCloud.count {
+            for i in 0..<min(pack2LevelHighScoresCloud.count, pack2LevelHighScores!.count) {
                 if pack2LevelHighScoresCloud[i] > pack2LevelHighScores![i] {
                     pack2LevelHighScores![i] = pack2LevelHighScoresCloud[i]
                 }
@@ -819,7 +864,7 @@ final class CloudKitHandler: NSObject {
         
         pack3LevelHighScores = totalStatsArray[0].pack3LevelHighScores
         if let pack3LevelHighScoresCloud = iCloudStore.array(forKey: "pack3LevelHighScores") as? [Int] {
-            for i in 0..<pack3LevelHighScoresCloud.count {
+            for i in 0..<min(pack3LevelHighScoresCloud.count, pack3LevelHighScores!.count) {
                 if pack3LevelHighScoresCloud[i] > pack3LevelHighScores![i] {
                     pack3LevelHighScores![i] = pack3LevelHighScoresCloud[i]
                 }
@@ -829,7 +874,7 @@ final class CloudKitHandler: NSObject {
         
         pack4LevelHighScores = totalStatsArray[0].pack4LevelHighScores
         if let pack4LevelHighScoresCloud = iCloudStore.array(forKey: "pack4LevelHighScores") as? [Int] {
-            for i in 0..<pack4LevelHighScoresCloud.count {
+            for i in 0..<min(pack4LevelHighScoresCloud.count, pack4LevelHighScores!.count) {
                 if pack4LevelHighScoresCloud[i] > pack4LevelHighScores![i] {
                     pack4LevelHighScores![i] = pack4LevelHighScoresCloud[i]
                 }
@@ -839,7 +884,7 @@ final class CloudKitHandler: NSObject {
         
         pack5LevelHighScores = totalStatsArray[0].pack5LevelHighScores
         if let pack5LevelHighScoresCloud = iCloudStore.array(forKey: "pack5LevelHighScores") as? [Int] {
-            for i in 0..<pack5LevelHighScoresCloud.count {
+            for i in 0..<min(pack5LevelHighScoresCloud.count, pack5LevelHighScores!.count) {
                 if pack5LevelHighScoresCloud[i] > pack5LevelHighScores![i] {
                     pack5LevelHighScores![i] = pack5LevelHighScoresCloud[i]
                 }
@@ -849,7 +894,7 @@ final class CloudKitHandler: NSObject {
         
         pack6LevelHighScores = totalStatsArray[0].pack6LevelHighScores
         if let pack6LevelHighScoresCloud = iCloudStore.array(forKey: "pack6LevelHighScores") as? [Int] {
-            for i in 0..<pack6LevelHighScoresCloud.count {
+            for i in 0..<min(pack6LevelHighScoresCloud.count, pack6LevelHighScores!.count) {
                 if pack6LevelHighScoresCloud[i] > pack6LevelHighScores![i] {
                     pack6LevelHighScores![i] = pack6LevelHighScoresCloud[i]
                 }
@@ -859,7 +904,7 @@ final class CloudKitHandler: NSObject {
         
         pack7LevelHighScores = totalStatsArray[0].pack7LevelHighScores
         if let pack7LevelHighScoresCloud = iCloudStore.array(forKey: "pack7LevelHighScores") as? [Int] {
-            for i in 0..<pack7LevelHighScoresCloud.count {
+            for i in 0..<min(pack7LevelHighScoresCloud.count, pack7LevelHighScores!.count) {
                 if pack7LevelHighScoresCloud[i] > pack7LevelHighScores![i] {
                     pack7LevelHighScores![i] = pack7LevelHighScoresCloud[i]
                 }
@@ -869,7 +914,7 @@ final class CloudKitHandler: NSObject {
         
         pack8LevelHighScores = totalStatsArray[0].pack8LevelHighScores
         if let pack8LevelHighScoresCloud = iCloudStore.array(forKey: "pack8LevelHighScores") as? [Int] {
-            for i in 0..<pack8LevelHighScoresCloud.count {
+            for i in 0..<min(pack8LevelHighScoresCloud.count, pack8LevelHighScores!.count) {
                 if pack8LevelHighScoresCloud[i] > pack8LevelHighScores![i] {
                     pack8LevelHighScores![i] = pack8LevelHighScoresCloud[i]
                 }
@@ -879,7 +924,7 @@ final class CloudKitHandler: NSObject {
         
         pack9LevelHighScores = totalStatsArray[0].pack9LevelHighScores
         if let pack9LevelHighScoresCloud = iCloudStore.array(forKey: "pack9LevelHighScores") as? [Int] {
-            for i in 0..<pack9LevelHighScoresCloud.count {
+            for i in 0..<min(pack9LevelHighScoresCloud.count, pack9LevelHighScores!.count) {
                 if pack9LevelHighScoresCloud[i] > pack9LevelHighScores![i] {
                     pack9LevelHighScores![i] = pack9LevelHighScoresCloud[i]
                 }
@@ -889,7 +934,7 @@ final class CloudKitHandler: NSObject {
         
         pack10LevelHighScores = totalStatsArray[0].pack10LevelHighScores
         if let pack10LevelHighScoresCloud = iCloudStore.array(forKey: "pack10LevelHighScores") as? [Int] {
-            for i in 0..<pack10LevelHighScoresCloud.count {
+            for i in 0..<min(pack10LevelHighScoresCloud.count, pack10LevelHighScores!.count) {
                 if pack10LevelHighScoresCloud[i] > pack10LevelHighScores![i] {
                     pack10LevelHighScores![i] = pack10LevelHighScoresCloud[i]
                 }
@@ -899,7 +944,7 @@ final class CloudKitHandler: NSObject {
         
         pack11LevelHighScores = totalStatsArray[0].pack11LevelHighScores
         if let pack11LevelHighScoresCloud = iCloudStore.array(forKey: "pack11LevelHighScores") as? [Int] {
-            for i in 0..<pack11LevelHighScoresCloud.count {
+            for i in 0..<min(pack11LevelHighScoresCloud.count, pack11LevelHighScores!.count) {
                 if pack11LevelHighScoresCloud[i] > pack11LevelHighScores![i] {
                     pack11LevelHighScores![i] = pack11LevelHighScoresCloud[i]
                 }

@@ -793,6 +793,14 @@ page and to the progression, and to neither pool, so no brick could ever be give
 outside that is indistinguishable from a style that is simply very rare, which is why it went
 unnoticed for so long.
 
+**Adding a power-up lengthens arrays in two places, not one.** Every per-power-up array exists
+twice: in the stats file on disk and in `NSUbiquitousKeyValueStore`. Both hold whatever the last
+version to write them had. `TotalStats.padded` covers the file; the cloud copy was missed, and
+the twenty-ninth power-up crashed on the first launch after the update — every merge loop in
+`CloudKitHandler` walked the local array's length while indexing the stored one. The same is
+true of achievements, levels, packs and themes. Loops there are now bounded by the shorter of
+the two in both directions, and a test reads the source to check no new one slips in.
+
 **A contact reports the velocity *after* the bounce.** SpriteKit calls the contact handler
 partway through resolving the step, so a ball's velocity read there is the one it is leaving
 with, not the one it arrived with. Anything that needs the approach — which face was struck,

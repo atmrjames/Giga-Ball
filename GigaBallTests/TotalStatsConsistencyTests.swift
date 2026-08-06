@@ -166,3 +166,72 @@ extension TotalStatsConsistencyTests {
         XCTAssertEqual(stats.powerUpUnlockedArray.count, TotalStats().powerUpUnlockedArray.count)
     }
 }
+
+// MARK: - iCloud
+
+final class CloudArrayLengthTests: XCTestCase {
+
+    /// Every merge in `CloudKitHandler` walks one array's length while indexing the other, and
+    /// the two come from different versions of the app - the local one from this build, the
+    /// stored one from whichever version last wrote it.
+    ///
+    /// Adding the twenty-ninth power-up made the local array longer than the stored one, and
+    /// the first launch after the update read one past the end of the stored array and crashed,
+    /// on the device of somebody with years of synced progress. `TotalStats.padded` had covered
+    /// exactly this hazard for the file on disk; the cloud copy was missed, because the file is
+    /// the one that looks like a save.
+    func testAShorterCloudArrayIsBroughtUpToLength() {
+        let local = [true, false, true, false, true]
+        let cloud = [true, false]
+
+        let padded = CloudKitHandler.padded(cloud, toMatch: local)
+
+        XCTAssertEqual(padded.count, local.count)
+        XCTAssertEqual(Array(padded.prefix(2)), cloud, "what iCloud already knew is untouched")
+        XCTAssertEqual(Array(padded.suffix(3)), Array(local.suffix(3)),
+                       "and what it has never heard of takes this device's answer")
+    }
+
+    func testALongerCloudArrayIsLeftAlone() {
+        // Written by a newer build. Truncating it would throw away progress the moment somebody
+        // opened an older version on a second device
+        let local = [1, 2]
+        let cloud = [1, 2, 3, 4]
+
+        XCTAssertEqual(CloudKitHandler.padded(cloud, toMatch: local), cloud)
+    }
+
+    func testEqualLengthsAreUnchanged() {
+        let both = [0, 1, 2]
+        XCTAssertEqual(CloudKitHandler.padded(both, toMatch: both), both)
+    }
+
+    func testAnEmptyCloudArrayBecomesTheLocalOne() {
+        // What a device that has never synced looks like
+        let local = [true, true, false]
+        XCTAssertEqual(CloudKitHandler.padded([Bool](), toMatch: local), local)
+    }
+
+    func testNoMergeLoopWalksPastEitherArray() {
+        // The guard rail rather than the fix: every loop in the file is bounded by the shorter
+        // of the two arrays, so a length mismatch in either direction cannot crash. Read from
+        // the source, because this is a rule about all of them and new ones keep being added
+        let source = try! String(contentsOfFile: CloudArrayLengthTests.handlerPath,
+                                 encoding: .utf8)
+        let unbounded = source
+            .split(separator: "\n")
+            .map(String.init)
+            .filter { $0.contains("for i in 0..<") && $0.contains("min(") == false }
+
+        XCTAssertTrue(unbounded.isEmpty,
+                      "these walk one array's length unchecked:\n" + unbounded.joined(separator: "\n"))
+    }
+
+    private static var handlerPath: String {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Megaball/CloudKitHandler.swift")
+            .path
+    }
+}
