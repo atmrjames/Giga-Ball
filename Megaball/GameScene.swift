@@ -850,10 +850,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		sideScreenBlockLeft.isHidden = false
 		sideScreenBlockRight.isHidden = false
-		sideScreenBlockLeft.size.width = screenBlockSideWidth
-		sideScreenBlockRight.size.width = screenBlockSideWidth
-		sideScreenBlockLeft.position.x = -gameWidth/2-screenBlockSideWidth/2
-		sideScreenBlockRight.position.x = gameWidth/2+screenBlockSideWidth/2
+		let wallThickness = max(screenBlockSideWidth, GameScene.minimumWallThickness)
+		sideScreenBlockLeft.size.width = wallThickness
+		sideScreenBlockRight.size.width = wallThickness
+		sideScreenBlockLeft.position.x = -gameWidth/2 - wallThickness/2
+		sideScreenBlockRight.position.x = gameWidth/2 + wallThickness/2
+		// Only the inner edge matters. It sits on the play area's edge either way, so a wall
+		// wider than the border it fills simply extends off the screen - which is what lets
+		// the play area run right to the edge and still have something to bounce off. A wall
+		// of zero width gets no physics body at all, and the line that configures it
+		// force-unwraps one
 
 		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth)
 		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight)
@@ -1184,12 +1190,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		powerUpRings.iconSize = iconSize
 		powerUpRings.spacing = iconSize*0.4
-		powerUpRings.position = CGPoint(x: 0,
-										y: pauseButton.position.y - pauseButton.size.height/2
-											- labelSpacing/2 - powerUpRings.containerHeight/2)
-		// Placed by its own height rather than borrowed from the tray's. The tray is hidden
-		// in this mode and a different size, and with the bar now sized to the rings there is
-		// no slack left to absorb the difference
+		let ringGapTop = pauseButton.position.y - pauseButton.size.height/2
+		let ringGapBottom = frame.size.height/2 - screenBlockTopHeight
+		powerUpRings.position = CGPoint(x: 0, y: (ringGapTop + ringGapBottom)/2)
+		// Centred in the space between the pause button and the top of the play area, rather
+		// than hung off the button and left to reach wherever it reaches. Whatever slack
+		// there is now sits evenly above and below it instead of all above
 		powerUpRings.zPosition = 3
 		powerUpRings.isHidden = gameMode != .endlessII
 		if powerUpRings.parent == nil { addChild(powerUpRings) }
@@ -4178,19 +4184,21 @@ laserTimer?.invalidate()
 	/// an icon plus a bar plus the gap between. The height that buys goes to the playfield:
 	/// the play area holds a fixed ratio, so a shorter bar makes it both taller and wider,
 	/// and the side borders shrink to match.
-	static let endlessIIHudUnits: CGFloat = 4.3
+	/// Sized so the ring row clears the play area on every device. The gap the rings have to
+	/// fit in is `layoutUnit*(hudUnits - 2)` and the rings need `layoutUnit*1.5 + 16`, and
+	/// the 16 is fixed padding that does not shrink with the unit - so on a large phone 4.3
+	/// came up 0.2pt short and the container crossed the top of the field.
+	static let endlessIIHudUnits: CGFloat = 4.7
 	// The HUD row (2 units), the power-up tray (3 units) and the spacing between them,
 	// in layout units. Must cover everything stacked below the safe area inset, or the
 	// tray overhangs into the playfield
 
 	static let hudTopClearance: CGFloat = 20
-	/// The narrowest each side border may become.
+	/// How solid each wall is, when the border it fills is thinner than this.
 	///
-	/// Deliberately smaller than the border any current device ends up with, so this only
-	/// ever acts as a floor and never takes width away from the play area. It exists because
-	/// the side blocks are the walls the ball bounces off, and a wall of zero width has no
-	/// physics body at all.
-	static let minimumSideBorder: CGFloat = 3
+	/// Costs nothing on screen - the surplus is off the edge - and it means the play area
+	/// never has to leave a margin behind just to keep its walls.
+	static let minimumWallThickness: CGFloat = 20
 	// Clearance from the physical top edge to the HUD, in points, used instead of
 	// safeAreaInsets.top.
 	//
@@ -4481,7 +4489,7 @@ laserTimer?.invalidate()
 
 		let hudUnits = gameMode == .endlessII ? GameScene.endlessIIHudUnits : GameScene.hudUnits
 		gameWidth = (availableHeight / (1 + hudUnits / (CGFloat(22) * GameScene.playRatio))) / GameScene.playRatio
-		gameWidth = min(gameWidth, availableWidth - GameScene.minimumSideBorder*2)
+		gameWidth = min(gameWidth, availableWidth)
 		// Play area sized from the space actually available, holding a fixed ratio.
 		//
 		// The border is not decoration - the side blocks are the walls the ball bounces off,
