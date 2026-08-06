@@ -110,13 +110,33 @@ extension EndlessIISizeTests {
         }
     }
 
+    func testTheThreeGapsAcrossATinySetAreEqual() {
+        // Placed at a flat quarter of a cell, the gap down the middle comes out twice the
+        // width of the ones at the edges - it is made of two half-gaps where they are made of
+        // one each - and the set reads as nudged apart rather than laid out.
+        let fill = GameScene.endlessIITinyFill
+        let offset = GameScene.endlessIITinyOffset
+        let halfBrick = fill/4
+
+        let outerGap = 0.5 - (offset + halfBrick)
+        let innerGap = (offset - halfBrick)*2
+
+        XCTAssertEqual(outerGap, innerGap, accuracy: 0.0001)
+        XCTAssertGreaterThan(outerGap, 0, "the set must not overhang its cell")
+    }
+
+    func testATinySetStillFitsInsideItsCell() {
+        let extent = GameScene.endlessIITinyOffset + GameScene.endlessIITinyFill/4
+        XCTAssertLessThanOrEqual(extent, 0.5)
+    }
+
     func testEveryQuarterSitsInADifferentCornerOfTheCell() {
         for _ in 0..<200 {
             let layout = GameScene.endlessIITinyLayout()
             XCTAssertEqual(Set(layout.map { "\($0.x),\($0.y)" }).count, layout.count)
             for offset in layout {
-                XCTAssertEqual(abs(offset.x), 0.25, accuracy: 0.0001)
-                XCTAssertEqual(abs(offset.y), 0.25, accuracy: 0.0001)
+                XCTAssertEqual(abs(offset.x), GameScene.endlessIITinyOffset, accuracy: 0.0001)
+                XCTAssertEqual(abs(offset.y), GameScene.endlessIITinyOffset, accuracy: 0.0001)
             }
         }
     }

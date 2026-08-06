@@ -758,14 +758,17 @@ reaching before judging whether the whole idea works.
 Phases 1 to 6 are built. Everything below is what remains, in the order it is worth doing —
 all of it presentation and reference material rather than mechanics.
 
+**Next up:** the background selection screen and the brick types page — both new UI, and the
+last things before phase 7.
+
 **Open, in rough priority order**
 
 | Item | Notes |
 |---|---|
 | Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
-| Ring bar styling | The progress ring sits outside the icon; the icons have room for it to sit inside. Giga-Ball colour and glow |
-| Background selection screen | Rather than a name on a cell, a screen showing a scene mock-up that can be swiped between |
-| Brick types menu page | A reference page like the power-ups one. The new power-ups also need adding to the existing page |
+| Background selection screen | Rather than a name on a cell, a screen showing a game-scene mock-up that can be swiped between |
+| Brick types menu page | A reference page like the power-ups one, covering behaviours, styles and sizes |
+| New power-ups on the existing power-ups page | Waits until the new power-ups are actually implemented, so the page is written against what exists |
 
 **Backlogged**
 

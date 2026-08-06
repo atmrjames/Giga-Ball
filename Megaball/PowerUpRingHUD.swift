@@ -66,11 +66,13 @@ final class PowerUpRingHUD: SKNode {
     var containerHeight: CGFloat { iconSize + PowerUpRingHUD.padding*2 }
     /// How far in from the icon's edge the ring sits, as a fraction of the icon.
     ///
-    /// Inward rather than around. The icons carry a good deal of empty margin, so a ring
-    /// drawn outside them spends space the row does not have and reads as a separate object
-    /// orbiting the icon rather than as part of it.
-    private static let ringInset: CGFloat = 0.14
-    private static let ringWidth: CGFloat = 3
+    /// Inward rather than around, but only just. The icons carry some empty margin, so a ring
+    /// drawn outside them spends space the row does not have - but the first attempt put it
+    /// at fourteen per cent in, three points thick and with a halo three times that, which
+    /// covered most of the icon it was supposed to be timing. It sits close to the edge now
+    /// and the glow is a suggestion rather than a light source.
+    private static let ringInset: CGFloat = 0.05
+    private static let ringWidth: CGFloat = 2
     private static let padding: CGFloat = 8
     private static let appearDuration: TimeInterval = 0.2
     /// A jump in remaining time means it was collected again rather than drained.
@@ -147,10 +149,10 @@ final class PowerUpRingHUD: SKNode {
         // timer to the rest of the art rather than leaving it as a plain white arc
         let halo = SKShapeNode()
         halo.strokeColor = PowerUpRingHUD.ringColour
-        halo.lineWidth = PowerUpRingHUD.ringWidth*3
+        halo.lineWidth = PowerUpRingHUD.ringWidth*2
         halo.lineCap = .round
         halo.fillColor = .clear
-        halo.alpha = 0.3
+        halo.alpha = 0.16
         halo.zPosition = 2
         halo.blendMode = .add
         holder.addChild(halo)

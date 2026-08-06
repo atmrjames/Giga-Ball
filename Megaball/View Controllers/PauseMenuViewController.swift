@@ -70,6 +70,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     private var heightTallyStartedAt: CFTimeInterval = 0
     private var heightTallyTarget = 0
     static let heightTallyDuration: CFTimeInterval = 0.7
+    static let heightTallyTicks = 10
+    private var heightTallyLastTick = -1
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -577,6 +579,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         guard height > 0 else { return }
         heightTallyTarget = height
         heightTallyStartedAt = CACurrentMediaTime()
+        heightTallyLastTick = -1
         scoreLabel.text = "0m"
 
         let link = CADisplayLink(target: self, selector: #selector(stepHeightTally))
@@ -594,6 +597,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         let progress = elapsed/PauseMenuViewController.heightTallyDuration
         let eased = 1 - pow(1 - progress, 3)
         scoreLabel.text = "\(Int((Double(heightTallyTarget)*eased).rounded()))m"
+
+        // The same ticking the level summary gives a score, for the same reason: a number
+        // climbing in silence is a number, and a number you can feel climbing is a result
+        let tick = Int(progress*Double(PauseMenuViewController.heightTallyTicks))
+        if tick != heightTallyLastTick {
+            heightTallyLastTick = tick
+            if hapticsSetting { interfaceHaptic.impactOccurred(intensity: 0.5) }
+        }
     }
 
     @objc private func tapToSkipHeightTally() {

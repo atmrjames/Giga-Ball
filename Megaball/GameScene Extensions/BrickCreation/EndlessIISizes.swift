@@ -73,10 +73,11 @@ extension GameScene {
     /// sometimes an obstacle and sometimes a gap with something in it - and the ball can be
     /// threaded between them.
     static func endlessIITinyLayout() -> [CGPoint] {
-        let topLeft = CGPoint(x: -0.25, y: 0.25)
-        let topRight = CGPoint(x: 0.25, y: 0.25)
-        let bottomLeft = CGPoint(x: -0.25, y: -0.25)
-        let bottomRight = CGPoint(x: 0.25, y: -0.25)
+        let step = endlessIITinyOffset
+        let topLeft = CGPoint(x: -step, y: step)
+        let topRight = CGPoint(x: step, y: step)
+        let bottomLeft = CGPoint(x: -step, y: -step)
+        let bottomRight = CGPoint(x: step, y: -step)
 
         switch Int.random(in: 0...5) {
         case 0: return [topLeft, bottomRight]
@@ -93,7 +94,18 @@ extension GameScene {
     /// The gap between the four is what makes them read as four bricks rather than one brick
     /// with hairlines scratched across it. It has to come out of the brick rather than being
     /// added around it, or the set would no longer fill its cell.
-    static let endlessIITinyFill: CGFloat = 0.82
+    static let endlessIITinyFill: CGFloat = 0.88
+
+    /// How far each quarter sits from the centre of its cell.
+    ///
+    /// Not a quarter of a cell. Placing them there leaves the gap down the middle twice the
+    /// width of the gaps at the edges, because the middle gap is made of two half-gaps and
+    /// the outer ones are made of one each - which reads as a set that has been nudged apart
+    /// rather than one that was laid out. Worked out from the fill so all three gaps match.
+    static var endlessIITinyOffset: CGFloat {
+        let gap = (1 - endlessIITinyFill)/3
+        return 0.5 - gap - endlessIITinyFill/4
+    }
 
     // MARK: - Big
 
