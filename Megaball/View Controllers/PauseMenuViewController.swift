@@ -79,6 +79,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NotificationCenter.default.addObserver(self, selector: #selector(self.killBallRemoveVCKeyReceived), name: .killBallRemoveVC, object: nil)
         // Sets up an observer to watch for notifications to check if the user has killed the ball from the settings menu to then remove the pause menu
         
+        let skipTally = UITapGestureRecognizer(target: self,
+                                              action: #selector(tapToSkipHeightTally))
+        skipTally.cancelsTouchesInView = false
+        view.addGestureRecognizer(skipTally)
+        // Added here rather than in the storyboard, and deliberately not cancelling touches:
+        // every button on this screen must keep working, so this only listens
+
         buttonCollectionView.delegate = self
         buttonCollectionView.dataSource = self
         buttonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
@@ -372,6 +379,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
             scoreLabelTitle.text = "Height"
             scoreLabel.text = "\(height)m"
+            if sender != "Pause" { startHeightTally(to: height) }
+            // Only at the end of a run. Pausing mid-run to watch your own height counted back
+            // to you would be telling you something you already know
             highscoreLabelTitle.text = "Best"
             
             var heightBest = 0
@@ -556,6 +566,45 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     @objc func killBallRemoveVCKeyReceived(_ notification: Notification) {
         NotificationCenter.default.post(name: .killBallNotification, object: nil)
         removeAnimate(nextAction: .unpause)
+    }
+    // MARK: - Height tally
+
+    /// Runs the final height up from zero, the way the level summary runs a score up.
+    ///
+    /// The number is the whole result of an endless run, and arriving at it is worth more
+    /// than being handed it. Short, because this sits between one run and the next.
+    private func startHeightTally(to height: Int) {
+        guard height > 0 else { return }
+        heightTallyTarget = height
+        heightTallyStartedAt = CACurrentMediaTime()
+        scoreLabel.text = "0m"
+
+        let link = CADisplayLink(target: self, selector: #selector(stepHeightTally))
+        link.add(to: .main, forMode: .common)
+        heightTallyLink = link
+    }
+
+    @objc private func stepHeightTally() {
+        let elapsed = CACurrentMediaTime() - heightTallyStartedAt
+        guard elapsed < PauseMenuViewController.heightTallyDuration else {
+            finishHeightTally()
+            return
+        }
+        // Eased, so it decelerates into the figure rather than stopping dead
+        let progress = elapsed/PauseMenuViewController.heightTallyDuration
+        let eased = 1 - pow(1 - progress, 3)
+        scoreLabel.text = "\(Int((Double(heightTallyTarget)*eased).rounded()))m"
+    }
+
+    @objc private func tapToSkipHeightTally() {
+        finishHeightTally()
+    }
+
+    private func finishHeightTally() {
+        guard heightTallyLink != nil else { return }
+        heightTallyLink?.invalidate()
+        heightTallyLink = nil
+        scoreLabel.text = "\(heightTallyTarget)m"
     }
 }
 
