@@ -82,6 +82,7 @@ final class EndlessIIStickyPaddleQueueTests: XCTestCase {
         scene.gameMode = .endlessII
         scene.stickyPaddleCatches = 4
         scene.stickyPaddleCatchesTotal = 4
+        scene.ballSize = 10
         scene.addChild(scene.ball)
         // The first ball is always in the scene during play, and the queue skips anything
         // that has left it
@@ -196,6 +197,21 @@ final class EndlessIIStickyPaddleQueueTests: XCTestCase {
                        scene.endlessIILaunchAngle(atPaddleOffset: -1))
         XCTAssertEqual(scene.endlessIILaunchAngle(atPaddleOffset: 4),
                        scene.endlessIILaunchAngle(atPaddleOffset: 1))
+    }
+
+    func testABallHeldOnThePaddleIsStillHeldAfterAResume() {
+        // A saved ball with no heading was not travelling, which means it was being held.
+        // Restored as an ordinary ball it would sit there for ever: nothing launches a ball
+        // that is not in the queue
+        let scene = stickyScene()
+        scene.endlessIIRestoreExtraBalls(from: [
+            .init(position: CGPoint(x: 0, y: 0), velocity: .zero),
+            .init(position: CGPoint(x: 40, y: 200), velocity: CGVector(dx: 100, dy: 100)),
+        ])
+
+        XCTAssertEqual(scene.endlessIIExtraBalls.count, 2)
+        XCTAssertEqual(scene.endlessIIHeldBalls.count, 1)
+        XCTAssertTrue(scene.endlessIITapLaunchesHeldBall)
     }
 
     func testABallLostWhileHeldLeavesTheQueue() {
@@ -335,6 +351,29 @@ final class EndlessIIBestHeightLabelTests: XCTestCase {
         scene.showMultiplier()
 
         XCTAssertEqual(scene.multiplierLabel.text, "BEST 77m")
+    }
+
+    func testTheBestHeightKeepsItsOwnColour() {
+        // "It's changing colours to white and giga-ball green yellow as if certain multipliers
+        // have been reached. In Endless 2.0 the multiplier isn't part of the game at all."
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        scene.totalStatsArray[0].endlessIIModeHeight = [200]
+
+        scene.showEndlessIIBest()
+        let painted = scene.multiplierLabel.fontColor
+        scene.setMultiplierColour(.green)
+
+        XCTAssertEqual(scene.multiplierLabel.fontColor, painted)
+    }
+
+    func testTheMultiplierIsStillPaintedWhereThereIsOne() {
+        let scene = GameScene()
+        scene.endlessMode = false
+        scene.setMultiplierColour(.green)
+        XCTAssertEqual(scene.multiplierLabel.fontColor, .green)
     }
 
     func testTheMultiplierStillShowsInTheModesThatHaveOne() {

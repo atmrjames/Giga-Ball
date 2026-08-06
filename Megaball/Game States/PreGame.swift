@@ -47,7 +47,7 @@ class PreGame: GKState {
         
         scene.scoreLabel.isHidden = true
         scene.multiplierLabel.isHidden = true
-        scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        scene.setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
         scene.pauseButton.isHidden = true
         scene.endlessGameIcon.isHidden = true
         scene.setLivesRowHidden(true)

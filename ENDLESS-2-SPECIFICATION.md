@@ -473,7 +473,13 @@ Only Endless II uses it. Classic and Endless keep a single ball, so the existing
 untouched — but the scene must hold a *collection* of balls rather than one, which touches:
 
 - ball-lost handling, which currently ends the life on any loss
-- per-ball state: sticky, aura, trajectory line, landing marker each act on their own ball
+- per-ball state: sticky, aura, trajectory line, landing marker each act on their own ball.
+  **Sticky is built**: the paddle holds a queue and launches the oldest first, one per tap,
+  with the first ball taking its turn in the same queue. A ball saved with no heading was
+  being held, and comes back held
+- power-up state that is *not* per ball: the Giga-Ball body, the ball's size and its speed all
+  belong to the run. Each of those reached the first ball's node and had to be pushed to the
+  rest — a set of balls that look alike and behave differently is worse than no Multi-Ball
 - the save format, which stored one ball's position and velocity (§9.3) — **built**
 - the ball-speed power-ups, which set a single shared limit — proposed: shared across all
   balls, as one value, matching the `ballSpeed` conflict group
@@ -965,7 +971,6 @@ same class of bug:
 
 | Item | Notes |
 |---|---|
-| Per-ball launch state | §5.5. Sticky Paddle holds the first ball only, and Aimed Sticky will have the same question. Not needed until phase 8 builds it |
 | A scatter cluster | §6.2.1 covers set formations with designed and undesigned contents. The third kind — particular bricks in a *random* arrangement — needs a generator rather than a grid |
 | New power-ups on the existing power-ups page | Waits until the new power-ups are actually implemented, so the page is written against what exists |
 

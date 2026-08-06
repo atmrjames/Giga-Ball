@@ -1187,7 +1187,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		multiplierLabel.position.y = scoreLabel.position.y - labelSpacing - fontSize/2
 		multiplierLabel.fontSize = fontSize
 		multiplierLabel.zPosition = 10
-		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		life.isHidden = true
 		livesLabel.isHidden = true
 		// Both retired in favour of the lives row below the paddle. They are authored in
@@ -1599,6 +1599,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     ///
     /// Every launch off a sticky paddle costs one, whichever ball it was - so with Multi-Ball
     /// a set of catches is spent across the balls rather than being renewed by each of them.
+    /// Paints the multiplier's label, in the modes that have a multiplier.
+    ///
+    /// Every place that used to set this colour asks here instead. Endless mode has no
+    /// multiplier: its label carries the best height, in its own dimmer white, and was being
+    /// repainted white and Giga-Ball green as though thresholds it does not have were being
+    /// crossed.
+    func setMultiplierColour(_ colour: UIColor) {
+        guard endlessMode == false else { return }
+        multiplierLabel.fontColor = colour
+    }
+
+    /// Pulses the multiplier's label when it changes, in the modes that have a multiplier.
+    ///
+    /// Same reason as the colour: the Max Multiplier and Reset Multiplier power-ups carry no
+    /// weight in endless mode today, and if that ever changed the best height would jump
+    /// about as though it were a multiplier.
+    func animateMultiplierLabel(_ action: SKAction) {
+        guard endlessMode == false else { return }
+        multiplierLabel.run(action, withKey: "multiplierAnimation")
+    }
+
     /// Writes the multiplier into its label, in the modes that have one.
     ///
     /// Endless mode has no multiplier, and its label carries the best height instead. Four
@@ -1838,7 +1859,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
 		showMultiplier()
-		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		// Reset score multiplier
 		
 		if numberOfLives >= 5 {
@@ -2439,11 +2460,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
-		if multiplier >= 2 {
-			multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-		} else {
-			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-		}
+		setMultiplierColour(multiplier >= 2 ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		showMultiplier()
 		// Update score
         
@@ -2634,9 +2651,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if multiplier < Scoring.multiplierCap {
 			multiplier = Scoring.steppedForBonus(multiplier)
-			multiplierLabel.fontColor = Scoring.isAtCap(multiplier)
-				? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-				: #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+			setMultiplierColour(Scoring.isAtCap(multiplier) ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		}
 		
 		levelScore = levelScore + Scoring.award(100, multiplier: multiplier)
@@ -3683,7 +3698,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			multiplier = Scoring.multiplierCap
 			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[12]+=1
-			multiplierLabel.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "multiplierAnimation")
+			animateMultiplierLabel(.sequence([timerScaleUp, timerScaleDown]))
 			// Power up set
 			
 		case powerUpMultiplierReset:
@@ -3693,7 +3708,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			brickRemovalCounter = 0
 			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[13]+=1
-			multiplierLabel.run(SKAction.sequence([pointsScaleDown, timerScaleDown]), withKey: "multiplierAnimation")
+			animateMultiplierLabel(.sequence([pointsScaleDown, timerScaleDown]))
 			
 		case powerUpNextLevel:
         // Next level
@@ -4234,9 +4249,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpsCollectedPerLevel+=1
         levelScore = levelScore + Scoring.award(powerUpScore, multiplier: multiplier)
 		multiplier = Scoring.adjusted(multiplier, by: powerUpMultiplierScore)
-		multiplierLabel.fontColor = Scoring.isAtCap(multiplier)
-			? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-			: #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		setMultiplierColour(Scoring.isAtCap(multiplier) ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		// Ensure multiplier never goes below 1 or above 2
 		if endlessMode == false {
 			scoreLabel.text = String(totalScore + levelScore)
@@ -4309,7 +4322,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Stop all timers and animations
 		powerUpsOnScreen = 0
 		multiplier = Scoring.multiplierBase
-		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
         
 		ball.physicsBody!.linearDamping = ballLinearDampening
 		powerUpLimit = 2

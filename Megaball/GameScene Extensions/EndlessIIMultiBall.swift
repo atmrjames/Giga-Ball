@@ -85,7 +85,9 @@ extension GameScene {
     /// and cannot be shared - and because getting one of these masks wrong gives a ball that
     /// falls through the field rather than one that plays slightly differently.
     func endlessIIBallBody(radius: CGFloat) -> SKPhysicsBody {
-        let body = SKPhysicsBody(circleOfRadius: radius)
+        let body = SKPhysicsBody(circleOfRadius: max(radius, 0.5))
+        // Never zero. A body of no size traps, and this is reached during a resume at launch,
+        // where anything that has not been laid out yet is still reporting nothing
         body.allowsRotation = false
         body.friction = 0.0
         body.affectedByGravity = false
@@ -262,6 +264,14 @@ extension GameScene {
             extra.physicsBody?.velocity = .zero
             endlessIIExtraBalls.append(extra)
             pauseExtraBallVelocities.append(entry.velocity)
+
+            if entry.velocity.dx == 0 && entry.velocity.dy == 0 {
+                endlessIICatchExtraBall(extra)
+            }
+            // A ball with no heading was not travelling when the game was saved, which means
+            // the sticky paddle was holding it. Put back as an ordinary ball it would sit
+            // there for ever with nothing able to launch it, because the queue that launches
+            // held balls would be empty
         }
     }
 

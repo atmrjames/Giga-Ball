@@ -75,11 +75,7 @@ class Paused: GKState {
         scene.userSettings()
         // Set user settings
         
-        if scene.multiplier >= 2 {
-            scene.multiplierLabel.fontColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        } else {
-            scene.multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        }
+        scene.setMultiplierColour(scene.multiplier >= 2 ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
         
         scene.powerUpProbAllocation(levelNumber: scene.levelNumber)
         // Re-check power-up allocation
