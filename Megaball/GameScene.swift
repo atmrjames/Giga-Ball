@@ -634,6 +634,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalCooldown: TimeInterval = 0
 	var endlessIIPendingPortalExit: CGPoint?
 	var endlessIIPortalKeepsHeading = false
+	/// Which ball is waiting to be moved to a portal's exit. Not always the first one.
+	weak var endlessIIPortalTraveller: SKSpriteNode?
 	var endlessIIProgression = EndlessIIProgression.make()
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
@@ -1872,10 +1874,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 secondBody = contact.bodyA
             }
             // Stores the 2 bodies, with the body with the lower category being first
-			
+
+			let struckBall = firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue
+				? (firstBody.node as? SKSpriteNode ?? ball)
+				: ball
+			let struckVelocity = struckBall.physicsBody?.velocity ?? .zero
+			// Which ball this contact is about. With one in play it is always `ball` and
+			// nothing below behaves differently; with more it is the only way to tell.
+			// `xSpeedLive` is sampled from the first ball once a frame, so an extra ball
+			// needs its own velocity rather than that one
+
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
-				
-				frameBallControl(xSpeed: -xSpeedLive)
+
+				frameBallControl(xSpeed: -struckVelocity.dx, for: struckBall)
 
 			}
 			// Ball hits Frame
@@ -1914,7 +1925,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					backstopCatches = 0
 				}
 				
-				ballBackstopHit()
+				ballBackstopHit(struckBall)
 				// Determine ball's angle after hitting backstop to prevent too shallow angle
 				
 				backstopHit = true
@@ -1934,7 +1945,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 				if frameBlockSprite.size.width < frameBlockSprite.size.height {
 				// Ball hits side block
-					frameBallControl(xSpeed: -xSpeedLive)
+					frameBallControl(xSpeed: -struckVelocity.dx, for: struckBall)
 				} else {
 				// Ball hits top block
 					if endlessMode == false {
@@ -1948,13 +1959,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						// Deactivate gravity power-up
 					}
 					
-					if ySpeedLive < 0 {
-						ball.physicsBody!.velocity = CGVector(dx: xSpeedLive, dy: ySpeedLive)
+					if struckVelocity.dy < 0 {
+						struckBall.physicsBody!.velocity = struckVelocity
 					} else {
-						ball.physicsBody!.velocity = CGVector(dx: xSpeedLive, dy: -ySpeedLive)
+						struckBall.physicsBody!.velocity = CGVector(dx: struckVelocity.dx,
+																   dy: -struckVelocity.dy)
 					}
-					let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
-					ballHorizontalControl(angleDegInput: angleDeg)
+					let angleDeg = Double(atan2(Double(struckBall.physicsBody!.velocity.dy), Double(struckBall.physicsBody!.velocity.dx)))/Double.pi*180
+					ballHorizontalControl(angleDegInput: angleDeg, for: struckBall)
 					// Ensure the ySpeed is downwards
 				}
 			}
@@ -1964,19 +1976,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				var brickNodeShare: SKNode?
                 if let brickNode = secondBody.node {
 					let struckSprite = brickNode as! SKSpriteNode
-					let struckSide = EndlessIIImpact.side(ballAt: ball.position,
+					let struckSide = EndlessIIImpact.side(ballAt: struckBall.position,
 														 brickAt: struckSprite.position,
 														 brickSize: struckSprite.size)
 					// Worked out here, where the ball's position is still the one it had on
 					// contact, rather than inside hitBrick which is also reached by lasers
-                    hitBrick(node: brickNode, sprite: struckSprite, hitFrom: struckSide)
+                    hitBrick(node: brickNode, sprite: struckSprite, hitFrom: struckSide,
+							 struckBy: struckBall)
 					brickNodeShare = brickNode
                 }
-				let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
-				
+				let angleDeg = Double(atan2(Double(struckBall.physicsBody!.velocity.dy), Double(struckBall.physicsBody!.velocity.dx)))/Double.pi*180
+
 				if ball.texture != gigaBallTexture {
-					ballHorizontalControl(angleDegInput: angleDeg, brickNode: brickNodeShare)
-					ballVerticalControl(brickNode: brickNodeShare)
+					ballHorizontalControl(angleDegInput: angleDeg, brickNode: brickNodeShare,
+										  for: struckBall)
+					ballVerticalControl(brickNode: brickNodeShare, for: struckBall)
 				}
 				// Only apply ball angle correct when hitting bricks with giga-ball power off
             }
@@ -1993,7 +2007,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 				// Deactivate gravity power-up
 				
-                paddleHit()
+                paddleHit(struckBall)
             }
             // Ball hits Paddle
             
@@ -2122,12 +2136,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gravityActivated = false
 	}
 	
-    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil) {
+    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil, struckBy: SKSpriteNode? = nil) {
 
 		if sprite.endlessIIRole == .portal {
 			laserNode?.removeFromParent()
 			if laserNode == nil {
-				endlessIIEnterPortal(sprite)
+				endlessIIEnterPortal(sprite, entering: struckBy ?? ball)
 			}
 			// A Portal takes the ball somewhere. A laser is not the ball, and firing one into
 			// a Portal teleported the ball from wherever it happened to be - so the jump is
@@ -2539,7 +2553,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // To run once the new row is inserted - slight delay to allow frame to move forward before executing
 	}
 	
-	func ballBackstopHit() {
+	func ballBackstopHit(_ subject: SKSpriteNode? = nil) {
+		let ball = subject ?? self.ball
 		if soundsSetting {
 			self.run(ballPaddleHitSound)
 		}
@@ -2560,27 +2575,39 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Travelling up and left alternative
 		// Prevents the new angle from over correting to a downward angle
-		ballHorizontalControl(angleDegInput: angleDeg)
+		ballHorizontalControl(angleDegInput: angleDeg, for: subject)
 	}
     
-    func paddleHit() {
-		
-		if ballIsOnPaddle {
+    func paddleHit(_ subject: SKSpriteNode? = nil) {
+		let ball = subject ?? self.ball
+		let isExtra = subject != nil && subject !== self.ball
+		let isOnPaddle = isExtra ? false : ballIsOnPaddle
+		// An extra ball is never the one resting on the paddle, and it must not be stopped
+		// from bouncing because the first one is. Shadowing `ball` with the one that was
+		// actually in the contact is what lets the rest of this read unchanged
+
+		if isOnPaddle {
 			return
 		}
-		
+
         if hapticsSetting {
 			lightHaptic.impactOccurred()
 		}
-				
-		setBallStartingPositionY()
-		
+
+		if isExtra == false {
+			setBallStartingPositionY()
+		}
+
 		paddleHitsPerLevel+=1
-		
+
         totalStatsArray[0].ballHits+=1
 		brickBounceCounter = 0
-		ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
-        
+		if isExtra == false {
+			ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
+		}
+		// Where on the paddle the ball sits is about the ball that can be caught, which is
+		// the first one - a Sticky Paddle holds one ball, not whichever arrived last
+
 		let xSpeed = ball.physicsBody!.velocity.dx
 		let ySpeed = ball.physicsBody!.velocity.dy
 		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
@@ -2610,9 +2637,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		
-		if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && collisionPercentage < 1.0 && collisionPercentage > -1.0 && stickyPaddleCatches != 0 {
+		if isExtra == false && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && collisionPercentage < 1.0 && collisionPercentage > -1.0 && stickyPaddleCatches != 0 {
 		// Catch the ball
-		// Only apply if the ball hits the centre of the paddle
+		// Only apply if the ball hits the centre of the paddle.
+		// Never an extra one: the paddle holds a ball and launches it, and holding two would
+		// need a launch each. Sticky is per-ball state that phase 7 does not build (§5.5)
 						
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
@@ -2635,7 +2664,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Don't try to adjust the ball's angle if it is on the paddle
 		}
 		
-		if ballIsOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage < 1.0 && collisionPercentage > -1.0) {
+		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage < 1.0 && collisionPercentage > -1.0) {
 		// Only applies if the ball hits the top surface of the paddle
 			
 			angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
@@ -2652,7 +2681,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Prevents the new angle from over correting to a downward angle
 		}
 
-		if ballIsOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
+		if isOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
 		// Only control the ball's angle if it in the centre of the paddle
 			if ball.position.y > paddle.position.y {
 				ballHorizontalControl(angleDegInput: angleDeg)
@@ -4702,9 +4731,16 @@ laserTimer?.invalidate()
 		brickBounceCounter = 0
 	}
 
-	func ballHorizontalControl(angleDegInput: Double, brickNode: SKNode? = nil) {
-				
-		if (gravityActivated && ball.position.y > paddle.position.y + ballSize*4) || ballIsOnPaddle {
+	func ballHorizontalControl(angleDegInput: Double, brickNode: SKNode? = nil,
+							   for subject: SKSpriteNode? = nil) {
+		let ball = subject ?? self.ball
+		let isExtra = subject != nil && subject !== self.ball
+		let isOnPaddle = isExtra ? false : ballIsOnPaddle
+		// The correction has to act on the ball that was actually in the contact. Shadowing
+		// the property with a local is what lets a hundred lines of arithmetic below stay
+		// exactly as they were and still be about the right ball
+
+		if (gravityActivated && ball.position.y > paddle.position.y + ballSize*4) || isOnPaddle {
 			return
 		}
 		// Do not run ball angle correction if gravity is activated and the ball is above the non-gravity area or ball is on the paddle
@@ -4789,9 +4825,12 @@ laserTimer?.invalidate()
 		}
 	}
 	
-	func ballVerticalControl(brickNode: SKNode? = nil) {
-		
-		if (gravityActivated && ball.position.y > paddle.position.y + ballSize*4) || ballIsOnPaddle {
+	func ballVerticalControl(brickNode: SKNode? = nil, for subject: SKSpriteNode? = nil) {
+		let ball = subject ?? self.ball
+		let isExtra = subject != nil && subject !== self.ball
+		let isOnPaddle = isExtra ? false : ballIsOnPaddle
+
+		if (gravityActivated && ball.position.y > paddle.position.y + ballSize*4) || isOnPaddle {
 			return
 		}
 		// Do not run ball angle correction if gravity is activated and the ball is above the non-gravity area or the ball is on the paddle
@@ -4910,8 +4949,12 @@ laserTimer?.invalidate()
 	}
 	// Set the new speed of the ball and ensure it stays within the boundary
 	
-	func frameBallControl(xSpeed: CGFloat) {
-		if gameState.currentState is Playing && ballIsOnPaddle == false {
+	func frameBallControl(xSpeed: CGFloat, for subject: SKSpriteNode? = nil) {
+		let ball = subject ?? self.ball
+		let isExtra = subject != nil && subject !== self.ball
+		let isOnPaddle = isExtra ? false : ballIsOnPaddle
+
+		if gameState.currentState is Playing && isOnPaddle == false {
 			let ySpeed = ball.physicsBody!.velocity.dy
 			var newXSpeed = xSpeed
 			if (ball.position.x > 0 && xSpeed > 0) || (ball.position.x < 0 && xSpeed < 0) {
@@ -4919,9 +4962,9 @@ laserTimer?.invalidate()
 			}
 			ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: ySpeed)
 			// Ensure the ball bounces off the wall correctly]
-			
+
 			let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180
-			ballHorizontalControl(angleDegInput: angleDeg)
+			ballHorizontalControl(angleDegInput: angleDeg, for: subject)
 		}
 	}
 	

@@ -621,11 +621,14 @@ extension GameScene {
     /// The cooldown is what stops it being a trap: without it a ball arriving at the top
     /// travelling upward would bounce off the ceiling straight back into whatever sent it
     /// there, over and over.
-    func endlessIIEnterPortal(_ brick: SKSpriteNode) {
+    func endlessIIEnterPortal(_ brick: SKSpriteNode, entering traveller: SKSpriteNode? = nil) {
         guard gameMode == .endlessII else { return }
         guard endlessIIPortalCooldown <= 0 else { return }
         endlessIIPortalCooldown = GameScene.endlessIIPortalCooldownSeconds
 
+        let ball = traveller ?? self.ball
+        endlessIIPortalTraveller = ball
+        // The ball that arrived, which with more than one in play is not always the first
         let from = ball.position
         let velocity = ball.physicsBody?.velocity ?? .zero
         let partner = endlessIIPortals().first { $0 !== brick }
@@ -748,6 +751,11 @@ extension GameScene {
     func applyEndlessIIPortalExit() {
         guard let exit = endlessIIPendingPortalExit else { return }
         endlessIIPendingPortalExit = nil
+
+        let ball = endlessIIPortalTraveller ?? self.ball
+        endlessIIPortalTraveller = nil
+        guard ball.parent != nil else { return }
+        // The traveller can be lost between entering a portal and the step finishing
 
         let velocity = ball.physicsBody?.velocity ?? .zero
         ball.position = exit
@@ -896,6 +904,7 @@ extension GameScene {
         endlessIIFallers.removeAll()
         endlessIIPortalCooldown = 0
         endlessIIPendingPortalExit = nil
+        endlessIIPortalTraveller = nil
     }
 }
 

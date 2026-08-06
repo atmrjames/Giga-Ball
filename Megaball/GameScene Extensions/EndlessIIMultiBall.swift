@@ -37,13 +37,14 @@ extension GameScene {
 
     /// Adds a ball, turned away from the one it came from.
     ///
-    /// This is what Multi-Ball will call. **Nothing calls it yet**, deliberately: the contact
-    /// handler still applies every angle correction to `ball` whichever ball was actually in
-    /// the contact, so a second ball would play by the first one's corrections. That is the
-    /// next piece of phase 7 and it has to land before this is offered to a player.
+    /// This is what Multi-Ball will call. Every ball now gets its own contact handling - its
+    /// own wall bounces, paddle angles, brick corrections and portal jumps - so an extra one
+    /// plays exactly as the first does.
     ///
-    /// Until then the collection is inert and the game behaves exactly as it did - which is
-    /// the point of leaving it this way round rather than half-enabling it.
+    /// What is still missing is the drop itself: the power-up weights and the per-power-up
+    /// stats arrays are sized by the number of power-ups and decoded from disk, so adding one
+    /// needs a migration that cannot get a player's existing progress wrong. Until that lands,
+    /// nothing calls this.
     ///
     /// Returns whether one was actually added, so a power-up with nothing to do can say so
     /// rather than being collected for nothing.
