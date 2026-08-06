@@ -935,12 +935,31 @@ of them is in play.
   corrections and portal jumps. Speed, size and texture are shared across the set (§5.5).
 - The drop weight falls to zero while four are in play, so it stops being offered rather than
   being collected for nothing.
-- Sticky Paddle holds the first ball only. Per-ball launch state is listed in §5.5 and is not
-  built.
-
+- **Sticky Paddle holds every ball**, in the order they were caught: one leaves per tap, oldest
+  first, and the first ball waits its turn in the same queue - so a first ball caught last goes
+  last. That is the per-ball launch state §5.5 asked for, for the power-up that exists today;
+  Aimed Sticky will inherit the same queue.
 - The save format carries every ball, so a run paused with four resumes with four (§9.3).
 
+Everything a power-up does reaches every ball. Giga-Ball reached all four textures and one
+physics body, so three of them looked the part and bounced like ordinary balls; the same is
+true of ball size, which is a scale rather than a size and has to be copied as one.
+
 Phase 7 is complete.
+
+**What play-testing found, and what it was.** Recorded because each of these was written when
+there was only ever one ball, and the next thing built on top of the collection will meet the
+same class of bug:
+
+- A bounce off nothing in the gap below the field was the paddle being handed back to a ball
+  still overlapping it. The paddle is taken out of a ball's way while the ball is underneath
+  (so a Backstop can work), and a contact reported in that moment is not a landing.
+- The resume countdown left the other balls running: pausing zeroed the first ball's velocity
+  once per ball in play and left the rest travelling. Every ball now keeps its own heading
+  across the pause and shows its own direction marker while the countdown runs.
+- Losing several balls within a frame or two spent balls that were never in play, and handed
+  the first ball the position of another ball that was itself about to be lost. The handover
+  now takes the highest survivor, and a ball already retired is not counted twice.
 
 **Open, in rough priority order**
 
