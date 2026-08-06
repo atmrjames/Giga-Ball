@@ -25,12 +25,19 @@ extension GameScene {
     /// field does rather than only how one brick behaves.
     static let endlessIIRoleChance = 10
 
+    /// The height from which a Directional brick may face left or right.
+    static let endlessIISideFacingFrom = 200
+    /// And the chance of meeting one before then, because nothing is ever locked out.
+    static let endlessIISideFacingEarlyChance = 8
+
     static let gravityBrickColour = UIColor(red: 0.42, green: 0.66, blue: 1.0, alpha: 1)
     static let movingBrickColour = UIColor(red: 1.0, green: 0.60, blue: 0.15, alpha: 1)
     static let directionalBrickColour = UIColor(red: 0.42, green: 0.42, blue: 0.48, alpha: 1)
     static let explodingBrickColour = UIColor(red: 1.0, green: 0.22, blue: 0.62, alpha: 1)
     static let spawnerBrickColour = UIColor(red: 0.20, green: 0.85, blue: 0.72, alpha: 1)
     static let portalBrickColour = UIColor(red: 0.78, green: 0.55, blue: 1.0, alpha: 1)
+    static let portalEntranceColour = UIColor(red: 0.30, green: 0.68, blue: 1.0, alpha: 1)
+    static let portalExitColour = UIColor(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
 
     private static let glyphName = "endlessIIGlyph"
     /// How fast a Gravity brick falls and a Moving brick wanders, in cells per second.
@@ -206,7 +213,15 @@ extension GameScene {
     /// Drawn dark like an Indestructible brick with the hittable edge picked out bright, so
     /// which side works is read off the brick rather than remembered.
     func makeDirectional(_ brick: SKSpriteNode) {
-        let side: EndlessIISide = [.top, .bottom, .left, .right].randomElement() ?? .bottom
+        // Top and bottom first. The ball spends most of its time travelling up and down, so
+        // a brick that only takes damage from above or below is something a player can solve
+        // by waiting for the right pass. Left and right ask for a specific angle, which is a
+        // much harder shot - so they stay rare until a run is well underway.
+        let sides: [EndlessIISide] = endlessHeight >= GameScene.endlessIISideFacingFrom
+            || Int.random(in: 1...100) <= GameScene.endlessIISideFacingEarlyChance
+            ? [.top, .bottom, .left, .right]
+            : [.top, .bottom]
+        let side: EndlessIISide = sides.randomElement() ?? .bottom
         brick.endlessIIRole = .directional
         brick.endlessIIVulnerableSide = side
         tint(brick, GameScene.directionalBrickColour)
@@ -403,24 +418,32 @@ extension GameScene {
     /// which buys the two rules that matter for free: the hit path already refuses to damage
     /// it, and the bottom-row check already ignores it. A Portal that counted would sit in
     /// the last row forever, waiting to be cleared, and no row would ever be generated again.
-    /// Whether the field already has a Portal on it.
-    ///
-    /// One at a time. Two of them facing each other is a loop the ball can fall into and not
-    /// come out of, and no amount of cooldown fixes a trap that is re-armed every time it
-    /// fires.
-    func endlessIIHasPortal() -> Bool {
-        var found = false
-        enumerateChildNodes(withName: BrickCategoryName) { node, stop in
-            if node.endlessIIRole == .portal {
-                found = true
-                stop.initialize(to: true)
+    /// Every Portal currently on the field, in the order they were made.
+    func endlessIIPortals() -> [SKSpriteNode] {
+        var found: [SKSpriteNode] = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if node.endlessIIRole == .portal, let brick = node as? SKSpriteNode {
+                found.append(brick)
             }
         }
-        return found
+        return found.sorted { $0.endlessIIPortalIsEntrance && $1.endlessIIPortalIsEntrance == false }
+    }
+
+    /// Two at most, and never more.
+    ///
+    /// One on its own sends the ball to the top of the field. Two make a pair - in one, out
+    /// of the other, still travelling the way it was - which is a far better thing to have on
+    /// the field than a lift. Three would be ambiguous about which one the exit is.
+    static let endlessIIMaximumPortals = 2
+
+    func endlessIIHasPortal() -> Bool {
+        endlessIIPortals().count >= GameScene.endlessIIMaximumPortals
     }
 
     func makePortal(_ brick: SKSpriteNode) {
+        let isEntrance = endlessIIPortals().isEmpty
         brick.endlessIIRole = .portal
+        brick.endlessIIPortalIsEntrance = isEntrance
         brick.texture = brickIndestructible2Texture
 
         // Left untinted, unlike every other role here. `colorBlendFactor` colourises a
@@ -437,7 +460,11 @@ extension GameScene {
 
         let glyph = SKShapeNode(path: rings)
         glyph.name = GameScene.glyphName
-        glyph.strokeColor = GameScene.portalBrickColour
+        glyph.strokeColor = isEntrance
+            ? GameScene.portalEntranceColour
+            : GameScene.portalExitColour
+        // Two colours, so which one the ball comes out of is something you can see rather
+        // than something you learn by being surprised
         glyph.fillColor = .clear
         glyph.lineWidth = max(1.5, brick.size.height*0.1)
         glyph.zPosition = 1
@@ -457,10 +484,25 @@ extension GameScene {
         endlessIIPortalCooldown = GameScene.endlessIIPortalCooldownSeconds
 
         let from = ball.position
-        let to = CGPoint(x: ball.position.x,
+        let velocity = ball.physicsBody?.velocity ?? .zero
+        let partner = endlessIIPortals().first { $0 !== brick }
+
+        let to: CGPoint
+        if let partner {
+            // Out of the far one, still travelling the way it was. Pushed clear of the brick
+            // along that heading, or it arrives inside the thing it just came out of
+            let speed = max(1, hypot(velocity.dx, velocity.dy))
+            let clearance = max(brickWidth, brickHeight)/2 + ballSize*1.5
+            to = CGPoint(x: partner.position.x + velocity.dx/speed*clearance,
+                         y: partner.position.y + velocity.dy/speed*clearance)
+        } else {
+            to = CGPoint(x: ball.position.x,
                          y: yBrickOffsetEndless + brickHeight/2 - ballSize)
-        // Just below the top of the playfield, not above it. An earlier version put the ball
-        // inside the top screen block and left the physics to shove it back out
+            // On its own it is a lift to the top of the field. Just below the top, not above
+            // it - an earlier version put the ball inside the top screen block and left the
+            // physics to shove it back out
+        }
+        endlessIIPortalKeepsHeading = partner != nil
 
         endlessIIPendingPortalExit = to
         // Not moved here. This runs from `didBegin`, which SpriteKit calls in the middle of
@@ -471,6 +513,8 @@ extension GameScene {
 
         endlessIIShowPortalJump(from: from, to: to)
         if hapticsSetting { mediumHaptic.impactOccurred() }
+        partner?.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
+                                .fadeAlpha(to: 1, duration: 0.12)]))
 
         brick.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                              .fadeAlpha(to: 1, duration: 0.12)]))
@@ -483,10 +527,16 @@ extension GameScene {
 
         let velocity = ball.physicsBody?.velocity ?? .zero
         ball.position = exit
-        ball.physicsBody?.velocity = CGVector(dx: velocity.dx, dy: -abs(velocity.dy))
-        // Downward, whichever way it was going. Arriving at the top still travelling up only
-        // buys an immediate bounce off the ceiling; sending it down means the jump hands the
-        // player a run back through the whole field, which is the point of going up there
+        if endlessIIPortalKeepsHeading {
+            ball.physicsBody?.velocity = velocity
+            // A pair is a doorway, so what goes in one side comes out of the other going the
+            // same way. Turning it would make the exit unpredictable from the entrance
+        } else {
+            ball.physicsBody?.velocity = CGVector(dx: velocity.dx, dy: -abs(velocity.dy))
+            // A lone Portal is a lift, and arriving at the top still travelling up only buys
+            // an immediate bounce off the ceiling. Sending it down hands the player a run
+            // back through the whole field, which is the point of going up there
+        }
     }
 
     /// Marks both ends of a portal jump.

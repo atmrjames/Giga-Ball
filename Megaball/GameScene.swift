@@ -478,9 +478,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var laserStacks: Int = 0
     static let laserBaseInterval: TimeInterval = 0.25
     static let laserMaxStacks = 2
+    /// The fastest the lasers may ever fire, however much is stacked on them.
+    ///
+    /// Two stacks and a slow ball put this at about a shot every twenty milliseconds, which
+    /// with Giga-Ball on top stopped being powerful and started being a screen-clearing
+    /// button. The floor leaves the first stack worth as much as it ever was and takes most
+    /// of the second one back.
+    static let laserFastestInterval: TimeInterval = 0.11
     var laserInterval: TimeInterval {
         let stacked = GameScene.laserBaseInterval / pow(2, Double(min(laserStacks, GameScene.laserMaxStacks)))
-        return stacked * ballSpeedPowerUpFactor
+        return max(GameScene.laserFastestInterval, stacked * ballSpeedPowerUpFactor)
     }
 
     /// How the ball-speed power-ups lean on everything else that is timed.
@@ -621,6 +628,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
 	var endlessIIPortalCooldown: TimeInterval = 0
 	var endlessIIPendingPortalExit: CGPoint?
+	var endlessIIPortalKeepsHeading = false
 	var endlessIIProgression = EndlessIIProgression.make()
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0

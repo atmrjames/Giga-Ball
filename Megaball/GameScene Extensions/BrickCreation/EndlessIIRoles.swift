@@ -154,6 +154,15 @@ extension SKNode {
         }
     }
 
+    /// Which end of a Portal pair this brick is - the blue one or the yellow one.
+    var endlessIIPortalIsEntrance: Bool {
+        get { userData?["endlessIIPortalEntrance"] as? Bool ?? false }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?["endlessIIPortalEntrance"] = newValue
+        }
+    }
+
     /// The side a Directional brick can be destroyed from.
     var endlessIIVulnerableSide: EndlessIISide? {
         get {

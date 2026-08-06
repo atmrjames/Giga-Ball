@@ -228,7 +228,13 @@ the lowest row. If its support is destroyed, it resumes falling. Falls are anima
 falling into the same column resolve in order.
 
 ### 4.7 Directional
-Destroyed only when struck from one side; other sides bounce without damage. **Drawn as the
+Destroyed only when struck from one side; other sides bounce without damage.
+
+**Top and bottom before left and right.** The ball spends most of its time travelling up and
+down, so a brick that only takes damage from above or below is something the player can solve
+by waiting for the right pass. Left and right ask for a specific angle, which is a much harder
+shot — so those stay rare until a run is well underway, with a small chance of meeting one
+sooner. **Drawn as the
 Indestructible brick with one edge in the standard brick's material**, so the hittable side
 is read from the artwork rather than from a colour.
 
@@ -252,13 +258,28 @@ to Exploding: one clears the field, this one refills it.
 fixed small number, never spawns another Spawner, and only into cells that are already
 empty — so it cannot displace anything or cascade.
 
+### 4.11a Fixed *(proposed, not built)*
+Behaves as an ordinary brick until it is struck once. From then on it stops descending with
+the rest of the field and holds its position, and is destroyed by a second hit. **Bricks that
+descend onto it are destroyed by it**, so leaving one alive carves a channel up through
+everything arriving above it.
+
+The interesting part is that it is the player who decides where the obstacle goes: one hit
+plants it, and where it is planted determines what the next twenty rows do. Needs care over
+what happens when one reaches the bottom row - it cannot be allowed to block generation for
+ever - and over whether a Big or Moving one can be fixed at all.
+
 ### 4.11 Portal
 Struck rather than destroyed. The ball entering one leaves from another Portal brick
 elsewhere in the field, keeping its speed.
 
-**Needs a pairing rule** and an exit direction. Proposed: Portals are placed in pairs, the
-ball leaves the far one travelling in the direction it entered, and a brief cooldown stops
-it re-entering the exit immediately and ping-ponging.
+**Two at most, and they behave differently alone and in a pair.** One on its own is a lift:
+the ball goes to the top of the field and comes back down through everything. A pair is a
+doorway — in the blue one, out of the yellow one, still travelling the way it was, which is
+what makes the exit predictable from the entrance. Three would be ambiguous about which one
+the exit is. A brief cooldown stops the ball re-entering the far end immediately, and the
+ball is pushed clear of the exit along its heading so it does not arrive inside the brick it
+just came out of.
 
 ---
 
