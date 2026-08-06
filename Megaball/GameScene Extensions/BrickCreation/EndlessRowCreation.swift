@@ -621,6 +621,11 @@ extension GameScene {
         if let leftColumn = endlessII.dueAt {
             brickArray.append(endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless))
         }
+
+        if let column = endlessII.powerUpAt,
+           let brick = endlessIIMakePowerUpBrick(column: column, rowY: yBrickOffsetEndless) {
+            brickArray.append(brick)
+        }
         // Appended with the rest so it animates in and is counted like any other brick
 
         let startingScale = SKAction.scale(to: 0.8, duration: 0)

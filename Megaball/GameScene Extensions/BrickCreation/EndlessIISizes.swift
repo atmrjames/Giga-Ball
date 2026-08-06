@@ -128,19 +128,28 @@ extension GameScene {
     /// Returns the columns this row must skip, and the left column of a Big brick that is
     /// now due - which is never the one just reserved, since a row either builds or
     /// reserves, not both.
-    func endlessIIReserveOrBuildBig() -> (skip: Set<Int>, dueAt: Int?, spinAt: Int?) {
-        guard gameMode == .endlessII else { return ([], nil, nil) }
+    func endlessIIReserveOrBuildBig() -> (skip: Set<Int>, dueAt: Int?, spinAt: Int?,
+                                          powerUpAt: Int?) {
+        guard gameMode == .endlessII else { return ([], nil, nil, nil) }
 
         let due = endlessIIPendingBigColumn
         let spinDue = endlessIIPendingSpinColumn
         let clearDue = endlessIIPendingClearColumn
+        let powerUpDue = endlessIIPendingPowerUpColumn
         endlessIIPendingBigColumn = nil
         endlessIIPendingSpinColumn = nil
         endlessIIPendingClearColumn = nil
+        endlessIIPendingPowerUpColumn = nil
 
         if let left = due {
-            return ([left, left + 1], left, nil)
+            return ([left, left + 1], left, nil, nil)
             // Its top half fills these cells here; its bottom half fills the gap below
+        }
+
+        if let column = powerUpDue {
+            return ([column], nil, nil, column)
+            // Two cells tall in one column: this row holds its top, and its bottom fills the
+            // gap the row before left
         }
 
         if let column = spinDue {
@@ -148,29 +157,36 @@ extension GameScene {
             // empty a row ago; the cell above is left empty by the next row.
             endlessIIPendingClearColumn = column
             return (Set([column - 1, column + 1].filter { $0 >= 0 && $0 < numberOfBrickColumns }),
-                    nil, column)
+                    nil, column, nil)
         }
 
         if let column = clearDue {
-            return ([column], nil, nil)
+            return ([column], nil, nil, nil)
             // The cell above a spinner placed a row ago
         }
 
         if Int.random(in: 1...100) <= GameScene.endlessIISpinChance {
             let column = Int.random(in: 0..<max(1, numberOfBrickColumns))
             endlessIIPendingSpinColumn = column
-            return ([column], nil, nil)
+            return ([column], nil, nil, nil)
             // Left empty for the cell below the spinner the next row will place
         }
 
+        if Int.random(in: 1...100) <= GameScene.endlessIIPowerUpBrickChance {
+            let column = Int.random(in: 0..<max(1, numberOfBrickColumns))
+            endlessIIPendingPowerUpColumn = column
+            return ([column], nil, nil, nil)
+            // Left empty for the bottom half of the power-up brick the next row will build
+        }
+
         let bigChance = endlessIIPhase == .giants ? 90 : GameScene.endlessIIBigChance
-        guard Int.random(in: 1...100) <= bigChance else { return ([], nil, nil) }
+        guard Int.random(in: 1...100) <= bigChance else { return ([], nil, nil, nil) }
         let left = Int.random(in: 0..<max(1, numberOfBrickColumns - 1))
         guard EndlessIIBigBrick.fits(leftColumn: left, columns: numberOfBrickColumns) else {
-            return ([], nil, nil)
+            return ([], nil, nil, nil)
         }
         endlessIIPendingBigColumn = left
-        return ([left, left + 1], nil, nil)
+        return ([left, left + 1], nil, nil, nil)
         // Left empty for the brick the next row will build down into
     }
 

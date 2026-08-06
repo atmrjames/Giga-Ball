@@ -277,6 +277,31 @@ explosion, or by Zap, it simply does not hold the field up while it waits.
 set would ever draw the style, and a Big one would wall off two columns at once. Moving and
 Gravity are excluded because one says stay exactly here and the others say do not.
 
+### 4.12 Power-Up brick
+
+A power-up built into the field rather than falling out of it. Breaking it sets it off at once —
+good or bad — through exactly the same path a caught power-up goes through, so every effect,
+timer, icon and conflict rule is the one that already exists.
+
+The point is what that does to a *bad* one. A falling Lose A Ball is avoided by moving the
+paddle, which costs nothing and is not really a decision. One built into the field is a brick
+you have to *not hit*: it is in the way, it is in the middle of the shot you wanted, and leaving
+it there means playing around it until it has descended past you.
+
+**It is never cleared by reaching the bottom.** It carries on down and out, like an
+Indestructible brick, so somebody who spent twenty metres avoiding a bad one is not punished at
+the last moment by the field clearing it for them.
+
+**Two cells tall and one wide**, which on a grid whose cells are twice as wide as they are tall
+makes it square — the shape a power-up already has when it falls. That is the whole reason for
+the shape: it should read as a power-up sitting in the field rather than as a brick with a
+picture on it. It wears the icon of whatever it is holding, and it is built the way a Big brick
+is: the node stays on its row centre and the extra height is an anchor point and an offset body,
+with the row below reserved a row earlier.
+
+**Rare**, and never given a style. It is already saying one thing loudly; a spinning, flashing
+power-up brick would be saying three.
+
 ### 4.11 Portal
 Struck rather than destroyed. The ball entering one leaves from another Portal brick
 elsewhere in the field, keeping its speed.

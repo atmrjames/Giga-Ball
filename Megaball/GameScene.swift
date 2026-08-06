@@ -662,6 +662,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPendingBigColumn: Int?
 	var endlessIIPendingSpinColumn: Int?
 	var endlessIIPendingClearColumn: Int?
+	/// The column a two-cell-tall power-up brick is due to be built in.
+	var endlessIIPendingPowerUpColumn: Int?
 	// A spinning brick needs the cells above, below and either side of it empty, and rows
 	// arrive one at a time, so it takes three of them: leave the cell below, place the
 	// spinner with its sides clear, leave the cell above
@@ -2188,6 +2190,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return
 		}
 		// A Portal is struck rather than damaged, so it never reaches the type switch
+
+		if endlessIITriggerPowerUpBrick(sprite) {
+			stopLaser()
+			if hapticsSetting { lightHaptic.impactOccurred() }
+			countBricks()
+			return
+		}
+		// A power-up brick is spent the moment it breaks, whatever broke it - the ball, a
+		// laser, an explosion. It never reaches the type switch below because it is not a type
 
 		if endlessIIAnchorIfNeeded(sprite) {
 			stopLaser()

@@ -217,7 +217,7 @@ enum BrickTypeCatalogue {
     }
 
     private static var styles: [Entry] {
-        styleOrder.map { style in
+        [powerUpBrick] + styleOrder.map { style in
             Entry(name: name(of: style),
                   description: description(of: style),
                   art: .style(style),
@@ -256,6 +256,22 @@ enum BrickTypeCatalogue {
         case .normal: return "One cell"
         case .big: return "2 × 2 cells"
         }
+    }
+
+    /// The power-up brick, which is its own thing rather than a style or a size.
+    ///
+    /// It is in the Styles section because that is where a player looking for "what was that
+    /// brick" will go, and a fourth section holding one entry would be a heading for its own
+    /// sake.
+    static var powerUpBrick: Entry {
+        Entry(name: "Power-Up",
+              description: "A power-up built into the field rather than falling out of it. Breaking it sets it off at once - good or bad. It is never cleared by reaching the bottom: it carries on down and out, so a bad one is something to play around rather than something to move the paddle away from. Two cells tall and one wide, which makes it square, and it wears the icon of whatever it is holding.",
+              art: .style(.rounded),
+              isNew: true,
+              facts: [Fact(label: "Behaviours", value: "Its own"),
+                      Fact(label: "Sizes", value: "1 × 2 cells"),
+                      Fact(label: "Stacks with", value: "Nothing - on its own"),
+                      Fact(label: "Found in", value: "Endless 2.0")])
     }
 
     private static var sizes: [Entry] {

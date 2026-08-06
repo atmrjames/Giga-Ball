@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF17000000000F1 /* EndlessIIPowerUpBricks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000F0 /* EndlessIIPowerUpBricks.swift */; };
 		1AF17000000000E1 /* PowerUpArrayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000E0 /* PowerUpArrayTests.swift */; };
 		1AF17000000000D1 /* BallBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000D0 /* BallBounceTests.swift */; };
 		1AF17000000000C1 /* BrickSeamBounce.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000C0 /* BrickSeamBounce.swift */; };
@@ -301,6 +302,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF17000000000F0 /* EndlessIIPowerUpBricks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPowerUpBricks.swift; sourceTree = "<group>"; };
 		1AF17000000000E0 /* PowerUpArrayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpArrayTests.swift; sourceTree = "<group>"; };
 		1AF17000000000D0 /* BallBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallBounceTests.swift; sourceTree = "<group>"; };
 		1AF17000000000C0 /* BrickSeamBounce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickSeamBounce.swift; sourceTree = "<group>"; };
@@ -901,6 +903,7 @@
 		1A5BA9B6242707590019FDBB /* BrickCreation */ = {
 			isa = PBXGroup;
 			children = (
+				1AF17000000000F0 /* EndlessIIPowerUpBricks.swift */,
 				1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */,
 				1AE2B3010000000000000302 /* EndlessIIBricks.swift */,
 				1AE2B3010000000000000A02 /* EndlessIIRescue.swift */,
@@ -1400,6 +1403,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF17000000000F1 /* EndlessIIPowerUpBricks.swift in Sources */,
 				1AF17000000000C1 /* BrickSeamBounce.swift in Sources */,
 				1AF17000000000A1 /* EndlessIIClusters.swift in Sources */,
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,

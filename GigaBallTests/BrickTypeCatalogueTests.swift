@@ -71,7 +71,8 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
                        sections.reduce(0) { $0 + $1.entries.count })
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
-                       4 + EndlessIIStyle.allCases.count + BrickSize.allCases.count)
+                       4 + EndlessIIStyle.allCases.count + 1 + BrickSize.allCases.count)
+        // The extra one is the power-up brick, which is neither a style nor a size
     }
 
     func testEveryEntryHasSomethingToSay() {
@@ -89,7 +90,7 @@ final class BrickTypeCatalogueTests: XCTestCase {
     func testTheNewMaterialIsMarkedAsEndlessIIOnly() {
         // §7.3 asks for it, so a player does not go looking for a Portal in a Classic pack
         for entry in BrickTypeCatalogue.sections[1].entries {
-            XCTAssertTrue(entry.isNew, "\(entry.name) is a new style and should say so")
+            XCTAssertTrue(entry.isNew, "\(entry.name) is new and should say so")
         }
         for entry in BrickTypeCatalogue.sections[0].entries {
             XCTAssertFalse(entry.isNew, "\(entry.name) has always been in the game")

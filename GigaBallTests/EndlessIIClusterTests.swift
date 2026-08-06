@@ -9,6 +9,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class EndlessIIClusterTests: XCTestCase {
@@ -165,5 +166,71 @@ final class EndlessIIClusterTests: XCTestCase {
             XCTAssertNotNil(EndlessIICluster.pick(at: height, roll: { Int($0/2) }),
                             "nothing at \(height)m")
         }
+    }
+}
+
+/// The power-up brick: a power-up built into the field rather than falling out of it.
+final class EndlessIIPowerUpBrickTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+    private var plan: EndlessIIPowerUpBrick { EndlessIIPowerUpBrick(cell: cell) }
+
+    func testItIsSquareOnScreen() {
+        // The whole reason for the shape. A cell is twice as wide as it is tall, so one cell
+        // wide and two tall comes out square - which is the shape a power-up already has when
+        // it falls, and what makes this read as a power-up sitting in the field
+        XCTAssertEqual(plan.size.width, plan.size.height, accuracy: 0.0001)
+        XCTAssertEqual(plan.size.width, cell.width, accuracy: 0.0001)
+        XCTAssertEqual(plan.size.height, cell.height*2, accuracy: 0.0001)
+    }
+
+    func testItsNodeSitsOnARowCentreLikeEveryOtherBrick() {
+        // The rule everything in Endless 2.0 bends around: a brick's position.y is its row.
+        // The extra height is expressed as an anchor point, not as a moved node
+        let gameWidth: CGFloat = 440
+        let width = cell.width
+        let ordinary = { (column: Int) in -gameWidth/2 + width/2 + width*CGFloat(column) }
+
+        for column in 0..<11 {
+            XCTAssertEqual(plan.nodeX(column: column, gameWidth: gameWidth),
+                           ordinary(column), accuracy: 0.0001)
+        }
+    }
+
+    func testTheSpriteCoversItsOwnRowAndTheOneBelow() {
+        let rowY: CGFloat = 300
+        let anchor = plan.anchorPoint
+        let drawn = CGRect(x: -anchor.x*plan.size.width, y: rowY - anchor.y*plan.size.height,
+                           width: plan.size.width, height: plan.size.height)
+
+        XCTAssertEqual(drawn.maxY, rowY + cell.height/2, accuracy: 0.0001)
+        XCTAssertEqual(drawn.minY, rowY - cell.height*1.5, accuracy: 0.0001)
+    }
+
+    func testTheBodyIsCentredOnTheSpriteRatherThanTheNode() {
+        // Or it would be solid across the row above and empty across the row below
+        XCTAssertEqual(plan.bodyCentre.y, -cell.height/2, accuracy: 0.0001)
+        XCTAssertEqual(plan.bodyCentre.x, 0, accuracy: 0.0001)
+    }
+
+    func testItOnlyGoesWhereThereIsAColumnForIt() {
+        XCTAssertTrue(EndlessIIPowerUpBrick.fits(column: 0, columns: 11))
+        XCTAssertTrue(EndlessIIPowerUpBrick.fits(column: 10, columns: 11))
+        XCTAssertFalse(EndlessIIPowerUpBrick.fits(column: 11, columns: 11))
+        XCTAssertFalse(EndlessIIPowerUpBrick.fits(column: -1, columns: 11))
+    }
+
+    func testItIsRarerThanTheOtherTwoRowShapes() {
+        // It is a whole power-up sitting in the field, good or bad. One every few screens is
+        // an event; one every screen is a mechanic
+        XCTAssertLessThan(GameScene.endlessIIPowerUpBrickChance, GameScene.endlessIIBigChance)
+        XCTAssertLessThan(GameScene.endlessIIPowerUpBrickChance, GameScene.endlessIISpinChance)
+    }
+
+    func testABrickRemembersWhichPowerUpItHolds() {
+        let brick = SKSpriteNode()
+        XCTAssertNil(brick.endlessIIPowerUpIndex)
+        brick.endlessIIPowerUpIndex = 7
+        XCTAssertEqual(brick.endlessIIPowerUpIndex, 7)
     }
 }
