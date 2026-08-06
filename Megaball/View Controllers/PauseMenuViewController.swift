@@ -66,6 +66,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     @IBOutlet var levelTitleLowerConstraint: NSLayoutConstraint!
     @IBOutlet var levelNameLabelNormalConstraint: NSLayoutConstraint!
     
+    private var heightTallyLink: CADisplayLink?
+    private var heightTallyStartedAt: CFTimeInterval = 0
+    private var heightTallyTarget = 0
+    static let heightTallyDuration: CFTimeInterval = 0.7
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
