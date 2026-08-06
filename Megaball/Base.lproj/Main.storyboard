@@ -2192,6 +2192,198 @@ U N L O C K E D</string>
             </objects>
             <point key="canvasLocation" x="-586" y="127"/>
         </scene>
+        <!--Background Select View Controller-->
+        <scene sceneID="Bgs-ce-ne1">
+            <objects>
+                <viewController storyboardIdentifier="backgroundSelectView" id="Bgs-vc-001" customClass="BackgroundSelectViewController" customModule="Giga_Ball" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Bgs-bv-002" userLabel="Background View">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-cv-003" userLabel="Content View">
+                                <rect key="frame" x="0.0" y="96" width="414" height="704"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BACKGROUND" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-tl-004">
+                                        <rect key="frame" x="20" y="20" width="374" height="52"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="52" id="Bgs-tl-c01"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" weight="black" pointSize="35"/>
+                                        <color key="textColor" red="0.82352941176470584" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <collectionView clipsSubviews="NO" multipleTouchEnabled="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-mc-005">
+                                        <rect key="frame" x="0.0" y="82" width="414" height="450"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <collectionViewFlowLayout key="collectionViewLayout" scrollDirection="horizontal" minimumLineSpacing="14" minimumInteritemSpacing="0.0" id="Bgs-mc-fl1">
+                                            <size key="itemSize" width="280" height="450"/>
+                                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                            <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                        </collectionViewFlowLayout>
+                                        <cells/>
+                                    </collectionView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Classic" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-nl-006">
+                                        <rect key="frame" x="20" y="548" width="374" height="29"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="29" id="Bgs-nl-c01"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" weight="black" pointSize="24"/>
+                                        <color key="textColor" red="0.82352941176470584" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="The original artwork, as the game has always looked" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-sl-007">
+                                        <rect key="frame" x="20" y="585" width="374" height="40"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="40" id="Bgs-sl-c01"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="15"/>
+                                        <color key="textColor" red="0.87058823529999996" green="0.87058823529999996" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <pageControl opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-pc-008">
+                                        <rect key="frame" x="157" y="629" width="100" height="26"/>
+                                        <color key="pageIndicatorTintColor" white="1" alpha="0.25" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="currentPageIndicatorTintColor" red="0.82352941176470584" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                    </pageControl>
+                                    <collectionView delaysContentTouches="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" bounces="NO" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="Bgs-bb-009">
+                                        <rect key="frame" x="20" y="634" width="50" height="50"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="Bgs-bb-009" secondAttribute="height" multiplier="1:1" id="Bgs-bb-c01"/>
+                                            <constraint firstAttribute="width" constant="50" id="Bgs-bb-c02"/>
+                                        </constraints>
+                                        <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="0.0" minimumInteritemSpacing="0.0" id="Bgs-bb-fl1">
+                                            <size key="itemSize" width="50" height="50"/>
+                                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                            <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                        </collectionViewFlowLayout>
+                                        <cells/>
+                                    </collectionView>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstItem="Bgs-tl-004" firstAttribute="top" secondItem="Bgs-cv-003" secondAttribute="top" constant="20" id="Bgs-ct-001"/>
+                                    <constraint firstItem="Bgs-tl-004" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-002"/>
+                                    <constraint firstItem="Bgs-tl-004" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-003"/>
+                                    <constraint firstItem="Bgs-mc-005" firstAttribute="top" secondItem="Bgs-tl-004" secondAttribute="bottom" constant="10" id="Bgs-ct-004"/>
+                                    <constraint firstItem="Bgs-mc-005" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" id="Bgs-ct-005"/>
+                                    <constraint firstAttribute="trailing" secondItem="Bgs-mc-005" secondAttribute="trailing" id="Bgs-ct-006"/>
+                                    <constraint firstItem="Bgs-nl-006" firstAttribute="top" secondItem="Bgs-mc-005" secondAttribute="bottom" constant="16" id="Bgs-ct-007"/>
+                                    <constraint firstItem="Bgs-nl-006" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-008"/>
+                                    <constraint firstItem="Bgs-nl-006" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-009"/>
+                                    <constraint firstItem="Bgs-sl-007" firstAttribute="top" secondItem="Bgs-nl-006" secondAttribute="bottom" constant="8" id="Bgs-ct-010"/>
+                                    <constraint firstItem="Bgs-sl-007" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-011"/>
+                                    <constraint firstItem="Bgs-sl-007" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-012"/>
+                                    <constraint firstItem="Bgs-pc-008" firstAttribute="top" secondItem="Bgs-sl-007" secondAttribute="bottom" constant="8" id="Bgs-ct-013"/>
+                                    <constraint firstItem="Bgs-pc-008" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-014"/>
+                                    <constraint firstItem="Bgs-bb-009" firstAttribute="top" secondItem="Bgs-pc-008" secondAttribute="bottom" constant="12" id="Bgs-ct-015"/>
+                                    <constraint firstItem="Bgs-bb-009" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-016"/>
+                                    <constraint firstAttribute="bottom" secondItem="Bgs-bb-009" secondAttribute="bottom" constant="20" id="Bgs-ct-017"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Bgs-sa-010"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="Bgs-cv-003" firstAttribute="top" secondItem="Bgs-sa-010" secondAttribute="top" id="Bgs-vt-001"/>
+                            <constraint firstItem="Bgs-cv-003" firstAttribute="leading" secondItem="Bgs-sa-010" secondAttribute="leading" id="Bgs-vt-002"/>
+                            <constraint firstItem="Bgs-sa-010" firstAttribute="trailing" secondItem="Bgs-cv-003" secondAttribute="trailing" id="Bgs-vt-003"/>
+                            <constraint firstItem="Bgs-sa-010" firstAttribute="bottom" secondItem="Bgs-cv-003" secondAttribute="bottom" id="Bgs-vt-004"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="backButtonCollectionView" destination="Bgs-bb-009" id="Bgs-ou-001"/>
+                        <outlet property="backgroundView" destination="Bgs-bv-002" id="Bgs-ou-002"/>
+                        <outlet property="contentView" destination="Bgs-cv-003" id="Bgs-ou-003"/>
+                        <outlet property="mockCollectionView" destination="Bgs-mc-005" id="Bgs-ou-004"/>
+                        <outlet property="nameLabel" destination="Bgs-nl-006" id="Bgs-ou-005"/>
+                        <outlet property="pageControl" destination="Bgs-pc-008" id="Bgs-ou-006"/>
+                        <outlet property="summaryLabel" destination="Bgs-sl-007" id="Bgs-ou-007"/>
+                        <outlet property="titleLabel" destination="Bgs-tl-004" id="Bgs-ou-008"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Bgs-fr-011" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2600" y="-4101"/>
+        </scene>
+        <!--Brick Types View Controller-->
+        <scene sceneID="Brk-sc-ene">
+            <objects>
+                <viewController storyboardIdentifier="brickTypesView" id="Brk-vc-001" customClass="BrickTypesViewController" customModule="Giga_Ball" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" restorationIdentifier="brickTypesView" id="Brk-bv-002" userLabel="Background View">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Brk-iv-003" userLabel="Items View">
+                                <rect key="frame" x="0.0" y="96" width="414" height="704"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BRICK TYPES" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="12" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Brk-tl-004">
+                                        <rect key="frame" x="20" y="20" width="374" height="52"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="52" id="Brk-tl-c01"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" weight="black" pointSize="35"/>
+                                        <color key="textColor" red="0.82352941176470584" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <tableView delaysContentTouches="NO" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" style="grouped" separatorStyle="none" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="34" sectionFooterHeight="0.0" translatesAutoresizingMaskIntoConstraints="NO" id="Brk-tv-005" customClass="ContentAwareTableView" customModule="Giga_Ball" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="77" width="414" height="549"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="sectionIndexBackgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </tableView>
+                                    <collectionView delaysContentTouches="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" bounces="NO" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="Brk-bb-006">
+                                        <rect key="frame" x="20" y="635" width="50" height="49"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="Brk-bb-006" secondAttribute="height" multiplier="1:1" constant="1" id="Brk-bb-c01"/>
+                                            <constraint firstAttribute="width" constant="50" id="Brk-bb-c02"/>
+                                        </constraints>
+                                        <collectionViewFlowLayout key="collectionViewLayout" automaticEstimatedItemSize="YES" minimumLineSpacing="0.0" minimumInteritemSpacing="0.0" id="Brk-bb-fl1">
+                                            <size key="itemSize" width="50" height="50"/>
+                                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                            <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                        </collectionViewFlowLayout>
+                                        <cells/>
+                                    </collectionView>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstItem="Brk-tl-004" firstAttribute="top" secondItem="Brk-iv-003" secondAttribute="top" constant="20" id="Brk-ct-001"/>
+                                    <constraint firstItem="Brk-tl-004" firstAttribute="leading" secondItem="Brk-iv-003" secondAttribute="leading" constant="20" id="Brk-ct-002"/>
+                                    <constraint firstItem="Brk-tl-004" firstAttribute="centerX" secondItem="Brk-iv-003" secondAttribute="centerX" id="Brk-ct-003"/>
+                                    <constraint firstItem="Brk-tv-005" firstAttribute="top" secondItem="Brk-tl-004" secondAttribute="bottom" constant="5" id="Brk-ct-004"/>
+                                    <constraint firstItem="Brk-tv-005" firstAttribute="leading" secondItem="Brk-iv-003" secondAttribute="leading" id="Brk-ct-005"/>
+                                    <constraint firstAttribute="trailing" secondItem="Brk-tv-005" secondAttribute="trailing" id="Brk-ct-006"/>
+                                    <constraint firstItem="Brk-bb-006" firstAttribute="top" secondItem="Brk-tv-005" secondAttribute="bottom" constant="20" id="Brk-ct-007"/>
+                                    <constraint firstItem="Brk-bb-006" firstAttribute="leading" secondItem="Brk-iv-003" secondAttribute="leading" constant="20" id="Brk-ct-008"/>
+                                    <constraint firstAttribute="bottom" secondItem="Brk-bb-006" secondAttribute="bottom" constant="20" id="Brk-ct-009"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Brk-sa-007"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="Brk-iv-003" firstAttribute="top" secondItem="Brk-sa-007" secondAttribute="top" id="Brk-vt-001"/>
+                            <constraint firstItem="Brk-iv-003" firstAttribute="leading" secondItem="Brk-sa-007" secondAttribute="leading" id="Brk-vt-002"/>
+                            <constraint firstItem="Brk-sa-007" firstAttribute="trailing" secondItem="Brk-iv-003" secondAttribute="trailing" id="Brk-vt-003"/>
+                            <constraint firstItem="Brk-sa-007" firstAttribute="bottom" secondItem="Brk-iv-003" secondAttribute="bottom" id="Brk-vt-004"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="backButtonCollectionView" destination="Brk-bb-006" id="Brk-ou-001"/>
+                        <outlet property="backgroundView" destination="Brk-bv-002" id="Brk-ou-002"/>
+                        <outlet property="itemsTableView" destination="Brk-tv-005" id="Brk-ou-003"/>
+                        <outlet property="itemsView" destination="Brk-iv-003" id="Brk-ou-004"/>
+                        <outlet property="titleLabel" destination="Brk-tl-004" id="Brk-ou-005"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Brk-fr-008" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="3300" y="-4101"/>
+        </scene>
     </scenes>
     <resources>
         <image name="Logo" width="1024" height="153"/>

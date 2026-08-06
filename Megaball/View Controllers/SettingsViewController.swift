@@ -257,7 +257,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Game Background"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconBackground.png")!
-                cell.settingState.text = LevelPackSetup().backgroundNameArray[backgroundSetting]
+                cell.settingState.text = GameBackground.stored(backgroundSetting).name
                 cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             case 6:
             // Parallax
@@ -397,14 +397,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 defaults.set(hapticsSetting, forKey: "hapticsSetting")
             case 5:
             // Game background
-                backgroundSetting = backgroundSetting + 1
-                if backgroundSetting >= LevelPackSetup().backgroundNameArray.count {
-                    backgroundSetting = 0
-                }
-                defaults.set(backgroundSetting, forKey: "backgroundSetting")
-                NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
-                // The scene is live behind the pause menu, so it repaints rather than
-                // waiting for the next level
+                hideAnimate()
+                moveToBackgroundSelect()
+                // The row used to cycle to the next background on each tap. Three of the four
+                // are shades of the same purple, so the name it left behind said nothing about
+                // what had been chosen - the picker shows the scene in each of them instead
             case 6:
             // Parallax
                 parallaxSetting = !parallaxSetting
@@ -471,6 +468,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         itemsDetailView.view.frame = self.view.frame
         self.view.addSubview(itemsDetailView.view)
         itemsDetailView.didMove(toParent: self)
+    }
+
+    func moveToBackgroundSelect() {
+        let backgroundSelectView = self.storyboard?.instantiateViewController(withIdentifier: "backgroundSelectView") as! BackgroundSelectViewController
+        self.addChild(backgroundSelectView)
+        backgroundSelectView.view.frame = self.view.frame
+        self.view.addSubview(backgroundSelectView.view)
+        backgroundSelectView.didMove(toParent: self)
     }
     
     func hideAnimate() {

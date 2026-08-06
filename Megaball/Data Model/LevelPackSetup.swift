@@ -113,12 +113,12 @@ class LevelPackSetup {
         UIImage(named:"retroBrickNormal.png")!
     ]
     
-    /// The game scene backgrounds, in the order the setting cycles them.
+    /// The game scene backgrounds, in the order the setting stores them.
     ///
-    /// Only Classic is an image. The rest are drawn at runtime from the colour sampled
-    /// off the top of that image, so they sit at whatever size the playfield is rather
-    /// than needing an asset per device.
-    let backgroundNameArray: [String] = ["Classic", "Solid", "Gradient", "Black"]
+    /// Read off `GameBackground` rather than written out again here. What a background is,
+    /// what it is called and how it is painted are one fact, and the selection screen, the
+    /// settings row and the scene all have to agree on it.
+    let backgroundNameArray: [String] = GameBackground.allCases.map(\.name)
 
     let appIconNameArray: [String] = [
         "Purple",

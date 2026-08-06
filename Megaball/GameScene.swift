@@ -4229,10 +4229,12 @@ laserTimer?.invalidate()
     }
     // Function to return to the MainViewController from the GameViewController, run as a delegate from GameViewController
 	
-	static let playRatio: CGFloat = 1.8236
-	// Play height : play width. Measured from the shipping build and held constant on
-	// every device so the game plays identically across a player's devices.
-	static let hudUnits: CGFloat = 5.5
+	// The playfield's proportions live in `GameSceneLayout`, which works them out for any
+	// screen without needing a scene - the background selection screen draws a scale model
+	// of this one and has to get the same answers. These are the names the scene has always
+	// used for them.
+	static let playRatio = GameSceneLayout.playRatio
+	static let hudUnits = GameSceneLayout.hudUnits
 	/// The same bar in Endless 2.0, which does not carry the eight-slot tray.
 	///
 	/// The rings show only what is running, and carry their timers around the icons rather
@@ -4244,17 +4246,14 @@ laserTimer?.invalidate()
 	/// fit in is `layoutUnit*(hudUnits - 2)` and the rings need `layoutUnit*1.5 + 16`, and
 	/// the 16 is fixed padding that does not shrink with the unit - so on a large phone 4.3
 	/// came up 0.2pt short and the container crossed the top of the field.
-	static let endlessIIHudUnits: CGFloat = 4.7
-	// The HUD row (2 units), the power-up tray (3 units) and the spacing between them,
-	// in layout units. Must cover everything stacked below the safe area inset, or the
-	// tray overhangs into the playfield
+	static let endlessIIHudUnits = GameSceneLayout.endlessIIHudUnits
 
-	static let hudTopClearance: CGFloat = 20
+	static let hudTopClearance = GameSceneLayout.hudTopClearance
 	/// How solid each wall is, when the border it fills is thinner than this.
 	///
 	/// Costs nothing on screen - the surplus is off the edge - and it means the play area
 	/// never has to leave a margin behind just to keep its walls.
-	static let minimumWallThickness: CGFloat = 20
+	static let minimumWallThickness = GameSceneLayout.minimumWallThickness
 	// Clearance from the physical top edge to the HUD, in points, used instead of
 	// safeAreaInsets.top.
 	//
@@ -4540,12 +4539,12 @@ laserTimer?.invalidate()
 
 	func computeLayoutMetrics() {
 		let insets = self.view?.safeAreaInsets ?? .zero
-		let availableHeight = frame.size.height - GameScene.hudTopClearance - insets.bottom
-		let availableWidth = frame.size.width - insets.left - insets.right
-
 		let hudUnits = gameMode == .endlessII ? GameScene.endlessIIHudUnits : GameScene.hudUnits
-		gameWidth = (availableHeight / (1 + hudUnits / (CGFloat(22) * GameScene.playRatio))) / GameScene.playRatio
-		gameWidth = min(gameWidth, availableWidth)
+		let layout = GameSceneLayout(screen: frame.size,
+									 bottomInset: insets.bottom,
+									 sideInsets: insets.left + insets.right,
+									 hudUnits: hudUnits)
+		gameWidth = layout.gameWidth
 		// Play area sized from the space actually available, holding a fixed ratio.
 		//
 		// The border is not decoration - the side blocks are the walls the ball bounces off,
@@ -4556,19 +4555,19 @@ laserTimer?.invalidate()
 		// than a reshaped playfield. Solved in closed form because the top bar height
 		// depends on layoutUnit, which depends on gameWidth, which depends on it
 
-		screenBlockSideWidth = (frame.size.width - gameWidth)/2
+		screenBlockSideWidth = layout.borderWidth
 
-		numberOfBrickRows = 22
-		numberOfBrickColumns = numberOfBrickRows/2
-		layoutUnit = (gameWidth)/CGFloat(numberOfBrickRows)
-		brickWidth = layoutUnit*2
-		brickHeight = layoutUnit
-		paddleGap = layoutUnit*7
+		numberOfBrickRows = GameSceneLayout.brickRows
+		numberOfBrickColumns = GameSceneLayout.brickColumns
+		layoutUnit = layout.layoutUnit
+		brickWidth = layout.brickWidth
+		brickHeight = layout.brickHeight
+		paddleGap = layout.paddleGap
 
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
 		fontSize = 16
-		screenBlockTopHeight = GameScene.hudTopClearance + layoutUnit*hudUnits
+		screenBlockTopHeight = layout.topBarHeight
 		// The bar is the HUD and power-up tray, sitting below the real inset rather than
 		// a fixed multiple guessed from screen height
 
@@ -5586,19 +5585,18 @@ laserTimer?.invalidate()
 										  userInfo: nil, repeats: true)
 	}
 
-	/// The purple at the top of the Classic background, which the drawn backgrounds match.
-	static let backgroundPurple = UIColor(red: 22/255, green: 0, blue: 32/255, alpha: 1)
-	/// The side borders' purple, which the gradient starts from.
-	static let borderPurple = UIColor(red: 41/255, green: 0, blue: 60/255, alpha: 1)
-
 	/// Paints the playfield background from the setting.
 	///
 	/// Classic is the artwork on the scene's own background node. The other three are
 	/// drawn onto a sprite created here instead, sitting just above it - assigning a new
 	/// texture to the node the scene file owns does not take, though clearing it does,
 	/// and a node we make ourselves avoids the question entirely.
+	///
+	/// What each background *is* lives in `GameBackground`, because the selection screen
+	/// draws the same four in miniature and a picker that paints them differently from the
+	/// game is worse than no picker at all.
 	func applyBackgroundSetting() {
-		let setting = defaults.integer(forKey: "backgroundSetting")
+		let setting = GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))
 
 		let overlay = backgroundOverlay ?? {
 			let node = SKSpriteNode()
@@ -5612,57 +5610,35 @@ laserTimer?.invalidate()
 		overlay.size = background.size
 		overlay.position = background.position
 
-		switch setting {
-		case 1:
+		switch setting.paint {
+		case .artwork:
+			overlay.isHidden = true
+		case .solid(let colour):
 			overlay.isHidden = false
 			overlay.texture = nil
-			overlay.color = GameScene.backgroundPurple
+			overlay.color = colour
 			overlay.colorBlendFactor = 1
-		case 2:
+		case .gradient:
 			overlay.isHidden = false
 			overlay.colorBlendFactor = 0
 			overlay.color = .clear
 			overlay.texture = gradientBackgroundTexture(size: overlay.size)
-		case 3:
-			overlay.isHidden = false
-			overlay.texture = nil
-			overlay.color = .black
-			overlay.colorBlendFactor = 1
-		default:
-			overlay.isHidden = true
 		}
-		background.isHidden = setting != 0
+		background.isHidden = setting != .classic
 	}
 
 	/// The borders' purple at the top, the Classic background's purple by the paddle, then
 	/// away to near black at the bottom of the playfield.
-	///
-	/// Two fades rather than one. The upper half lifts the brick field slightly and ties
-	/// it to the side borders, and only below the paddle does it fall away - which is how
-	/// the Classic artwork reads.
 	func gradientBackgroundTexture(size: CGSize) -> SKTexture? {
 		guard size.width > 0, size.height > 0 else { return nil }
 
 		// Where the paddle sits within the background, measured from its bottom.
 		let bottom = background.frame.minY
-		let paddleFraction = min(max((paddlePositionY - bottom)/size.height, 0), 1)
+		let paddleFraction = (paddlePositionY - bottom)/size.height
 
-		let renderer = UIGraphicsImageRenderer(size: size)
-		let image = renderer.image { context in
-			let colours = [GameScene.borderPurple.cgColor,
-						   GameScene.backgroundPurple.cgColor,
-						   UIColor(red: 2/255, green: 0, blue: 3/255, alpha: 1).cgColor]
-			// UIKit's y runs down the image, so the paddle's fraction is measured from
-			// the top here rather than from the bottom.
-			let stops: [CGFloat] = [0, 1 - paddleFraction, 1]
-			guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-											colors: colours as CFArray,
-											locations: stops) else { return }
-			context.cgContext.drawLinearGradient(
-				gradient,
-				start: CGPoint(x: 0, y: 0),
-				end: CGPoint(x: 0, y: size.height),
-				options: [])
+		guard let image = GameBackground.gradientImage(size: size,
+													   paddleFraction: paddleFraction) else {
+			return nil
 		}
 		return SKTexture(image: image)
 	}

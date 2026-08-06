@@ -78,7 +78,26 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
 
+    /// What `sender` is set to when this screen is showing a brick type.
+    ///
+    /// The brick types page reuses this screen rather than growing one of its own: an icon, a
+    /// name, a description and a short list of facts is exactly what it already draws, and a
+    /// second copy of it would be a second copy to keep looking the same.
+    static let brickTypesSender = "Brick Types"
+
+    private var brickTypeEntry: BrickTypeCatalogue.Entry? {
+        guard sender == ItemsStatsViewController.brickTypesSender, let index = passedIndex else {
+            return nil
+        }
+        let entries = BrickTypeCatalogue.allEntries
+        guard entries.indices.contains(index) else { return nil }
+        return entries[index]
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if let entry = brickTypeEntry {
+            return entry.facts.count
+        }
         if sender == "Power-Ups" {
             return 5
         } else {
@@ -90,7 +109,21 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         
         statsTableView.rowHeight = 35.0
-        
+
+        if let entry = brickTypeEntry {
+            let fact = entry.facts[indexPath.row]
+            cell.statDescription.text = fact.label
+            cell.statValue.text = fact.value
+
+            // These values are sentences where a power-up's are numbers, and the two labels
+            // share the row's width - a long one pushed its own label out of the row and left
+            // a stat with no name on it
+            cell.statDescription.setContentCompressionResistancePriority(.required, for: .horizontal)
+            cell.statValue.adjustsFontSizeToFitWidth = true
+            cell.statValue.minimumScaleFactor = 0.6
+            return cell
+        }
+
         if sender == "Power-Ups" {
             switch indexPath.row {
             case 0:
@@ -289,7 +322,18 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     func updateLabels() {
-        
+
+        if let entry = brickTypeEntry {
+            titleLabel.text = entry.name.uppercased()
+            powerUpImage.image = BrickTypeIcons.image(for: entry.art)
+            descriptionLabel.text = entry.description
+            powerUpImage.layer.masksToBounds = false
+            return
+            // No shadow. The power-up icons are rounded squares that sit on the background,
+            // and a shadow lifts them off it; a brick is drawn with room around it, so the
+            // same shadow lands under nothing
+        }
+
         if sender == "Power-Ups" {
             titleLabel.text = LevelPackSetup().powerUpNameArray[passedIndex!].uppercased()
             powerUpImage.image = LevelPackSetup().powerUpImageArray[passedIndex!]

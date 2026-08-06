@@ -96,12 +96,13 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     /// cell still takes up a row, so there was a gap between Quick Start Guide and the
     /// SoundCloud link. Rows that are not offered are now simply not in the list.
     enum InfoRow {
-        case powerUps, achievements, statistics, gameCenter, quickStart, soundCloud
+        case powerUps, brickTypes, achievements, statistics, gameCenter, quickStart, soundCloud
         case rate, share, about
 
         var title: String {
             switch self {
             case .powerUps: return "Power-Ups"
+            case .brickTypes: return "Brick Types"
             case .achievements: return "Achievements"
             case .statistics: return "Statistics"
             case .gameCenter: return "Game Center"
@@ -116,6 +117,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         var iconName: String {
             switch self {
             case .powerUps: return "iconPowerUp.png"
+            case .brickTypes: return "iconBricks.png"
             case .achievements: return "iconAchievements.png"
             case .statistics: return "iconStats.png"
             case .gameCenter: return "iconGameCenter.png"
@@ -129,7 +131,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
 
     var infoRows: [InfoRow] {
-        var rows: [InfoRow] = [.powerUps, .achievements, .statistics]
+        var rows: [InfoRow] = [.powerUps, .brickTypes, .achievements, .statistics]
         if gameCenterSetting { rows.append(.gameCenter) }
         rows += [.quickStart, .soundCloud, .rate, .share, .about]
         return rows
@@ -170,6 +172,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         switch infoRows[indexPath.row] {
         case .powerUps:
             moveToItemDetails(senderID: 2)
+        case .brickTypes:
+            moveToBrickTypes()
         case .achievements:
             moveToItemDetails(senderID: 3)
         case .statistics:
@@ -428,6 +432,15 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         itemsDetailView.didMove(toParent: self)
     }
     
+    func moveToBrickTypes() {
+        hideAnimate()
+        let brickTypesView = self.storyboard?.instantiateViewController(withIdentifier: "brickTypesView") as! BrickTypesViewController
+        self.addChild(brickTypesView)
+        brickTypesView.view.frame = self.view.frame
+        self.view.addSubview(brickTypesView.view)
+        brickTypesView.didMove(toParent: self)
+    }
+
     func moveToAbout() {
         hideAnimate()
         let aboutView = self.storyboard?.instantiateViewController(withIdentifier: "aboutVC") as! AboutViewController

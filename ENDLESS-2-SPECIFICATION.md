@@ -758,16 +758,29 @@ reaching before judging whether the whole idea works.
 Phases 1 to 6 are built. Everything below is what remains, in the order it is worth doing —
 all of it presentation and reference material rather than mechanics.
 
-**Next up:** the background selection screen and the brick types page — both new UI, and the
-last things before phase 7.
+**Built since:** the background selection screen and the brick types page. Both are new UI
+rather than mechanics.
+
+- **Background selection.** The settings row opened nothing and cycled a name; three of the
+  four backgrounds are shades of the same purple, so the name said nothing about what had been
+  chosen. It now opens a screen that swipes between scale models of the game scene, one per
+  background, drawn at the device's own proportions. What a background *is* moved to
+  `GameBackground` and the playfield's proportions to `GameSceneLayout`, so the model and the
+  scene cannot disagree — the layout maths the scene has always used now has a home that can
+  be tested, and the 1.8236 ratio is asserted across a spread of screens.
+- **Brick types page.** A reference page in the shape of the power-ups one, with sections for
+  the five behaviours, the ten styles and the three sizes. The compatibility lines are derived
+  from `EndlessIIStyle` rather than written out, so the page cannot fall behind the game; the
+  icons reproduce the placeholder look described in §8.5 deliberately, and this is where the
+  page will start using the real artwork when it exists.
+
+**Next up:** phase 7, Multi-Ball.
 
 **Open, in rough priority order**
 
 | Item | Notes |
 |---|---|
 | Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
-| Background selection screen | Rather than a name on a cell, a screen showing a game-scene mock-up that can be swiped between |
-| Brick types menu page | A reference page like the power-ups one, covering behaviours, styles and sizes |
 | New power-ups on the existing power-ups page | Waits until the new power-ups are actually implemented, so the page is written against what exists |
 
 **Backlogged**

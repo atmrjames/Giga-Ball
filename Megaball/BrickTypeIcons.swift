@@ -1,0 +1,307 @@
+//
+//  BrickTypeIcons.swift
+//  Megaball
+//
+//  Pictures of bricks for the reference page.
+//
+//  Everything new in Endless 2.0 is wearing a placeholder - an ordinary brick tinted a colour
+//  nothing else uses, with a shape drawn over it saying what it does (§8.5). The reference page
+//  wears the same placeholders, deliberately. A page showing finished artwork for a brick the
+//  player meets as a tinted rectangle would be a page that makes bricks harder to recognise
+//  rather than easier, and the artwork is last on the list precisely because these have already
+//  changed shape twice.
+//
+//  So the colours and the glyph geometry here are the ones in `EndlessIIBehaviourBricks`,
+//  read from the same constants where they are constants. When the real artwork arrives this
+//  file is where the page starts using it.
+//
+
+import UIKit
+
+enum BrickTypeIcons {
+
+    /// The size every icon is drawn at.
+    ///
+    /// Wider than it is tall, because a brick is - drawing one into a square canvas and
+    /// letting the row's image view fit it would waste half the height it has to play with,
+    /// and the icons are only 40 points across to begin with. Not the brick's own 2:1 either,
+    /// since a Big brick and a turning one both need room around them.
+    static let canvas = CGSize(width: 120, height: 80)
+
+    /// A brick that is the subject of its own picture, filling what the canvas will give it.
+    private static let feature = CGSize(width: 104, height: 52)
+
+    /// One ordinary cell, for the size pictures - where the whole point is how the three
+    /// compare, so a Big one has to be drawn twice the size rather than fitted to the frame.
+    private static let cell = CGSize(width: 52, height: 26)
+
+    /// The turning brick, which has to fit its own swept circle rather than the canvas.
+    private static let spinning = CGSize(width: 84, height: 42)
+
+    static func image(for art: BrickTypeArt) -> UIImage {
+        UIGraphicsImageRenderer(size: canvas).image { context in
+            let cgContext = context.cgContext
+            switch art {
+            case .behaviour(let behaviour):
+                draw(behaviour, in: cgContext)
+            case .style(let style):
+                draw(style, in: cgContext)
+            case .size(let size):
+                draw(size, in: cgContext)
+            }
+        }
+    }
+
+    // MARK: - Behaviours
+
+    private static func draw(_ behaviour: EndlessIIBehaviour, in context: CGContext) {
+        let frame = centred(feature)
+        switch behaviour {
+        case .standard:
+            // Standard bricks carry a colour, and the colour is the point of them, so the
+            // picture has to have one. Green because it is the one the field opens with
+            artwork("BrickNormal")?.tinted(standardColour).draw(in: frame)
+        case .multiHit:
+            artwork("BrickMultiHit3")?.draw(in: frame)
+        case .indestructibleOnce:
+            artwork("BrickIndestructible1")?.draw(in: frame)
+        case .indestructibleAlways:
+            artwork("BrickIndestructible2")?.draw(in: frame)
+        case .invisible:
+            // Drawn as it looks once it has been struck, faded, because a picture of a brick
+            // that is not drawn is an empty square
+            artwork("BrickInvisible")?.draw(in: frame, blendMode: .normal, alpha: 0.5)
+            outline(frame, in: context)
+        }
+    }
+
+    private static let standardColour = #colorLiteral(red: 0.1137254902, green: 0.6156862745, blue: 0.1058823529, alpha: 1)
+
+    // MARK: - Styles
+
+    private static func colour(of style: EndlessIIStyle) -> UIColor {
+        switch style {
+        case .gravity: return GameScene.gravityBrickColour
+        case .moving: return GameScene.movingBrickColour
+        case .directional: return GameScene.directionalBrickColour
+        case .exploding: return GameScene.explodingBrickColour
+        case .spawner: return GameScene.spawnerBrickColour
+        case .portal: return GameScene.portalBrickColour
+        case .fixed: return GameScene.fixedBrickColour
+        case .flashing: return #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        case .rounded, .spinning: return standardColour
+        }
+    }
+    // The six field-changing roles keep the scene's own constants. Rounded and Spinning are
+    // not tinted in the game at all - they change a brick's shape and its motion, not its
+    // colour - so they are shown in the colour an ordinary brick wears
+
+    private static func draw(_ style: EndlessIIStyle, in context: CGContext) {
+        let frame = centred(feature)
+        let tint = colour(of: style)
+
+        switch style {
+        case .rounded:
+            // The body is the rounded rectangle, filled with the brick's own texture and
+            // colour, exactly as `makeRounded` builds it
+            context.saveGState()
+            let radius = min(frame.width, frame.height)*GameScene.roundedBrickCornerFraction
+            context.addPath(CGPath(roundedRect: frame, cornerWidth: radius,
+                                   cornerHeight: radius, transform: nil))
+            context.clip()
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            context.restoreGState()
+            return
+
+        case .spinning:
+            // A still picture cannot turn, so the brick is drawn part-way round and given an
+            // arrow. The game needs neither - the movement says it.
+            //
+            // Smaller than the others, because a brick twice as wide as it is tall needs the
+            // room to get round - which is the same reason the generator leaves the cells
+            // beside a spinner empty
+            context.saveGState()
+            context.translateBy(x: canvas.width/2, y: canvas.height/2)
+            context.rotate(by: -.pi/9)
+            let turning = CGRect(x: -BrickTypeIcons.spinning.width/2,
+                                 y: -BrickTypeIcons.spinning.height/2,
+                                 width: BrickTypeIcons.spinning.width,
+                                 height: BrickTypeIcons.spinning.height)
+            artwork("BrickNormal")?.tinted(tint).draw(in: turning)
+            context.restoreGState()
+            drawSpinArrow(in: context)
+            return
+
+        case .flashing:
+            // Half-way through fading out, which is the state that says what it does
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame, blendMode: .normal, alpha: 0.55)
+            outline(frame, in: context)
+            return
+
+        case .portal:
+            // Left untinted, as in the game: the Indestructible artwork is dark, so any colour
+            // put through it comes out muddy. The identity is in the rings
+            artwork("BrickIndestructible2")?.draw(in: frame)
+            drawPortalRings(in: frame, context: context)
+            return
+
+        case .directional:
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            let thickness = min(frame.width, frame.height)*0.2
+            UIColor.white.setFill()
+            context.fill(CGRect(x: frame.minX, y: frame.maxY - thickness,
+                                width: frame.width, height: thickness))
+            // Facing down, which is the common case - the ball spends most of its time
+            // travelling up and down, so above and below are the sides a player can plan for
+            return
+
+        case .gravity, .moving, .exploding, .spawner, .fixed:
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            stroke(glyph(for: style, in: frame), in: context, width: max(1.5, frame.height*0.08))
+            return
+        }
+    }
+
+    /// The shapes drawn over the tinted bricks, at the proportions `EndlessIIBehaviourBricks`
+    /// draws them.
+    private static func glyph(for style: EndlessIIStyle, in frame: CGRect) -> CGPath {
+        let centre = CGPoint(x: frame.midX, y: frame.midY)
+        let path = CGMutablePath()
+
+        switch style {
+        case .gravity:
+            let unit = frame.height*0.28
+            // Downward in UIKit is a larger y, so the chevron is the scene's flipped
+            path.move(to: CGPoint(x: centre.x - unit, y: centre.y - unit/2))
+            path.addLine(to: CGPoint(x: centre.x, y: centre.y + unit/2))
+            path.addLine(to: CGPoint(x: centre.x + unit, y: centre.y - unit/2))
+
+        case .moving:
+            let unit = frame.height*0.26
+            path.move(to: CGPoint(x: centre.x - unit*1.6, y: centre.y))
+            path.addLine(to: CGPoint(x: centre.x + unit*1.6, y: centre.y))
+            for direction in [CGFloat(-1), 1] {
+                let tip = CGPoint(x: centre.x + direction*unit*1.6, y: centre.y)
+                path.move(to: tip)
+                path.addLine(to: CGPoint(x: centre.x + direction*unit*0.8, y: centre.y - unit*0.7))
+                path.move(to: tip)
+                path.addLine(to: CGPoint(x: centre.x + direction*unit*0.8, y: centre.y + unit*0.7))
+            }
+
+        case .exploding:
+            let unit = frame.height*0.3
+            for step in 0..<4 {
+                let angle = CGFloat(step)*(.pi/4)
+                path.move(to: CGPoint(x: centre.x - cos(angle)*unit, y: centre.y - sin(angle)*unit))
+                path.addLine(to: CGPoint(x: centre.x + cos(angle)*unit, y: centre.y + sin(angle)*unit))
+            }
+
+        case .spawner:
+            let unit = frame.height*0.28
+            path.move(to: CGPoint(x: centre.x - unit, y: centre.y))
+            path.addLine(to: CGPoint(x: centre.x + unit, y: centre.y))
+            path.move(to: CGPoint(x: centre.x, y: centre.y - unit))
+            path.addLine(to: CGPoint(x: centre.x, y: centre.y + unit))
+
+        case .fixed:
+            let unit = frame.height*0.28
+            path.move(to: CGPoint(x: centre.x - unit, y: centre.y - unit*0.7))
+            path.addLine(to: CGPoint(x: centre.x + unit, y: centre.y - unit*0.7))
+            path.move(to: CGPoint(x: centre.x, y: centre.y - unit*0.7))
+            path.addLine(to: CGPoint(x: centre.x, y: centre.y + unit*0.9))
+
+        default:
+            break
+        }
+        return path
+    }
+
+    private static func drawSpinArrow(in context: CGContext) {
+        let centre = CGPoint(x: canvas.width/2, y: canvas.height/2)
+        let radius = canvas.height/2 - 3
+
+        context.saveGState()
+        context.setStrokeColor(UIColor(white: 0.55, alpha: 0.9).cgColor)
+        context.setLineWidth(4)
+        context.setLineCap(.round)
+        context.addArc(center: centre, radius: radius,
+                       startAngle: -.pi*0.85, endAngle: -.pi*0.15, clockwise: true)
+        context.strokePath()
+
+        // The head, drawn as its own path. An arc joins to whatever point the context was
+        // already at, so a head added to the arc above would be connected to it by a chord
+        let tip = CGPoint(x: centre.x + cos(-CGFloat.pi*0.15)*radius,
+                          y: centre.y + sin(-CGFloat.pi*0.15)*radius)
+        context.move(to: CGPoint(x: tip.x - 8, y: tip.y - 4))
+        context.addLine(to: tip)
+        context.addLine(to: CGPoint(x: tip.x - 2, y: tip.y + 9))
+        context.strokePath()
+        context.restoreGState()
+    }
+
+    private static func drawPortalRings(in frame: CGRect, context: CGContext) {
+        let radius = min(frame.width, frame.height)*0.3
+        let centre = CGPoint(x: frame.midX, y: frame.midY)
+
+        context.saveGState()
+        context.setStrokeColor(GameScene.portalBlueColour.cgColor)
+        context.setLineWidth(max(1.5, frame.height*0.1))
+        context.strokeEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                         width: radius*2, height: radius*2))
+        context.strokeEllipse(in: CGRect(x: centre.x - radius*0.5, y: centre.y - radius*0.5,
+                                         width: radius, height: radius))
+        // Two rings, so it cannot be mistaken for a Rounded brick's single one
+        context.restoreGState()
+    }
+
+    // MARK: - Sizes
+
+    private static func draw(_ size: BrickSize, in context: CGContext) {
+        // One cell, dashed, so the three pictures can be compared - a brick on its own says
+        // nothing about how much room it takes
+        let reference = centred(cell)
+        context.saveGState()
+        context.setStrokeColor(UIColor(white: 0.55, alpha: 0.9).cgColor)
+        context.setLineWidth(2)
+        context.setLineDash(phase: 0, lengths: [4, 4])
+        context.stroke(reference)
+        // Solid enough to survive being drawn at forty points across, which is all the row
+        // gives it - a one-point hairline at a third opacity disappeared entirely, and with
+        // it the only thing saying what a Tiny brick is small compared to
+        context.restoreGState()
+
+        let scale = size.scale
+        let brick = centred(CGSize(width: cell.width*scale, height: cell.height*scale))
+        artwork("BrickNormal")?.tinted(standardColour).draw(in: brick)
+    }
+
+    // MARK: - Drawing helpers
+
+    private static func centred(_ size: CGSize) -> CGRect {
+        CGRect(x: (canvas.width - size.width)/2, y: (canvas.height - size.height)/2,
+               width: size.width, height: size.height)
+    }
+
+    private static func outline(_ frame: CGRect, in context: CGContext) {
+        context.saveGState()
+        context.setStrokeColor(UIColor(white: 1, alpha: 0.45).cgColor)
+        context.setLineWidth(1)
+        context.stroke(frame)
+        context.restoreGState()
+    }
+
+    private static func stroke(_ path: CGPath, in context: CGContext, width: CGFloat) {
+        context.saveGState()
+        context.addPath(path)
+        context.setStrokeColor(UIColor(white: 0, alpha: 0.75).cgColor)
+        context.setLineWidth(width)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.strokePath()
+        context.restoreGState()
+    }
+
+    private static func artwork(_ named: String) -> UIImage? {
+        UIImage(named: named)
+    }
+}

@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000072 /* BrickTypeCatalogueTests.swift */; };
+		1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000070 /* GameSceneLayoutTests.swift */; };
+		1AF170000000006F /* GameBackgroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006E /* GameBackgroundTests.swift */; };
+		1AF170000000006D /* BrickTypesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006C /* BrickTypesViewController.swift */; };
+		1AF170000000006B /* BrickTypeIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006A /* BrickTypeIcons.swift */; };
+		1AF1700000000069 /* BrickTypeCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000068 /* BrickTypeCatalogue.swift */; };
+		1AF1700000000067 /* BackgroundSelectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000066 /* BackgroundSelectViewController.swift */; };
+		1AF1700000000065 /* GameSceneMockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000064 /* GameSceneMockView.swift */; };
+		1AF1700000000063 /* GameSceneLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000062 /* GameSceneLayout.swift */; };
+		1AF1700000000061 /* GameBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000060 /* GameBackground.swift */; };
 		1AF1700000000004 /* SavedGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000003 /* SavedGameTests.swift */; };
 		1AF170000000001E /* BrickGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001D /* BrickGridTests.swift */; };
 		1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000023 /* PowerUpCatalogueTests.swift */; };
@@ -281,6 +291,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF1700000000072 /* BrickTypeCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeCatalogueTests.swift; sourceTree = "<group>"; };
+		1AF1700000000070 /* GameSceneLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayoutTests.swift; sourceTree = "<group>"; };
+		1AF170000000006E /* GameBackgroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackgroundTests.swift; sourceTree = "<group>"; };
+		1AF170000000006C /* BrickTypesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypesViewController.swift; sourceTree = "<group>"; };
+		1AF170000000006A /* BrickTypeIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeIcons.swift; sourceTree = "<group>"; };
+		1AF1700000000068 /* BrickTypeCatalogue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeCatalogue.swift; sourceTree = "<group>"; };
+		1AF1700000000066 /* BackgroundSelectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSelectViewController.swift; sourceTree = "<group>"; };
+		1AF1700000000064 /* GameSceneMockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneMockView.swift; sourceTree = "<group>"; };
+		1AF1700000000062 /* GameSceneLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayout.swift; sourceTree = "<group>"; };
+		1AF1700000000060 /* GameBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackground.swift; sourceTree = "<group>"; };
 		1AF1700000000003 /* SavedGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGameTests.swift; sourceTree = "<group>"; };
 		1AF170000000001D /* BrickGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickGridTests.swift; sourceTree = "<group>"; };
 		1AF1700000000023 /* PowerUpCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogueTests.swift; sourceTree = "<group>"; };
@@ -582,6 +602,9 @@
 		1AF100000000000B /* GigaBallTests */ = {
 			isa = PBXGroup;
 			children = (
+				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
+				1AF1700000000070 /* GameSceneLayoutTests.swift */,
+				1AF170000000006E /* GameBackgroundTests.swift */,
 				1AF1100000000000 /* LevelPackSetupTests.swift */,
 				1AF1100000000001 /* TotalStatsTests.swift */,
 				1AF1400000000001 /* ScoringTests.swift */,
@@ -793,6 +816,8 @@
 		1A5A94832309E4F30076D635 /* Megaball */ = {
 			isa = PBXGroup;
 			children = (
+				1AF170000000006A /* BrickTypeIcons.swift */,
+				1AF1700000000064 /* GameSceneMockView.swift */,
 				1AF0FF0100000003 /* Fonts */,
 				1A5A94912309E4F40076D635 /* Assets.xcassets */,
 				1AF0FE0100000005 /* AppIcon.icon */,
@@ -1065,6 +1090,8 @@
 		1AE9574C23257BC200E5618A /* View Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				1AF170000000006C /* BrickTypesViewController.swift */,
+				1AF1700000000066 /* BackgroundSelectViewController.swift */,
 				1AC08ADB23FC417A00B4BC32 /* SplashViewController.swift */,
 				1AE2922B240190AE009D3C4E /* ItemsStatsViewController.swift */,
 				1A6E15F023F58A7C002F8D8B /* ItemsDetailViewController.swift */,
@@ -1090,6 +1117,9 @@
 		1AFF33C623EC42CB0033F485 /* Data Model */ = {
 			isa = PBXGroup;
 			children = (
+				1AF1700000000068 /* BrickTypeCatalogue.swift */,
+				1AF1700000000062 /* GameSceneLayout.swift */,
+				1AF1700000000060 /* GameBackground.swift */,
 				1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */,
 				1AF1300000000001 /* Scoring.swift */,
 				1AF1700000000001 /* SavedGame.swift */,
@@ -1305,6 +1335,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
+				1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */,
+				1AF170000000006F /* GameBackgroundTests.swift in Sources */,
 				1AF1200000000000 /* LevelPackSetupTests.swift in Sources */,
 				1AF1200000000001 /* TotalStatsTests.swift in Sources */,
 				1AF1400000000002 /* ScoringTests.swift in Sources */,
@@ -1331,6 +1364,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF170000000006D /* BrickTypesViewController.swift in Sources */,
+				1AF170000000006B /* BrickTypeIcons.swift in Sources */,
+				1AF1700000000069 /* BrickTypeCatalogue.swift in Sources */,
+				1AF1700000000067 /* BackgroundSelectViewController.swift in Sources */,
+				1AF1700000000065 /* GameSceneMockView.swift in Sources */,
+				1AF1700000000063 /* GameSceneLayout.swift in Sources */,
+				1AF1700000000061 /* GameBackground.swift in Sources */,
 				1A28AF77244DB591007A1A3E /* Level073.swift in Sources */,
 				1AF335E0241133C4007DC048 /* Level004.swift in Sources */,
 				1A94366F245D60AF00388D6C /* Level100.swift in Sources */,
