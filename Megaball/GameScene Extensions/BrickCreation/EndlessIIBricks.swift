@@ -273,7 +273,12 @@ extension GameScene {
         switch style {
         case .rounded: return centred
         case .spinning: return centred && isOrdinaryCellSized(brick)
-        case .moving, .gravity:
+        case .gravity:
+            // Ordinary size only. A quarter-cell brick falling on its own looks like a piece
+            // of a set coming loose - and it would be, since the four quarters are separate
+            // bricks and only some of them would ever draw the style
+            return isOrdinaryCellSized(brick)
+        case .moving:
             // Both work out where they may go by looking at a neighbouring cell, and both
             // measure from the node's position. On a Big brick neither holds: the cell to
             // its right is part of itself, and its node sits on its top-left corner rather

@@ -66,6 +66,27 @@ extension GameScene {
     /// old figure a tenth of the field became Tiny and then quadrupled in visual weight.
     static let endlessIITinyChance = 4
 
+    /// Which quarters of a cell a Tiny set fills.
+    ///
+    /// All four, or one of the two diagonal pairs. The diagonals are the interesting ones:
+    /// they leave a route through the cell rather than a solid block, so a Tiny set is
+    /// sometimes an obstacle and sometimes a gap with something in it - and the ball can be
+    /// threaded between them.
+    static func endlessIITinyLayout() -> [CGPoint] {
+        let topLeft = CGPoint(x: -0.25, y: 0.25)
+        let topRight = CGPoint(x: 0.25, y: 0.25)
+        let bottomLeft = CGPoint(x: -0.25, y: -0.25)
+        let bottomRight = CGPoint(x: 0.25, y: -0.25)
+
+        switch Int.random(in: 0...3) {
+        case 0: return [topLeft, bottomRight]
+        case 1: return [topRight, bottomLeft]
+        default: return [bottomLeft, bottomRight, topLeft, topRight]
+        }
+        // Weighted toward the full set, so a diagonal pair reads as a variation on something
+        // familiar rather than as the normal case
+    }
+
     /// How much of each quarter cell the brick actually fills.
     ///
     /// The gap between the four is what makes them read as four bricks rather than one brick
@@ -205,8 +226,7 @@ extension GameScene {
         let home = brick.position
         var quarters: [SKSpriteNode] = []
 
-        for (index, offset) in [CGPoint(x: -0.25, y: -0.25), CGPoint(x: 0.25, y: -0.25),
-                                CGPoint(x: -0.25, y: 0.25), CGPoint(x: 0.25, y: 0.25)].enumerated() {
+        for (index, offset) in GameScene.endlessIITinyLayout().enumerated() {
             let piece: SKSpriteNode
             if index == 0 {
                 piece = brick

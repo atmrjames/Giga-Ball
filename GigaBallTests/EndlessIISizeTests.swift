@@ -96,3 +96,45 @@ final class EndlessIISizeTests: XCTestCase {
         }
     }
 }
+
+extension EndlessIISizeTests {
+
+    // MARK: - Tiny layouts
+
+    func testATinySetIsEitherFourQuartersOrADiagonalPair() {
+        // Anything else would leave a cell filled in a way that reads as a mistake rather
+        // than as a shape.
+        for _ in 0..<200 {
+            let layout = GameScene.endlessIITinyLayout()
+            XCTAssertTrue(layout.count == 4 || layout.count == 2, "\(layout.count)")
+        }
+    }
+
+    func testEveryQuarterSitsInADifferentCornerOfTheCell() {
+        for _ in 0..<200 {
+            let layout = GameScene.endlessIITinyLayout()
+            XCTAssertEqual(Set(layout.map { "\($0.x),\($0.y)" }).count, layout.count)
+            for offset in layout {
+                XCTAssertEqual(abs(offset.x), 0.25, accuracy: 0.0001)
+                XCTAssertEqual(abs(offset.y), 0.25, accuracy: 0.0001)
+            }
+        }
+    }
+
+    func testAPairIsAlwaysDiagonal() {
+        // Two side by side would be an oddly-shaped brick; two on a diagonal leave a route
+        // through the cell, which is the point of having them.
+        for _ in 0..<200 {
+            let layout = GameScene.endlessIITinyLayout()
+            guard layout.count == 2 else { continue }
+            XCTAssertNotEqual(layout[0].x, layout[1].x)
+            XCTAssertNotEqual(layout[0].y, layout[1].y)
+        }
+    }
+
+    func testTheFullSetIsTheCommonCase() {
+        // A diagonal pair should read as a variation on something familiar.
+        let full = (0..<400).filter { _ in GameScene.endlessIITinyLayout().count == 4 }.count
+        XCTAssertGreaterThan(full, 200)
+    }
+}
