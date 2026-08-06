@@ -54,7 +54,11 @@ extension GameScene {
     /// separate axis.
     func applyEndlessIIRoles(to bricks: [SKNode]) {
         applyEndlessIIStyles([.gravity, .moving, .directional,
-                              .exploding, .spawner, .portal], to: bricks)
+                              .exploding, .spawner, .portal, .fixed], to: bricks)
+        // Fixed was in the enum, in the compatibility grid, in the reference page and in the
+        // progression's style list, and in neither pool - so it could never be applied to a
+        // brick and nobody had ever seen one. Being everywhere except the one line that
+        // offers it is exactly the kind of gap that looks like rarity from the outside
     }
 
     /// Whether a brick is still plain enough to be given a role.

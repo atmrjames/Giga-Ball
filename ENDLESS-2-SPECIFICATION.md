@@ -741,6 +741,19 @@ thickness that extends off-screen, so the play area can reach the edge.
 **Cells can be part full.** Four Tiny bricks share one cell, so "is this cell occupied" is the
 wrong question — a cell with one quarter left in it is not a wall. Ask how full it is.
 
+**A style has to be in a pool to exist.** `EndlessIIStyle` is the list of styles, and
+`applyEndlessIIStyles` is offered a *pool* per call site — the appearance ones and the
+field-changing ones. Fixed was added to the enum, to the compatibility grid, to the reference
+page and to the progression, and to neither pool, so no brick could ever be given it. From the
+outside that is indistinguishable from a style that is simply very rare, which is why it went
+unnoticed for so long.
+
+**Adjacent bricks have a seam.** Every brick is its own body, so a ball landing exactly on the
+join between two of them is resolved against both at once and leaves off a corner rather than
+off the flat face. `BrickSeamBounce` catches it: two bricks struck in one step are treated as
+one surface. Anything else that gives one ball several brick contacts in a step needs to think
+about the same thing.
+
 ---
 
 ## 9. Out of scope for the first version

@@ -104,6 +104,31 @@ extension GameScene {
     /// How far a tick reaches in from each wall, as a fraction of the play area's width.
     static let endlessIITickLength: CGFloat = 0.045
 
+    /// Puts the marks that are already in the opening field there.
+    ///
+    /// Every other marker enters at the top and descends into place, which works for heights
+    /// the run has not reached yet. The opening field is different: it is built all at once,
+    /// and the twenty-two rows of it already stand for 0m at the bottom up to 21m at the top.
+    /// Nothing had ever placed those, so the first tick a player saw was at 30m and the scale
+    /// appeared to start in the wrong place.
+    ///
+    /// 0m is the bottom row - where the field is now, and where the brick the first ball is
+    /// aimed at sits.
+    func seedEndlessIIMarkers() {
+        guard gameMode == .endlessII else { return }
+
+        for row in 0..<numberOfBrickRows {
+            let height = numberOfBrickRows - 1 - row
+            guard height % GameScene.endlessIITickSpacing == 0 else { continue }
+            guard height % GameScene.endlessIIMarkerSpacing != 0 || height == 0 else { continue }
+
+            let y = yBrickOffsetEndless - brickHeight*CGFloat(row) + brickHeight/2
+            addEndlessIITick(at: y)
+        }
+        // Only the tens. A hundred-metre line cannot already be in the opening field, and 0m
+        // gets a tick like any other ten so the scale starts where the player does
+    }
+
     /// Adds a pair of short marks at the sides for the tens.
     ///
     /// The hundreds say how far you have come; these say how fast it is going past. A run
@@ -118,9 +143,13 @@ extension GameScene {
         guard arriving % GameScene.endlessIIMarkerSpacing != 0 else { return }
         // A hundred is a hundred, not a hundred and a tick
 
+        addEndlessIITick(at: yBrickOffsetEndless + brickHeight/2)
+    }
+
+    func addEndlessIITick(at y: CGFloat) {
         let tick = SKNode()
         tick.name = GameScene.endlessIIMarkerName
-        tick.position = CGPoint(x: 0, y: yBrickOffsetEndless + brickHeight/2)
+        tick.position = CGPoint(x: 0, y: y)
         tick.zPosition = 0.6
         addChild(tick)
 

@@ -56,6 +56,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var paddleRetroStickyTexture = SKSpriteNode()
 
     var ball = SKSpriteNode()
+	/// Where each ball was before the physics step, for the seam correction below.
+	var ballStateBeforeStep: [ObjectIdentifier: BallState] = [:]
+	/// The bricks each ball touched during the step, as the frames they had at the time.
+	var brickSeamStrikes: [ObjectIdentifier: [CGRect]] = [:]
+
 	/// The balls beyond the first, in Endless 2.0 only.
 	///
 	/// `ball` stays the ball the rest of the game holds; these sit beside it. See
@@ -1638,6 +1643,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func didSimulatePhysics() {
         applyEndlessIIPortalExit()
+        resolveBrickSeamBounces()
     }
     // The one place a physics body can be moved from. Anything written to one during contact
     // resolution is undone by the rest of the step
@@ -1666,6 +1672,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			refreshPaddleReachability()
 			// The paddle moves under the player's finger, so whether a ball is beneath it is
 			// a question with a new answer every frame
+
+			recordBallStatesBeforeStep()
+			// Before the physics runs, because how a ball arrived is the only thing that says
+			// which face it hit - and by the time a contact is reported that is already gone
 		
 			if gravityActivated {
 				if ball.position.y < paddle.position.y + ballSize*4 {
@@ -1976,6 +1986,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				var brickNodeShare: SKNode?
                 if let brickNode = secondBody.node {
 					let struckSprite = brickNode as! SKSpriteNode
+					noteBrickStrike(ball: struckBall, brick: struckSprite)
+					// Two bricks touched in one step is the seam between them, and the ball
+					// should leave it as though it were one long brick
+
 					let struckSide = EndlessIIImpact.side(ballAt: struckBall.position,
 														 brickAt: struckSprite.position,
 														 brickSize: struckSprite.size)
@@ -4997,6 +5011,33 @@ laserTimer?.invalidate()
 	}
 	// Set the new speed of the ball and ensure it stays within the boundary
 	
+	/// How far from vertical a ball must leave a side wall, in degrees.
+	///
+	/// The mirror of `minAngleDeg`, which keeps the ball from travelling too near horizontal.
+	/// Nothing was doing the same job at the other end, and the wall is where it is needed:
+	/// a ball arriving almost vertically leaves almost vertically, which puts it back into the
+	/// wall a few frames later at the same angle, and again - so it runs up the side of the
+	/// screen in a stack of tiny bounces that reads as the ball having stuck to it.
+	static let minWallAngleDeg: Double = 12
+
+	/// Turns a ball leaving a wall far enough away from vertical to actually leave it.
+	///
+	/// The speed is preserved exactly - only the direction is opened out - so this cannot
+	/// change how fast the game plays, which is the one thing the physics rules must keep.
+	func pushedOffTheWall(dx: CGFloat, dy: CGFloat) -> CGVector {
+		let speed = sqrt(dx*dx + dy*dy)
+		guard speed > 0 else { return CGVector(dx: dx, dy: dy) }
+
+		let minimum = CGFloat(sin(GameScene.minWallAngleDeg*Double.pi/180))*speed
+		guard abs(dx) < minimum else { return CGVector(dx: dx, dy: dy) }
+
+		let wanted = dx < 0 ? -minimum : minimum
+		let remaining = max(0, speed*speed - wanted*wanted).squareRoot()
+		return CGVector(dx: wanted, dy: dy < 0 ? -remaining : remaining)
+		// The vertical component takes what is left, keeping the sign it had, so the ball
+		// carries on the way it was going and simply stops grazing the wall
+	}
+
 	func frameBallControl(xSpeed: CGFloat, for subject: SKSpriteNode? = nil) {
 		let ball = subject ?? self.ball
 		let isExtra = subject != nil && subject !== self.ball
@@ -5008,7 +5049,7 @@ laserTimer?.invalidate()
 			if (ball.position.x > 0 && xSpeed > 0) || (ball.position.x < 0 && xSpeed < 0) {
 				newXSpeed = -xSpeed
 			}
-			ball.physicsBody!.velocity = CGVector(dx: newXSpeed, dy: ySpeed)
+			ball.physicsBody!.velocity = pushedOffTheWall(dx: newXSpeed, dy: ySpeed)
 			// Ensure the ball bounces off the wall correctly]
 
 			let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180

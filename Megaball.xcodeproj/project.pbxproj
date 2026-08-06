@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF17000000000D1 /* BallBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000D0 /* BallBounceTests.swift */; };
+		1AF17000000000C1 /* BrickSeamBounce.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000C0 /* BrickSeamBounce.swift */; };
 		1AF17000000000B1 /* BackstopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000B0 /* BackstopTests.swift */; };
 		1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A2 /* EndlessIIClusterTests.swift */; };
 		1AF17000000000A1 /* EndlessIIClusters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A0 /* EndlessIIClusters.swift */; };
@@ -298,6 +300,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF17000000000D0 /* BallBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallBounceTests.swift; sourceTree = "<group>"; };
+		1AF17000000000C0 /* BrickSeamBounce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickSeamBounce.swift; sourceTree = "<group>"; };
 		1AF17000000000B0 /* BackstopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackstopTests.swift; sourceTree = "<group>"; };
 		1AF17000000000A2 /* EndlessIIClusterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusterTests.swift; sourceTree = "<group>"; };
 		1AF17000000000A0 /* EndlessIIClusters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusters.swift; sourceTree = "<group>"; };
@@ -616,6 +620,7 @@
 		1AF100000000000B /* GigaBallTests */ = {
 			isa = PBXGroup;
 			children = (
+				1AF17000000000D0 /* BallBounceTests.swift */,
 				1AF17000000000B0 /* BackstopTests.swift */,
 				1AF17000000000A2 /* EndlessIIClusterTests.swift */,
 				1AF1700000000094 /* EndlessIIBallsTests.swift */,
@@ -1060,6 +1065,7 @@
 		1ACC0F4023FDA3C400B7EFE9 /* GameScene Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				1AF17000000000C0 /* BrickSeamBounce.swift */,
 				1AF1700000000092 /* EndlessIIMultiBall.swift */,
 				1ACFFDB724752D6300AF2C43 /* PowerUpAllocation.swift */,
 				1A5BA9B6242707590019FDBB /* BrickCreation */,
@@ -1356,6 +1362,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF17000000000D1 /* BallBounceTests.swift in Sources */,
 				1AF17000000000B1 /* BackstopTests.swift in Sources */,
 				1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */,
 				1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */,
@@ -1389,6 +1396,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF17000000000C1 /* BrickSeamBounce.swift in Sources */,
 				1AF17000000000A1 /* EndlessIIClusters.swift in Sources */,
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,
 				1AF1700000000091 /* EndlessIIBalls.swift in Sources */,

@@ -73,6 +73,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     static let heightTallyDuration: CFTimeInterval = 0.7
     static let heightTallyTicks = 10
     private var heightTallyLastTick = -1
+    private var hasRunHeightTally = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -604,6 +605,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     /// than being handed it. Short, because this sits between one run and the next.
     private func startHeightTally(to height: Int) {
         guard height > 0 else { return }
+        guard hasRunHeightTally == false else { return }
+        hasRunHeightTally = true
+        // Once per screen. `updateLabels` runs again every time this menu is returned to -
+        // from settings, from the information pages - and each of those was starting the
+        // tally over: ten haptic ticks, mid-run, with no number counting anywhere. Whether
+        // the count is wanted depends on how the screen was opened, which is decided once,
+        // so running it is a thing that happens once too
         heightTallyTarget = height
         heightTallyStartedAt = CACurrentMediaTime()
         heightTallyLastTick = -1
