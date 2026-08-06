@@ -22,8 +22,9 @@ enum PowerUpIcon {
     /// The size the existing icons are drawn at.
     static let canvas = CGSize(width: 120, height: 120)
 
-    /// The green every beneficial power-up wears.
+    /// The green every beneficial power-up wears, and the red every harmful one does.
     static let beneficial = #colorLiteral(red: 0.2039215686, green: 0.7803921569, blue: 0.3490196078, alpha: 1)
+    static let harmful = #colorLiteral(red: 0.9098039216, green: 0.2666666667, blue: 0.2666666667, alpha: 1)
 
     /// Multi-Ball: three balls where there was one.
     ///
@@ -78,12 +79,165 @@ enum PowerUpIcon {
         // The ghost of the ball, empty because it is a prediction rather than a ball
     }
 
+    // MARK: - The paddle batch
+
+    /// Aimed Sticky: a held ball with the aim arrow leaving it.
+    static let aimedSticky: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.2))
+        context.strokePath()
+        // The paddle
+
+        let start = CGPoint(x: rect.midX - rect.width*0.06, y: rect.maxY - rect.height*0.3)
+        let end = CGPoint(x: rect.maxX - rect.width*0.26, y: rect.minY + rect.height*0.24)
+        context.move(to: start)
+        context.addLine(to: end)
+        context.move(to: CGPoint(x: end.x - rect.width*0.14, y: end.y + rect.height*0.02))
+        context.addLine(to: end)
+        context.addLine(to: CGPoint(x: end.x - rect.width*0.02, y: end.y + rect.height*0.15))
+        context.strokePath()
+        // The aim, leaving at an angle a drag chose
+
+        dot(context, at: start, radius: rect.width*0.08)
+    }
+
+    /// Magnetism: the ball's path curving in toward the paddle.
+    static let magnetism: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.2))
+        context.strokePath()
+
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.24, y: rect.minY + rect.height*0.2))
+        context.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.32),
+                             control: CGPoint(x: rect.maxX - rect.width*0.2, y: rect.minY + rect.height*0.4))
+        context.strokePath()
+        dot(context, at: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.32),
+            radius: rect.width*0.08)
+    }
+
+    /// Portal Paddle: in at the paddle, out at the top.
+    static let portalPaddle: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.2))
+        context.strokePath()
+
+        context.setLineDash(phase: 0, lengths: [rect.width*0.08, rect.width*0.07])
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.minY + rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.minY + rect.height*0.2))
+        context.strokePath()
+        context.setLineDash(phase: 0, lengths: [])
+        // The top it comes back in from, dashed because it is not really there
+
+        dot(context, at: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.38),
+            radius: rect.width*0.08)
+    }
+
+    /// Paddle Halo: the glow reaching up from the paddle.
+    static let paddleHalo: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.strokePath()
+
+        context.addArc(center: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.24),
+                       radius: rect.width*0.3, startAngle: .pi, endAngle: 0, clockwise: false)
+        context.strokePath()
+    }
+
+    /// Ball Steering: the ball leaning both ways.
+    static let ballSteering: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        dot(context, at: CGPoint(x: rect.midX, y: rect.midY - rect.height*0.1),
+            radius: rect.width*0.11)
+
+        let y = rect.maxY - rect.height*0.28
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: y))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: y))
+        for direction: CGFloat in [-1, 1] {
+            let tip = CGPoint(x: rect.midX + direction*(rect.width*0.3), y: y)
+            context.move(to: CGPoint(x: tip.x - direction*rect.width*0.1, y: y - rect.height*0.08))
+            context.addLine(to: tip)
+            context.addLine(to: CGPoint(x: tip.x - direction*rect.width*0.1, y: y + rect.height*0.08))
+        }
+        context.strokePath()
+    }
+
+    /// Inert Paddle: the bounce coming off exactly as it went in.
+    static let inertPaddle: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.strokePath()
+
+        context.move(to: CGPoint(x: rect.midX - rect.width*0.2, y: rect.minY + rect.height*0.22))
+        context.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.3))
+        context.addLine(to: CGPoint(x: rect.midX + rect.width*0.2, y: rect.minY + rect.height*0.22))
+        context.strokePath()
+        // The one bounce the paddle no longer has a say in
+    }
+
+    /// Flipped Angle: the bounce sent back the way it came from.
+    static let flippedAngle: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.strokePath()
+
+        let base = CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.3)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.24, y: rect.minY + rect.height*0.26))
+        context.addLine(to: base)
+        let end = CGPoint(x: rect.minX + rect.width*0.32, y: rect.minY + rect.height*0.5)
+        context.addLine(to: end)
+        context.move(to: CGPoint(x: end.x + rect.width*0.02, y: end.y + rect.height*0.14))
+        context.addLine(to: end)
+        context.addLine(to: CGPoint(x: end.x + rect.width*0.15, y: end.y + rect.height*0.04))
+        context.strokePath()
+        // In from the left, out to the left - the influence turned round
+    }
+
+    /// Reversed Controls: the finger goes one way, the paddle the other.
+    static let reversedControls: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        for (y, direction) in [(rect.midY - rect.height*0.14, CGFloat(1)),
+                               (rect.midY + rect.height*0.14, CGFloat(-1))] {
+            context.move(to: CGPoint(x: rect.midX - direction*rect.width*0.24, y: y))
+            context.addLine(to: CGPoint(x: rect.midX + direction*rect.width*0.24, y: y))
+            let tip = CGPoint(x: rect.midX + direction*rect.width*0.24, y: y)
+            context.move(to: CGPoint(x: tip.x - direction*rect.width*0.1, y: y - rect.height*0.07))
+            context.addLine(to: tip)
+            context.addLine(to: CGPoint(x: tip.x - direction*rect.width*0.1, y: y + rect.height*0.07))
+        }
+        context.strokePath()
+    }
+
+    // MARK: - Drawing helpers
+
+    private static func stroke(_ context: CGContext, width: CGFloat) {
+        context.setStrokeColor(UIColor.white.cgColor)
+        context.setLineWidth(width)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+    }
+
+    private static func dot(_ context: CGContext, at centre: CGPoint, radius: CGFloat) {
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                       width: radius*2, height: radius*2))
+    }
+
     /// The rounded square every power-up icon is, with a glyph drawn into it.
-    private static func badge(_ glyph: (CGContext, CGRect) -> Void) -> UIImage {
+    ///
+    /// Green unless told otherwise - the harmful ones wear the same red the falling assets
+    /// do, so what a power-up will do to you is readable before it does it.
+    private static func badge(_ colour: UIColor = beneficial,
+                              _ glyph: (CGContext, CGRect) -> Void) -> UIImage {
         UIGraphicsImageRenderer(size: canvas).image { context in
             let rect = CGRect(origin: .zero, size: canvas).insetBy(dx: 4, dy: 4)
             let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.width*0.22)
-            beneficial.setFill()
+            colour.setFill()
             path.fill()
             glyph(context.cgContext, rect)
         }

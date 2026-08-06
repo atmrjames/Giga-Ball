@@ -1036,7 +1036,7 @@ playable and is worth a round of play-testing on its own.
 | Batch | What lands | Why these together | The question it answers |
 |---|---|---|---|
 | **8a. Vision** ✅ | Trajectory Line, Landing Marker | Both draw what the ball is *about* to do and change no rule. One predictor serves both, and it is pure geometry - testable rather than eyeballed | Whether four balls means four lines, and whether being told where the ball will land makes the mode easier or just calmer |
-| **8b. The paddle** | Aimed Sticky, Magnetism, Portal Paddle, Paddle Halo, Ball Steering, and the three bad ones - Inert Paddle, Flipped Angle, Reversed Controls | Every one of them changes what the paddle does, so they conflict with each other and want tuning against each other. Aimed Sticky inherits the queue Sticky Paddle already has (§5.5) | Whether a mode where the paddle keeps changing its rules is exciting or exhausting - and whether the bad ones are funny or just unfair |
+| **8b. The paddle** ✅ | Aimed Sticky, Magnetism, Portal Paddle, Paddle Halo, Ball Steering, and the three bad ones - Inert Paddle, Flipped Angle, Reversed Controls | Every one of them changes what the paddle does, so they conflict with each other and want tuning against each other. Aimed Sticky inherits the queue Sticky Paddle already has (§5.5) | Whether a mode where the paddle keeps changing its rules is exciting or exhausting - and whether the bad ones are funny or just unfair |
 | **8c. The field** | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
 | **8d. The rules** | Lock, Key, Wipe, Randomised Bounce | The ones that act on *other power-ups*. They need the rest of the set to exist before they mean anything, and Lock and Key only drop in each other's company | Whether a power-up about power-ups reads at all in the moment |
 
@@ -1064,6 +1064,20 @@ report themselves to the ring HUD since they have no tray slot to be read from, 
 pause-and-quit through the active-power-up arrays. The weights are guarded by mode inside
 `buildNewEndlessRow`, which builds rows for *both* endless modes - a flat weight there would
 have quietly added them to the original Endless.
+
+**8b is built.** All eight run on `EndlessIIClock` - one type for every timed power-up the
+mode owns, so extending, deepening, pausing, expiring, saving and the ring read the same
+everywhere - and the arithmetic of each effect is a pure function in
+`EndlessIIPaddleEffects`, tested on its own. The scene is *asked* rather than rewritten: the
+bounce's angle line multiplies by one influence value (Inert 0, Flipped -1), the touch
+handler multiplies by one direction value (Reversed -1), and the body-writing effects -
+Magnetism's speed-preserving curve, Ball Steering's clamped nudge, the Portal Paddle's
+re-entry at the top - all run from `didSimulatePhysics`, §8.6's one safe place. The halo
+destroys like a crush: roles react, nothing rolls a power-up. Aimed Sticky owns the launch
+while it runs (launchControl): any ball landing on the paddle is held into the same queue
+Multi-Ball built, the arrow defaults to the bounce the ball would have taken, dragging swings
+it - and while aiming, the paddle deliberately does not move, which is this batch's
+sharpest play-test question.
 
 **Phase 9 — presentation.** Scrolling backgrounds, the real artwork and sound (§8.5), and the
 information pages finished against a mode that has stopped moving. Deliberately last: a

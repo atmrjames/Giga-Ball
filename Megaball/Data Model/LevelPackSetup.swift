@@ -508,14 +508,22 @@ class LevelPackSetup {
         UIImage(named:"PowerUpDecreaseBallSize.png")!,
         PowerUpIcon.multiBall,
         PowerUpIcon.trajectoryLine,
-        PowerUpIcon.landingMarker
+        PowerUpIcon.landingMarker,
+        PowerUpIcon.aimedSticky,
+        PowerUpIcon.magnetism,
+        PowerUpIcon.portalPaddle,
+        PowerUpIcon.paddleHalo,
+        PowerUpIcon.ballSteering,
+        PowerUpIcon.inertPaddle,
+        PowerUpIcon.flippedAngle,
+        PowerUpIcon.reversedControls
     ]
     // Multi-Ball is drawn rather than an asset. §8.5 has the icons down as still to make, and
     // a placeholder that matches the set is worth more during design than a slot with the
     // wrong picture in it - see PowerUpIcon
     
-    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30]
-    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0]
+    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38]
+    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0]
     // Multi-Ball is last in the list and belongs to no pack. It is not unlocked by finishing
     // one - it exists only in Endless 2.0, which every player already has
     
@@ -550,7 +558,15 @@ class LevelPackSetup {
         "Shrink Ball",
         "Multi-Ball",
         "Trajectory Line",
-        "Landing Marker"
+        "Landing Marker",
+        "Aimed Sticky",
+        "Magnetism",
+        "Portal Paddle",
+        "Paddle Halo",
+        "Ball Steering",
+        "Inert Paddle",
+        "Flipped Angle",
+        "Reversed Controls"
     ]
     
     let powerUpUnlockedDescriptionArray: [String] = [
@@ -584,7 +600,8 @@ class LevelPackSetup {
         "Complete Computer to unlock", // Decrease Ball Size
         "", // Multi-Ball - never locked
         "", // Trajectory Line - never locked
-        "" // Landing Marker - never locked
+        "", // Landing Marker - never locked
+        "", "", "", "", "", "", "", "" // The paddle batch - Endless 2.0's own, never locked
     ]
     
     let powerUpHiddenUnlockedDescriptionArray: [String] = [
@@ -618,7 +635,8 @@ class LevelPackSetup {
         "Complete Pack 6 to unlock", // Decrease Ball Size
         "", // Multi-Ball - never locked
         "", // Trajectory Line - never locked
-        "" // Landing Marker - never locked
+        "", // Landing Marker - never locked
+        "", "", "", "", "", "", "", "" // The paddle batch - Endless 2.0's own, never locked
     ]
     
     let powerUpDescriptionArray: [String] = [
@@ -652,7 +670,15 @@ class LevelPackSetup {
         "Makes the ball smaller",
         "Adds another ball, up to four. The run continues while any of them is still in play",
         "Draws each ball's path ahead, bouncing off the walls and stopping at the first brick",
-        "Marks where each ball will cross the paddle's line"
+        "Marks where each ball will cross the paddle's line",
+        "Holds a caught ball and lets you aim its launch by dragging",
+        "Curves falling balls toward the paddle",
+        "A ball entering the paddle re-enters at the top of the screen",
+        "A glow around the paddle that destroys the bricks it touches",
+        "Moving the paddle steers the balls in flight",
+        "The paddle no longer angles the bounce",
+        "The paddle's angle influence is inverted",
+        "The paddle moves opposite to your touch"
     ]
     
     let powerUpMultiplierArray: [String] = [
@@ -686,7 +712,15 @@ class LevelPackSetup {
         "-0.1",
         "+0.1",
         "+0.1",
-        "+0.1"
+        "+0.1",
+        "+0.1",
+        "+0.1",
+        "+0.1",
+        "+0.1",
+        "+0.1",
+        "-0.1",
+        "-0.1",
+        "-0.1"
     ]
     
     let powerUpTimerArray: [String] = [
@@ -719,6 +753,14 @@ class LevelPackSetup {
         "10",
         "10",
         "",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
         "10",
         "10"
     ]

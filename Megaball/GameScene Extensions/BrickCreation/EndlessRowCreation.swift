@@ -28,6 +28,14 @@ extension GameScene {
 
         powerUpProbArray[29] = gameMode == .endlessII ? 5 : 0 // Trajectory Line - uncommon (§5.4)
         powerUpProbArray[30] = gameMode == .endlessII ? 7 : 0 // Landing Marker - common
+        powerUpProbArray[31] = gameMode == .endlessII ? 5 : 0 // Aimed Sticky - uncommon
+        powerUpProbArray[32] = gameMode == .endlessII ? 5 : 0 // Magnetism - uncommon
+        powerUpProbArray[33] = gameMode == .endlessII ? 3 : 0 // Portal Paddle - rare
+        powerUpProbArray[34] = gameMode == .endlessII ? 3 : 0 // Paddle Halo - rare
+        powerUpProbArray[35] = gameMode == .endlessII ? 3 : 0 // Ball Steering - rare
+        powerUpProbArray[36] = gameMode == .endlessII ? 5 : 0 // Inert Paddle - uncommon, bad
+        powerUpProbArray[37] = gameMode == .endlessII ? 5 : 0 // Flipped Angle - uncommon, bad
+        powerUpProbArray[38] = gameMode == .endlessII ? 5 : 0 // Reversed Controls - uncommon, bad
         // Guarded by mode, because these rows are built for *both* endless modes - the
         // Multi-Ball line above gets the same guard for free from endlessIICanAddBall, but a
         // flat weight here would have quietly added the new power-ups to the original

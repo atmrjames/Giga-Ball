@@ -76,9 +76,11 @@ struct EndlessIIProgression {
     static let rampEasing = 0.4
 
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
-                     powerUps: Int = 31) -> EndlessIIProgression {
-        // Every power-up in the table, including Endless 2.0's own - a new one that is not
-        // in this shuffle is introduced at 0m, which is the opposite of introduced
+                     powerUps: Int = LevelPackSetup().powerUpNameArray.count) -> EndlessIIProgression {
+        // Every power-up in the table, including Endless 2.0's own, derived from the array
+        // that names them rather than counted by hand - the hand-count came up short the
+        // first time a batch landed, which is exactly what §8.6 says literals do. A new
+        // power-up missing from this shuffle is introduced at 0m, the opposite of introduced
         EndlessIIProgression(introductionOrder: styles.shuffled(),
                              powerUpOrder: Array(0..<powerUps).shuffled())
     }

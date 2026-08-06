@@ -86,6 +86,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIVisionLastTick: TimeInterval = 0
 	var endlessIITrajectoryLines: [SKShapeNode] = []
 	var endlessIILandingMarkers: [SKShapeNode] = []
+
+	// The paddle batch's clocks and state - see EndlessIIPaddlePowerUps
+	var endlessIIAimedStickyClock = EndlessIIClock()
+	var endlessIIMagnetismClock = EndlessIIClock()
+	var endlessIIPortalPaddleClock = EndlessIIClock()
+	var endlessIIPaddleHaloClock = EndlessIIClock()
+	var endlessIIBallSteeringClock = EndlessIIClock()
+	var endlessIIInertPaddleClock = EndlessIIClock()
+	var endlessIIFlippedAngleClock = EndlessIIClock()
+	var endlessIIReversedControlsClock = EndlessIIClock()
+	var endlessIIPaddleLastTick: TimeInterval = 0
+	var endlessIIPaddleFrameDelta: TimeInterval = 0
+	var endlessIIPendingPaddlePortals: [SKSpriteNode] = []
+	var endlessIIPaddleHaloNode: SKShapeNode?
+	var endlessIIPaddleHaloDrawnReach: CGFloat = 0
+	var endlessIISteeringLastPaddleX: CGFloat = 0
+	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
+	var endlessIIAimDrag: CGFloat = 0
+	var endlessIIAimArrow: SKShapeNode?
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -273,7 +292,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 31)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 39)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -750,6 +769,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpMultiBall = SKTexture(image: PowerUpIcon.multiBall)
 	let powerUpTrajectoryLine = SKTexture(image: PowerUpIcon.trajectoryLine)
 	let powerUpLandingMarker = SKTexture(image: PowerUpIcon.landingMarker)
+	let powerUpAimedSticky = SKTexture(image: PowerUpIcon.aimedSticky)
+	let powerUpMagnetism = SKTexture(image: PowerUpIcon.magnetism)
+	let powerUpPortalPaddle = SKTexture(image: PowerUpIcon.portalPaddle)
+	let powerUpPaddleHalo = SKTexture(image: PowerUpIcon.paddleHalo)
+	let powerUpBallSteering = SKTexture(image: PowerUpIcon.ballSteering)
+	let powerUpInertPaddle = SKTexture(image: PowerUpIcon.inertPaddle)
+	let powerUpFlippedAngle = SKTexture(image: PowerUpIcon.flippedAngle)
+	let powerUpReversedControls = SKTexture(image: PowerUpIcon.reversedControls)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -926,7 +953,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -1484,6 +1511,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Define the property to store the x position of the paddle
 		
 			paddleMovedDistance = touchLocation.x - previousLocation.x
+
+			if endlessIIAimDragged(by: paddleMovedDistance) { return }
+			// While a ball is being aimed the drag is the aim, and the paddle stays put
+
+			paddleMovedDistance *= endlessIIControlDirection
+			// Reversed Controls, and otherwise one - the whole power-up is this line
 			
 			var touchDistance = paddleMovedDistance
 			if touchDistance < 0 {
@@ -1588,6 +1621,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // A tap while the ball is coming back is spent bringing it back now, not launching
         // it. The pause after losing a ball is there to be felt, but a player who does not
         // want it should not have to spend the skip and the launch on the same tap
+
+        if touchBeganWhilstPlaying && gameState.currentState is Playing && endlessIIAimLaunch() {
+            touchBeganWhilstPlaying = false
+            return
+        }
+        // Aimed Sticky owns the launch while it runs (§5.4's launchControl group), whether
+        // the finger dragged or only tapped
 
         if endlessIITapLaunchesHeldBall && touchBeganWhilstPlaying && paddleMoved == false && gameState.currentState is Playing {
             endlessIILaunchHeldBall()
@@ -1757,6 +1797,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func didSimulatePhysics() {
         applyEndlessIIBallHandover()
+        applyEndlessIIPaddlePhysics()
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
     }
@@ -1772,6 +1813,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			tickEndlessIIExtraBalls()
 			tickEndlessIIHeldBalls()
 			tickEndlessIIVision(currentTime)
+			tickEndlessIIPaddlePowerUps(currentTime)
+			tickEndlessIIAim()
 			tickEndlessIIBuildIn(currentTime)
 		}
 		
@@ -2805,6 +2848,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			&& collisionPercentage < 1.0 && collisionPercentage > -1.0
 			&& stickyPaddleCatches != 0
 
+		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2
+			&& endlessIIAimedCatch(ball, isExtra: isExtra) {
+			return
+		}
+		// Aimed Sticky catches any ball landing on the top surface, wherever it lands - it
+		// owns the launch while it runs, and costs no sticky catches
+
 		if isExtra && inTheStickyBand && endlessIICatchExtraBall(ball) {
 			return
 		}
@@ -2839,10 +2889,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Don't try to adjust the ball's angle if it is on the paddle
 		}
 		
+		if isOnPaddle == false && endlessIIPaddlePortalTook(ball) {
+			return
+		}
+		// A Portal Paddle swallows the ball instead of bouncing it; it re-enters at the top
+		// after the step resolves. Past the catches, so a held ball is held first
+
 		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage < 1.0 && collisionPercentage > -1.0) {
 		// Only applies if the ball hits the top surface of the paddle
 			
-			angleDeg = angleDeg - angleAdjustmentK*collisionPercentage
+			angleDeg = angleDeg - angleAdjustmentK*collisionPercentage*endlessIIPaddleAngleInfluence
 			// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
 			
 			if angleDeg < 0+minAngleDeg {
@@ -3936,6 +3992,54 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[30] += 1
 
+		case powerUpAimedSticky:
+		// 31 - Aimed Sticky
+			endlessIICollectAimedSticky()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[31] += 1
+
+		case powerUpMagnetism:
+		// 32 - Magnetism
+			endlessIICollectMagnetism()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[32] += 1
+
+		case powerUpPortalPaddle:
+		// 33 - Portal Paddle
+			endlessIICollectPortalPaddle()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[33] += 1
+
+		case powerUpPaddleHalo:
+		// 34 - Paddle Halo
+			endlessIICollectPaddleHalo()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[34] += 1
+
+		case powerUpBallSteering:
+		// 35 - Ball Steering
+			endlessIICollectBallSteering()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[35] += 1
+
+		case powerUpInertPaddle:
+		// 36 - Inert Paddle. Bad
+			endlessIICollectInertPaddle()
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[36] += 1
+
+		case powerUpFlippedAngle:
+		// 37 - Flipped Angle. Bad
+			endlessIICollectFlippedAngle()
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[37] += 1
+
+		case powerUpReversedControls:
+		// 38 - Reversed Controls. Bad
+			endlessIICollectReversedControls()
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[38] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -4152,8 +4256,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.removeAllActions()
         // Stop all timers and animations
 		endlessIIResetVision()
-		// The vision power-ups keep their own clocks, so the removeAllActions above does not
-		// reach them
+		endlessIIResetPaddlePowerUps()
+		// Endless 2.0's own power-ups keep their own clocks, so the removeAllActions above
+		// does not reach them
 		powerUpsOnScreen = 0
 		multiplier = Scoring.multiplierBase
 		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
@@ -5461,6 +5566,14 @@ laserTimer?.invalidate()
 				powerUpActiveTimerArray?.append(endlessIILandingTotal)
 				powerUpActiveMagnitudeArray?.append(0)
 			}
+			for entry in endlessIIPaddleClockSaveEntries() {
+				powerUpActiveArray?.append(entry.key)
+				powerUpActiveDurationArray?.append(entry.remaining)
+				powerUpActiveTimerArray?.append(entry.total)
+				powerUpActiveMagnitudeArray?.append(entry.magnitude)
+			}
+			// The whole paddle batch, one entry per running clock - the key doubles as the
+			// ring id, so there is no third list to keep in step
 			
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
@@ -5778,6 +5891,7 @@ laserTimer?.invalidate()
 											    segments: segments))
 		}
 		entries.append(contentsOf: endlessIIVisionRingEntries())
+		entries.append(contentsOf: endlessIIPaddleRingEntries())
 		// Endless 2.0's own power-ups have no tray slot to be read from, so they report
 		// themselves
 		return entries
@@ -6291,7 +6405,10 @@ laserTimer?.invalidate()
 						endlessIILandingTotal = totalTime
 
 					default:
-						break
+						endlessIIRestorePaddleClock(key: savedGame.activePowerUps[i],
+													remaining: remainingTime,
+													total: totalTime,
+													magnitude: savedGame.activePowerUpMagnitudes[i])
 					}
 				}
 			}
