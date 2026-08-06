@@ -928,8 +928,13 @@ of them is in play.
 
 | Item | Notes |
 |---|---|
-| Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
+| Multi-Ball in the save format | §9.3. A paused run with four balls resumes with one. The only piece of phase 7 still owed |
+| Per-ball launch state | §5.5. Sticky Paddle holds the first ball only, and Aimed Sticky will have the same question. Not needed until phase 8 builds it |
+| A scatter cluster | §6.2.1 covers set formations with designed and undesigned contents. The third kind — particular bricks in a *random* arrangement — needs a generator rather than a grid |
 | New power-ups on the existing power-ups page | Waits until the new power-ups are actually implemented, so the page is written against what exists |
+
+Tap to skip the game-over height tally is **built** — the gesture is on the pause menu and does
+not cancel touches, so every button on the screen keeps working.
 
 **Backlogged**
 
