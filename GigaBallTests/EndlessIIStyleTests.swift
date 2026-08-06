@@ -9,6 +9,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class EndlessIIStyleTests: XCTestCase {
@@ -161,5 +162,43 @@ extension EndlessIIStyleTests {
         // The point of the on-hit reading: they used to be excluded here entirely.
         XCTAssertTrue(EndlessIIStyle.exploding.suits(.indestructibleAlways))
         XCTAssertTrue(EndlessIIStyle.spawner.suits(.indestructibleAlways))
+    }
+}
+
+extension EndlessIIStyleTests {
+
+    // MARK: - Fixed
+
+    func testAFixedBrickNeedsToBeDestructible() {
+        // It spends its first hit anchoring and its second dying. On a brick that never takes
+        // damage it would simply never anchor.
+        XCTAssertFalse(EndlessIIStyle.fixed.suits(.indestructibleAlways))
+        XCTAssertTrue(EndlessIIStyle.fixed.suits(.standard))
+        XCTAssertTrue(EndlessIIStyle.fixed.suits(.multiHit))
+        XCTAssertTrue(EndlessIIStyle.fixed.suits(.invisible))
+    }
+
+    func testFixedCannotShareABrickWithAnythingThatMovesIt() {
+        // One says stay exactly here, the others say do not.
+        XCTAssertFalse(EndlessIIStyle.fixed.stacksWith(.moving))
+        XCTAssertFalse(EndlessIIStyle.fixed.stacksWith(.gravity))
+        XCTAssertFalse(EndlessIIStyle.fixed.stacksWith(.portal))
+    }
+
+    func testFixedStillCombinesWithTheHarmlessStyles() {
+        // Anchoring says nothing about a brick's shape or what it does when destroyed.
+        for style in [EndlessIIStyle.rounded, .spinning, .flashing, .exploding, .spawner] {
+            XCTAssertTrue(EndlessIIStyle.fixed.stacksWith(style), "\(style)")
+        }
+    }
+
+    func testAnAnchorFlagTravelsWithItsBrick() {
+        let brick = SKSpriteNode()
+        XCTAssertFalse(brick.endlessIIIsAnchored)
+        brick.endlessIIIsAnchored = true
+        XCTAssertTrue(brick.endlessIIIsAnchored)
+
+        brick.endlessIIRole = .fixed
+        XCTAssertTrue(brick.endlessIIIsAnchored, "setting a role must not clear the anchor")
     }
 }

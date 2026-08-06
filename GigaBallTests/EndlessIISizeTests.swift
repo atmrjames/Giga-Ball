@@ -133,8 +133,15 @@ extension EndlessIISizeTests {
     }
 
     func testTheFullSetIsTheCommonCase() {
-        // A diagonal pair should read as a variation on something familiar.
-        let full = (0..<400).filter { _ in GameScene.endlessIITinyLayout().count == 4 }.count
-        XCTAssertGreaterThan(full, 200)
+        // A diagonal pair should read as a variation on something familiar, so the full set
+        // has to be properly more likely rather than merely as likely.
+        //
+        // The threshold is well below the expected count on purpose. This asserted more than
+        // half of a sample whose true rate was exactly half, which made it a coin flip that
+        // failed one run in two - and it took a real failure to notice, because a flaky test
+        // looks exactly like a real one until you read it.
+        let samples = 600
+        let full = (0..<samples).filter { _ in GameScene.endlessIITinyLayout().count == 4 }.count
+        XCTAssertGreaterThan(full, samples/2)
     }
 }

@@ -123,6 +123,7 @@ each other rather than the ones that are merely strange.
 |---|---|---|---|---|---|
 | Rounded | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Spinning | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Fixed | ✓ | ✓ | ✓ | ✗ ² | ✓ |
 | Flashing | ✓ | ✓ | ✓ | ✓ | ✗ ¹ |
 | Gravity | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Moving | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -258,16 +259,23 @@ to Exploding: one clears the field, this one refills it.
 fixed small number, never spawns another Spawner, and only into cells that are already
 empty — so it cannot displace anything or cascade.
 
-### 4.11a Fixed *(proposed, not built)*
+### 4.11a Fixed
 Behaves as an ordinary brick until it is struck once. From then on it stops descending with
 the rest of the field and holds its position, and is destroyed by a second hit. **Bricks that
 descend onto it are destroyed by it**, so leaving one alive carves a channel up through
 everything arriving above it.
 
 The interesting part is that it is the player who decides where the obstacle goes: one hit
-plants it, and where it is planted determines what the next twenty rows do. Needs care over
-what happens when one reaches the bottom row - it cannot be allowed to block generation for
-ever - and over whether a Big or Moving one can be fixed at all.
+plants it, and where it is planted determines what the next twenty rows do.
+
+**It never gates generation.** An anchored brick does not descend, so one anchored low in the
+field would sit in the bottom row for ever and no further row would be generated. It is
+excluded from the bottom-row count instead — still destructible by the player, by an
+explosion, or by Zap, it simply does not hold the field up while it waits.
+
+**Ordinary size only, and never with anything that moves it.** Only some quarters of a Tiny
+set would ever draw the style, and a Big one would wall off two columns at once. Moving and
+Gravity are excluded because one says stay exactly here and the others say do not.
 
 ### 4.11 Portal
 Struck rather than destroyed. The ball entering one leaves from another Portal brick
@@ -755,7 +763,6 @@ introduction schedule. Everything below is what remains, in the order it is wort
 | Item | Notes |
 |---|---|
 | Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
-| Fixed brick | Specced at §4.11a. Two open questions: what happens when one reaches the bottom row, and whether a Big or Moving one can be fixed |
 | Build-in animation | Bricks build in from the top at the start of a run, quickly, skippable with a tap |
 | Ring bar styling | The progress ring sits outside the icon; the icons have room for it to sit inside. Giga-Ball colour and glow |
 | Stuck-ball nudge | Rare endless loops remain. If the ball is detected as stuck, apply a small random direction change |

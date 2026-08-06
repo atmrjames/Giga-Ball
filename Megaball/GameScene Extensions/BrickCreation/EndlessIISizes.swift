@@ -78,13 +78,14 @@ extension GameScene {
         let bottomLeft = CGPoint(x: -0.25, y: -0.25)
         let bottomRight = CGPoint(x: 0.25, y: -0.25)
 
-        switch Int.random(in: 0...3) {
+        switch Int.random(in: 0...5) {
         case 0: return [topLeft, bottomRight]
         case 1: return [topRight, bottomLeft]
         default: return [bottomLeft, bottomRight, topLeft, topRight]
         }
-        // Weighted toward the full set, so a diagonal pair reads as a variation on something
-        // familiar rather than as the normal case
+        // Two in six, so the full set is genuinely the common case and a diagonal pair reads
+        // as a variation on something familiar. It was one in two, which is not a weighting
+        // at all - the comment said one thing and the arithmetic did another
     }
 
     /// How much of each quarter cell the brick actually fills.

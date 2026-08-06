@@ -36,6 +36,8 @@ enum EndlessIIBehaviour {
 enum EndlessIIStyle: String, CaseIterable {
     case rounded, spinning, flashing
     case gravity, moving, directional, exploding, spawner, portal
+    /// Anchors itself where it is when first struck (§4.11a).
+    case fixed
 
     /// Whether this style contradicts a behaviour, rather than merely being strange with it.
     func suits(_ behaviour: EndlessIIBehaviour) -> Bool {
@@ -62,6 +64,10 @@ enum EndlessIIStyle: String, CaseIterable {
             return true
         case .moving:
             return true
+        case .fixed:
+            // It needs a first hit to anchor it and a second to destroy it, so a behaviour
+            // that never takes damage would leave it as an ordinary brick that never fixes
+            return behaviour != .indestructibleAlways
         }
     }
 
@@ -98,6 +104,9 @@ enum EndlessIIStyle: String, CaseIterable {
         [.portal, .directional],    // nor ever damaged
         [.portal, .exploding],      // one big thing per hit, or nobody can follow it
         [.portal, .spawner],
+        [.fixed, .moving],       // one says stay put, the other says do not
+        [.fixed, .gravity],      // the same argument
+        [.fixed, .portal],       // a Portal is never damaged, so it never anchors
     ]
 }
 
@@ -114,6 +123,8 @@ enum EndlessIIRole: String {
     case spawner
     /// Sends the ball to the top; cannot be destroyed (§4.11).
     case portal
+    /// Anchors itself where it is when struck, and destroys what descends onto it (§4.11a).
+    case fixed
 }
 
 /// Which face of a Directional brick can be hurt.
@@ -151,6 +162,15 @@ extension SKNode {
         set {
             if userData == nil { userData = NSMutableDictionary() }
             userData?[SKNode.plainKey] = newValue
+        }
+    }
+
+    /// Whether a Fixed brick has been struck and anchored itself.
+    var endlessIIIsAnchored: Bool {
+        get { userData?["endlessIIAnchored"] as? Bool ?? false }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?["endlessIIAnchored"] = newValue
         }
     }
 

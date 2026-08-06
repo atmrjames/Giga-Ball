@@ -272,6 +272,7 @@ extension GameScene {
         case .exploding: found.append(.exploding)
         case .spawner: found.append(.spawner)
         case .portal: found.append(.portal)
+        case .fixed: found.append(.fixed)
         case nil: break
         }
         return found
@@ -306,6 +307,10 @@ extension GameScene {
         switch style {
         case .rounded: return centred
         case .spinning: return centred && isOrdinaryCellSized(brick)
+        case .fixed:
+            // Ordinary size only, for the same reason as Gravity: only some quarters of a
+            // Tiny set would ever draw it, and a Big one would wall off two columns at once
+            return isOrdinaryCellSized(brick)
         case .gravity:
             // Ordinary size only. A quarter-cell brick falling on its own looks like a piece
             // of a set coming loose - and it would be, since the four quarters are separate
@@ -385,6 +390,7 @@ extension GameScene {
         case .exploding: makeExploding(brick)
         case .spawner: makeSpawner(brick)
         case .portal: makePortal(brick)
+        case .fixed: makeFixed(brick)
         }
     }
 

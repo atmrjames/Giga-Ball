@@ -2109,6 +2109,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// A Portal is struck rather than damaged, so it never reaches the type switch
 
+		if endlessIIAnchorIfNeeded(sprite) {
+			laserNode?.removeFromParent()
+			if hapticsSetting { lightHaptic.impactOccurred() }
+			if soundsSetting { self.run(brickHitNormalSound) }
+			return
+		}
+		// A Fixed brick spends its first hit anchoring itself. The second one destroys it
+
 		if endlessIIAcceptsHit(sprite, from: hitFrom) == false {
 			laserNode?.removeFromParent()
 			if hapticsSetting {
@@ -2347,9 +2355,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.bricksLeft+=1
 				// Count the number of active bricks remaining
 				
-				if self.endlessMode && spriteBrick.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
+				if self.endlessMode && spriteBrick.position.y <= self.finalBrickRowHeight + self.brickHeight/2
+					&& spriteBrick.endlessIIIsAnchored == false {
 					endlessModeBricks+=1
 				}
+				// An anchored brick does not descend, so one anchored low would sit in the
+				// bottom row for ever and no row would ever be generated again. It is still
+				// destructible by the player, by an explosion, or by Zap - it simply does
+				// not hold the field up while it waits
 				// Count number of active bricks in bottom row of bricks in endless mode
 				
 				if self.endlessMode && spriteBrick.hasActions() {
@@ -2385,12 +2398,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		endlessMoveInProgress = true
 						
 		let moveBricksDown = SKAction.moveBy(x: 0, y: -brickHeight, duration: 0.05)
+		let anchored = endlessIIAnchoredCells()
 
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			if node.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
 				node.removeFromParent()
+				return
 			}
 			// Count number of active bricks in bottom row of bricks in endless mode
+
+			if self.endlessIIStaysPut(node) { return }
+			// An anchored brick is the one thing the field descends around
+
+			if self.endlessIICrushedByAnchor(node, anchored: anchored) {
+				if let brick = node as? SKSpriteNode { self.endlessIIDestroy(brick) }
+				return
+			}
+			// Anything descending onto an anchored brick is destroyed by it, which is what
+			// carves a channel up through everything arriving above it
 
 			node.run(moveBricksDown)
 		}

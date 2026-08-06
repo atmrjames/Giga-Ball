@@ -447,6 +447,72 @@ extension GameScene {
         if made > 0 { countBricks() }
     }
 
+    // MARK: - Fixed
+
+    /// Anchors itself where it is the first time it is struck, and is destroyed by the
+    /// second hit.
+    ///
+    /// The interesting part is that the player chooses where the obstacle goes. One hit
+    /// plants it, and where it is planted decides what the next twenty rows do - because
+    /// anything descending onto it is destroyed by it, so it carves a channel up through
+    /// everything that arrives above it.
+    func makeFixed(_ brick: SKSpriteNode) {
+        brick.endlessIIRole = .fixed
+        tint(brick, GameScene.fixedBrickColour)
+
+        let unit = brick.size.height*0.28
+        let pin = CGMutablePath()
+        pin.move(to: CGPoint(x: -unit, y: unit*0.7))
+        pin.addLine(to: CGPoint(x: unit, y: unit*0.7))
+        pin.move(to: CGPoint(x: 0, y: unit*0.7))
+        pin.addLine(to: CGPoint(x: 0, y: -unit*0.9))
+        addGlyph(pin, to: brick, filled: false)
+    }
+
+    /// Anchors a Fixed brick, or reports that it is already anchored and should take the hit.
+    ///
+    /// Returns true when the hit was spent anchoring it, so the caller knows to stop there.
+    func endlessIIAnchorIfNeeded(_ brick: SKSpriteNode) -> Bool {
+        guard gameMode == .endlessII, brick.endlessIIRole == .fixed else { return false }
+        guard brick.endlessIIIsAnchored == false else { return false }
+
+        brick.endlessIIIsAnchored = true
+        brick.removeAllActions()
+        // Any descent already under way has to stop, or it finishes moving after anchoring
+
+        tint(brick, GameScene.fixedAnchoredColour)
+        brick.run(.sequence([.scale(to: 1.15, duration: 0.06),
+                             .scale(to: 1, duration: 0.1)]))
+        if hapticsSetting { heavyHaptic.impactOccurred() }
+        return true
+    }
+
+    /// The cells held by anchored bricks, which nothing may descend into.
+    func endlessIIAnchoredCells() -> Set<EndlessIICell> {
+        var held: Set<EndlessIICell> = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode, brick.endlessIIIsAnchored else { return }
+            held.insert(self.endlessIICell(of: brick))
+        }
+        return held
+    }
+
+    /// Whether this brick stays where it is when the field descends.
+    func endlessIIStaysPut(_ node: SKNode) -> Bool {
+        gameMode == .endlessII && node.endlessIIIsAnchored
+    }
+
+    /// Whether a descending brick would land on an anchored one, and so be destroyed by it.
+    func endlessIICrushedByAnchor(_ node: SKNode, anchored: Set<EndlessIICell>) -> Bool {
+        guard gameMode == .endlessII, anchored.isEmpty == false else { return false }
+        guard node.endlessIIIsAnchored == false else { return false }
+        let cell = endlessIIGeometry.cell(at: node.position)
+        return anchored.contains(EndlessIICell(column: cell.column, row: cell.row + 1))
+    }
+
+    static let fixedBrickColour = UIColor(red: 0.60, green: 0.80, blue: 0.35, alpha: 1)
+    static let fixedAnchoredColour = UIColor(red: 0.95, green: 0.95, blue: 0.98, alpha: 1)
+
     // MARK: - Portal
 
     /// Sends the ball to the top of the field. Never destroyed.
