@@ -83,4 +83,50 @@ enum EndlessIIBalls {
         return CGPoint(x: parent.x + heading.dx/speed*clearance,
                        y: parent.y + heading.dy/speed*clearance)
     }
+
+    // MARK: - Saving
+
+    /// One ball as it is written into a save: where it is and how it is travelling.
+    struct Saved: Equatable {
+        var position: CGPoint
+        var velocity: CGVector
+    }
+
+    /// The four values each extra ball carries: x, y, dx, dy.
+    ///
+    /// Four rather than the primary ball's five - the fifth there is the paddle's x, which
+    /// belongs to the game rather than to a ball and is written once.
+    static let savedPropertiesCount = 4
+
+    /// Flattens the extra balls into the array a save holds.
+    ///
+    /// Flat doubles rather than a nested type because that is the shape every other array in
+    /// `SavedGame` already has, and because a save written by this build has to still decode in
+    /// the next one.
+    static func flattened(_ balls: [Saved]) -> [Double] {
+        balls.prefix(maximum - 1).flatMap {
+            [Double($0.position.x), Double($0.position.y),
+             Double($0.velocity.dx), Double($0.velocity.dy)]
+        }
+        // Capped on the way in as well as on the way out. A save holding five extras came from
+        // somewhere that was not this game, and restoring it would put more balls on the field
+        // than the mode allows
+    }
+
+    /// Reads the extra balls back out of a save.
+    ///
+    /// Forgiving in both directions: a trailing group that is short of four values is dropped
+    /// rather than read past the end, and anything beyond the maximum is ignored. A save is a
+    /// file on disk that an older build - or a bad write - may have left in any state, and this
+    /// runs at launch where a trap is a crash on opening the app.
+    static func unflattened(_ properties: [Double]?) -> [Saved] {
+        guard let properties else { return [] }
+
+        let whole = properties.count/savedPropertiesCount
+        return (0..<min(whole, maximum - 1)).map { index in
+            let base = index*savedPropertiesCount
+            return Saved(position: CGPoint(x: properties[base], y: properties[base + 1]),
+                         velocity: CGVector(dx: properties[base + 2], dy: properties[base + 3]))
+        }
+    }
 }

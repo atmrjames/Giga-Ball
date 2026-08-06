@@ -244,6 +244,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var gravityActivated: Bool = false
 	var pauseBallVelocityX: CGFloat = 0
 	var pauseBallVelocityY: CGFloat = 0
+	/// Every extra ball's velocity, held across a pause the way the first ball's is.
+	///
+	/// Pausing takes the velocities off the field, so each ball needs somewhere to keep its
+	/// own. Without this the extras came back stationary and dropped straight down, which is
+	/// three balls lost to opening the pause menu.
+	var pauseExtraBallVelocities: [CGVector] = []
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
@@ -5381,6 +5387,7 @@ laserTimer?.invalidate()
 		var brickXPositionArray: [Int]? = []
 		var brickYPositionArray: [Int]? = []
 		var ballPropertiesArray: [Double]? = []
+		var extraBallPropertiesArray: [Double] = []
 		
 		var laserXPositionArray: [Int] = []
 		var laserYPositionArray: [Int] = []
@@ -5633,6 +5640,17 @@ laserTimer?.invalidate()
 				let ballDYVelocity = Double(pauseBallVelocityY)
 				let paddleXPosition = Double(paddle.position.x)
 				ballPropertiesArray = [ballXPosition, ballYPosition, ballDXVelocity, ballDYVelocity, paddleXPosition]
+
+				extraBallPropertiesArray = EndlessIIBalls.flattened(
+					endlessIIExtraBalls.filter { $0.parent != nil }.enumerated().map { index, extra in
+						EndlessIIBalls.Saved(position: extra.position,
+											 velocity: pauseExtraBallVelocities.indices.contains(index)
+												? pauseExtraBallVelocities[index]
+												: extra.physicsBody?.velocity ?? .zero)
+					})
+				// The velocity recorded at the pause where there is one, and the live one where
+				// there is not - the game also saves itself on backgrounding, which does not go
+				// through the pause menu
 			}
 			// Only save ball properties if ball is in play and not on paddle
 			
@@ -5756,6 +5774,9 @@ laserTimer?.invalidate()
 			brickXPositions: brickXPositionArray != [] ? brickXPositionArray! : previous?.brickXPositions ?? [],
 			brickYPositions: brickXPositionArray != [] ? brickYPositionArray! : previous?.brickYPositions ?? [],
 			ballProperties: ballPropertiesArray != [] ? ballPropertiesArray! : previous?.ballProperties ?? [],
+			extraBallProperties: ballPropertiesArray != [] ? extraBallPropertiesArray : previous?.extraBallProperties,
+			// Written whenever the ball is - including empty, which is how a run that has just
+			// lost its extras stops claiming to have them
 			fallingPowerUpXPositions: powerUpFallingXPositionArray != [] ? powerUpFallingXPositionArray! : previous?.fallingPowerUpXPositions ?? [],
 			fallingPowerUpYPositions: powerUpFallingXPositionArray != [] ? powerUpFallingYPositionArray! : previous?.fallingPowerUpYPositions ?? [],
 			fallingPowerUps: powerUpFallingXPositionArray != [] ? powerUpFallingArray! : previous?.fallingPowerUps ?? [],
@@ -5945,6 +5966,8 @@ laserTimer?.invalidate()
 				ball.position.x = CGFloat(savedGame.ballProperties[0])
 				ball.position.y = CGFloat(savedGame.ballProperties[1])
 				paddle.position.x = CGFloat(savedGame.ballProperties[4])
+				endlessIIRestoreExtraBalls(from: EndlessIIBalls.unflattened(savedGame.extraBallProperties))
+				// A run paused with a Multi-Ball in play comes back with it
 				paddleLaser.position.x = paddle.position.x
 				paddleLaser.position.y = paddle.position.y - paddleHeight/2
 				paddleSticky.position.x = paddle.position.x
@@ -6492,7 +6515,16 @@ laserTimer?.invalidate()
 			node.isPaused = false
 		}
 		enumerateChildNodes(withName: BallCategoryName) { (node, _) in
-			self.ball.physicsBody!.velocity = CGVector(dx: self.pauseBallVelocityX, dy: self.pauseBallVelocityY)
+			if let index = self.endlessIIExtraBalls.firstIndex(where: { $0 === node }) {
+				// Each extra keeps its own heading. The line below sets the first ball's
+				// velocity whichever node it is looking at, so without this every ball in play
+				// was given the first one's - four balls travelling as one
+				if self.pauseExtraBallVelocities.indices.contains(index) {
+					node.physicsBody?.velocity = self.pauseExtraBallVelocities[index]
+				}
+			} else {
+				self.ball.physicsBody!.velocity = CGVector(dx: self.pauseBallVelocityX, dy: self.pauseBallVelocityY)
+			}
 			node.isPaused = false
 		}
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in

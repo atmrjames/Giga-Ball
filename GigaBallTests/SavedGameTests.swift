@@ -333,6 +333,60 @@ final class SavedGameTests: XCTestCase {
         XCTAssertEqual(SavedGame.load(from: defaults)?.ballProperties, [1, 2, 3, 4, 5])
     }
 
+    // MARK: - More than one ball
+
+    func testASaveWrittenBeforeMultiBallStillLoads() {
+        // Every save on every device in the world today was written without this field
+        var game = sampleGame()
+        game.extraBallProperties = nil
+        game.save(to: defaults)
+
+        let loaded = SavedGame.load(from: defaults)
+        XCTAssertNotNil(loaded)
+        XCTAssertNil(loaded?.extraBallProperties)
+        XCTAssertTrue(EndlessIIBalls.unflattened(loaded?.extraBallProperties).isEmpty)
+    }
+
+    func testEveryExtraBallSurvivesTheRoundTrip() {
+        var game = sampleGame()
+        game.ballProperties = [1, 2, 3, 4, 5]
+        game.extraBallProperties = EndlessIIBalls.flattened([
+            .init(position: CGPoint(x: 10, y: 20), velocity: CGVector(dx: 30, dy: -40)),
+            .init(position: CGPoint(x: -50, y: 60), velocity: CGVector(dx: -70, dy: 80)),
+        ])
+        game.save(to: defaults)
+
+        let restored = EndlessIIBalls.unflattened(SavedGame.load(from: defaults)?.extraBallProperties)
+        XCTAssertEqual(restored.count, 2)
+        XCTAssertEqual(restored[0].position, CGPoint(x: 10, y: 20))
+        XCTAssertEqual(restored[0].velocity, CGVector(dx: 30, dy: -40))
+        XCTAssertEqual(restored[1].position, CGPoint(x: -50, y: 60))
+        XCTAssertEqual(restored[1].velocity, CGVector(dx: -70, dy: 80))
+    }
+
+    func testARaggedExtraBallArrayIsRejected() {
+        // Read in whole groups of four during resume, at launch, where a trap is a crash on
+        // opening the app - the same shape of bug the ball guard above exists for
+        for count in [1, 2, 3, 5, 7] {
+            var game = sampleGame()
+            game.ballProperties = [1, 2, 3, 4, 5]
+            game.extraBallProperties = Array(repeating: 1.0, count: count)
+            game.save(to: defaults)
+
+            XCTAssertNil(SavedGame.load(from: defaults), "\(count) values should not load")
+        }
+    }
+
+    func testExtraBallsWithoutAFirstBallAreRejected() {
+        // The ball was on the paddle, so there is nothing for the others to be extra to
+        var game = sampleGame()
+        game.ballProperties = []
+        game.extraBallProperties = [1, 2, 3, 4]
+        game.save(to: defaults)
+
+        XCTAssertNil(SavedGame.load(from: defaults))
+    }
+
     // MARK: - Sticky paddle
 
     func testTheStickyPaddleTotalRoundTrips() {

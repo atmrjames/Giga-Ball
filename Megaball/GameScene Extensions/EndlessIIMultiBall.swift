@@ -156,6 +156,47 @@ extension GameScene {
             extra.removeFromParent()
         }
         endlessIIExtraBalls.removeAll()
+        pauseExtraBallVelocities.removeAll()
+        // Or the next set of balls would be handed the last set's headings on the first pause
+    }
+
+    // MARK: - Saving
+
+    /// Every extra ball as a save holds it.
+    ///
+    /// Read at the moment of saving, so it is where the balls actually are rather than where
+    /// they were when the pause menu opened.
+    var endlessIISavedExtraBalls: [EndlessIIBalls.Saved] {
+        endlessIIExtraBalls.filter { $0.parent != nil }.map {
+            EndlessIIBalls.Saved(position: $0.position,
+                                 velocity: $0.physicsBody?.velocity ?? .zero)
+        }
+    }
+
+    /// Puts the extra balls back where a save left them.
+    ///
+    /// The velocities go into `pauseExtraBallVelocities` rather than straight onto the bodies,
+    /// because a resumed game is a paused game: the countdown runs first, and every ball gets
+    /// its velocity at the moment play actually starts. Setting them here would have four balls
+    /// moving behind the countdown.
+    func endlessIIRestoreExtraBalls(from saved: [EndlessIIBalls.Saved]) {
+        guard gameMode == .endlessII else { return }
+        endlessIIClearExtraBalls()
+        pauseExtraBallVelocities = []
+
+        for entry in saved {
+            let extra = SKSpriteNode(texture: ball.texture)
+            extra.size = ball.size
+            extra.zPosition = ball.zPosition
+            extra.name = BallCategoryName
+            extra.position = entry.position
+            addChild(extra)
+
+            extra.physicsBody = endlessIIBallBody(radius: ballSize/2)
+            extra.physicsBody?.velocity = .zero
+            endlessIIExtraBalls.append(extra)
+            pauseExtraBallVelocities.append(entry.velocity)
+        }
     }
 
     /// Keeps the extras in step with the ball each frame.

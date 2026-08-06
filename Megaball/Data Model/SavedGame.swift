@@ -107,6 +107,16 @@ struct SavedGame: Codable, Equatable {
     /// Ball position and velocity, flattened.
     var ballProperties: [Double]
 
+    /// Every ball beyond the first, four values each: x, y, dx, dy.
+    ///
+    /// Endless 2.0 only, and only while a Multi-Ball is in play. Without it a run paused with
+    /// four balls came back with one, which is a power-up quietly taken away by the pause
+    /// button - and the longer the run, the more it cost.
+    ///
+    /// Optional so every save written before Multi-Ball existed still decodes. Those restore
+    /// with no extras, which is exactly what they had.
+    var extraBallProperties: [Double]? = nil
+
     // MARK: - Power-ups in flight
     // Three arrays indexed together, one entry per falling power-up.
 
@@ -167,8 +177,15 @@ struct SavedGame: Codable, Equatable {
         let ballIsWholeOrAbsent = ballProperties.isEmpty
             || ballProperties.count == SavedGame.ballPropertiesCount
         let lasersAgree = (laserXPositions?.count ?? 0) == (laserYPositions?.count ?? 0)
+        // The extras are read in whole groups of four, so a ragged array is a save that was
+        // written by something other than this game. They also cannot outlive the ball they
+        // are extra to: a save with no primary ball but three secondary ones has nothing to
+        // restore them alongside
+        let extrasAreWholeGroups = (extraBallProperties?.count ?? 0)
+            .isMultiple(of: EndlessIIBalls.savedPropertiesCount)
+        let extrasHaveABall = (extraBallProperties?.isEmpty ?? true) || ballProperties.isEmpty == false
         return brickCounts.count == 1 && fallingCounts.count == 1 && activeCounts.count == 1
-            && ballIsWholeOrAbsent && lasersAgree
+            && ballIsWholeOrAbsent && lasersAgree && extrasAreWholeGroups && extrasHaveABall
     }
 
     // MARK: - Legacy migration

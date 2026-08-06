@@ -39,6 +39,10 @@ class Paused: GKState {
             scene.pauseBallVelocityY = scene.ball.physicsBody!.velocity.dy
             // Record the speed of the ball so it can be reapplied later
             
+            scene.pauseExtraBallVelocities = scene.endlessIISavedExtraBalls.map(\.velocity)
+            // And every other ball's, in the order they are held in. Recorded here rather than
+            // read off the bodies later because pausing is what takes them off the field
+            
             if sqrt(scene.pauseBallVelocityX*scene.pauseBallVelocityX) + sqrt(scene.pauseBallVelocityY*scene.pauseBallVelocityY) == 0 && scene.ballIsOnPaddle == false {
                 scene.ballLaunchAngleRad = scene.straightLaunchAngleRad + scene.minLaunchAngleRad
                 scene.pauseBallVelocityX = cos(CGFloat(scene.ballLaunchAngleRad)) * CGFloat(scene.ballSpeedLimit)

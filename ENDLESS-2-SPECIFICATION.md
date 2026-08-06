@@ -474,7 +474,7 @@ untouched — but the scene must hold a *collection* of balls rather than one, w
 
 - ball-lost handling, which currently ends the life on any loss
 - per-ball state: sticky, aura, trajectory line, landing marker each act on their own ball
-- the save format, which stores one ball's position and velocity (§9.3)
+- the save format, which stored one ball's position and velocity (§9.3) — **built**
 - the ball-speed power-ups, which set a single shared limit — proposed: shared across all
   balls, as one value, matching the `ballSpeed` conflict group
 
@@ -834,6 +834,24 @@ generated field as it stands, and the phase and schedule position so generation 
 coherently. Generation does not need to be reproducible from a seed - the field is stored
 as it is today, and only one phase is planned ahead.
 
+**Built.** Every ball beyond the first is written as four values — x, y, dx, dy — in one flat
+array beside the first ball's five. The fifth value there is the paddle's x, which belongs to
+the game rather than to a ball and is written once.
+
+- The field is **optional**, so every save written before Multi-Ball existed still decodes.
+  Those restore with no extras, which is what they had.
+- A save is a file on disk that an older build or a bad write may have left in any state, and
+  it is read at launch, where a trap is a crash on opening the app. So a ragged array — one
+  not a whole number of balls — fails the consistency check and the save is discarded rather
+  than read past the end, and extras claiming no first ball to be extra to are rejected the
+  same way.
+- No more balls come back than §5.5 allows, capped both when writing and when reading.
+- Velocities are restored the way the first ball's are: into the paused-velocity store, so
+  the countdown runs with the field still, and every ball starts moving at the moment play
+  does. Pausing is what takes the velocities off the field, so each ball needs somewhere of
+  its own to keep one — without that the extras came back stationary and dropped straight
+  down, which is three balls lost to opening the pause menu.
+
 ---
 
 ## 10. Decisions
@@ -920,15 +938,14 @@ of them is in play.
 - Sticky Paddle holds the first ball only. Per-ball launch state is listed in §5.5 and is not
   built.
 
-| Still owed | Why |
-|---|---|
-| The save format | §9.3: it stores one ball's position and velocity, so a paused run with four resumes with one |
+- The save format carries every ball, so a run paused with four resumes with four (§9.3).
+
+Phase 7 is complete.
 
 **Open, in rough priority order**
 
 | Item | Notes |
 |---|---|
-| Multi-Ball in the save format | §9.3. A paused run with four balls resumes with one. The only piece of phase 7 still owed |
 | Per-ball launch state | §5.5. Sticky Paddle holds the first ball only, and Aimed Sticky will have the same question. Not needed until phase 8 builds it |
 | A scatter cluster | §6.2.1 covers set formations with designed and undesigned contents. The third kind — particular bricks in a *random* arrangement — needs a generator rather than a grid |
 | New power-ups on the existing power-ups page | Waits until the new power-ups are actually implemented, so the page is written against what exists |

@@ -123,4 +123,62 @@ final class EndlessIIBallsTests: XCTestCase {
         scene.gameMode = .classic
         XCTAssertFalse(scene.endlessIIBallWasLost(scene.ball))
     }
+
+    // MARK: - Saving
+
+    func testABallIsWrittenAsFourValues() {
+        let flat = EndlessIIBalls.flattened([
+            .init(position: CGPoint(x: 1, y: 2), velocity: CGVector(dx: 3, dy: 4)),
+        ])
+        XCTAssertEqual(flat, [1, 2, 3, 4])
+    }
+
+    func testEveryBallComesBackAsItWentIn() {
+        let balls: [EndlessIIBalls.Saved] = [
+            .init(position: CGPoint(x: -12.5, y: 340), velocity: CGVector(dx: 200, dy: -180)),
+            .init(position: CGPoint(x: 88, y: -4), velocity: CGVector(dx: -60, dy: 60)),
+            .init(position: CGPoint(x: 0, y: 0), velocity: CGVector(dx: 0, dy: 0)),
+        ]
+        XCTAssertEqual(EndlessIIBalls.unflattened(EndlessIIBalls.flattened(balls)), balls)
+    }
+
+    func testNothingSavedRestoresNothing() {
+        XCTAssertTrue(EndlessIIBalls.unflattened(nil).isEmpty)
+        XCTAssertTrue(EndlessIIBalls.unflattened([]).isEmpty)
+        XCTAssertTrue(EndlessIIBalls.flattened([]).isEmpty)
+    }
+
+    func testAHalfWrittenBallIsDropped() {
+        // A save is a file on disk that a bad write may have left in any state, and this is
+        // read at launch. Reading past the end there is a crash on opening the app
+        let one: [Double] = [1, 2, 3, 4]
+        for trailing in 1...3 {
+            let ragged = one + Array(repeating: 9.0, count: trailing)
+            XCTAssertEqual(EndlessIIBalls.unflattened(ragged).count, 1, "\(trailing) extra")
+        }
+    }
+
+    func testNoMoreBallsComeBackThanTheModeAllows() {
+        // The first ball is not in here, so the most there can be is one short of the maximum.
+        // A save claiming more came from somewhere that was not this game
+        let many = (0..<10).map { index in
+            EndlessIIBalls.Saved(position: CGPoint(x: CGFloat(index), y: 0),
+                                 velocity: CGVector(dx: 1, dy: 1))
+        }
+        XCTAssertEqual(EndlessIIBalls.flattened(many).count,
+                       (EndlessIIBalls.maximum - 1)*EndlessIIBalls.savedPropertiesCount)
+        XCTAssertEqual(EndlessIIBalls.unflattened(Array(repeating: 1.0, count: 40)).count,
+                       EndlessIIBalls.maximum - 1)
+    }
+
+    func testAFullFieldOfBallsSurvivesAPause() {
+        // The case the format exists for: four balls in play when the pause menu opens
+        let balls = (0..<(EndlessIIBalls.maximum - 1)).map { index in
+            EndlessIIBalls.Saved(position: CGPoint(x: CGFloat(index)*10, y: 100),
+                                 velocity: CGVector(dx: CGFloat(index) - 1, dy: 300))
+        }
+        let restored = EndlessIIBalls.unflattened(EndlessIIBalls.flattened(balls))
+        XCTAssertEqual(restored, balls)
+        XCTAssertEqual(restored.count + 1, EndlessIIBalls.maximum)
+    }
 }
