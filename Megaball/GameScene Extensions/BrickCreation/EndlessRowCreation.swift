@@ -663,6 +663,9 @@ extension GameScene {
         // The clearance around it was reserved two rows ago; whatever brick the generator
         // put here is the one that turns, whatever type it happens to be
 
+        applyEndlessIIPowerUpSchedule()
+        // After this row's own probability tweaks, so it damps the figures actually in use
+
         applyEndlessIISizes(to: &brickArray)
         applyEndlessIIBehaviours(to: brickArray)
         applyEndlessIIRoles(to: brickArray)

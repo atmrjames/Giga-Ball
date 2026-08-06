@@ -133,6 +133,30 @@ extension GameScene {
         // sitting there next time
     }
 
+    // MARK: - Power-up schedule
+
+    /// Damps the power-ups a run has not been introduced to yet.
+    ///
+    /// Applied on top of whatever the allocation tables decided rather than replacing them,
+    /// so every authored weight and every level-specific tweak still holds - this only says
+    /// how much of that weight is available at this depth.
+    ///
+    /// Never to zero. A weight of one is the difference between a power-up somebody might
+    /// meet in their first run and one they certainly will not.
+    func applyEndlessIIPowerUpSchedule() {
+        guard gameMode == .endlessII else { return }
+        let progression = endlessIIProgression
+
+        for index in powerUpProbArray.indices where powerUpProbArray[index] > 0 {
+            let scale = progression.powerUpWeightScale(for: index, at: endlessHeight)
+            guard scale < 1 else { continue }
+            powerUpProbArray[index] = max(1, Int((Double(powerUpProbArray[index])*scale).rounded()))
+        }
+        powerUpProbSum = powerUpProbArray.reduce(0, +)
+        // Recomputed here because the draw divides by this, and a sum left over from before
+        // the damping would make every weight mean something slightly different
+    }
+
     // MARK: - Generating
 
     /// Picks what a single cell of a new Endless 2.0 row holds.
@@ -528,6 +552,7 @@ extension GameScene {
         }
 
         tickEndlessIIRoles(delta)
+        tickEndlessIIRescue(delta)
         refreshEndlessIIRoundedFaces()
     }
 

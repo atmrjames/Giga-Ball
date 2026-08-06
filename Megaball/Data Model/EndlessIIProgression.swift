@@ -30,6 +30,13 @@ struct EndlessIIProgression {
     /// most runs, rather than the same first three things for ever.
     let introductionOrder: [EndlessIIStyle]
 
+    /// The order power-ups are introduced in, shuffled once per run alongside the styles.
+    ///
+    /// Indices into the probability array rather than a named type, because that array is
+    /// what the drop actually reads and a second list of names would only have to be kept in
+    /// step with it.
+    var powerUpOrder: [Int] = []
+
     /// Metres between one style being introduced and the next.
     ///
     /// Spread so the last one arrives around 280m, which leaves most of a long run for the
@@ -63,10 +70,38 @@ struct EndlessIIProgression {
     /// shallow one rather than simply fuller.
     static let rampMetres = 1000
 
-    static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases)
-    -> EndlessIIProgression {
-        EndlessIIProgression(introductionOrder: styles.shuffled())
+    static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
+                     powerUps: Int = 28) -> EndlessIIProgression {
+        EndlessIIProgression(introductionOrder: styles.shuffled(),
+                             powerUpOrder: Array(0..<powerUps).shuffled())
     }
+
+    /// Metres between one power-up being introduced and the next.
+    ///
+    /// Tighter than the styles' spacing because there are three times as many of them, and a
+    /// run that had met only a handful by four hundred metres would feel thin rather than
+    /// gradual.
+    static let powerUpIntroductionSpacing = 14
+
+    /// The height a power-up is introduced at.
+    func powerUpIntroductionHeight(of index: Int) -> Int {
+        guard let place = powerUpOrder.firstIndex(of: index) else { return 0 }
+        return place*EndlessIIProgression.powerUpIntroductionSpacing
+    }
+
+    /// What a power-up's authored weight should be scaled to at this height.
+    ///
+    /// Rarity is preserved rather than replaced: being introduced does not make something
+    /// common, it restores whatever weight it was given in the first place. Before that it
+    /// keeps a fraction of it, so an early run can still turn one up as a surprise - the same
+    /// rule the styles follow, for the same reason.
+    func powerUpWeightScale(for index: Int, at height: Int) -> Double {
+        height >= powerUpIntroductionHeight(of: index)
+            ? 1
+            : EndlessIIProgression.powerUpEarlyScale
+    }
+
+    static let powerUpEarlyScale = 0.15
 
     // MARK: - Which styles are on the table
 

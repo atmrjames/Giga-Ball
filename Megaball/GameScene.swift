@@ -633,6 +633,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
 	var endlessIIBuildingIn = false
+	var endlessIIStuckTimer: TimeInterval = 0
 	var endlessIISetRowQueue: [String] = []
 	// The rows of a designed pattern still to come, one per generated row
 	var endlessIIPhaseBehaviour: EndlessIIBehaviour?

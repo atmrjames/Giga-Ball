@@ -86,6 +86,7 @@ extension GameScene {
             
         }
 
+        applyEndlessIIPowerUpSchedule()
         startEndlessIIBuildIn()
         applyEndlessIISizes(to: &brickBuildArray)
         applyEndlessIIBehaviours(to: brickBuildArray)

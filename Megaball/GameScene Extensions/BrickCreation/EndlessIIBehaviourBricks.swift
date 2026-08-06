@@ -706,6 +706,8 @@ extension GameScene {
     /// thing this does is check the brick actually went.
     func endlessIIBrickDestroyed(_ brick: SKSpriteNode) {
         guard gameMode == .endlessII else { return }
+        endlessIINotedProgress()
+        // Something was destroyed, so whatever the ball is doing it is not stuck
         guard brick.texture != brickIndestructible1Texture,
               brick.texture != brickIndestructible2Texture else { return }
 

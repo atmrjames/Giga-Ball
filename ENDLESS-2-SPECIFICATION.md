@@ -744,7 +744,7 @@ only at the end. Nothing in a later phase is a prerequisite for testing an earli
 | **3. Simple bricks** ✅ | Spinning, Flashing, Rounded - no grid changes needed | Whether they read clearly and whether Flashing is fair |
 | **4. Sizes** ✅ | Big and Tiny, on the brick grid | Whether Tiny is worth its cost, which is the open question in §11 |
 | **5. Behavioural bricks** ✅ | Gravity, Moving, Directional, Exploding, Spawner, Portal | Whether explosions and cascades feel good or chaotic |
-| **6. Generation** ✅ mostly | Phases, gentle opening, and the **style progression** below. Power-up introduction schedule still to do | The heart of it: whether a run feels varied and whether the pacing works |
+| **6. Generation** ✅ | Phases, gentle opening, the **style progression** below, and the power-up introduction schedule | The heart of it: whether a run feels varied and whether the pacing works |
 | **7. Multi-Ball** | The collection of balls, and the run continuing while one survives | Performance with four balls, and whether it is as fun as it sounds |
 | **8. New power-ups** | In batches, simplest first: vision, then paddle, then rules-changing | Each batch on its own, which is the only way to tune rarity |
 | **9. Presentation** | Scrolling backgrounds, icons, the information page | The finish |
@@ -755,8 +755,8 @@ reaching before judging whether the whole idea works.
 
 ### 12.0 Where this has got to
 
-Phases 1 to 5 are built and play-tested. Phase 6 is built apart from the power-up
-introduction schedule. Everything below is what remains, in the order it is worth doing.
+Phases 1 to 6 are built. Everything below is what remains, in the order it is worth doing —
+all of it presentation and reference material rather than mechanics.
 
 **Open, in rough priority order**
 
@@ -764,9 +764,7 @@ introduction schedule. Everything below is what remains, in the order it is wort
 |---|---|
 | Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
 | Ring bar styling | The progress ring sits outside the icon; the icons have room for it to sit inside. Giga-Ball colour and glow |
-| Stuck-ball nudge | Rare endless loops remain. If the ball is detected as stuck, apply a small random direction change |
 | Background selection screen | Rather than a name on a cell, a screen showing a scene mock-up that can be swiped between |
-| Power-up introduction schedule | The last piece of §6.3 — the same treatment styles already get |
 | Brick types menu page | A reference page like the power-ups one. The new power-ups also need adding to the existing page |
 
 **Backlogged**

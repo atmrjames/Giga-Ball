@@ -347,3 +347,71 @@ extension EndlessIIProgressionTests {
         }
     }
 }
+
+extension EndlessIIProgressionTests {
+
+    // MARK: - The power-up schedule
+
+    private var withPowerUps: EndlessIIProgression {
+        EndlessIIProgression(introductionOrder: order, powerUpOrder: Array(0..<28))
+    }
+
+    func testNoPowerUpIsEverLockedOut() {
+        // The same rule the styles follow: being introduced late makes something unlikely,
+        // never impossible. Somebody's first run should still be able to surprise them.
+        let p = withPowerUps
+        for index in 0..<28 {
+            XCTAssertGreaterThan(p.powerUpWeightScale(for: index, at: 0), 0, "\(index)")
+        }
+    }
+
+    func testRarityIsRestoredRatherThanReplaced() {
+        // Being introduced does not make something common - it gives back the weight it was
+        // authored with, whatever that was.
+        let p = withPowerUps
+        let last = 27
+        let deep = p.powerUpIntroductionHeight(of: last)
+        XCTAssertEqual(p.powerUpWeightScale(for: last, at: deep), 1, accuracy: 0.0001)
+        XCTAssertEqual(p.powerUpWeightScale(for: last, at: deep + 500), 1, accuracy: 0.0001)
+    }
+
+    func testAnUnintroducedPowerUpIsDampedButPresent() {
+        let p = withPowerUps
+        let last = 27
+        let scale = p.powerUpWeightScale(for: last, at: 0)
+        XCTAssertLessThan(scale, 1)
+        XCTAssertGreaterThan(scale, 0)
+    }
+
+    func testTheFirstPowerUpIsAvailableImmediately() {
+        XCTAssertEqual(withPowerUps.powerUpIntroductionHeight(of: 0), 0)
+    }
+
+    func testTheWholeSetIsIntroducedWithinAReasonableRun() {
+        // All twenty-eight should be in play well before the ramp ends, or the second half of
+        // a long run would still be meeting basics.
+        let p = withPowerUps
+        let latest = (0..<28).map { p.powerUpIntroductionHeight(of: $0) }.max() ?? 0
+        XCTAssertLessThan(latest, EndlessIIProgression.rampMetres)
+    }
+
+    func testThePowerUpOrderDiffersBetweenRuns() {
+        let first = EndlessIIProgression.make().powerUpOrder
+        let anyDifferent = (0..<20).contains { _ in
+            EndlessIIProgression.make().powerUpOrder != first
+        }
+        XCTAssertTrue(anyDifferent)
+    }
+
+    func testEveryPowerUpAppearsInTheOrderExactlyOnce() {
+        let made = EndlessIIProgression.make().powerUpOrder
+        XCTAssertEqual(made.count, 28)
+        XCTAssertEqual(Set(made).count, 28)
+    }
+
+    func testAnIndexOutsideTheOrderIsTreatedAsAvailable() {
+        // If the probability array ever grows past what the schedule was built for, the extra
+        // entries must keep working rather than silently vanishing from the draw.
+        XCTAssertEqual(withPowerUps.powerUpWeightScale(for: 999, at: 0), 1, accuracy: 0.0001)
+    }
+}
