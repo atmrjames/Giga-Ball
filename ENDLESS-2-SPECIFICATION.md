@@ -459,6 +459,18 @@ Each has a **weight** and some a **minimum height**, so the opening stays gentle
 | Windfall | Normal density, noticeably more power-ups | — |
 | Monolith | One enormous Big brick formation with a narrow route | High |
 | Static | Flashing bricks, all in phase, so the whole field blinks together | High |
+| Monoculture | One brick behaviour and nothing else, for the whole phase | Medium |
+| Giants | Big bricks only, at lower density | Medium |
+| Miniatures | Tiny bricks only, at higher density | Medium |
+| Motif | Every brick wears the same pair of styles — spinning Multi-hit, rounded Indestructible | High |
+
+**The uniform phases are the rarest.** Monoculture, Giants, Miniatures and Motif fix what
+the field is made of once, at the start of the phase, rather than drawing it per brick. A
+field where everything is one thing is a different problem from one where everything is
+different, and it is a problem the player can plan against — which is what makes it a relief
+after a mixed stretch rather than another kind of noise. It also shows a combination off
+properly: one spinning Multi-hit brick is a curiosity, a screen of them is a puzzle. They
+carry the lowest weights because a run that kept serving them would be a run of set pieces.
 
 **Breathers are weighted, not scheduled.** Quiet simply carries a higher weight than the
 rest, so breaks arrive often without being predictable. A Quiet phase is **not empty** — a

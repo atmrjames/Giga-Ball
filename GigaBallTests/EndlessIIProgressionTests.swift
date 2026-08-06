@@ -280,3 +280,55 @@ extension EndlessIIProgressionTests {
         XCTAssertGreaterThan(p.motionRate(at: 1000), 1.0)
     }
 }
+
+extension EndlessIIProgressionTests {
+
+    // MARK: - Phases that fix what the field is made of
+
+    func testTheUniformPhasesAreTheRarestOnes() {
+        // They are the strongest flavour available, and a run that kept serving them would
+        // be a run of set pieces rather than a field.
+        let uniform = EndlessIIPhase.allCases.filter { $0.isUniform }
+        let varied = EndlessIIPhase.allCases.filter { $0.isUniform == false }
+        XCTAssertFalse(uniform.isEmpty)
+        for one in uniform {
+            for other in varied {
+                XCTAssertLessThan(one.weight, other.weight, "\(one) vs \(other)")
+            }
+        }
+    }
+
+    func testNoUniformPhaseAppearsInTheOpening() {
+        // A player has to know what an ordinary field looks like before one made entirely
+        // of one thing means anything.
+        for phase in EndlessIIPhase.allCases where phase.isUniform {
+            XCTAssertGreaterThan(phase.minimumHeight, 100, "\(phase)")
+        }
+    }
+
+    func testAMotifWaitsUntilStackingIsFamiliar() {
+        // It is two styles on every brick, so it should not be where somebody first meets
+        // the idea of two styles at all.
+        XCTAssertGreaterThan(EndlessIIPhase.motif.minimumHeight,
+                             EndlessIIPhase.monoculture.minimumHeight)
+    }
+
+    func testAPhaseOfBigBricksIsThinnerAndOneOfTinyOnesIsDenser() {
+        // Same number of cells means something different when the bricks are four times the
+        // size, so the density has to move with it.
+        XCTAssertLessThan(EndlessIIPhase.giants.densityFactor,
+                          EndlessIIPhase.standard.densityFactor)
+        XCTAssertGreaterThan(EndlessIIPhase.miniatures.densityFactor,
+                             EndlessIIPhase.standard.densityFactor)
+    }
+
+    func testEveryPhaseStillHasSomewhereItCanAppear() {
+        let p = progression
+        for phase in EndlessIIPhase.allCases {
+            let allowed = EndlessIIPhase.allCases.filter { phase.minimumHeight >= $0.minimumHeight }
+            XCTAssertTrue(allowed.contains(phase), "\(phase)")
+            XCTAssertGreaterThan(phase.weight, 0, "\(phase)")
+            _ = p.pickPhase(at: phase.minimumHeight)
+        }
+    }
+}

@@ -149,6 +149,12 @@ struct EndlessIIProgression {
 enum EndlessIIPhase: String, CaseIterable {
     case standard, quiet, swarm, drift, flicker
     case cascade, minefield, fortress, gauntlet, carousel
+    /// One kind of brick and nothing else, for as long as it lasts.
+    case monoculture
+    /// Every brick is the same size, and it is not the usual one.
+    case giants, miniatures
+    /// Every brick wears the same pair of styles.
+    case motif
 
     /// How much this phase multiplies the height's density by.
     var densityFactor: Double {
@@ -158,6 +164,24 @@ enum EndlessIIPhase: String, CaseIterable {
         case .swarm: return 1.15
         case .fortress, .minefield: return 1.25
         case .standard, .cascade, .gauntlet: return 1.0
+        case .monoculture, .motif: return 0.9
+        case .giants: return 0.7
+        case .miniatures: return 1.3
+        }
+    }
+
+    /// Whether every brick in this phase should be the same, rather than drawn afresh each
+    /// time.
+    ///
+    /// A field where everything is one thing is a different problem from a field where
+    /// everything is different, and it is a problem the player can actually plan against -
+    /// which is what makes it a relief after a mixed stretch rather than another kind of
+    /// noise. It also shows off a combination properly: one spinning Multi-hit brick is a
+    /// curiosity, a screen of them is a puzzle.
+    var isUniform: Bool {
+        switch self {
+        case .monoculture, .giants, .miniatures, .motif: return true
+        default: return false
         }
     }
 
@@ -171,6 +195,7 @@ enum EndlessIIPhase: String, CaseIterable {
         case .gauntlet: return [.directional]
         case .carousel: return [.spinning, .rounded]
         case .standard, .quiet, .swarm, .fortress: return []
+        case .monoculture, .giants, .miniatures, .motif: return []
         }
     }
 
@@ -180,6 +205,9 @@ enum EndlessIIPhase: String, CaseIterable {
         switch self {
         case .quiet: return 26
         case .standard: return 22
+        // The uniform ones are the rarest. They are the strongest flavour here, and a run
+        // that kept serving them would be a run of set pieces rather than a field
+        case .monoculture, .giants, .miniatures, .motif: return 4
         default: return 8
         }
     }
@@ -191,6 +219,11 @@ enum EndlessIIPhase: String, CaseIterable {
         case .swarm, .drift, .flicker: return 40
         case .cascade, .minefield: return 120
         case .fortress, .gauntlet, .carousel: return 250
+        case .monoculture, .miniatures: return 150
+        case .giants: return 200
+        // A motif is two styles at once, so it waits until stacking is a thing a player has
+        // met on ordinary bricks first
+        case .motif: return 350
         }
     }
 

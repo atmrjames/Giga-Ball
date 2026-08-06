@@ -114,7 +114,7 @@ extension GameScene {
             return brickNullTexture
         }
 
-        switch progression.pickBehaviour(at: endlessHeight) {
+        switch endlessIIPhaseBehaviour ?? progression.pickBehaviour(at: endlessHeight) {
         case .multiHit: return brickMultiHit3Texture
         case .indestructibleOnce: return brickIndestructible1Texture
         case .indestructibleAlways: return brickIndestructible2Texture
@@ -124,13 +124,38 @@ extension GameScene {
     }
 
     /// Moves the run on to the next phase when the current one has run its length.
+    ///
+    /// A uniform phase settles what it is made of once, here, rather than per brick - that
+    /// is the whole point of it. Everything else clears those choices so the ordinary mix
+    /// resumes.
     func advanceEndlessIIPhase() {
         guard gameMode == .endlessII else { return }
         guard endlessHeight >= endlessIIPhaseEndsAt else { return }
 
-        endlessIIPhase = endlessIIProgression.pickPhase(at: endlessHeight)
-        endlessIIPhaseEndsAt = endlessHeight + Int.random(in: EndlessIIPhase.shortest...EndlessIIPhase.longest)
+        let phase = endlessIIProgression.pickPhase(at: endlessHeight)
+        endlessIIPhase = phase
+        endlessIIPhaseEndsAt = endlessHeight
+            + Int.random(in: EndlessIIPhase.shortest...EndlessIIPhase.longest)
+
+        endlessIIPhaseBehaviour = nil
+        endlessIIPhaseStyles = []
+        guard phase.isUniform else { return }
+
+        switch phase {
+        case .monoculture:
+            endlessIIPhaseBehaviour = endlessIIProgression.pickBehaviour(at: endlessHeight)
+        case .motif:
+            // A pair that can actually share a brick, drawn from what this depth offers
+            let first = endlessIIProgression.pickStyle(from: EndlessIIStyle.allCases,
+                                                       at: endlessHeight)
+            let partners = EndlessIIStyle.allCases.filter { first?.stacksWith($0) == true }
+            let second = endlessIIProgression.pickStyle(from: partners, at: endlessHeight)
+            endlessIIPhaseStyles = [first, second].compactMap { $0 }
+        default:
+            break
+        }
     }
+
 
     // MARK: - Applying
 
@@ -241,12 +266,22 @@ extension GameScene {
             // Both are chances rather than gates, so a stack is possible from the first
             // metre and simply unlikely
             let alreadyStyled = endlessIIStyles(on: brick).isEmpty == false
-            let chance = alreadyStyled
+            var chance = alreadyStyled
                 ? progression.stackChance(at: height)
                 : progression.styleChance(at: height)
+            if endlessIIPhaseStyles.isEmpty == false { chance = 85 }
+            // A motif phase is the motif. Running it at the ordinary rate would produce a
+            // stretch of plain bricks with the occasional themed one, which is not a phase
             guard Int.random(in: 1...100) <= chance else { continue }
 
-            guard let wanted = progression.pickStyle(from: pool, at: height),
+            let offered = endlessIIPhaseStyles.isEmpty
+                ? pool
+                : pool.filter { endlessIIPhaseStyles.contains($0) }
+            // A motif phase only offers what the motif is, so a whole stretch wears the same
+            // pair rather than each brick drawing its own
+            guard offered.isEmpty == false else { continue }
+
+            guard let wanted = progression.pickStyle(from: offered, at: height),
                   endlessIICanTake(wanted, brick) else { continue }
             applyEndlessIIStyle(wanted, to: brick)
         }
@@ -414,6 +449,8 @@ extension GameScene {
         endlessIIProgression = EndlessIIProgression.make()
         endlessIIPhase = .standard
         endlessIIPhaseEndsAt = 0
+        endlessIIPhaseBehaviour = nil
+        endlessIIPhaseStyles = []
         endlessIILastTick = 0
         resetEndlessIIRoles()
     }

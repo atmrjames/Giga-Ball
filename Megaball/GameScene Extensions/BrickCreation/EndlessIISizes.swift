@@ -110,7 +110,8 @@ extension GameScene {
             // Left empty for the cell below the spinner the next row will place
         }
 
-        guard Int.random(in: 1...100) <= GameScene.endlessIIBigChance else { return ([], nil, nil) }
+        let bigChance = endlessIIPhase == .giants ? 90 : GameScene.endlessIIBigChance
+        guard Int.random(in: 1...100) <= bigChance else { return ([], nil, nil) }
         let left = Int.random(in: 0..<max(1, numberOfBrickColumns - 1))
         guard EndlessIIBigBrick.fits(leftColumn: left, columns: numberOfBrickColumns) else {
             return ([], nil, nil)
@@ -158,7 +159,8 @@ extension GameScene {
             guard brick.endlessIIStaysPlain == false else { continue }
             guard isOrdinaryCellSized(brick) else { continue }
             // Already resized - the Big brick this row built comes through here too
-            guard Int.random(in: 1...100) <= GameScene.endlessIITinyChance else { continue }
+            let chance = endlessIIPhase == .miniatures ? 100 : GameScene.endlessIITinyChance
+            guard Int.random(in: 1...100) <= chance else { continue }
             makeTiny(brick)
         }
     }

@@ -624,6 +624,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIProgression = EndlessIIProgression.make()
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
+	var endlessIIPhaseBehaviour: EndlessIIBehaviour?
+	var endlessIIPhaseStyles: [EndlessIIStyle] = []
+	// What a uniform phase settled on when it started, so every brick in it matches
 	// Shuffled once per run, so two runs to the same height meet a different subset
 	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
 	var endlessIIPendingBigColumn: Int?
@@ -6129,6 +6132,10 @@ laserTimer?.invalidate()
         enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
             node.isPaused = true
         }
+		iconTimerArray.forEach { $0.isPaused = true }
+		// The power-up timers too. They are not under any of the names above, so they were
+		// the one thing still running during the resume countdown - a player watching three
+		// two one was watching their power-ups drain at the same time
         // Pause all nodes individually
         
         ball.physicsBody!.affectedByGravity = false
@@ -6191,6 +6198,8 @@ laserTimer?.invalidate()
 		
 		clearSavedGame()
 		countdownStarted = false
+		iconTimerArray.forEach { $0.isPaused = false }
+		// Started again at the moment play does, not at the moment the countdown does
 		pauseButton.texture = pauseTexture
 		pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
