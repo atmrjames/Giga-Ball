@@ -144,6 +144,29 @@ struct EndlessIIProgression {
         return styles.last
     }
 
+    /// How often an ordinary brick becomes a set of four Tiny ones.
+    ///
+    /// The one size that changes how a field is *played* rather than how it looks: four
+    /// quarter-cell bricks in a cell are four separate shots, and a run that meets them in its
+    /// first twenty metres meets the hardest thing in the mode before it has met the rest.
+    /// So this is held near zero at the start and reaches its full rate deep, where a player
+    /// who has got that far is asking for something to do.
+    ///
+    /// It also does not begin at all until a run is properly under way. The opening is a plain
+    /// field on purpose (§12.1), and Tiny is the least plain thing in it.
+    func tinyChance(at height: Int) -> Int {
+        guard height >= EndlessIIProgression.tinyFirstMetres else { return 0 }
+        return EndlessIIProgression.ramped(from: EndlessIIProgression.openingTinyChance,
+                                           to: EndlessIIProgression.deepTinyChance,
+                                           at: height)
+    }
+
+    /// Where Tiny bricks start being offered at all.
+    static let tinyFirstMetres = 40
+    /// One brick in a hundred at the start, against one in twenty-five deep.
+    static let openingTinyChance = 1
+    static let deepTinyChance = 4
+
     // MARK: - How much of the field is unusual
 
     /// The chance in 100 that a brick takes a style.

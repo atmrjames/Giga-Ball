@@ -27,6 +27,15 @@ protocol MenuNavigable: UIViewController {
     func menuNavigationGoBack()
 }
 
+/// A menu screen that fades its own content out while something it opened is on top.
+///
+/// The screens that do this look wrong without it: their content is drawn behind the screen
+/// above, and both are readable at once. Opening a screen calls `hideAnimate` directly; going
+/// forward to one had no way to say the same thing.
+protocol MenuNavigationPresenter: UIViewController {
+    func menuNavigationHideBehindChild()
+}
+
 /// The one screen a forward swipe would return to.
 ///
 /// One deep, deliberately. The menus are shallow, and a stack of screens that were swiped away
@@ -107,6 +116,10 @@ final class MenuNavigation: NSObject, UIGestureRecognizerDelegate {
     func goForward(from current: UIViewController) {
         guard canGoForward(from: current), let screen, let parent = screen.parent else { return }
 
+        (parent as? MenuNavigationPresenter)?.menuNavigationHideBehindChild()
+        // The same thing opening it would have done. Without it the screen underneath stays
+        // where it was and both are visible at once
+
         screen.view.frame = parent.view.frame
         parent.view.addSubview(screen.view)
         screen.menuNavigationFadeIn()
@@ -127,7 +140,9 @@ extension UIViewController {
         let swipe = UIPanGestureRecognizer(target: self,
                                           action: #selector(menuNavigationEdgeSwipe(_:)))
         swipe.delegate = MenuNavigation.shared
-        swipe.cancelsTouchesInView = false
+        swipe.cancelsTouchesInView = true
+        // A swipe is not a tap. Without this the touch carried on to whatever was under the
+        // finger, so a swipe that started on a cell opened it
         view.addGestureRecognizer(swipe)
     }
 
@@ -155,6 +170,11 @@ extension UIViewController {
         case .ended:
             defer { menuNavigationSwipeStart = nil }
             guard let start = menuNavigationSwipeStart else { return }
+            guard menuNavigationIsFrontmost else { return }
+            // Only the screen on top acts. Every screen is laid over the one that opened it,
+            // so a swipe on a screen three deep is delivered to all three recognisers - and
+            // all three went back, which landed the player on the first screen however deep
+            // they were
             let moved = gesture.translation(in: view)
 
             switch MenuNavigation.move(start: start, translation: moved,
@@ -171,6 +191,15 @@ extension UIViewController {
         default:
             break
         }
+    }
+
+    /// Whether this screen is the one on top.
+    ///
+    /// A menu screen is on top when none of the screens it opened are still on display. Their
+    /// views are removed as they go back, and the view controllers stay as children - so this
+    /// asks about the view rather than about the child.
+    var menuNavigationIsFrontmost: Bool {
+        children.allSatisfy { $0.viewIfLoaded?.superview == nil }
     }
 
     /// Where the swipe in progress began, if there is one.

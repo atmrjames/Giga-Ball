@@ -967,6 +967,13 @@ same class of bug:
   the first ball the position of another ball that was itself about to be lost. The handover
   now takes the highest survivor, and a ball already retired is not counted twice.
 
+**Since the last round of play-testing:** the power-up brick draws from the same eligibility
+rules as the falling ones (`powerUpCanAppear`, which the drop path now asks too rather than
+answering one case at a time inside its own switch); Tiny bricks ramp with height rather than
+appearing at a flat rate from the first metre; and the opening field arrives the way the field
+moves in play - each row entering at the top and stepping down, in lockstep, rather than each
+brick fading into its own place.
+
 **Open, in rough priority order**
 
 | Item | Notes |
@@ -1015,3 +1022,43 @@ Portal, and met it as a surprise rather than as the thing that ended the run.
 **Varied, not escalating.** Depth raises what is *possible*, not what is *guaranteed*. A
 deep field that is entirely styled bricks is as monotonous as a shallow field with none, so
 the ramp raises the ceiling and leaves the roll to chance.
+
+### 12.2 What is left, and in what order
+
+Phases 1 to 7 are built. What remains is phase 8, phase 9, and two things that fell out of
+earlier phases and are small enough to carry alongside them.
+
+**Phase 8 — the new power-ups, in four batches.** Twenty-three of them (§5.4), which is far
+too many to judge at once: rarity can only be tuned against a batch that is actually being
+played, and a mode that gained all of them in one build would be unreadable. Each batch ends
+playable and is worth a round of play-testing on its own.
+
+| Batch | What lands | Why these together | The question it answers |
+|---|---|---|---|
+| **8a. Vision** | Trajectory Line, Landing Marker | Both draw what the ball is *about* to do and change no rule. One predictor serves both, and it is pure geometry - testable rather than eyeballed | Whether four balls means four lines, and whether being told where the ball will land makes the mode easier or just calmer |
+| **8b. The paddle** | Aimed Sticky, Magnetism, Portal Paddle, Paddle Halo, Ball Steering, and the three bad ones - Inert Paddle, Flipped Angle, Reversed Controls | Every one of them changes what the paddle does, so they conflict with each other and want tuning against each other. Aimed Sticky inherits the queue Sticky Paddle already has (§5.5) | Whether a mode where the paddle keeps changing its rules is exciting or exhausting - and whether the bad ones are funny or just unfair |
+| **8c. The field** | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
+| **8d. The rules** | Lock, Key, Wipe, Randomised Bounce | The ones that act on *other power-ups*. They need the rest of the set to exist before they mean anything, and Lock and Key only drop in each other's company | Whether a power-up about power-ups reads at all in the moment |
+
+Each batch needs the same four things, and none of them is optional: entries in every
+power-up array (§8.6's trap - the stats file *and* the iCloud store), a weight in the
+allocation table and the introduction schedule (§6.3), an eligibility rule where the power-up
+only makes sense sometimes (`powerUpCanAppear`, which the power-up brick reads too), and a
+drawn placeholder icon so it looks like a power-up rather than a gap.
+
+**Carried alongside, whenever they fit:**
+
+| Item | Notes |
+|---|---|
+| A scatter cluster | §6.2.1's third kind - particular bricks in a *random* arrangement rather than a drawn one. Needs a generator rather than a grid, which is why it did not come with the other two |
+| The new power-ups on the power-ups page | Written against what exists, so it follows each batch rather than leading it |
+
+**Phase 9 — presentation.** Scrolling backgrounds, the real artwork and sound (§8.5), and the
+information pages finished against a mode that has stopped moving. Deliberately last: a
+placeholder that reads correctly is worth more than finished art for something that might
+still change.
+
+**Still blocked on something outside the code:** the Endless 2.0 leaderboards existing in App
+Store Connect (until they do, scores fail to post silently), and the ring HUD in Classic and
+Endless, which changes `layoutUnit` and therefore brick size on levels people hold years of
+scores on.

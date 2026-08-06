@@ -91,3 +91,7 @@ A `UIPanGestureRecognizer` only begins after the touch has travelled its slop, s
 `location(in:)` at `.began` is already well inside the screen - the start has to be worked
 back out from the translation, or a swipe from the very edge reads as starting outside the
 edge strip.
+
+One swipe reaches **every** screen in the stack, because each screen's view is a subview of
+the one that opened it. Only the frontmost may act on it, or a swipe three screens deep goes
+back three times.

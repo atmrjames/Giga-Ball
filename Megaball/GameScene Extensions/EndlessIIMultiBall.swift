@@ -144,9 +144,13 @@ extension GameScene {
             // The highest one, rather than the first added. When two balls reach the bottom
             // together the other one is also about to be lost, and handing the first ball its
             // position put it on the floor - a ball that arrived already falling out of play
-            ball.position = survivor.position
-            ball.physicsBody?.velocity = survivor.physicsBody?.velocity ?? .zero
-            retire(survivor)
+
+            endlessIIPendingHandover = survivor
+            // Not now. This is running inside a contact, and a position or velocity written
+            // there is undone by the rest of the step (§8.6) - so the handover was being
+            // thrown away while the survivor was removed anyway, which left one ball gone and
+            // the other still falling out of play under the paddle. It is applied from
+            // `didSimulatePhysics`, the one place a body can be written to and have it stick
         } else {
             retire(lost)
         }
@@ -157,6 +161,23 @@ extension GameScene {
         // Counted and heard, because losing one of four is still losing one - it is only the
         // run that carries on
         return true
+    }
+
+    /// Hands the first ball a survivor's place on the field, after the step has resolved.
+    ///
+    /// Called from `didSimulatePhysics`. The survivor is only taken off once the ball it is
+    /// handing over to has actually taken over - losing both is how a run ends with no ball
+    /// on the field at all.
+    func applyEndlessIIBallHandover() {
+        guard let survivor = endlessIIPendingHandover else { return }
+        endlessIIPendingHandover = nil
+        guard survivor.parent != nil else { return }
+
+        ball.position = survivor.position
+        ball.physicsBody?.velocity = survivor.physicsBody?.velocity ?? .zero
+        ball.isHidden = false
+        ball.alpha = 1
+        retire(survivor)
     }
 
     private func retire(_ extra: SKSpriteNode) {

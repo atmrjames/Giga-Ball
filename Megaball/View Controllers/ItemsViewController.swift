@@ -10,7 +10,7 @@
 import UIKit
 import GameKit
 
-class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable {
+class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -517,6 +517,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
     }
     
+    /// Fades this screen out behind one it opened - or one being returned to by a forward
+    /// swipe, which is the same thing seen from the other side.
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
+    }
+
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.itemsView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)

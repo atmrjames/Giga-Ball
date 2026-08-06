@@ -124,6 +124,67 @@ final class EndlessIIBallsTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIBallWasLost(scene.ball))
     }
 
+    // MARK: - Losing the first ball
+
+    private func sceneWithExtras(_ positions: [CGPoint]) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSize = 10
+        scene.totalStatsArray = [TotalStats()]
+        // Losing a ball counts one, and a scene built by hand has no stats behind it
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(scene.ball)
+        for point in positions {
+            let extra = SKSpriteNode()
+            extra.name = BallCategoryName
+            extra.position = point
+            extra.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+            extra.physicsBody?.velocity = CGVector(dx: 50, dy: 120)
+            scene.addChild(extra)
+            scene.endlessIIExtraBalls.append(extra)
+        }
+        return scene
+    }
+
+    func testTheHandoverWaitsForTheStepToFinish() {
+        // "One ball fell below the paddle, the other ball disappeared and the first one got
+        // stuck at the bottom of the screen under the paddle." A position written inside a
+        // contact is undone by the rest of the step (§8.6), so the handover was thrown away
+        // while the survivor was removed anyway
+        let scene = sceneWithExtras([CGPoint(x: 30, y: 300)])
+        scene.ball.position = CGPoint(x: 0, y: -500)
+
+        XCTAssertTrue(scene.endlessIIBallWasLost(scene.ball))
+        XCTAssertEqual(scene.ball.position, CGPoint(x: 0, y: -500), "moved during the contact")
+        XCTAssertEqual(scene.endlessIIExtraBalls.count, 1, "the survivor left before it handed over")
+
+        scene.applyEndlessIIBallHandover()
+        XCTAssertEqual(scene.ball.position, CGPoint(x: 30, y: 300))
+        XCTAssertEqual(scene.ball.physicsBody?.velocity.dy, 120)
+        XCTAssertTrue(scene.endlessIIExtraBalls.isEmpty, "the survivor should be gone now")
+    }
+
+    func testTheHandoverTakesTheHighestSurvivor() {
+        // Two balls reaching the bottom together: handing the first ball the position of one
+        // that is itself about to be lost puts it straight back on the floor
+        let scene = sceneWithExtras([CGPoint(x: 0, y: -480), CGPoint(x: 60, y: 240)])
+        scene.ball.position = CGPoint(x: 0, y: -500)
+
+        XCTAssertTrue(scene.endlessIIBallWasLost(scene.ball))
+        scene.applyEndlessIIBallHandover()
+        XCTAssertEqual(scene.ball.position.y, 240)
+    }
+
+    func testNothingIsHandedOverTwice() {
+        let scene = sceneWithExtras([CGPoint(x: 30, y: 300)])
+        XCTAssertTrue(scene.endlessIIBallWasLost(scene.ball))
+        scene.applyEndlessIIBallHandover()
+
+        let landed = scene.ball.position
+        scene.applyEndlessIIBallHandover()
+        XCTAssertEqual(scene.ball.position, landed)
+    }
+
     // MARK: - Saving
 
     func testABallIsWrittenAsFourValues() {

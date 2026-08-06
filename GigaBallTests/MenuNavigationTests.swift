@@ -78,9 +78,23 @@ final class MenuNavigationTests: XCTestCase {
         XCTAssertNil(child.view.superview, "the way forward should have been used up")
     }
 
+    func testOnlyTheScreenOnTopIsTheFrontmostOne() {
+        // "Back swipe in menus is going back to the first screen even if multiple layers
+        // deep." Every screen is laid over the one that opened it, so one swipe reaches every
+        // recogniser in the stack
+        XCTAssertTrue(parent.menuNavigationIsFrontmost, "nothing is open over it")
+
+        parent.view.addSubview(child.view)
+        XCTAssertFalse(parent.menuNavigationIsFrontmost)
+        XCTAssertTrue(child.menuNavigationIsFrontmost)
+
+        child.view.removeFromSuperview()
+        XCTAssertTrue(parent.menuNavigationIsFrontmost, "the screen it opened has gone back")
+    }
+
     func testTheSwipeIsInstalledAndSharesTheTouch() {
-        // Sharing matters: menus scroll, and a gesture that took the touch outright would
-        // leave lists that will not scroll near the edge
+        // Sharing matters for the *other recognisers*: menus scroll, and scrolling is driven
+        // by a gesture recogniser rather than by touches in the view
         let screen = UIViewController()
         screen.loadViewIfNeeded()
         screen.installMenuNavigationSwipes()
@@ -89,7 +103,9 @@ final class MenuNavigationTests: XCTestCase {
             .compactMap { $0 as? UIPanGestureRecognizer }
         XCTAssertEqual(pans.count, 1)
         XCTAssertTrue(pans.first?.delegate === MenuNavigation.shared)
-        XCTAssertEqual(pans.first?.cancelsTouchesInView, false)
+        XCTAssertEqual(pans.first?.cancelsTouchesInView, true)
+        // A swipe is not a tap: without this the touch carried on to whatever was under the
+        // finger, and a swipe that started on a cell opened it
     }
 
     // MARK: - What a swipe means

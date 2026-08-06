@@ -19,7 +19,7 @@ import UIKit
 
 class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableViewDataSource,
                                 UICollectionViewDelegate, UICollectionViewDataSource,
-                                MenuNavigable {
+                                MenuNavigable, MenuNavigationPresenter {
 
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true
@@ -343,6 +343,12 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
                 self.view.removeFromSuperview()
             }
         }
+    }
+
+    /// Fades this screen out behind one it opened - or one being returned to by a forward
+    /// swipe, which is the same thing seen from the other side.
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
     }
 
     func hideAnimate() {

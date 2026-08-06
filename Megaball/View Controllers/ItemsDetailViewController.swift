@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable {
+class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable, MenuNavigationPresenter {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -549,6 +549,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
     }
     
+    /// Fades this screen out behind one it opened - or one being returned to by a forward
+    /// swipe, which is the same thing seen from the other side.
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
+    }
+
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.itemsView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)

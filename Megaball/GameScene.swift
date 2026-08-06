@@ -73,6 +73,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIHeldOffsets: [CGFloat] = []
 	/// One direction marker per extra ball, while the resume countdown runs.
 	var endlessIIExtraDirectionMarkers: [SKSpriteNode] = []
+	/// The extra ball that is about to hand its place to the first ball, once the step that
+	/// lost the first ball has finished resolving.
+	var endlessIIPendingHandover: SKSpriteNode?
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -664,8 +667,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIBuildInBricks: [SKSpriteNode] = []
 	/// Whether the opening field is still waiting for a clear screen to arrive on.
 	var endlessIIBuildInWaiting = false
-	/// Whether the splash screen has been up while the field waited to build in.
-	var endlessIIBuildInSawSplash = false
+	/// Where each waiting brick is going, while it sits on the top row waiting its turn.
+	var endlessIIBuildInFinalY: [ObjectIdentifier: CGFloat] = [:]
+	/// Whether the level intro is covering the scene.
+	///
+	/// The other thing in front of the opening field, and the one that was actually hiding it:
+	/// the app's splash screen is only up on a cold launch, where the level intro is there
+	/// every time a run starts.
+	var endlessIILevelIntroShowing = false
 	/// When the field may start building in, once the splash has reported itself gone.
 	var endlessIIBuildInReadyAt: TimeInterval?
 	var endlessIIStuckTimer: TimeInterval = 0
@@ -1344,6 +1353,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
 		NotificationCenter.default.addObserver(self, selector: #selector(self.levelIntroDidClearReceived), name: .levelIntroDidClear, object: nil)
+
+		NotificationCenter.default.addObserver(self, selector: #selector(self.levelIntroDidAppearReceived), name: .levelIntroDidAppear, object: nil)
+		// So the opening field knows it is being covered, rather than only knowing when it
+		// stops being
 		NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundSettingChangedNotificationReceived), name: .backgroundSettingChanged, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
 		
@@ -1729,6 +1742,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func didSimulatePhysics() {
+        applyEndlessIIBallHandover()
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
     }
@@ -2674,8 +2688,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // To run once the new row is inserted - slight delay to allow frame to move forward before executing
 	}
 	
-	func ballBackstopHit(_ subject: SKSpriteNode? = nil) {
-		let ball = subject ?? self.ball
+	func ballBackstopHit(_ subject: SKSpriteNode) {
+		let ball = subject
 		if soundsSetting {
 			self.run(ballPaddleHitSound)
 		}
@@ -2699,9 +2713,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballHorizontalControl(angleDegInput: angleDeg, for: subject)
 	}
     
-    func paddleHit(_ subject: SKSpriteNode? = nil) {
-		let ball = subject ?? self.ball
-		let isExtra = subject != nil && subject !== self.ball
+    /// The paddle was hit by a ball. Which ball is not optional: everything below writes a
+    /// velocity, and doing that to the first ball whichever one landed is how hitting the
+    /// paddle with one ball made another turn.
+    func paddleHit(_ subject: SKSpriteNode) {
+		let ball = subject
+		let isExtra = subject !== self.ball
 		let isOnPaddle = isExtra ? false : ballIsOnPaddle
 		// An extra ball is never the one resting on the paddle, and it must not be stopped
 		// from bouncing because the first one is. Shadowing `ball` with the one that was
@@ -2827,9 +2844,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if isOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
 		// Only control the ball's angle if it in the centre of the paddle
 			if ball.position.y > paddle.position.y {
-				ballHorizontalControl(angleDegInput: angleDeg)
+				ballHorizontalControl(angleDegInput: angleDeg, for: ball)
 			}
-			// Only control is the ball is above the paddle
+			// Only control is the ball is above the paddle - and for the ball that was
+			// actually caught by it. This is where the paddle's angle is applied, and without
+			// the subject it was applied to the first ball whichever ball had landed: hitting
+			// the paddle with one made another one turn
 		}
 		
 		invisibleBrickFlash()
@@ -2958,238 +2978,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Power-up selection based on probability
 		
-        switch powerUpSelection {
-        case 0:
-		// 0 - Get a life
-			if numberOfLives >= 5 || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpGetALife
-			}
-			// Don't show if number of lives is 5 or more or power-up already falling or endless mode or locked
-		case 1:
-		// 1 - Lose a life
-			if numberOfLives <= 0 || mysteryPowerUp || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpLoseALife
-			}
-			// Don't show if on last life or in place of mystery power-up or power-up already falling or endless mode or locked
-		case 2:
-		// 2 - Decrease ball speed
-			powerUp.texture = powerUpDecreaseBallSpeed
-		case 3:
-		// 3 - Increase ball speed
-			powerUp.texture = powerUpIncreaseBallSpeed
-        case 4:
-		// 4 - Increase paddle size
-			powerUp.texture = powerUpIncreasePaddleSize
-		case 5:
-		// 5 - Decrease paddle size
-			powerUp.texture = powerUpDecreasePaddleSize
-		case 6:
-		// 6 - Sticky paddle
-			powerUp.texture = powerUpStickyPaddle
-		case 7:
-		// 7 - Gravity ball
-			powerUp.texture = powerUpGravityBall
-		case 8:
-		// 8 - +100 points
-			if endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpPointsBonusSmall
-			}
-			// Don't show if power-up already falling or in endless mode or locked
-		case 9:
-		// 9 - -100 points
-			if levelScore <= Int(100*2) || mysteryPowerUp || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpPointsPenaltySmall
-			}
-			// Don't show if score is less than penalty points amount or in place of mystery power-up or power-up already falling or in endless mode or locked
-		case 10:
-		// 10 - +1000 points
-			if endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpPointsBonus
-			}
-			// Don't show if power-up already falling or in endless mode or locked
-		case 11:
-		// 11 - -1000 points
-			if levelScore <= Int(1000*2) || mysteryPowerUp || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpPointsPenalty
-			}
-			// Don't show if score is less than penalty points amount or in place of mystery power-up or power-up already falling or in endless mode or locked
-		case 12:
-		// 12 - x2 multiplier
-			if multiplier >= 2.0 || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpMultiplier
-			}
-			// Don't show if multiplier at 2.5 or above or power-up already falling or in endless mode or locked
-		case 13:
-		// 13 - Multiplier reset
-			if multiplier <= 1.1 || mysteryPowerUp || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpMultiplierReset
-			}
-			// Don't show if multiplier is 1.5 or in place of mystery power-up or power-up already falling or in endless mode or locked
-        case 14:
-		// 14 - Next level
-			if mysteryPowerUp || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpNextLevel
-			}
-			// Don't show in place of mystery power-up or power-up already falling or endless mode or locked
-        case 15:
-		// 15 - Invisible bricks become visible
-			powerUp.texture = self.powerUpShowInvisibleBricks
-			var hiddenNodeFound = 0
-			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				let sprite = node as! SKSpriteNode
-				if sprite.isHidden == true && (sprite.texture != self.brickInvisibleTexture || sprite.texture != self.brickNormalTexture) {
-					hiddenNodeFound+=1
-				}
-			}
-			if hiddenNodeFound < 3 {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			}
-			// Don't show if no invisible/hidden bricks or power-up already falling or locked
-        case 16:
-		// 16 - Normal bricks become invisble bricks
-			powerUp.texture = powerUpNormalToInvisibleBricks
-			var normalNodeFound = 0
-			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				let sprite = node as! SKSpriteNode
-				if sprite.texture != self.brickMultiHit1Texture && sprite.texture != self.brickMultiHit2Texture && sprite.texture != self.brickMultiHit3Texture && sprite.texture != self.brickMultiHit4Texture && sprite.texture != self.brickInvisibleTexture && sprite.texture != self.brickIndestructible1Texture && sprite.texture != self.brickIndestructible2Texture {
-					normalNodeFound+=1
-				}
-			}
-			if normalNodeFound < 3 {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			}
-			// Don't show if no normal bricks or power-up already falling or locked
-		case 17:
-		// 17 - Multi-hit bricks become normal bricks
-			powerUp.texture = powerUpMultiHitToNormalBricks
-			var multiNodeFound = 0
-			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture {
-					multiNodeFound+=1
-				}
-			}
-			if multiNodeFound < 3 {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			}
-			// Don't show if no multi-hit bricks or power-up already falling or locked
-		case 18:
-		// 18 - Multi-hit bricks reset
-			powerUp.texture = powerUpMultiHitBricksReset
-			var multiHitBrickFound = 0
-			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture {
-					multiHitBrickFound+=1
-				}
-			}
-			if multiHitBrickFound < 3 {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			}
-			// Don't show if no multi-hit bricks that have been hit or power-up already falling or locked
-		case 19:
-		// 19 - Remove indestructible bricks
-			powerUp.texture = powerUpRemoveIndestructibleBricks
-			var indestructibleNodeFound = 0
-			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickIndestructible2Texture || sprite.texture == self.brickIndestructible1Texture {
-					indestructibleNodeFound+=1
-				}
-			}
-			if indestructibleNodeFound < 3 {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			}
-			// Don't show if no indestructible bricks or power-up already falling or locked
-		case 20:
-		// 20 - Giga-ball
-			powerUp.texture = powerUpGigaBall
-        case 21:
-		// 21 - Undestructi-ball
-			powerUp.texture = powerUpUndestructiBall
-		case 22:
-		// 22 - Lasers
-			powerUp.texture = powerUpLasers
-		case 23:
-		// 23 - Move all bricks down 2 rows
-			powerUp.texture = powerUpBricksDown
-			var bricksAtBottom = false
-			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-				if node.position.y < self.paddle.position.y + self.minPaddleGap {
-					bricksAtBottom = true
-					stop.initialize(to: true)
-				}
-			}
-			if bricksAtBottom || endlessMode {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			}
-			// Don't show if bricks are already at lowest point or power-up already falling or endless mode or locked
-		case 24:
-		// 24 - Mystery power-up
-			if mysteryPowerUp {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpMystery
-			}
-			// Don't show in place of mystery power-up or power-up already falling or locked
-		case 25:
-		// 25 - Backstop power-up
-			if backstopCatches > 0 {
-				removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
-				return
-			} else {
-				powerUp.texture = powerUpBackstop
-				if totalStatsArray[0].powerupsGenerated.count < 24 {
-					totalStatsArray[0].powerupsGenerated.append(0)
-				}
-			}
-			// Don't show power-up if already falling or in action or locked
-		case 28:
-		// 28 - Multi-Ball
-			powerUp.texture = powerUpMultiBall
-		case 26:
-		// 26 - Increase ball size
-			powerUp.texture = powerUpIncreaseBallSize
-		case 27:
-		// 27 - Decrease ball size
-			powerUp.texture = powerUpDecreaseBallSize
-        default:
-            break
+        guard powerUpCanAppear(powerUpSelection) else {
+            removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+            return
         }
+        // Whether this one has anything to do lives in `powerUpCanAppear`, where the power-up
+        // brick can ask the same question. It used to be a condition inside each case of the
+        // switch below, which meant a brick could hold a Show Bricks with nothing to show
+
+        guard powerUpTextureArray.indices.contains(powerUpSelection) else {
+            removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
+            return
+        }
+        powerUp.texture = powerUpTextureArray[powerUpSelection]
+        // The textures are held in power-up order, so the switch that assigned twenty-nine of
+        // them one case at a time was a second copy of that order - and it had 28 listed
+        // between 25 and 26
 
 		if powerUpOnScreenArray.contains(powerUp.texture!) {
 			removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
@@ -4648,7 +4452,12 @@ laserTimer?.invalidate()
 	// Follows the same lifecycle as the rest of the HUD: hidden during the level intro,
 	// shown while playing and paused
 
+	@objc func levelIntroDidAppearReceived(notification: Notification) {
+		endlessIILevelIntroShowing = true
+	}
+
 	@objc func levelIntroDidClearReceived(notification: Notification) {
+		endlessIILevelIntroShowing = false
 		rollInLivesRow()
 	}
 	// The level intro posts this when its view is finally removed. Keying the roll-in to
@@ -4939,9 +4748,9 @@ laserTimer?.invalidate()
 	}
 
 	func ballHorizontalControl(angleDegInput: Double, brickNode: SKNode? = nil,
-							   for subject: SKSpriteNode? = nil) {
-		let ball = subject ?? self.ball
-		let isExtra = subject != nil && subject !== self.ball
+							   for subject: SKSpriteNode) {
+		let ball = subject
+		let isExtra = subject !== self.ball
 		let isOnPaddle = isExtra ? false : ballIsOnPaddle
 		// The correction has to act on the ball that was actually in the contact. Shadowing
 		// the property with a local is what lets a hundred lines of arithmetic below stay
@@ -5038,9 +4847,9 @@ laserTimer?.invalidate()
 		}
 	}
 	
-	func ballVerticalControl(brickNode: SKNode? = nil, for subject: SKSpriteNode? = nil) {
-		let ball = subject ?? self.ball
-		let isExtra = subject != nil && subject !== self.ball
+	func ballVerticalControl(brickNode: SKNode? = nil, for subject: SKSpriteNode) {
+		let ball = subject
+		let isExtra = subject !== self.ball
 		let isOnPaddle = isExtra ? false : ballIsOnPaddle
 
 		if (gravityActivated && ball.position.y > paddle.position.y + ballSize*4) || isOnPaddle {
@@ -5225,9 +5034,9 @@ laserTimer?.invalidate()
 		CGVector(dx: x > 0 ? -abs(incoming.dx) : abs(incoming.dx), dy: incoming.dy)
 	}
 
-	func frameBallControl(xSpeed: CGFloat, for subject: SKSpriteNode? = nil) {
-		let ball = subject ?? self.ball
-		let isExtra = subject != nil && subject !== self.ball
+	func frameBallControl(xSpeed: CGFloat, for subject: SKSpriteNode) {
+		let ball = subject
+		let isExtra = subject !== self.ball
 		let isOnPaddle = isExtra ? false : ballIsOnPaddle
 
 		if gameState.currentState is Playing && isOnPaddle == false {

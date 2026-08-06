@@ -267,6 +267,18 @@ final class EndlessIIPauseHoldsEveryBallTests: XCTestCase {
 /// "Build-in animation is still behind the splash screen."
 final class EndlessIIBuildInTimingTests: XCTestCase {
 
+    override func setUp() {
+        super.setUp()
+        splashScreenIsShowing = false
+        // The host app is a real launch, and its splash screen sets this global on the way
+        // past. Left alone, these tests read whatever the app happened to be doing
+    }
+
+    override func tearDown() {
+        splashScreenIsShowing = false
+        super.tearDown()
+    }
+
     private func waitingScene() -> GameScene {
         let scene = GameScene()
         scene.gameMode = .endlessII
@@ -277,33 +289,56 @@ final class EndlessIIBuildInTimingTests: XCTestCase {
     func testTheFieldWaitsWhileTheSplashIsUp() {
         let scene = waitingScene()
         splashScreenIsShowing = true
-        defer { splashScreenIsShowing = false }
 
         scene.tickEndlessIIBuildIn(0)
-        XCTAssertTrue(scene.endlessIIBuildInWaiting)
+        scene.tickEndlessIIBuildIn(60)
+        XCTAssertTrue(scene.endlessIIBuildInWaiting, "started while the splash was up")
     }
 
-    func testTheFieldWaitsABeatLongerThanTheSplashSaysTo() {
-        // The splash clears its flag and then animates out over the top of the scene, so the
-        // moment it says it has gone is the moment it starts going
+    func testTheFieldWaitsWhileTheLevelIntroIsUp() {
+        // The cover that was actually hiding it. The splash is only up on a cold launch; the
+        // level intro is there every time a run starts
         let scene = waitingScene()
-        splashScreenIsShowing = true
+        scene.endlessIILevelIntroShowing = true
+
         scene.tickEndlessIIBuildIn(0)
-        splashScreenIsShowing = false
+        scene.tickEndlessIIBuildIn(60)
+        XCTAssertTrue(scene.endlessIIBuildInWaiting, "started behind the level intro")
+    }
 
-        scene.tickEndlessIIBuildIn(1)
-        XCTAssertTrue(scene.endlessIIBuildInWaiting, "started while the splash was fading")
+    func testTheFieldWaitsABeatLongerThanTheCoverSaysTo() {
+        // A beat, not a few seconds. The splash clears its flag and then fades; the level
+        // intro posts after its view is already off, so this only has the splash to cover
+        let scene = waitingScene()
+        scene.endlessIILevelIntroShowing = true
+        scene.tickEndlessIIBuildIn(0)
+        scene.endlessIILevelIntroShowing = false
 
-        scene.tickEndlessIIBuildIn(1 + GameScene.endlessIIBuildInSplashDelay)
+        scene.tickEndlessIIBuildIn(GameScene.endlessIIBuildInSettle/2)
+        XCTAssertTrue(scene.endlessIIBuildInWaiting, "started while the intro was still going")
+
+        scene.tickEndlessIIBuildIn(GameScene.endlessIIBuildInSettle)
         XCTAssertFalse(scene.endlessIIBuildInWaiting)
     }
 
-    func testNothingIsWaitedForWhenThereWasNoSplash() {
-        // Reached from the menu. A delay here would be a run that opens with a blank field
+    func testTheFieldWaitsEvenBeforeACoverHasGoneUp() {
+        // The level intro fades in a quarter of a second after the level is built, so a field
+        // that started the moment it was asked would already be arriving behind it
         let scene = waitingScene()
-        splashScreenIsShowing = false
-
         scene.tickEndlessIIBuildIn(0)
+        XCTAssertTrue(scene.endlessIIBuildInWaiting)
+
+        scene.tickEndlessIIBuildIn(GameScene.endlessIIBuildInCoverGrace)
+        XCTAssertFalse(scene.endlessIIBuildInWaiting)
+    }
+
+    func testATapPutsTheFieldUpRatherThanServingTheWait() {
+        // Somebody who taps wants to play, and the tap must not launch the ball into a screen
+        // with nothing in it yet
+        let scene = waitingScene()
+        scene.tickEndlessIIBuildIn(0)
+
+        XCTAssertTrue(scene.finishEndlessIIBuildIn())
         XCTAssertFalse(scene.endlessIIBuildInWaiting)
     }
 }

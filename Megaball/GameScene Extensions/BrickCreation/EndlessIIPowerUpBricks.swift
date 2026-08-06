@@ -77,11 +77,18 @@ extension GameScene {
 
     /// Picks a power-up for a brick to hold.
     ///
-    /// Drawn from the same weighted table the falling ones use, so a brick holds whatever the
-    /// mode would have dropped at this height - including the bad ones, which are most of the
-    /// reason for having these at all. Returns nil when the table has nothing to offer.
+    /// Drawn from the same weighted table the falling ones use and filtered by the same rules,
+    /// so a brick holds whatever the mode would have dropped at this moment - including the bad
+    /// ones, which are most of the reason for having these at all. Returns nil when there is
+    /// nothing worth holding, and the row simply has no power-up brick in it.
     func endlessIIPowerUpForBrick() -> Int? {
-        let candidates = powerUpProbArray.indices.filter { powerUpProbArray[$0] > 0 }
+        let candidates = powerUpProbArray.indices.filter {
+            powerUpProbArray[$0] > 0 && powerUpCanAppear($0)
+        }
+        // The same weights *and* the same eligibility the falling ones go through. A brick
+        // holding Show Bricks in a field with nothing hidden in it is a brick that does
+        // nothing when you break it - and one holding Backstop while a Backstop is already out
+        // is worse, because it looks like it did something
         guard candidates.isEmpty == false else { return nil }
 
         let total = candidates.reduce(0) { $0 + powerUpProbArray[$1] }

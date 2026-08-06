@@ -62,9 +62,10 @@ extension GameScene {
     /// Both are opening guesses. Big costs two rows of setup, so it should be the rarer of
     /// the two even at the same number.
     static let endlessIIBigChance = 18
-    /// Lower than it looks, because one roll now makes four bricks rather than one. At the
-    /// old figure a tenth of the field became Tiny and then quadrupled in visual weight.
-    static let endlessIITinyChance = 4
+    /// The deep rate for Tiny, kept here for the reference page. How often it actually
+    /// happens is `EndlessIIProgression.tinyChance(at:)`, which ramps to this - a flat rate
+    /// put the hardest thing in the mode in front of a player in their first twenty metres.
+    static let endlessIITinyChance = EndlessIIProgression.deepTinyChance
 
     /// Which quarters of a cell a Tiny set fills.
     ///
@@ -241,7 +242,12 @@ extension GameScene {
             // spinner being shrunk *afterwards*. Four quarter-cell bricks each turning about
             // their own centre sweep straight through one another, which is the one thing the
             // spinner's whole clearance rule exists to prevent
-            let chance = endlessIIPhase == .miniatures ? 100 : GameScene.endlessIITinyChance
+            let chance = endlessIIPhase == .miniatures
+                ? 100
+                : endlessIIProgression.tinyChance(at: endlessHeight)
+            // Ramped with height rather than flat. The Miniatures phase is the exception and
+            // stays a certainty - a phase whose whole character is Tiny bricks is not a phase
+            // that should be waiting on a roll
             guard Int.random(in: 1...100) <= chance else { continue }
             made.append(contentsOf: Array(makeTiny(brick).dropFirst()) as [SKNode])
         }
