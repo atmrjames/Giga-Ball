@@ -216,6 +216,7 @@ enum PowerUpIcon {
     /// Cull: half the field, gone.
     static let cull: UIImage = badge { context, rect in
         stroke(context, width: rect.width*0.06)
+        context.setFillColor(UIColor.white.cgColor)
         for (index, y) in [rect.minY + rect.height*0.28, rect.midY,
                            rect.maxY - rect.height*0.28].enumerated() {
             for column in 0..<3 {
@@ -229,7 +230,6 @@ enum PowerUpIcon {
                 }
             }
         }
-        context.setFillColor(UIColor.white.cgColor)
     }
 
     /// Clear And Retreat: the bottom row going, the field moving up.
@@ -286,7 +286,7 @@ enum PowerUpIcon {
 
     /// Infill: bricks arriving where there were none.
     static let infill: UIImage = badge(harmful) { context, rect in
-        stroke(context, width: rect.width*0.055)
+        context.setFillColor(UIColor.white.cgColor)
         for (row, columns) in [(0.3, [0, 2]), (0.55, [1]), (0.8, [0, 2])] {
             for column in columns {
                 let x = rect.minX + rect.width*(0.24 + 0.26*CGFloat(column))
@@ -295,7 +295,6 @@ enum PowerUpIcon {
                 context.fill(cell)
             }
         }
-        context.setFillColor(UIColor.white.cgColor)
     }
 
     /// Descent: the field on its way down.
