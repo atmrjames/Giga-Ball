@@ -273,14 +273,22 @@ extension GameScene {
     func startEndlessIIBuildIn() {
         guard gameMode == .endlessII, savedGame == nil else { return }
         guard endlessIIBuildInBricks.isEmpty == false else { return }
+        endlessIIBuildInWaiting = true
+        // Not started here. `tickEndlessIIBuildIn` starts it on the first frame where nothing
+        // is covering the scene - see there for why this is a poll rather than a notification
+    }
 
-        guard splashScreenIsShowing == false else {
-            NotificationCenter.default.addObserver(
-                forName: .splashScreenEndedNotification, object: nil, queue: .main) { [weak self] _ in
-                    self?.runEndlessIIBuildIn()
-                }
-            return
-        }
+    /// Starts the opening field the moment there is nobody standing in front of it.
+    ///
+    /// Asked every frame rather than arranged once. Listening for the splash screen to end
+    /// assumed the splash was already up when the field was built, and whether it is depends
+    /// on how the run was reached: from the menu it has long gone, and from a resume it goes
+    /// up *after* the scene exists. A flag checked once is right for one of those orders and
+    /// wrong for the other, where asking each frame is right for both - and costs a boolean
+    /// test in a method that already runs every frame.
+    func tickEndlessIIBuildIn() {
+        guard endlessIIBuildInWaiting, splashScreenIsShowing == false else { return }
+        endlessIIBuildInWaiting = false
         runEndlessIIBuildIn()
     }
 

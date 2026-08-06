@@ -649,6 +649,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIBuildingIn = false
 	/// The opening field, held above where it belongs until the build-in runs.
 	var endlessIIBuildInBricks: [SKSpriteNode] = []
+	/// Whether the opening field is still waiting for a clear screen to arrive on.
+	var endlessIIBuildInWaiting = false
 	var endlessIIStuckTimer: TimeInterval = 0
 	var endlessIISetRowQueue: [String] = []
 	// The rows of a designed pattern still to come, one per generated row
@@ -1660,6 +1662,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpRings.update(with: activePowerUpEntries())
 			tickEndlessIIBricks(currentTime)
 			tickEndlessIIExtraBalls()
+			tickEndlessIIBuildIn()
 		}
 		
 		if gameState.currentState is Paused {
@@ -2166,8 +2169,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil, struckBy: SKSpriteNode? = nil) {
 
+		let gigaLaser = laserNode != nil && laserSprite?.texture == laserGigaTexture
+		// A Giga-Ball laser passes through whatever it meets and carries on. Every `return`
+		// below stops the laser as well as the brick, which is right for an ordinary one and
+		// exactly wrong for this - a laser that is stopped by the first Directional brick it
+		// meets is not going through anything
+		let stopLaser = { if gigaLaser == false { laserNode?.removeFromParent() } }
+
 		if sprite.endlessIIRole == .portal {
-			laserNode?.removeFromParent()
+			stopLaser()
 			if laserNode == nil {
 				endlessIIEnterPortal(sprite, entering: struckBy ?? ball)
 			}
@@ -2180,7 +2190,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// A Portal is struck rather than damaged, so it never reaches the type switch
 
 		if endlessIIAnchorIfNeeded(sprite) {
-			laserNode?.removeFromParent()
+			stopLaser()
 			if hapticsSetting { lightHaptic.impactOccurred() }
 			if soundsSetting { self.run(brickHitNormalSound) }
 			return
@@ -2188,7 +2198,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// A Fixed brick spends its first hit anchoring itself. The second one destroys it
 
 		if endlessIIAcceptsHit(sprite, from: hitFrom) == false {
-			laserNode?.removeFromParent()
+			stopLaser()
 			if hapticsSetting {
 				lightHaptic.impactOccurred()
 			}
@@ -2204,9 +2214,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			lightHaptic.impactOccurred()
 		}
 
-		if  laserSprite?.texture != laserGigaTexture {
-            laserNode?.removeFromParent()
-        }
+		stopLaser()
         // Remove laser if giga-ball power up isn't activated
 		
 		if sprite.texture == brickIndestructible2Texture {

@@ -385,7 +385,17 @@ extension GameScene {
             // Ordinary size only. A quarter-cell brick falling on its own looks like a piece
             // of a set coming loose - and it would be, since the four quarters are separate
             // bricks and only some of them would ever draw the style
-            return isOrdinaryCellSized(brick)
+            guard isOrdinaryCellSized(brick) else { return false }
+
+            // And never in a column a spinner is in. A falling brick stops on whatever is
+            // below it, and a spinner's cell reads as empty to that check because the spinner
+            // is not *in* the cells it sweeps - so the faller would come to rest inside a
+            // turning brick. The spinner's clearance is kept clear of arrivals from the side
+            // already; this is the same rule for arrivals from above
+            let column = endlessIICell(of: brick).column
+            return endlessIISpinners.contains {
+                $0.brick.parent != nil && endlessIICell(of: $0.brick).column == column
+            } == false
         case .moving:
             // Both work out where they may go by looking at a neighbouring cell, and both
             // measure from the node's position. On a Big brick neither holds: the cell to

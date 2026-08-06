@@ -117,7 +117,14 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         backgrounds.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(backgrounds)
 
-        for option in GameBackground.allCases {
+        // The last background, then all of them, then the first. Swiping past either end
+        // lands on a copy of what is at the other, and the strip is silently moved to the real
+        // one while it is standing still - so the row has no ends to run into and the wrap is
+        // never seen happening
+        let strip = [GameBackground.allCases.last!] + GameBackground.allCases
+            + [GameBackground.allCases.first!]
+
+        for option in strip {
             let layer = GameBackgroundView()
             layer.background = option
             backgrounds.addSubview(layer)
@@ -199,14 +206,14 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         }
         backgrounds.contentSize = CGSize(width: size.width*CGFloat(layers.count),
                                          height: size.height)
-        backgrounds.contentOffset = CGPoint(x: size.width*CGFloat(selected.rawValue), y: 0)
+        backgrounds.contentOffset = CGPoint(x: size.width*CGFloat(page(of: selected)), y: 0)
     }
 
     // MARK: - Choosing
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView === backgrounds, scrollView.bounds.width > 0 else { return }
-        pageControl.currentPage = page(in: scrollView)
+        pageControl.currentPage = background(atPage: page(in: scrollView)).rawValue
         // The dots follow the finger rather than waiting for the page to settle, so the swipe
         // has something answering it while it is happening
     }
@@ -226,9 +233,23 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         // change the picture without changing the setting
     }
 
+    /// Where a background sits in the strip, which is one along from its own index because of
+    /// the copy at the front.
+    private func page(of background: GameBackground) -> Int {
+        background.rawValue + 1
+    }
+
+    /// Which page of the strip is showing, copies included.
     private func page(in scrollView: UIScrollView) -> Int {
         let page = Int((scrollView.contentOffset.x/max(scrollView.bounds.width, 1)).rounded())
-        return min(max(page, 0), GameBackground.allCases.count - 1)
+        return min(max(page, 0), layers.count - 1)
+    }
+
+    /// Which background a page of the strip is, reading the copies as what they are copies of.
+    private func background(atPage page: Int) -> GameBackground {
+        let count = GameBackground.allCases.count
+        let index = ((page - 1) % count + count) % count
+        return GameBackground.allCases[index]
     }
 
     /// Takes whichever background the strip came to rest on.
@@ -237,7 +258,16 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     /// at is the answer to the question the screen is asking.
     private func settle(_ scrollView: UIScrollView) {
         guard scrollView === backgrounds else { return }
-        let background = GameBackground.allCases[page(in: scrollView)]
+        let landed = page(in: scrollView)
+        let background = background(atPage: landed)
+
+        // Standing on a copy: put the strip on the real one, without animating, so what the
+        // player sees does not change and the row has somewhere to go next time
+        if landed == 0 || landed == layers.count - 1 {
+            scrollView.setContentOffset(CGPoint(x: scrollView.bounds.width*CGFloat(page(of: background)),
+                                                y: 0), animated: false)
+        }
+
         guard background != selected else { return }
 
         selected = background
