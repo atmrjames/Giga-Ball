@@ -94,20 +94,29 @@ enum BrickTypeIcons {
         }
     }
 
-    /// Where each of several states sits, laid out left to right across the canvas.
+    /// Where each of several states sits.
     ///
-    /// Shrunk to fit rather than overflowing, so a four-state brick and a one-state brick are
-    /// the same picture width and the rows read as a list.
+    /// One across, two side by side - and four in a two-by-two grid rather than a row of four.
+    /// Four bricks across a forty-point icon leaves each one ten points wide, which is not a
+    /// brick any more; stacked, they are twice that and the eye reads the sequence left to
+    /// right and then down, which is the order they happen in anyway.
     private static func row(of count: Int) -> [CGRect] {
         guard count > 1 else { return [centred(feature)] }
 
-        let gap = canvas.width*0.03
-        let width = (canvas.width - gap*CGFloat(count - 1))/CGFloat(count)
-        let height = min(width/2, feature.height)
-        let y = (canvas.height - height)/2
+        let columns = count > 2 ? 2 : count
+        let rows = Int((Double(count)/Double(columns)).rounded(.up))
+
+        let gap = canvas.width*0.04
+        let width = (canvas.width - gap*CGFloat(columns - 1))/CGFloat(columns)
+        let height = min(width/2, (canvas.height - gap*CGFloat(rows - 1))/CGFloat(rows))
+
+        let blockHeight = height*CGFloat(rows) + gap*CGFloat(rows - 1)
+        let top = (canvas.height - blockHeight)/2
 
         return (0..<count).map { index in
-            CGRect(x: (width + gap)*CGFloat(index), y: y, width: width, height: height)
+            CGRect(x: (width + gap)*CGFloat(index % columns),
+                   y: top + (height + gap)*CGFloat(index/columns),
+                   width: width, height: height)
         }
     }
 

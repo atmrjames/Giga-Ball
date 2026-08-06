@@ -9,15 +9,20 @@
 //  three of the four are shades of the same purple and a name does not distinguish them - the
 //  only way to see what you were choosing was to start a level.
 //
-//  One game view, and swiping swaps the background under it. The scene is the constant and the
-//  background is the variable, so a row of four scenes said the opposite of what the screen is
-//  for - and made the picture of each a quarter of the size it could be.
+//  One game view, and swiping slides the backgrounds behind it. The scene is the constant and
+//  the background is the variable, so a row of four scenes said the opposite of what the screen
+//  is for - and made the picture of each a quarter of the size it could be.
+//
+//  The backgrounds are a paging scroll view *under* the scene rather than a crossfade on top of
+//  it. A crossfade happens after the gesture and tells the player what they chose; a strip that
+//  moves with the finger lets them see what they are choosing while they are still choosing it,
+//  and gives them back the half-swipe that changes their mind.
 //
 
 import UIKit
 
 class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate,
-                                      UICollectionViewDataSource {
+                                      UICollectionViewDataSource, UIScrollViewDelegate {
 
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true
@@ -32,8 +37,12 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     /// Which background is showing, and therefore which is chosen.
     private var selected: GameBackground = .classic
 
+    private let card = UIView()
+    private let backgrounds = UIScrollView()
     private let mock = GameSceneMockView()
+    private var layers: [GameBackgroundView] = []
     private var mockAspect: NSLayoutConstraint?
+    private var laidOut = CGSize.zero
 
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var contentView: UIView!
@@ -87,13 +96,12 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     // MARK: - The model
 
     private func buildMock() {
-        mock.translatesAutoresizingMaskIntoConstraints = false
-        mock.background = selected
-        mock.themeIndex = ballSetting
-        mock.layer.cornerRadius = 12
-        mock.layer.cornerCurve = .continuous
-        mock.layer.masksToBounds = true
-        mockContainer.addSubview(mock)
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.layer.cornerRadius = 12
+        card.layer.cornerCurve = .continuous
+        card.layer.masksToBounds = true
+        card.backgroundColor = .black
+        mockContainer.addSubview(card)
 
         mockContainer.layer.masksToBounds = false
         mockContainer.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
@@ -101,25 +109,50 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         mockContainer.layer.shadowOpacity = 0.5
         mockContainer.layer.shadowRadius = 6
 
-        NSLayoutConstraint.activate([
-            mock.centerXAnchor.constraint(equalTo: mockContainer.centerXAnchor),
-            mock.centerYAnchor.constraint(equalTo: mockContainer.centerYAnchor),
-            mock.topAnchor.constraint(equalTo: mockContainer.topAnchor),
-            mock.bottomAnchor.constraint(equalTo: mockContainer.bottomAnchor),
-            mock.widthAnchor.constraint(lessThanOrEqualTo: mockContainer.widthAnchor)
-        ])
+        backgrounds.isPagingEnabled = true
+        backgrounds.showsHorizontalScrollIndicator = false
+        backgrounds.contentInsetAdjustmentBehavior = .never
+        backgrounds.delegate = self
+        backgrounds.backgroundColor = .clear
+        backgrounds.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(backgrounds)
 
-        for direction in [UISwipeGestureRecognizer.Direction.left, .right] {
-            let swipe = UISwipeGestureRecognizer(target: self, action: #selector(swiped))
-            swipe.direction = direction
-            mockContainer.addGestureRecognizer(swipe)
+        for option in GameBackground.allCases {
+            let layer = GameBackgroundView()
+            layer.background = option
+            backgrounds.addSubview(layer)
+            layers.append(layer)
         }
 
-        mockContainer.addGestureRecognizer(
+        mock.translatesAutoresizingMaskIntoConstraints = false
+        mock.themeIndex = ballSetting
+        mock.isUserInteractionEnabled = false
+        // The scene sits on top and never moves. Touches belong to the strip behind it
+        card.addSubview(mock)
+
+        NSLayoutConstraint.activate([
+            card.centerXAnchor.constraint(equalTo: mockContainer.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: mockContainer.centerYAnchor),
+            card.topAnchor.constraint(equalTo: mockContainer.topAnchor),
+            card.bottomAnchor.constraint(equalTo: mockContainer.bottomAnchor),
+            card.widthAnchor.constraint(lessThanOrEqualTo: mockContainer.widthAnchor),
+
+            backgrounds.topAnchor.constraint(equalTo: card.topAnchor),
+            backgrounds.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+            backgrounds.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            backgrounds.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+
+            mock.topAnchor.constraint(equalTo: card.topAnchor),
+            mock.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+            mock.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            mock.trailingAnchor.constraint(equalTo: card.trailingAnchor)
+        ])
+
+        card.addGestureRecognizer(
             UITapGestureRecognizer(target: self, action: #selector(tapped)))
         // Swiping browses, tapping takes it. The background on screen is already the setting,
-        // so the tap is not what chooses - it is the way out, said in the obvious place. A
-        // player who has found the one they want should not have to look for the close button
+        // so the tap is not what chooses - it is the way out, said in the place a player is
+        // already looking rather than at the close button
     }
 
     @objc private func tapped() {
@@ -127,42 +160,86 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         close()
     }
 
-    /// Shapes the model to the playfield it is a model of.
+    /// Shapes the model to the playfield it is a model of, and lays the strip out behind it.
     ///
     /// The picture is the device's own play area, so the card is that shape rather than the
     /// card being a shape and the picture sitting letterboxed inside it.
     private func refreshMockShape() {
-        mock.screen = view.window?.bounds.size ?? view.bounds.size
-        mock.bottomInset = view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
+        let screen = view.window?.bounds.size ?? view.bounds.size
+        let inset = view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
+
+        mock.screen = screen
+        mock.bottomInset = inset
+        for layer in layers {
+            layer.screen = screen
+            layer.bottomInset = inset
+        }
 
         let modelled = mock.modelledSize
         let ratio = modelled.width/max(modelled.height, 1)
-        guard abs((mockAspect?.multiplier ?? 0) - ratio) > 0.001 else { return }
+        if abs((mockAspect?.multiplier ?? 0) - ratio) > 0.001 {
+            mockAspect?.isActive = false
+            let aspect = card.widthAnchor.constraint(equalTo: card.heightAnchor,
+                                                     multiplier: ratio)
+            aspect.priority = .required
+            aspect.isActive = true
+            mockAspect = aspect
+        }
 
-        mockAspect?.isActive = false
-        let aspect = mock.widthAnchor.constraint(equalTo: mock.heightAnchor, multiplier: ratio)
-        aspect.priority = .required
-        aspect.isActive = true
-        mockAspect = aspect
+        let size = backgrounds.bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+        guard size != laidOut else { return }
+        laidOut = size
+        // Only when it has actually changed: laying the strip out sets a content offset, and
+        // doing that on every layout pass would drag the player's swipe back
+
+        for (index, layer) in layers.enumerated() {
+            layer.frame = CGRect(x: size.width*CGFloat(index), y: 0,
+                                 width: size.width, height: size.height)
+        }
+        backgrounds.contentSize = CGSize(width: size.width*CGFloat(layers.count),
+                                         height: size.height)
+        backgrounds.contentOffset = CGPoint(x: size.width*CGFloat(selected.rawValue), y: 0)
     }
 
     // MARK: - Choosing
 
-    @objc private func swiped(_ gesture: UISwipeGestureRecognizer) {
-        let step = gesture.direction == .left ? 1 : -1
-        let wanted = selected.rawValue + step
-        guard GameBackground.allCases.indices.contains(wanted) else {
-            nudge(towards: step)
-            return
-        }
-        show(GameBackground.allCases[wanted])
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === backgrounds, scrollView.bounds.width > 0 else { return }
+        pageControl.currentPage = page(in: scrollView)
+        // The dots follow the finger rather than waiting for the page to settle, so the swipe
+        // has something answering it while it is happening
     }
 
-    /// Swaps the background under the scene, and takes it as the choice.
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        settle(scrollView)
+    }
+
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        settle(scrollView)
+    }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        guard decelerate == false else { return }
+        settle(scrollView)
+        // A slow drag that lands without momentum never decelerates, so it would otherwise
+        // change the picture without changing the setting
+    }
+
+    private func page(in scrollView: UIScrollView) -> Int {
+        let page = Int((scrollView.contentOffset.x/max(scrollView.bounds.width, 1)).rounded())
+        return min(max(page, 0), GameBackground.allCases.count - 1)
+    }
+
+    /// Takes whichever background the strip came to rest on.
     ///
     /// Committing on arrival rather than on a confirm button: the background you are looking
     /// at is the answer to the question the screen is asking.
-    private func show(_ background: GameBackground) {
+    private func settle(_ scrollView: UIScrollView) {
+        guard scrollView === backgrounds else { return }
+        let background = GameBackground.allCases[page(in: scrollView)]
+        guard background != selected else { return }
+
         selected = background
         defaults.set(background.rawValue, forKey: "backgroundSetting")
         NotificationCenter.default.post(name: .backgroundSettingChanged, object: nil)
@@ -171,23 +248,6 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         updateLabels()
-
-        UIView.transition(with: mock, duration: 0.22,
-                          options: [.transitionCrossDissolve, .allowUserInteraction]) {
-            self.mock.background = background
-        }
-        // Crossfaded rather than cut. Between Solid and Classic a hard swap reads as the
-        // screen having flickered rather than as something having changed
-    }
-
-    /// A small push back at either end of the list, so a swipe with nowhere to go says so
-    /// rather than appearing not to have registered.
-    private func nudge(towards step: Int) {
-        UIView.animate(withDuration: 0.12, animations: {
-            self.mock.transform = CGAffineTransform(translationX: CGFloat(-step*12), y: 0)
-        }, completion: { _ in
-            UIView.animate(withDuration: 0.18) { self.mock.transform = .identity }
-        })
     }
 
     private func updateLabels() {

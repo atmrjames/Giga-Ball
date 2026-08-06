@@ -105,7 +105,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         var title: String {
             switch self {
             case .powerUps: return "Power-Ups"
-            case .brickTypes: return "Brick Types"
+            case .brickTypes: return "Bricks"
             case .achievements: return "Achievements"
             case .statistics: return "Statistics"
             case .gameCenter: return "Game Center"

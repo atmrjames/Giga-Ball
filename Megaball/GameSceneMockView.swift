@@ -19,15 +19,15 @@
 //  own renderer to show a still image, is a lot of machinery for a picture that never moves -
 //  and `GameScene` cannot be instantiated without a game to put in it.
 //
+//  Two layers, not one. The scene - walls, bricks, paddle, ball - is what stays put, and the
+//  backgrounds are a strip that slides behind it under the player's finger. Drawing both into
+//  one view would mean the only way to change background was to redraw the whole picture, and
+//  a picture that can only cut or crossfade cannot follow a swipe.
+//
 
 import UIKit
 
 final class GameSceneMockView: UIView {
-
-    /// Which background this model is wearing.
-    var background: GameBackground = .classic {
-        didSet { if background != oldValue { setNeedsDisplay() } }
-    }
 
     /// The screen being modelled, and the inset at the bottom of it.
     ///
@@ -99,13 +99,19 @@ final class GameSceneMockView: UIView {
     // properties of `GameScene`, which needs a scene to exist before it has any
 
     private func artwork(for character: Character) -> UIImage? {
+        let named: String
         switch character {
-        case "M": return UIImage(named: "BrickMultiHit3")
-        case "X": return UIImage(named: "BrickIndestructible2")
+        case "M": named = "BrickMultiHit3"
+        case "X": named = "BrickIndestructible2"
         case ".": return nil
-        default: return UIImage(named: "BrickNormal")
+        default: named = "BrickNormal"
         }
+        return UIImage(named: BrickTypeIcons.retroName(for: named) ?? named)
     }
+    // Through the same swap the scene makes. The paddle and the ball already followed the
+    // player's theme here and the bricks did not, which made the Retro theme look like it had
+    // been half applied - and a model of the game that is not a model of *their* game is the
+    // one thing this screen cannot afford to be
 
     // MARK: - Drawing
 
@@ -133,7 +139,6 @@ final class GameSceneMockView: UIView {
         // the power-up row - is the same on every background and is not what is being chosen
         // between, so showing it spends a quarter of a small picture saying nothing
 
-        drawBackground(layout, in: context)
         drawWalls(layout)
         drawBricks(layout)
         drawPaddleAndBall(layout)
@@ -150,33 +155,6 @@ final class GameSceneMockView: UIView {
         let layout = GameSceneLayout(screen: screen, bottomInset: bottomInset)
         return CGSize(width: screen.width,
                       height: max(1, screen.height - layout.topBarHeight))
-    }
-
-    private func drawBackground(_ layout: GameSceneLayout, in context: CGContext) {
-        UIColor.black.setFill()
-        context.fill(CGRect(origin: .zero, size: screen))
-        // Behind everything, including the borders where the walls do not reach
-
-        // The scene's background node spans from the bottom of the top bar to the bottom of
-        // the screen - past the play area proper, into the home indicator's strip
-        let area = CGRect(x: (screen.width - layout.gameWidth)/2,
-                          y: layout.topBarHeight,
-                          width: layout.gameWidth,
-                          height: screen.height - layout.topBarHeight)
-
-        switch background.paint {
-        case .artwork:
-            UIImage(named: "gameBackground")?.draw(in: area)
-        case .solid(let colour):
-            colour.setFill()
-            context.fill(area)
-        case .gradient:
-            // Measured from the bottom of the background, which is where the scene measures
-            // it from - the fade turns at the paddle rather than at the halfway mark
-            let fraction = (area.maxY - paddleCentreY(layout))/area.height
-            GameBackground.gradientImage(size: area.size, paddleFraction: fraction)?
-                .draw(in: area)
-        }
     }
 
     private func drawWalls(_ layout: GameSceneLayout) {
@@ -215,7 +193,7 @@ final class GameSceneMockView: UIView {
     ///
     /// Below all twenty-two rows, not below the bricks that happen to be filled - the gap the
     /// player has to work in is the same whether a level is full or nearly cleared.
-    private func paddleCentreY(_ layout: GameSceneLayout) -> CGFloat {
+    func paddleCentreY(_ layout: GameSceneLayout) -> CGFloat {
         layout.topBarHeight + layout.topGap
             + CGFloat(GameSceneLayout.brickRows)*layout.brickHeight
             + layout.paddleGap + layout.paddleHeight/2
@@ -296,5 +274,90 @@ extension UIImage {
             // plain `draw(in:)` composites normally whatever the context's blend mode is -
             // which quietly put the untinted white brick back on top
         }
+    }
+}
+
+/// One background, drawn at the same proportions the scene layer above it uses.
+///
+/// Its own view so the backgrounds can be a strip that slides behind a scene that stays put.
+/// Everything about where the painted area sits comes from `GameSceneLayout`, exactly as it
+/// does for the layer in front, or the two would drift apart the moment either changed.
+final class GameBackgroundView: UIView {
+
+    var background: GameBackground = .classic {
+        didSet { if background != oldValue { setNeedsDisplay() } }
+    }
+    var screen: CGSize = CGSize(width: 390, height: 844) {
+        didSet { if screen != oldValue { setNeedsDisplay() } }
+    }
+    var bottomInset: CGFloat = 34 {
+        didSet { if bottomInset != oldValue { setNeedsDisplay() } }
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        isOpaque = false
+        contentMode = .redraw
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        backgroundColor = .clear
+        isOpaque = false
+        contentMode = .redraw
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        setNeedsDisplay()
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext(),
+              bounds.width > 0, bounds.height > 0,
+              screen.width > 0, screen.height > 0 else { return }
+
+        let layout = GameSceneLayout(screen: screen, bottomInset: bottomInset)
+        guard layout.gameWidth > 0 else { return }
+
+        let model = CGSize(width: screen.width,
+                           height: max(1, screen.height - layout.topBarHeight))
+        let scale = min(bounds.width/model.width, bounds.height/model.height)
+
+        context.saveGState()
+        context.translateBy(x: (bounds.width - model.width*scale)/2,
+                            y: (bounds.height - model.height*scale)/2)
+        context.scaleBy(x: scale, y: scale)
+        context.translateBy(x: 0, y: -layout.topBarHeight)
+
+        UIColor.black.setFill()
+        context.fill(CGRect(origin: .zero, size: screen))
+        // Behind everything, including the borders where the walls do not reach
+
+        // The scene's background node spans from the bottom of the top bar to the bottom of
+        // the screen - past the play area proper, into the home indicator's strip
+        let area = CGRect(x: (screen.width - layout.gameWidth)/2,
+                          y: layout.topBarHeight,
+                          width: layout.gameWidth,
+                          height: screen.height - layout.topBarHeight)
+
+        switch background.paint {
+        case .artwork:
+            UIImage(named: "gameBackground")?.draw(in: area)
+        case .solid(let colour):
+            colour.setFill()
+            context.fill(area)
+        case .gradient:
+            // Measured from the bottom of the background, which is where the scene measures
+            // it from - the fade turns at the paddle rather than at the halfway mark
+            let paddle = layout.topBarHeight + layout.topGap
+                + CGFloat(GameSceneLayout.brickRows)*layout.brickHeight
+                + layout.paddleGap + layout.paddleHeight/2
+            let fraction = (area.maxY - paddle)/area.height
+            GameBackground.gradientImage(size: area.size, paddleFraction: fraction)?
+                .draw(in: area)
+        }
+        context.restoreGState()
     }
 }
