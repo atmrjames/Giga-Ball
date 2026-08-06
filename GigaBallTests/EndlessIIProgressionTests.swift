@@ -66,10 +66,12 @@ final class EndlessIIProgressionTests: XCTestCase {
     }
 
     func testTheEndsOfTheRampAreTheValuesAsked() {
+        // From the first metre, not from zero - the very first screen is a special case and
+        // has nothing unusual on it at all.
         let p = progression
-        XCTAssertEqual(p.styleChance(at: 0), EndlessIIProgression.openingStyleChance)
+        XCTAssertEqual(p.styleChance(at: 1), EndlessIIProgression.openingStyleChance)
         XCTAssertEqual(p.styleChance(at: 10_000), EndlessIIProgression.deepStyleChance)
-        XCTAssertEqual(p.stackChance(at: 0), EndlessIIProgression.openingStackChance)
+        XCTAssertEqual(p.stackChance(at: 1), EndlessIIProgression.openingStackChance)
         XCTAssertEqual(p.stackChance(at: 10_000), EndlessIIProgression.deepStackChance)
     }
 
@@ -235,9 +237,22 @@ extension EndlessIIProgressionTests {
         XCTAssertLessThan(standard, rest)
     }
 
+    func testTheVeryFirstScreenIsPlainAndSparse() {
+        // The only screen somebody sees before deciding what this mode is. It has to read as
+        // an invitation, not a wall - so no styles at all, ordinary bricks only, and thinner
+        // than the opening proper. Everything starts arriving the moment the height moves.
+        let p = progression
+        XCTAssertEqual(p.styleChance(at: 0), 0)
+        XCTAssertEqual(p.stackChance(at: 0), 0)
+        XCTAssertEqual(p.behaviourWeights(at: 0).count, 1)
+        XCTAssertEqual(p.behaviourWeights(at: 0).first?.0, .standard)
+        XCTAssertLessThan(p.density(at: 0), p.density(at: 1))
+        XCTAssertGreaterThan(p.styleChance(at: 30), 0)
+    }
+
     func testEveryBehaviourIsReachableAtEveryDepth() {
         let p = progression
-        for height in [0, 50, 500, 1500] {
+        for height in [50, 500, 1500] {
             for (_, weight) in p.behaviourWeights(at: height) {
                 XCTAssertGreaterThan(weight, 0, "at \(height)")
             }

@@ -108,7 +108,10 @@ struct EndlessIIProgression {
 
     /// The chance in 100 that a brick takes a style.
     func styleChance(at height: Int) -> Int {
-        EndlessIIProgression.ramped(from: EndlessIIProgression.openingStyleChance,
+        guard height > 0 else { return 0 }
+        // Nothing unusual on the first screen at all. The moment the height moves, styles
+        // start arriving - but a player's first look at Endless 2.0 is a plain field
+        return EndlessIIProgression.ramped(from: EndlessIIProgression.openingStyleChance,
                                     to: EndlessIIProgression.deepStyleChance,
                                     at: height)
     }
@@ -119,7 +122,11 @@ struct EndlessIIProgression {
     /// merely unlikely. The real rate is this multiplied by the chance of the first style,
     /// so stacks stay rarer than singles at every depth without a third number to tune.
     func stackChance(at height: Int) -> Int {
-        EndlessIIProgression.ramped(from: EndlessIIProgression.openingStackChance,
+        guard height > 0 else { return 0 }
+        // Nothing unusual on the first screen, and a stack is the most unusual thing there
+        // is - leaving this at its opening value while the first roll was zero was an
+        // inconsistency rather than a shortcut
+        return EndlessIIProgression.ramped(from: EndlessIIProgression.openingStackChance,
                                     to: EndlessIIProgression.deepStackChance,
                                     at: height)
     }
@@ -247,13 +254,19 @@ extension EndlessIIProgression {
     /// the cap what keeps changing is *what* the bricks are, not how many. A field that kept
     /// filling would end as a wall.
     static let openingDensity = 0.07
+    /// The very first screen, before a run has moved at all.
+    ///
+    /// Thinner still than the opening. It is the only screen a player sees before deciding
+    /// what this mode is, and it has to look like an invitation rather than a wall - a dozen
+    /// bricks with space between them, all of them ordinary.
+    static let firstScreenDensity = 0.035
     static let cappedDensity = 0.42
     static let densityCapMetres = 500
 
     func density(at height: Int, phase: EndlessIIPhase = .standard) -> Double {
         let base: Double
         if height <= 0 {
-            base = EndlessIIProgression.openingDensity
+            base = EndlessIIProgression.firstScreenDensity
         } else if height >= EndlessIIProgression.densityCapMetres {
             base = EndlessIIProgression.cappedDensity
         } else {
@@ -275,6 +288,8 @@ extension EndlessIIProgression {
     /// other half of not going stale: if the field only ever got fuller, a deep run would be
     /// the opening with more of it.
     func behaviourWeights(at height: Int) -> [(EndlessIIBehaviour, Int)] {
+        guard height > 0 else { return [(.standard, 100)] }
+        // Ordinary bricks and nothing else to begin with, for the same reason
         let toward = { (opening: Int, deep: Int) in
             EndlessIIProgression.ramped(from: opening, to: deep, at: height)
         }

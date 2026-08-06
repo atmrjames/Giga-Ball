@@ -150,9 +150,10 @@ extension GameScene {
     /// Centred, so the node stays on its row centre and the gaps open up evenly around it -
     /// a quarter-cell brick pushed into one corner would read as a misplaced normal brick
     /// rather than as a small one.
-    func applyEndlessIISizes(to bricks: [SKNode]) {
+    func applyEndlessIISizes(to bricks: inout [SKNode]) {
         guard gameMode == .endlessII else { return }
 
+        var made: [SKNode] = []
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
             guard brick.texture == brickNormalTexture else { continue }
@@ -161,8 +162,11 @@ extension GameScene {
             // Already resized - the Big brick this row built comes through here too
             let chance = endlessIIPhase == .miniatures ? 100 : GameScene.endlessIITinyChance
             guard Int.random(in: 1...100) <= chance else { continue }
-            makeTiny(brick)
+            made.append(contentsOf: Array(makeTiny(brick).dropFirst()) as [SKNode])
         }
+        bricks.append(contentsOf: made)
+        // The three new quarters join the row, so the arrival animation and the brick count
+        // see them like anything else generated this row
     }
 
     /// Whether a brick is still exactly one cell.
@@ -174,8 +178,44 @@ extension GameScene {
         abs(brick.size.width - brickWidth) < 0.5 && abs(brick.size.height - brickHeight) < 0.5
     }
 
-    func makeTiny(_ brick: SKSpriteNode) {
-        brick.size = CGSize(width: brickWidth/2, height: brickHeight/2)
-        brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: brick.size))
+    /// Replaces a brick with the four quarter-cell bricks that fill its cell.
+    ///
+    /// Four, not one. A single quarter-cell brick floating in the middle of an otherwise
+    /// empty cell reads as a mistake - a normal brick that failed to draw properly - because
+    /// nothing else in the field sits anywhere but on the grid. Four of them fill the cell
+    /// exactly, so the cell still looks like a cell, and what the player gets is a brick
+    /// that takes four hits to clear and opens gaps as it goes rather than one that vanishes
+    /// in a single hit and leaves a hole.
+    ///
+    /// The original node becomes the bottom-left quarter and the other three are new, so
+    /// whatever the caller already did to it - its texture, its colour - carries into at
+    /// least one of them.
+    func makeTiny(_ brick: SKSpriteNode) -> [SKSpriteNode] {
+        let quarter = CGSize(width: brickWidth/2, height: brickHeight/2)
+        let home = brick.position
+        var quarters: [SKSpriteNode] = []
+
+        for (index, offset) in [CGPoint(x: -0.25, y: -0.25), CGPoint(x: 0.25, y: -0.25),
+                                CGPoint(x: -0.25, y: 0.25), CGPoint(x: 0.25, y: 0.25)].enumerated() {
+            let piece: SKSpriteNode
+            if index == 0 {
+                piece = brick
+            } else {
+                piece = SKSpriteNode(texture: brick.texture)
+                piece.color = brick.color
+                piece.colorBlendFactor = brick.colorBlendFactor
+                piece.zPosition = brick.zPosition
+                piece.name = BrickCategoryName
+                addChild(piece)
+            }
+            piece.size = quarter
+            piece.position = CGPoint(x: home.x + offset.x*brickWidth,
+                                     y: home.y + offset.y*brickHeight)
+            piece.physicsBody = brickBody(SKPhysicsBody(rectangleOf: quarter))
+            quarters.append(piece)
+        }
+        return quarters
+        // All four keep their row centre within half a cell of the original, so the descent
+        // and the bottom-row check still read them as belonging to this row
     }
 }

@@ -655,7 +655,7 @@ extension GameScene {
         // The clearance around it was reserved two rows ago; whatever brick the generator
         // put here is the one that turns, whatever type it happens to be
 
-        applyEndlessIISizes(to: brickArray)
+        applyEndlessIISizes(to: &brickArray)
         applyEndlessIIBehaviours(to: brickArray)
         applyEndlessIIRoles(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend

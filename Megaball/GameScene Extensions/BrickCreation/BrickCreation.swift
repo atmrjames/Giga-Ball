@@ -81,7 +81,7 @@ extension GameScene {
             
         }
 
-        applyEndlessIISizes(to: brickBuildArray)
+        applyEndlessIISizes(to: &brickBuildArray)
         applyEndlessIIBehaviours(to: brickBuildArray)
         applyEndlessIIRoles(to: brickBuildArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend.

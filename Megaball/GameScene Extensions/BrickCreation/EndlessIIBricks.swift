@@ -180,6 +180,13 @@ extension GameScene {
     /// combinations fun rather than noisy.
     static let endlessIIMaximumStyles = 2
 
+    /// Whether a brick sits in exactly one cell - true of an ordinary brick and of a Tiny
+    /// one, false of a Big one.
+    func occupiesOneCell(_ brick: SKSpriteNode) -> Bool {
+        let size = endlessIIGeometry.footprint(of: brick.size)
+        return size.columns == 1 && size.rows == 1
+    }
+
     /// Which styles a brick is already wearing.
     ///
     /// Worked out from the brick and the lists that drive it rather than kept as a separate
@@ -232,6 +239,14 @@ extension GameScene {
         switch style {
         case .rounded: return centred
         case .spinning: return centred && isOrdinaryCellSized(brick)
+        case .moving, .gravity:
+            // Both work out where they may go by looking at a neighbouring cell, and both
+            // measure from the node's position. On a Big brick neither holds: the cell to
+            // its right is part of itself, and its node sits on its top-left corner rather
+            // than its middle. So a Big Moving brick saw nothing in its way and slid over
+            // its neighbours, hiding them until it moved on again. Restricted to bricks that
+            // occupy exactly one cell until both are taught about footprints
+            return occupiesOneCell(brick)
         default: return true
         }
     }
