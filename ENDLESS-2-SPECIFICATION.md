@@ -412,7 +412,7 @@ the first is still active.
 | **Cull** | — | Rare | No | Fires again | Destroys half the remaining bricks, chosen at random, of any type including Indestructible. Scored as destroyed. Its value is highest exactly when the field is worst, which is when a run is most likely to end - and being random rather than chosen means it relieves the pressure without deciding the shape of what is left |
 | **Laser Beam** | — | Rare | No | Fires again | A sustained vertical beam destroying a whole column including Indestructible. **One beam per ball in play**, each fired from its own x-position — so with four balls it clears four columns at once |
 | **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity |
-| **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other |
+| **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other. **The paddle wraps too**, so a paddle driven off one edge reappears at the other — the side walls stop being walls for as long as it lasts, and the corners stop being the safe places they usually are. Moving bricks and explosions wrap as well, so what the power-up changes is the shape of the field rather than one rule about the ball |
 | **Landing Marker** | — | Common | Yes | Extends duration | Marks where the ball will cross the paddle's line |
 | **Wrecking Ball** | `ballHitBehaviour` | Rare | Yes | Extends duration | Destroys any brick in one hit regardless of type, and **still bounces off it** — distinct from Giga-Ball, which passes through without destroying everything |
 | **Aura** | — | Uncommon | Yes | Extends, then grows | Glow of twice the ball's radius. Bricks touched by the aura are destroyed; the ball bounces only off bricks it touches itself |
@@ -763,7 +763,6 @@ introduction schedule. Everything below is what remains, in the order it is wort
 | Item | Notes |
 |---|---|
 | Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
-| Build-in animation | Bricks build in from the top at the start of a run, quickly, skippable with a tap |
 | Ring bar styling | The progress ring sits outside the icon; the icons have room for it to sit inside. Giga-Ball colour and glow |
 | Stuck-ball nudge | Rare endless loops remain. If the ball is detected as stuck, apply a small random direction change |
 | Background selection screen | Rather than a name on a cell, a screen showing a scene mock-up that can be swiped between |
@@ -777,7 +776,7 @@ introduction schedule. Everything below is what remains, in the order it is wort
 | Global leaderboard lines on the height markers | The Endless 2.0 boards existing in App Store Connect. Until they do, scores fail to post silently |
 | Artwork and sound for everything new | §8.5. Deliberately last, while mechanics are still moving |
 | Ring HUD in Classic and Endless | A shorter HUD bar changes `layoutUnit`, which changes brick size in levels people hold high scores on. Worth doing deliberately, not as a side effect |
-| Wrap-around power-up interacting with Moving and Exploding bricks | The power-up itself is not built yet |
+| Wrap-around applying to the paddle, Moving bricks and explosions | The power-up itself is not built yet. Written up in §5.4 so it is built that way first time rather than retrofitted |
 
 ### 12.1 Style progression, as part of phase 6
 

@@ -82,3 +82,50 @@ extension GameScene {
         }
     }
 }
+
+// MARK: - Building the opening field in
+
+extension GameScene {
+
+    /// How long the whole cascade takes, top row to bottom.
+    ///
+    /// Short. It is a flourish before a run, not a title sequence, and anybody past their
+    /// first few games wants to be playing.
+    static let endlessIIBuildInSweep: TimeInterval = 0.35
+
+    /// When a brick in the opening field should appear.
+    ///
+    /// Ordered by row so the field builds downward from the top - the direction it will keep
+    /// arriving from for the rest of the run, which makes the animation say something about
+    /// the mode rather than just being movement.
+    func endlessIIBuildInDelay(for brick: SKSpriteNode) -> TimeInterval {
+        let row = max(0, endlessIICell(of: brick).row)
+        let rows = max(1, numberOfBrickRows - 1)
+        return GameScene.endlessIIBuildInSweep*min(1, Double(row)/Double(rows))
+    }
+
+    func startEndlessIIBuildIn() {
+        guard gameMode == .endlessII, savedGame == nil else { return }
+        endlessIIBuildingIn = true
+        run(.sequence([.wait(forDuration: GameScene.endlessIIBuildInSweep + 0.3),
+                       .run { [weak self] in self?.endlessIIBuildingIn = false }]))
+        // Cleared on a timer rather than by counting bricks finishing, because the flag only
+        // exists to know whether a tap should skip - and once everything has arrived there is
+        // nothing left to skip
+    }
+
+    /// Puts the whole field on screen now. Returns whether there was anything to skip, so a
+    /// tap that lands during the build is spent on it rather than launching the ball.
+    @discardableResult
+    func finishEndlessIIBuildIn() -> Bool {
+        guard endlessIIBuildingIn else { return false }
+        endlessIIBuildingIn = false
+
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            node.removeAllActions()
+            node.alpha = 1
+            node.setScale(1)
+        }
+        return true
+    }
+}

@@ -632,6 +632,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIProgression = EndlessIIProgression.make()
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
+	var endlessIIBuildingIn = false
 	var endlessIISetRowQueue: [String] = []
 	// The rows of a designed pattern still to come, one per generated row
 	var endlessIIPhaseBehaviour: EndlessIIBehaviour?
@@ -1496,6 +1497,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if finishEndlessIIBuildIn() {
+            touchBeganWhilstPlaying = false
+            return
+        }
+        // A tap during the opening cascade puts the field up now. Spent on that rather than
+        // on launching the ball, so nobody launches into a field that is still arriving
+
         if ballIsReturning && gameState.currentState is Playing {
             finishBallReturn()
             touchBeganWhilstPlaying = false

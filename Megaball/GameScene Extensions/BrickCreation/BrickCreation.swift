@@ -70,9 +70,14 @@ extension GameScene {
                 let wait = SKAction.wait(forDuration: 0.25)
                 let startingGroup = SKAction.group([startingScale, startingFade])
                 let brickGroup = SKAction.group([scaleUp, fadeIn])
-                let brickSequence = SKAction.sequence([wait, brickGroup])
-                // Setup brick animation
-                
+                let lead = gameMode == .endlessII
+                    ? SKAction.wait(forDuration: endlessIIBuildInDelay(for: brickCurrent))
+                    : wait
+                let brickSequence = SKAction.sequence([lead, brickGroup])
+                // Setup brick animation. Endless 2.0 staggers the wait by row so the field
+                // builds downward from the top rather than arriving all at once - the same
+                // direction it descends from for the rest of the run
+
                 brick.run(startingGroup)
                 brick.run(brickSequence)
                 // Run animation for each brick
@@ -81,6 +86,7 @@ extension GameScene {
             
         }
 
+        startEndlessIIBuildIn()
         applyEndlessIISizes(to: &brickBuildArray)
         applyEndlessIIBehaviours(to: brickBuildArray)
         applyEndlessIIRoles(to: brickBuildArray)
