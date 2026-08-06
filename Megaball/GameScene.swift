@@ -2405,6 +2405,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 
 		endlessHeight+=1
+		refreshEndlessIIBest()
 		
 		if endlessHeight >= 10 && totalStatsArray[0].achievementsUnlockedArray[0] == false {
 			totalStatsArray[0].achievementsUnlockedArray[0] = true

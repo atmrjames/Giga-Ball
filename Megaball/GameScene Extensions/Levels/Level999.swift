@@ -27,6 +27,8 @@ extension GameScene {
         scoreLabel.text = "\(endlessHeight)m"
         // Setup score label for endless mode
 
+        showEndlessIIBest()
+
         height01 = Int.random(in: 0...25)
         height02 = Int.random(in: height01!...50)
         height03 = Int.random(in: height02!...75)

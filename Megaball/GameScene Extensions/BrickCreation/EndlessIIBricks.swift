@@ -99,6 +99,40 @@ extension GameScene {
     /// brick through several cycles at once.
     private static let maximumTickInterval: TimeInterval = 1.0/20.0
 
+    // MARK: - The best so far
+
+    /// Puts the player's best height under the current one.
+    ///
+    /// Reuses the multiplier label, which endless mode hides because it has no multiplier -
+    /// so this costs no new node and inherits a position that is already right. Smaller and
+    /// dimmer than the live figure, because it is the thing you glance at rather than the
+    /// thing you are watching.
+    func showEndlessIIBest() {
+        guard gameMode == .endlessII else { return }
+        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
+        guard best > 0 else { return }
+
+        multiplierLabel.isHidden = false
+        multiplierLabel.text = "BEST \(best)m"
+        multiplierLabel.fontSize = fontSize*0.7
+        multiplierLabel.horizontalAlignmentMode = .right
+        multiplierLabel.fontColor = UIColor(white: 1, alpha: 0.45)
+        multiplierLabel.position.x = scoreLabel.position.x
+        multiplierLabel.position.y = scoreLabel.position.y - fontSize*1.2
+    }
+
+    /// Clears it once the run passes it. Beating your best should feel like it happened.
+    func refreshEndlessIIBest() {
+        guard gameMode == .endlessII, multiplierLabel.isHidden == false else { return }
+        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
+        guard endlessHeight > best else { return }
+
+        multiplierLabel.text = "NEW BEST"
+        multiplierLabel.fontColor = brickGreenGigaball
+        // Left showing rather than removed - the run is now writing the number that will be
+        // sitting there next time
+    }
+
     // MARK: - Generating
 
     /// Picks what a single cell of a new Endless 2.0 row holds.
