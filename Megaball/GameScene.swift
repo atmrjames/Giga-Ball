@@ -110,6 +110,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWreckingBallClock = EndlessIIClock()
 	var endlessIIAuraClock = EndlessIIClock()
 	var endlessIIAuraNodes: [SKShapeNode] = []
+	var endlessIIDescentClock = EndlessIIClock()
+	var endlessIIDescentAccumulated: TimeInterval = 0
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -297,7 +299,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 45)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 46)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -818,6 +820,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpWreckingBall = SKTexture(image: PowerUpIcon.wreckingBall)
 	let powerUpAura = SKTexture(image: PowerUpIcon.aura)
 	let powerUpInfill = SKTexture(image: PowerUpIcon.infill)
+	let powerUpDescent = SKTexture(image: PowerUpIcon.descent)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -994,7 +997,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -2693,10 +2696,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Check achievement for clearing endless mode screen of active bricks
 							
-		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0 {
+		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0
+			&& endlessIIDescentSuspendsCadence == false {
 			moveEndlessModeRowDown()
 		}
-		// If there's no other bricks in the bottom row and a move isn't currently in progress, move to the row with the next lowest bricks
+		// If there's no other bricks in the bottom row and a move isn't currently in progress,
+		// move to the row with the next lowest bricks - unless Descent owns the field's
+		// movement right now, where both at once would double-step (§5.4)
 	}
 	
 	func moveEndlessModeRowDown() {
@@ -4145,6 +4151,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIIInfill()
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[44] += 1
+
+		case powerUpDescent:
+		// 45 - Descent
+			endlessIICollectDescent()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[45] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball

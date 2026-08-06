@@ -298,6 +298,25 @@ enum PowerUpIcon {
         context.setFillColor(UIColor.white.cgColor)
     }
 
+    /// Descent: the field on its way down.
+    static let descent: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.06)
+        for y in [rect.minY + rect.height*0.26, rect.minY + rect.height*0.42] {
+            context.move(to: CGPoint(x: rect.minX + rect.width*0.22, y: y))
+            context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.22, y: y))
+        }
+        context.strokePath()
+        // The rows
+
+        let tip = CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.18)
+        context.move(to: CGPoint(x: rect.midX, y: rect.midY + rect.height*0.04))
+        context.addLine(to: tip)
+        context.move(to: CGPoint(x: tip.x - rect.width*0.13, y: tip.y - rect.height*0.14))
+        context.addLine(to: tip)
+        context.addLine(to: CGPoint(x: tip.x + rect.width*0.13, y: tip.y - rect.height*0.14))
+        context.strokePath()
+    }
+
     // MARK: - Drawing helpers
 
     private static func stroke(_ context: CGContext, width: CGFloat) {

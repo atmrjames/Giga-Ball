@@ -4,15 +4,16 @@
 //
 //  Phase 8c: the power-ups that act on the field rather than on the ball.
 //
-//  Six of the batch's eight. Four are instants - Cull takes half the field at random, Clear
-//  And Retreat takes the lowest row and pushes everything back up, Laser Beam burns one
-//  column per ball, and Infill (the bad one) fills empty cells with new bricks. Two run on
-//  clocks: Wrecking Ball makes every hit lethal while still bouncing, and Aura destroys what
-//  the glow around each ball touches.
+//  Seven of the batch's eight. Four are instants - Cull takes half the field at random,
+//  Clear And Retreat takes the lowest row and pushes everything back up, Laser Beam burns
+//  one column per ball, and Infill (the bad one) fills empty cells with new bricks. Three
+//  run on clocks: Wrecking Ball makes every hit lethal while still bouncing, Aura destroys
+//  what the glow around each ball touches, and Descent drives the field's own one-row step
+//  on a timer, suspending the normal cadence while it runs.
 //
-//  Descent and Wrap-Around are the other two, and they are deliberately not here yet: one
-//  drives the field's own descent machinery and the other asks the side walls to stop being
-//  walls, and each wants its own careful visit rather than a corner of this file.
+//  Wrap-Around is the eighth, and it is deliberately not here yet: it asks the side walls
+//  to stop being walls - for the paddle and Moving bricks and explosions too - and that is
+//  its own careful visit rather than a corner of this file.
 //
 //  Everything destroys through the same pair a crush uses - roles react, nothing rolls a
 //  power-up - except the Wrecking Ball, whose hits are ordinary hits that happen to win:
@@ -257,6 +258,53 @@ extension GameScene {
     /// the field - and rows that were empty stay mostly empty.
     static let endlessIIInfillCount = 6
 
+    // MARK: - Descent
+
+    func endlessIICollectDescent() {
+        endlessIIDescentClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+    }
+
+    /// How often the field steps down while Descent runs.
+    ///
+    /// The spec says "continuously"; this is the grid-preserving reading of it - a fast,
+    /// steady cadence of the same one-row step the field has always made, because a brick's
+    /// position.y is its row and a field that drifted off its row centres would break
+    /// everything that reads them (§8.6). Just under two rows a second reads as continuous
+    /// motion and keeps every landing on a centre.
+    static let endlessIIDescentStep: TimeInterval = 0.55
+
+    /// Drives the descent. Called from the field batch's tick.
+    ///
+    /// The whole power-up is the existing row-step asked on a timer instead of on the bottom
+    /// row emptying: `moveEndlessModeRowDown` already destroys what passes the lower limit
+    /// unscored, builds the next row, counts the height and moves the markers - which is why
+    /// Descent is free height, and why it is a power-up.
+    func tickEndlessIIDescent() {
+        guard endlessIIDescentClock.isRunning else {
+            endlessIIDescentAccumulated = 0
+            return
+        }
+
+        endlessIIDescentAccumulated += endlessIIPaddleFrameDelta
+        guard endlessIIDescentAccumulated >= GameScene.endlessIIDescentStep else { return }
+        endlessIIDescentAccumulated = 0
+
+        guard endlessMoveInProgress == false else { return }
+        // A step already animating finishes first - two moves at once would stack their
+        // distances and carry bricks off their row centres
+
+        moveEndlessModeRowDown()
+    }
+
+    /// Whether the normal descent cadence is suspended (§5.4).
+    ///
+    /// Asked by `countBricks` where the bottom row emptying would normally step the field
+    /// down. While Descent runs, the timer owns the field's movement - both at once would
+    /// double-step.
+    var endlessIIDescentSuspendsCadence: Bool {
+        endlessIIDescentClock.isRunning
+    }
+
     // MARK: - The ring and the save
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
@@ -271,13 +319,19 @@ extension GameScene {
                 id: "endlessIIAura", texture: SKTexture(image: PowerUpIcon.aura),
                 remaining: endlessIIAuraClock.fraction, segments: nil))
         }
+        if endlessIIDescentClock.isRunning {
+            entries.append(PowerUpRingHUD.Entry(
+                id: "endlessIIDescent", texture: SKTexture(image: PowerUpIcon.descent),
+                remaining: endlessIIDescentClock.fraction, segments: nil))
+        }
         return entries
     }
 
     func endlessIIFieldClockSaveEntries() -> [(key: String, remaining: Double, total: Double,
                                                magnitude: Int)] {
         [("endlessIIWreckingBall", endlessIIWreckingBallClock),
-         ("endlessIIAura", endlessIIAuraClock)]
+         ("endlessIIAura", endlessIIAuraClock),
+         ("endlessIIDescent", endlessIIDescentClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -291,6 +345,8 @@ extension GameScene {
         case "endlessIIAura":
             endlessIIAuraClock.restore(remaining: remaining, total: total, level: magnitude,
                                        deepestLevel: GameScene.endlessIIAuraReach.count - 1)
+        case "endlessIIDescent":
+            endlessIIDescentClock.restore(remaining: remaining, total: total, level: 0)
         default:
             return false
         }
@@ -303,6 +359,8 @@ extension GameScene {
         if gameState.currentState is Playing && isPaused == false {
             endlessIIWreckingBallClock.run(down: endlessIIPaddleFrameDelta)
             endlessIIAuraClock.run(down: endlessIIPaddleFrameDelta)
+            endlessIIDescentClock.run(down: endlessIIPaddleFrameDelta)
+            tickEndlessIIDescent()
         }
         tickEndlessIIAura()
     }
@@ -310,6 +368,8 @@ extension GameScene {
     func endlessIIResetFieldPowerUps() {
         endlessIIWreckingBallClock.reset()
         endlessIIAuraClock.reset()
+        endlessIIDescentClock.reset()
+        endlessIIDescentAccumulated = 0
         endlessIIAuraNodes.forEach { $0.removeFromParent() }
         endlessIIAuraNodes.removeAll()
     }

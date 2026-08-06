@@ -227,6 +227,47 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         XCTAssertEqual(bricksLeft(scene), 0)
     }
 
+    // MARK: - Descent
+
+    func testDescentSuspendsTheNormalCadenceWhileItRuns() {
+        // §5.4: both at once would double-step the field
+        let scene = fieldScene()
+        XCTAssertFalse(scene.endlessIIDescentSuspendsCadence)
+
+        scene.endlessIICollectDescent()
+        XCTAssertTrue(scene.endlessIIDescentSuspendsCadence)
+    }
+
+    func testDescentStepsOnItsTimerAndNotBeforeIt() {
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep/2
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 0, "half a step is no step")
+
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 1, "the second half completes it")
+    }
+
+    func testDescentDoesNothingWithoutTheClock() {
+        let scene = fieldScene()
+        scene.endlessIIPaddleFrameDelta = 10
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 0)
+    }
+
+    func testAStepAlreadyAnimatingFinishesFirst() {
+        // Two moves at once stack their distances and carry bricks off their row centres
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+        scene.endlessMoveInProgress = true
+
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep + 1
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 0)
+    }
+
     // MARK: - The ring and the save
 
     func testTheTimedPairReportToTheRingAndRoundTrip() {
@@ -250,13 +291,13 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         let scene = fieldScene()
         scene.gameMode = .endless
         scene.applyEndlessRowPowerUpWeights()
-        for index in 39...44 {
+        for index in 39...45 {
             XCTAssertEqual(scene.powerUpProbArray[index], 0, "power-up \(index)")
         }
 
         scene.gameMode = .endlessII
         scene.applyEndlessRowPowerUpWeights()
-        for index in 39...44 {
+        for index in 39...45 {
             XCTAssertGreaterThan(scene.powerUpProbArray[index], 0, "power-up \(index)")
         }
     }

@@ -42,6 +42,7 @@ extension GameScene {
         powerUpProbArray[42] = gameMode == .endlessII ? 3 : 0 // Wrecking Ball - rare
         powerUpProbArray[43] = gameMode == .endlessII ? 5 : 0 // Aura - uncommon
         powerUpProbArray[44] = gameMode == .endlessII ? 5 : 0 // Infill - uncommon, bad
+        powerUpProbArray[45] = gameMode == .endlessII ? 5 : 0 // Descent - uncommon
         // Guarded by mode, because these rows are built for *both* endless modes - the
         // Multi-Ball line above gets the same guard for free from endlessIICanAddBall, but a
         // flat weight here would have quietly added the new power-ups to the original

@@ -1037,25 +1037,28 @@ playable and is worth a round of play-testing on its own.
 |---|---|---|---|
 | **8a. Vision** ✅ | Trajectory Line, Landing Marker | Both draw what the ball is *about* to do and change no rule. One predictor serves both, and it is pure geometry - testable rather than eyeballed | Whether four balls means four lines, and whether being told where the ball will land makes the mode easier or just calmer |
 | **8b. The paddle** ✅ | Aimed Sticky, Magnetism, Portal Paddle, Paddle Halo, Ball Steering, and the three bad ones - Inert Paddle, Flipped Angle, Reversed Controls | Every one of them changes what the paddle does, so they conflict with each other and want tuning against each other. Aimed Sticky inherits the queue Sticky Paddle already has (§5.5) | Whether a mode where the paddle keeps changing its rules is exciting or exhausting - and whether the bad ones are funny or just unfair |
-| **8c. The field** (six of eight built) | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
+| **8c. The field** (seven of eight built) | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
 
-**8c is built, six of its eight.** Cull takes half the field at random and scores all of it,
+**8c is built, seven of its eight.** Cull takes half the field at random and scores all of it,
 including the indestructibles the ordinary destroy path refuses to score; Clear And Retreat
 destroys the lowest occupied row and steps everything else up exactly one row, so every
 brick lands on a row centre again; Laser Beam burns one column per ball in play, each from
 its own x; Infill (the bad one) adds six bricks in random empty cells, arriving the way a
-Spawner's do. The two on clocks: Wrecking Ball makes the ball's own hits destroy whatever
+Spawner's do. The clocks: Wrecking Ball makes the ball's own hits destroy whatever
 they strike - through the ordinary destroy path, so they score, roll power-ups and count
 like any hit, and the ball still bounces - and Aura destroys what the glow around each ball
-touches, growing on a second collection. Everything else destroys like a crush: roles react,
+touches, growing on a second collection. Descent drives the field's own one-row step on a
+timer, just under two rows a second, suspending the normal bottom-row cadence while it runs
+- the grid-preserving reading of "moves down continuously", because a brick's position.y is
+its row and a field that drifted off its centres would break everything that reads them.
+Height, markers, new rows and the unscored destruction at the lower limit all come free,
+because the step is the same step the field has always made. Everything else destroys like a crush: roles react,
 nothing rolls a power-up. All of it spares Portals and power-up bricks, and the Aura also
 spares hidden bricks - an invisible brick it silently ate would never have been seen at all.
 
-**Descent and Wrap-Around are deliberately not built yet.** Descent has to drive the field's
-own descent machinery (suspending the normal cadence while it runs), and Wrap-Around asks
-the side walls to stop being walls - for the paddle and Moving bricks and explosions too.
-Each is a careful visit to load-bearing code, not a corner of a batch, and each wants its
-own play-test.
+**Wrap-Around is deliberately not built yet.** It asks the side walls to stop being walls -
+for the paddle and Moving bricks and explosions too - which is a careful visit to the wall
+physics, not a corner of a batch, and it wants its own play-test.
 | **8d. The rules** | Lock, Key, Wipe, Randomised Bounce | The ones that act on *other power-ups*. They need the rest of the set to exist before they mean anything, and Lock and Key only drop in each other's company | Whether a power-up about power-ups reads at all in the moment |
 
 Each batch needs the same four things, and none of them is optional: entries in every
