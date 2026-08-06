@@ -155,11 +155,16 @@ extension SKNode {
     }
 
     /// Which end of a Portal pair this brick is - the blue one or the yellow one.
-    var endlessIIPortalIsEntrance: Bool {
-        get { userData?["endlessIIPortalEntrance"] as? Bool ?? false }
+    ///
+    /// A label, not a direction. The link works both ways: the ball comes out of whichever
+    /// end it did not go into, so blue to yellow and yellow to blue are the same journey.
+    /// The two colours exist so a player can tell at a glance where a jump will land them,
+    /// not to say which end is the way in.
+    var endlessIIPortalIsBlue: Bool {
+        get { userData?["endlessIIPortalBlue"] as? Bool ?? false }
         set {
             if userData == nil { userData = NSMutableDictionary() }
-            userData?["endlessIIPortalEntrance"] = newValue
+            userData?["endlessIIPortalBlue"] = newValue
         }
     }
 

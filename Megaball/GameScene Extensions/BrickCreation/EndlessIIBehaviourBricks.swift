@@ -36,8 +36,8 @@ extension GameScene {
     static let explodingBrickColour = UIColor(red: 1.0, green: 0.22, blue: 0.62, alpha: 1)
     static let spawnerBrickColour = UIColor(red: 0.20, green: 0.85, blue: 0.72, alpha: 1)
     static let portalBrickColour = UIColor(red: 0.78, green: 0.55, blue: 1.0, alpha: 1)
-    static let portalEntranceColour = UIColor(red: 0.30, green: 0.68, blue: 1.0, alpha: 1)
-    static let portalExitColour = UIColor(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
+    static let portalBlueColour = UIColor(red: 0.30, green: 0.68, blue: 1.0, alpha: 1)
+    static let portalYellowColour = UIColor(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
 
     private static let glyphName = "endlessIIGlyph"
     /// How fast a Gravity brick falls and a Moving brick wanders, in cells per second.
@@ -426,14 +426,14 @@ extension GameScene {
                 found.append(brick)
             }
         }
-        return found.sorted { $0.endlessIIPortalIsEntrance && $1.endlessIIPortalIsEntrance == false }
+        return found
     }
 
     /// Two at most, and never more.
     ///
-    /// One on its own sends the ball to the top of the field. Two make a pair - in one, out
-    /// of the other, still travelling the way it was - which is a far better thing to have on
-    /// the field than a lift. Three would be ambiguous about which one the exit is.
+    /// One on its own sends the ball to the top of the field. Two make a pair, and the pair
+    /// works both ways - the ball comes out of whichever end it did not go into, still
+    /// travelling the way it was. Three would be ambiguous about where a jump lands.
     static let endlessIIMaximumPortals = 2
 
     func endlessIIHasPortal() -> Bool {
@@ -441,9 +441,9 @@ extension GameScene {
     }
 
     func makePortal(_ brick: SKSpriteNode) {
-        let isEntrance = endlessIIPortals().isEmpty
+        let isBlue = endlessIIPortals().isEmpty
         brick.endlessIIRole = .portal
-        brick.endlessIIPortalIsEntrance = isEntrance
+        brick.endlessIIPortalIsBlue = isBlue
         brick.texture = brickIndestructible2Texture
 
         // Left untinted, unlike every other role here. `colorBlendFactor` colourises a
@@ -460,11 +460,10 @@ extension GameScene {
 
         let glyph = SKShapeNode(path: rings)
         glyph.name = GameScene.glyphName
-        glyph.strokeColor = isEntrance
-            ? GameScene.portalEntranceColour
-            : GameScene.portalExitColour
-        // Two colours, so which one the ball comes out of is something you can see rather
-        // than something you learn by being surprised
+        glyph.strokeColor = isBlue ? GameScene.portalBlueColour : GameScene.portalYellowColour
+        // Two colours so a player can see which end pairs with which. Neither is the way in:
+        // hit the blue one and you come out of the yellow, hit the yellow and you come out
+        // of the blue
         glyph.fillColor = .clear
         glyph.lineWidth = max(1.5, brick.size.height*0.1)
         glyph.zPosition = 1

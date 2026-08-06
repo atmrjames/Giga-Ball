@@ -275,9 +275,10 @@ elsewhere in the field, keeping its speed.
 
 **Two at most, and they behave differently alone and in a pair.** One on its own is a lift:
 the ball goes to the top of the field and comes back down through everything. A pair is a
-doorway — in the blue one, out of the yellow one, still travelling the way it was, which is
-what makes the exit predictable from the entrance. Three would be ambiguous about which one
-the exit is. A brief cooldown stops the ball re-entering the far end immediately, and the
+doorway, and it works both ways — the ball comes out of whichever end it did not go into,
+still travelling the way it was, so blue to yellow and yellow to blue are the same journey.
+The two colours are a label rather than a direction: they let a player see which end pairs
+with which before committing to the shot. Three would be ambiguous about where a jump lands. A brief cooldown stops the ball re-entering the far end immediately, and the
 ball is pushed clear of the exit along its heading so it does not arrive inside the brick it
 just came out of.
 
