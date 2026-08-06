@@ -96,16 +96,34 @@ extension GameScene {
                                         maximumLength: endlessIITrajectoryRemaining > 0 ? reach : 0)
 
             if endlessIITrajectoryRemaining > 0, path.points.count > 1 {
-                endlessIIVisionLine(at: lineIndex).path = endlessIIVisionCGPath(path.points)
+                var points = path.points
+                if let landing = path.landing, points.count >= 2 {
+                    let last = points[points.count - 1]
+                    let previous = points[points.count - 2]
+                    let incoming = CGVector(dx: last.x - previous.x, dy: last.y - previous.y)
+                    let angle = EndlessIIPaddleEffects.paddleBounceAngle(
+                        arriving: incoming, landingX: landing.x,
+                        paddleX: paddle.position.x, paddleHalfWidth: paddle.size.width/2,
+                        adjustmentK: angleAdjustmentK, minimumDeg: minAngleDeg,
+                        influence: endlessIIPaddleAngleInfluence)
+                    let reach = ballSize*5
+                    points.append(CGPoint(x: landing.x + cos(angle)*reach,
+                                          y: landing.y + sin(angle)*reach))
+                    // The bounce the paddle would give from where it stands now, drawn by
+                    // the same rule paddleHit applies - the line keeps going off the paddle
+                    // so the player can aim the shot after the catch, not just the catch
+                }
+                endlessIIVisionLine(at: lineIndex).path = endlessIIVisionCGPath(points)
                 lineIndex += 1
             }
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
-                marker.position = CGPoint(x: landing.x, y: paddle.position.y)
+                marker.position = CGPoint(x: landing.x,
+                                          y: paddle.position.y - paddleHeight*1.6)
                 markerIndex += 1
             }
-            // The marker sits on the paddle's own line, whatever height the prediction used -
-            // it is an aiming aid for the paddle, so it belongs where the paddle is
+            // Just below the paddle, pointing up at where the ball will cross - out of the
+            // paddle's own visual space, so the mark and the thing being aimed never overlap
         }
 
         endlessIITrimVision(lines: lineIndex, markers: markerIndex)
@@ -154,13 +172,18 @@ extension GameScene {
     /// The landing marker for the nth ball, made when first needed.
     private func endlessIIVisionMarker(at index: Int) -> SKShapeNode {
         while endlessIILandingMarkers.count <= index {
-            let marker = SKShapeNode(circleOfRadius: ballSize/2)
-            marker.strokeColor = UIColor(white: 1, alpha: 0.7)
-            marker.fillColor = UIColor(white: 1, alpha: 0.15)
-            marker.lineWidth = 1.5
+            let size = ballSize*0.7
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: 0, y: size*0.6))
+            path.addLine(to: CGPoint(x: -size*0.55, y: -size*0.4))
+            path.addLine(to: CGPoint(x: size*0.55, y: -size*0.4))
+            path.closeSubpath()
+            let marker = SKShapeNode(path: path)
+            marker.strokeColor = .clear
+            marker.fillColor = UIColor(white: 1, alpha: 0.7)
             marker.zPosition = 3
-            // A ghost of the ball, where the ball will be - the same size, so what it says
-            // needs no legend
+            // A small triangle pointing up at the crossing point, sitting under the paddle -
+            // play-testing preferred it to the ghost ball, which crowded the paddle itself
             addChild(marker)
             endlessIILandingMarkers.append(marker)
         }

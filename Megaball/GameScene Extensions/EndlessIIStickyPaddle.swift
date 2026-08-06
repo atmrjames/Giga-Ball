@@ -163,6 +163,28 @@ extension GameScene {
         }
     }
 
+    /// Launches everything the paddle is still holding, each at its own spot's angle.
+    ///
+    /// For the sticky paddle ending while balls are still caught. The first ball is left
+    /// alone - resting on the paddle is its ordinary state, and launching it belongs to the
+    /// player's tap.
+    func endlessIIReleaseRemainingHeldBalls() {
+        guard gameMode == .endlessII, endlessIIAimedStickyClock.isRunning == false else { return }
+        // Aimed Sticky holds its own licence to keep them
+
+        while let held = endlessIINextHeldBall, held !== ball {
+            let offset = Double((held.position.x - paddle.position.x)/(paddle.size.width/2))
+            let angle = endlessIILaunchAngle(atPaddleOffset: offset)
+            held.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
+                                                  dy: sin(angle)*Double(ballSpeedLimit))
+            endlessIIReleasedFromPaddle(held)
+        }
+        if endlessIIHeldBalls.contains(where: { $0 === ball }) == false {
+            // Nothing left in the queue but flight - the sticky look can go too
+            paddleRetroStickyTexture.isHidden = true
+        }
+    }
+
     /// Empties the paddle. For losing the life, resetting, and starting again.
     func endlessIIClearHeldBalls() {
         endlessIIHeldBalls.removeAll()

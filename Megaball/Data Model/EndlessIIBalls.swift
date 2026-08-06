@@ -43,45 +43,23 @@ enum EndlessIIBalls {
         inPlay > 1 ? .carryOn : .lifeLost
     }
 
-    /// Where a new ball is launched, relative to the ball it was added from.
+    /// How far either side of vertical a new ball may leave the paddle.
     ///
-    /// Turned away from the parent rather than copied from it, or a Multi-Ball would produce
-    /// two balls travelling as one and the player would not know anything had happened until
-    /// they drifted apart. Alternating sides keeps the pair symmetrical about the original,
-    /// so the field is opened up evenly rather than pushed to one side.
-    ///
-    /// The speed is the parent's. Ball speed is a single shared value across every ball in
-    /// play (§5.5), so a new one arrives at whatever speed the run is running at.
-    static func launchAngle(of parent: CGVector, index: Int) -> CGVector {
-        let speed = (parent.dx*parent.dx + parent.dy*parent.dy).squareRoot()
-        guard speed > 0 else {
-            // Added while the ball is sitting on the paddle, which has no heading yet
-            let spread = spreadAngle*CGFloat(index.isMultiple(of: 2) ? 1 : -1)
-            return CGVector(dx: sin(spread), dy: cos(spread))
-        }
+    /// Twenty-five degrees, from play-testing: enough that two collections do not stack into
+    /// one column, little enough that a new ball is always climbing into the field rather
+    /// than setting off sideways into a wall.
+    static let launchSpreadDegrees: Double = 25
 
-        let heading = atan2(parent.dy, parent.dx)
-        let turn = spreadAngle*CGFloat(index.isMultiple(of: 2) ? 1 : -1)
-        return CGVector(dx: cos(heading + turn)*speed, dy: sin(heading + turn)*speed)
-    }
-
-    /// How far a new ball is turned from its parent.
+    /// The velocity a new ball leaves the paddle with.
     ///
-    /// Wide enough that the two separate immediately and narrow enough that a ball added while
-    /// travelling up is still travelling up - a new ball that launches sideways into a wall
-    /// reads as a mistake rather than as a gift.
-    static let spreadAngle: CGFloat = .pi/6
-
-    /// Where a new ball is placed, given where its parent is.
-    ///
-    /// Clear of the parent, or the two are created inside one another and the physics resolves
-    /// that by throwing both somewhere arbitrary.
-    static func launchPosition(from parent: CGPoint, heading: CGVector,
-                               clearance: CGFloat) -> CGPoint {
-        let speed = (heading.dx*heading.dx + heading.dy*heading.dy).squareRoot()
-        guard speed > 0 else { return CGPoint(x: parent.x, y: parent.y + clearance) }
-        return CGPoint(x: parent.x + heading.dx/speed*clearance,
-                       y: parent.y + heading.dy/speed*clearance)
+    /// Out of the paddle, near vertical - not out of the ball it came from, which is where
+    /// they used to appear and where a mid-field arrival read as a glitch rather than a
+    /// gift. The offset is -1 to 1 across the spread, passed in so tests can pin the edges
+    /// of the fan while the game rolls it.
+    static func paddleLaunchVelocity(speed: CGFloat, offset: Double) -> CGVector {
+        let clamped = max(-1, min(1, offset))
+        let angle = Double.pi/2 + clamped*launchSpreadDegrees*Double.pi/180
+        return CGVector(dx: CGFloat(cos(angle))*speed, dy: CGFloat(sin(angle))*speed)
     }
 
     // MARK: - Saving

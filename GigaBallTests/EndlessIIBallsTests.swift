@@ -39,62 +39,41 @@ final class EndlessIIBallsTests: XCTestCase {
 
     // MARK: - Launching
 
-    func testANewBallKeepsItsParentsSpeed() {
+    // "For new multi-balls they should appear out of the paddle at a random angle close to
+    // vertical - maybe 25deg each side." The offset is injectable, so the fan's edges are
+    // pinned here while the game rolls inside them.
+
+    func testANewBallKeepsTheRunsSpeed() {
         // Ball speed is one shared value across every ball in play, so a ball added during a
         // Slow Ball arrives slow rather than at whatever it was created with
-        let parent = CGVector(dx: 120, dy: 160)
-        let expected = hypot(parent.dx, parent.dy)
-
-        for index in 0..<4 {
-            let launched = EndlessIIBalls.launchAngle(of: parent, index: index)
-            XCTAssertEqual(hypot(launched.dx, launched.dy), expected, accuracy: 0.001)
+        for offset in [-1.0, -0.3, 0, 0.5, 1.0] {
+            let launched = EndlessIIBalls.paddleLaunchVelocity(speed: 200, offset: offset)
+            XCTAssertEqual(hypot(launched.dx, launched.dy), 200, accuracy: 0.001)
         }
     }
 
-    func testANewBallIsTurnedAwayFromTheOneItCameFrom() {
-        // Two balls travelling as one is a Multi-Ball the player cannot see happen
-        let parent = CGVector(dx: 0, dy: 200)
-        let launched = EndlessIIBalls.launchAngle(of: parent, index: 0)
-
-        let parentAngle = atan2(parent.dy, parent.dx)
-        let launchedAngle = atan2(launched.dy, launched.dx)
-        XCTAssertEqual(abs(launchedAngle - parentAngle), EndlessIIBalls.spreadAngle,
-                       accuracy: 0.001)
+    func testTheMiddleOfTheFanIsStraightUp() {
+        let launched = EndlessIIBalls.paddleLaunchVelocity(speed: 200, offset: 0)
+        XCTAssertEqual(launched.dx, 0, accuracy: 0.001)
+        XCTAssertEqual(launched.dy, 200, accuracy: 0.001)
     }
 
-    func testSuccessiveBallsAlternateSides() {
-        // So a pair opens the field up evenly rather than pushing everything one way
-        let parent = CGVector(dx: 0, dy: 200)
-        let first = EndlessIIBalls.launchAngle(of: parent, index: 0)
-        let second = EndlessIIBalls.launchAngle(of: parent, index: 1)
-
-        XCTAssertGreaterThan(first.dx*second.dx, -.infinity)
-        XCTAssertEqual(first.dx, -second.dx, accuracy: 0.001)
-        XCTAssertEqual(first.dy, second.dy, accuracy: 0.001)
+    func testTheFanIsTwentyFiveDegreesEachSide() {
+        for offset in [-1.0, 1.0] {
+            let launched = EndlessIIBalls.paddleLaunchVelocity(speed: 100, offset: offset)
+            let offVertical = abs(atan2(launched.dy, launched.dx) - .pi/2)*180/Double.pi
+            XCTAssertEqual(Double(offVertical), EndlessIIBalls.launchSpreadDegrees,
+                           accuracy: 0.001)
+            XCTAssertGreaterThan(launched.dy, 0, "always climbing into the field")
+        }
     }
 
-    func testANewBallStillGoesSomewhereWhenTheBallIsSittingStill() {
-        // Collected before the launch, when the ball is on the paddle with no heading at all
-        let launched = EndlessIIBalls.launchAngle(of: .zero, index: 0)
-        XCTAssertGreaterThan(hypot(launched.dx, launched.dy), 0)
-        XCTAssertGreaterThan(launched.dy, 0, "it has to leave the paddle upward")
-    }
-
-    func testANewBallIsPlacedClearOfItsParent() {
-        // Created inside one another, the physics resolves the overlap by throwing both
-        // somewhere arbitrary
-        let parent = CGPoint(x: 10, y: 20)
-        let heading = CGVector(dx: 100, dy: 0)
-        let placed = EndlessIIBalls.launchPosition(from: parent, heading: heading,
-                                                   clearance: 15)
-
-        XCTAssertEqual(hypot(placed.x - parent.x, placed.y - parent.y), 15, accuracy: 0.001)
-        XCTAssertGreaterThan(placed.x, parent.x, "clear along the way it is going")
-    }
-
-    func testAStationaryParentStillPlacesItsChildClear() {
-        let placed = EndlessIIBalls.launchPosition(from: .zero, heading: .zero, clearance: 15)
-        XCTAssertEqual(hypot(placed.x, placed.y), 15, accuracy: 0.001)
+    func testAnOffsetPastTheFanIsClamped() {
+        // The offset is rolled, but the roll must not be able to point along the paddle
+        let wild = EndlessIIBalls.paddleLaunchVelocity(speed: 100, offset: 40)
+        let edge = EndlessIIBalls.paddleLaunchVelocity(speed: 100, offset: 1)
+        XCTAssertEqual(wild.dx, edge.dx, accuracy: 0.001)
+        XCTAssertEqual(wild.dy, edge.dy, accuracy: 0.001)
     }
 
     // MARK: - In the scene

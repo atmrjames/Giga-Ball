@@ -798,6 +798,7 @@ class InbetweenLevels: GKState {
 extension Notification.Name {
     public static let continueToNextLevel = Notification.Name(rawValue: "continueToNextLevel")
     public static let levelIntroDidClear = Notification.Name(rawValue: "levelIntroDidClear")
+    public static let levelIntroWillClear = Notification.Name(rawValue: "levelIntroWillClear")
     /// The scene now has a level in it and is worth looking at.
     public static let levelDidBuild = Notification.Name(rawValue: "levelDidBuild")
     /// The level intro has finished fading in and is now covering the scene.

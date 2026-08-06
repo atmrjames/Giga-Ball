@@ -632,6 +632,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 	}
 	// Property observer to release stuck ball
+
+	/// Each extra ball's own bounce count, so a stuck fourth ball is noticed even while the
+	/// first is bouncing normally - one shared counter was reset by whichever ball did
+	/// anything, which with four in play is nearly always
+	var endlessIIExtraBounceCounters: [ObjectIdentifier: Int] = [:]
+
+	/// Counts a fruitless bounce against the ball that actually made it.
+	func noteBrickBounce(for subject: SKSpriteNode?) {
+		guard let subject, subject !== ball, gameMode == .endlessII else {
+			brickBounceCounter += 1
+			return
+		}
+		let id = ObjectIdentifier(subject)
+		endlessIIExtraBounceCounters[id, default: 0] += 1
+		if endlessIIExtraBounceCounters[id]! > 100 {
+			endlessIIExtraBounceCounters[id] = 0
+			ballStuck()
+		}
+	}
+
+	/// A ball did something useful, so its own count starts over.
+	func resetBrickBounce(for subject: SKSpriteNode?) {
+		guard let subject, subject !== ball, gameMode == .endlessII else {
+			brickBounceCounter = 0
+			return
+		}
+		endlessIIExtraBounceCounters[ObjectIdentifier(subject)] = 0
+	}
 	
 	var killBall: Bool = false
 	var endlessMode: Bool = false
@@ -708,6 +736,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIILevelIntroShowing = false
 	/// When the field may start building in, once the splash has reported itself gone.
 	var endlessIIBuildInReadyAt: TimeInterval?
+	/// Set by the level intro's final fade beginning: start on the next frame.
+	var endlessIIBuildInStartNow = false
 	var endlessIIStuckTimer: TimeInterval = 0
 	var endlessIISetRowQueue: [String] = []
 	// The rows of a designed pattern still to come, one per generated row
@@ -1398,6 +1428,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		NotificationCenter.default.addObserver(self, selector: #selector(self.levelIntroDidAppearReceived), name: .levelIntroDidAppear, object: nil)
 		// So the opening field knows it is being covered, rather than only knowing when it
 		// stops being
+
+		NotificationCenter.default.addObserver(self, selector: #selector(self.levelIntroWillClearReceived), name: .levelIntroWillClear, object: nil)
+		// And when the cover is *about* to go, so the field can start falling behind the
+		// last quarter second of the fade rather than after it
 		NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundSettingChangedNotificationReceived), name: .backgroundSettingChanged, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
 		
@@ -1717,6 +1751,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             stickyPaddleIconBar.isHidden = true
             stickyPaddleIconBar.xScale = 0
             // Sticky paddle reset
+
+            endlessIIReleaseRemainingHeldBalls()
+            // The last catch was just spent on a launch, and with Multi-Ball another ball
+            // can still be sitting on the paddle - held by a power-up that no longer
+            // exists. It leaves now rather than waiting for a tap it has no claim to
         }
     }
 
@@ -2361,13 +2400,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if endlessIIAcceptsHit(sprite, from: hitFrom) == false {
 			stopLaser()
+			if sprite.isHidden {
+				sprite.run(.fadeIn(withDuration: 0.2))
+				sprite.isHidden = false
+			}
+			// An invisible Directional brick still appears on its first hit, whichever face
+			// was struck - being hidden is about knowing it is there, being armoured is
+			// about how it dies, and a hit answers the first question from any side
 			if hapticsSetting {
 				lightHaptic.impactOccurred()
 			}
 			if soundsSetting {
 				self.run(brickHitNormalSound)
 			}
-			brickBounceCounter += 1
+			noteBrickBounce(for: struckBy)
 			return
 		}
 		// Directional brick struck on one of its armoured sides: it bounces, nothing else
@@ -2380,9 +2426,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove laser if giga-ball power up isn't activated
 		
 		if sprite.texture == brickIndestructible2Texture {
-			brickBounceCounter+=1
+			noteBrickBounce(for: struckBy)
 		} else {
-			brickBounceCounter = 0
+			resetBrickBounce(for: struckBy)
 		}
 		
 		if sprite.texture == brickMultiHit1Texture || sprite.texture == brickMultiHit2Texture || sprite.texture == brickMultiHit3Texture || sprite.isHidden {
@@ -2807,7 +2853,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleHitsPerLevel+=1
 
         totalStatsArray[0].ballHits+=1
-		brickBounceCounter = 0
+		resetBrickBounce(for: ball)
 		if isExtra == false {
 			ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
 		}
@@ -4589,6 +4635,11 @@ laserTimer?.invalidate()
 
 	@objc func levelIntroDidAppearReceived(notification: Notification) {
 		endlessIILevelIntroShowing = true
+	}
+
+	@objc func levelIntroWillClearReceived(notification: Notification) {
+		endlessIILevelIntroShowing = false
+		endlessIIBuildInStartNow = true
 	}
 
 	@objc func levelIntroDidClearReceived(notification: Notification) {

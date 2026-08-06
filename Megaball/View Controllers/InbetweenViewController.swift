@@ -294,6 +294,12 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                             self.view.alpha = 1.0})
                         { (finished: Bool) in
                             if (finished) {
+                                NotificationCenter.default.post(name: .levelIntroWillClear, object: nil)
+                                // The final fade is about to run. The opening field starts
+                                // on this rather than on .levelIntroDidClear, so its first
+                                // bricks are already falling as the intro's last quarter
+                                // second fades - the field is moving the moment the screen
+                                // is readable
                                 UIView.animate(withDuration: 0.25, animations: {
                                     self.view.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
                                     self.view.alpha = 0.0})

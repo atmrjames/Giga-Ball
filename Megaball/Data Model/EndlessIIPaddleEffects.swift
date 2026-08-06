@@ -143,6 +143,23 @@ enum EndlessIIPaddleEffects {
     /// of hundred points - sweeps all of it without a hand having to cross the screen.
     static let aimRadiansPerPoint: Double = 0.011
 
+    /// The angle a ball leaves the paddle at, given where it lands and how it arrives.
+    ///
+    /// The same rule `paddleHit` applies: the reflection, bent by up to `adjustment` degrees
+    /// by how far off-centre the landing is, and never allowed shallower than the minimum.
+    /// Written here so the Trajectory Line can draw the same bounce the paddle will actually
+    /// give - a predicted angle that differed from the real one would be worse than none.
+    static func paddleBounceAngle(arriving velocity: CGVector, landingX: CGFloat,
+                                  paddleX: CGFloat, paddleHalfWidth: CGFloat,
+                                  adjustmentK: Double, minimumDeg: Double,
+                                  influence: Double) -> Double {
+        var angleDeg = defaultLaunchAngle(arriving: velocity)*180/Double.pi
+        let offset = max(-1, min(1, Double((landingX - paddleX)/max(1, paddleHalfWidth))))
+        angleDeg -= adjustmentK*offset*influence
+        angleDeg = max(minimumDeg, min(180 - minimumDeg, angleDeg))
+        return angleDeg*Double.pi/180
+    }
+
     /// The bounce a ball arriving with this velocity would have taken off a flat paddle.
     ///
     /// Only the reflection, deliberately: the paddle's angular influence depends on where

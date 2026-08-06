@@ -50,18 +50,20 @@ extension GameScene {
         guard endlessIICanAddBall else { return false }
 
         let parent = ball
-        let index = endlessIIExtraBalls.count
-        let heading = EndlessIIBalls.launchAngle(of: parent.physicsBody?.velocity ?? .zero,
-                                                 index: index)
+        let currentSpeed = hypot(parent.physicsBody?.velocity.dx ?? 0,
+                                 parent.physicsBody?.velocity.dy ?? 0)
+        let heading = EndlessIIBalls.paddleLaunchVelocity(
+            speed: currentSpeed > 0 ? currentSpeed : ballSpeedLimit,
+            offset: Double.random(in: -1...1))
 
         let extra = SKSpriteNode(texture: parent.texture)
         extra.size = parent.size
         extra.zPosition = parent.zPosition
         extra.name = BallCategoryName
-        extra.position = EndlessIIBalls.launchPosition(
-            from: parent.position, heading: heading,
-            clearance: ballSize*GameScene.multiBallClearanceFactor)
+        extra.position = CGPoint(x: paddle.position.x, y: ballStartingPositionY)
         addChild(extra)
+        // Out of the paddle, near vertical, like a launch - which is what it is. Appearing
+        // beside the ball it came from read as a glitch in the middle of the field
 
         extra.physicsBody = endlessIIBallBody(radius: ballSize/2)
         extra.physicsBody?.velocity = heading
@@ -70,8 +72,6 @@ extension GameScene {
         // A ball added while Giga-Ball is running is a Giga-Ball too. Its body is built plain
         // above, and this is what puts whatever the run is currently wearing onto it
 
-        // Arriving out of the ball it came from, so the new one is seen to be new rather than
-        // simply appearing in the field
         extra.setScale(0.2)
         extra.run(.scale(to: 1, duration: 0.15))
 
@@ -182,6 +182,7 @@ extension GameScene {
 
     private func retire(_ extra: SKSpriteNode) {
         endlessIIExtraBalls.removeAll { $0 === extra }
+        endlessIIExtraBounceCounters[ObjectIdentifier(extra)] = nil
         endlessIIReleasedFromPaddle(extra)
         extra.physicsBody = nil
         extra.run(.sequence([.group([.scale(to: 0, duration: 0.1),
@@ -197,6 +198,7 @@ extension GameScene {
         }
         endlessIIExtraBalls.removeAll()
         pauseExtraBallVelocities.removeAll()
+        endlessIIExtraBounceCounters.removeAll()
         endlessIIClearHeldBalls()
         // Nothing left for the paddle to be holding
         // Or the next set of balls would be handed the last set's headings on the first pause

@@ -108,7 +108,10 @@ extension GameScene {
     static let endlessIITickSpacing = 10
 
     /// How far a tick reaches in from each wall, as a fraction of the play area's width.
-    static let endlessIITickLength: CGFloat = 0.045
+    ///
+    /// Halved from its first guess after play-testing - at the old length the ticks read as
+    /// part of the field rather than as marks on the wall beside it.
+    static let endlessIITickLength: CGFloat = 0.0225
 
     /// Whether the row being generated right now is the one a milestone marker will arrive in.
     ///
@@ -260,16 +263,16 @@ extension GameScene {
         return GameScene.endlessIIBuildInStagger*Double(row)
     }
 
-    /// Holds a brick at the top of the field, waiting for its turn to come down.
+    /// Holds a brick just above the field, waiting for its turn to fall.
     ///
-    /// Every brick in the opening field arrives the way every brick arrives for the rest of
-    /// the run: at the top row, pushed down a row at a time by the ones behind it. So they all
-    /// start on the top row rather than one row above their own place, and the field grows
-    /// downward out of the top of the screen instead of fading into position.
+    /// The opening field rains in: each brick starts above the top of the play area and falls
+    /// to its own row, deepest rows first so the field stacks up from the bottom. Stepping
+    /// down in lockstep was tried first and read as a marching wall - play-testing asked for
+    /// the fall.
     func prepareEndlessIIBuildIn(_ brick: SKSpriteNode) {
         brick.alpha = 0
         endlessIIBuildInFinalY[ObjectIdentifier(brick)] = brick.position.y
-        brick.position.y = endlessIIGeometry.topRowY
+        brick.position.y = endlessIIGeometry.topRowY + brickHeight
         endlessIIBuildInBricks.append(brick)
     }
 
@@ -296,6 +299,16 @@ extension GameScene {
     /// test in a method that already runs every frame.
     func tickEndlessIIBuildIn(_ currentTime: TimeInterval) {
         guard endlessIIBuildInWaiting else { return }
+
+        if endlessIIBuildInStartNow {
+            endlessIIBuildInStartNow = false
+            endlessIIBuildInWaiting = false
+            endlessIIBuildInReadyAt = nil
+            runEndlessIIBuildIn()
+            return
+        }
+        // The level intro's final fade has begun: the field starts now, behind the last
+        // quarter second of it, so something is already moving when the screen is readable
 
         if endlessIIBuildInReadyAt == nil {
             endlessIIBuildInReadyAt = currentTime + GameScene.endlessIIBuildInCoverGrace
@@ -339,47 +352,52 @@ extension GameScene {
         guard endlessIIBuildInBricks.isEmpty == false else { return }
         endlessIIBuildingIn = true
 
-        let step = GameScene.endlessIIBuildInStep
         let stagger = GameScene.endlessIIBuildInStagger
+        let fallPerRow = GameScene.endlessIIBuildInFallPerRow
         let rows = endlessIIBuildInBricks.reduce(0) { deepest, brick in
             max(deepest, endlessIIBuildInRow(of: brick))
         }
 
+        var landings: [Int: TimeInterval] = [:]
         for brick in endlessIIBuildInBricks {
             guard brick.parent != nil else { continue }
             let row = endlessIIBuildInRow(of: brick)
-            let arrives = rows - row
-            // The deepest row is built first and pushed down by everything after it, which is
-            // the order the field itself arrives in: a new row at the top, and the rest of the
-            // field a row lower than it was
+            guard let finalY = endlessIIBuildInFinalY[ObjectIdentifier(brick)] else { continue }
 
-            var descent: [SKAction] = [.wait(forDuration: stagger*Double(arrives)),
-                                       .fadeIn(withDuration: step)]
-            for _ in 0..<row {
-                descent.append(.wait(forDuration: max(0, stagger - step)))
-                descent.append(.moveBy(x: 0, y: -brickHeight, duration: step))
-            }
-            brick.run(.sequence(descent))
-            // Every brick moves on the same beat, so the whole field steps down together the
-            // way it does in play - rather than each row sliding one place on its own
+            let delay = stagger*Double(rows - row)
+            let fall = max(0.06, fallPerRow*Double(row + 1))
+            // The deepest rows leave first and fall furthest, so the field stacks up from
+            // the bottom - each row lands just before the one that will sit above it
+
+            let drop = SKAction.moveTo(y: finalY, duration: fall)
+            drop.timingMode = .easeIn
+            brick.run(.sequence([.wait(forDuration: delay),
+                                 .group([.fadeIn(withDuration: 0.05), drop])]))
+
+            let arrival = delay + fall
+            if landings[row] == nil || arrival < landings[row]! { landings[row] = arrival }
         }
         endlessIIBuildInBricks.removeAll()
         endlessIIBuildInFinalY.removeAll()
 
-        // The row-down sound and knock, once per row, so the field arrives with the same
-        // feedback it will give every time it moves for the rest of the run
-        for row in 0...max(0, rows) {
-            run(.sequence([.wait(forDuration: stagger*Double(row)),
+        // The row-down knock as each row lands, so the field arrives with the same feedback
+        // it will give every time it moves for the rest of the run
+        for arrival in landings.values.sorted() {
+            run(.sequence([.wait(forDuration: arrival),
                            .run { [weak self] in self?.endlessIIBuildInRowLanded() }]))
         }
 
-        let total = stagger*Double(rows) + step
+        let total = (landings.values.max() ?? 0) + 0.05
         run(.sequence([.wait(forDuration: total),
                        .run { [weak self] in self?.endlessIIBuildingIn = false }]))
         // Cleared on a timer rather than by counting bricks finishing, because the flag only
         // exists to know whether a tap should skip - and once everything has arrived there is
         // nothing left to skip
     }
+
+    /// How long one row of fall takes. The bottom row falls the whole field in about a
+    /// quarter of a second - a drop, not a descent.
+    static let endlessIIBuildInFallPerRow: TimeInterval = 0.012
 
     /// Which row a waiting brick belongs to.
     ///
