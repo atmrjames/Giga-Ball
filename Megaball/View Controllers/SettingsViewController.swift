@@ -16,7 +16,7 @@ enum device {
     case SE
 }
 
-class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource {
+class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable {
     
     var navigatedFrom: String?
     
@@ -65,6 +65,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
                 
         NotificationCenter.default.addObserver(self, selector: #selector(self.resetNotificiationKeyReceived), name: .resetNotificiation, object: nil)
         // Sets up an observer to watch for notifications to check if the user has selected to reset the game data
@@ -582,12 +584,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        removeAnimate()
-        if navigatedFrom! == "PauseMenu" {
-            NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
-        } else if navigatedFrom! == "MainMenu" {
-            NotificationCenter.default.post(name: .returnSettingsNotification, object: nil)
-        }
+        menuNavigationGoBack()
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }
@@ -625,6 +622,20 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             })
     }
     
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+        if navigatedFrom! == "PauseMenu" {
+            NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
+        } else if navigatedFrom! == "MainMenu" {
+            NotificationCenter.default.post(name: .returnSettingsNotification, object: nil)
+        }
+    }
+
     func removeAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)

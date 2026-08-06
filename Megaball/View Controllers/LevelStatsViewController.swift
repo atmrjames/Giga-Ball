@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
+class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -56,6 +56,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnLevelStatsNotificationKeyReceived), name: .returnLevelStatsNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from the settings menu
@@ -150,8 +152,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.row == 0 {
-            removeAnimate()
-            NotificationCenter.default.post(name: .returnLevelSelectFromStatsNotification, object: nil)
+            menuNavigationGoBack()
         }
         if indexPath.row == 1 {
             if gameCenterSetting && packNumber == 1 {
@@ -341,6 +342,16 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             })
     }
     
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+        NotificationCenter.default.post(name: .returnLevelSelectFromStatsNotification, object: nil)
+    }
+
     func removeAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)

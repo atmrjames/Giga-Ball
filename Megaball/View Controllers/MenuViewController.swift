@@ -70,6 +70,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
         
 //        SKPaymentQueue.default().add(self)
                 

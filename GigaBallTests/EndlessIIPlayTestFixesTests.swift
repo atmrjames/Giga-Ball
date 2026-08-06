@@ -321,6 +321,32 @@ final class EndlessIIBestHeightLabelTests: XCTestCase {
         XCTAssertTrue(scene.multiplierLabel.isHidden)
     }
 
+    func testTheMultiplierNeverOverwritesTheBestHeight() {
+        // "Best score is now showing, but immediately turns to a multiplier when a brick is
+        // hit." Five places wrote the multiplier straight into this label
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        scene.totalStatsArray[0].endlessIIModeHeight = [77]
+
+        scene.showEndlessIIBest()
+        scene.scoreFactorString = "1.0"
+        scene.showMultiplier()
+
+        XCTAssertEqual(scene.multiplierLabel.text, "BEST 77m")
+    }
+
+    func testTheMultiplierStillShowsInTheModesThatHaveOne() {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.endlessMode = false
+        scene.scoreFactorString = "2.0"
+        scene.showMultiplier()
+
+        XCTAssertEqual(scene.multiplierLabel.text, "x2.0")
+    }
+
     func testEachEndlessModeReadsItsOwnBest() {
         let scene = GameScene()
         scene.endlessMode = true

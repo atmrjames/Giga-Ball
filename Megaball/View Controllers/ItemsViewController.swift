@@ -10,7 +10,7 @@
 import UIKit
 import GameKit
 
-class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
+class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -45,6 +45,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnItemDetailsNotificationKeyReceived), name: .returnItemDetailsNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned from another view
@@ -301,11 +303,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.row == 0 {
-            removeAnimate()
-            if navigatedFrom == "PauseMenu" {
-                NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
-                // The pause menu hid itself to make room, and is watching for this to come back
-            }
+            menuNavigationGoBack()
         }
 
         collectionView.deselectItem(at: indexPath, animated: true)
@@ -495,6 +493,19 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             })
     }
     
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+        if navigatedFrom == "PauseMenu" {
+            NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
+            // The pause menu hid itself to make room, and is watching for this to come back
+        }
+    }
+
     func removeAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)

@@ -78,3 +78,16 @@ Ordinary work, done as asked. Where a fix touches shared mechanics — physics, 
 paddle, save format — it applies to **all three modes**, and Classic and the original Endless
 deserve a few levels of play-testing before it ships, because those are the leaderboards with
 years of scores on them.
+
+## Menus
+
+There is no navigation controller. A screen is a child view controller whose view is added
+over the one that opened it, and each has its own back button in a collection view - so
+"back" is `menuNavigationGoBack()`, which every back button and the left-edge swipe both
+call. Adding a screen means conforming to `MenuNavigable`, routing its back button through
+that method, and calling `installMenuNavigationSwipes()` in `viewDidLoad`.
+
+A `UIPanGestureRecognizer` only begins after the touch has travelled its slop, so
+`location(in:)` at `.began` is already well inside the screen - the start has to be worked
+back out from the translation, or a swipe from the very edge reads as starting outside the
+edge strip.

@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate {
+class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -45,6 +45,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
@@ -440,7 +442,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
 
         if indexPath.row == 0 {
-            removeAnimate()
+            menuNavigationGoBack()
         }
         if indexPath.row == 1 && gameCenterSetting {
             showGameCenterLeaderboards()
@@ -583,6 +585,15 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             })
     }
     
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+    }
+
     func removeAnimate() {
         NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
         UIView.animate(withDuration: 0.25, animations: {

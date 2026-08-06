@@ -1599,6 +1599,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     ///
     /// Every launch off a sticky paddle costs one, whichever ball it was - so with Multi-Ball
     /// a set of catches is spent across the balls rather than being renewed by each of them.
+    /// Writes the multiplier into its label, in the modes that have one.
+    ///
+    /// Endless mode has no multiplier, and its label carries the best height instead. Four
+    /// places wrote the multiplier straight into it, so the best height appeared at the start
+    /// of a run and was replaced by "x1.0" by the first brick.
+    func showMultiplier() {
+        guard endlessMode == false else { return }
+        multiplierLabel.text = "x\(scoreFactorString)"
+    }
+
     func spendStickyPaddleCatch() {
         guard stickyPaddleCatches != 0 else { return }
 
@@ -1827,7 +1837,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
-		multiplierLabel.text = "x\(scoreFactorString)"
+		showMultiplier()
 		multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		// Reset score multiplier
 		
@@ -2434,7 +2444,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		} else {
 			multiplierLabel.fontColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
 		}
-		multiplierLabel.text = "x\(scoreFactorString)"
+		showMultiplier()
 		// Update score
         
         if bricksLeft == 0 && endlessMode == false {
@@ -2639,7 +2649,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
 		
-		multiplierLabel.text = "x\(scoreFactorString)"
+		showMultiplier()
 		// Update multiplier & score
 
 		let wait = SKAction.wait(forDuration: 0.075)
@@ -4235,7 +4245,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessMode {
 			scoreLabel.text = "\(endlessHeight)m"
 		}
-		multiplierLabel.text = "x\(scoreFactorString)"
+		showMultiplier()
         // Update score
     }
 	

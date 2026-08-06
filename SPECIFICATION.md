@@ -305,7 +305,8 @@ Splash (animated logo, tap to skip)
   └─ Main Menu ─────── Classic Mode ── Pack Select ── Level Select ── Level Detail
      │                                                                   └─ Game
      ├─────────────── Endless Mode ── Endless Detail ── Game
-     ├─ Info (i) ──── Items / Stats / Items Detail / Item Stats / About
+     ├─────────────── Endless 2.0 ─── Endless Detail ── Game
+     ├─ Info (i) ──── Items / Stats / Items Detail / Item Stats / Bricks / About
      └─ Settings ──── (also reachable from the pause menu)
 
 Game ─┬─ Pause Menu (pause, game over, pack complete — one screen, three modes)
@@ -318,6 +319,13 @@ Intro / onboarding: 5 pages, shown on first launch only
 Screens are presented by adding child view controllers and their views as subviews, not
 by navigation controller pushes or modal presentation. The pause menu, between-levels
 screen and warnings are all overlays added onto the game view controller.
+
+Because there is no navigation controller, the swipes that come with one had to be written:
+a swipe from the left edge goes back, doing exactly what that screen's back button does, and
+a swipe from the right edge returns to the screen just come back from. Opening anything new
+discards the way forward, the way a push discards what a pop left behind. It is one screen
+deep — the menus are shallow, and a screen swiped away several steps ago is not one anybody
+remembers wanting back. See `MenuNavigation`.
 
 **Stats** are tracked extensively — per level, per pack and lifetime — covering scores,
 times, completions, balls lost, power-ups collected and generated, and playtime.

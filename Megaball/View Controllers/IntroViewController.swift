@@ -13,7 +13,7 @@ struct IntroScene {
     var label: String
 }
 
-class IntroViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
+class IntroViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable {
     
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true
@@ -34,6 +34,8 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
@@ -69,7 +71,7 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        removeAnimate()
+        menuNavigationGoBack()
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }
@@ -107,6 +109,15 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
             })
     }
     
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+    }
+
     func removeAnimate() {
         NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
         UIView.animate(withDuration: 0.25, animations: {

@@ -22,7 +22,8 @@
 import UIKit
 
 class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate,
-                                      UICollectionViewDataSource, UIScrollViewDelegate {
+                                      UICollectionViewDataSource, UIScrollViewDelegate,
+                                      MenuNavigable {
 
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true
@@ -54,6 +55,8 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
 
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(self.refreshViewForSyncNotificationKeyReceived),
@@ -286,8 +289,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     }
 
     private func close() {
-        removeAnimate()
-        NotificationCenter.default.post(name: .reanimateNotificiation, object: nil)
+        menuNavigationGoBack()
     }
 
     // MARK: - The close button
@@ -391,6 +393,16 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
             self.view.alpha = 1.0
             self.view.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
         })
+    }
+
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+        NotificationCenter.default.post(name: .reanimateNotificiation, object: nil)
     }
 
     func removeAnimate() {

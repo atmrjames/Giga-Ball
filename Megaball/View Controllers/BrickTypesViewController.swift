@@ -18,7 +18,8 @@
 import UIKit
 
 class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableViewDataSource,
-                                UICollectionViewDelegate, UICollectionViewDataSource {
+                                UICollectionViewDelegate, UICollectionViewDataSource,
+                                MenuNavigable {
 
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true
@@ -39,6 +40,8 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        installMenuNavigationSwipes()
+        // Back from the left edge, forward from the right - see MenuNavigation
 
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(self.returnItemStatsNotificationKeyReceived),
@@ -239,8 +242,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        removeAnimate()
-        NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
+        menuNavigationGoBack()
 
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
@@ -320,6 +322,16 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
             self.view.alpha = 1.0
             self.view.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
         })
+    }
+
+    /// Does exactly what tapping the back button does.
+    ///
+    /// The left-edge swipe calls this, so the gesture and the button can never drift apart.
+    func menuNavigationGoBack() {
+        MenuNavigation.shared.record(self)
+        // Remembered, so a swipe from the right edge brings this screen back
+        removeAnimate()
+        NotificationCenter.default.post(name: .returnItemDetailsNotification, object: nil)
     }
 
     func removeAnimate() {

@@ -117,7 +117,7 @@ class Playing: GKState {
         
         scene.scoreLabel.text = String(scene.totalScore)
         scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
-        scene.multiplierLabel.text = "x\(scene.scoreFactorString)"
+        scene.showMultiplier()
         scene.refreshLivesRow()
         // Update number of lives label
 
