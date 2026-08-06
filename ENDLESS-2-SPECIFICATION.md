@@ -898,20 +898,23 @@ rather than mechanics.
   icons reproduce the placeholder look described in §8.5 deliberately, and this is where the
   page will start using the real artwork when it exists.
 
-**Next up:** phase 7, Multi-Ball. Started — the collection exists and the survival rule is in
-(`EndlessIIBalls`, `EndlessIIMultiBall`): a run continues while any ball is in play, an extra
-hands its position over to `ball` when that is the one lost, and speed, size and texture are
-shared across the set. It is deliberately inert — nothing adds a ball yet — because two things
-have to land first:
+**Phase 7 is built.** Multi-Ball drops, adds a ball up to four, and the run continues while any
+of them is in play.
 
-Per-ball contact handling is in: the contact resolves which ball it is about, and every wall
-bounce, paddle angle, brick correction and portal jump acts on that one. An extra ball plays
-exactly as the first does.
+- `EndlessIIBalls` holds the rules; `EndlessIIMultiBall` holds the collection. `ball` never
+  changes identity — when it is the one lost, a survivor hands over its position and velocity,
+  so nothing else in the scene has to know a swap happened. That is what keeps Classic and
+  Endless untouched.
+- Every ball gets its own contact handling: its own wall bounces, paddle angles, brick
+  corrections and portal jumps. Speed, size and texture are shared across the set (§5.5).
+- The drop weight falls to zero while four are in play, so it stops being offered rather than
+  being collected for nothing.
+- Sticky Paddle holds the first ball only. Per-ball launch state is listed in §5.5 and is not
+  built.
 
-| Before Multi-Ball can be offered | Why |
+| Still owed | Why |
 |---|---|
-| The drop itself | `powerUpProbArray` and the stats arrays in `TotalStats` are sized by the power-up count and are decoded from disk, so adding one needs a migration. That is phase 8's plumbing, and it is the piece that must not break existing progress |
-| The save format | §9.3: it stores one ball's position and velocity |
+| The save format | §9.3: it stores one ball's position and velocity, so a paused run with four resumes with one |
 
 **Open, in rough priority order**
 

@@ -41,6 +41,10 @@ extension GameScene {
         powerUpProbArray[26] = 10 // Increase Ball Size
         powerUpProbArray[27] = 10 // Decrease Ball Size
         
+        powerUpProbArray[28] = 0
+        // Multi-Ball is Endless 2.0's alone. Every other mode keeps one ball, so it is off
+        // everywhere by default and switched on below only for the mode that has it
+
         powerUpProbFactor = 10
         // default power-up allocation
         

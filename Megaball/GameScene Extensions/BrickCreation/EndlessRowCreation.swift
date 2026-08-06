@@ -55,6 +55,11 @@ extension GameScene {
         powerUpProbArray[19] = 5 // Remove Indestructible Bricks
         powerUpProbArray[21] = 3 // Undestructi-Ball
         
+        powerUpProbArray[28] = endlessIICanAddBall ? GameScene.multiBallWeight : 0
+        // Zero while four are already in play, so it stops being offered rather than being
+        // collected for nothing (§5.4). Set per row because the answer changes as balls are
+        // added and lost
+
         advanceEndlessIIPhase()
         // Checked per row, so a phase ends where it ends rather than on a schedule
 

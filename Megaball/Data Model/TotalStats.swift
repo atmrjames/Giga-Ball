@@ -17,8 +17,8 @@ class TotalStats: Codable {
     var levelsCompleted: Int = 0
     var ballHits: Int = 0
     var ballsLost: Int = 0
-    var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    var powerupsCollected: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    var powerupsGenerated: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     var bricksHit: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var lasersFired: Int = 0
@@ -271,7 +271,8 @@ class TotalStats: Codable {
         false, // Mystery
         false, // Backstop
         false, // Increase Ball Size
-        false // Decrease Ball Size
+        false, // Decrease Ball Size
+        true // Multi-Ball - Endless 2.0 only, and never locked behind a pack
     ]
     
     var achievementsUnlockedArray: [Bool] = [

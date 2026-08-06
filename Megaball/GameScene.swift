@@ -247,7 +247,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var powerUpProbArray: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	var powerUpProbSum: Int = 0
 	var powerUpGeneratorCycles: Int = 0
 	// Power-up probabilities
@@ -708,6 +708,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 //MARK: - Sound and Haptic Definition
 	
+	/// Multi-Ball's icon, drawn rather than loaded - see PowerUpIcon.
+	let powerUpMultiBall = SKTexture(image: PowerUpIcon.multiBall)
+	/// How often Multi-Ball is offered, relative to the rest of the table.
+	///
+	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
+	/// many things the player is watching at once.
+	static let multiBallWeight = 5
+
 	let ballLostSound = SKAction.playSoundFileNamed("ballLostSound.mp3", waitForCompletion: true)
 	let ballPaddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit.mp3", waitForCompletion: true)
 	let ballReleaseSound = SKAction.playSoundFileNamed("ballRelease.mp3", waitForCompletion: true)
@@ -878,7 +886,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -3085,6 +3093,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 			}
 			// Don't show power-up if already falling or in action or locked
+		case 28:
+		// 28 - Multi-Ball
+			powerUp.texture = powerUpMultiBall
 		case 26:
 		// 26 - Increase ball size
 			powerUp.texture = powerUpIncreaseBallSize
@@ -4009,7 +4020,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             self.run(sequence, withKey: "powerUpIncreaseBallSize")
             // Power up reverted
             
-        case powerUpDecreaseBallSize:
+		case powerUpMultiBall:
+		// Multi-Ball
+			endlessIIAddBall()
+			// The whole effect. Everything that makes an extra ball work - its contacts, its
+			// share of the speed and size, the run continuing while any of them survives - is
+			// the collection the scene already holds, so collecting this is one call
+
+		case powerUpDecreaseBallSize:
         // Decrease ball size
 			removeAction(forKey: "powerUpIncreaseBallSize")
 			removeAction(forKey: "powerUpDecreaseBallSize")

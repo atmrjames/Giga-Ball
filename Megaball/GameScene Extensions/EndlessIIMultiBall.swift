@@ -37,17 +37,14 @@ extension GameScene {
 
     /// Adds a ball, turned away from the one it came from.
     ///
-    /// This is what Multi-Ball will call. Every ball now gets its own contact handling - its
-    /// own wall bounces, paddle angles, brick corrections and portal jumps - so an extra one
-    /// plays exactly as the first does.
-    ///
-    /// What is still missing is the drop itself: the power-up weights and the per-power-up
-    /// stats arrays are sized by the number of power-ups and decoded from disk, so adding one
-    /// needs a migration that cannot get a player's existing progress wrong. Until that lands,
-    /// nothing calls this.
+    /// Called by Multi-Ball. Every ball gets its own contact handling - its own wall bounces,
+    /// paddle angles, brick corrections and portal jumps - so an extra one plays exactly as the
+    /// first does.
     ///
     /// Returns whether one was actually added, so a power-up with nothing to do can say so
-    /// rather than being collected for nothing.
+    /// rather than being collected for nothing. In practice it always has something to do: the
+    /// drop weight goes to zero while four are in play, so it stops being offered rather than
+    /// being collected for nothing (§5.4).
     @discardableResult
     func endlessIIAddBall() -> Bool {
         guard endlessIICanAddBall else { return false }

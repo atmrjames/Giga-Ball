@@ -85,7 +85,10 @@ final class LevelPackSetupTests: XCTestCase {
     // MARK: - Power-ups
 
     func testPowerUpArraysAgree() {
-        let expected = 28
+        // Taken from the list of names rather than written down. A hard-coded count has to be
+        // edited every time a power-up is added, which makes it a thing to remember rather
+        // than a thing that checks - and remembering is exactly what this exists to replace
+        let expected = setup.powerUpNameArray.count
         XCTAssertEqual(setup.powerUpNameArray.count, expected)
         XCTAssertEqual(setup.powerUpImageArray.count, expected)
         XCTAssertEqual(setup.powerUpDescriptionArray.count, expected)
@@ -98,10 +101,12 @@ final class LevelPackSetupTests: XCTestCase {
     }
 
     func testPowerUpDisplayOrderIsAPermutation() {
-        // powerUpCorrectOrderArray reorders the power-ups for display. If it is
-        // not a permutation of 0..<28 then some power-up is shown twice and
-        // another never appears at all.
-        XCTAssertEqual(Set(setup.powerUpCorrectOrderArray), Set(0..<28))
+        // powerUpCorrectOrderArray reorders the power-ups for display. If it is not a
+        // permutation of every index then some power-up is shown twice and another never
+        // appears at all. Counted from the names, so adding a power-up cannot leave this
+        // checking an old length and passing for the wrong reason.
+        XCTAssertEqual(Set(setup.powerUpCorrectOrderArray),
+                       Set(0..<setup.powerUpNameArray.count))
     }
 
     func testPowerUpPackOrderStaysInRange() {

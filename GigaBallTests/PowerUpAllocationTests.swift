@@ -50,7 +50,8 @@ final class PowerUpAllocationTests: XCTestCase {
             scene.powerUpProbAllocation(levelNumber: level)
             XCTAssertGreaterThanOrEqual(scene.powerUpProbFactor, 0,
                                         "Level \(level) produced a negative drop factor")
-            XCTAssertEqual(scene.powerUpProbArray.count, 28,
+            XCTAssertEqual(scene.powerUpProbArray.count,
+                           LevelPackSetup().powerUpNameArray.count,
                            "Level \(level) changed the size of the probability table")
         }
     }
