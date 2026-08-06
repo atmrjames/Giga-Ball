@@ -213,6 +213,91 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
+    /// Cull: half the field, gone.
+    static let cull: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.06)
+        for (index, y) in [rect.minY + rect.height*0.28, rect.midY,
+                           rect.maxY - rect.height*0.28].enumerated() {
+            for column in 0..<3 {
+                let x = rect.minX + rect.width*(0.24 + 0.26*CGFloat(column))
+                let cell = CGRect(x: x - rect.width*0.09, y: y - rect.height*0.06,
+                                  width: rect.width*0.18, height: rect.height*0.12)
+                if (index + column).isMultiple(of: 2) {
+                    context.fill(cell)
+                } else {
+                    context.stroke(cell)
+                }
+            }
+        }
+        context.setFillColor(UIColor.white.cgColor)
+    }
+
+    /// Clear And Retreat: the bottom row going, the field moving up.
+    static let clearAndRetreat: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: rect.maxY - rect.height*0.22))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: rect.maxY - rect.height*0.22))
+        context.strokePath()
+        // The row on its way out
+
+        let tip = CGPoint(x: rect.midX, y: rect.minY + rect.height*0.2)
+        context.move(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.36))
+        context.addLine(to: tip)
+        context.move(to: CGPoint(x: tip.x - rect.width*0.13, y: tip.y + rect.height*0.14))
+        context.addLine(to: tip)
+        context.addLine(to: CGPoint(x: tip.x + rect.width*0.13, y: tip.y + rect.height*0.14))
+        context.strokePath()
+    }
+
+    /// Laser Beam: the column, floor to ceiling.
+    static let laserBeam: UIImage = badge { context, rect in
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(CGRect(x: rect.midX - rect.width*0.07, y: rect.minY + rect.height*0.14,
+                            width: rect.width*0.14, height: rect.height*0.72))
+        for x in [rect.midX - rect.width*0.22, rect.midX + rect.width*0.22] {
+            context.fill(CGRect(x: x - rect.width*0.025, y: rect.minY + rect.height*0.3,
+                                width: rect.width*0.05, height: rect.height*0.4))
+        }
+    }
+
+    /// Wrecking Ball: a heavier ball, with impact marks.
+    static let wreckingBall: UIImage = badge { context, rect in
+        dot(context, at: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width*0.17)
+        stroke(context, width: rect.width*0.06)
+        for angle in stride(from: CGFloat.pi/6, to: 2*CGFloat.pi, by: CGFloat.pi/3) {
+            let from = CGPoint(x: rect.midX + cos(angle)*rect.width*0.24,
+                               y: rect.midY + sin(angle)*rect.width*0.24)
+            let to = CGPoint(x: rect.midX + cos(angle)*rect.width*0.34,
+                             y: rect.midY + sin(angle)*rect.width*0.34)
+            context.move(to: from)
+            context.addLine(to: to)
+        }
+        context.strokePath()
+    }
+
+    /// Aura: the ball inside its glow.
+    static let aura: UIImage = badge { context, rect in
+        dot(context, at: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width*0.11)
+        stroke(context, width: rect.width*0.06)
+        context.strokeEllipse(in: CGRect(x: rect.midX - rect.width*0.28,
+                                         y: rect.midY - rect.width*0.28,
+                                         width: rect.width*0.56, height: rect.width*0.56))
+    }
+
+    /// Infill: bricks arriving where there were none.
+    static let infill: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.055)
+        for (row, columns) in [(0.3, [0, 2]), (0.55, [1]), (0.8, [0, 2])] {
+            for column in columns {
+                let x = rect.minX + rect.width*(0.24 + 0.26*CGFloat(column))
+                let cell = CGRect(x: x - rect.width*0.1, y: rect.minY + rect.height*row - rect.height*0.06,
+                                  width: rect.width*0.2, height: rect.height*0.12)
+                context.fill(cell)
+            }
+        }
+        context.setFillColor(UIColor.white.cgColor)
+    }
+
     // MARK: - Drawing helpers
 
     private static func stroke(_ context: CGContext, width: CGFloat) {

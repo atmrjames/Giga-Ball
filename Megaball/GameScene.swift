@@ -105,6 +105,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	var endlessIIAimDrag: CGFloat = 0
 	var endlessIIAimArrow: SKShapeNode?
+
+	// The field batch's clocks and drawing - see EndlessIIFieldPowerUps
+	var endlessIIWreckingBallClock = EndlessIIClock()
+	var endlessIIAuraClock = EndlessIIClock()
+	var endlessIIAuraNodes: [SKShapeNode] = []
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -292,7 +297,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 39)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 45)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -807,6 +812,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpInertPaddle = SKTexture(image: PowerUpIcon.inertPaddle)
 	let powerUpFlippedAngle = SKTexture(image: PowerUpIcon.flippedAngle)
 	let powerUpReversedControls = SKTexture(image: PowerUpIcon.reversedControls)
+	let powerUpCull = SKTexture(image: PowerUpIcon.cull)
+	let powerUpClearAndRetreat = SKTexture(image: PowerUpIcon.clearAndRetreat)
+	let powerUpLaserBeam = SKTexture(image: PowerUpIcon.laserBeam)
+	let powerUpWreckingBall = SKTexture(image: PowerUpIcon.wreckingBall)
+	let powerUpAura = SKTexture(image: PowerUpIcon.aura)
+	let powerUpInfill = SKTexture(image: PowerUpIcon.infill)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -983,7 +994,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -1853,6 +1864,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			tickEndlessIIHeldBalls()
 			tickEndlessIIVision(currentTime)
 			tickEndlessIIPaddlePowerUps(currentTime)
+			tickEndlessIIFieldPowerUps()
 			tickEndlessIIAim()
 			tickEndlessIIBuildIn(currentTime)
 		}
@@ -2389,6 +2401,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// A power-up brick is spent the moment it breaks, whatever broke it - the ball, a
 		// laser, an explosion. It never reaches the type switch below because it is not a type
+
+		if endlessIIWreckingHit(struckBy: struckBy, laser: laserNode != nil) {
+			stopLaser()
+			totalStatsArray[0].bricksHit[0] += 1
+			totalStatsArray[0].bricksDestroyed[0] += 1
+			resetBrickBounce(for: struckBy)
+			removeBrick(node: node, sprite: sprite)
+			return
+		}
+		// A Wrecking Ball hit wins whatever it struck - Fixed, Directional, Multi-Hit,
+		// Indestructible - and still bounces, which the collision does on its own. Through
+		// the ordinary destroy path, so it scores, rolls and counts like any hit
 
 		if endlessIIAnchorIfNeeded(sprite) {
 			stopLaser()
@@ -4086,6 +4110,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[38] += 1
 
+		case powerUpCull:
+		// 39 - Cull
+			endlessIICull()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[39] += 1
+
+		case powerUpClearAndRetreat:
+		// 40 - Clear And Retreat
+			endlessIIClearAndRetreat()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[40] += 1
+
+		case powerUpLaserBeam:
+		// 41 - Laser Beam
+			endlessIIFireLaserBeams()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[41] += 1
+
+		case powerUpWreckingBall:
+		// 42 - Wrecking Ball
+			endlessIICollectWreckingBall()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[42] += 1
+
+		case powerUpAura:
+		// 43 - Aura
+			endlessIICollectAura()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[43] += 1
+
+		case powerUpInfill:
+		// 44 - Infill. Bad
+			endlessIIInfill()
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[44] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -4303,6 +4363,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Stop all timers and animations
 		endlessIIResetVision()
 		endlessIIResetPaddlePowerUps()
+		endlessIIResetFieldPowerUps()
 		// Endless 2.0's own power-ups keep their own clocks, so the removeAllActions above
 		// does not reach them
 		powerUpsOnScreen = 0
@@ -5617,7 +5678,7 @@ laserTimer?.invalidate()
 				powerUpActiveTimerArray?.append(endlessIILandingTotal)
 				powerUpActiveMagnitudeArray?.append(0)
 			}
-			for entry in endlessIIPaddleClockSaveEntries() {
+			for entry in endlessIIPaddleClockSaveEntries() + endlessIIFieldClockSaveEntries() {
 				powerUpActiveArray?.append(entry.key)
 				powerUpActiveDurationArray?.append(entry.remaining)
 				powerUpActiveTimerArray?.append(entry.total)
@@ -5943,6 +6004,7 @@ laserTimer?.invalidate()
 		}
 		entries.append(contentsOf: endlessIIVisionRingEntries())
 		entries.append(contentsOf: endlessIIPaddleRingEntries())
+		entries.append(contentsOf: endlessIIFieldRingEntries())
 		// Endless 2.0's own power-ups have no tray slot to be read from, so they report
 		// themselves
 		return entries
@@ -6456,10 +6518,15 @@ laserTimer?.invalidate()
 						endlessIILandingTotal = totalTime
 
 					default:
-						endlessIIRestorePaddleClock(key: savedGame.activePowerUps[i],
-													remaining: remainingTime,
-													total: totalTime,
-													magnitude: savedGame.activePowerUpMagnitudes[i])
+						if endlessIIRestorePaddleClock(key: savedGame.activePowerUps[i],
+													   remaining: remainingTime,
+													   total: totalTime,
+													   magnitude: savedGame.activePowerUpMagnitudes[i]) == false {
+							endlessIIRestoreFieldClock(key: savedGame.activePowerUps[i],
+													   remaining: remainingTime,
+													   total: totalTime,
+													   magnitude: savedGame.activePowerUpMagnitudes[i])
+						}
 					}
 				}
 			}
