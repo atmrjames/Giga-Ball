@@ -245,7 +245,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var powerUpProbArray: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	var powerUpProbSum: Int = 0
 	var powerUpGeneratorCycles: Int = 0
-	var backstopHit: Bool = false
 	// Power-up probabilities
     
     var brickDestroyScore: Int = 0
@@ -1663,6 +1662,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 			xSpeedLive = ball.physicsBody!.velocity.dx
 			ySpeedLive = ball.physicsBody!.velocity.dy
+
+			refreshPaddleReachability()
+			// The paddle moves under the player's finger, so whether a ball is beneath it is
+			// a question with a new answer every frame
 		
 			if gravityActivated {
 				if ball.position.y < paddle.position.y + ballSize*4 {
@@ -1928,13 +1931,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				ballBackstopHit(struckBall)
 				// Determine ball's angle after hitting backstop to prevent too shallow angle
 				
-				backstopHit = true
-				ballPhysicsBodySet()
-				self.run(SKAction.wait(forDuration: 0.25), completion: {
-					self.backstopHit = false
-					self.ballPhysicsBodySet()
-				})
-				// Paddle cannot hit ball for some time after ball hits backstop
+				// The ball coming off the backstop is under the paddle, and the paddle is not
+				// there while that is true - see `refreshPaddleReachability`. It used to be a
+				// quarter-second window here instead, which was both the wrong shape for the
+				// problem and never actually applied: the flag it set was never read
 			}
 			// Ball hits backstop
 
@@ -4234,7 +4234,6 @@ laserTimer?.invalidate()
 			self.backstop.physicsBody!.contactTestBitMask = 0
 			self.backstop.run(SKAction.scaleX(by: 4, y: 1, duration: 0.0))
 		})
-		backstopHit = false
 		paddle.physicsBody!.isDynamic = true
 		// Backstop paddle reset
 		
@@ -4278,9 +4277,49 @@ laserTimer?.invalidate()
 			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
 			// Set ball physics body
 		}
+		refreshPaddleReachability()
+		// Applied last, because everything above hands the paddle back
 	}
 	// Set ball's physics bodies
-    
+
+	/// Whether a ball is underneath the paddle rather than in front of it.
+	///
+	/// Measured against the paddle's centre. A catch happens with the ball sitting on the
+	/// paddle's top surface, a whole radius above this, so there is no legitimate hit this can
+	/// take away - and a ball whose centre is below the paddle's is one that has got past.
+	func ballIsUnderPaddle(_ subject: SKSpriteNode) -> Bool {
+		subject.position.y < paddle.position.y
+	}
+
+	/// Takes the paddle out of a ball's way while the ball is underneath it.
+	///
+	/// The Backstop's whole purpose is to send a ball that got past the paddle back up. It
+	/// could not do that: the paddle is solid from below as well as above, so a player who
+	/// moved the paddle over the rescued ball had it bounced straight back down off the
+	/// underside and lost the life the Backstop had just saved.
+	///
+	/// Stated as a condition rather than as a window of time, because that is what it is - the
+	/// paddle is not in the way until the ball is in front of it. It costs nothing in ordinary
+	/// play, where a ball below the paddle is already gone, and it applies in every mode.
+	func refreshPaddleReachability() {
+		for subject in endlessIIBallsInPlay {
+			setPaddleReachable(ballIsUnderPaddle(subject) == false, for: subject)
+		}
+	}
+
+	func setPaddleReachable(_ reachable: Bool, for subject: SKSpriteNode) {
+		guard let body = subject.physicsBody else { return }
+		let paddleBit = CollisionTypes.paddleCategory.rawValue
+
+		let collision = reachable ? body.collisionBitMask | paddleBit
+								  : body.collisionBitMask & ~paddleBit
+		let contact = reachable ? body.contactTestBitMask | paddleBit
+								: body.contactTestBitMask & ~paddleBit
+
+		if body.collisionBitMask != collision { body.collisionBitMask = collision }
+		if body.contactTestBitMask != contact { body.contactTestBitMask = contact }
+	}
+
     func moveToMainMenu() {
 		gameViewControllerDelegate?.moveToMainMenu()
     }

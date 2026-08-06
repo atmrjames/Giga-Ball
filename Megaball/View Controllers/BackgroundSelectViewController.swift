@@ -114,6 +114,17 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
             swipe.direction = direction
             mockContainer.addGestureRecognizer(swipe)
         }
+
+        mockContainer.addGestureRecognizer(
+            UITapGestureRecognizer(target: self, action: #selector(tapped)))
+        // Swiping browses, tapping takes it. The background on screen is already the setting,
+        // so the tap is not what chooses - it is the way out, said in the obvious place. A
+        // player who has found the one they want should not have to look for the close button
+    }
+
+    @objc private func tapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        close()
     }
 
     /// Shapes the model to the playfield it is a model of.

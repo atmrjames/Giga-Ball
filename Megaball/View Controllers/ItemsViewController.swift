@@ -34,6 +34,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var blurView: UIVisualEffectView?
     // UI property setup
 
+    /// Which screen opened this one. "PauseMenu" when it is being used mid-run.
+    var navigatedFrom: String = "MainMenu"
+
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var itemsView: UIView!
     @IBOutlet var itemsTableView: UITableView!
@@ -133,6 +136,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     var infoRows: [InfoRow] {
         var rows: [InfoRow] = [.powerUps, .brickTypes, .achievements, .statistics]
         if gameCenterSetting { rows.append(.gameCenter) }
+
+        guard navigatedFrom != "PauseMenu" else { return rows }
+        // Opened over a paused game, this is a reference rather than a menu. What is left out
+        // is everything that takes the player out of the app or out of the run: the tutorial
+        // restarts on top of a live game, and Rate, Share, SoundCloud and About all lead
+        // somewhere else entirely, which is not what somebody who paused to look something up
+        // is after
+
         rows += [.quickStart, .soundCloud, .rate, .share, .about]
         return rows
     }
@@ -291,8 +302,12 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         if indexPath.row == 0 {
             removeAnimate()
+            if navigatedFrom == "PauseMenu" {
+                NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
+                // The pause menu hid itself to make room, and is watching for this to come back
+            }
         }
-        
+
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }

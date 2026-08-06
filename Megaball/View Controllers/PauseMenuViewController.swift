@@ -52,6 +52,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     @IBOutlet weak var highscoreLabel: UILabel!
     @IBOutlet weak var highscoreLabelTitle: UILabel!
     @IBOutlet var buttonCollectionView: UICollectionView!
+    @IBOutlet var informationButton: UIButton!
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var packNameLabel: UILabel!
     @IBOutlet weak var levelNumberLabel: UILabel!
@@ -96,6 +97,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         levelTitleLowerConstraint.isActive = false
         levelNameLabelNormalConstraint.isActive = true
         // Default constraints setting
+
+        informationButton.isHidden = sender != "Pause"
+        // This screen is also the game-over and level-complete screen, and those are about
+        // what just happened rather than about looking something up
         
         if levelNumber == 0 {
             endlessMode = true
@@ -514,6 +519,28 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         containterView.addMotionEffect(group!)
     }
     
+    /// Opens the reference pages over the paused game.
+    ///
+    /// The power-ups page and the brick types page answer questions that only come up while
+    /// playing - what was that brick, what does this power-up do - and until now they were
+    /// three screens away behind quitting the run. Reaching them from the pause menu is the
+    /// difference between a reference a player uses and one they know exists.
+    ///
+    /// Every mode, because the question is the same in all of them.
+    @IBAction func informationButton(_ sender: Any) {
+        if hapticsSetting {
+            interfaceHaptic.impactOccurred()
+        }
+        hideAnimate()
+
+        let itemsView = self.storyboard?.instantiateViewController(withIdentifier: "itemsView") as! ItemsViewController
+        itemsView.navigatedFrom = "PauseMenu"
+        self.addChild(itemsView)
+        itemsView.view.frame = self.view.frame
+        self.view.addSubview(itemsView.view)
+        itemsView.didMove(toParent: self)
+    }
+
     func moveToSettings() {
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
         settingsView.navigatedFrom = "PauseMenu"
