@@ -898,6 +898,14 @@ Three things ramp with height, independently:
 | **How many styles a brick may carry** | One | Two, and rarely two on several bricks at once |
 | **Which styles are offered** | The readable ones — Rounded, Big, Tiny | Everything, weighted so the field-changing ones stay the minority |
 
+**The ramp is eased, not linear.** A thousand metres is the right place for the deep figures
+to land, but a straight line puts a hundred metres a tenth of the way there — and most players
+do not often pass a hundred metres. A run that is still nine parts plain bricks by then has
+shown them almost nothing of the mode, which is precisely what §2's *reachable novelty* rules
+out. The curve is steep early and flattens, so most of the variety arrives in the first couple
+of hundred metres and the rest of the climb is the rare things getting likelier. The endpoints
+are unchanged.
+
 **Rare, not absent.** Every style keeps a small floor probability from the first row, the
 same rule §6.3 sets for power-ups. Somebody who never passes 20m should still have met a
 Portal, and met it as a surprise rather than as the thing that ended the run.

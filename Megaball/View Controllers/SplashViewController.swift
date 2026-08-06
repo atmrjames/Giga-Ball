@@ -8,6 +8,13 @@
 
 import UIKit
 
+/// Whether the splash screen is currently covering everything.
+///
+/// A game can be resumed or started while it is still up, and anything that animates in the
+/// scene underneath is spent behind a full-screen cover - the player sees the end of it at
+/// best. Read by `GameScene` so the opening field waits its turn.
+var splashScreenIsShowing = false
+
 class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     @IBOutlet var splashScreenLogo1: UIImageView!
@@ -44,6 +51,9 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     var resumeInProgress: Bool = false
     
     override func viewDidLoad() {
+        splashScreenIsShowing = true
+        // Set here rather than by whoever presents it, so it cannot be forgotten at a call site
+
         super.viewDidLoad()
                 
         splashScreenLogo1.image = UIImage(named: "SplashScreenLogo1")!
@@ -292,10 +302,12 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             { (finished: Bool) in
                 if (finished) {
                     self.view.removeFromSuperview()
-                    NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
+                    splashScreenIsShowing = false
+            NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
                 }
             }
         } else {
+            splashScreenIsShowing = false
             NotificationCenter.default.post(name: .splashScreenEndedNotification, object: nil)
             
             UIView.animate(withDuration: duration, animations: {

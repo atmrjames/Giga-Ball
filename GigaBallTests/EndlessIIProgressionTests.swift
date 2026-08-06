@@ -66,13 +66,45 @@ final class EndlessIIProgressionTests: XCTestCase {
     }
 
     func testTheEndsOfTheRampAreTheValuesAsked() {
-        // From the first metre, not from zero - the very first screen is a special case and
-        // has nothing unusual on it at all.
+        // The deep end is exact. The opening end is a floor rather than an exact value,
+        // because the ramp is eased rather than linear - it lifts away from the opening figure
+        // immediately, which is the whole point of easing it. What must hold is that it never
+        // starts *below* what was asked for and never overshoots what it is heading to.
         let p = progression
-        XCTAssertEqual(p.styleChance(at: 1), EndlessIIProgression.openingStyleChance)
+
+        XCTAssertGreaterThanOrEqual(p.styleChance(at: 1), EndlessIIProgression.openingStyleChance)
+        XCTAssertLessThan(p.styleChance(at: 1), EndlessIIProgression.deepStyleChance)
         XCTAssertEqual(p.styleChance(at: 10_000), EndlessIIProgression.deepStyleChance)
-        XCTAssertEqual(p.stackChance(at: 1), EndlessIIProgression.openingStackChance)
+
+        XCTAssertGreaterThanOrEqual(p.stackChance(at: 1), EndlessIIProgression.openingStackChance)
+        XCTAssertLessThan(p.stackChance(at: 1), EndlessIIProgression.deepStackChance)
         XCTAssertEqual(p.stackChance(at: 10_000), EndlessIIProgression.deepStackChance)
+    }
+
+    func testMostOfTheVarietyArrivesEarly() {
+        // The reason for easing the ramp. A straight line to a thousand metres put a hundred
+        // metres a tenth of the way there, and a run that is still nine parts plain bricks by
+        // then has shown a player almost nothing of the mode - which is exactly what §2 says
+        // rarity must not do.
+        let p = progression
+        let opening = EndlessIIProgression.openingStyleChance
+        let deep = EndlessIIProgression.deepStyleChance
+        let atHundred = Double(p.styleChance(at: 100) - opening)/Double(deep - opening)
+
+        XCTAssertGreaterThan(atHundred, 0.25, "a hundred metres should be well on its way")
+        XCTAssertLessThan(atHundred, 0.6, "and still leave the climb somewhere to go")
+    }
+
+    func testAnOrdinaryBrickIsNotMostOfTheFieldByAHundredMetres() {
+        // The play-test report: by 100m the majority of bricks were still plain white
+        let p = progression
+        let weights = p.behaviourWeights(at: 100)
+        let total = weights.reduce(0) { $0 + $1.1 }
+        let standard = weights.first { $0.0 == .standard }?.1 ?? 0
+
+        XCTAssertLessThan(Double(standard)/Double(total), 0.7)
+        XCTAssertGreaterThan(Double(standard)/Double(total), 0.4,
+                             "still the commonest brick, though - it is the baseline")
     }
 
     func testStacksStayRarerThanSinglesAtEveryDepth() {

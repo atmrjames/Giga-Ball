@@ -647,6 +647,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
 	var endlessIIBuildingIn = false
+	/// The opening field, held above where it belongs until the build-in runs.
+	var endlessIIBuildInBricks: [SKSpriteNode] = []
 	var endlessIIStuckTimer: TimeInterval = 0
 	var endlessIISetRowQueue: [String] = []
 	// The rows of a designed pattern still to come, one per generated row

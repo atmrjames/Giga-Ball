@@ -63,27 +63,25 @@ extension GameScene {
             // Remove null bricks & discount indestructible bricks
             
             if savedGame == nil {
-                let startingScale = SKAction.scale(to: 0.8, duration: 0)
-                let startingFade = SKAction.fadeOut(withDuration: 0)
-                let arrival = gameMode == .endlessII
-                    ? GameScene.endlessIIBuildInFade
-                    : 0.25
-                let scaleUp = SKAction.scale(to: 1, duration: arrival)
-                let fadeIn = SKAction.fadeIn(withDuration: arrival)
-                let wait = SKAction.wait(forDuration: 0.25)
-                let startingGroup = SKAction.group([startingScale, startingFade])
-                let brickGroup = SKAction.group([scaleUp, fadeIn])
-                let lead = gameMode == .endlessII
-                    ? SKAction.wait(forDuration: endlessIIBuildInDelay(for: brickCurrent))
-                    : wait
-                let brickSequence = SKAction.sequence([lead, brickGroup])
-                // Setup brick animation. Endless 2.0 staggers the wait by row so the field
-                // builds downward from the top rather than arriving all at once - the same
-                // direction it descends from for the rest of the run
+                if gameMode == .endlessII {
+                    prepareEndlessIIBuildIn(brickCurrent)
+                    // Held one row above where it belongs and invisible, waiting for
+                    // `runEndlessIIBuildIn` - which does not start until the splash screen is
+                    // out of the way
+                } else {
+                    let startingScale = SKAction.scale(to: 0.8, duration: 0)
+                    let startingFade = SKAction.fadeOut(withDuration: 0)
+                    let scaleUp = SKAction.scale(to: 1, duration: 0.25)
+                    let fadeIn = SKAction.fadeIn(withDuration: 0.25)
+                    let wait = SKAction.wait(forDuration: 0.25)
+                    let startingGroup = SKAction.group([startingScale, startingFade])
+                    let brickGroup = SKAction.group([scaleUp, fadeIn])
+                    let brickSequence = SKAction.sequence([wait, brickGroup])
 
-                brick.run(startingGroup)
-                brick.run(brickSequence)
-                // Run animation for each brick
+                    brick.run(startingGroup)
+                    brick.run(brickSequence)
+                    // Run animation for each brick
+                }
             }
             // Don't animate if resuming game
             

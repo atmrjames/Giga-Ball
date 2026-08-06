@@ -70,6 +70,11 @@ struct EndlessIIProgression {
     /// shallow one rather than simply fuller.
     static let rampMetres = 1000
 
+    /// How front-loaded the ramp is. Below 1 pulls the curve up early; 1 would be a straight
+    /// line. At 0.4 a hundred metres is about a third of the way to the deep figures rather
+    /// than a tenth.
+    static let rampEasing = 0.4
+
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
                      powerUps: Int = 28) -> EndlessIIProgression {
         EndlessIIProgression(introductionOrder: styles.shuffled(),
@@ -175,7 +180,18 @@ struct EndlessIIProgression {
     static func ramped(from opening: Int, to deep: Int, at height: Int) -> Int {
         guard height > 0 else { return opening }
         guard height < rampMetres else { return deep }
-        let progress = Double(height)/Double(rampMetres)
+
+        // Eased, not linear. A thousand metres is the right place for the *deep* figures to
+        // land, but a straight line puts a hundred metres a tenth of the way there - and most
+        // players do not often pass a hundred metres. A run that is still nine parts plain
+        // white bricks by then has shown them almost nothing of the mode, which is the one
+        // thing §2 says it must not do: rarity must not mean deep.
+        //
+        // The curve is steep early and flattens, so most of the variety arrives in the first
+        // couple of hundred metres and the rest of the climb is the rare things getting
+        // likelier. The endpoints are untouched: the opening is as gentle as it was and a deep
+        // field is exactly as strange as it was.
+        let progress = pow(Double(height)/Double(rampMetres), rampEasing)
         return opening + Int((Double(deep - opening)*progress).rounded())
     }
 }
@@ -330,11 +346,16 @@ extension EndlessIIProgression {
         }
         return [
             (.standard, toward(100, 30)),
-            (.multiHit, toward(6, 26)),
-            (.indestructibleOnce, toward(1, 16)),
-            (.indestructibleAlways, toward(1, 14)),
-            (.invisible, toward(1, 14)),
+            (.multiHit, toward(14, 26)),
+            (.indestructibleOnce, toward(3, 16)),
+            (.indestructibleAlways, toward(2, 14)),
+            (.invisible, toward(3, 14)),
         ]
+        // The opening figures are what a player meets in their first minute, and they were set
+        // as though the ramp would carry them - one in a hundred for three of the five meant
+        // the first two hundred metres were very nearly all Standard. Raised so that even the
+        // opening mix has something in it besides white bricks, while the deep mix - which is
+        // what the whole climb is for - is unchanged
     }
 
     func pickBehaviour(at height: Int,

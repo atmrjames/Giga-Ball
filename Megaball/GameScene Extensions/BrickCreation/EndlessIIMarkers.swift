@@ -233,42 +233,94 @@ extension GameScene {
 
 extension GameScene {
 
-    /// How long the whole cascade takes, top row to bottom.
+    /// How long one row takes to arrive.
     ///
-    /// Short - it is a flourish before a run, not a title sequence, and anybody past their
-    /// first few games wants to be playing. But it was 0.35s, which over twenty-two rows is
-    /// sixteen milliseconds a row against a quarter-second fade on each brick: every row was
-    /// still arriving while every other row was arriving, so the wave was there in the code
-    /// and invisible on the screen. Long enough now to read as sweeping downward, and still
-    /// over before a player has finished deciding where to aim.
-    static let endlessIIBuildInSweep: TimeInterval = 0.9
+    /// The same 0.05s the field takes to move down a row for the rest of the run, because it
+    /// is the same movement. The opening field was scaling and fading each brick into place,
+    /// which is how bricks arrive in Classic - here it should look like the field descending,
+    /// since that is what it will do from this moment until the run ends.
+    static let endlessIIBuildInStep: TimeInterval = 0.05
 
-    /// How long one brick takes to arrive once its turn comes.
+    /// The gap between one row arriving and the next.
     ///
-    /// Shorter than the sweep by enough that the rows are distinct. A brick that fades in over
-    /// longer than the gap between rows blurs into the ones after it, which is the whole
-    /// difference between a cascade and everything appearing at once slightly unevenly.
-    static let endlessIIBuildInFade: TimeInterval = 0.16
+    /// Longer than the step, so the rows are distinct: a row lands, then the next one comes
+    /// down. Twenty-two of these is the whole cascade, and it wants to be over before a player
+    /// has finished deciding where to aim.
+    static let endlessIIBuildInStagger: TimeInterval = 0.035
 
-    /// When a brick in the opening field should appear.
+    /// When a brick in the opening field should arrive.
     ///
     /// Ordered by row so the field builds downward from the top - the direction it will keep
     /// arriving from for the rest of the run, which makes the animation say something about
     /// the mode rather than just being movement.
     func endlessIIBuildInDelay(for brick: SKSpriteNode) -> TimeInterval {
         let row = max(0, endlessIICell(of: brick).row)
-        let rows = max(1, numberOfBrickRows - 1)
-        return GameScene.endlessIIBuildInSweep*min(1, Double(row)/Double(rows))
+        return GameScene.endlessIIBuildInStagger*Double(row)
     }
 
+    /// Holds a brick one row above where it belongs, ready to come down into place.
+    func prepareEndlessIIBuildIn(_ brick: SKSpriteNode) {
+        brick.alpha = 0
+        brick.position.y += brickHeight
+        endlessIIBuildInBricks.append(brick)
+    }
+
+    /// Brings the opening field down, a row at a time.
+    ///
+    /// Waits for the splash screen. A run can be started or resumed while it is still up, and
+    /// an animation played behind a full-screen cover is one the player sees the end of at
+    /// best - which is exactly what was happening.
     func startEndlessIIBuildIn() {
         guard gameMode == .endlessII, savedGame == nil else { return }
+        guard endlessIIBuildInBricks.isEmpty == false else { return }
+
+        guard splashScreenIsShowing == false else {
+            NotificationCenter.default.addObserver(
+                forName: .splashScreenEndedNotification, object: nil, queue: .main) { [weak self] _ in
+                    self?.runEndlessIIBuildIn()
+                }
+            return
+        }
+        runEndlessIIBuildIn()
+    }
+
+    func runEndlessIIBuildIn() {
+        guard endlessIIBuildInBricks.isEmpty == false else { return }
         endlessIIBuildingIn = true
-        run(.sequence([.wait(forDuration: GameScene.endlessIIBuildInSweep + 0.3),
+
+        let step = GameScene.endlessIIBuildInStep
+        var rows = 0
+
+        for brick in endlessIIBuildInBricks {
+            guard brick.parent != nil else { continue }
+            let delay = endlessIIBuildInDelay(for: brick)
+            rows = max(rows, Int((delay/GameScene.endlessIIBuildInStagger).rounded()))
+
+            brick.run(.sequence([.wait(forDuration: delay),
+                                 .group([.fadeIn(withDuration: step),
+                                         .moveBy(x: 0, y: -brickHeight, duration: step)])]))
+        }
+        endlessIIBuildInBricks.removeAll()
+
+        // The row-down sound and knock, once per row, so the field arrives with the same
+        // feedback it will give every time it moves for the rest of the run
+        for row in 0...max(0, rows) {
+            run(.sequence([.wait(forDuration: GameScene.endlessIIBuildInStagger*Double(row)),
+                           .run { [weak self] in self?.endlessIIBuildInRowLanded() }]))
+        }
+
+        let total = GameScene.endlessIIBuildInStagger*Double(rows) + step
+        run(.sequence([.wait(forDuration: total),
                        .run { [weak self] in self?.endlessIIBuildingIn = false }]))
         // Cleared on a timer rather than by counting bricks finishing, because the flag only
         // exists to know whether a tap should skip - and once everything has arrived there is
         // nothing left to skip
+    }
+
+    private func endlessIIBuildInRowLanded() {
+        guard endlessIIBuildingIn else { return }
+        if soundsSetting { run(endlessRowDownSound) }
+        if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.4) }
     }
 
     /// Puts the whole field on screen now. Returns whether there was anything to skip, so a
@@ -277,12 +329,34 @@ extension GameScene {
     func finishEndlessIIBuildIn() -> Bool {
         guard endlessIIBuildingIn else { return false }
         endlessIIBuildingIn = false
+        removeAllActions()
+        // The per-row sound and knock are scheduled on the scene, and a skipped build-in
+        // should not carry on tapping out rows that have already arrived
+
+        let landed = endlessIIBuildInBricks
+        endlessIIBuildInBricks.removeAll()
+        for brick in landed where brick.parent != nil {
+            brick.position.y -= brickHeight
+        }
+        // Anything still waiting its turn never started moving, so it is put where it belongs
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            node.removeAllActions()
-            node.alpha = 1
-            node.setScale(1)
+            guard let brick = node as? SKSpriteNode else { return }
+            let unfinished = brick.hasActions()
+            brick.removeAllActions()
+            brick.alpha = 1
+            brick.setScale(1)
+            if unfinished { brick.position.y = self.endlessIIRowCentre(nearest: brick.position.y) }
+            // A brick caught mid-descent is put on the row it was heading for, or it would sit
+            // a fraction of a row out for the rest of the run - and a brick off its row centre
+            // is the one thing the descent and the bottom-row check cannot survive
         }
         return true
+    }
+
+    /// The centre of the row nearest a given y, which is where every brick has to sit.
+    func endlessIIRowCentre(nearest y: CGFloat) -> CGFloat {
+        let rows = ((yBrickOffsetEndless - y)/brickHeight).rounded()
+        return yBrickOffsetEndless - brickHeight*rows
     }
 }
