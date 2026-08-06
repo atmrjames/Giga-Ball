@@ -624,7 +624,9 @@ extension GameScene {
         // Define brick properties
 
         if gameMode == .endlessII {
-            endlessIIFillEmptyRowIfOverdue(brickArray)
+            endlessIIFillEmptyRowIfOverdue(brickArray, reserved: endlessII.skip,
+                                           shapeComing: endlessII.dueAt != nil
+                                               || endlessII.powerUpAt != nil)
         }
         // Checked before the two-row shapes are added, because those count as filling the row
 

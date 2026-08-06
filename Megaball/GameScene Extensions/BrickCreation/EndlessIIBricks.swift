@@ -112,9 +112,14 @@ extension GameScene {
             : stats.endlessModeHeight.max()
     }
 
-    /// Puts the player's best height under the current one.
+    /// Puts the player's best height under the current one, or takes it away if there is none.
     ///
-    /// Reuses the multiplier label, which endless mode hides because it has no multiplier -
+    /// Every place that used to hide this label in endless mode calls this instead. Showing it
+    /// once at level load was not enough: the states show and hide the whole HUD row as play
+    /// starts and as the pause menu closes, and each of those hid it again a third of a second
+    /// after it appeared.
+    ///
+    /// It reuses the multiplier label, which endless mode hides because it has no multiplier -
     /// so this costs no new node and inherits a position that is already right. Smaller and
     /// dimmer than the live figure, because it is the thing you glance at rather than the
     /// thing you are watching.
@@ -123,7 +128,12 @@ extension GameScene {
         // Both endless modes. A best height is the thing a run is measured against, and the
         // original mode wanted it for exactly the same reason - it was only ever here because
         // this is where it was written
-        guard let best = endlessBestHeight, best > 0 else { return }
+        guard let best = endlessBestHeight, best > 0 else {
+            multiplierLabel.isHidden = true
+            return
+        }
+        // No best yet - a first run has nothing to be measured against, and the label goes
+        // back to being the one endless mode does not use
 
         multiplierLabel.isHidden = false
         multiplierLabel.text = "BEST \(best)m"
@@ -697,8 +707,18 @@ extension GameScene {
     /// This is a floor rather than a change to the density curve. The opening is meant to be
     /// sparse and stays sparse; what it cannot be is *absent*, and one brick is the difference
     /// between a row that has to be played and a row that is not there.
-    func endlessIIFillEmptyRowIfOverdue(_ row: [SKNode]) {
+    func endlessIIFillEmptyRowIfOverdue(_ row: [SKNode], reserved: Set<Int> = [],
+                                        shapeComing: Bool = false) {
         guard gameMode == .endlessII else { return }
+
+        guard shapeComing == false else {
+            endlessIIEmptyRowRun = 0
+            return
+        }
+        // A Big or power-up brick is about to be built into this row. It is added after this
+        // runs, so the row looks empty from here and is not - filling it would put an ordinary
+        // brick inside the shape's own footprint, which is what was found underneath a Big
+        // brick after it broke
 
         let bricks = row.compactMap { $0 as? SKSpriteNode }
             .filter { $0.texture != brickNullTexture }
@@ -717,12 +737,17 @@ extension GameScene {
         let margin = columns/6
         let candidates = row.compactMap { $0 as? SKSpriteNode }.filter { brick in
             let column = endlessIICell(of: brick).column
+            guard reserved.contains(column) == false else { return false }
+            // A cell kept clear is kept clear. These are the gap a shape from the next row
+            // comes down into, or a spinner's clearance - a brick here is either buried
+            // inside something else or in the way of something that turns
             return column >= margin && column < columns - margin
         }
 
-        guard let chosen = candidates.randomElement() ?? row.first as? SKSpriteNode else {
-            return
-        }
+        guard let chosen = candidates.randomElement()
+                ?? row.compactMap({ $0 as? SKSpriteNode })
+                      .first(where: { reserved.contains(endlessIICell(of: $0).column) == false })
+        else { return }
         chosen.texture = endlessIIBrickTexture()
         if chosen.texture == brickNullTexture { chosen.texture = brickNormalTexture }
         // The mix this height would have produced, and an ordinary brick if that came up empty

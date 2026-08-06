@@ -66,6 +66,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// `ball` stays the ball the rest of the game holds; these sit beside it. See
 	/// EndlessIIMultiBall for why it is done that way round.
 	var endlessIIExtraBalls: [SKSpriteNode] = []
+	/// Every ball the sticky paddle is holding, oldest first - see EndlessIIStickyPaddle.
+	var endlessIIHeldBalls: [SKSpriteNode] = []
+	/// Where each held ball sits across the paddle, so it rides the paddle rather than
+	/// waiting where it landed.
+	var endlessIIHeldOffsets: [CGFloat] = []
+	/// One direction marker per extra ball, while the resume countdown runs.
+	var endlessIIExtraDirectionMarkers: [SKSpriteNode] = []
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -657,6 +664,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIBuildInBricks: [SKSpriteNode] = []
 	/// Whether the opening field is still waiting for a clear screen to arrive on.
 	var endlessIIBuildInWaiting = false
+	/// Whether the splash screen has been up while the field waited to build in.
+	var endlessIIBuildInSawSplash = false
+	/// When the field may start building in, once the splash has reported itself gone.
+	var endlessIIBuildInReadyAt: TimeInterval?
 	var endlessIIStuckTimer: TimeInterval = 0
 	var endlessIISetRowQueue: [String] = []
 	// The rows of a designed pattern still to come, one per generated row
@@ -1073,6 +1084,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleLaser.isHidden = true
 		paddleSticky.isHidden = true
 		directionMarker.isHidden = true
+		endlessIIHideExtraDirectionMarkers()
         // Hide ball and paddle
 		
 		screenBlockArray = [topScreenBlock, sideScreenBlockLeft, sideScreenBlockRight]
@@ -1550,6 +1562,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // it. The pause after losing a ball is there to be felt, but a player who does not
         // want it should not have to spend the skip and the launch on the same tap
 
+        if endlessIITapLaunchesHeldBall && touchBeganWhilstPlaying && paddleMoved == false && gameState.currentState is Playing {
+            endlessIILaunchHeldBall()
+            touchBeganWhilstPlaying = false
+            return
+        }
+        // The sticky paddle may be holding several balls, and they leave in the order they
+        // were caught. Only once the queue is empty does a tap belong to the first ball again
+
         if ballIsOnPaddle && touchBeganWhilstPlaying && paddleMoved == false && gameState.currentState is Playing {
             releaseBall()
         }
@@ -1575,6 +1595,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // The spent life was flying to meet the ball, so it arrives now too
     }
     
+    /// Spends one of the sticky paddle's catches, and puts it away once they run out.
+    ///
+    /// Every launch off a sticky paddle costs one, whichever ball it was - so with Multi-Ball
+    /// a set of catches is spent across the balls rather than being renewed by each of them.
+    func spendStickyPaddleCatch() {
+        guard stickyPaddleCatches != 0 else { return }
+
+        stickyPaddleCatches -= 1
+        let iconBarLength: CGFloat = (CGFloat(stickyPaddleCatches)/CGFloat(max(1, stickyPaddleCatchesTotal)))
+        stickyPaddleIconBar.run(SKAction.scaleX(to: iconBarLength, duration: 0.05))
+        // Size icon timer based on number of catches remaining
+        if paddleTexture == retroPaddle && endlessIIHasHeldExtras == false {
+            paddleRetroStickyTexture.isHidden = true
+        }
+        // The paddle keeps its sticky look while it is still holding something
+
+        if stickyPaddleCatches == 0 {
+            paddleSticky.isHidden = true
+            paddleRetroStickyTexture.isHidden = true
+            stickyPaddleCatchesTotal = 0
+            stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
+            stickyPaddleIconBar.isHidden = true
+            stickyPaddleIconBar.xScale = 0
+            // Sticky paddle reset
+        }
+    }
+
     func releaseBall() {
         
         if ball.hasActions() {
@@ -1596,25 +1643,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		ballRelativePositionOnPaddle = 0
         
-        if stickyPaddleCatches != 0 {
-            stickyPaddleCatches-=1
-			let iconBarLength: CGFloat = (CGFloat(stickyPaddleCatches)/CGFloat(stickyPaddleCatchesTotal))
-			stickyPaddleIconBar.run(SKAction.scaleX(to: iconBarLength, duration: 0.05))
-			// Size icon timer based on number of catches remaining
-			if paddleTexture == retroPaddle {
-				paddleRetroStickyTexture.isHidden = true
-			}
-			// show retro sticky paddle
-            if stickyPaddleCatches == 0 {
-				paddleSticky.isHidden = true
-				paddleRetroStickyTexture.isHidden = true
-				stickyPaddleCatchesTotal = 0
-				stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
-				stickyPaddleIconBar.isHidden = true
-				stickyPaddleIconBar.xScale = 0
-				// Sticky paddle reset
-            }
-        }
+        spendStickyPaddleCatch()
+        endlessIIReleasedFromPaddle(ball)
+        // Out of the sticky queue, so the next tap belongs to whatever was caught after it
 
         ballPositionOnPaddle = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
         // Define the relative position between the ball and paddle
@@ -1680,7 +1711,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpRings.update(with: activePowerUpEntries())
 			tickEndlessIIBricks(currentTime)
 			tickEndlessIIExtraBalls()
-			tickEndlessIIBuildIn()
+			tickEndlessIIHeldBalls()
+			tickEndlessIIBuildIn(currentTime)
 		}
 		
 		if gameState.currentState is Paused {
@@ -2654,6 +2686,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return
 		}
 
+		if ballIsUnderPaddle(ball) {
+			return
+		}
+		// A contact reported while the ball's centre is below the paddle's is not a landing.
+		// The paddle is taken out of a ball's way while it is underneath (see
+		// `refreshPaddleReachability`) and handed back the moment it is not, and a ball still
+		// overlapping the paddle when that happens is reported as a fresh hit - a bounce off
+		// nothing, in the empty space between the paddle and the field. One ball rarely
+		// lingers there; four do it constantly
+
         if hapticsSetting {
 			lightHaptic.impactOccurred()
 		}
@@ -2701,11 +2743,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		
-		if isExtra == false && ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && collisionPercentage < 1.0 && collisionPercentage > -1.0 && stickyPaddleCatches != 0 {
+		let inTheStickyBand = ball.position.x > paddleLeftEdgePosition + ball.size.width/3
+			&& ball.position.x < paddleRightEdgePosition - ball.size.width/3
+			&& collisionPercentage < 1.0 && collisionPercentage > -1.0
+			&& stickyPaddleCatches != 0
+
+		if isExtra && inTheStickyBand && endlessIICatchExtraBall(ball) {
+			return
+		}
+		// An extra ball is caught and held like any other. It waits its turn in the queue and
+		// leaves on its own tap - a paddle that caught the first ball and bounced the rest
+		// would be a power-up that stopped working the moment Multi-Ball was collected
+
+		if isExtra == false && inTheStickyBand {
 		// Catch the ball
 		// Only apply if the ball hits the centre of the paddle.
-		// Never an extra one: the paddle holds a ball and launches it, and holding two would
-		// need a launch each. Sticky is per-ball state that phase 7 does not build (§5.5)
 						
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
@@ -2719,6 +2771,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 			paddleMoved = true
 			ball.position.y = ballStartingPositionY
+			endlessIIFirstBallWasCaught()
+			// Takes its place in the queue behind anything caught before it
 			invisibleBrickFlash()
 			
 			if musicSetting {
@@ -4339,17 +4393,26 @@ laserTimer?.invalidate()
     }
 	
 	func ballPhysicsBodySet() {
-		if ball.texture == gigaBallTexture {
-		// Giga-Ball power-up
-			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
-			// Reset undestructi-ball power-up
-			ball.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
-			// Set giga-ball power-up
-		} else {
-			ball.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
-			ball.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
-			// Set ball physics body
+		for subject in endlessIIBallsInPlay {
+			guard let body = subject.physicsBody else { continue }
+
+			if ball.texture == gigaBallTexture {
+			// Giga-Ball power-up
+				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				// Reset undestructi-ball power-up
+				body.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				// Set giga-ball power-up
+			} else {
+				body.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				// Set ball physics body
+			}
 		}
+		// Every ball in play, from the first ball's state. A power-up is collected by the
+		// paddle and belongs to the run rather than to whichever ball happened to knock it
+		// down - so all four wear the Giga-Ball texture, and until this loop existed only one
+		// of them actually passed through anything
+
 		refreshPaddleReachability()
 		// Applied last, because everything above hands the paddle back
 	}
@@ -6409,11 +6472,17 @@ laserTimer?.invalidate()
         enumerateChildNodes(withName: PaddleCategoryName) { (node, _) in
             node.isPaused = true
         }
+        endlessIIRecordExtraBallVelocities()
+        // Before they are zeroed below, and only where they have not been recorded already -
+        // this runs on the way into the pause menu and again on the way out of it
+
         enumerateChildNodes(withName: BallCategoryName) { (node, _) in
-            self.ball.physicsBody!.velocity.dx = 0
-            self.ball.physicsBody!.velocity.dy = 0
+            node.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
             node.isPaused = true
         }
+        // Each ball's own body. This zeroed the first ball's velocity once per ball in play
+        // and left the others travelling, so an extra ball carried on through the resume
+        // countdown while the one being counted in stood still
         enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
             node.isPaused = true
         }
@@ -6484,6 +6553,11 @@ laserTimer?.invalidate()
     
             directionMarker.isHidden = false
             // Show ball direction marker
+
+            endlessIIShowExtraDirectionMarkers()
+            // Every ball gets one, after the first ball's texture has been chosen - the extras
+            // wear the same one. A countdown that points at one of four balls says nothing
+            // about where the other three are going
         }
     }
     // Pause all nodes
@@ -6498,6 +6572,7 @@ laserTimer?.invalidate()
 		pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
 		directionMarker.isHidden = true
+		endlessIIHideExtraDirectionMarkers()
 		isPaused = false
 				
 		if ballIsOnPaddle == false && pauseBallVelocityX == 0 && pauseBallVelocityY == 0 {

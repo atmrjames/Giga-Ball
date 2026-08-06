@@ -172,11 +172,15 @@ extension GameScene {
             // Left empty for the cell below the spinner the next row will place
         }
 
-        if Int.random(in: 1...100) <= GameScene.endlessIIPowerUpBrickChance {
+        if endlessIIPowerUpBricksInPlay.isEmpty,
+           Int.random(in: 1...100) <= GameScene.endlessIIPowerUpBrickChance {
             let column = Int.random(in: 0..<max(1, numberOfBrickColumns))
             endlessIIPendingPowerUpColumn = column
             return ([column], nil, nil, nil)
-            // Left empty for the bottom half of the power-up brick the next row will build
+            // Left empty for the bottom half of the power-up brick the next row will build.
+            // Not even reserved while one is still in play - the row that reserves is a row
+            // with a hole in it, and holding one open for a brick that will not be built is
+            // worse than not offering one
         }
 
         let bigChance = endlessIIPhase == .giants ? 90 : GameScene.endlessIIBigChance

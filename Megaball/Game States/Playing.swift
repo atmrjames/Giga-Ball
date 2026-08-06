@@ -79,8 +79,10 @@ class Playing: GKState {
             self.scene.pauseButton.isHidden = false
             self.scene.setLivesRowHidden(false)
             if self.scene.endlessMode {
-                self.scene.multiplierLabel.isHidden = true
+                self.scene.showEndlessIIBest()
             }
+            // The multiplier has no meaning in endless mode, so the label carries the best
+            // height instead - and hides itself when there is not one yet
         })
         // Show game labels
         

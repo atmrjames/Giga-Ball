@@ -97,6 +97,10 @@ extension GameScene {
 
     /// Builds the power-up brick a row owes, ready to animate in with the rest of the row.
     func endlessIIMakePowerUpBrick(column: Int, rowY: CGFloat) -> SKSpriteNode? {
+        guard endlessIIPowerUpBricksInPlay.isEmpty else { return nil }
+        // One at a time. Two of these on screen is two shots you have to not take, which is
+        // most of the field for as long as they take to descend - and a second one arriving
+        // while the first is still in the way turns a decision into a siege
         guard let index = endlessIIPowerUpForBrick() else { return nil }
         guard totalStatsArray.first?.powerUpUnlockedArray.indices.contains(index) == true,
               totalStatsArray[0].powerUpUnlockedArray[index] else { return nil }
@@ -119,7 +123,7 @@ extension GameScene {
                                                     center: plan.bodyCentre))
         addChild(brick)
 
-        let icon = SKSpriteNode(texture: SKTexture(image: LevelPackSetup().powerUpImageArray[index]))
+        let icon = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         icon.size = CGSize(width: plan.size.width*0.78, height: plan.size.width*0.78)
         icon.position = CGPoint(x: 0, y: -plan.cell.height/2)
         icon.zPosition = 1
@@ -138,23 +142,43 @@ extension GameScene {
     func endlessIITriggerPowerUpBrick(_ brick: SKSpriteNode) -> Bool {
         guard gameMode == .endlessII, let index = brick.endlessIIPowerUpIndex else { return false }
 
-        let carrier = SKSpriteNode(texture: SKTexture(image: LevelPackSetup().powerUpImageArray[index]))
+        let carrier = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         carrier.position = brick.position
+        carrier.alpha = 0
+        addChild(carrier)
+        powerUpsOnScreen += 1
+        // In the scene, invisible, and counted. `applyPowerUp` runs the collection animation
+        // on the node and decrements the on-screen count - both of which need a node that is
+        // actually in the scene and a count that was incremented when it appeared. A carrier
+        // held outside the scene ran no actions, so the completion that clears the mystery
+        // power-up never fired
+
         applyPowerUp(node: carrier)
         // Handed to the same method a caught power-up goes through, so every effect, timer,
-        // icon and conflict rule is the one that already exists. The carrier is never in the
-        // scene - it is only there to say which power-up this was
+        // icon and conflict rule is the one that already exists
 
-        totalStatsArray[0].powerupsCollected[index] += 1
         totalStatsArray[0].powerupsGenerated[index] += 1
+        // Collected is counted by `applyPowerUp` itself, in whichever case it lands on
 
         endlessIIShowPowerUpBrickBurst(at: brick.position, index: index)
         brick.removeFromParent()
         return true
     }
 
+    /// The scene's own texture for a power-up.
+    ///
+    /// `applyPowerUp` decides what to do by comparing the sprite's texture against the ones the
+    /// scene holds, and two textures built from the same image are not the same texture. Built
+    /// from the image, the brick set off nothing at all: it broke, it was counted, and the
+    /// power-up it was holding never happened.
+    func endlessIIPowerUpTexture(_ index: Int) -> SKTexture {
+        powerUpTextureArray.indices.contains(index)
+            ? powerUpTextureArray[index]
+            : SKTexture(image: LevelPackSetup().powerUpImageArray[index])
+    }
+
     private func endlessIIShowPowerUpBrickBurst(at point: CGPoint, index: Int) {
-        let icon = SKSpriteNode(texture: SKTexture(image: LevelPackSetup().powerUpImageArray[index]))
+        let icon = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         icon.size = CGSize(width: brickWidth*0.8, height: brickWidth*0.8)
         icon.position = point
         icon.zPosition = 4

@@ -17,9 +17,11 @@
 		1AF17000000000A1 /* EndlessIIClusters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A0 /* EndlessIIClusters.swift */; };
 		1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000094 /* EndlessIIBallsTests.swift */; };
 		1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000092 /* EndlessIIMultiBall.swift */; };
+		1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000096 /* EndlessIIStickyPaddle.swift */; };
 		1AF1700000000091 /* EndlessIIBalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000090 /* EndlessIIBalls.swift */; };
 		1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000080 /* EndlessIINeighbourTests.swift */; };
 		1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000072 /* BrickTypeCatalogueTests.swift */; };
+		1AF1700000000099 /* EndlessIIPlayTestFixesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */; };
 		1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000070 /* GameSceneLayoutTests.swift */; };
 		1AF170000000006F /* GameBackgroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006E /* GameBackgroundTests.swift */; };
 		1AF170000000006D /* BrickTypesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006C /* BrickTypesViewController.swift */; };
@@ -313,9 +315,11 @@
 		1AF17000000000A0 /* EndlessIIClusters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusters.swift; sourceTree = "<group>"; };
 		1AF1700000000094 /* EndlessIIBallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBallsTests.swift; sourceTree = "<group>"; };
 		1AF1700000000092 /* EndlessIIMultiBall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIMultiBall.swift; sourceTree = "<group>"; };
+		1AF1700000000096 /* EndlessIIStickyPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStickyPaddle.swift; sourceTree = "<group>"; };
 		1AF1700000000090 /* EndlessIIBalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBalls.swift; sourceTree = "<group>"; };
 		1AF1700000000080 /* EndlessIINeighbourTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIINeighbourTests.swift; sourceTree = "<group>"; };
 		1AF1700000000072 /* BrickTypeCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeCatalogueTests.swift; sourceTree = "<group>"; };
+		1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPlayTestFixesTests.swift; sourceTree = "<group>"; };
 		1AF1700000000070 /* GameSceneLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayoutTests.swift; sourceTree = "<group>"; };
 		1AF170000000006E /* GameBackgroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackgroundTests.swift; sourceTree = "<group>"; };
 		1AF170000000006C /* BrickTypesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypesViewController.swift; sourceTree = "<group>"; };
@@ -633,6 +637,7 @@
 				1AF1700000000094 /* EndlessIIBallsTests.swift */,
 				1AF1700000000080 /* EndlessIINeighbourTests.swift */,
 				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
+				1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */,
 				1AF1700000000070 /* GameSceneLayoutTests.swift */,
 				1AF170000000006E /* GameBackgroundTests.swift */,
 				1AF1100000000000 /* LevelPackSetupTests.swift */,
@@ -1076,6 +1081,7 @@
 			children = (
 				1AF17000000000C0 /* BrickSeamBounce.swift */,
 				1AF1700000000092 /* EndlessIIMultiBall.swift */,
+				1AF1700000000096 /* EndlessIIStickyPaddle.swift */,
 				1ACFFDB724752D6300AF2C43 /* PowerUpAllocation.swift */,
 				1A5BA9B6242707590019FDBB /* BrickCreation */,
 				1AE957492324ECF900E5618A /* Levels */,
@@ -1378,6 +1384,7 @@
 				1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */,
 				1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */,
 				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
+				1AF1700000000099 /* EndlessIIPlayTestFixesTests.swift in Sources */,
 				1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */,
 				1AF170000000006F /* GameBackgroundTests.swift in Sources */,
 				1AF1200000000000 /* LevelPackSetupTests.swift in Sources */,
@@ -1411,6 +1418,7 @@
 				1AF17000000000C1 /* BrickSeamBounce.swift in Sources */,
 				1AF17000000000A1 /* EndlessIIClusters.swift in Sources */,
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,
+				1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */,
 				1AF1700000000091 /* EndlessIIBalls.swift in Sources */,
 				1AF170000000006D /* BrickTypesViewController.swift in Sources */,
 				1AF170000000006B /* BrickTypeIcons.swift in Sources */,

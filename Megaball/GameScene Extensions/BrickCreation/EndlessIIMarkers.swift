@@ -288,11 +288,42 @@ extension GameScene {
     /// up *after* the scene exists. A flag checked once is right for one of those orders and
     /// wrong for the other, where asking each frame is right for both - and costs a boolean
     /// test in a method that already runs every frame.
-    func tickEndlessIIBuildIn() {
-        guard endlessIIBuildInWaiting, splashScreenIsShowing == false else { return }
+    func tickEndlessIIBuildIn(_ currentTime: TimeInterval) {
+        guard endlessIIBuildInWaiting else { return }
+
+        if splashScreenIsShowing {
+            endlessIIBuildInSawSplash = true
+            endlessIIBuildInReadyAt = nil
+            return
+        }
+
+        guard endlessIIBuildInSawSplash else {
+            // Reached from the menu, with nothing in front of the scene. Nothing to wait for
+            endlessIIBuildInWaiting = false
+            runEndlessIIBuildIn()
+            return
+        }
+
+        // The splash reports itself gone at the moment it *starts* going: on the resume path
+        // it clears the flag and then animates out over the top of the scene, and on any path
+        // the view is still being taken down afterwards. So the field waits a beat longer
+        // than the flag does, rather than playing its opening behind a screen that is still
+        // there
+        let ready = endlessIIBuildInReadyAt ?? (currentTime + GameScene.endlessIIBuildInSplashDelay)
+        endlessIIBuildInReadyAt = ready
+        guard currentTime >= ready else { return }
+
         endlessIIBuildInWaiting = false
+        endlessIIBuildInReadyAt = nil
         runEndlessIIBuildIn()
     }
+
+    /// How long after the splash screen says it has gone the opening field waits.
+    ///
+    /// Long enough to cover the splash's own fade and the frame or two it takes to come off
+    /// the window. An opening animation is worth nothing if it plays behind something else,
+    /// and worth the same as ever if it starts a moment late - so this errs long.
+    static let endlessIIBuildInSplashDelay: TimeInterval = 2.0
 
     func runEndlessIIBuildIn() {
         guard endlessIIBuildInBricks.isEmpty == false else { return }

@@ -89,8 +89,10 @@ class Paused: GKState {
         scene.pauseButton.isHidden = false
         scene.setLivesRowHidden(false)
         if scene.endlessMode {
-            scene.multiplierLabel.isHidden = true
+            scene.showEndlessIIBest()
         }
+        // The multiplier has no meaning in endless mode, so the label carries the best
+        // height instead - and hides itself when there is not one yet
         
         scene.powerUpIconReset(sender: "Pause")
         // Reset power-up icons locked icon if power-up locked

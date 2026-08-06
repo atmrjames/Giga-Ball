@@ -66,6 +66,9 @@ extension GameScene {
         extra.physicsBody = endlessIIBallBody(radius: ballSize/2)
         extra.physicsBody?.velocity = heading
         endlessIIExtraBalls.append(extra)
+        ballPhysicsBodySet()
+        // A ball added while Giga-Ball is running is a Giga-Ball too. Its body is built plain
+        // above, and this is what puts whatever the run is currently wearing onto it
 
         // Arriving out of the ball it came from, so the new one is seen to be new rather than
         // simply appearing in the field
@@ -113,6 +116,14 @@ extension GameScene {
     /// the sound, the save and the reset are all for the last ball only.
     func endlessIIBallWasLost(_ lost: SKSpriteNode) -> Bool {
         guard gameMode == .endlessII else { return false }
+
+        if lost !== ball, lost.parent == nil || endlessIIExtraBalls.contains(where: { $0 === lost }) == false {
+            return true
+        }
+        // Already dealt with. Several balls reach the bottom within a frame or two of each
+        // other, and a ball that has been retired can still have a contact reported against
+        // it - counting that as another loss spent balls that were never in play
+
         guard EndlessIIBalls.losing(oneOf: endlessIIBallsInPlay.count) == .carryOn else {
             // The last one. Whichever node it was, the primary ball is the one the rest of
             // the game will reset, so anything still lying around goes with it
@@ -123,9 +134,14 @@ extension GameScene {
         if lost === ball {
             // The one the rest of the game holds. It cannot simply be removed, so a survivor
             // hands over where it is and how it is travelling, and steps out of the way
-            guard let survivor = endlessIIExtraBalls.first(where: { $0.parent != nil }) else {
+            guard let survivor = endlessIIExtraBalls
+                .filter({ $0.parent != nil })
+                .max(by: { $0.position.y < $1.position.y }) else {
                 return false
             }
+            // The highest one, rather than the first added. When two balls reach the bottom
+            // together the other one is also about to be lost, and handing the first ball its
+            // position put it on the floor - a ball that arrived already falling out of play
             ball.position = survivor.position
             ball.physicsBody?.velocity = survivor.physicsBody?.velocity ?? .zero
             retire(survivor)
@@ -143,6 +159,7 @@ extension GameScene {
 
     private func retire(_ extra: SKSpriteNode) {
         endlessIIExtraBalls.removeAll { $0 === extra }
+        endlessIIReleasedFromPaddle(extra)
         extra.physicsBody = nil
         extra.run(.sequence([.group([.scale(to: 0, duration: 0.1),
                                      .fadeOut(withDuration: 0.1)]),
@@ -157,7 +174,56 @@ extension GameScene {
         }
         endlessIIExtraBalls.removeAll()
         pauseExtraBallVelocities.removeAll()
+        endlessIIClearHeldBalls()
+        // Nothing left for the paddle to be holding
         // Or the next set of balls would be handed the last set's headings on the first pause
+    }
+
+    // MARK: - Pausing
+
+    /// Records every extra ball's heading, unless it has been recorded already.
+    ///
+    /// Pausing zeroes the velocities on the field, so this has to happen first. It runs on
+    /// both sides of the pause menu - going in, and again on the way out while the countdown
+    /// holds the field still - and the second run must not overwrite the first with the zeroes
+    /// the first one caused.
+    func endlessIIRecordExtraBallVelocities() {
+        guard gameMode == .endlessII else { return }
+        let inPlay = endlessIIExtraBalls.filter { $0.parent != nil }
+        guard inPlay.isEmpty == false else { return }
+        guard pauseExtraBallVelocities.count != inPlay.count else { return }
+
+        pauseExtraBallVelocities = inPlay.map { $0.physicsBody?.velocity ?? .zero }
+    }
+
+    /// Shows which way each extra ball is about to go, while the countdown runs.
+    ///
+    /// The scene owns one direction marker, for the one ball it was built around. These are
+    /// made as they are needed and taken away with it - a marker on the first ball alone tells
+    /// a player being counted back in about a quarter of what is on the field.
+    func endlessIIShowExtraDirectionMarkers() {
+        guard gameMode == .endlessII else { return }
+        endlessIIHideExtraDirectionMarkers()
+
+        for (index, extra) in endlessIIExtraBalls.enumerated() where extra.parent != nil {
+            let heading = pauseExtraBallVelocities.indices.contains(index)
+                ? pauseExtraBallVelocities[index]
+                : extra.physicsBody?.velocity ?? .zero
+            guard heading.dx != 0 || heading.dy != 0 else { continue }
+
+            let marker = SKSpriteNode(texture: directionMarker.texture)
+            marker.size = CGSize(width: extra.size.width*3.5, height: extra.size.height*3.5)
+            marker.position = extra.position
+            marker.zRotation = atan2(heading.dy, heading.dx)
+            marker.zPosition = directionMarker.zPosition
+            addChild(marker)
+            endlessIIExtraDirectionMarkers.append(marker)
+        }
+    }
+
+    func endlessIIHideExtraDirectionMarkers() {
+        endlessIIExtraDirectionMarkers.forEach { $0.removeFromParent() }
+        endlessIIExtraDirectionMarkers.removeAll()
     }
 
     // MARK: - Saving
@@ -214,6 +280,10 @@ extension GameScene {
         for extra in endlessIIExtraBalls {
             extra.texture = ball.texture
             extra.size = ball.size
+            extra.setScale(ball.xScale)
+            // The scale as well as the size: Expand Ball scales the node rather than resizing
+            // it, and a physics body scales with its node - so an extra that copied only the
+            // size was drawn and felt smaller than the ball beside it
             // The ball's own look and size are shared too: a Giga-Ball or an Expand Ball that
             // only applied to one of four would read as three balls that had gone wrong
 
