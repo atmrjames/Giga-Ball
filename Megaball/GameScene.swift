@@ -1184,7 +1184,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		powerUpRings.iconSize = iconSize
 		powerUpRings.spacing = iconSize*0.4
-		powerUpRings.position = CGPoint(x: 0, y: powerUpTray.position.y)
+		powerUpRings.position = CGPoint(x: 0,
+										y: pauseButton.position.y - pauseButton.size.height/2
+											- labelSpacing/2 - powerUpRings.containerHeight/2)
+		// Placed by its own height rather than borrowed from the tray's. The tray is hidden
+		// in this mode and a different size, and with the bar now sized to the rings there is
+		// no slack left to absorb the difference
 		powerUpRings.zPosition = 3
 		powerUpRings.isHidden = gameMode != .endlessII
 		if powerUpRings.parent == nil { addChild(powerUpRings) }
@@ -4166,11 +4171,26 @@ laserTimer?.invalidate()
 	// Play height : play width. Measured from the shipping build and held constant on
 	// every device so the game plays identically across a player's devices.
 	static let hudUnits: CGFloat = 5.5
+	/// The same bar in Endless 2.0, which does not carry the eight-slot tray.
+	///
+	/// The rings show only what is running, and carry their timers around the icons rather
+	/// than on a bar beneath them, so the row costs a little over an icon's height instead of
+	/// an icon plus a bar plus the gap between. The height that buys goes to the playfield:
+	/// the play area holds a fixed ratio, so a shorter bar makes it both taller and wider,
+	/// and the side borders shrink to match.
+	static let endlessIIHudUnits: CGFloat = 4.3
 	// The HUD row (2 units), the power-up tray (3 units) and the spacing between them,
 	// in layout units. Must cover everything stacked below the safe area inset, or the
 	// tray overhangs into the playfield
 
 	static let hudTopClearance: CGFloat = 20
+	/// The narrowest each side border may become.
+	///
+	/// Deliberately smaller than the border any current device ends up with, so this only
+	/// ever acts as a floor and never takes width away from the play area. It exists because
+	/// the side blocks are the walls the ball bounces off, and a wall of zero width has no
+	/// physics body at all.
+	static let minimumSideBorder: CGFloat = 3
 	// Clearance from the physical top edge to the HUD, in points, used instead of
 	// safeAreaInsets.top.
 	//
@@ -4459,9 +4479,15 @@ laserTimer?.invalidate()
 		let availableHeight = frame.size.height - GameScene.hudTopClearance - insets.bottom
 		let availableWidth = frame.size.width - insets.left - insets.right
 
-		gameWidth = (availableHeight / (1 + GameScene.hudUnits / (CGFloat(22) * GameScene.playRatio))) / GameScene.playRatio
-		gameWidth = min(gameWidth, availableWidth)
+		let hudUnits = gameMode == .endlessII ? GameScene.endlessIIHudUnits : GameScene.hudUnits
+		gameWidth = (availableHeight / (1 + hudUnits / (CGFloat(22) * GameScene.playRatio))) / GameScene.playRatio
+		gameWidth = min(gameWidth, availableWidth - GameScene.minimumSideBorder*2)
 		// Play area sized from the space actually available, holding a fixed ratio.
+		//
+		// The border is not decoration - the side blocks are the walls the ball bounces off,
+		// and a wall of zero width has no physics body at all. This used to clamp to the
+		// full available width, which was survivable only because the height-derived figure
+		// never reached it; a shorter HUD bar reaches it immediately.
 		// Clamped to width so short, wide layouts fall back to taller borders rather
 		// than a reshaped playfield. Solved in closed form because the top bar height
 		// depends on layoutUnit, which depends on gameWidth, which depends on it
@@ -4478,7 +4504,7 @@ laserTimer?.invalidate()
 		pauseButtonSize = layoutUnit*2
 		iconSize = layoutUnit*1.5
 		fontSize = 16
-		screenBlockTopHeight = GameScene.hudTopClearance + layoutUnit*GameScene.hudUnits
+		screenBlockTopHeight = GameScene.hudTopClearance + layoutUnit*hudUnits
 		// The bar is the HUD and power-up tray, sitting below the real inset rather than
 		// a fixed multiple guessed from screen height
 

@@ -57,6 +57,9 @@ final class PowerUpRingHUD: SKNode {
     /// The container never narrows past this, so an empty one still reads as the place
     /// power-ups appear rather than as nothing at all.
     static let minimumSlots = 3
+
+    /// How tall the container is, for whoever has to leave room for it.
+    var containerHeight: CGFloat { iconSize + PowerUpRingHUD.padding*2 }
     private static let ringWidth: CGFloat = 3
     private static let padding: CGFloat = 8
     private static let appearDuration: TimeInterval = 0.2
