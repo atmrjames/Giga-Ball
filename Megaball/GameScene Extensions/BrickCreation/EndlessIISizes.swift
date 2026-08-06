@@ -89,23 +89,33 @@ extension GameScene {
         // at all - the comment said one thing and the arithmetic did another
     }
 
-    /// How much of each quarter cell the brick actually fills.
+    /// The line the field shows between two ordinary bricks, in points.
     ///
-    /// The gap between the four is what makes them read as four bricks rather than one brick
-    /// with hairlines scratched across it. It has to come out of the brick rather than being
-    /// added around it, or the set would no longer fill its cell.
-    static let endlessIITinyFill: CGFloat = 0.88
+    /// The brick artwork carries its own border on every edge, so two bricks side by side show
+    /// two of them and that is the whole of the ordinary field's spacing. Measured off the
+    /// artwork - twenty-eight pixels tall with a pixel of border - so it holds at any cell
+    /// size.
+    var endlessIIBrickSeam: CGFloat { brickHeight/14 }
 
-    /// How far each quarter sits from the centre of its cell.
+    /// The extra gap left around each quarter of a Tiny set, in points.
     ///
-    /// Not a quarter of a cell. Placing them there leaves the gap down the middle twice the
-    /// width of the gaps at the edges, because the middle gap is made of two half-gaps and
-    /// the outer ones are made of one each - which reads as a set that has been nudged apart
-    /// rather than one that was laid out. Worked out from the fill so all three gaps match.
-    static var endlessIITinyOffset: CGFloat {
-        let gap = (1 - endlessIITinyFill)/3
-        return 0.5 - gap - endlessIITinyFill/4
-    }
+    /// Half the seam, because a Tiny brick is drawn at half scale and so is the border in its
+    /// own artwork - two of them come to half of what two ordinary bricks show, and this makes
+    /// up the difference. The result is that a Tiny set is spaced exactly like the field around
+    /// it.
+    ///
+    /// It used to be a fraction of a *cell*, applied to both axes. A cell is twice as wide as
+    /// it is tall, so the same fraction meant the vertical gaps came out at half the horizontal
+    /// ones - which is what made a set of four look nudged apart rather than laid out, and made
+    /// the gaps down the middle the most obvious thing about a Tiny brick.
+    var endlessIITinyGap: CGFloat { endlessIIBrickSeam/2 }
+
+    /// How far each quarter sits from the centre of its cell, as a fraction of the cell.
+    ///
+    /// Exactly a quarter, on both axes, so the four sit on the quarter-cell centres the way
+    /// ordinary bricks sit on cell centres. The gap comes out of each quarter's size instead,
+    /// which keeps every gap in the set the same and matches the gap to the next cell along.
+    static let endlessIITinyOffset: CGFloat = 0.25
 
     // MARK: - Big
 
@@ -234,8 +244,11 @@ extension GameScene {
     /// whatever the caller already did to it - its texture, its colour - carries into at
     /// least one of them.
     func makeTiny(_ brick: SKSpriteNode) -> [SKSpriteNode] {
-        let quarter = CGSize(width: brickWidth/2*GameScene.endlessIITinyFill,
-                             height: brickHeight/2*GameScene.endlessIITinyFill)
+        let gap = endlessIITinyGap
+        let quarter = CGSize(width: brickWidth/2 - gap, height: brickHeight/2 - gap)
+        // Taken off the size rather than added around the position, so the four still fill
+        // their cell and the gap at the cell's edge is half of the one down its middle - which
+        // adds up to the same gap wherever two bricks meet
         let home = brick.position
         var quarters: [SKSpriteNode] = []
 

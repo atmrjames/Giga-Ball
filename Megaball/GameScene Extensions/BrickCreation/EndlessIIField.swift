@@ -118,13 +118,19 @@ extension GameScene {
         (fill[cell] ?? 0) >= GameScene.endlessIIBlockingFill
     }
 
-    /// Every cell that currently holds a brick.
+    /// Every brick in every cell that holds one.
     ///
     /// A Big brick claims all four of its cells, so a neighbour search finds it from any
     /// side rather than only from the one its node happens to sit on.
-    func endlessIIOccupancy() -> [EndlessIICell: SKSpriteNode] {
+    ///
+    /// A list per cell rather than one brick. Four Tiny bricks share a cell, and while this
+    /// returned a single brick the other three were invisible to everything that asked - the
+    /// last one enumerated answered for the cell and the rest did not exist. That is what let
+    /// a Moving Tiny brick slide through its own neighbours, and what stopped an Exploding
+    /// one taking the Tiny bricks beside it.
+    func endlessIIOccupancy() -> [EndlessIICell: [SKSpriteNode]] {
         let geometry = endlessIIGeometry
-        var occupied: [EndlessIICell: SKSpriteNode] = [:]
+        var occupied: [EndlessIICell: [SKSpriteNode]] = [:]
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
@@ -133,11 +139,23 @@ extension GameScene {
             for row in 0..<size.rows {
                 for column in 0..<size.columns {
                     occupied[EndlessIICell(column: origin.column + column,
-                                           row: origin.row + row)] = brick
+                                           row: origin.row + row), default: []].append(brick)
                 }
             }
         }
         return occupied
+    }
+
+    /// Every brick currently in the scene, once each.
+    ///
+    /// The occupancy map lists a Big brick in each of its four cells, so reading it for a
+    /// per-brick pass would visit that one four times.
+    func endlessIIBricks() -> [SKSpriteNode] {
+        var found: [SKSpriteNode] = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let brick = node as? SKSpriteNode { found.append(brick) }
+        }
+        return found
     }
 
     /// The cell a brick's node sits in.

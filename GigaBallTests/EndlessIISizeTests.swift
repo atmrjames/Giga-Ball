@@ -110,24 +110,36 @@ extension EndlessIISizeTests {
         }
     }
 
-    func testTheThreeGapsAcrossATinySetAreEqual() {
-        // Placed at a flat quarter of a cell, the gap down the middle comes out twice the
-        // width of the ones at the edges - it is made of two half-gaps where they are made of
-        // one each - and the set reads as nudged apart rather than laid out.
-        let fill = GameScene.endlessIITinyFill
-        let offset = GameScene.endlessIITinyOffset
-        let halfBrick = fill/4
-
-        let outerGap = 0.5 - (offset + halfBrick)
-        let innerGap = (offset - halfBrick)*2
-
-        XCTAssertEqual(outerGap, innerGap, accuracy: 0.0001)
-        XCTAssertGreaterThan(outerGap, 0, "the set must not overhang its cell")
+    func testTheQuartersSitOnTheQuarterCellCentres() {
+        // Exactly a quarter of a cell on both axes, the way an ordinary brick sits on a cell
+        // centre. The gap is taken out of each quarter's size instead, which is what keeps it
+        // the same in both directions - a fraction of a cell is not, because a cell is twice
+        // as wide as it is tall.
+        XCTAssertEqual(GameScene.endlessIITinyOffset, 0.25, accuracy: 0.0001)
     }
 
-    func testATinySetStillFitsInsideItsCell() {
-        let extent = GameScene.endlessIITinyOffset + GameScene.endlessIITinyFill/4
-        XCTAssertLessThanOrEqual(extent, 0.5)
+    func testATinySetIsSpacedLikeTheFieldAroundIt() {
+        // Every gap within the set, and the gap from the set to the next cell along, come to
+        // the same figure - and that figure is the line the field already shows between two
+        // ordinary bricks.
+        let scene = GameScene()
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+
+        let gap = scene.endlessIITinyGap
+        let quarterWidth = scene.brickWidth/2 - gap
+        let quarterHeight = scene.brickHeight/2 - gap
+
+        // Down the middle: the two quarters are a half-cell apart, less their own widths
+        XCTAssertEqual(scene.brickWidth/2 - quarterWidth, gap, accuracy: 0.0001)
+        XCTAssertEqual(scene.brickHeight/2 - quarterHeight, gap, accuracy: 0.0001)
+
+        // At the edge: half a gap on this side of the boundary, half on the other
+        let overhang = scene.brickWidth/4 + quarterWidth/2
+        XCTAssertEqual(scene.brickWidth/2 - overhang, gap/2, accuracy: 0.0001)
+
+        XCTAssertEqual(gap*2, scene.endlessIIBrickSeam, accuracy: 0.0001)
+        XCTAssertGreaterThan(gap, 0, "the set must not run into itself")
     }
 
     func testEveryQuarterSitsInADifferentCornerOfTheCell() {

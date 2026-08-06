@@ -115,15 +115,12 @@ extension GameScene {
     func settleEndlessIIGravityBricks() {
         guard gameMode == .endlessII else { return }
 
-        var occupied = endlessIIOccupancy()
         var fill = endlessIIFill()
         let geometry = endlessIIGeometry
         let lowestRow = endlessIILowestRow
 
-        let falling = occupied.values
+        let falling = endlessIIBricks()
             .filter { $0.endlessIIRole == .gravity }
-            .reduce(into: [ObjectIdentifier: SKSpriteNode]()) { $0[ObjectIdentifier($1)] = $1 }
-            .values
             .sorted { endlessIICell(of: $0).row > endlessIICell(of: $1).row }
 
         for brick in falling {
@@ -136,8 +133,6 @@ extension GameScene {
             }
             guard to != from else { continue }
 
-            occupied[from] = nil
-            occupied[to] = brick
             fill[from] = 0
             fill[to] = 1
             // Kept in step so a stack of them lands in order rather than each one falling
@@ -191,30 +186,36 @@ extension GameScene {
     /// trusting limits worked out when the brick was made - the field it sits in changes
     /// constantly underneath it.
     func endlessIIWanderLimits(for brick: SKSpriteNode) -> (left: CGFloat, right: CGFloat) {
-        let geometry = endlessIIGeometry
-        let cell = geometry.cell(at: brick.position)
-        let occupied = endlessIIOccupancy()
         let halfWidth = brick.size.width/2
 
         var leftLimit = -gameWidth/2 + halfWidth
         var rightLimit = gameWidth/2 - halfWidth
         // The walls, until a brick gets in the way first
 
-        let fill = endlessIIFill()
-        let leftCell = EndlessIICell(column: cell.column - 1, row: cell.row)
-        let rightCell = EndlessIICell(column: cell.column + 1, row: cell.row)
+        // Measured against what is actually beside it rather than against the cell either
+        // side. A Tiny brick is a quarter of a cell, so its neighbours are mostly *in* its own
+        // cell - which a cell-granular look never saw, and a Moving Tiny brick slid straight
+        // through the three quarters it shares a cell with. Worse, the cell either side held
+        // whichever of its four bricks happened to be enumerated last, so the same set blocked
+        // it from one direction and not the other.
+        let mine = brick.frame
+        let overlap = min(mine.height, brickHeight)*0.4
+        // Bricks in the same horizontal band. A Tiny brick on the bottom of a cell is stopped
+        // by the one beside it, not by the one above it
 
-        if let blocker = occupied[leftCell], blocker !== brick,
-           endlessIICellBlocks(leftCell, fill: fill) {
-            leftLimit = max(leftLimit, blocker.position.x + blocker.size.width/2 + halfWidth)
+        for other in endlessIIBricks() where other !== brick {
+            let theirs = other.frame
+            guard theirs.maxY - mine.minY > overlap, mine.maxY - theirs.minY > overlap else {
+                continue
+            }
+            if theirs.maxX <= mine.minX + 0.5 {
+                leftLimit = max(leftLimit, theirs.maxX + halfWidth)
+            } else if theirs.minX >= mine.maxX - 0.5 {
+                rightLimit = min(rightLimit, theirs.minX - halfWidth)
+            }
         }
-        if let blocker = occupied[rightCell], blocker !== brick,
-           endlessIICellBlocks(rightCell, fill: fill) {
-            rightLimit = min(rightLimit, blocker.position.x - blocker.size.width/2 - halfWidth)
-        }
-        // A cell that is only part full is not a wall. A single Tiny brick left over from a
-        // set of four used to stop a Moving brick dead in what looked like open space
-        return (leftLimit, rightLimit)
+        return (max(leftLimit, -gameWidth/2 + halfWidth),
+                min(rightLimit, gameWidth/2 - halfWidth))
     }
 
     // MARK: - Directional
@@ -283,9 +284,11 @@ extension GameScene {
         case .left: beyond = EndlessIICell(column: cell.column - 1, row: cell.row)
         case .right: beyond = EndlessIICell(column: cell.column + 1, row: cell.row)
         }
-        guard let neighbour = endlessIIOccupancy()[beyond] else { return true }
-        return neighbour.texture != brickIndestructible1Texture
-            && neighbour.texture != brickIndestructible2Texture
+        let neighbours = endlessIIOccupancy()[beyond] ?? []
+        return neighbours.allSatisfy { $0.texture != brickIndestructible1Texture
+                                    && $0.texture != brickIndestructible2Texture }
+        // Every brick in the cell, not whichever one answered for it. A vulnerable side facing
+        // an Indestructible brick is a brick that cannot be destroyed at all
     }
 
     /// Whether a hit on this brick should do anything at all.
@@ -357,15 +360,15 @@ extension GameScene {
     func endlessIIExplode(from brick: SKSpriteNode) {
         guard gameMode == .endlessII else { return }
 
-        let occupied = endlessIIOccupancy()
+        let field = endlessIIBricks()
         var caught: Set<ObjectIdentifier> = [ObjectIdentifier(brick)]
         var queue = [brick]
         var destroyed: [SKSpriteNode] = []
 
         while queue.isEmpty == false {
             let centre = queue.removeFirst()
-            for cell in EndlessIIFieldGeometry.neighbours(of: endlessIICell(of: centre)) {
-                guard let neighbour = occupied[cell] else { continue }
+            let blast = endlessIIBlastReach(of: centre)
+            for neighbour in field where blast.intersects(neighbour.frame) {
                 guard caught.insert(ObjectIdentifier(neighbour)).inserted else { continue }
                 // A Portal is not destructible by anything, explosions included
                 guard neighbour.endlessIIRole != .portal else { continue }
@@ -380,6 +383,20 @@ extension GameScene {
         // seeing it fire into empty space is how a player learns what it would have done
         for victim in destroyed { endlessIIDestroy(victim) }
         if destroyed.isEmpty == false { countBricks() }
+    }
+
+    /// How far an explosion reaches: everything touching the brick, whatever size either of
+    /// them is.
+    ///
+    /// A brick's own footprint again in each direction. On an ordinary brick that is exactly
+    /// the eight cells around it, which is what §4.9 asks for. It was worked out from those
+    /// eight cells directly, and that only ever meant the right thing at ordinary size - an
+    /// Exploding Tiny brick's neighbours are the Tiny bricks touching it, three of which share
+    /// its own cell, so a cell-granular blast missed every one of them. Measuring outward from
+    /// the brick gives the same answer at ordinary size and the right one at the other two.
+    func endlessIIBlastReach(of brick: SKSpriteNode) -> CGRect {
+        let frame = brick.frame
+        return frame.insetBy(dx: -frame.width, dy: -frame.height)
     }
 
     /// Removes a brick that something else destroyed, rather than the ball.
@@ -411,6 +428,23 @@ extension GameScene {
         addGlyph(plus, to: brick, filled: false)
     }
 
+    /// The cells a turning brick needs kept empty, its own included.
+    ///
+    /// All eight around it rather than the four the generator reserves. The generator only has
+    /// to keep the arc clear of the rows it is building, and a diagonal neighbour is exactly
+    /// on the edge of the sweep - close enough that anything arriving there later would clip.
+    /// Nothing is lost by being careful here: a Spawner only needs somewhere to put a brick,
+    /// and there is always somewhere else.
+    func endlessIISpinnerClearanceCells() -> Set<EndlessIICell> {
+        var reserved: Set<EndlessIICell> = []
+        for spinner in endlessIISpinners where spinner.brick.parent != nil {
+            let cell = endlessIICell(of: spinner.brick)
+            reserved.insert(cell)
+            reserved.formUnion(EndlessIIFieldGeometry.neighbours(of: cell))
+        }
+        return reserved
+    }
+
     /// Fills the empty cells around a destroyed Spawner with ordinary bricks.
     ///
     /// Ordinary, and never another Spawner, so what it leaves behind is something the player
@@ -421,12 +455,19 @@ extension GameScene {
         let occupied = endlessIIOccupancy()
         let geometry = endlessIIGeometry
         let lowestRow = endlessIILowestRow
+        let reserved = endlessIISpinnerClearanceCells()
         var made = 0
 
         for cell in EndlessIIFieldGeometry.neighbours(of: endlessIICell(of: brick)) {
             guard geometry.isInsideWidth(cell) else { continue }
             guard cell.row >= 0 && cell.row <= lowestRow else { continue }
-            guard occupied[cell] == nil else { continue }
+            guard occupied[cell]?.isEmpty != false else { continue }
+            // Anything at all in the cell, not just a brick that fills it. A cell holding one
+            // Tiny brick is not somewhere a whole new brick can go
+            guard reserved.contains(cell) == false else { continue }
+            // A spinning brick sweeps a circle wider than its own cell, and the generator
+            // leaves that room empty. Filling it later put a new brick inside the arc of one
+            // already turning, and the two passed through each other
 
             let spawned = SKSpriteNode(texture: brickNormalTexture)
             spawned.color = brickWhite
@@ -591,12 +632,7 @@ extension GameScene {
 
         let to: CGPoint
         if let partner {
-            // Out of the far one, still travelling the way it was. Pushed clear of the brick
-            // along that heading, or it arrives inside the thing it just came out of
-            let speed = max(1, hypot(velocity.dx, velocity.dy))
-            let clearance = max(brickWidth, brickHeight)/2 + ballSize*1.5
-            to = CGPoint(x: partner.position.x + velocity.dx/speed*clearance,
-                         y: partner.position.y + velocity.dy/speed*clearance)
+            to = endlessIIPortalExit(from: partner, heading: velocity)
         } else {
             to = CGPoint(x: ball.position.x,
                          y: yBrickOffsetEndless + brickHeight/2 - ballSize)
@@ -620,6 +656,92 @@ extension GameScene {
 
         brick.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                              .fadeAlpha(to: 1, duration: 0.12)]))
+
+        showEndlessIIPortalsCooling()
+    }
+
+    /// Greys both ends out while the cooldown runs.
+    ///
+    /// The cooldown is the reason a ball can arrive at a Portal and bounce instead of jumping,
+    /// which without this is a Portal that sometimes works and sometimes does not. The rings
+    /// carry the state because they already carry the identity: colour means this end is a way
+    /// through, grey means it is a wall for the moment.
+    func showEndlessIIPortalsCooling() {
+        for portal in endlessIIPortals() {
+            guard let glyph = portal.childNode(withName: GameScene.glyphName) as? SKShapeNode
+            else { continue }
+            glyph.removeAllActions()
+            glyph.strokeColor = GameScene.portalCoolingColour
+        }
+    }
+
+    /// Puts their colours back, so the moment a Portal can be used again is one you can see.
+    func showEndlessIIPortalsReady() {
+        for portal in endlessIIPortals() {
+            guard let glyph = portal.childNode(withName: GameScene.glyphName) as? SKShapeNode
+            else { continue }
+            glyph.removeAllActions()
+            glyph.strokeColor = portal.endlessIIPortalIsBlue
+                ? GameScene.portalBlueColour
+                : GameScene.portalYellowColour
+            glyph.run(.sequence([.scale(to: 1.25, duration: 0.08),
+                                 .scale(to: 1, duration: 0.12)]))
+            // A small pulse as well as the colour. The two ends can be off screen from each
+            // other, and coming back to life is the thing worth noticing
+        }
+    }
+
+    /// What a Portal's rings go while it cannot be entered.
+    static let portalCoolingColour = UIColor(white: 0.45, alpha: 1)
+
+    /// Where the ball is put down when it comes out of the far Portal.
+    ///
+    /// Clear of the brick, along the way it was travelling - and, above all, somewhere it is
+    /// still in play. Pushing it along its heading was the whole rule, and a Portal against a
+    /// side wall put the ball straight through that wall and out of the game: a jump the
+    /// player set up correctly ended the run.
+    ///
+    /// So the heading is the first choice rather than the only one. If it leads outside, the
+    /// ball leaves vertically instead, which is always available to a brick in the field, and
+    /// keeps the sense of the journey - it carries on up, or on down. The velocity is never
+    /// touched: which way the ball is going is the one thing a doorway must not change.
+    func endlessIIPortalExit(from partner: SKSpriteNode, heading velocity: CGVector) -> CGPoint {
+        let brick = partner.frame
+        let centre = CGPoint(x: brick.midX, y: brick.midY)
+        let clearance = max(brick.width, brick.height)/2 + ballSize*1.5
+        let playable = endlessIIPlayableRect
+
+        let speed = max(1, hypot(velocity.dx, velocity.dy))
+        let vertical: CGFloat = velocity.dy >= 0 ? 1 : -1
+        let horizontal: CGFloat = velocity.dx >= 0 ? 1 : -1
+
+        let headings = [CGVector(dx: velocity.dx/speed, dy: velocity.dy/speed),
+                        CGVector(dx: 0, dy: vertical),
+                        CGVector(dx: -horizontal, dy: vertical),
+                        CGVector(dx: 0, dy: -vertical)]
+
+        for heading in headings {
+            let exit = CGPoint(x: centre.x + heading.dx*clearance,
+                               y: centre.y + heading.dy*clearance)
+            if playable.contains(exit) { return exit }
+        }
+
+        // A Portal with no clear side at all, which takes a field that has boxed it in on
+        // every one. Put the ball where it can go: still in play beats still travelling
+        return CGPoint(x: min(max(centre.x, playable.minX), playable.maxX),
+                       y: min(max(centre.y, playable.minY), playable.maxY))
+    }
+
+    /// Where the ball can be set down and still be in the game.
+    ///
+    /// Inside the walls and below the HUD bar, with the ball's own radius kept clear of each -
+    /// a ball placed exactly on a wall is a ball the physics has to push somewhere.
+    var endlessIIPlayableRect: CGRect {
+        let inset = ballSize/2 + 1
+        let top = frame.height/2 - screenBlockTopHeight - inset
+        let bottom = -frame.height/2 + inset
+        return CGRect(x: -gameWidth/2 + inset, y: bottom,
+                      width: max(0, gameWidth - inset*2), height: max(0, top - bottom))
     }
 
     /// Moves the ball to a portal's exit, once the physics step is out of the way.
@@ -725,7 +847,9 @@ extension GameScene {
 
     /// Advances the falling and wandering bricks, and runs down the portal cooldown.
     func tickEndlessIIRoles(_ delta: TimeInterval) {
+        let wasCooling = endlessIIPortalCooldown > 0
         endlessIIPortalCooldown = max(0, endlessIIPortalCooldown - delta)
+        if wasCooling && endlessIIPortalCooldown <= 0 { showEndlessIIPortalsReady() }
 
         let rate = CGFloat(endlessIIProgression.motionRate(at: endlessHeight))
         // Everything that moves starts slow and speeds up. A spinning brick at full rate in

@@ -21,16 +21,33 @@ extension GameScene {
     /// How often a line appears.
     static let endlessIIMarkerSpacing = 100
 
-    /// Adds a line for this height if it is one worth marking.
+    /// How far ahead of itself a marker is created, in rows.
     ///
-    /// Created in the row that represents that height and then carried down with it, so it
-    /// means "this is where 300m was" rather than "this is roughly 300m".
+    /// A marker means "this is where 300m was", and where 300m *is* is the bottom of the
+    /// field - the row the player is clearing when the counter reads 300. So the line has to
+    /// enter at the top a whole field earlier and descend with everything else, arriving at
+    /// the bottom row exactly as the height is reached.
+    ///
+    /// It used to be created at the height it named, which put it at the top of the screen at
+    /// the moment the player was told they had got there - the line then spent the next
+    /// twenty-two rows travelling down to where it should have been when it appeared.
+    /// One less than the field's depth: a line entering at the top row has that many rows to
+    /// travel before it is in the bottom one.
+    static var endlessIIMarkerLead: Int { GameSceneLayout.brickRows - 1 }
+
+    /// Adds a line for the height this row will represent by the time it reaches the bottom.
+    ///
+    /// Created in that row and then carried down with it, so it stays attached to the field
+    /// rather than being a line at roughly the right place.
     func addEndlessIIMarkerIfDue() {
-        guard gameMode == .endlessII, endlessHeight > 0 else { return }
+        guard gameMode == .endlessII else { return }
+
+        let arriving = endlessHeight + GameScene.endlessIIMarkerLead
+        guard arriving > 0 else { return }
 
         let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
-        let isBest = best > 0 && endlessHeight == best
-        let isHundred = endlessHeight % GameScene.endlessIIMarkerSpacing == 0
+        let isBest = best > 0 && arriving == best
+        let isHundred = arriving % GameScene.endlessIIMarkerSpacing == 0
         guard isBest || isHundred else { return }
 
         let marker = SKNode()
@@ -41,22 +58,30 @@ extension GameScene {
         // field would be something to look past rather than something to notice
         addChild(marker)
 
-        let line = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: -0.5,
-                                            width: gameWidth, height: 1))
-        line.fillColor = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.16)
-        line.strokeColor = .clear
-        line.alpha = isBest ? 0.5 : 1
-        marker.addChild(line)
-
+        let colour = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.3)
         let label = SKLabelNode(fontNamed: scoreLabel.fontName)
-        label.text = isBest ? "BEST \(best)m" : "\(endlessHeight)m"
+        label.text = isBest ? "BEST \(best)m" : "\(arriving)m"
         label.fontSize = fontSize*0.6
-        label.fontColor = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.3)
+        label.fontColor = colour
         label.horizontalAlignmentMode = .left
-        label.verticalAlignmentMode = .bottom
-        label.position = CGPoint(x: -gameWidth/2 + labelSpacing, y: labelSpacing/3)
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: -gameWidth/2 + labelSpacing, y: 0)
         marker.addChild(label)
-        // Labelled, because an unlabelled line at 300m and one at 400m are the same line
+        // On the line rather than sitting above it, so the two read as one marking. The line
+        // breaks around it rather than running underneath, which is what stops the text
+        // fighting a rule drawn through its middle
+
+        let gap = label.frame.width + labelSpacing*1.5
+        let left = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: -0.5,
+                                            width: labelSpacing/2, height: 1))
+        let right = SKShapeNode(rect: CGRect(x: -gameWidth/2 + gap, y: -0.5,
+                                             width: gameWidth - gap, height: 1))
+        for line in [left, right] {
+            line.fillColor = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.16)
+            line.strokeColor = .clear
+            line.alpha = isBest ? 0.5 : 1
+            marker.addChild(line)
+        }
     }
 
     /// Moves the markers down with the field, and clears the ones that have left it.
@@ -68,13 +93,23 @@ extension GameScene {
         let move = SKAction.moveBy(x: 0, y: -brickHeight, duration: 0.05)
 
         enumerateChildNodes(withName: GameScene.endlessIIMarkerName) { node, _ in
-            if node.position.y <= -self.frame.size.height/2 {
-                node.removeFromParent()
+            if node.position.y <= self.endlessIIMarkerFloor {
+                node.name = nil
+                node.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+                // Renamed first so the next descent does not find it again and restart the
+                // fade it is already running
                 return
             }
             node.run(move)
         }
     }
+
+    /// Where a marker's work is done: the bottom edge of the lowest row a brick can occupy.
+    ///
+    /// Past that the line is below the field entirely. It used to carry on to the bottom of
+    /// the screen, which put a moving line through the gap in front of the paddle - the part
+    /// of the screen the player is actually watching - long after it had anything to say.
+    var endlessIIMarkerFloor: CGFloat { finalBrickRowHeight - brickHeight/2 }
 
     func clearEndlessIIMarkers() {
         enumerateChildNodes(withName: GameScene.endlessIIMarkerName) { node, _ in

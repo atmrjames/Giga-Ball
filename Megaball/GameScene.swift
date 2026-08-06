@@ -2113,7 +2113,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if sprite.endlessIIRole == .portal {
 			laserNode?.removeFromParent()
-			endlessIIEnterPortal(sprite)
+			if laserNode == nil {
+				endlessIIEnterPortal(sprite)
+			}
+			// A Portal takes the ball somewhere. A laser is not the ball, and firing one into
+			// a Portal teleported the ball from wherever it happened to be - so the jump is
+			// the one thing here that only the ball can set off. The laser still stops, as it
+			// does on any brick it cannot destroy
 			return
 		}
 		// A Portal is struck rather than damaged, so it never reaches the type switch

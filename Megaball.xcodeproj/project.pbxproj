@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000080 /* EndlessIINeighbourTests.swift */; };
 		1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000072 /* BrickTypeCatalogueTests.swift */; };
 		1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000070 /* GameSceneLayoutTests.swift */; };
 		1AF170000000006F /* GameBackgroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006E /* GameBackgroundTests.swift */; };
@@ -291,6 +292,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AF1700000000080 /* EndlessIINeighbourTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIINeighbourTests.swift; sourceTree = "<group>"; };
 		1AF1700000000072 /* BrickTypeCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeCatalogueTests.swift; sourceTree = "<group>"; };
 		1AF1700000000070 /* GameSceneLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayoutTests.swift; sourceTree = "<group>"; };
 		1AF170000000006E /* GameBackgroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackgroundTests.swift; sourceTree = "<group>"; };
@@ -602,6 +604,7 @@
 		1AF100000000000B /* GigaBallTests */ = {
 			isa = PBXGroup;
 			children = (
+				1AF1700000000080 /* EndlessIINeighbourTests.swift */,
 				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
 				1AF1700000000070 /* GameSceneLayoutTests.swift */,
 				1AF170000000006E /* GameBackgroundTests.swift */,
@@ -1335,6 +1338,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */,
 				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
 				1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */,
 				1AF170000000006F /* GameBackgroundTests.swift in Sources */,
