@@ -19,11 +19,15 @@
 		1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000092 /* EndlessIIMultiBall.swift */; };
 		1AF170000000009B /* MenuNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009A /* MenuNavigation.swift */; };
 		1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000096 /* EndlessIIStickyPaddle.swift */; };
+		000000001AF1800000000011 /* EndlessIIVision.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000010 /* EndlessIIVision.swift */; };
+		000000001AF1800000000002 /* BallPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000001 /* BallPath.swift */; };
+		000000001AF1800000000004 /* BallPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000003 /* BallPathTests.swift */; };
 		1AF170000000009F /* PowerUpEligibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009E /* PowerUpEligibility.swift */; };
 		1AF1700000000091 /* EndlessIIBalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000090 /* EndlessIIBalls.swift */; };
 		1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000080 /* EndlessIINeighbourTests.swift */; };
 		1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000072 /* BrickTypeCatalogueTests.swift */; };
 		1AF1700000000099 /* EndlessIIPlayTestFixesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */; };
+		000000001AF1800000000021 /* EndlessIIVisionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000020 /* EndlessIIVisionTests.swift */; };
 		1AF170000000009D /* MenuNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009C /* MenuNavigationTests.swift */; };
 		1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000070 /* GameSceneLayoutTests.swift */; };
 		1AF170000000006F /* GameBackgroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006E /* GameBackgroundTests.swift */; };
@@ -320,11 +324,15 @@
 		1AF1700000000092 /* EndlessIIMultiBall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIMultiBall.swift; sourceTree = "<group>"; };
 		1AF170000000009A /* MenuNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuNavigation.swift; sourceTree = "<group>"; };
 		1AF1700000000096 /* EndlessIIStickyPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStickyPaddle.swift; sourceTree = "<group>"; };
+		000000001AF1800000000010 /* EndlessIIVision.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIVision.swift; sourceTree = "<group>"; };
+		000000001AF1800000000001 /* BallPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallPath.swift; sourceTree = "<group>"; };
+		000000001AF1800000000003 /* BallPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallPathTests.swift; sourceTree = "<group>"; };
 		1AF170000000009E /* PowerUpEligibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpEligibility.swift; sourceTree = "<group>"; };
 		1AF1700000000090 /* EndlessIIBalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBalls.swift; sourceTree = "<group>"; };
 		1AF1700000000080 /* EndlessIINeighbourTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIINeighbourTests.swift; sourceTree = "<group>"; };
 		1AF1700000000072 /* BrickTypeCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeCatalogueTests.swift; sourceTree = "<group>"; };
 		1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPlayTestFixesTests.swift; sourceTree = "<group>"; };
+		000000001AF1800000000020 /* EndlessIIVisionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIVisionTests.swift; sourceTree = "<group>"; };
 		1AF170000000009C /* MenuNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuNavigationTests.swift; sourceTree = "<group>"; };
 		1AF1700000000070 /* GameSceneLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayoutTests.swift; sourceTree = "<group>"; };
 		1AF170000000006E /* GameBackgroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackgroundTests.swift; sourceTree = "<group>"; };
@@ -644,6 +652,8 @@
 				1AF1700000000080 /* EndlessIINeighbourTests.swift */,
 				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
 				1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */,
+				000000001AF1800000000020 /* EndlessIIVisionTests.swift */,
+				000000001AF1800000000003 /* BallPathTests.swift */,
 				1AF170000000009C /* MenuNavigationTests.swift */,
 				1AF1700000000070 /* GameSceneLayoutTests.swift */,
 				1AF170000000006E /* GameBackgroundTests.swift */,
@@ -1089,6 +1099,7 @@
 				1AF17000000000C0 /* BrickSeamBounce.swift */,
 				1AF1700000000092 /* EndlessIIMultiBall.swift */,
 				1AF1700000000096 /* EndlessIIStickyPaddle.swift */,
+				000000001AF1800000000010 /* EndlessIIVision.swift */,
 				1AF170000000009E /* PowerUpEligibility.swift */,
 				1ACFFDB724752D6300AF2C43 /* PowerUpAllocation.swift */,
 				1A5BA9B6242707590019FDBB /* BrickCreation */,
@@ -1166,6 +1177,7 @@
 		1AFF33C623EC42CB0033F485 /* Data Model */ = {
 			isa = PBXGroup;
 			children = (
+				000000001AF1800000000001 /* BallPath.swift */,
 				1AF17000000000A0 /* EndlessIIClusters.swift */,
 				1AF1700000000090 /* EndlessIIBalls.swift */,
 				1AF1700000000068 /* BrickTypeCatalogue.swift */,
@@ -1394,6 +1406,8 @@
 				1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */,
 				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
 				1AF1700000000099 /* EndlessIIPlayTestFixesTests.swift in Sources */,
+				000000001AF1800000000021 /* EndlessIIVisionTests.swift in Sources */,
+				000000001AF1800000000004 /* BallPathTests.swift in Sources */,
 				1AF170000000009D /* MenuNavigationTests.swift in Sources */,
 				1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */,
 				1AF170000000006F /* GameBackgroundTests.swift in Sources */,
@@ -1430,7 +1444,9 @@
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,
 				1AF170000000009B /* MenuNavigation.swift in Sources */,
 				1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */,
+				000000001AF1800000000011 /* EndlessIIVision.swift in Sources */,
 				1AF170000000009F /* PowerUpEligibility.swift in Sources */,
+				000000001AF1800000000002 /* BallPath.swift in Sources */,
 				1AF1700000000091 /* EndlessIIBalls.swift in Sources */,
 				1AF170000000006D /* BrickTypesViewController.swift in Sources */,
 				1AF170000000006B /* BrickTypeIcons.swift in Sources */,

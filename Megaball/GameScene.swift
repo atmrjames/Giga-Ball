@@ -76,6 +76,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The extra ball that is about to hand its place to the first ball, once the step that
 	/// lost the first ball has finished resolving.
 	var endlessIIPendingHandover: SKSpriteNode?
+
+	// The vision power-ups' clocks and drawing - see EndlessIIVision
+	var endlessIITrajectoryRemaining: TimeInterval = 0
+	var endlessIITrajectoryTotal: TimeInterval = 0
+	var endlessIITrajectoryLevel = 0
+	var endlessIILandingRemaining: TimeInterval = 0
+	var endlessIILandingTotal: TimeInterval = 0
+	var endlessIIVisionLastTick: TimeInterval = 0
+	var endlessIITrajectoryLines: [SKShapeNode] = []
+	var endlessIILandingMarkers: [SKShapeNode] = []
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -263,7 +273,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 31)
+	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
+	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
 	var powerUpGeneratorCycles: Int = 0
 	// Power-up probabilities
@@ -736,6 +748,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	/// Multi-Ball's icon, drawn rather than loaded - see PowerUpIcon.
 	let powerUpMultiBall = SKTexture(image: PowerUpIcon.multiBall)
+	let powerUpTrajectoryLine = SKTexture(image: PowerUpIcon.trajectoryLine)
+	let powerUpLandingMarker = SKTexture(image: PowerUpIcon.landingMarker)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -912,7 +926,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -1757,6 +1771,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			tickEndlessIIBricks(currentTime)
 			tickEndlessIIExtraBalls()
 			tickEndlessIIHeldBalls()
+			tickEndlessIIVision(currentTime)
 			tickEndlessIIBuildIn(currentTime)
 		}
 		
@@ -3909,6 +3924,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             self.run(sequence, withKey: "powerUpIncreaseBallSize")
             // Power up reverted
             
+		case powerUpTrajectoryLine:
+		// 29 - Trajectory Line
+			endlessIICollectTrajectoryLine()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[29] += 1
+
+		case powerUpLandingMarker:
+		// 30 - Landing Marker
+			endlessIICollectLandingMarker()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[30] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -4124,6 +4151,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func powerUpsReset() {
         self.removeAllActions()
         // Stop all timers and animations
+		endlessIIResetVision()
+		// The vision power-ups keep their own clocks, so the removeAllActions above does not
+		// reach them
 		powerUpsOnScreen = 0
 		multiplier = Scoring.multiplierBase
 		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
@@ -5417,6 +5447,20 @@ laserTimer?.invalidate()
 				powerUpActiveTimerArray?.append(0)
 				powerUpActiveMagnitudeArray?.append(backstopCatches)
 			}
+			if endlessIITrajectoryRemaining > 0 {
+				powerUpActiveArray?.append("endlessIITrajectory")
+				powerUpActiveDurationArray?.append(endlessIITrajectoryRemaining)
+				powerUpActiveTimerArray?.append(endlessIITrajectoryTotal)
+				powerUpActiveMagnitudeArray?.append(endlessIITrajectoryLevel)
+				// The vision power-ups keep their own clocks rather than an SKAction, so
+				// there is no bar to read the remaining time off - the clock is the truth
+			}
+			if endlessIILandingRemaining > 0 {
+				powerUpActiveArray?.append("endlessIILanding")
+				powerUpActiveDurationArray?.append(endlessIILandingRemaining)
+				powerUpActiveTimerArray?.append(endlessIILandingTotal)
+				powerUpActiveMagnitudeArray?.append(0)
+			}
 			
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
@@ -5733,6 +5777,9 @@ laserTimer?.invalidate()
 											    remaining: bar.xScale,
 											    segments: segments))
 		}
+		entries.append(contentsOf: endlessIIVisionRingEntries())
+		// Endless 2.0's own power-ups have no tray slot to be read from, so they report
+		// themselves
 		return entries
 	}
 
@@ -6230,7 +6277,19 @@ laserTimer?.invalidate()
 						self.backstop.physicsBody!.categoryBitMask = CollisionTypes.backstopCategory.rawValue
 						self.backstop.physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
 						self.backstop.physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.powerUpCategory.rawValue
-						
+
+					case "endlessIITrajectory":
+						endlessIITrajectoryRemaining = remainingTime
+						endlessIITrajectoryTotal = totalTime
+						endlessIITrajectoryLevel = min(max(0, savedGame.activePowerUpMagnitudes[i]),
+													   GameScene.endlessIITrajectoryReach.count - 1)
+						// Clamped: the magnitude is a file on disk, and an index into the
+						// reach table read at launch must not be able to trap
+
+					case "endlessIILanding":
+						endlessIILandingRemaining = remainingTime
+						endlessIILandingTotal = totalTime
+
 					default:
 						break
 					}

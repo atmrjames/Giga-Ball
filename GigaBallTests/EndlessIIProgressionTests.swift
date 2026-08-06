@@ -436,9 +436,12 @@ extension EndlessIIProgressionTests {
     }
 
     func testEveryPowerUpAppearsInTheOrderExactlyOnce() {
+        // Derived from the array the drop actually reads, not written out - a new power-up
+        // that is missing from this shuffle is introduced at 0m, the opposite of introduced
+        let expected = LevelPackSetup().powerUpNameArray.count
         let made = EndlessIIProgression.make().powerUpOrder
-        XCTAssertEqual(made.count, 28)
-        XCTAssertEqual(Set(made).count, 28)
+        XCTAssertEqual(made.count, expected)
+        XCTAssertEqual(Set(made).count, expected)
     }
 
     func testAnIndexOutsideTheOrderIsTreatedAsAvailable() {

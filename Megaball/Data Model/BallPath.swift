@@ -1,0 +1,202 @@
+//
+//  BallPath.swift
+//  Megaball
+//
+//  Where a ball is about to go.
+//
+//  Two of Endless 2.0's new power-ups are the same question asked at different lengths: the
+//  Trajectory Line draws the path ahead until it meets something, and the Landing Marker says
+//  only where that path crosses the paddle's line. So they share one predictor, and the
+//  predictor is arithmetic rather than physics - given where a ball is and how it is
+//  travelling, it walks the path forward, turning at the walls and stopping at the first brick.
+//
+//  Pure on purpose. Everything here is testable without a scene, which matters more than usual:
+//  a prediction that is subtly wrong is worse than none at all, because the player will aim
+//  with it. A line that says "you will hit that brick" and does not is a lie the game told.
+//
+//  It predicts the ball the game actually simulates, which is not quite the ball a physicist
+//  would: the scene nudges angles away from horizontal and vertical, and a bounce off two
+//  bricks at once is resolved as one flat face. Those corrections are small and they are
+//  applied *at* a bounce, so a path drawn to the first brick is honest and a path drawn
+//  through several bounces of a busy field is not. That is why the line has a length limit
+//  rather than running until it hits something.
+//
+
+import CoreGraphics
+
+enum BallPath {
+
+    /// The walls a predicted ball can turn on, and the line it is heading for.
+    struct Bounds {
+        /// The inside faces of the side walls.
+        var left: CGFloat
+        var right: CGFloat
+        /// The inside face of the ceiling.
+        var ceiling: CGFloat
+        /// The height the paddle catches at.
+        var paddleLine: CGFloat
+    }
+
+    /// What a ball would do next.
+    struct Prediction: Equatable {
+        /// The path as a polyline, starting at the ball. Two points is a straight run; each
+        /// extra point is a bounce off a wall.
+        var points: [CGPoint]
+        /// Where the path crosses the paddle's line, if it gets there.
+        var landing: CGPoint?
+        /// Whether the path stopped because a brick is in the way.
+        var stoppedAtBrick: Bool
+    }
+
+    /// How many wall bounces a prediction will follow before giving up.
+    ///
+    /// A ball crossing a narrow field at a shallow angle can bounce many times in a short
+    /// distance, and each bounce is a place the real ball's angle rules may nudge it - so a
+    /// path that keeps going gets less true the longer it is. This is the point at which it
+    /// stops being a prediction and starts being a guess.
+    static let maximumBounces = 8
+
+    /// Walks the ball forward from where it is.
+    ///
+    /// - Parameters:
+    ///   - radius: the ball's radius. Everything is inset by it, so the path is the path of
+    ///     the ball's *surface* against the walls and bricks rather than of its centre.
+    ///   - bricks: the field, as rectangles. A brick is what stops the path.
+    ///   - maximumLength: how far to follow it. Zero or less means as far as it goes.
+    static func predict(from start: CGPoint, velocity: CGVector, radius: CGFloat,
+                        bounds: Bounds, bricks: [CGRect],
+                        maximumLength: CGFloat = 0) -> Prediction {
+        let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
+        guard speed > 0 else {
+            return Prediction(points: [start], landing: nil, stoppedAtBrick: false)
+        }
+
+        var direction = CGVector(dx: velocity.dx/speed, dy: velocity.dy/speed)
+        var point = start
+        var points = [start]
+        var travelled: CGFloat = 0
+        var landing: CGPoint?
+        var stoppedAtBrick = false
+
+        for _ in 0...maximumBounces {
+            let toBrick = firstBrick(from: point, direction: direction,
+                                     radius: radius, bricks: bricks)
+            let toWall = sideWall(from: point, direction: direction, radius: radius,
+                                  bounds: bounds)
+            let toCeiling = ceiling(from: point, direction: direction, radius: radius,
+                                    bounds: bounds)
+            let toPaddle = paddleLine(from: point, direction: direction, radius: radius,
+                                      bounds: bounds)
+
+            let nearest = [toBrick, toWall, toCeiling, toPaddle].compactMap { $0 }.min() ?? 0
+            guard nearest > 0 else { break }
+
+            // Cut short rather than overshooting, and stop: a length limit is a limit on the
+            // line, not on the number of bounces it is allowed to draw before reaching it
+            if maximumLength > 0, travelled + nearest >= maximumLength {
+                let remaining = maximumLength - travelled
+                points.append(CGPoint(x: point.x + direction.dx*remaining,
+                                      y: point.y + direction.dy*remaining))
+                return Prediction(points: points, landing: landing, stoppedAtBrick: false)
+            }
+
+            point = CGPoint(x: point.x + direction.dx*nearest, y: point.y + direction.dy*nearest)
+            points.append(point)
+            travelled += nearest
+
+            if nearest == toBrick {
+                stoppedAtBrick = true
+                break
+            }
+            if nearest == toPaddle {
+                landing = point
+                break
+            }
+            if nearest == toCeiling {
+                direction.dy = -direction.dy
+                continue
+            }
+            direction.dx = -direction.dx
+        }
+
+        return Prediction(points: points, landing: landing, stoppedAtBrick: stoppedAtBrick)
+    }
+
+    // MARK: - How far to the next thing
+
+    private static func sideWall(from point: CGPoint, direction: CGVector, radius: CGFloat,
+                                 bounds: Bounds) -> CGFloat? {
+        if direction.dx > 0 {
+            return distance(to: bounds.right - radius - point.x, along: direction.dx)
+        }
+        if direction.dx < 0 {
+            return distance(to: bounds.left + radius - point.x, along: direction.dx)
+        }
+        return nil
+    }
+
+    private static func ceiling(from point: CGPoint, direction: CGVector, radius: CGFloat,
+                                bounds: Bounds) -> CGFloat? {
+        guard direction.dy > 0 else { return nil }
+        return distance(to: bounds.ceiling - radius - point.y, along: direction.dy)
+    }
+
+    private static func paddleLine(from point: CGPoint, direction: CGVector, radius: CGFloat,
+                                   bounds: Bounds) -> CGFloat? {
+        guard direction.dy < 0 else { return nil }
+        return distance(to: bounds.paddleLine + radius - point.y, along: direction.dy)
+    }
+
+    private static func distance(to gap: CGFloat, along component: CGFloat) -> CGFloat? {
+        let travel = gap/component
+        return travel > 0.0001 ? travel : nil
+        // Anything at or behind the current point is not ahead of it. Without the tolerance a
+        // ball resting exactly against a wall reports a bounce every step and never moves
+    }
+
+    /// How far to the nearest brick along this heading.
+    ///
+    /// The brick is grown by the ball's radius and the ball treated as a point, which is the
+    /// standard way to ask this and the only one that gets the corners right. A brick the ball
+    /// is already inside is ignored - that is the brick it just hit, and stopping the path on
+    /// it would draw no path at all.
+    private static func firstBrick(from point: CGPoint, direction: CGVector, radius: CGFloat,
+                                   bricks: [CGRect]) -> CGFloat? {
+        var nearest: CGFloat?
+        for brick in bricks {
+            let grown = brick.insetBy(dx: -radius, dy: -radius)
+            guard grown.contains(point) == false else { continue }
+            guard let hit = entry(into: grown, from: point, direction: direction) else { continue }
+            if nearest == nil || hit < nearest! { nearest = hit }
+        }
+        return nearest
+    }
+
+    /// Where a ray enters a rectangle, by the slab method.
+    ///
+    /// The near faces are crossed first and the far faces last, so the ray is inside the
+    /// rectangle between the largest near crossing and the smallest far one. If that range is
+    /// empty the ray misses.
+    private static func entry(into rect: CGRect, from point: CGPoint,
+                              direction: CGVector) -> CGFloat? {
+        var enter = -CGFloat.greatestFiniteMagnitude
+        var leave = CGFloat.greatestFiniteMagnitude
+
+        for (origin, heading, low, high) in [(point.x, direction.dx, rect.minX, rect.maxX),
+                                             (point.y, direction.dy, rect.minY, rect.maxY)] {
+            if abs(heading) < 0.000001 {
+                guard origin >= low, origin <= high else { return nil }
+                continue
+                // Travelling parallel to this pair of faces: it either passes between them
+                // for ever or misses them for ever
+            }
+            let first = (low - origin)/heading
+            let second = (high - origin)/heading
+            enter = max(enter, min(first, second))
+            leave = min(leave, max(first, second))
+        }
+
+        guard leave >= enter, leave > 0 else { return nil }
+        return enter > 0.0001 ? enter : nil
+    }
+}

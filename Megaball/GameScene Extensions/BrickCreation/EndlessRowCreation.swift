@@ -11,6 +11,29 @@ import GameplayKit
 
 extension GameScene {
     
+    /// The per-row power-up weights, for both endless modes.
+    ///
+    /// Its own method so the mode boundary can be tested without building a row - the row
+    /// builder needs a whole scene, and this is the part of it that guards a constraint.
+    func applyEndlessRowPowerUpWeights() {
+        powerUpProbArray[7] = 7 // Gravity
+        powerUpProbArray[18] = 5 // Reset Multi-Hit Bricks
+        powerUpProbArray[19] = 5 // Remove Indestructible Bricks
+        powerUpProbArray[21] = 3 // Undestructi-Ball
+
+        powerUpProbArray[28] = endlessIICanAddBall ? GameScene.multiBallWeight : 0
+        // Zero while four are already in play, so it stops being offered rather than being
+        // collected for nothing (§5.4). Set per row because the answer changes as balls are
+        // added and lost
+
+        powerUpProbArray[29] = gameMode == .endlessII ? 5 : 0 // Trajectory Line - uncommon (§5.4)
+        powerUpProbArray[30] = gameMode == .endlessII ? 7 : 0 // Landing Marker - common
+        // Guarded by mode, because these rows are built for *both* endless modes - the
+        // Multi-Ball line above gets the same guard for free from endlessIICanAddBall, but a
+        // flat weight here would have quietly added the new power-ups to the original
+        // Endless, whose leaderboards hold years of scores
+    }
+
     func buildNewEndlessRow() {
         
         var brickArray: [SKNode] = []
@@ -50,15 +73,7 @@ extension GameScene {
         let randRowSelect = Int.random(in: 1...100)
         // Random pre-defined row selector
                 
-        powerUpProbArray[7] = 7 // Gravity
-        powerUpProbArray[18] = 5 // Reset Multi-Hit Bricks
-        powerUpProbArray[19] = 5 // Remove Indestructible Bricks
-        powerUpProbArray[21] = 3 // Undestructi-Ball
-        
-        powerUpProbArray[28] = endlessIICanAddBall ? GameScene.multiBallWeight : 0
-        // Zero while four are already in play, so it stops being offered rather than being
-        // collected for nothing (§5.4). Set per row because the answer changes as balls are
-        // added and lost
+        applyEndlessRowPowerUpWeights()
 
         advanceEndlessIIPhase()
         // Checked per row, so a phase ends where it ends rather than on a schedule

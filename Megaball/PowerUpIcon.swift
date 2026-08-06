@@ -43,6 +43,41 @@ enum PowerUpIcon {
         }
     }
 
+    /// Trajectory Line: the path ahead, drawn as it will be drawn - a line with a bounce in it.
+    static let trajectoryLine: UIImage = badge { context, rect in
+        context.setStrokeColor(UIColor.white.cgColor)
+        context.setLineWidth(rect.width*0.07)
+        context.setLineCap(.round)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: rect.maxY - rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.25, y: rect.midY))
+        context.addLine(to: CGPoint(x: rect.minX + rect.width*0.3, y: rect.minY + rect.height*0.22))
+        context.strokePath()
+
+        let radius = rect.width*0.09
+        let end = CGPoint(x: rect.minX + rect.width*0.3, y: rect.minY + rect.height*0.22)
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: CGRect(x: end.x - radius, y: end.y - radius,
+                                       width: radius*2, height: radius*2))
+        // The ball at the end of its path
+    }
+
+    /// Landing Marker: the ghost ball above the paddle's line.
+    static let landingMarker: UIImage = badge { context, rect in
+        context.setStrokeColor(UIColor.white.cgColor)
+        context.setLineWidth(rect.width*0.07)
+        context.setLineCap(.round)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
+        context.strokePath()
+        // The paddle's line
+
+        let radius = rect.width*0.14
+        let centre = CGPoint(x: rect.midX, y: rect.midY - rect.height*0.08)
+        context.strokeEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                         width: radius*2, height: radius*2))
+        // The ghost of the ball, empty because it is a prediction rather than a ball
+    }
+
     /// The rounded square every power-up icon is, with a glyph drawn into it.
     private static func badge(_ glyph: (CGContext, CGRect) -> Void) -> UIImage {
         UIGraphicsImageRenderer(size: canvas).image { context in

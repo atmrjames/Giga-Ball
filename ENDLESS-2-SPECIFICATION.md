@@ -1035,7 +1035,7 @@ playable and is worth a round of play-testing on its own.
 
 | Batch | What lands | Why these together | The question it answers |
 |---|---|---|---|
-| **8a. Vision** | Trajectory Line, Landing Marker | Both draw what the ball is *about* to do and change no rule. One predictor serves both, and it is pure geometry - testable rather than eyeballed | Whether four balls means four lines, and whether being told where the ball will land makes the mode easier or just calmer |
+| **8a. Vision** ✅ | Trajectory Line, Landing Marker | Both draw what the ball is *about* to do and change no rule. One predictor serves both, and it is pure geometry - testable rather than eyeballed | Whether four balls means four lines, and whether being told where the ball will land makes the mode easier or just calmer |
 | **8b. The paddle** | Aimed Sticky, Magnetism, Portal Paddle, Paddle Halo, Ball Steering, and the three bad ones - Inert Paddle, Flipped Angle, Reversed Controls | Every one of them changes what the paddle does, so they conflict with each other and want tuning against each other. Aimed Sticky inherits the queue Sticky Paddle already has (§5.5) | Whether a mode where the paddle keeps changing its rules is exciting or exhausting - and whether the bad ones are funny or just unfair |
 | **8c. The field** | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
 | **8d. The rules** | Lock, Key, Wipe, Randomised Bounce | The ones that act on *other power-ups*. They need the rest of the set to exist before they mean anything, and Lock and Key only drop in each other's company | Whether a power-up about power-ups reads at all in the moment |
@@ -1052,6 +1052,18 @@ drawn placeholder icon so it looks like a power-up rather than a gap.
 |---|---|
 | A scatter cluster | §6.2.1's third kind - particular bricks in a *random* arrangement rather than a drawn one. Needs a generator rather than a grid, which is why it did not come with the other two |
 | The new power-ups on the power-ups page | Written against what exists, so it follows each batch rather than leading it |
+
+**8a is built.** `BallPath` walks the path forward - turning at the walls, stopping at the
+first brick, honest about the ball's radius - and is pure arithmetic with its own tests. The
+line is drawn per ball, faint, and re-asked every frame, because a stale line pointing through
+a brick that has already been destroyed is the lie the feature must not tell; it is also
+capped at a handful of bounces, because every bounce is a place the scene's own angle rules
+may nudge the real ball. The marker is a ghost of the ball on the paddle's line. Both run on
+their own clocks (extend on re-collection; the third Trajectory Line lengthens the line),
+report themselves to the ring HUD since they have no tray slot to be read from, and survive a
+pause-and-quit through the active-power-up arrays. The weights are guarded by mode inside
+`buildNewEndlessRow`, which builds rows for *both* endless modes - a flat weight there would
+have quietly added them to the original Endless.
 
 **Phase 9 — presentation.** Scrolling backgrounds, the real artwork and sound (§8.5), and the
 information pages finished against a mode that has stopped moving. Deliberately last: a

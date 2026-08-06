@@ -76,7 +76,9 @@ struct EndlessIIProgression {
     static let rampEasing = 0.4
 
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
-                     powerUps: Int = 28) -> EndlessIIProgression {
+                     powerUps: Int = 31) -> EndlessIIProgression {
+        // Every power-up in the table, including Endless 2.0's own - a new one that is not
+        // in this shuffle is introduced at 0m, which is the opposite of introduced
         EndlessIIProgression(introductionOrder: styles.shuffled(),
                              powerUpOrder: Array(0..<powerUps).shuffled())
     }
