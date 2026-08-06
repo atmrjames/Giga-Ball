@@ -127,17 +127,22 @@ each other rather than the ones that are merely strange.
 | Gravity | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Moving | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Directional | ✓ | ✓ | ✓ | ✗ ² | ✓ |
-| Exploding | ✓ | ✓ | ✓ | ✗ ² | ✓ |
-| Spawner | ✓ | ✓ | ✓ | ✗ ² | ✓ |
+| Exploding | ✓ | ✓ | ✓ | ✓ ⁶ | ✓ |
+| Spawner | ✓ | ✓ | ✓ | ✓ ⁶ | ✓ |
 | Portal | ✗ ³ | ✗ ³ | ✗ ³ | ✓ | ✗ ³ |
 
 1. Both are about whether the brick can be seen. A brick that is invisible until struck and
    also fades in and out has no readable state.
-2. Each of these fires when the brick is destroyed, or describes how it is destroyed. On a
-   brick that can never be destroyed they can never happen.
+2. Directional describes how a brick is destroyed. On one that never is, there is nothing
+   for it to describe.
 3. A Portal is struck rather than damaged, so its behaviour has to be the one that already
    means "a hit does nothing". Building it on Indestructible ×2 is not a limitation — it is
    what makes the rest of the game treat it correctly for free.
+6. **These fire on every hit rather than on destruction.** On any other behaviour they go off
+   once, when the brick dies. On one that never dies that moment never comes, so contact is
+   the trigger instead — a brick that clears its neighbours each time you hit it, or one that
+   keeps refilling them. Both are self-limiting: an explosion with nothing beside it does
+   nothing, and a Spawner only fills cells that are empty.
 
 **Sizes** combine with every behaviour and every style, with one exception: a Big brick
 cannot be Spinning, because the clearance a full-size brick needs to turn is already two
@@ -634,7 +639,7 @@ only at the end. Nothing in a later phase is a prerequisite for testing an earli
 | **3. Simple bricks** | Spinning, Flashing, Rounded - no grid changes needed | Whether they read clearly and whether Flashing is fair |
 | **4. Sizes** | Big and Tiny, on the brick grid | Whether Tiny is worth its cost, which is the open question in §11 |
 | **5. Behavioural bricks** | Gravity, Moving, Directional, Exploding, Spawner, Portal | Whether explosions and cascades feel good or chaotic |
-| **6. Generation** | Phases, the introduction schedule, gentle opening | The heart of it: whether a run feels varied and whether the pacing works |
+| **6. Generation** | Phases, the introduction schedule, gentle opening, and the **style progression** below | The heart of it: whether a run feels varied and whether the pacing works |
 | **7. Multi-Ball** | The collection of balls, and the run continuing while one survives | Performance with four balls, and whether it is as fun as it sounds |
 | **8. New power-ups** | In batches, simplest first: vision, then paddle, then rules-changing | Each batch on its own, which is the only way to tune rarity |
 | **9. Presentation** | Scrolling backgrounds, icons, the information page | The finish |
@@ -642,3 +647,25 @@ only at the end. Nothing in a later phase is a prerequisite for testing an earli
 Phases 3 to 5 can be reordered freely - they are independent. Phase 6 is where the mode
 stops being Endless with extra bricks and starts being its own thing, so it is worth
 reaching before judging whether the whole idea works.
+
+### 12.1 Style progression, as part of phase 6
+
+Styles arrive the way power-ups do (§6.3), and for the same reason: a player who never gets
+far should still meet everything eventually, and a player who gets a long way should be
+meeting combinations rather than single tricks.
+
+Three things ramp with height, independently:
+
+| | Near the start | Deep |
+|---|---|---|
+| **How often a brick has a style at all** | Rare — most of the field is plain | Common enough to shape how a field is played |
+| **How many styles a brick may carry** | One | Two, and rarely two on several bricks at once |
+| **Which styles are offered** | The readable ones — Rounded, Big, Tiny | Everything, weighted so the field-changing ones stay the minority |
+
+**Rare, not absent.** Every style keeps a small floor probability from the first row, the
+same rule §6.3 sets for power-ups. Somebody who never passes 20m should still have met a
+Portal, and met it as a surprise rather than as the thing that ended the run.
+
+**Varied, not escalating.** Depth raises what is *possible*, not what is *guaranteed*. A
+deep field that is entirely styled bricks is as monotonous as a shallow field with none, so
+the ramp raises the ceiling and leaves the roll to chance.

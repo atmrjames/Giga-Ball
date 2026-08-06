@@ -33,7 +33,7 @@ enum EndlessIIBehaviour {
 /// Independent of behaviour, so a spinning Indestructible brick is a thing that can exist:
 /// an obstacle you cannot remove, presenting a different angle every time the ball reaches
 /// it. See §4.0 of the specification for the full grid.
-enum EndlessIIStyle: CaseIterable {
+enum EndlessIIStyle: String, CaseIterable {
     case rounded, spinning, flashing
     case gravity, moving, directional, exploding, spawner, portal
 
@@ -44,18 +44,61 @@ enum EndlessIIStyle: CaseIterable {
             // Both are about whether the brick can be seen; together there is no readable
             // state
             return behaviour != .invisible
-        case .directional, .exploding, .spawner:
-            // Each fires when the brick is destroyed, or says how it is destroyed. On one
-            // that never is, they never happen
+        case .directional:
+            // Says how a brick is destroyed. On one that never is, there is nothing for it
+            // to describe
             return behaviour != .indestructibleAlways
+        case .exploding, .spawner:
+            // These two fire on destruction everywhere else, and on an Indestructible brick
+            // they fire on every hit instead - a turret that clears its own neighbourhood,
+            // or a well that keeps refilling it. Both are self-limiting: once the cells
+            // around them are empty, or full, hitting them again does nothing
+            return true
         case .portal:
             // Struck rather than damaged, so its behaviour has to be the one that already
             // means a hit does nothing
             return behaviour == .indestructibleAlways
-        case .rounded, .spinning, .gravity, .moving:
+        case .rounded, .spinning, .gravity:
+            return true
+        case .moving:
             return true
         }
     }
+
+    /// Whether this style fires when the brick is hit rather than when it is destroyed.
+    ///
+    /// The same style, read differently depending on what it is attached to. A brick that
+    /// can never be destroyed would never fire an on-destruction effect at all, so it fires
+    /// on contact instead.
+    func firesOnHit(with behaviour: EndlessIIBehaviour) -> Bool {
+        (self == .exploding || self == .spawner) && behaviour == .indestructibleAlways
+    }
+
+    /// Whether two styles can share one brick.
+    ///
+    /// What decides it is what each one takes control of. Two that both say where the brick
+    /// is, or both decide whether it is solid, or both answer for what a hit does, cannot be
+    /// combined - the second would only undo the first. Everything else can, and an
+    /// Indestructible brick that is rounded and spinning is the reason for having this at
+    /// all. See §4.0.2 of the specification.
+    func stacksWith(_ other: EndlessIIStyle) -> Bool {
+        guard self != other else { return false }
+        let pair: Set<EndlessIIStyle> = [self, other]
+        return EndlessIIStyle.incompatiblePairs.contains(pair) == false
+    }
+
+    static let incompatiblePairs: [Set<EndlessIIStyle>] = [
+        [.spinning, .moving],       // both want to say where the brick is
+        [.gravity, .moving],        // the same
+        [.spinning, .directional],  // a vulnerable side has to stay findable
+        [.moving, .directional],    // the same
+        [.flashing, .directional],  // a brick that keeps vanishing cannot also be read
+        [.exploding, .spawner],     // opposite answers to the same question
+        [.portal, .flashing],       // a Portal is never not solid
+        [.portal, .directional],    // nor ever damaged
+        [.portal, .exploding],      // one big thing per hit, or nobody can follow it
+        [.portal, .spawner],
+    ]
 }
 
 enum EndlessIIRole: String {

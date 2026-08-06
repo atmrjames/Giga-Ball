@@ -117,17 +117,48 @@ extension GameScene {
         }
     }
 
+    /// At most two. Three is not ruled out by the compatibility grid, but a brick doing
+    /// three things is one nobody can read at a glance, and legibility is what makes the
+    /// combinations fun rather than noisy.
+    static let endlessIIMaximumStyles = 2
+
+    /// Which styles a brick is already wearing.
+    ///
+    /// Worked out from the brick and the lists that drive it rather than kept as a separate
+    /// record, so there is no second copy of the truth to fall out of step with the first.
+    func endlessIIStyles(on brick: SKSpriteNode) -> [EndlessIIStyle] {
+        var found: [EndlessIIStyle] = []
+        if brick.childNode(withName: GameScene.roundedBrickOutlineName) != nil {
+            found.append(.rounded)
+        }
+        if endlessIISpinners.contains(where: { $0.brick === brick }) { found.append(.spinning) }
+        if endlessIIFlashers.contains(where: { $0.brick === brick }) { found.append(.flashing) }
+        switch brick.endlessIIRole {
+        case .gravity: found.append(.gravity)
+        case .moving: found.append(.moving)
+        case .directional: found.append(.directional)
+        case .exploding: found.append(.exploding)
+        case .spawner: found.append(.spawner)
+        case .portal: found.append(.portal)
+        case nil: break
+        }
+        return found
+    }
+
     /// Whether a brick can take a style on top of what it already is.
     ///
-    /// Two questions, and they are different. Whether the style suits the behaviour is a
-    /// design rule and lives in `EndlessIIStyle.suits`. Whether this particular sprite can
-    /// carry it is a mechanical one: a brick already wearing a style should not wear two,
-    /// and Rounded and Spinning both assume a sprite centred on its node, which a Big
-    /// brick's is not.
+    /// Three separate questions. Whether the style suits the behaviour is a design rule and
+    /// lives in `EndlessIIStyle.suits`. Whether it stacks with what the brick already wears
+    /// is another, in `stacksWith`. Whether this particular sprite can carry it is a
+    /// mechanical one: Rounded and Spinning both assume a sprite centred on its node, which
+    /// a Big brick's is not.
     func endlessIICanTake(_ style: EndlessIIStyle, _ brick: SKSpriteNode) -> Bool {
         guard brick.endlessIIStaysPlain == false else { return false }
         guard let behaviour = endlessIIBehaviour(of: brick) else { return false }
-        guard brick.endlessIIRole == nil, endlessIIIsPlain(brick) else { return false }
+
+        let worn = endlessIIStyles(on: brick)
+        guard worn.count < GameScene.endlessIIMaximumStyles else { return false }
+        guard worn.allSatisfy({ $0.stacksWith(style) }) else { return false }
 
         if style == .portal {
             // Portal does not need to find an Indestructible brick, it makes one: it takes
@@ -257,9 +288,12 @@ extension GameScene {
             guard let brick = node as? SKSpriteNode,
                   let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName)
                     as? SKShapeNode else { return }
-            if shape.fillTexture !== brick.texture {
+            let wantedColour = brick.colorBlendFactor > 0.5 ? brick.color : UIColor.white
+            if shape.fillTexture !== brick.texture || shape.fillColor != wantedColour {
                 shape.fillTexture = brick.texture
-                shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
+                shape.fillColor = wantedColour
+                // Colour as well as texture: a rounded brick that also picked up a role is
+                // tinted after its face was built, and the face has to follow
             }
         }
     }

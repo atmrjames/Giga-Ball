@@ -2136,6 +2136,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeBrick(node: node, sprite: sprite)
 		case brickIndestructible2Texture:
 			totalStatsArray[0].bricksHit[6]+=1
+			endlessIIBrickStruck(sprite)
+			// An Endless 2.0 brick that can never be destroyed fires its style here instead
 			countBricks()
         case brickInvisibleTexture:
 			totalStatsArray[0].bricksHit[7]+=1

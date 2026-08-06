@@ -345,9 +345,10 @@ extension GameScene {
             }
         }
 
-        if destroyed.isEmpty == false {
-            endlessIIShowBlast(at: brick.position, over: destroyed)
-        }
+        endlessIIShowBlast(at: brick.position, over: destroyed)
+        // Shown whether or not it caught anything. An explosion with nothing beside it
+        // achieves nothing, but a brick that only sometimes goes off reads as broken - and
+        // seeing it fire into empty space is how a player learns what it would have done
         for victim in destroyed { endlessIIDestroy(victim) }
         if destroyed.isEmpty == false { countBricks() }
     }
@@ -532,6 +533,26 @@ extension GameScene {
     static let endlessIIPortalCooldownSeconds: TimeInterval = 0.5
 
     // MARK: - Reacting
+
+    /// What Endless 2.0 does when a brick is struck but survives.
+    ///
+    /// Exploding and Spawner normally fire when their brick is destroyed. On an
+    /// Indestructible one that moment never comes, so they fire on contact instead - which
+    /// turns each of them into something that keeps working: a brick that clears its
+    /// neighbours every time you hit it, or one that keeps refilling them. Neither runs
+    /// away, because both only act on cells that are there to act on.
+    func endlessIIBrickStruck(_ brick: SKSpriteNode) {
+        guard gameMode == .endlessII else { return }
+        guard let behaviour = endlessIIBehaviour(of: brick) else { return }
+
+        switch brick.endlessIIRole {
+        case .exploding where EndlessIIStyle.exploding.firesOnHit(with: behaviour):
+            endlessIIExplode(from: brick)
+        case .spawner where EndlessIIStyle.spawner.firesOnHit(with: behaviour):
+            endlessIISpawn(around: brick)
+        default: break
+        }
+    }
 
     /// What Endless 2.0 does when a brick is destroyed.
     ///

@@ -48,14 +48,16 @@ final class EndlessIIStyleTests: XCTestCase {
         XCTAssertTrue(EndlessIIStyle.flashing.suits(.indestructibleAlways))
     }
 
-    func testTheStylesThatFireOnDestructionNeedABrickThatCanBeDestroyed() {
-        for style in [EndlessIIStyle.directional, .exploding, .spawner] {
-            XCTAssertFalse(style.suits(.indestructibleAlways), "\(style)")
-            XCTAssertTrue(style.suits(.standard), "\(style)")
-            XCTAssertTrue(style.suits(.multiHit), "\(style)")
-            // Indestructible x1 becomes x2 when hit, so it is destructible once
-            XCTAssertTrue(style.suits(.indestructibleOnce), "\(style)")
-        }
+    func testDirectionalNeedsABrickThatCanBeDestroyed() {
+        // Exploding and Spawner used to be here too. They are not any more: on a brick that
+        // can never be destroyed they fire on every hit instead, which is a reading of the
+        // same style rather than an exception to it. Directional has no such reading - it
+        // describes how a brick is destroyed, and there is nothing to describe.
+        XCTAssertFalse(EndlessIIStyle.directional.suits(.indestructibleAlways))
+        XCTAssertTrue(EndlessIIStyle.directional.suits(.standard))
+        XCTAssertTrue(EndlessIIStyle.directional.suits(.multiHit))
+        // Indestructible x1 becomes x2 when hit, so it is destructible once
+        XCTAssertTrue(EndlessIIStyle.directional.suits(.indestructibleOnce))
     }
 
     func testAPortalIsOnlyEverIndestructible() {
@@ -80,5 +82,84 @@ final class EndlessIIStyleTests: XCTestCase {
             XCTAssertTrue(EndlessIIStyle.allCases.contains { $0.suits(behaviour) },
                           "\(behaviour) can take nothing at all")
         }
+    }
+}
+
+extension EndlessIIStyleTests {
+
+    // MARK: - Stacking
+
+    func testAStyleNeverStacksWithItself() {
+        for style in EndlessIIStyle.allCases {
+            XCTAssertFalse(style.stacksWith(style), "\(style)")
+        }
+    }
+
+    func testStackingIsSymmetric() {
+        // An asymmetry here would mean a pair that works in one generation order and not the
+        // other, which would look like a bug that only happens sometimes.
+        for a in EndlessIIStyle.allCases {
+            for b in EndlessIIStyle.allCases {
+                XCTAssertEqual(a.stacksWith(b), b.stacksWith(a), "\(a) / \(b)")
+            }
+        }
+    }
+
+    func testTheCombinationTheSplitWasBuiltFor() {
+        // Indestructible, rounded and spinning: you cannot remove it, it shows a different
+        // angle every time, and the angles are ones a rectangle never gives.
+        XCTAssertTrue(EndlessIIStyle.rounded.stacksWith(.spinning))
+        XCTAssertTrue(EndlessIIStyle.rounded.suits(.indestructibleAlways))
+        XCTAssertTrue(EndlessIIStyle.spinning.suits(.indestructibleAlways))
+    }
+
+    func testTwoStylesThatBothMoveABrickCannotShareIt() {
+        XCTAssertFalse(EndlessIIStyle.spinning.stacksWith(.moving))
+        XCTAssertFalse(EndlessIIStyle.gravity.stacksWith(.moving))
+    }
+
+    func testAVulnerableSideHasToStayFindable() {
+        for style in [EndlessIIStyle.spinning, .moving, .flashing] {
+            XCTAssertFalse(EndlessIIStyle.directional.stacksWith(style), "\(style)")
+        }
+    }
+
+    func testOppositeAnswersToTheSameQuestionCannotShareABrick() {
+        // One clears the neighbourhood, the other fills it.
+        XCTAssertFalse(EndlessIIStyle.exploding.stacksWith(.spawner))
+    }
+
+    func testRoundedGoesWithEverythingElse() {
+        // It only changes the brick's outline, so it has nothing to fight over.
+        for style in EndlessIIStyle.allCases where style != .rounded {
+            XCTAssertTrue(EndlessIIStyle.rounded.stacksWith(style), "\(style)")
+        }
+    }
+
+    // MARK: - Firing on hit
+
+    func testTheDestructionStylesFireOnHitWhenTheBrickCannotBeDestroyed() {
+        XCTAssertTrue(EndlessIIStyle.exploding.firesOnHit(with: .indestructibleAlways))
+        XCTAssertTrue(EndlessIIStyle.spawner.firesOnHit(with: .indestructibleAlways))
+    }
+
+    func testEverywhereElseTheyStillFireOnDestruction() {
+        for behaviour in [EndlessIIBehaviour.standard, .multiHit,
+                          .indestructibleOnce, .invisible] {
+            XCTAssertFalse(EndlessIIStyle.exploding.firesOnHit(with: behaviour), "\(behaviour)")
+            XCTAssertFalse(EndlessIIStyle.spawner.firesOnHit(with: behaviour), "\(behaviour)")
+        }
+    }
+
+    func testNothingElseFiresOnHit() {
+        for style in EndlessIIStyle.allCases where style != .exploding && style != .spawner {
+            XCTAssertFalse(style.firesOnHit(with: .indestructibleAlways), "\(style)")
+        }
+    }
+
+    func testAnIndestructibleBrickCanNowCarryThemAtAll() {
+        // The point of the on-hit reading: they used to be excluded here entirely.
+        XCTAssertTrue(EndlessIIStyle.exploding.suits(.indestructibleAlways))
+        XCTAssertTrue(EndlessIIStyle.spawner.suits(.indestructibleAlways))
     }
 }
