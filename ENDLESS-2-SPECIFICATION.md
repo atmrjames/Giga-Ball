@@ -636,6 +636,51 @@ changed shape twice.
 
 ---
 
+## 8.6 Constraints the implementation has to respect
+
+Things that are not obvious from reading the code, each of which has already caused a bug.
+Written down because they are the expensive kind of knowledge — every one cost a debugging
+session, and none of them announces itself.
+
+**A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
+gates new-row generation reads it. A brick whose position is anywhere but its row centre is
+cleared away at the wrong moment, or sits in the last row blocking generation for ever. Big
+bricks keep their node on a row centre and express their size through an anchor point and an
+offset physics body for exactly this reason.
+
+**The descent moves by `brickHeight`, not by each brick's own height.** Those were the same
+number while every brick was one cell. A brick of any other size drifts out of step with the
+field it belongs to.
+
+**Nothing runs a repeating `SKAction` on a brick.** `countBricks()` decides whether a row move
+is underway by asking every brick `hasActions()`, and a new row is only generated once nothing
+is moving. A brick with a permanent action answers yes for ever and the field stops descending.
+Spinning, flashing, falling and wandering are all driven from `update` instead.
+
+**`SKSpriteNode.size` is backed by floats.** A width assigned straight from `brickWidth` does
+not read back as `brickWidth`, so `size.width == brickWidth` is always false. Compare with a
+tolerance. This silently disabled two whole features once.
+
+**A physics body cannot be moved from `didBegin`.** SpriteKit calls contact handlers in the
+middle of simulating the step, and a position written there is overwritten as the step
+resolves. Record the intent and apply it in `didSimulatePhysics`.
+
+**`colorBlendFactor` is modulated by the texture.** Colourising a bright texture gives the
+colour; colourising a dark one gives a dark, muddy version of it. Tinting only works on the
+plain brick artwork.
+
+**`CGMutablePath.addArc` joins to the current point.** Drawing a segmented ring without a
+`move(to:)` before each arc fills every gap with a connecting line and the ring reads solid.
+
+**The side blocks are the walls.** They fill whatever the play area leaves over, and a wall of
+zero width gets no physics body — which the next line force-unwraps. They take a minimum
+thickness that extends off-screen, so the play area can reach the edge.
+
+**Cells can be part full.** Four Tiny bricks share one cell, so "is this cell occupied" is the
+wrong question — a cell with one quarter left in it is not a wall. Ask how full it is.
+
+---
+
 ## 9. Out of scope for the first version
 
 - **A separate descent-pressure mode** — where the field reaching the paddle is the core
@@ -686,12 +731,12 @@ only at the end. Nothing in a later phase is a prerequisite for testing an earli
 
 | Phase | What lands | What you can test |
 |---|---|---|
-| **1. The mode exists** | Endless 2.0 on the main menu, playing exactly as Endless does today, with its own stats and leaderboard | That it launches, plays and scores - and that Endless and Classic are untouched |
-| **2. The ring HUD** | Only-active power-ups, ring timers, in Endless 2.0 only | Whether the ring reads better than the tray, side by side with the old one |
-| **3. Simple bricks** | Spinning, Flashing, Rounded - no grid changes needed | Whether they read clearly and whether Flashing is fair |
-| **4. Sizes** | Big and Tiny, on the brick grid | Whether Tiny is worth its cost, which is the open question in §11 |
-| **5. Behavioural bricks** | Gravity, Moving, Directional, Exploding, Spawner, Portal | Whether explosions and cascades feel good or chaotic |
-| **6. Generation** | Phases, the introduction schedule, gentle opening, and the **style progression** below | The heart of it: whether a run feels varied and whether the pacing works |
+| **1. The mode exists** ✅ | Endless 2.0 on the main menu, playing exactly as Endless does today, with its own stats and leaderboard | That it launches, plays and scores - and that Endless and Classic are untouched |
+| **2. The ring HUD** ✅ | Only-active power-ups, ring timers, in Endless 2.0 only | Whether the ring reads better than the tray, side by side with the old one |
+| **3. Simple bricks** ✅ | Spinning, Flashing, Rounded - no grid changes needed | Whether they read clearly and whether Flashing is fair |
+| **4. Sizes** ✅ | Big and Tiny, on the brick grid | Whether Tiny is worth its cost, which is the open question in §11 |
+| **5. Behavioural bricks** ✅ | Gravity, Moving, Directional, Exploding, Spawner, Portal | Whether explosions and cascades feel good or chaotic |
+| **6. Generation** ✅ mostly | Phases, gentle opening, and the **style progression** below. Power-up introduction schedule still to do | The heart of it: whether a run feels varied and whether the pacing works |
 | **7. Multi-Ball** | The collection of balls, and the run continuing while one survives | Performance with four balls, and whether it is as fun as it sounds |
 | **8. New power-ups** | In batches, simplest first: vision, then paddle, then rules-changing | Each batch on its own, which is the only way to tune rarity |
 | **9. Presentation** | Scrolling backgrounds, icons, the information page | The finish |
@@ -699,6 +744,34 @@ only at the end. Nothing in a later phase is a prerequisite for testing an earli
 Phases 3 to 5 can be reordered freely - they are independent. Phase 6 is where the mode
 stops being Endless with extra bricks and starts being its own thing, so it is worth
 reaching before judging whether the whole idea works.
+
+### 12.0 Where this has got to
+
+Phases 1 to 5 are built and play-tested. Phase 6 is built apart from the power-up
+introduction schedule. Everything below is what remains, in the order it is worth doing.
+
+**Open, in rough priority order**
+
+| Item | Notes |
+|---|---|
+| Tap to skip the game-over height tally | The hook exists; the screen has no tap gesture to hang it off |
+| Set rows | Deliberately designed 1–3 row patterns, alongside phases. A couple already exist, such as the alternating indestructible row |
+| Fixed brick | Specced at §4.11a. Two open questions: what happens when one reaches the bottom row, and whether a Big or Moving one can be fixed |
+| Build-in animation | Bricks build in from the top at the start of a run, quickly, skippable with a tap |
+| Ring bar styling | The progress ring sits outside the icon; the icons have room for it to sit inside. Giga-Ball colour and glow |
+| Stuck-ball nudge | Rare endless loops remain. If the ball is detected as stuck, apply a small random direction change |
+| Background selection screen | Rather than a name on a cell, a screen showing a scene mock-up that can be swiped between |
+| Power-up introduction schedule | The last piece of §6.3 — the same treatment styles already get |
+| Brick types menu page | A reference page like the power-ups one. The new power-ups also need adding to the existing page |
+
+**Backlogged**
+
+| Item | Blocked on |
+|---|---|
+| Global leaderboard lines on the height markers | The Endless 2.0 boards existing in App Store Connect. Until they do, scores fail to post silently |
+| Artwork and sound for everything new | §8.5. Deliberately last, while mechanics are still moving |
+| Ring HUD in Classic and Endless | A shorter HUD bar changes `layoutUnit`, which changes brick size in levels people hold high scores on. Worth doing deliberately, not as a side effect |
+| Wrap-around power-up interacting with Moving and Exploding bricks | The power-up itself is not built yet |
 
 ### 12.1 Style progression, as part of phase 6
 
