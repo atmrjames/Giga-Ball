@@ -2406,6 +2406,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		endlessHeight+=1
 		refreshEndlessIIBest()
+		moveEndlessIIMarkersDown()
+		addEndlessIIMarkerIfDue()
+		// Existing markers move first, then the new one is placed - otherwise the line just
+		// added would immediately travel a row and sit against the wrong height
 		
 		if endlessHeight >= 10 && totalStatsArray[0].achievementsUnlockedArray[0] == false {
 			totalStatsArray[0].achievementsUnlockedArray[0] = true

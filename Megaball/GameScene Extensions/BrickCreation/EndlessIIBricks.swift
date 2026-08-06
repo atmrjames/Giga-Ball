@@ -501,6 +501,7 @@ extension GameScene {
         endlessIIPendingSpinColumn = nil
         endlessIIPendingClearColumn = nil
         endlessIIProgression = EndlessIIProgression.make()
+        clearEndlessIIMarkers()
         endlessIIPhase = .standard
         endlessIIPhaseEndsAt = 0
         endlessIIPhaseBehaviour = nil
