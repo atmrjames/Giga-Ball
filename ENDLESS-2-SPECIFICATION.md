@@ -754,6 +754,12 @@ with, not the one it arrived with. Anything that needs the approach — which fa
 which way a Portal should send the ball on — has to sample it in `update`, before the physics
 runs. `ballStateBeforeStep` is that sample.
 
+**Reflecting a reported velocity bounces it twice.** Following from the note above: the wall
+and ceiling handlers negated a velocity the engine had already turned round, so the ball was
+sent back into the surface it had just left. At the ceiling that is a ball running along the
+top of the screen; at a side wall it is the sideways part of a shallow approach being lost.
+Both now reflect the *approach*, sampled before the step.
+
 **Adjacent bricks have a seam.** Every brick is its own body, so a ball landing exactly on the
 join between two of them is resolved against both at once and leaves off a corner rather than
 off the flat face. `BrickSeamBounce` catches it: two bricks struck in one step are treated as

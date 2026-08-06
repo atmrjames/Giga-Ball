@@ -199,8 +199,10 @@ enum BrickTypeCatalogue {
         switch style {
         case .spinning:
             // A full-size brick already sweeps two cells in each direction as it turns, and a
-            // Big one would need four
-            return "Tiny and Normal"
+            // Big one would need four. A Tiny one is worse than either: four quarter-cell
+            // bricks share a cell, and each turning about its own centre sweeps through the
+            // three beside it
+            return "Normal"
         case .fixed, .gravity:
             // Only some quarters of a Tiny set would ever draw the style, and a Big one would
             // wall off two columns at once

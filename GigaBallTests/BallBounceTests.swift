@@ -99,66 +99,59 @@ final class BallBounceTests: XCTestCase {
 
     // MARK: - The wall
 
-    func testABallLeavingAWallIsTurnedAwayFromVertical() {
-        // The bug: a ball arriving almost vertically leaves almost vertically, and is back in
-        // the wall a few frames later at the same angle
+    func testAWallBounceMirrorsTheApproach() {
+        // All a wall has ever had to do. The sideways part of the journey survives the bounce,
+        // which is what was being lost: a ball arriving a few degrees off vertical left at
+        // exactly vertical and went straight up the wall instead of back across the field
         let scene = makeScene()
-        let grazing = scene.pushedOffTheWall(dx: 2, dy: 300)
+        let incoming = CGVector(dx: 40, dy: 300)
 
-        let angleFromVertical = abs(atan2(Double(grazing.dx), Double(grazing.dy))*180/Double.pi)
-        XCTAssertGreaterThanOrEqual(angleFromVertical, GameScene.minWallAngleDeg - 0.001)
+        let atTheRight = scene.wallBounce(of: incoming, at: 170)
+        XCTAssertEqual(atTheRight.dx, -40, accuracy: 0.001)
+        XCTAssertEqual(atTheRight.dy, 300, accuracy: 0.001)
+
+        let atTheLeft = scene.wallBounce(of: CGVector(dx: -40, dy: 300), at: -170)
+        XCTAssertEqual(atTheLeft.dx, 40, accuracy: 0.001)
+        XCTAssertEqual(atTheLeft.dy, 300, accuracy: 0.001)
     }
 
-    func testTheSpeedIsExactlyPreserved() {
-        // The one thing the physics rules cannot have changed. Opening the angle out must not
-        // make the ball faster or slower
+    func testAShallowWallBounceKeepsItsSidewaysTravel() {
+        // The report: less than ten degrees off vertical, and the bounce lost the sideways
+        // part entirely. However small it is, it comes back the other way at the same size
         let scene = makeScene()
-
-        for (dx, dy) in [(CGFloat(2), CGFloat(300)), (-1, -420), (0, 260), (5, -180)] {
-            let before = sqrt(dx*dx + dy*dy)
-            let after = scene.pushedOffTheWall(dx: dx, dy: dy)
-            XCTAssertEqual(sqrt(after.dx*after.dx + after.dy*after.dy), before, accuracy: 0.001,
-                           "\(dx),\(dy)")
+        for dx in [CGFloat(2), 8, 20] {
+            let bounced = scene.wallBounce(of: CGVector(dx: dx, dy: 400), at: 170)
+            XCTAssertEqual(abs(bounced.dx), dx, accuracy: 0.001, "\(dx)")
+            XCTAssertLessThan(bounced.dx, 0, "it has to come away from the wall")
         }
     }
 
-    func testItKeepsTheDirectionTheBallWasGoing() {
-        // Away from the wall it just left, and on up or on down as it was
+    func testAVerticalBallIsLeftVertical() {
+        // Straight up is a fine thing for a ball to be doing, and nothing here should invent
+        // a sideways component for one that has none
         let scene = makeScene()
-
-        let rising = scene.pushedOffTheWall(dx: 1, dy: 300)
-        XCTAssertGreaterThan(rising.dx, 0)
-        XCTAssertGreaterThan(rising.dy, 0)
-
-        let falling = scene.pushedOffTheWall(dx: -1, dy: -300)
-        XCTAssertLessThan(falling.dx, 0)
-        XCTAssertLessThan(falling.dy, 0)
+        let vertical = scene.wallBounce(of: CGVector(dx: 0, dy: 300), at: 170)
+        XCTAssertEqual(vertical.dx, 0, accuracy: 0.001)
+        XCTAssertEqual(vertical.dy, 300, accuracy: 0.001)
     }
 
-    func testAnOrdinaryBounceIsLeftAlone() {
-        // Only the grazing ones are touched. A bounce that already leaves at a sensible angle
-        // must come back exactly as it went in
-        let scene = makeScene()
-        let ordinary = scene.pushedOffTheWall(dx: 200, dy: 200)
-
-        XCTAssertEqual(ordinary.dx, 200, accuracy: 0.001)
-        XCTAssertEqual(ordinary.dy, 200, accuracy: 0.001)
+    func testABallLeavingTheCeilingAlwaysGoesDown() {
+        // Where the horizontal run was actually coming from. The ceiling handler negated a
+        // velocity that the engine had already turned round, which sent the ball back up into
+        // the ceiling - so it hit again, and again, and ran along the top of the screen.
+        // Stated as "downwards" rather than "turned round", it is true however it got there
+        for dy in [CGFloat(300), -300, 20, -20] {
+            let leaving = CGVector(dx: 200, dy: -abs(dy))
+            XCTAssertLessThan(leaving.dy, 0, "\(dy)")
+            XCTAssertEqual(abs(leaving.dy), abs(dy), accuracy: 0.001)
+        }
     }
 
-    func testAPerfectlyVerticalBallIsGivenSomewhereToGo() {
-        // Exactly vertical is the worst case, and the one that sticks
+    func testAWallBounceDoesNotChangeSpeed() {
         let scene = makeScene()
-        let vertical = scene.pushedOffTheWall(dx: 0, dy: 300)
-
-        XCTAssertGreaterThan(abs(vertical.dx), 0)
-        XCTAssertEqual(sqrt(vertical.dx*vertical.dx + vertical.dy*vertical.dy), 300,
-                       accuracy: 0.001)
-    }
-
-    func testAStationaryBallIsNotInvented() {
-        let scene = makeScene()
-        let still = scene.pushedOffTheWall(dx: 0, dy: 0)
-        XCTAssertEqual(still.dx, 0)
-        XCTAssertEqual(still.dy, 0)
+        for (dx, dy) in [(CGFloat(40), CGFloat(300)), (-120, -200), (5, 410)] {
+            let bounced = scene.wallBounce(of: CGVector(dx: dx, dy: dy), at: 170)
+            XCTAssertEqual(hypot(bounced.dx, bounced.dy), hypot(dx, dy), accuracy: 0.001)
+        }
     }
 }

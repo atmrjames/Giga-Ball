@@ -213,6 +213,14 @@ extension GameScene {
             guard brick.endlessIIStaysPlain == false else { continue }
             guard isOrdinaryCellSized(brick) else { continue }
             // Already resized - the Big brick this row built comes through here too
+            guard endlessIISpinners.contains(where: { $0.brick === brick }) == false else {
+                continue
+            }
+            // A spinning brick is placed by the row generator, which runs before this, and
+            // `endlessIICanTake` refuses to make a Tiny brick spin - but nothing stopped a
+            // spinner being shrunk *afterwards*. Four quarter-cell bricks each turning about
+            // their own centre sweep straight through one another, which is the one thing the
+            // spinner's whole clearance rule exists to prevent
             let chance = endlessIIPhase == .miniatures ? 100 : GameScene.endlessIITinyChance
             guard Int.random(in: 1...100) <= chance else { continue }
             made.append(contentsOf: Array(makeTiny(brick).dropFirst()) as [SKNode])

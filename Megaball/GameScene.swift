@@ -1679,6 +1679,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			recordBallStatesBeforeStep()
 			// Before the physics runs, because how a ball arrived is the only thing that says
 			// which face it hit - and by the time a contact is reported that is already gone
+
+			breakHorizontalRuns()
 		
 			if gravityActivated {
 				if ball.position.y < paddle.position.y + ballSize*4 {
@@ -1972,15 +1974,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						// Deactivate gravity power-up
 					}
 					
-					if struckVelocity.dy < 0 {
-						struckBall.physicsBody!.velocity = struckVelocity
-					} else {
-						struckBall.physicsBody!.velocity = CGVector(dx: struckVelocity.dx,
-																   dy: -struckVelocity.dy)
-					}
+					// The velocity the ball arrived with. Read from the contact, it has already
+					// been through the engine's own bounce off the ceiling - so negating it
+					// sent the ball back *up* into the ceiling, where it hit again, and again,
+					// and ran along the top of the screen horizontally until something else
+					// knocked it out of it. Every bounce off the top was doing this; it only
+					// showed when the ball arrived shallow enough to stay up there
+					let incoming = ballStateBeforeStep[ObjectIdentifier(struckBall)]?.velocity
+						?? struckVelocity
+
+					struckBall.physicsBody!.velocity = CGVector(dx: incoming.dx,
+																dy: -abs(incoming.dy))
+					// Ensure the ySpeed is downwards - stated as "downwards" rather than as
+					// "turned round", so it is true however the ball got here
+
 					let angleDeg = Double(atan2(Double(struckBall.physicsBody!.velocity.dy), Double(struckBall.physicsBody!.velocity.dx)))/Double.pi*180
 					ballHorizontalControl(angleDegInput: angleDeg, for: struckBall)
-					// Ensure the ySpeed is downwards
 				}
 			}
 		   // Ball hits screenblock
@@ -5020,15 +5029,6 @@ laserTimer?.invalidate()
 	}
 	// Set the new speed of the ball and ensure it stays within the boundary
 	
-	/// How far from vertical a ball must leave a side wall, in degrees.
-	///
-	/// The mirror of `minAngleDeg`, which keeps the ball from travelling too near horizontal.
-	/// Nothing was doing the same job at the other end, and the wall is where it is needed:
-	/// a ball arriving almost vertically leaves almost vertically, which puts it back into the
-	/// wall a few frames later at the same angle, and again - so it runs up the side of the
-	/// screen in a stack of tiny bounces that reads as the ball having stuck to it.
-	static let minWallAngleDeg: Double = 12
-
 	/// How much more than the minimum a ball gets when it is pushed off horizontal.
 	///
 	/// Small, and random, so no two escapes are the same. A fixed escape angle is a loop
@@ -5037,22 +5037,59 @@ laserTimer?.invalidate()
 	/// horizontally for a dozen bounces before something else knocks it out of it.
 	static let horizontalEscapeJitter: Double = 6
 
-	/// Turns a ball leaving a wall far enough away from vertical to actually leave it.
+	/// Catches a ball that has ended up travelling horizontally, wherever it came from.
 	///
-	/// The speed is preserved exactly - only the direction is opened out - so this cannot
-	/// change how fast the game plays, which is the one thing the physics rules must keep.
-	func pushedOffTheWall(dx: CGFloat, dy: CGFloat) -> CGVector {
-		let speed = sqrt(dx*dx + dy*dy)
-		guard speed > 0 else { return CGVector(dx: dx, dy: dy) }
+	/// The angle correction already refuses to leave a bounce near horizontal, and a ball still
+	/// got there - which is the point. That correction only runs on bounces it is told about,
+	/// and a ball can arrive at horizontal through a path that never calls it: a seam, a
+	/// simultaneous pair of contacts, a power-up that sets a velocity directly. Rather than
+	/// find every one of those, this asks the only question that matters, every frame, of the
+	/// only thing that can answer it - the ball.
+	///
+	/// A horizontal ball never comes down, so it can never be lost and never be played. It is
+	/// the one heading the game cannot allow.
+	func breakHorizontalRuns() {
+		for subject in endlessIIBallsInPlay {
+			guard let body = subject.physicsBody else { continue }
+			if subject === ball && ballIsOnPaddle { continue }
 
-		let minimum = CGFloat(sin(GameScene.minWallAngleDeg*Double.pi/180))*speed
-		guard abs(dx) < minimum else { return CGVector(dx: dx, dy: dy) }
+			let speed = hypot(body.velocity.dx, body.velocity.dy)
+			guard speed > 1 else { continue }
 
-		let wanted = dx < 0 ? -minimum : minimum
-		let remaining = max(0, speed*speed - wanted*wanted).squareRoot()
-		return CGVector(dx: wanted, dy: dy < 0 ? -remaining : remaining)
-		// The vertical component takes what is left, keeping the sign it had, so the ball
-		// carries on the way it was going and simply stops grazing the wall
+			let floor = CGFloat(sin(minAngleDeg*Double.pi/180))*speed
+			guard abs(body.velocity.dy) < floor else { continue }
+
+			// Sent off at the minimum plus a little, and a different little each time, so two
+			// balls in the same fix do not leave in lockstep and one ball cannot fall into a
+			// repeating escape
+			let escape = minAngleDeg + Double.random(in: 0...GameScene.horizontalEscapeJitter)
+			let wanted = CGFloat(sin(escape*Double.pi/180))*speed
+			let dy: CGFloat = body.velocity.dy < 0 ? -wanted
+				: body.velocity.dy > 0 ? wanted
+				: (Bool.random() ? wanted : -wanted)
+			let dx = (max(0, speed*speed - dy*dy)).squareRoot()
+
+			body.velocity = CGVector(dx: body.velocity.dx < 0 ? -dx : dx, dy: dy)
+		}
+	}
+
+	/// A wall bounce, reflected off the approach rather than off whatever the engine left.
+	///
+	/// A ball travelling straight up is fine - it comes back down off the top and stays
+	/// playable the whole way, so nothing here has any business giving it a sideways nudge.
+	/// What was not fine was arriving at a side wall a few degrees off vertical and leaving at
+	/// exactly vertical: the sideways part of the journey was lost at the bounce, so a shot
+	/// aimed to come back across the field went straight up the wall instead.
+	///
+	/// The cause is the one §8.6 records. A contact is reported partway through resolving the
+	/// step, so the velocity read there has already been through the engine's own bounce -
+	/// and reflecting that a second time, then correcting the angle from the result, is two
+	/// bounces' worth of arithmetic on one bounce. At a shallow angle the horizontal part is
+	/// small enough to be lost in it. Taking the approach instead makes the reflection exact:
+	/// the ball leaves at the angle it arrived at, mirrored, which is all a wall has ever had
+	/// to do.
+	func wallBounce(of incoming: CGVector, at x: CGFloat) -> CGVector {
+		CGVector(dx: x > 0 ? -abs(incoming.dx) : abs(incoming.dx), dy: incoming.dy)
 	}
 
 	func frameBallControl(xSpeed: CGFloat, for subject: SKSpriteNode? = nil) {
@@ -5061,12 +5098,12 @@ laserTimer?.invalidate()
 		let isOnPaddle = isExtra ? false : ballIsOnPaddle
 
 		if gameState.currentState is Playing && isOnPaddle == false {
-			let ySpeed = ball.physicsBody!.velocity.dy
-			var newXSpeed = xSpeed
-			if (ball.position.x > 0 && xSpeed > 0) || (ball.position.x < 0 && xSpeed < 0) {
-				newXSpeed = -xSpeed
-			}
-			ball.physicsBody!.velocity = pushedOffTheWall(dx: newXSpeed, dy: ySpeed)
+			// The velocity the ball arrived with, where there is one. `xSpeed` is taken from
+			// the contact, by which point the engine has already bounced it
+			let incoming = ballStateBeforeStep[ObjectIdentifier(ball)]?.velocity
+				?? CGVector(dx: -xSpeed, dy: ball.physicsBody!.velocity.dy)
+
+			ball.physicsBody!.velocity = wallBounce(of: incoming, at: ball.position.x)
 			// Ensure the ball bounces off the wall correctly]
 
 			let angleDeg = Double(atan2(Double(ball.physicsBody!.velocity.dy), Double(ball.physicsBody!.velocity.dx)))/Double.pi*180

@@ -12,6 +12,11 @@ import GameplayKit
 extension GameScene {
     func loadLevel000() {
 
+        showEndlessIIBest()
+        // The original endless mode gets its best height under the live one too. It is the
+        // thing a run is measured against, and it was only ever missing here because the
+        // display was written for the mode that came second
+
         var brickArray: [SKNode] = []
         // Array to store all bricks
 

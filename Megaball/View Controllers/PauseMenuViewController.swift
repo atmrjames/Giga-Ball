@@ -52,7 +52,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     @IBOutlet weak var highscoreLabel: UILabel!
     @IBOutlet weak var highscoreLabelTitle: UILabel!
     @IBOutlet var buttonCollectionView: UICollectionView!
-    @IBOutlet var informationButton: UIButton!
+    @IBOutlet var homeButton: UIButton!
     @IBOutlet var titleLabel: UILabel!
     @IBOutlet var packNameLabel: UILabel!
     @IBOutlet weak var levelNumberLabel: UILabel!
@@ -74,6 +74,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     static let heightTallyTicks = 10
     private var heightTallyLastTick = -1
     private var hasRunHeightTally = false
+    /// What the figure being counted up is measured in - metres for a run, nothing for a score.
+    private var heightTallySuffix = "m"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -99,9 +101,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         levelNameLabelNormalConstraint.isActive = true
         // Default constraints setting
 
-        informationButton.isHidden = sender != "Pause"
-        // This screen is also the game-over and level-complete screen, and those are about
-        // what just happened rather than about looking something up
+        // Home is in the top-left corner rather than in the row of buttons, where it sat
+        // beside Play and was the one press nobody wants to make by accident - it ends the
+        // run. The row below is Information, Play and Settings: two small buttons either side
+        // of the large one, which is what makes it read as a row rather than a list
         
         if levelNumber == 0 {
             endlessMode = true
@@ -181,7 +184,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonHome.png")
+            if self.sender == "Pause" {
+                cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            }
             cell.widthConstraint.constant = 40
         case 1:
             if self.sender == "Pause" {
@@ -212,13 +219,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
             if sender == "Pause" {
-                showWarning(senderID: "pauseMenu")
-            } else {
-                MenuViewController().clearSavedGame()
-                moveToMainMenu()
-                // return to main menu
+                openInformation()
             }
-            // Don't show warning if game over or complete
         }
         if indexPath.row == 1 {
             if self.sender == "Pause" {
@@ -245,10 +247,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
+                    if self.sender == "Pause" {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonHomeHighlighted.png")
                 case 1:
                     if self.sender == "Pause" {
                         if self.hapticsSetting {
@@ -284,10 +290,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
+                    if self.sender == "Pause" {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonHome.png")
                 case 1:
                     if self.sender == "Pause" {
                         if self.hapticsSetting {
@@ -387,7 +397,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
             scoreLabelTitle.text = "Height"
             scoreLabel.text = "\(height)m"
-            if sender != "Pause" { startHeightTally(to: height) }
+            if sender != "Pause" { startTally(to: height, suffix: "m") }
             // Only at the end of a run. Pausing mid-run to watch your own height counted back
             // to you would be telling you something you already know
             highscoreLabelTitle.text = "Best"
@@ -446,6 +456,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
             scoreLabelTitle.text = "Score"
             scoreLabel.text = "\(score)"
+            if sender != "Pause" && numberOfLevels <= 1 {
+                startTally(to: score, suffix: "")
+            }
+            // Single Level Mode only. A level inside a pack is one of many and its score is
+            // carried into the next one, so counting it up would be counting up a running
+            // total that has not finished running - where a single level is the whole result,
+            // the same as a run's height is
             highscoreLabelTitle.text = "Highscore"
             // Get current highscore from level or pack
             
@@ -528,7 +545,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     /// difference between a reference a player uses and one they know exists.
     ///
     /// Every mode, because the question is the same in all of them.
-    @IBAction func informationButton(_ sender: Any) {
+    @IBAction func homeButton(_ sender: Any) {
+        if hapticsSetting {
+            interfaceHaptic.impactOccurred()
+        }
+        if self.sender == "Pause" {
+            showWarning(senderID: "pauseMenu")
+        } else {
+            MenuViewController().clearSavedGame()
+            moveToMainMenu()
+        }
+        // Don't show warning if game over or complete
+    }
+
+    func openInformation() {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
@@ -603,19 +633,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     ///
     /// The number is the whole result of an endless run, and arriving at it is worth more
     /// than being handed it. Short, because this sits between one run and the next.
-    private func startHeightTally(to height: Int) {
-        guard height > 0 else { return }
+    private func startTally(to target: Int, suffix: String) {
+        guard target > 0 else { return }
         guard hasRunHeightTally == false else { return }
         hasRunHeightTally = true
+        heightTallySuffix = suffix
         // Once per screen. `updateLabels` runs again every time this menu is returned to -
         // from settings, from the information pages - and each of those was starting the
         // tally over: ten haptic ticks, mid-run, with no number counting anywhere. Whether
         // the count is wanted depends on how the screen was opened, which is decided once,
         // so running it is a thing that happens once too
-        heightTallyTarget = height
+        heightTallyTarget = target
         heightTallyStartedAt = CACurrentMediaTime()
         heightTallyLastTick = -1
-        scoreLabel.text = "0m"
+        scoreLabel.text = "0" + heightTallySuffix
 
         let link = CADisplayLink(target: self, selector: #selector(stepHeightTally))
         link.add(to: .main, forMode: .common)
@@ -631,7 +662,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         // Eased, so it decelerates into the figure rather than stopping dead
         let progress = elapsed/PauseMenuViewController.heightTallyDuration
         let eased = 1 - pow(1 - progress, 3)
-        scoreLabel.text = "\(Int((Double(heightTallyTarget)*eased).rounded()))m"
+        scoreLabel.text = "\(Int((Double(heightTallyTarget)*eased).rounded()))" + heightTallySuffix
 
         // The same ticking the level summary gives a score, for the same reason: a number
         // climbing in silence is a number, and a number you can feel climbing is a result
@@ -650,7 +681,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         guard heightTallyLink != nil else { return }
         heightTallyLink?.invalidate()
         heightTallyLink = nil
-        scoreLabel.text = "\(heightTallyTarget)m"
+        scoreLabel.text = "\(heightTallyTarget)" + heightTallySuffix
     }
 }
 

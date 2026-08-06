@@ -146,7 +146,7 @@ extension GameScene {
             guard height % GameScene.endlessIITickSpacing == 0 else { continue }
             guard height % GameScene.endlessIIMarkerSpacing != 0 || height == 0 else { continue }
 
-            let y = yBrickOffsetEndless - brickHeight*CGFloat(row)
+            let y = yBrickOffsetEndless - brickHeight*CGFloat(row) - brickHeight/2
             addEndlessIITick(at: y)
         }
         // Only the tens. A hundred-metre line cannot already be in the opening field, and 0m
@@ -167,9 +167,16 @@ extension GameScene {
         guard arriving % GameScene.endlessIIMarkerSpacing != 0 else { return }
         // A hundred is a hundred, not a hundred and a tick
 
-        addEndlessIITick(at: yBrickOffsetEndless)
+        addEndlessIITick(at: yBrickOffsetEndless - brickHeight/2)
     }
 
+    /// A tick sits on the *bottom* edge of the row it belongs to, where a milestone marker
+    /// sits on the row's centre line.
+    ///
+    /// They are doing different jobs. A milestone row is generated empty and the line is the
+    /// thing in it, so the middle is where it belongs. A tick shares its row with whatever the
+    /// field put there, and the boundary between two rows is the one place in a row that
+    /// nothing is ever drawn - so that is where a mark can be read without competing.
     func addEndlessIITick(at y: CGFloat) {
         let tick = SKNode()
         tick.name = GameScene.endlessIIMarkerName

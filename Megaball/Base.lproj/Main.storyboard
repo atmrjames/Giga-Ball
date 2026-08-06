@@ -1477,17 +1477,17 @@ U N L O C K E D</string>
                                             <constraint firstAttribute="width" constant="42" id="Inf-bt-c01"/>
                                             <constraint firstAttribute="height" constant="42" id="Inf-bt-c02"/>
                                         </constraints>
-                                        <state key="normal" image="ButtonInfo"/>
-                                        <state key="highlighted" image="ButtonInfoHighlighted"/>
+                                        <state key="normal" image="ButtonHome"/>
+                                        <state key="highlighted" image="ButtonHomeHighlighted"/>
                                         <connections>
-                                            <action selector="informationButton:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="Inf-bt-a01"/>
+                                            <action selector="homeButton:" destination="B3u-Ha-WlJ" eventType="touchUpInside" id="Inf-bt-a01"/>
                                         </connections>
                                     </button>
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstItem="Inf-bt-001" firstAttribute="top" secondItem="NJ2-8t-agb" secondAttribute="top" constant="20" id="Inf-bt-c03"/>
-                                    <constraint firstAttribute="trailing" secondItem="Inf-bt-001" secondAttribute="trailing" constant="20" id="Inf-bt-c04"/>
+                                    <constraint firstItem="Inf-bt-001" firstAttribute="leading" secondItem="NJ2-8t-agb" secondAttribute="leading" constant="20" id="Inf-bt-c04"/>
                                     <constraint firstItem="IXj-WE-ltT" firstAttribute="leading" secondItem="NJ2-8t-agb" secondAttribute="leading" constant="50" id="4rV-lj-I0w"/>
                                     <constraint firstItem="4kO-MJ-8e5" firstAttribute="centerX" secondItem="NJ2-8t-agb" secondAttribute="centerX" id="DZz-hN-Bcp"/>
                                     <constraint firstAttribute="bottom" secondItem="IXj-WE-ltT" secondAttribute="bottom" constant="20" id="IXF-gQ-MZX"/>
@@ -1546,7 +1546,7 @@ U N L O C K E D</string>
                         <outlet property="backgroundView" destination="Ulk-Qo-bdS" id="2n4-dQ-9SI"/>
                         <outlet property="buttonCollectionView" destination="IXj-WE-ltT" id="hiH-Jz-BcK"/>
                         <outlet property="containterView" destination="NJ2-8t-agb" id="Q3w-Hj-1yK"/>
-                        <outlet property="informationButton" destination="Inf-bt-001" id="Inf-ou-001"/>
+                        <outlet property="homeButton" destination="Inf-bt-001" id="Inf-ou-001"/>
                         <outlet property="highscoreLabel" destination="I9a-19-gog" id="VpO-wh-14D"/>
                         <outlet property="highscoreLabelTitle" destination="pHn-nN-xEW" id="HB7-wJ-48h"/>
                         <outlet property="levelNameLabel" destination="Z9j-4p-wqX" id="nIa-k4-4wa"/>
@@ -2267,13 +2267,13 @@ U N L O C K E D</string>
                                     <constraint firstItem="Bgs-tl-004" firstAttribute="top" secondItem="Bgs-cv-003" secondAttribute="top" constant="20" id="Bgs-ct-001"/>
                                     <constraint firstItem="Bgs-tl-004" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-002"/>
                                     <constraint firstItem="Bgs-tl-004" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-003"/>
-                                    <constraint firstItem="Bgs-mc-005" firstAttribute="top" secondItem="Bgs-tl-004" secondAttribute="bottom" constant="10" id="Bgs-ct-004"/>
+                                    <constraint firstItem="Bgs-nl-006" firstAttribute="top" secondItem="Bgs-tl-004" secondAttribute="bottom" constant="2" id="Bgs-ct-004"/>
                                     <constraint firstItem="Bgs-mc-005" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" id="Bgs-ct-005"/>
                                     <constraint firstAttribute="trailing" secondItem="Bgs-mc-005" secondAttribute="trailing" id="Bgs-ct-006"/>
-                                    <constraint firstItem="Bgs-nl-006" firstAttribute="top" secondItem="Bgs-mc-005" secondAttribute="bottom" constant="16" id="Bgs-ct-007"/>
+                                    <constraint firstItem="Bgs-mc-005" firstAttribute="top" secondItem="Bgs-nl-006" secondAttribute="bottom" constant="10" id="Bgs-ct-007"/>
                                     <constraint firstItem="Bgs-nl-006" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-008"/>
                                     <constraint firstItem="Bgs-nl-006" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-009"/>
-                                    <constraint firstItem="Bgs-pc-008" firstAttribute="top" secondItem="Bgs-nl-006" secondAttribute="bottom" constant="10" id="Bgs-ct-013"/>
+                                    <constraint firstItem="Bgs-pc-008" firstAttribute="top" secondItem="Bgs-mc-005" secondAttribute="bottom" constant="12" id="Bgs-ct-013"/>
                                     <constraint firstItem="Bgs-pc-008" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-014"/>
                                     <constraint firstItem="Bgs-bb-009" firstAttribute="top" secondItem="Bgs-pc-008" secondAttribute="bottom" constant="12" id="Bgs-ct-015"/>
                                     <constraint firstItem="Bgs-bb-009" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-016"/>

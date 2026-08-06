@@ -101,6 +101,17 @@ extension GameScene {
 
     // MARK: - The best so far
 
+    /// The best this mode has seen, from the mode's own runs.
+    ///
+    /// Each endless mode keeps its own list. Reading the other one's would show an Endless 2.0
+    /// player a best they set in a different game.
+    var endlessBestHeight: Int? {
+        guard let stats = totalStatsArray.first else { return nil }
+        return gameMode == .endlessII
+            ? stats.endlessIIHeights.max()
+            : stats.endlessModeHeight.max()
+    }
+
     /// Puts the player's best height under the current one.
     ///
     /// Reuses the multiplier label, which endless mode hides because it has no multiplier -
@@ -108,9 +119,11 @@ extension GameScene {
     /// dimmer than the live figure, because it is the thing you glance at rather than the
     /// thing you are watching.
     func showEndlessIIBest() {
-        guard gameMode == .endlessII else { return }
-        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
-        guard best > 0 else { return }
+        guard endlessMode else { return }
+        // Both endless modes. A best height is the thing a run is measured against, and the
+        // original mode wanted it for exactly the same reason - it was only ever here because
+        // this is where it was written
+        guard let best = endlessBestHeight, best > 0 else { return }
 
         multiplierLabel.isHidden = false
         multiplierLabel.text = "BEST \(best)m"
@@ -123,9 +136,8 @@ extension GameScene {
 
     /// Clears it once the run passes it. Beating your best should feel like it happened.
     func refreshEndlessIIBest() {
-        guard gameMode == .endlessII, multiplierLabel.isHidden == false else { return }
-        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
-        guard endlessHeight > best else { return }
+        guard endlessMode, multiplierLabel.isHidden == false else { return }
+        guard let best = endlessBestHeight, endlessHeight > best else { return }
 
         multiplierLabel.text = "NEW BEST"
         multiplierLabel.fontColor = brickGreenGigaball
