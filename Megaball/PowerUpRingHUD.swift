@@ -34,10 +34,14 @@ final class PowerUpRingHUD: SKNode {
         var segments: Int?
     }
 
+    /// The Giga-Ball yellow-green, the colour the game uses for anything of its own.
+    static let ringColour = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+
     private struct Slot {
         let container: SKNode
         let icon: SKSpriteNode
         let ring: SKShapeNode
+        let halo: SKShapeNode
         var remaining: CGFloat
         var segments: Int?
     }
@@ -60,6 +64,12 @@ final class PowerUpRingHUD: SKNode {
 
     /// How tall the container is, for whoever has to leave room for it.
     var containerHeight: CGFloat { iconSize + PowerUpRingHUD.padding*2 }
+    /// How far in from the icon's edge the ring sits, as a fraction of the icon.
+    ///
+    /// Inward rather than around. The icons carry a good deal of empty margin, so a ring
+    /// drawn outside them spends space the row does not have and reads as a separate object
+    /// orbiting the icon rather than as part of it.
+    private static let ringInset: CGFloat = 0.14
     private static let ringWidth: CGFloat = 3
     private static let padding: CGFloat = 8
     private static let appearDuration: TimeInterval = 0.2
@@ -104,8 +114,9 @@ final class PowerUpRingHUD: SKNode {
             }
             slots[entry.id]?.remaining = entry.remaining
             slots[entry.id]?.segments = entry.segments
-            slots[entry.id]?.ring.path = ringPath(remaining: entry.remaining,
-                                                  segments: entry.segments)
+            let path = ringPath(remaining: entry.remaining, segments: entry.segments)
+            slots[entry.id]?.ring.path = path
+            slots[entry.id]?.halo.path = path
         }
 
         if changed { layoutSlots() }
@@ -131,17 +142,33 @@ final class PowerUpRingHUD: SKNode {
         icon.zPosition = 1
         holder.addChild(icon)
 
+        // Drawn twice: a soft wide pass underneath and a bright thin one on top. That is
+        // what the Giga-Ball glow is everywhere else in the game, and doing it here ties the
+        // timer to the rest of the art rather than leaving it as a plain white arc
+        let halo = SKShapeNode()
+        halo.strokeColor = PowerUpRingHUD.ringColour
+        halo.lineWidth = PowerUpRingHUD.ringWidth*3
+        halo.lineCap = .round
+        halo.fillColor = .clear
+        halo.alpha = 0.3
+        halo.zPosition = 2
+        halo.blendMode = .add
+        holder.addChild(halo)
+
         let ring = SKShapeNode()
-        ring.strokeColor = .white
+        ring.strokeColor = PowerUpRingHUD.ringColour
         ring.lineWidth = PowerUpRingHUD.ringWidth
         ring.lineCap = .round
         ring.fillColor = .clear
-        ring.zPosition = 2
-        ring.path = ringPath(remaining: entry.remaining, segments: entry.segments)
+        ring.zPosition = 3
         holder.addChild(ring)
 
+        for shape in [halo, ring] {
+            shape.path = ringPath(remaining: entry.remaining, segments: entry.segments)
+        }
+
         addChild(holder)
-        slots[entry.id] = Slot(container: holder, icon: icon, ring: ring,
+        slots[entry.id] = Slot(container: holder, icon: icon, ring: ring, halo: halo,
                                remaining: entry.remaining, segments: entry.segments)
 
         holder.run(.group([.fadeIn(withDuration: PowerUpRingHUD.appearDuration),
@@ -208,7 +235,9 @@ final class PowerUpRingHUD: SKNode {
 
     // MARK: - Rings
 
-    private func radius() -> CGFloat { iconSize/2 + PowerUpRingHUD.ringWidth }
+    private func radius() -> CGFloat {
+        iconSize/2 - iconSize*PowerUpRingHUD.ringInset
+    }
 
     /// An arc from twelve o'clock, clockwise, covering what is left.
     ///
