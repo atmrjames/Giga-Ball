@@ -306,6 +306,11 @@ power-up brick would be saying three.
 Struck rather than destroyed. The ball entering one leaves from another Portal brick
 elsewhere in the field, keeping its speed.
 
+**The two ends are never the same colour.** The second Portal takes whichever colour is not
+already in the field, rather than "blue if there are none" — those are the same answer until a
+Portal is removed (Zap clears Indestructible bricks, and a Portal is built on one), after which
+the survivor could be yellow and the next one would be yellow as well.
+
 **Two at most, and they behave differently alone and in a pair.** One on its own is a lift:
 the ball goes to the top of the field and comes back down through everything. A pair is a
 doorway, and it works both ways — the ball comes out of whichever end it did not go into,
@@ -585,6 +590,21 @@ rather than what is guaranteed.
 **They never fit half-way.** A shape that runs off the side of the field is not the shape, and
 the wall would be doing the part of the work the design was for. A cluster is only placed at a
 column where it fits whole.
+
+### 6.2.2 A floor under the density
+
+The opening is meant to be sparse, and it is. What it cannot be is *absent*: **no more than two
+consecutive rows arrive empty.**
+
+Height is gained by clearing the bottom row, and a row with nothing in it is cleared the moment
+it arrives — so a run of empty rows is height for free. That sounds generous and is the
+opposite. The field rushes past, the player is deep before the mode has shown them anything,
+and the density that was meant to arrive gradually arrives all at once, because it is keyed to
+a height they reached in seconds.
+
+The third empty row in a row gets exactly one brick, drawn from the mix that height would have
+produced, and placed in the middle two thirds — against a wall it is easy to leave alone, and
+leaving it alone is the thing this exists to stop. The density curve itself is untouched.
 
 ### 6.3 Exposure
 

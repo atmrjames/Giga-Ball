@@ -31,9 +31,11 @@ extension GameScene {
     /// It used to be created at the height it named, which put it at the top of the screen at
     /// the moment the player was told they had got there - the line then spent the next
     /// twenty-two rows travelling down to where it should have been when it appeared.
-    /// One less than the field's depth: a line entering at the top row has that many rows to
-    /// travel before it is in the bottom one.
-    static var endlessIIMarkerLead: Int { GameSceneLayout.brickRows - 1 }
+    /// The field's depth. A line entering at the top has this many descents to make before it
+    /// is level with the lowest row - counted from the height *after* the row that carried it
+    /// was generated, which is the one row this was short by: the 100m line was still on screen
+    /// at 101m because it reached the bottom a row late.
+    static var endlessIIMarkerLead: Int { GameSceneLayout.brickRows }
 
     /// Adds a line for the height this row will represent by the time it reaches the bottom.
     ///

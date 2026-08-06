@@ -159,8 +159,10 @@ enum BrickTypeIcons {
             return
 
         case .spinning:
-            // A still picture cannot turn, so the brick is drawn part-way round and given an
-            // arrow. The game needs neither - the movement says it.
+            // Drawn part-way round, and nothing else. An arrow was added on the theory that a
+            // still picture cannot show turning; a brick sitting at an angle when every other
+            // brick in the app is square-on already says it, and the arrow was one more thing
+            // to read in a forty-point icon.
             //
             // Smaller than the others, because a brick twice as wide as it is tall needs the
             // room to get round - which is the same reason the generator leaves the cells
@@ -174,7 +176,6 @@ enum BrickTypeIcons {
                                  height: BrickTypeIcons.spinning.height)
             artwork("BrickNormal")?.tinted(tint).draw(in: turning)
             context.restoreGState()
-            drawSpinArrow(in: context)
             return
 
         case .flashing:
@@ -259,29 +260,6 @@ enum BrickTypeIcons {
             break
         }
         return path
-    }
-
-    private static func drawSpinArrow(in context: CGContext) {
-        let centre = CGPoint(x: canvas.width/2, y: canvas.height/2)
-        let radius = canvas.height/2 - 3
-
-        context.saveGState()
-        context.setStrokeColor(UIColor(white: 0.55, alpha: 0.9).cgColor)
-        context.setLineWidth(4)
-        context.setLineCap(.round)
-        context.addArc(center: centre, radius: radius,
-                       startAngle: -.pi*0.85, endAngle: -.pi*0.15, clockwise: true)
-        context.strokePath()
-
-        // The head, drawn as its own path. An arc joins to whatever point the context was
-        // already at, so a head added to the arc above would be connected to it by a chord
-        let tip = CGPoint(x: centre.x + cos(-CGFloat.pi*0.15)*radius,
-                          y: centre.y + sin(-CGFloat.pi*0.15)*radius)
-        context.move(to: CGPoint(x: tip.x - 8, y: tip.y - 4))
-        context.addLine(to: tip)
-        context.addLine(to: CGPoint(x: tip.x - 2, y: tip.y + 9))
-        context.strokePath()
-        context.restoreGState()
     }
 
     private static func drawPortalRings(in frame: CGRect, context: CGContext) {

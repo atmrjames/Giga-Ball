@@ -101,10 +101,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         levelNameLabelNormalConstraint.isActive = true
         // Default constraints setting
 
-        // Home is in the top-left corner rather than in the row of buttons, where it sat
-        // beside Play and was the one press nobody wants to make by accident - it ends the
-        // run. The row below is Information, Play and Settings: two small buttons either side
-        // of the large one, which is what makes it read as a row rather than a list
+        homeButton.isHidden = sender != "Pause"
+        // Home is in the top-left corner *while paused*, where it is out of the way: it ends
+        // the run, and it sat beside Play where it was the one press nobody wants to make by
+        // accident. The row below is then Information, Play and Settings - two small buttons
+        // either side of the large one.
+        //
+        // On the game-over screen there is no run left to end, so it goes back to the bottom
+        // left where it balances Replay
         
         if levelNumber == 0 {
             endlessMode = true
@@ -187,7 +191,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonInfo.png")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                cell.iconImage.image = UIImage(named:"ButtonHome.png")
             }
             cell.widthConstraint.constant = 40
         case 1:
@@ -220,6 +224,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         if indexPath.row == 0 {
             if sender == "Pause" {
                 openInformation()
+            } else {
+                MenuViewController().clearSavedGame()
+                moveToMainMenu()
+                // No warning: the run is already over, so there is nothing to lose
             }
         }
         if indexPath.row == 1 {
@@ -247,14 +255,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
                 switch indexPath.row {
                 case 0:
-                    if self.sender == "Pause" {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
-                        cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
-                    } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
                     }
+                    cell.iconImage.image = self.sender == "Pause"
+                        ? UIImage(named:"ButtonInfoHighlighted.png")
+                        : UIImage(named:"ButtonHomeHighlighted.png")
                 case 1:
                     if self.sender == "Pause" {
                         if self.hapticsSetting {
@@ -290,14 +296,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             
                 switch indexPath.row {
                 case 0:
-                    if self.sender == "Pause" {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
-                        cell.iconImage.image = UIImage(named:"ButtonInfo.png")
-                    } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
                     }
+                    cell.iconImage.image = self.sender == "Pause"
+                        ? UIImage(named:"ButtonInfo.png")
+                        : UIImage(named:"ButtonHome.png")
                 case 1:
                     if self.sender == "Pause" {
                         if self.hapticsSetting {

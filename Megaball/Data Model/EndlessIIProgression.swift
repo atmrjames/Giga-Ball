@@ -330,6 +330,17 @@ extension EndlessIIProgression {
         // put up a solid wall
     }
 
+    /// The most rows in a row that may arrive with nothing in them.
+    ///
+    /// Height is gained by clearing the bottom row, and a row with nothing in it is cleared the
+    /// moment it arrives - so a run of empty rows is height for free. That sounds generous and
+    /// is the opposite: the field rushes past, the player is deep before the mode has shown
+    /// them anything, and the density that was meant to arrive gradually arrives all at once
+    /// because it is keyed to a height they reached in seconds.
+    ///
+    /// Two is enough to keep the opening feeling open. Three starts to be a lift.
+    static let mostEmptyRowsInARow = 2
+
     // MARK: - Which brick
 
     /// How strongly each behaviour should be drawn at this height.

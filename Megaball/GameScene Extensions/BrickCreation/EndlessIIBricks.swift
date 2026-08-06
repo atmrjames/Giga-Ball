@@ -683,3 +683,53 @@ extension GameScene {
 
     static let roundedBrickOutlineName = "endlessIIRoundedOutline"
 }
+
+extension GameScene {
+
+    /// Puts something in a row that would otherwise be the third empty one in a row.
+    ///
+    /// Height in this mode is gained by clearing the bottom row, and a row with nothing in it
+    /// is cleared the moment it arrives. So a run of empty rows is height for free - which
+    /// sounds generous and is the opposite of it. The field rushes past, the player is deep
+    /// before the mode has shown them anything, and the density that was meant to arrive
+    /// gradually arrives all at once, because it is keyed to a height they reached in seconds.
+    ///
+    /// This is a floor rather than a change to the density curve. The opening is meant to be
+    /// sparse and stays sparse; what it cannot be is *absent*, and one brick is the difference
+    /// between a row that has to be played and a row that is not there.
+    func endlessIIFillEmptyRowIfOverdue(_ row: [SKNode]) {
+        guard gameMode == .endlessII else { return }
+
+        let bricks = row.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.texture != brickNullTexture }
+
+        guard bricks.isEmpty else {
+            endlessIIEmptyRowRun = 0
+            return
+        }
+
+        endlessIIEmptyRowRun += 1
+        guard endlessIIEmptyRowRun > EndlessIIProgression.mostEmptyRowsInARow else { return }
+
+        // One brick, somewhere in the middle two thirds. Against a wall it is easy to leave
+        // alone, and leaving it alone is the thing this exists to stop
+        let columns = max(1, numberOfBrickColumns)
+        let margin = columns/6
+        let candidates = row.compactMap { $0 as? SKSpriteNode }.filter { brick in
+            let column = endlessIICell(of: brick).column
+            return column >= margin && column < columns - margin
+        }
+
+        guard let chosen = candidates.randomElement() ?? row.first as? SKSpriteNode else {
+            return
+        }
+        chosen.texture = endlessIIBrickTexture()
+        if chosen.texture == brickNullTexture { chosen.texture = brickNormalTexture }
+        // The mix this height would have produced, and an ordinary brick if that came up empty
+        // as well - the point is that the row is not empty, not which brick it is
+
+        chosen.color = brickWhite
+        chosen.colorBlendFactor = 1.0
+        endlessIIEmptyRowRun = 0
+    }
+}

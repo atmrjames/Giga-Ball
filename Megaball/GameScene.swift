@@ -664,6 +664,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPendingClearColumn: Int?
 	/// The column a two-cell-tall power-up brick is due to be built in.
 	var endlessIIPendingPowerUpColumn: Int?
+	/// How many rows have arrived empty in a row.
+	var endlessIIEmptyRowRun = 0
 	// A spinning brick needs the cells above, below and either side of it empty, and rows
 	// arrive one at a time, so it takes three of them: leave the cell below, place the
 	// spinner with its sides clear, leave the cell above

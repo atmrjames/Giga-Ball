@@ -618,6 +618,11 @@ extension GameScene {
         }
         // Define brick properties
 
+        if gameMode == .endlessII {
+            endlessIIFillEmptyRowIfOverdue(brickArray)
+        }
+        // Checked before the two-row shapes are added, because those count as filling the row
+
         if let leftColumn = endlessII.dueAt {
             brickArray.append(endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless))
         }

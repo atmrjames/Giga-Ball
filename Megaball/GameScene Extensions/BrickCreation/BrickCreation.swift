@@ -88,6 +88,10 @@ extension GameScene {
         }
 
         applyEndlessIIPowerUpSchedule()
+        showEndlessIIBest()
+        // Here rather than only in the level file. The level is loaded while the scene is
+        // still being put together, and the stats it reads may not have arrived yet - so the
+        // best height was quietly nil and the label was never shown
         startEndlessIIBuildIn()
         seedEndlessIIMarkers()
         // The opening field already stands for 0m up to 21m, so the marks belonging to those

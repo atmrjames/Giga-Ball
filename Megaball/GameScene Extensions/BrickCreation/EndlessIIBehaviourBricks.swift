@@ -281,6 +281,13 @@ extension GameScene {
     /// when it arrived should not have to stay fair for ever.
     func endlessIISideIsReachable(_ side: EndlessIISide, from brick: SKSpriteNode) -> Bool {
         let cell = endlessIICell(of: brick)
+
+        // A wall is not something the ball can get behind. A brick in the outermost column
+        // with its soft side facing outward is a brick nothing can ever destroy - which is not
+        // a hard brick, it is a broken one
+        if side == .left && cell.column <= 0 { return false }
+        if side == .right && cell.column >= numberOfBrickColumns - 1 { return false }
+
         let beyond: EndlessIICell
         switch side {
         case .top: beyond = EndlessIICell(column: cell.column, row: cell.row - 1)
@@ -589,7 +596,12 @@ extension GameScene {
     }
 
     func makePortal(_ brick: SKSpriteNode) {
-        let isBlue = endlessIIPortals().isEmpty
+        let isBlue = endlessIIPortals().contains { $0.endlessIIPortalIsBlue } == false
+        // Whichever colour is not already in the field, rather than "blue if there are none".
+        // Those are the same answer until a Portal is removed - Zap clears Indestructible
+        // bricks and a Portal is built on one - after which the survivor could be yellow and
+        // the next one would be yellow as well. Two ends the same colour is the one thing the
+        // colours exist to prevent
         brick.endlessIIRole = .portal
         brick.endlessIIPortalIsBlue = isBlue
         brick.texture = brickIndestructible2Texture

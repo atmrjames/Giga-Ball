@@ -271,13 +271,91 @@ final class EndlessIINeighbourTests: XCTestCase {
                        "a bounce is a change of direction, not of speed")
     }
 
+    // MARK: - Directional bricks and the walls
+
+    func testASoftSideNeverFacesAWall() {
+        // A wall is not something the ball can get behind, so a brick in the outermost column
+        // with its soft side facing outward can never be destroyed - which is not a hard brick,
+        // it is a broken one
+        let scene = makeScene()
+        let leftEdge = addBrick(scene, at: CGPoint(x: -scene.gameWidth/2 + cell.width/2, y: 200),
+                                size: cell)
+        XCTAssertFalse(scene.endlessIISideIsReachable(.left, from: leftEdge))
+        XCTAssertTrue(scene.endlessIISideIsReachable(.right, from: leftEdge))
+        XCTAssertTrue(scene.endlessIISideIsReachable(.top, from: leftEdge))
+
+        let rightEdge = addBrick(scene, at: CGPoint(x: scene.gameWidth/2 - cell.width/2, y: 200),
+                                 size: cell)
+        XCTAssertFalse(scene.endlessIISideIsReachable(.right, from: rightEdge))
+        XCTAssertTrue(scene.endlessIISideIsReachable(.left, from: rightEdge))
+    }
+
+    func testABrickInTheMiddleCanFaceEitherWay() {
+        let scene = makeScene()
+        let middle = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        XCTAssertTrue(scene.endlessIISideIsReachable(.left, from: middle))
+        XCTAssertTrue(scene.endlessIISideIsReachable(.right, from: middle))
+    }
+
+    // MARK: - Density
+
+    func testEmptyRowsAreNotAllowedToRunOn() {
+        // Height is gained by clearing the bottom row, and an empty row is cleared the moment
+        // it arrives - so a run of them is height for free, and the player is deep before the
+        // mode has shown them anything
+        XCTAssertEqual(EndlessIIProgression.mostEmptyRowsInARow, 2)
+
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+
+        let empty = { () -> [SKNode] in
+            (0..<11).map { column -> SKSpriteNode in
+                let brick = SKSpriteNode(texture: scene.brickNullTexture)
+                brick.position = CGPoint(x: -scene.gameWidth/2 + self.cell.width/2
+                                            + self.cell.width*CGFloat(column),
+                                         y: scene.yBrickOffsetEndless)
+                brick.name = BrickCategoryName
+                return brick
+            }
+        }
+
+        for pass in 1...EndlessIIProgression.mostEmptyRowsInARow {
+            let row = empty()
+            scene.endlessIIFillEmptyRowIfOverdue(row)
+            let filled = row.compactMap { $0 as? SKSpriteNode }
+                .filter { $0.texture != scene.brickNullTexture }
+            XCTAssertTrue(filled.isEmpty, "row \(pass) is allowed to be empty")
+        }
+
+        let third = empty()
+        scene.endlessIIFillEmptyRowIfOverdue(third)
+        let filled = third.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.texture != scene.brickNullTexture }
+        XCTAssertEqual(filled.count, 1, "the third empty row gets one brick, and only one")
+    }
+
+    func testARowWithSomethingInItResetsTheRun() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+
+        let occupied = [SKSpriteNode(texture: scene.brickNormalTexture)]
+        occupied[0].name = BrickCategoryName
+        scene.endlessIIEmptyRowRun = 2
+        scene.endlessIIFillEmptyRowIfOverdue(occupied)
+        XCTAssertEqual(scene.endlessIIEmptyRowRun, 0)
+    }
+
     // MARK: - Markers
 
     func testAMarkerIsMadeAFieldsDepthBeforeTheHeightItNames() {
         // It marks where a height *was*, and where a height is is the bottom of the field. A
         // line created at the height it names appears at the top of the screen at the moment
         // the player is told they have reached it.
-        XCTAssertEqual(GameScene.endlessIIMarkerLead, GameSceneLayout.brickRows - 1)
+        //
+        // A full field's depth, not one less. Counted from the height after the row carrying
+        // it was generated, one less put the 100m line at the bottom row at 101m - so it was
+        // still on screen after the player had passed it.
+        XCTAssertEqual(GameScene.endlessIIMarkerLead, GameSceneLayout.brickRows)
     }
 
     func testAMarkerIsClearedOnceItIsBelowTheField() {
