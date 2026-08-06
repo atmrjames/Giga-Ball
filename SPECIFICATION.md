@@ -141,6 +141,30 @@ is no continue.
 
 Endless has its own leaderboards (best height, total height) and its own achievements.
 
+### Endless 2.0
+
+The same shape as Endless — one life, height in metres, a generated field — with variety as
+the point rather than escalation. It is a separate mode with its own leaderboards and
+achievements, because its scores are not comparable with the original's.
+
+What it adds, in full in [ENDLESS-2-SPECIFICATION.md](ENDLESS-2-SPECIFICATION.md):
+
+- **A brick is a behaviour, a style and a size**, independently. The five behaviours are the
+  ones the game has always had; the ten styles (rounded, spinning, flashing, fixed, gravity,
+  moving, directional, exploding, spawner, portal) and the sizes Tiny and Big are new, and a
+  brick may carry two styles where they do not contradict.
+- **Power-up bricks.** A power-up built into the field rather than falling out of it, set off
+  by breaking it, never cleared by reaching the bottom.
+- **Multi-Ball**, up to four balls; the run continues while any is in play.
+- **Clusters and set rows** — designed shapes dropped into an otherwise generated field.
+- **Phases**, stretches of 5–25m with their own character.
+- **The ring HUD**, showing only active power-ups with their timers around the icon.
+- **Height markers** every 100m with the row left empty for them, and unlabelled ticks every
+  10m.
+
+Everything is additive: no existing brick, power-up or level behaves differently because
+Endless 2.0 exists.
+
 ---
 
 ## 4. Gameplay mechanics
@@ -207,7 +231,13 @@ assigning textures across the grid.
 | Invisible | Present and solid but not drawn until struck |
 
 Brick *type* is conveyed entirely by colour and texture — there is no shape or symbol
-distinction, which matters for colour-blind players.
+distinction, which matters for colour-blind players. Endless 2.0's styles are the exception:
+each carries a glyph as well as a colour, deliberately, so it can be read without relying on
+either.
+
+A **Bricks** page in the information menu documents all of it — behaviours with every state
+they pass through, styles, and sizes — with its compatibility lines derived from the code
+rather than written out.
 
 ---
 
@@ -353,6 +383,22 @@ Game Center can be disabled in settings.
 ---
 
 ## 12. Known constraints and quirks
+
+**Ball physics rules that apply to every mode.** These were fixed together and are easy to
+undo by accident:
+
+- A wall or ceiling bounce reflects the velocity the ball *arrived* with, sampled before the
+  physics step — not the one reported by the contact, which the engine has already turned
+  round. Reflecting that a second time is what sent the ball back into the surface it had just
+  left, and is why it used to run along the top of the screen.
+- Two or more bricks struck in the same step are treated as **one surface**, so a ball landing
+  on the seam between adjacent bricks leaves off the flat face rather than off a corner.
+- The ball may travel vertically, but never horizontally — a horizontal ball never comes back.
+  It is pushed off horizontal by the minimum angle plus a small random amount, so no two
+  escapes are identical and it cannot settle into a loop.
+- **The paddle is not solid from below.** While a ball is under it the paddle is not in the
+  way, so a Backstop can actually return a ball that got past.
+
 
 Things a newcomer would otherwise have to discover the hard way.
 
