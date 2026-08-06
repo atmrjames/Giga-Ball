@@ -116,6 +116,7 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
 
         var occupied = endlessIIOccupancy()
+        var fill = endlessIIFill()
         let geometry = endlessIIGeometry
         let lowestRow = endlessIILowestRow
 
@@ -130,13 +131,17 @@ extension GameScene {
             var to = from
             while to.row < lowestRow {
                 let below = EndlessIICell(column: to.column, row: to.row + 1)
-                guard occupied[below] == nil else { break }
+                guard endlessIICellBlocks(below, fill: fill) == false else { break }
                 to = below
             }
             guard to != from else { continue }
 
             occupied[from] = nil
             occupied[to] = brick
+            fill[from] = 0
+            fill[to] = 1
+            // Kept in step so a stack of them lands in order rather than each one falling
+            // through the space the one before it just claimed
             endlessIIFallers[ObjectIdentifier(brick)] =
                 EndlessIIFall(brick: brick, targetY: geometry.centre(of: to).y)
         }
@@ -195,14 +200,20 @@ extension GameScene {
         var rightLimit = gameWidth/2 - halfWidth
         // The walls, until a brick gets in the way first
 
-        if let blocker = occupied[EndlessIICell(column: cell.column - 1, row: cell.row)],
-           blocker !== brick {
+        let fill = endlessIIFill()
+        let leftCell = EndlessIICell(column: cell.column - 1, row: cell.row)
+        let rightCell = EndlessIICell(column: cell.column + 1, row: cell.row)
+
+        if let blocker = occupied[leftCell], blocker !== brick,
+           endlessIICellBlocks(leftCell, fill: fill) {
             leftLimit = max(leftLimit, blocker.position.x + blocker.size.width/2 + halfWidth)
         }
-        if let blocker = occupied[EndlessIICell(column: cell.column + 1, row: cell.row)],
-           blocker !== brick {
+        if let blocker = occupied[rightCell], blocker !== brick,
+           endlessIICellBlocks(rightCell, fill: fill) {
             rightLimit = min(rightLimit, blocker.position.x - blocker.size.width/2 - halfWidth)
         }
+        // A cell that is only part full is not a wall. A single Tiny brick left over from a
+        // set of four used to stop a Moving brick dead in what looked like open space
         return (leftLimit, rightLimit)
     }
 
@@ -217,10 +228,17 @@ extension GameScene {
         // a brick that only takes damage from above or below is something a player can solve
         // by waiting for the right pass. Left and right ask for a specific angle, which is a
         // much harder shot - so they stay rare until a run is well underway.
-        let sides: [EndlessIISide] = endlessHeight >= GameScene.endlessIISideFacingFrom
+        var sides: [EndlessIISide] = endlessHeight >= GameScene.endlessIISideFacingFrom
             || Int.random(in: 1...100) <= GameScene.endlessIISideFacingEarlyChance
             ? [.top, .bottom, .left, .right]
             : [.top, .bottom]
+
+        let reachable = sides.filter { endlessIISideIsReachable($0, from: brick) }
+        if reachable.isEmpty == false { sides = reachable }
+        // A vulnerable side facing an Indestructible neighbour is a brick that cannot be
+        // destroyed at all, which is not a hard brick but a broken one. If every side is
+        // blocked the brick stays as it is rather than becoming an accidental wall
+
         let side: EndlessIISide = sides.randomElement() ?? .bottom
         brick.endlessIIRole = .directional
         brick.endlessIIVulnerableSide = side
@@ -249,6 +267,25 @@ extension GameScene {
         bar.position = CGPoint(x: (0.5 - brick.anchorPoint.x)*width,
                                y: (0.5 - brick.anchorPoint.y)*height)
         brick.addChild(bar)
+    }
+
+    /// Whether the ball could actually reach a given face of a brick.
+    ///
+    /// Only asks about the cell immediately beyond it. A longer look would be more accurate
+    /// and much less predictable - the field changes constantly, and a brick that was fair
+    /// when it arrived should not have to stay fair for ever.
+    func endlessIISideIsReachable(_ side: EndlessIISide, from brick: SKSpriteNode) -> Bool {
+        let cell = endlessIICell(of: brick)
+        let beyond: EndlessIICell
+        switch side {
+        case .top: beyond = EndlessIICell(column: cell.column, row: cell.row - 1)
+        case .bottom: beyond = EndlessIICell(column: cell.column, row: cell.row + 1)
+        case .left: beyond = EndlessIICell(column: cell.column - 1, row: cell.row)
+        case .right: beyond = EndlessIICell(column: cell.column + 1, row: cell.row)
+        }
+        guard let neighbour = endlessIIOccupancy()[beyond] else { return true }
+        return neighbour.texture != brickIndestructible1Texture
+            && neighbour.texture != brickIndestructible2Texture
     }
 
     /// Whether a hit on this brick should do anything at all.

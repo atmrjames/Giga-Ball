@@ -79,6 +79,45 @@ extension GameScene {
                                columns: numberOfBrickColumns)
     }
 
+    /// Every cell that currently holds a brick, and how much of it is filled.
+    ///
+    /// The fraction matters because of Tiny bricks. Four of them share a cell, and clearing
+    /// one leaves the cell three-quarters full - which to anything asking "is this cell
+    /// occupied" looked exactly the same as untouched. That is what stopped a Gravity brick
+    /// falling into a cell that visibly had a hole in it, and what made a Moving brick stop
+    /// against what looked like empty space.
+    func endlessIIFill() -> [EndlessIICell: CGFloat] {
+        let geometry = endlessIIGeometry
+        let cellArea = brickWidth*brickHeight
+        var fill: [EndlessIICell: CGFloat] = [:]
+
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode else { return }
+            let origin = geometry.cell(at: node.position)
+            let size = geometry.footprint(of: brick.size)
+            let share = (brick.size.width*brick.size.height)
+                / (cellArea*CGFloat(size.columns*size.rows))
+            for row in 0..<size.rows {
+                for column in 0..<size.columns {
+                    let cell = EndlessIICell(column: origin.column + column,
+                                             row: origin.row + row)
+                    fill[cell, default: 0] += share
+                }
+            }
+        }
+        return fill
+    }
+
+    /// How full a cell has to be before it counts as blocking something.
+    ///
+    /// Half. One Tiny brick left in a cell is something the ball can get past and something
+    /// a falling brick should be able to land on top of; three of them is not.
+    static let endlessIIBlockingFill: CGFloat = 0.5
+
+    func endlessIICellBlocks(_ cell: EndlessIICell, fill: [EndlessIICell: CGFloat]) -> Bool {
+        (fill[cell] ?? 0) >= GameScene.endlessIIBlockingFill
+    }
+
     /// Every cell that currently holds a brick.
     ///
     /// A Big brick claims all four of its cells, so a neighbour search finds it from any

@@ -62,7 +62,16 @@ extension GameScene {
     /// Both are opening guesses. Big costs two rows of setup, so it should be the rarer of
     /// the two even at the same number.
     static let endlessIIBigChance = 18
-    static let endlessIITinyChance = 10
+    /// Lower than it looks, because one roll now makes four bricks rather than one. At the
+    /// old figure a tenth of the field became Tiny and then quadrupled in visual weight.
+    static let endlessIITinyChance = 4
+
+    /// How much of each quarter cell the brick actually fills.
+    ///
+    /// The gap between the four is what makes them read as four bricks rather than one brick
+    /// with hairlines scratched across it. It has to come out of the brick rather than being
+    /// added around it, or the set would no longer fill its cell.
+    static let endlessIITinyFill: CGFloat = 0.82
 
     // MARK: - Big
 
@@ -191,7 +200,8 @@ extension GameScene {
     /// whatever the caller already did to it - its texture, its colour - carries into at
     /// least one of them.
     func makeTiny(_ brick: SKSpriteNode) -> [SKSpriteNode] {
-        let quarter = CGSize(width: brickWidth/2, height: brickHeight/2)
+        let quarter = CGSize(width: brickWidth/2*GameScene.endlessIITinyFill,
+                             height: brickHeight/2*GameScene.endlessIITinyFill)
         let home = brick.position
         var quarters: [SKSpriteNode] = []
 
