@@ -493,8 +493,18 @@ extension TotalStats {
     /// something well.
     ///
     /// Padded from a freshly built TotalStats rather than from a hard-coded length, so
-    /// adding an achievement needs nothing here changed to stay safe.
-    func makeAchievementArraysConsistent() {
+    /// adding an achievement or a power-up needs nothing here changed to stay safe.
+    ///
+    /// The power-up arrays are here for the same reason the achievement ones are, and they are
+    /// the ones about to matter: one entry per power-up, decoded from a file written by
+    /// whichever version the player last ran, and Endless 2.0 adds twenty-two. A stats file
+    /// written before those existed is shorter than the arrays this build indexes into, and
+    /// the first read past the end takes the app down - on the device of somebody who has been
+    /// playing for years, which is exactly whose file is shortest.
+    ///
+    /// So this is what has to be right *before* a new power-up can be offered, rather than a
+    /// tidy-up afterwards.
+    func makeStoredArraysConsistent() {
         let fresh = TotalStats()
         achievementsUnlockedArray = TotalStats.padded(achievementsUnlockedArray,
                                                       like: fresh.achievementsUnlockedArray)
@@ -503,6 +513,15 @@ extension TotalStats {
         achievementsPercentageCompleteArray =
             TotalStats.padded(achievementsPercentageCompleteArray,
                               like: fresh.achievementsPercentageCompleteArray)
+
+        powerupsCollected = TotalStats.padded(powerupsCollected, like: fresh.powerupsCollected)
+        powerupsGenerated = TotalStats.padded(powerupsGenerated, like: fresh.powerupsGenerated)
+        powerUpUnlockedArray = TotalStats.padded(powerUpUnlockedArray,
+                                                 like: fresh.powerUpUnlockedArray)
+        // A power-up nobody has met is one nobody has collected, and a new one is unlocked from
+        // the start - which is what a fresh TotalStats already says. Padding from one rather
+        // than from a literal is the whole trick: the defaults are declared once, where the
+        // property is
     }
 
     /// Only ever lengthens. A file with more entries than this build knows about was written

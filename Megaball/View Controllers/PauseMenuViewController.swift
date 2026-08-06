@@ -569,7 +569,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     func loadData() {
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {
-                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData).map { $0.makeAchievementArraysConsistent(); return $0 }
+                totalStatsArray = try decoder.decode([TotalStats].self, from: totalData).map { $0.makeStoredArraysConsistent(); return $0 }
             } catch {
                 Log.data.error("Error decoding total stats array, \(String(describing: error), privacy: .public)")
             }
