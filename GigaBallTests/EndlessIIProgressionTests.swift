@@ -26,9 +26,29 @@ final class EndlessIIProgressionTests: XCTestCase {
         XCTAssertLessThan(p.stackChance(at: 0), p.stackChance(at: 200))
     }
 
+    func testTheRampReachesTheDepthsPeopleActuallyPlayTo() {
+        // The original Endless leaderboard tops out around a thousand metres and plenty of
+        // runs pass a hundred. A ramp that finished early would mean the mode stopped
+        // developing in the first minute of a good run.
+        let p = progression
+        XCTAssertGreaterThanOrEqual(EndlessIIProgression.rampMetres, 1000)
+        XCTAssertLessThan(p.styleChance(at: 100), p.styleChance(at: 500))
+        XCTAssertLessThan(p.styleChance(at: 500), p.styleChance(at: 900))
+        XCTAssertLessThan(p.stackChance(at: 100), p.stackChance(at: 500))
+        XCTAssertLessThan(p.stackChance(at: 500), p.stackChance(at: 900))
+    }
+
+    func testThereIsStillSomethingNewToMeetWellIntoARun() {
+        // Introductions have to outlast the opening, or everything is known within a minute
+        // and the rest of the ramp is only about frequency.
+        let p = progression
+        let last = order[order.count - 1]
+        XCTAssertGreaterThan(p.introductionHeight(of: last), 150)
+    }
+
     func testTheRampsNeverGoBackwards() {
         let p = progression
-        for height in 1...400 {
+        for height in 1...1200 {
             XCTAssertGreaterThanOrEqual(p.styleChance(at: height), p.styleChance(at: height - 1),
                                         "style at \(height)")
             XCTAssertGreaterThanOrEqual(p.stackChance(at: height), p.stackChance(at: height - 1),
@@ -58,7 +78,7 @@ final class EndlessIIProgressionTests: XCTestCase {
         // the real rate is the product - but the stack roll itself must not overtake the
         // first, or deep fields would be mostly doubles.
         let p = progression
-        for height in stride(from: 0, through: 400, by: 10) {
+        for height in stride(from: 0, through: 1200, by: 10) {
             XCTAssertLessThanOrEqual(p.stackChance(at: height), p.styleChance(at: height)*2,
                                      "at \(height)")
         }

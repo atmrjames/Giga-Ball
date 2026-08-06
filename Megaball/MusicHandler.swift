@@ -77,7 +77,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
                 player.delegate = self
                 player.numberOfLoops = -1
                 // Loop infinitely
-                player.volume = (self.gameInProgress ?? false) ? self.gameVolumeSet : self.menuVolumeSet
+                player.volume = self.gameInProgress ? self.gameVolumeSet : self.menuVolumeSet
                 player.prepareToPlay()
                 player.play()
                 DispatchQueue.main.async { self.player = player }

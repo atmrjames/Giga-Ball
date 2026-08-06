@@ -31,7 +31,11 @@ struct EndlessIIProgression {
     let introductionOrder: [EndlessIIStyle]
 
     /// Metres between one style being introduced and the next.
-    static let introductionSpacing = 12
+    ///
+    /// Spread so the last one arrives around 280m, which leaves most of a long run for the
+    /// second half of the ramp - the part where what is already known gets more common and
+    /// starts combining, rather than where new things keep appearing.
+    static let introductionSpacing = 35
 
     /// The weight a style carries before its turn comes.
     ///
@@ -47,7 +51,17 @@ struct EndlessIIProgression {
     static let openingStackChance = 3
     static let deepStackChance = 40
     /// The height by which both have reached their full value.
-    static let rampMetres = 160
+    ///
+    /// A thousand metres, because that is roughly where the top of the original Endless
+    /// leaderboard sits and plenty of people pass 100m. A ramp that finished at 160 would
+    /// mean the mode stopped developing in the first minute of a good run and the remaining
+    /// nine hundred metres were the same field over and over.
+    ///
+    /// Reaching that far is only sane because what ramps is not difficulty. Density moves a
+    /// little; what really changes is how many different things are in play, how often they
+    /// combine, and how likely the rare ones are - so a deep field is stranger than a
+    /// shallow one rather than simply fuller.
+    static let rampMetres = 1000
 
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases)
     -> EndlessIIProgression {
@@ -112,9 +126,10 @@ struct EndlessIIProgression {
 
     /// Linear from the opening value to the deep one, then flat.
     ///
-    /// Flat rather than ever-climbing: a run that keeps getting denser eventually becomes
-    /// unplayable rather than hard, and a ceiling is what lets a deep run settle into a
-    /// rhythm instead of grinding to a halt.
+    /// Flat only once the far end is reached, and the far end is a long way out. There has
+    /// to be a ceiling somewhere - a field that keeps getting denser eventually becomes
+    /// unplayable rather than hard - but it belongs past where almost every run ends, not
+    /// inside the first minute of a good one.
     static func ramped(from opening: Int, to deep: Int, at height: Int) -> Int {
         guard height > 0 else { return opening }
         guard height < rampMetres else { return deep }

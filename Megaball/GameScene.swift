@@ -5062,7 +5062,7 @@ laserTimer?.invalidate()
 		}
 		// If inbetween levels but only playing 1 level at a time don't save
 		
-		let gameSaveArray = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentLevelTimerValue, currentPackTimerValue, currentDeathsPerLevel, currentDeathsPerPack, currentpowerUpsGeneratedPerLevel, currentpowerUpsCollectedPerLevel, currentpowerUpsGeneratedPerPack, currentpowerUpsCollectedPerPack, currentpaddleHitsPerLevel]
+		_ = [currentLevelNumber, currentEndLevelNumber, currentPackNumber, currentLevelScore, currentTotalScore, currentNumberOfLives, currentHeight, currentNumberOfLevels, currentLevelTimerValue, currentPackTimerValue, currentDeathsPerLevel, currentDeathsPerPack, currentpowerUpsGeneratedPerLevel, currentpowerUpsCollectedPerLevel, currentpowerUpsGeneratedPerPack, currentpowerUpsCollectedPerPack, currentpaddleHitsPerLevel]
 		
 		var currentMultiplier = multiplier
 		

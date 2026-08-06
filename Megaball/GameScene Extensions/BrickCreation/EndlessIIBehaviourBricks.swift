@@ -578,7 +578,7 @@ extension GameScene {
         }
 
         for key in endlessIIFallers.keys {
-            guard var fall = endlessIIFallers[key] else { continue }
+            guard let fall = endlessIIFallers[key] else { continue }
             guard fall.brick.parent != nil else {
                 endlessIIFallers[key] = nil
                 continue
@@ -589,7 +589,6 @@ extension GameScene {
                 endlessIIFallers[key] = nil
             } else {
                 fall.brick.position.y -= step
-                endlessIIFallers[key] = fall
             }
         }
     }
