@@ -56,6 +56,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var paddleRetroStickyTexture = SKSpriteNode()
 
     var ball = SKSpriteNode()
+	/// The balls beyond the first, in Endless 2.0 only.
+	///
+	/// `ball` stays the ball the rest of the game holds; these sit beside it. See
+	/// EndlessIIMultiBall for why it is done that way round.
+	var endlessIIExtraBalls: [SKSpriteNode] = []
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -1642,6 +1647,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if gameMode == .endlessII {
 			powerUpRings.update(with: activePowerUpEntries())
 			tickEndlessIIBricks(currentTime)
+			tickEndlessIIExtraBalls()
 		}
 		
 		if gameState.currentState is Paused {
@@ -1823,7 +1829,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
     
-    func ballLostAnimation() {
+    func ballLostAnimation(_ lost: SKSpriteNode? = nil) {
+		if endlessIIBallWasLost(lost ?? ball) { return }
+		// In Endless 2.0 the run continues while any ball is still in play. Losing one of
+		// several costs nothing and never reaches the rest of this - which is the whole of
+		// what phase 7 changes, and why it is asked before anything else happens
+
 		if soundsSetting {
 			if numberOfLives > 0 {
 				self.run(ballLostSound)
@@ -2020,7 +2031,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Power-up hits Paddle
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
-				ballLostAnimation()
+				ballLostAnimation(firstBody.node as? SKSpriteNode)
+				// Which ball reached the bottom, not "the ball" - with more than one in play
+				// they are not the same question
 			}
 			// Ball hits bottom screen block
 		

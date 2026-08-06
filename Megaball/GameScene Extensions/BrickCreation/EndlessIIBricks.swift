@@ -573,6 +573,8 @@ extension GameScene {
         endlessIIPhaseStyles = []
         endlessIILastTick = 0
         resetEndlessIIRoles()
+        endlessIIClearExtraBalls()
+        // A run starts on one ball, whatever the last one ended on
     }
 
     private func advanceFlasher(at index: Int, by delta: TimeInterval) {

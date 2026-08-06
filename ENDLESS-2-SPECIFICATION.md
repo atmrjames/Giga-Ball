@@ -774,7 +774,17 @@ rather than mechanics.
   icons reproduce the placeholder look described in §8.5 deliberately, and this is where the
   page will start using the real artwork when it exists.
 
-**Next up:** phase 7, Multi-Ball.
+**Next up:** phase 7, Multi-Ball. Started — the collection exists and the survival rule is in
+(`EndlessIIBalls`, `EndlessIIMultiBall`): a run continues while any ball is in play, an extra
+hands its position over to `ball` when that is the one lost, and speed, size and texture are
+shared across the set. It is deliberately inert — nothing adds a ball yet — because two things
+have to land first:
+
+| Before Multi-Ball can be offered | Why |
+|---|---|
+| Per-ball contact handling | The contact handler applies every angle correction to `ball`, whichever ball was actually in the contact. A second ball would play by the first one's corrections |
+| The drop itself | `powerUpProbArray` and the stats arrays in `TotalStats` are sized by the power-up count and are decoded from disk, so adding one needs a migration. That is phase 8's plumbing, and it is the piece that must not break existing progress |
+| The save format | §9.3: it stores one ball's position and velocity |
 
 **Open, in rough priority order**
 
