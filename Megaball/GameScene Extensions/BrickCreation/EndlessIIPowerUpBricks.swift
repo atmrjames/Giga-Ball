@@ -104,6 +104,9 @@ extension GameScene {
 
     /// Builds the power-up brick a row owes, ready to animate in with the rest of the row.
     func endlessIIMakePowerUpBrick(column: Int, rowY: CGFloat) -> SKSpriteNode? {
+        guard isDailyChallenge == false
+                || DailyChallengeSession.shared.has(.noPowerUps) == false else { return nil }
+        // "Nothing drops, no power-up bricks" - the twist means the built-in ones too
         guard endlessIIPowerUpBricksInPlay.isEmpty else { return nil }
         // One at a time. Two of these on screen is two shots you have to not take, which is
         // most of the field for as long as they take to descend - and a second one arriving

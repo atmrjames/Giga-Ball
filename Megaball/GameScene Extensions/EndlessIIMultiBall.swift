@@ -119,6 +119,13 @@ extension GameScene {
     func endlessIIBallWasLost(_ lost: SKSpriteNode) -> Bool {
         guard gameMode == .endlessII else { return false }
 
+        if dailySuddenDeath {
+            endlessIIClearExtraBalls()
+            return false
+        }
+        // Sudden Death: any ball lost ends the run, Multi-Ball's carry-on rule overruled
+        // for the day (daily spec §4)
+
         if lost !== ball, lost.parent == nil || endlessIIExtraBalls.contains(where: { $0 === lost }) == false {
             return true
         }

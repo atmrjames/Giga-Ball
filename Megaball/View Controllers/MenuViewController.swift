@@ -212,6 +212,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case .endless, .endlessII:
             cell.modeImageIcon.image = UIImage(named: "EndlessIcon.png")
             // Endless 2.0 shares the endless icon until it has one of its own
+        case .daily:
+            cell.modeImageIcon.image = PowerUpIcon.dailyChallenge
+            // Drawn, like the power-up placeholders, until §8.5's art lands
         }
         
         UIView.animate(withDuration: 0.1) {
@@ -231,9 +234,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         }
 
         let mode = GameMode(rawValue: indexPath.row) ?? .classic
-        mode.makeCurrent(in: defaults)
+        if mode != .daily {
+            mode.makeCurrent(in: defaults)
+        }
         // Recorded before the run starts, so the scene and the stats know which mode this
-        // is without having to infer it from a level number
+        // is without having to infer it from a level number. The daily is a menu identity,
+        // not a scene one - the briefing records the *underlying* mode when play is pressed,
+        // and recording .daily here would leave a resumed campaign save reading the wrong
+        // mode after a browse-and-close
 
         switch mode {
         case .classic:
@@ -245,6 +253,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             // Endless 2.0 plays the endless field for now, and differs only in what it
             // records and where it posts. The new bricks and power-ups come in later
             // phases
+        case .daily:
+            moveToDailyChallenge()
         }
         
         tableView.deselectRow(at: indexPath, animated: true)
@@ -469,6 +479,16 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         itemsView.didMove(toParent: self)
     }
     
+    func moveToDailyChallenge() {
+        let daily = DailyChallengeViewController()
+        daily.menu = self
+        self.addChild(daily)
+        daily.view.frame = self.view.frame
+        self.view.addSubview(daily.view)
+        daily.didMove(toParent: self)
+        daily.showAnimate()
+    }
+
     func moveToIntro() {
         let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
         introView.sender = "Main"
@@ -584,6 +604,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
+        DailyChallengeSession.shared.active = nil
+        // Back in the menus, the daily is over - whatever happens next is not it
         refreshView()
         MusicHandler.sharedHelper.stopMusic()
         if musicSetting {

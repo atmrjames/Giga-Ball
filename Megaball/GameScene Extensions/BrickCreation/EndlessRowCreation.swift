@@ -45,6 +45,9 @@ extension GameScene {
         powerUpProbArray[45] = gameMode == .endlessII ? 5 : 0 // Descent - uncommon
         powerUpProbArray[46] = gameMode == .endlessII ? 5 : 0 // Auto-Aim - uncommon
         powerUpProbArray[47] = gameMode == .endlessII ? 3 : 0 // Wrap-Around - rare (§5.4)
+
+        applyDailyEconomyTwists()
+        // After the endless rows' own weights too, so the day's economy holds per row
         // Guarded by mode, because these rows are built for *both* endless modes - the
         // Multi-Ball line above gets the same guard for free from endlessIICanAddBall, but a
         // flat weight here would have quietly added the new power-ups to the original
@@ -671,6 +674,9 @@ extension GameScene {
             brickArray.append(brick)
         }
         // Appended with the rest so it animates in and is counted like any other brick
+
+        applyDailyFog(to: brickArray)
+        // New rows arrive fogged too, or the day's fog would lift a row at a time
 
         let startingScale = SKAction.scale(to: 0.8, duration: 0)
         let startingFade = SKAction.fadeOut(withDuration: 0)

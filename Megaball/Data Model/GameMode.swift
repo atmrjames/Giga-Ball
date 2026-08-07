@@ -22,6 +22,10 @@ enum GameMode: Int, CaseIterable {
     /// Endless 2.0. Same shape as endless - one life, height for score - and everything
     /// else about it is new.
     case endlessII = 2
+    /// The Daily Challenge (DAILY-CHALLENGE-SPECIFICATION.md). A menu identity, not a
+    /// scene identity: a daily *plays* one of the other three modes with the day's twists,
+    /// so the scene never sees this case - DailyChallengeSession is how it knows.
+    case daily = 3
 
     /// Where the mode is remembered between launches, so a resumed run knows what it is.
     static let defaultsKey = "gameMode"
@@ -33,6 +37,7 @@ enum GameMode: Int, CaseIterable {
         case .endlessII: return "Endless Mayhem"
         // Renamed from "Endless 2.0" in play-testing - every screen reads this, so the
         // rename is this line
+        case .daily: return "Daily Challenge"
         }
     }
 

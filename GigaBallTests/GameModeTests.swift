@@ -13,11 +13,14 @@ import XCTest
 
 final class GameModeTests: XCTestCase {
 
-    func testTheThreeModes() {
-        XCTAssertEqual(GameMode.allCases.count, 3)
+    func testTheFourModes() {
+        XCTAssertEqual(GameMode.allCases.count, 4)
         XCTAssertEqual(GameMode.classic.name, "Classic Mode")
         XCTAssertEqual(GameMode.endless.name, "Endless Mode")
         XCTAssertEqual(GameMode.endlessII.name, "Endless Mayhem")
+        XCTAssertEqual(GameMode.daily.name, "Daily Challenge")
+        // The daily is a menu identity, not a scene one - the scene always plays one of
+        // the other three, and DailyChallengeSession is how it knows
     }
 
     func testRawValuesAreStableBecauseTheyArePersisted() {

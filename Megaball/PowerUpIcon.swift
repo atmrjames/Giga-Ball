@@ -360,6 +360,24 @@ enum PowerUpIcon {
         // Leaving right, so the ball on the left is the same ball arriving
     }
 
+    /// The Daily Challenge's menu mark: a calendar with today burning in it.
+    static let dailyChallenge: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let card = CGRect(x: rect.minX + rect.width*0.2, y: rect.minY + rect.height*0.24,
+                          width: rect.width*0.6, height: rect.height*0.52)
+        context.stroke(card)
+        context.move(to: CGPoint(x: card.minX, y: card.minY + card.height*0.28))
+        context.addLine(to: CGPoint(x: card.maxX, y: card.minY + card.height*0.28))
+        context.strokePath()
+        for x in [card.minX + card.width*0.3, card.maxX - card.width*0.3] {
+            context.move(to: CGPoint(x: x, y: card.minY))
+            context.addLine(to: CGPoint(x: x, y: rect.minY + rect.height*0.16))
+            context.strokePath()
+        }
+        dot(context, at: CGPoint(x: card.midX, y: card.midY + card.height*0.14),
+            radius: rect.width*0.09)
+    }
+
     // MARK: - Drawing helpers
 
     private static func stroke(_ context: CGContext, width: CGFloat) {

@@ -433,6 +433,9 @@ extension GameScene {
         // stale. Inert until now only because every power-up is force-unlocked
 
         powerUpProbSum = powerUpProbArray.reduce(0, +)
+
+        applyDailyEconomyTwists()
+        // The day has the last word on the tables, whatever the level decided
     }
 }
 

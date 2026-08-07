@@ -177,7 +177,10 @@ class InbetweenLevels: GKState {
     }
     
     func saveGameData() {
-        if scene.endlessMode {
+        if scene.isDailyChallenge {
+            // A daily run records nothing here: not heights, not high scores, not pack
+            // progress. It is a different game that borrows the field (daily spec §9)
+        } else if scene.endlessMode {
             if scene.gameMode == .endlessII {
                 // Kept apart from the original mode's runs, which are a different game
                 scene.totalStatsArray[0].endlessIIModeHeight =
@@ -223,7 +226,7 @@ class InbetweenLevels: GKState {
         
         scene.totalStatsArray[0].dateSaved = Date()
         
-        if scene.endlessMode == false {
+        if scene.endlessMode == false && scene.isDailyChallenge == false {
             
             if (scene.levelScore + scene.levelTimerBonus) > scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] {
                 scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] = (scene.levelScore + scene.levelTimerBonus)

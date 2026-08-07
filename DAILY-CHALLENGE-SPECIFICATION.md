@@ -1,6 +1,18 @@
 # Daily Challenge — design specification
 
-**Status: design, revision 1.** Nothing here is built. This is a design document, in the
+**Status: phases 1-2 in build.** The generator exists exactly as §2 specifies - SplitMix64,
+pinned against reference outputs, exact-output tests as the cross-device contract - and the
+mode is playable end to end: the menu row, the briefing screen, and Classic/Endless/Mayhem
+dailies launching with the day's twists applied. The first twist batch is live (the
+economy five, the lives three, Fog of War). Not yet built: attempts and leaderboards
+(phase 3), the remaining twists, history, streaks, themes.
+
+**The test clock** - the play-test rig this feature needs, since days are the unit of
+content: the briefing screen carries ◀ DAY / LIVE / DAY ▶ controls that wind a simulated
+UTC date backward and forward, persisted across launches and loudly labelled. It must be
+removed or debug-gated before release; this line is the tracking for that.
+
+Originally: This is a design document, in the
 tradition of [ENDLESS-2-SPECIFICATION.md](ENDLESS-2-SPECIFICATION.md) before it was built:
 it exists to be argued with before it is implemented, and §12's build phases are written so
 each one ends in something playable. [SPECIFICATION.md](SPECIFICATION.md) describes the app

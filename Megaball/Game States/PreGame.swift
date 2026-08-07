@@ -83,7 +83,8 @@ class PreGame: GKState {
         if scene.startLevelNumber == 0 {
             scene.numberOfLives = 0
         } else {
-            scene.numberOfLives = 3
+            scene.numberOfLives = scene.dailyStartingLives ?? 3
+            // The day's word first, the mode's own three otherwise
         }
         // 0 lives for endless mode, 3 for all other levels
         scene.multiplier = Scoring.multiplierBase

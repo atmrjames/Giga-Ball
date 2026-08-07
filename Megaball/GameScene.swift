@@ -5521,6 +5521,11 @@ laserTimer?.invalidate()
 	}
 	
 	func saveCurrentGame() {
+		guard isDailyChallenge == false else { return }
+		// A daily run is never saved: resuming a twisted game into the campaign - or a
+		// campaign save into a twisted game - would be the wrong game either way. A daily
+		// interrupted is a daily abandoned, which phase 3's attempt rules will formalise
+
 				
 		if numberOfLives <= 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
