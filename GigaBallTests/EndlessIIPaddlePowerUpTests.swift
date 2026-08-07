@@ -405,6 +405,37 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "it left upward")
     }
 
+    func testACatchFreezesTheWorldAndTheLaunchLetsItGo() {
+        // "Can we pause the game whilst the user aims? As soon as they lift their finger
+        // the ball fires and the game continues?" - yes, and this is it
+        let scene = paddleScene()
+        scene.ballSpeedLimit = 100
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        let flying = SKSpriteNode()
+        flying.name = BallCategoryName
+        flying.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        flying.physicsBody?.velocity = CGVector(dx: 70, dy: -50)
+        scene.addChild(flying)
+        scene.endlessIIExtraBalls.append(flying)
+
+        scene.endlessIICollectAimedSticky()
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
+        XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
+
+        XCTAssertTrue(scene.endlessIIAimHold, "the world holds its breath")
+        XCTAssertEqual(flying.physicsBody?.velocity.dx, 0, "the other ball froze too")
+        XCTAssertEqual(scene.pauseExtraBallVelocities.first?.dx, 70,
+                       "its heading survives the freeze")
+
+        XCTAssertTrue(scene.endlessIIAimLaunch())
+        XCTAssertFalse(scene.endlessIIAimHold, "lifting the finger lets the world go")
+        XCTAssertEqual(flying.physicsBody?.velocity.dx ?? 0, 70, accuracy: 0.01,
+                       "the other ball resumes its flight")
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "and the shot flies")
+    }
+
     func testCatchingNeedsTheClock() {
         let scene = paddleScene()
         scene.addChild(scene.ball)

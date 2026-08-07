@@ -73,13 +73,35 @@ extension GameScene {
         endlessIIAutoAimClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
+    /// The power-ups a free shot should not be spent on - the bad ones, by the same
+    /// judgement the reference page prints. Derived from the multiplier column rather than
+    /// listed, so a new bad power-up is excluded the day it exists.
+    static let endlessIIHarmfulPowerUps: Set<Int> = {
+        var harmful = Set(LevelPackSetup().powerUpMultiplierArray.enumerated()
+            .filter { $0.element == "-0.1" }
+            .map { $0.offset })
+        harmful.insert(1)
+        // Lose A Ball's multiplier chip is blank - losing the ball speaks for itself - so
+        // the derivation misses the single worst thing a free shot could set off
+        return harmful
+    }()
+
     /// The brick an Auto-Aim bounce goes for: the lowest on the field, nearest first among
     /// equals - the one that is threatening the run, which is the one worth a free shot.
+    ///
+    /// Only bricks worth the shot: never a Portal or an Indestructible, which the ball
+    /// cannot destroy, and never a brick holding a bad power-up - a free shot that sets off
+    /// a Lose A Ball is not a free shot.
     func endlessIIAutoAimTarget(from x: CGFloat) -> CGPoint? {
         var best: (position: CGPoint, distance: CGFloat)?
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode else { return }
             guard node.parent != nil, node.isHidden == false else { return }
             guard node.endlessIIRole != .portal else { return }
+            guard brick.texture != self.brickIndestructible1Texture,
+                  brick.texture != self.brickIndestructible2Texture else { return }
+            if let held = node.endlessIIPowerUpIndex,
+               GameScene.endlessIIHarmfulPowerUps.contains(held) { return }
             let distance = abs(node.position.x - x)
             if let current = best {
                 if node.position.y < current.position.y - 1
@@ -168,10 +190,23 @@ extension GameScene {
             // The velocity it entered with, sampled before the engine's own bounce - the
             // reported one has already been turned round (§8.6)
 
-            subject.position = CGPoint(x: subject.position.x,
-                                       y: frame.height/2 - topScreenBlock.size.height
-                                          - subject.size.height)
-            body.velocity = CGVector(dx: arriving.dx, dy: -abs(arriving.dy))
+            if let portal = endlessIIPortals().randomElement() {
+                let from = subject.position
+                subject.position = CGPoint(x: portal.position.x,
+                                           y: portal.frame.maxY + subject.size.height)
+                body.velocity = CGVector(dx: arriving.dx, dy: abs(arriving.dy))
+                endlessIIShowPortalJump(from: from, to: subject.position)
+                portal.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
+                                      .fadeAlpha(to: 1, duration: 0.12)]))
+                // The network: with Portal bricks in play the paddle connects to them, one
+                // chosen at random, and the ball climbs out of the brick into the field
+            } else {
+                subject.position = CGPoint(x: subject.position.x,
+                                           y: frame.height/2 - topScreenBlock.size.height
+                                              - subject.size.height)
+                body.velocity = CGVector(dx: arriving.dx, dy: -abs(arriving.dy))
+                // On its own the paddle's portal exits at the top, falling back in
+            }
         }
     }
 
@@ -410,6 +445,7 @@ extension GameScene {
         endlessIIPullLines.forEach { $0.removeFromParent() }
         endlessIIPullLines.removeAll()
         if paddle.colorBlendFactor != 0 { paddle.colorBlendFactor = 0 }
+        endlessIIAimHold = false
         endlessIIEndAim()
     }
 }

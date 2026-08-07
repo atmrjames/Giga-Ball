@@ -343,6 +343,40 @@ final class EndlessIIBuildInTimingTests: XCTestCase {
     }
 }
 
+/// "The first hit of a fixed brick locks it in place then it becomes a normal multi-hit
+/// brick requiring the most hits to destroy it."
+final class EndlessIIFixedHardensTests: XCTestCase {
+
+    func testAnchoringTurnsAPlainBrickIntoAFreshMultiHit() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.name = BrickCategoryName
+        brick.endlessIIRole = .fixed
+        scene.addChild(brick)
+
+        XCTAssertTrue(scene.endlessIIAnchorIfNeeded(brick))
+        XCTAssertTrue(brick.endlessIIIsAnchored)
+        XCTAssertEqual(brick.texture, scene.brickMultiHit1Texture,
+                       "the anchor now costs the full multi-hit ladder to dig out")
+    }
+
+    func testABrickThatWasAlreadyMultiHitKeepsItsOwnLadder() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        let brick = SKSpriteNode(texture: scene.brickMultiHit3Texture)
+        brick.name = BrickCategoryName
+        brick.endlessIIRole = .fixed
+        scene.addChild(brick)
+
+        scene.endlessIIAnchorIfNeeded(brick)
+        XCTAssertEqual(brick.texture, scene.brickMultiHit3Texture,
+                       "two hits already taken are not refunded")
+    }
+}
+
 /// "Best score below current score is still not showing."
 final class EndlessIIBestHeightLabelTests: XCTestCase {
 

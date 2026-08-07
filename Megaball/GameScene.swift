@@ -113,6 +113,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	var endlessIIAimDrag: CGFloat = 0
 	var endlessIIAimArrow: SKShapeNode?
+	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
+	var endlessIIAimHold = false
 
 	// The field batch's clocks and drawing - see EndlessIIFieldPowerUps
 	var endlessIIWreckingBallClock = EndlessIIClock()
@@ -1570,10 +1572,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 			paddleMovedDistance = touchLocation.x - previousLocation.x
 
-			endlessIIAimDragged(by: paddleMovedDistance)
-			// The drag swings the aim *and* moves the paddle. Freezing the paddle while
-			// aiming read as the game pausing - the held ball rides the paddle, the arrow
-			// rides the ball, and the same drag chooses the angle
+			if endlessIIAimHold {
+				endlessIIAimDragged(by: paddleMovedDistance)
+				return
+			}
+			// While the aim hold is on, the drag is the aim and nothing else moves - the
+			// world is frozen, and lifting the finger is what fires and unfreezes
 
 			paddleMovedDistance *= endlessIIControlDirection
 			// Reversed Controls, and otherwise one - the whole power-up is this line

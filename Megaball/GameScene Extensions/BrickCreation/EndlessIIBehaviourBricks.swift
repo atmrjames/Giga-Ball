@@ -535,6 +535,15 @@ extension GameScene {
         brick.removeAllActions()
         // Any descent already under way has to stop, or it finishes moving after anchoring
 
+        if brick.texture == brickNormalTexture {
+            brick.texture = brickMultiHit1Texture
+            brick.colorBlendFactor = 0
+        }
+        // Anchoring also hardens it: a plain Fixed brick was being hit twice in quick
+        // succession and never really came into play, so the anchor now costs the full
+        // multi-hit ladder to dig out. A brick that was already multi-hit keeps its own
+        // ladder, and anything else keeps its own rules - only the plain ones harden
+
         tint(brick, GameScene.fixedAnchoredColour)
         brick.run(.sequence([.scale(to: 1.15, duration: 0.06),
                              .scale(to: 1, duration: 0.1)]))
@@ -661,7 +670,14 @@ extension GameScene {
 
         let to: CGPoint
         var leaving = velocity
-        if let partner {
+        if endlessIIPortalPaddleClock.isRunning {
+            to = CGPoint(x: paddle.position.x,
+                         y: paddle.position.y + paddleHeight/2 + ballSize)
+            leaving = CGVector(dx: velocity.dx, dy: abs(velocity.dy))
+            // The network the play test asked for: while a Portal Paddle runs, every portal
+            // connects to it. A brick hit sends the ball out of the paddle, always upward -
+            // a ball exiting a paddle downward would be a ball exiting the game
+        } else if let partner {
             let exit = endlessIIPortalExit(from: partner, heading: velocity)
             to = exit.point
             leaving = exit.heading
@@ -672,7 +688,7 @@ extension GameScene {
             // it - an earlier version put the ball inside the top screen block and left the
             // physics to shove it back out
         }
-        endlessIIPortalKeepsHeading = partner != nil
+        endlessIIPortalKeepsHeading = partner != nil || endlessIIPortalPaddleClock.isRunning
         endlessIIPortalExitVelocity = leaving
 
         endlessIIPendingPortalExit = to

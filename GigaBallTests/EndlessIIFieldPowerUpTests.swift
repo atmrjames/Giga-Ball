@@ -383,6 +383,80 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                       "the far side of the wall is in reach")
     }
 
+    // MARK: - The portal network
+
+    func testABrickHitExitsAtThePaddleWhileThePortalPaddleRuns() {
+        let scene = fieldScene()
+        scene.paddle.position = CGPoint(x: 30, y: -300)
+        scene.paddleHeight = 10
+        let portal = brick(in: scene, x: 0, y: 100, role: .portal)
+        scene.endlessIICollectPortalPaddle()
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: .zero, velocity: CGVector(dx: 40, dy: 60))
+
+        scene.endlessIIEnterPortal(portal, entering: scene.ball)
+        XCTAssertEqual(scene.endlessIIPendingPortalExit?.x, 30, "out of the paddle")
+        XCTAssertGreaterThan(scene.endlessIIPortalExitVelocity?.dy ?? -1, 0,
+                             "must exit with some upwards velocity")
+    }
+
+    func testAPaddleHitExitsAtAPortalBrickWhenOneExists() {
+        let scene = fieldScene()
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.ball.position = CGPoint(x: 0, y: -300)
+        let portal = brick(in: scene, x: -80, y: 150, role: .portal)
+        scene.endlessIICollectPortalPaddle()
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 20, dy: -90))
+
+        XCTAssertTrue(scene.endlessIIPaddlePortalTook(scene.ball))
+        scene.applyEndlessIIPaddlePortals()
+
+        XCTAssertEqual(scene.ball.position.x, portal.position.x, "out of the portal brick")
+        XCTAssertGreaterThan(scene.ball.position.y, portal.frame.maxY)
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "climbing")
+    }
+
+    func testAPaddleHitStillExitsAtTheTopWithNoPortalBricks() {
+        let scene = fieldScene()
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.position = CGPoint(x: 10, y: -300)
+        scene.endlessIICollectPortalPaddle()
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 20, dy: -90))
+
+        XCTAssertTrue(scene.endlessIIPaddlePortalTook(scene.ball))
+        scene.applyEndlessIIPaddlePortals()
+        XCTAssertLessThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
+                          "falling back in from the top, as before")
+    }
+
+    // MARK: - What Auto-Aim will not waste a shot on
+
+    func testAutoAimSkipsIndestructiblesAndBadPowerUpBricks() {
+        XCTAssertTrue(GameScene.endlessIIHarmfulPowerUps.contains(1),
+                      "Lose A Ball is the canonical bad one")
+        XCTAssertFalse(GameScene.endlessIIHarmfulPowerUps.contains(0),
+                       "Extra Ball is the canonical good one")
+
+        let scene = fieldScene()
+        let wall = brick(in: scene, x: 0, y: 50)
+        wall.texture = scene.brickIndestructible2Texture
+        brick(in: scene, x: 30, y: 60, powerUp: 1)
+        // The lowest two things on the field are a brick the ball cannot destroy and a
+        // brick holding a Lose A Ball - a free shot at either is a wasted or hostile shot
+        let worth = brick(in: scene, x: -60, y: 100)
+
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, worth.position.x)
+    }
+
+    func testAutoAimStillAimsAtGoodPowerUpBricks() {
+        let scene = fieldScene()
+        let gift = brick(in: scene, x: 20, y: 60, powerUp: 0)
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, gift.position.x)
+    }
+
     // MARK: - The ring and the save
 
     func testTheTimedPairReportToTheRingAndRoundTrip() {

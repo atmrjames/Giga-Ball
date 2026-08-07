@@ -55,8 +55,12 @@ extension GameScene {
     /// ball can come out of: a Portal Paddle is running, or exactly one Portal brick is in
     /// play (whose exit is the top, §4.11).
     private func showEndlessIITopExitStrip() {
-        let wanted = endlessIIPortalPaddleClock.isRunning
-            || (gameMode == .endlessII && endlessIIPortals().count == 1)
+        let portals = gameMode == .endlessII ? endlessIIPortals().count : 0
+        let wanted = (endlessIIPortalPaddleClock.isRunning && portals == 0)
+            || (endlessIIPortalPaddleClock.isRunning == false && portals == 1)
+        // The strip marks the top as an exit, and the top is only the exit while nothing
+        // better is: a Portal Paddle with bricks in play exits at the bricks, and a pair of
+        // bricks exit at each other
 
         guard wanted else {
             endlessIITopExitStrip?.removeFromParent()

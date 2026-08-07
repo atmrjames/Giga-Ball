@@ -15,8 +15,11 @@
 //  paddle built (§5.5) is reused whole, so with Multi-Ball the balls still leave oldest
 //  first, each at its own aimed angle.
 //
-//  While a ball is being aimed the paddle does not move: the drag is the aim. That is the
-//  spec's trade, and the play-test's question.
+//  Aiming is its own moment: the catch freezes the world the way the pause menu does, the
+//  drag chooses the angle while everything holds its breath, and lifting the finger fires
+//  the ball and lets play go again in the same frame. Play-testing arrived here after two
+//  other answers - a frozen paddle read as the game pausing by accident, and a live paddle
+//  made the drag do two jobs at once.
 //
 
 import SpriteKit
@@ -57,7 +60,74 @@ extension GameScene {
 
         if soundsSetting { run(stickyPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
+        endlessIIBeginAimHold()
         return true
+    }
+
+    // MARK: - The hold
+
+    /// Freezes play while the aim is chosen.
+    ///
+    /// The first version kept the game running and let the drag move the paddle too, and
+    /// play-testing called both wrong ways round: aiming should be its own moment. So a
+    /// catch stops the world - every ball, brick and laser holds where it is, exactly the
+    /// way the pause menu holds them - the drag chooses the angle, and lifting the finger
+    /// fires the ball and lets the world go again.
+    func endlessIIBeginAimHold() {
+        guard endlessIIAimHold == false else { return }
+
+        if ballIsOnPaddle == false, let velocity = ball.physicsBody?.velocity,
+           velocity.dx != 0 || velocity.dy != 0 {
+            pauseBallVelocityX = velocity.dx
+            pauseBallVelocityY = velocity.dy
+        }
+        // The primary ball may be mid-flight while an extra is caught; its heading has to
+        // survive the freeze the same way it survives the pause menu
+
+        endlessIIRecordExtraBallVelocities()
+        pauseAllNodes()
+        endlessIIAimHold = true
+    }
+
+    /// Lets the world go again, restoring every heading the freeze took.
+    ///
+    /// The launching ball is skipped - its velocity belongs to the aim, applied by the
+    /// caller straight after this returns.
+    func endlessIIEndAimHold(launching: SKSpriteNode?) {
+        guard endlessIIAimHold else { return }
+        endlessIIAimHold = false
+
+        for name in [PaddleCategoryName, BallCategoryName, BrickCategoryName,
+                     BrickRemovalCategoryName, LaserCategoryName] {
+            enumerateChildNodes(withName: name) { node, _ in node.isPaused = false }
+        }
+        enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
+            let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 7.5)
+            node.run(move, withKey: "PowerUpDrop")
+        }
+        // The same wake the pause menu's countdown gives - the drops lost their action when
+        // the world froze, so they are set falling again
+
+        if launching !== ball, ballIsOnPaddle == false,
+           endlessIIHeldBalls.contains(where: { $0 === ball }) == false,
+           pauseBallVelocityX != 0 || pauseBallVelocityY != 0 {
+            ball.physicsBody?.velocity = CGVector(dx: pauseBallVelocityX,
+                                                  dy: pauseBallVelocityY)
+            pauseBallVelocityX = 0
+            pauseBallVelocityY = 0
+        }
+        for (index, extra) in endlessIIExtraBalls.enumerated() {
+            guard extra !== launching, extra.parent != nil else { continue }
+            guard endlessIIHeldBalls.contains(where: { $0 === extra }) == false else { continue }
+            guard pauseExtraBallVelocities.indices.contains(index) else { continue }
+            extra.physicsBody?.velocity = pauseExtraBallVelocities[index]
+        }
+        pauseExtraBallVelocities.removeAll()
+        // Everything the freeze stopped is sent on its way - except what the paddle is
+        // still holding, which stays held
+
+        directionMarker.isHidden = true
+        endlessIIHideExtraDirectionMarkers()
     }
 
     /// The ball whose launch is currently being aimed: the head of the held queue.
@@ -89,6 +159,10 @@ extension GameScene {
     /// A tap or release while a ball is being aimed launches it. Returns whether it did.
     func endlessIIAimLaunch() -> Bool {
         guard let target = endlessIIAimTarget else { return false }
+
+        endlessIIEndAimHold(launching: target)
+        // The world goes first, so the launch velocity below is not overwritten by the
+        // restore - and everything else resumes in the same frame the shot leaves
 
         let angle = endlessIIAimAngle(for: target)
         target.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),

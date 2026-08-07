@@ -1085,15 +1085,26 @@ are exits, and a paddle overhanging an edge when the walls come back is pushed i
 - **The mode is renamed Endless Mayhem.** Internal identifiers stay `endlessII`; the rename
   is one line, because every screen reads `GameMode.name`.
 
-**Open questions from the same play-test, answered in design rather than code:**
+**Second-round revisions, from playing the first round's answers:**
 
-- *Should the Portal Paddle and Portal bricks connect?* No. A Portal Paddle whose exit
-  depended on a Portal brick being in play would be a power-up that mostly does nothing -
-  the paddle's portal always exits at the top, and the shared blue/yellow language already
-  says they are the same kind of thing.
-- *Are Fixed bricks always multi-hit?* Effectively, by design: the Fixed style spends its
-  first hit anchoring itself (§4.6), so even a normal-behaviour brick takes two. That is the
-  style's cost working as intended, not a generator bias.
+- **Aiming is its own moment.** An Aimed Sticky catch freezes the world the way the pause
+  menu does - every ball, brick and laser holds where it is, headings preserved - the drag
+  chooses the angle, and lifting the finger fires the ball and lets play go in the same
+  frame. Two other answers were tried first: a frozen paddle read as the game pausing by
+  accident, and a live paddle made one drag do two jobs.
+- **The Portal Paddle and Portal bricks connect after all.** While the paddle's clock runs,
+  every portal joins one network: a paddle hit exits at a random Portal brick (climbing), a
+  brick hit exits at the paddle (always upward - a ball exiting a paddle downward would be
+  exiting the game), and only with no bricks in play does the paddle's portal still use the
+  top. The yellow strip now marks the top only while the top is genuinely the exit.
+- **Auto-Aim only spends its shot on bricks worth hitting**: never an Indestructible, never
+  a brick holding a bad power-up. The bad set is derived from the multiplier column plus
+  Lose A Ball, whose chip is blank because losing the ball speaks for itself.
+- **A Fixed brick hardens as it anchors**: the first hit locks it in place *and* turns a
+  plain brick into a fresh Multi-Hit, so digging it out costs the full ladder. Play-testing
+  found the two-hit version dead on arrival - hit twice in quick succession, it never came
+  into play. A brick already multi-hit keeps its own ladder; hits already taken are not
+  refunded.
 | **8d. The rules** | Lock, Key, Wipe, Randomised Bounce | The ones that act on *other power-ups*. They need the rest of the set to exist before they mean anything, and Lock and Key only drop in each other's company | Whether a power-up about power-ups reads at all in the moment |
 
 Each batch needs the same four things, and none of them is optional: entries in every
