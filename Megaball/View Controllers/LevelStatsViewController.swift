@@ -59,6 +59,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     var runHistoryTable: UITableView?
     /// The rows, newest first: height, and when - `nil` for runs recorded before dates were.
     var runHistory: [(height: Int, date: Date?)] = []
+    /// Whether the list is ordered by height instead of by date. Date is the default -
+    /// the question the list usually answers is "what have I done lately".
+    var runHistorySortsByHeight = false
+    var runHistorySortButton: UIButton?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -462,6 +466,22 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         // horizontally and giving it a width leaves the aspect doing the height, and the
         // labels below follow it up because they were pinned to its bottom all along
 
+        let sort = UIButton(type: .system)
+        sort.translatesAutoresizingMaskIntoConstraints = false
+        sort.setTitle("DATE ▾", for: .normal)
+        sort.setTitleColor(UIColor(white: 1, alpha: 0.55), for: .normal)
+        sort.titleLabel?.font = .boldSystemFont(ofSize: 12)
+        sort.addTarget(self, action: #selector(toggleRunHistorySort), for: .touchUpInside)
+        levelStatsView.addSubview(sort)
+        NSLayoutConstraint.activate([
+            sort.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 6),
+            sort.trailingAnchor.constraint(equalTo: levelStatsView.trailingAnchor,
+                                           constant: -44),
+        ])
+        runHistorySortButton = sort
+        // One small word, where a column header would be - the list is sorted by date
+        // until the player asks it the other question
+
         let table = UITableView(frame: .zero, style: .plain)
         table.translatesAutoresizingMaskIntoConstraints = false
         table.backgroundColor = .clear
@@ -473,7 +493,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         table.allowsSelection = false
         levelStatsView.addSubview(table)
         NSLayoutConstraint.activate([
-            table.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 14),
+            table.topAnchor.constraint(equalTo: sort.bottomAnchor, constant: 4),
             table.bottomAnchor.constraint(equalTo: backButtonCollectionView.topAnchor,
                                           constant: -8),
             table.leadingAnchor.constraint(equalTo: levelStatsView.leadingAnchor,
@@ -484,6 +504,30 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         runHistoryTable = table
     }
 
+    /// Flips between the two orders a run list can answer for: when, and how high.
+    @objc func toggleRunHistorySort() {
+        runHistorySortsByHeight.toggle()
+        runHistorySortButton?.setTitle(runHistorySortsByHeight ? "HEIGHT ▾" : "DATE ▾",
+                                       for: .normal)
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        runHistoryTable?.reloadData()
+    }
+
+    /// The rows in the order the toggle asks for.
+    ///
+    /// By date is the stored order - newest first. By height sorts descending, ties newest
+    /// first, so equal runs keep their recency order rather than shuffling.
+    var sortedRunHistory: [(height: Int, date: Date?)] {
+        guard runHistorySortsByHeight else { return runHistory }
+        return runHistory.enumerated()
+            .sorted { a, b in
+                a.element.height != b.element.height
+                    ? a.element.height > b.element.height
+                    : a.offset < b.offset
+            }
+            .map(\.element)
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         runHistory.count
     }
@@ -492,7 +536,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         let cell = tableView.dequeueReusableCell(withIdentifier: "run")
             ?? UITableViewCell(style: .value1, reuseIdentifier: "run")
         cell.backgroundColor = .clear
-        let entry = runHistory[indexPath.row]
+        let entry = sortedRunHistory[indexPath.row]
 
         cell.textLabel?.text = "\(entry.height)m"
         cell.textLabel?.font = .boldSystemFont(ofSize: 15)

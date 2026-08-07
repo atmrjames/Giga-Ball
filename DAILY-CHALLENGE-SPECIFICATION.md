@@ -79,11 +79,13 @@ Drawn in this order, each from the day's PRNG stream:
    mode. The daily **ignores pack unlocks**: it is a tasting menu, and a new player landing
    on a Food Pack level they have not unlocked is the point, not a bug. (Their campaign
    progress is untouched.)
-3. **Twist count** — none 30%, one 50%, two 20%. Two is the ceiling: three rule changes at
-   once stops being a twist and becomes a different game nobody practised for. "No twist"
-   days are deliberate — the baseline day is what makes twist days feel like twists.
-4. **The twists** — drawn from the pool (§4) with weights, filtered by the compatibility
-   matrix (§4.2) and by mode applicability.
+3. **Twist count** — none 30%, one 50%, two 20% at launch, and the structure is built to
+   raise the ceiling: because twists live in categories (§4.2) and a day draws at most one
+   per category, any count up to the category count is automatically a legal combination.
+   Raising the ceiling later is a weights change, not a design change. "No twist" days are
+   deliberate — the baseline day is what makes twist days feel like twists.
+4. **The twists** — one category at a time, then one twist from within it, both weighted
+   and both filtered by mode applicability (§4.2).
 5. **Theme** — usually the player's own settings; some days force a dress (§5).
 
 ## 4. Twists
@@ -170,6 +172,12 @@ Flipped Angle means.
 - **The score is the mode's own score.** Classic: level score. Endless modes: height. No
   cross-mode normalisation is needed for the daily board, because everyone plays the same
   mode on the same day.
+- **Decided:** daily Classic quietly excludes the four ±points power-ups and both
+  multiplier power-ups from drops - the board compares play, not multiplier luck. Ordinary
+  multiplier mechanics otherwise stay, so daily scores still feel like Classic scores.
+  Ball resets stay available - they are part of the game being scored - with the briefing
+  noting they cost time, which on a Time Trial day is its own deterrent. Endless dailies
+  are uncapped.
 - **Only the first attempt posts, and only if it finishes in the window** (§1). The first
   time the play button is pressed on a given UTC day's challenge, that run is the scoring
   run — abandoning it spends it (quitting to menu posts the score of where you were;
@@ -190,10 +198,13 @@ Flipped Angle means.
 
 ## 8. Playing the past
 
-The challenge screen offers a scrollable list of previous days (newest first — the same
-furniture as the endless history list): date, mode, twist names, the player's result or "not
-played". Any past day is playable for ever as practice — determinism plus append-only pools
-(§2.1) is what makes this promise keepable. No leaderboard posting, ever, for past days.
+Nice to have, not must have (James's call), and scoped accordingly: the challenge screen
+lists the **last 30 days** (newest first — the same furniture as the endless history list):
+date, mode, twist names, the player's result or "not played". Any listed day is playable as
+practice; no leaderboard posting, ever, for past days. Determinism plus append-only pools
+(§2.1) mean the window could be widened to for-ever later at zero cost — 30 days is a
+product choice, not a technical one, and it keeps the list a list rather than an archive.
+Ships in phase 5, after the daily loop itself is proven.
 
 ## 9. What the daily must never touch
 
@@ -256,10 +267,6 @@ important one: everything else stands on "every device computes the same day".
 
 ## 13. Open questions
 
-- **Endless dailies and run length**: an endless run can be 40 minutes. Cap the daily at a
-  height (first to X? score = time-to-X?) or a duration, or leave uncapped? Uncapped is
-  simplest and matches "height is the score" — but a daily that can eat an hour cuts
-  against "quick daily game". *Recommendation: uncapped in phase 2; revisit with data.*
 - **Deterministic endless fields**: should an Endless daily's field itself be seeded, so
   everyone faces the same rows? Fairer, and doable (the generator already fits the
   pattern), but it makes replays memorisable and needs the row generator to take an
@@ -271,15 +278,7 @@ important one: everything else stands on "every device computes the same day".
 - **Abandoned first attempts** (§7): does quitting post the partial score or burn the
   attempt with nothing? Posting-partial is the anti-cheese answer and the recommendation.
 - **Monochrome performance** (§5, §4 Blackout).
-- **Is ball reset allowed?** (ideas list) — the stuck-ball rescue and the return-tap are
-  game mechanics, not cheats; *recommendation: allowed, they are part of the game being
-  scored*. The kill-ball affordance in the pause menu is moot on No Pausing days.
-- **Score-based power-ups and the multiplier** (ideas list): ±points and multiplier
-  power-ups swing Classic scores harder than skill does, which muddies a shared board.
-  *Recommendation: exclude the four points power-ups and both multiplier power-ups from
-  daily Classic drops by default — quietly, not as a named twist - and keep the ordinary
-  multiplier mechanics otherwise, because removing the multiplier entirely makes dailies
-  score-incomparable with the player's own campaign instincts.* Needs James's call.
+
 - **App Store in-app events** (§11.5): App Store Connect setup, James's side.
 
 ---
