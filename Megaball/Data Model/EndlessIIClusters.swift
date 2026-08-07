@@ -43,18 +43,76 @@ struct EndlessIICluster {
     let minimumHeight: Int
     /// How likely this one is, relative to the others available.
     let weight: Int
+    /// A scatter draws its rows fresh each time it is placed - see `Scatter`.
+    let scatter: Scatter?
 
     var height: Int { rows.count }
     var width: Int { rows.map(\.count).max() ?? 0 }
 
-    init(name: String, rows: [String], minimumHeight: Int, weight: Int = 10) {
+    init(name: String, rows: [String], minimumHeight: Int, weight: Int = 10,
+         scatter: Scatter? = nil) {
         self.name = name
         self.rows = rows
         self.minimumHeight = minimumHeight
         self.weight = weight
+        self.scatter = scatter
+    }
+
+    // MARK: - Scatters
+
+    /// The third kind of formation §6.2.1 asks for: particular bricks in a *random*
+    /// arrangement. A drawn cluster is a designed shape with undesigned contents; a scatter
+    /// is the reverse - the contents are chosen and the shape is rolled, so the same handful
+    /// of bricks is a different field every time it lands.
+    struct Scatter {
+        /// What is scattered - one of the characters the generator already reads.
+        let character: Character
+        /// How many of them land.
+        let count: Int
+        /// Over how many rows they are spread.
+        let rows: Int
+    }
+
+    /// Draws a scatter's rows, using the caller's randomness.
+    ///
+    /// Full field width, all `?` except the scattered bricks, which land in distinct cells -
+    /// `count` bricks means `count` bricks, not fewer where two rolls collided. Injected
+    /// randomness so tests can pin the arrangement while the game rolls it.
+    func materialised(fieldWidth: Int, pick: (Int) -> Int) -> EndlessIICluster {
+        guard let scatter else { return self }
+
+        var cells = (0..<scatter.rows).flatMap { row in
+            (0..<fieldWidth).map { (row: row, column: $0) }
+        }
+        var grid = Array(repeating: Array(repeating: Character("?"), count: fieldWidth),
+                         count: scatter.rows)
+        for _ in 0..<min(scatter.count, cells.count) {
+            let chosen = cells.remove(at: min(max(0, pick(cells.count)), cells.count - 1))
+            grid[chosen.row][chosen.column] = scatter.character
+        }
+
+        return EndlessIICluster(name: name, rows: grid.map { String($0) },
+                                minimumHeight: minimumHeight, weight: weight)
     }
 
     static let all: [EndlessIICluster] = [
+
+        // MARK: Scatters - chosen contents, rolled shape (§6.2.1's third kind)
+
+        EndlessIICluster(name: "Buckshot", rows: [], minimumHeight: 80, weight: 8,
+                         scatter: Scatter(character: "N", count: 9, rows: 3)),
+        // A spray of ordinary bricks with holes everywhere - the anti-wall
+
+        EndlessIICluster(name: "Ghost Field", rows: [], minimumHeight: 140, weight: 6,
+                         scatter: Scatter(character: "i", count: 7, rows: 3)),
+        // Seven bricks that are not there until struck, scattered so no memory of the last
+        // one helps with this one
+
+        EndlessIICluster(name: "Shrapnel", rows: [], minimumHeight: 220, weight: 5,
+                         scatter: Scatter(character: "I", count: 5, rows: 3)),
+        // Five indestructibles thrown across three rows: not a wall to breach but debris to
+        // play around, and every arrangement asks differently
+
 
         // MARK: Blocks - the plain ones, and the ones that arrive first
 

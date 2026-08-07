@@ -733,21 +733,60 @@ and backgrounds, which are also tables.
 
 ## 8.5 Art and audio still to make
 
-Everything new in Endless 2.0 is currently wearing a placeholder: the brick styles are
-ordinary brick artwork tinted a distinct colour with a shape drawn over it, and none of them
-has a sound of its own. That has been good enough to build and judge the mechanics against —
-each one is legible and tells you what it does — but it is not what ships.
+Everything new is currently wearing a placeholder that reads correctly, which was the right
+order: the mechanics have all changed shape at least once since they were drawn. With phase
+8 complete this section is now the shopping list, slot by slot, for the real assets.
 
-**Needed before release:** artwork for the nine brick styles and the three sizes, artwork for
-the new power-ups in the existing icon style, and sound effects for the events that currently
-borrow the ordinary brick-hit sound — an explosion, a spawn, a portal jump, a gravity brick
-landing, a flashing brick turning solid.
+### Power-up icons — twenty drawn placeholders
 
-Deliberately last. A placeholder that reads correctly is worth more during design than
-finished art for a mechanic that might still change, and several of these bricks have already
-changed shape twice.
+Every one is a `static let` in `PowerUpIcon.swift`, drawn at 120×120 into the standard
+rounded-square badge, green for beneficial and red for harmful. To replace one: add the
+asset (e.g. `PowerUpMagnetism.png`), swap the entry in `LevelPackSetup.powerUpImageArray`
+(which feeds the reference page and the power-up bricks) and the matching `SKTexture` in
+`GameScene` (which feeds the drops) — both are found by the icon's name. The `applyPowerUp`
+switch matches on those scene textures, so the drop, the brick and the page must all come
+from the same place, which they do today via `PowerUpIcon`.
 
----
+The twenty: Multi-Ball, Trajectory Line, Landing Marker, Aimed Sticky, Magnetism, Portal
+Paddle, Paddle Halo, Ball Steering, Inert Paddle, Flipped Angle, Reversed Controls, Cull,
+Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Descent, Auto-Aim, Wrap-Around.
+
+### Brick styles — glyph-on-tint placeholders
+
+The nine styles and two sizes wear ordinary brick artwork tinted a distinct colour with a
+drawn glyph over it (`BrickTypeIcons` and the style application in the brick creation
+extensions). Real artwork replaces the tint-plus-glyph per style; the glyph-per-style rule
+should survive whatever the art looks like, because it is what keeps the styles readable
+without relying on colour alone (§7.3).
+
+### Menus
+
+Endless Mayhem currently reuses the original Endless infinity icon on the main menu, the
+mode detail screen and the game-over screen. It deserves its own mark.
+
+### In-scene drawing that may stay drawn
+
+The halo, aura glow, laser beam flash, portal jump trail, aim arrow, pull lines, exit
+strips, wall tints and the landing triangle are `SKShapeNode`/tint work, styled to the
+mode's palette. These can ship as they are or be replaced piecemeal - none blocks release.
+
+### Sound
+
+The events that currently borrow a sound or play none, each with where it fires:
+
+| Event | Today | Where |
+|---|---|---|
+| Explosion / Cull / Laser Beam / Infill | haptics only | `EndlessIIBehaviourBricks.endlessIIExplode`, `EndlessIIFieldPowerUps` |
+| Portal jump (brick, paddle, wrap) | haptic only | `endlessIIEnterPortal`, `applyEndlessIIPaddlePortals`, `applyEndlessIIWraps` |
+| Spawner refilling | none | `endlessIISpawn` |
+| Gravity brick landing | none | the fallers tick in `EndlessIIBehaviourBricks` |
+| Flashing brick turning solid | none | the flashing tick |
+| Fixed brick anchoring | heavy haptic | `endlessIIAnchorIfNeeded` |
+| Build-in rain / Clear And Retreat | `endlessRowDownSound` (borrowed) | `runEndlessIIBuildIn`, `endlessIIClearAndRetreat` |
+| Power-up brick going off | `powerUpSound` (borrowed) | `endlessIITriggerPowerUpBrick` |
+| Aimed catch / aimed launch | sticky catch / release sounds (borrowed) | `EndlessIIAimedSticky` |
+
+The borrowed ones may be fine borrowed - the new ones from silence are the priority.
 
 ## 8.6 Constraints the implementation has to respect
 

@@ -248,10 +248,14 @@ extension GameScene {
 
     /// Picks a cluster and a column for it, and writes it out as rows.
     func endlessIIStartCluster() -> [String]? {
-        guard let cluster = EndlessIICluster.pick(at: endlessHeight,
-                                                  roll: { Int.random(in: 0..<$0) }) else {
+        guard let picked = EndlessIICluster.pick(at: endlessHeight,
+                                                 roll: { Int.random(in: 0..<$0) }) else {
             return nil
         }
+        let cluster = picked.materialised(fieldWidth: numberOfBrickColumns,
+                                          pick: { Int.random(in: 0..<$0) })
+        // A scatter rolls its arrangement here, at placement - the same one is a different
+        // field every time it lands. A drawn cluster passes through unchanged
         let places = EndlessIICluster.placements(width: cluster.width,
                                                  in: numberOfBrickColumns)
         guard let column = places.randomElement() else { return nil }

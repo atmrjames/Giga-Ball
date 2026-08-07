@@ -16,10 +16,15 @@ final class EndlessIIClusterTests: XCTestCase {
 
     private let columns = 11
 
+    /// Every cluster as it would actually be placed - scatters drawn out, shapes untouched.
+    private var placeable: [EndlessIICluster] {
+        EndlessIICluster.all.map { $0.materialised(fieldWidth: columns, pick: { $0/2 }) }
+    }
+
     func testEveryClusterIsDrawnAsARectangle() {
         // Ragged rows would place their shape correctly and pad the short ones from the left,
         // which is not the shape anybody drew
-        for cluster in EndlessIICluster.all {
+        for cluster in placeable {
             let widths = Set(cluster.rows.map(\.count))
             XCTAssertEqual(widths.count, 1, "\(cluster.name) has rows of differing widths")
             XCTAssertFalse(cluster.rows.isEmpty, cluster.name)
@@ -27,7 +32,7 @@ final class EndlessIIClusterTests: XCTestCase {
     }
 
     func testEveryClusterFitsTheField() {
-        for cluster in EndlessIICluster.all {
+        for cluster in placeable {
             XCTAssertLessThanOrEqual(cluster.width, columns, cluster.name)
             XCTAssertGreaterThan(cluster.width, 0, cluster.name)
         }
@@ -35,7 +40,7 @@ final class EndlessIIClusterTests: XCTestCase {
 
     func testEveryClusterUsesCharactersTheGeneratorKnows() {
         let known: Set<Character> = [".", "N", "M", "i", "I", "?"]
-        for cluster in EndlessIICluster.all {
+        for cluster in placeable {
             for row in cluster.rows {
                 for character in row {
                     XCTAssertTrue(known.contains(character),
@@ -43,6 +48,46 @@ final class EndlessIIClusterTests: XCTestCase {
                 }
             }
         }
+    }
+
+    // MARK: - Scatters
+
+    func testAScatterLandsExactlyItsCountInDistinctCells() {
+        // Count bricks means count bricks - two rolls landing in the same cell must not
+        // quietly make one
+        let scatter = EndlessIICluster(name: "Test", rows: [], minimumHeight: 0,
+                                       scatter: .init(character: "N", count: 9, rows: 3))
+        for seed in 0..<5 {
+            let drawn = scatter.materialised(fieldWidth: columns,
+                                             pick: { ($0 + seed*7) % $0 })
+            let landed = drawn.rows.joined().filter { $0 == "N" }.count
+            XCTAssertEqual(landed, 9, "seed \(seed)")
+            XCTAssertEqual(drawn.rows.count, 3)
+            XCTAssertTrue(drawn.rows.allSatisfy { $0.count == columns })
+        }
+    }
+
+    func testEverythingAroundAScatterIsTheGeneratorsOwn() {
+        let scatter = EndlessIICluster(name: "Test", rows: [], minimumHeight: 0,
+                                       scatter: .init(character: "I", count: 4, rows: 2))
+        let drawn = scatter.materialised(fieldWidth: columns, pick: { _ in 0 })
+        let rest = drawn.rows.joined().filter { $0 != "I" }
+        XCTAssertTrue(rest.allSatisfy { $0 == "?" },
+                      "a scatter is contents without a shape - the field carries on around it")
+    }
+
+    func testADrawnClusterPassesThroughMaterialisationUntouched() {
+        let block = EndlessIICluster.all.first { $0.scatter == nil }!
+        let after = block.materialised(fieldWidth: columns, pick: { _ in 0 })
+        XCTAssertEqual(after.rows, block.rows)
+    }
+
+    func testAScatterAskingForMoreThanTheAreaHoldsIsCapped() {
+        // A count past the cell count fills the area rather than trapping
+        let greedy = EndlessIICluster(name: "Test", rows: [], minimumHeight: 0,
+                                      scatter: .init(character: "N", count: 500, rows: 2))
+        let drawn = greedy.materialised(fieldWidth: columns, pick: { _ in 0 })
+        XCTAssertEqual(drawn.rows.joined().filter { $0 == "N" }.count, columns*2)
     }
 
     // MARK: - Placement
@@ -65,7 +110,7 @@ final class EndlessIIClusterTests: XCTestCase {
     }
 
     func testEveryClusterHasSomewhereToGo() {
-        for cluster in EndlessIICluster.all {
+        for cluster in placeable {
             XCTAssertFalse(EndlessIICluster.placements(width: cluster.width, in: columns).isEmpty,
                            cluster.name)
         }
@@ -104,7 +149,7 @@ final class EndlessIIClusterTests: XCTestCase {
     }
 
     func testEveryRealClusterExpandsToTheFieldWidth() {
-        for cluster in EndlessIICluster.all {
+        for cluster in placeable {
             let expanded = cluster.expanded(atColumn: 0, fieldWidth: columns)
             XCTAssertEqual(expanded.count, cluster.rows.count, cluster.name)
             for row in expanded {
