@@ -979,7 +979,10 @@ brick fading into its own place.
 | Item | Notes |
 |---|---|
 | A scatter cluster | §6.2.1 covers set formations with designed and undesigned contents. The third kind — particular bricks in a *random* arrangement — needs a generator rather than a grid |
-| New power-ups on the existing power-ups page | Waits until the new power-ups are actually implemented, so the page is written against what exists |
+
+The new power-ups appear on the power-ups page already — the page derives from the arrays
+that define them, so all forty-eight are listed with their icons, timers and descriptions.
+What it does not yet show is Endless Mayhem's turn-based distinction; worth a look in phase 9.
 
 Tap to skip the game-over height tally is **built** — the gesture is on the pause menu and does
 not cancel touches, so every button on the screen keeps working.
@@ -991,7 +994,7 @@ not cancel touches, so every button on the screen keeps working.
 | Global leaderboard lines on the height markers | The Endless 2.0 boards existing in App Store Connect. Until they do, scores fail to post silently |
 | Artwork and sound for everything new | §8.5. Deliberately last, while mechanics are still moving |
 | Ring HUD in Classic and Endless | A shorter HUD bar changes `layoutUnit`, which changes brick size in levels people hold high scores on. Worth doing deliberately, not as a side effect |
-| Wrap-around applying to the paddle, Moving bricks and explosions | The power-up itself is not built yet. Written up in §5.4 so it is built that way first time rather than retrofitted |
+| ~~Wrap-around applying to the paddle, Moving bricks and explosions~~ | **Built**, first time, the way §5.4 wrote it up |
 
 ### 12.1 Style progression, as part of phase 6
 
