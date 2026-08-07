@@ -200,6 +200,53 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         return scene
     }
 
+    func testAPaddleContactSpendsOneTurnFromEveryRunningClock() {
+        // "Make paddle power-ups turn based not time based - like sticky paddle - 5 turns
+        // each." The contact is the turn, whatever the paddle then does with it
+        let scene = paddleScene()
+        scene.endlessIICollectMagnetism()
+        scene.endlessIICollectReversedControls()
+        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpTurns)
+
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpTurns - 1)
+        XCTAssertEqual(scene.endlessIIReversedControlsClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpTurns - 1)
+
+        for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) {
+            scene.endlessIISpendPaddleTurns()
+        }
+        XCTAssertFalse(scene.endlessIIMagnetismClock.isRunning, "five turns and it is gone")
+    }
+
+    func testATurnClockSpendsWholeTurns() {
+        var clock = EndlessIIClock()
+        clock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        clock.spendTurn()
+        XCTAssertEqual(clock.remaining, GameScene.endlessIIPaddlePowerUpTurns - 1)
+        XCTAssertEqual(clock.fraction, 4.0/5.0, accuracy: 0.001,
+                       "the ring drains a segment at a time")
+    }
+
+    func testTheRingShowsTheTurnsAsSegments() {
+        let scene = paddleScene()
+        scene.endlessIICollectPaddleHalo()
+        let entry = scene.endlessIIPaddleRingEntries().first
+        XCTAssertEqual(entry?.segments, Int(GameScene.endlessIIPaddlePowerUpTurns),
+                       "five marks say five turns, the way the sticky paddle's ring does")
+    }
+
+    func testOtherModesSpendNothing() {
+        let scene = paddleScene()
+        scene.endlessIICollectMagnetism()
+        scene.gameMode = .classic
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpTurns)
+    }
+
     func testTheBadOnesChangeTheHooksTheSceneAsks() {
         let scene = paddleScene()
         XCTAssertEqual(scene.endlessIIPaddleAngleInfluence, 1)
@@ -311,7 +358,7 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
                        "the default is the bounce it would have taken")
     }
 
-    func testDraggingSwingsTheAimAndConsumesTheTouch() {
+    func testDraggingSwingsTheAim() {
         let scene = paddleScene()
         scene.addChild(scene.ball)
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
@@ -320,7 +367,7 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
         scene.endlessIIAimedCatch(scene.ball, isExtra: false)
 
-        XCTAssertTrue(scene.endlessIIAimDragged(by: 30), "the drag is the aim")
+        XCTAssertTrue(scene.endlessIIAimDragged(by: 30), "the drag swings the aim - and the paddle moves too")
         let target = scene.endlessIIAimTarget!
         let swung = scene.endlessIIAimAngle(for: target)
         XCTAssertNotEqual(swung, .pi/2, accuracy: 0.01)

@@ -407,7 +407,9 @@ extension GameScene {
     /// the brick gives the same answer at ordinary size and the right one at the other two.
     func endlessIIBlastReach(of brick: SKSpriteNode) -> CGRect {
         let frame = brick.frame
-        return frame.insetBy(dx: -frame.width, dy: -frame.height)
+        return frame.insetBy(dx: -frame.width, dy: -frame.height*2)
+        // Two rows up and down, one brick each side - play-testing found a single row of
+        // blast too polite for the space an explosion visually claims
     }
 
     /// Removes a brick that something else destroyed, rather than the ball.

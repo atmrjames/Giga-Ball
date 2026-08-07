@@ -48,6 +48,15 @@ struct EndlessIIClock: Equatable {
         total = remaining
     }
 
+    /// A turn was used - for the clocks that count paddle hits rather than seconds,
+    /// the way the sticky paddle always has (§5.4, revised in play-testing).
+    mutating func spendTurn() {
+        remaining = max(0, remaining - 1)
+        if remaining == 0, total > 0 {
+            self = EndlessIIClock()
+        }
+    }
+
     /// Play advanced by this much.
     mutating func run(down delta: TimeInterval) {
         remaining = max(0, remaining - delta)

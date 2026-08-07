@@ -1560,8 +1560,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 			paddleMovedDistance = touchLocation.x - previousLocation.x
 
-			if endlessIIAimDragged(by: paddleMovedDistance) { return }
-			// While a ball is being aimed the drag is the aim, and the paddle stays put
+			endlessIIAimDragged(by: paddleMovedDistance)
+			// The drag swings the aim *and* moves the paddle. Freezing the paddle while
+			// aiming read as the game pausing - the held ball rides the paddle, the arrow
+			// rides the ball, and the same drag chooses the angle
 
 			paddleMovedDistance *= endlessIIControlDirection
 			// Reversed Controls, and otherwise one - the whole power-up is this line
@@ -2865,6 +2867,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if ballIsUnderPaddle(ball) {
 			return
 		}
+
+		endlessIISpendPaddleTurns()
+		// This contact is a turn for every running paddle power-up, whatever the paddle
+		// does with it below - a catch, a swallow or a bounce all count the same one
 		// A contact reported while the ball's centre is below the paddle's is not a landing.
 		// The paddle is taken out of a ball's way while it is underneath (see
 		// `refreshPaddleReachability`) and handed back the moment it is not, and a ball still

@@ -46,8 +46,9 @@ final class EndlessIINeighbourTests: XCTestCase {
 
     // MARK: - Explosions
 
-    func testAnOrdinaryExplosionStillReachesExactlyItsEightNeighbours() {
-        // The rule §4.9 asks for, and the thing the geometric reach must not change.
+    func testAnOrdinaryExplosionReachesItsNeighboursAndTheRowBeyond() {
+        // §4.9 asked for the eight neighbours; play-testing raised the vertical reach to two
+        // rows each way. The eight are still the floor - and two rows is the new ceiling.
         let scene = makeScene()
         let centre = addBrick(scene, at: .zero, size: cell)
         let reach = scene.endlessIIBlastReach(of: centre)
@@ -70,7 +71,14 @@ final class EndlessIINeighbourTests: XCTestCase {
 
         let far = CGRect(x: cell.width*2 - cell.width/2, y: -cell.height/2,
                          width: cell.width, height: cell.height)
-        XCTAssertFalse(reach.intersects(far))
+        XCTAssertFalse(reach.intersects(far), "two columns away is out of reach")
+
+        let secondRow = CGRect(x: -cell.width/2, y: cell.height*2 - cell.height/2,
+                               width: cell.width, height: cell.height)
+        let thirdRow = CGRect(x: -cell.width/2, y: cell.height*3 - cell.height/2,
+                              width: cell.width, height: cell.height)
+        XCTAssertTrue(reach.intersects(secondRow), "two rows up is the new reach")
+        XCTAssertFalse(reach.intersects(thirdRow), "three is not")
     }
 
     func testAnExplodingTinyBrickTakesTheTinyBricksBesideIt() {

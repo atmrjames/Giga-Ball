@@ -26,43 +26,67 @@ extension GameScene {
 
     static let endlessIIPaddlePowerUpDuration: TimeInterval = 10
 
+    /// How many paddle hits one collection of a paddle power-up lasts.
+    ///
+    /// The whole batch is turn-based rather than timed - like the sticky paddle, which is
+    /// the request play-testing made in as many words. A power-up you spend by using reads
+    /// differently from one that evaporates while the ball is away at the top of the field.
+    static let endlessIIPaddlePowerUpTurns: TimeInterval = 5
+
     // MARK: - Collection
 
     func endlessIICollectAimedSticky() {
-        endlessIIAimedStickyClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIAimedStickyClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func endlessIICollectMagnetism() {
-        endlessIIMagnetismClock.collect(GameScene.endlessIIPaddlePowerUpDuration,
+        endlessIIMagnetismClock.collect(GameScene.endlessIIPaddlePowerUpTurns,
                                         deepestLevel: EndlessIIPaddleEffects.magnetismStrength.count - 1)
     }
 
     func endlessIICollectPortalPaddle() {
-        endlessIIPortalPaddleClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIPortalPaddleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func endlessIICollectPaddleHalo() {
-        endlessIIPaddleHaloClock.collect(GameScene.endlessIIPaddlePowerUpDuration,
+        endlessIIPaddleHaloClock.collect(GameScene.endlessIIPaddlePowerUpTurns,
                                          deepestLevel: EndlessIIPaddleEffects.haloReach.count - 1)
     }
 
     func endlessIICollectBallSteering() {
-        endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func endlessIICollectInertPaddle() {
-        endlessIIInertPaddleClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIInertPaddleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func endlessIICollectFlippedAngle() {
-        endlessIIFlippedAngleClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIFlippedAngleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func endlessIICollectReversedControls() {
-        endlessIIReversedControlsClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIReversedControlsClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     // MARK: - The hooks the scene asks
+
+    /// One paddle contact happened: every running paddle power-up spends a turn.
+    ///
+    /// Called once per genuine landing, before the catches and the portal - the contact is
+    /// the turn, whatever the paddle then does with it. With Multi-Ball every ball's landing
+    /// spends one, which is the price of running four balls through a five-turn power-up.
+    func endlessIISpendPaddleTurns() {
+        guard gameMode == .endlessII else { return }
+        endlessIIAimedStickyClock.spendTurn()
+        endlessIIMagnetismClock.spendTurn()
+        endlessIIPortalPaddleClock.spendTurn()
+        endlessIIPaddleHaloClock.spendTurn()
+        endlessIIBallSteeringClock.spendTurn()
+        endlessIIInertPaddleClock.spendTurn()
+        endlessIIFlippedAngleClock.spendTurn()
+        endlessIIReversedControlsClock.spendTurn()
+    }
 
     /// What multiplies the paddle's angular influence on a bounce - see `paddleHit`.
     var endlessIIPaddleAngleInfluence: Double {
@@ -127,17 +151,10 @@ extension GameScene {
         endlessIIPaddleFrameDelta = delta
 
         if gameState.currentState is Playing && isPaused == false {
-            endlessIIAimedStickyClock.run(down: delta)
-            endlessIIMagnetismClock.run(down: delta)
-            endlessIIPortalPaddleClock.run(down: delta)
-            endlessIIPaddleHaloClock.run(down: delta)
-            endlessIIBallSteeringClock.run(down: delta)
-            endlessIIInertPaddleClock.run(down: delta)
-            endlessIIFlippedAngleClock.run(down: delta)
-            endlessIIReversedControlsClock.run(down: delta)
-
             tickEndlessIIPaddleHalo()
         }
+        // The batch's clocks no longer run on time at all - they count paddle hits, spent in
+        // `endlessIISpendPaddleTurns`, so there is nothing to run down here
 
         if endlessIIPaddleHaloClock.isRunning == false {
             endlessIIPaddleHaloNode?.removeFromParent()
@@ -259,7 +276,10 @@ extension GameScene {
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
             return PowerUpRingHUD.Entry(id: id, texture: SKTexture(image: icon),
-                                        remaining: clock.fraction, segments: nil)
+                                        remaining: clock.fraction,
+                                        segments: Int(clock.total))
+            // Segmented like the sticky paddle's ring: five marks say "five turns" where a
+            // smooth arc only says "most of it"
         }
     }
 
