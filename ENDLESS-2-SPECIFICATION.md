@@ -1,7 +1,15 @@
-# Endless Mode II — design specification
+# Endless Mayhem — design specification
 
-**Status: draft, revision 4.** Nothing here is built. This is a design document, unlike
-[SPECIFICATION.md](SPECIFICATION.md), which describes the app as it stands.
+**Status: built.** Every mechanic in this document exists - the phases in §12 are all
+complete, and §12.0 records what each one turned into, including where play-testing
+overruled the design written here. What remains is §8.5's asset list and the Quick Start
+Guide, neither of which is code. This began as a design document, unlike
+[SPECIFICATION.md](SPECIFICATION.md), which describes the app as it stands; it is now
+equal parts design record and build log, and the sections written to stop mistakes being
+repeated (§8.6, §12.0's play-test notes) are the ones that keep earning their place.
+
+The mode shipped under the name **Endless Mayhem**; the code and this document's internal
+references say `endlessII`, which is the identifier history and not worth churning.
 
 **What this is:** the design for a new game mode, added alongside the existing Classic and
 Endless modes rather than replacing either.

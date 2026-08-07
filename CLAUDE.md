@@ -2,8 +2,8 @@
 
 An iOS SpriteKit brick-breaker, shipping since 2020. Two documents describe it:
 [SPECIFICATION.md](SPECIFICATION.md) is the app **as it stands**;
-[ENDLESS-2-SPECIFICATION.md](ENDLESS-2-SPECIFICATION.md) is the design for Endless 2.0 and
-tracks what is built in §12.0. Read the relevant one before changing anything — both carry
+[ENDLESS-2-SPECIFICATION.md](ENDLESS-2-SPECIFICATION.md) is the design and build log for
+Endless Mayhem (`endlessII` in code) and tracks what is built in §12.0. Read the relevant one before changing anything — both carry
 sections written specifically to stop mistakes being repeated.
 
 ## Two constraints that never bend
