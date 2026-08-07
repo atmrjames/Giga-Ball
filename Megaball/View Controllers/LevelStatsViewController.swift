@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable {
+class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -98,17 +98,37 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func collectionViewLayout() {
         let layout = UICollectionViewFlowLayout()
-        let cellWidth: CGFloat = 50
         let available = backButtonCollectionView.frame.size.width
         // Spread across the width the buttons actually occupy. This used to measure the
         // whole screen, or the container, neither of which is the row the buttons are in
         // once the content is capped - so on iPad they bunched to one side.
-        let cellSpacing = max(0, (available - cellWidth*3)/3)
+        let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
         backButtonCollectionView.collectionViewLayout = layout
+
+        for constraint in backButtonCollectionView.constraints
+        where constraint.firstAttribute == .height {
+            constraint.constant = LevelStatsViewController.playButtonSize
+        }
+        // The storyboard's row is 50 tall, which is the button size this screen used to
+        // have everywhere. The play button now matches the pause menu's, so the row grows
+        // to hold it - in code, because the row is shared furniture in the storyboard
     }
     // Set the spacing between collection view cells
+
+    /// The pause menu's play button size, which play-testing asked this screen to match -
+    /// the button that starts the run should be the biggest thing on the row.
+    static let playButtonSize: CGFloat = 75
+
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        indexPath.row == 2
+            ? CGSize(width: LevelStatsViewController.playButtonSize,
+                     height: LevelStatsViewController.playButtonSize)
+            : CGSize(width: 50, height: 50)
+    }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return 3
@@ -137,6 +157,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             }
         case 2:
             cell.iconImage.image = UIImage(named:"ButtonPlay")
+            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
+            // The one outsized button on the row - see playButtonSize
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
