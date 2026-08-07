@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable {
+class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable, UITableViewDataSource, UITableViewDelegate {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -53,6 +53,12 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     // UIViewController outlets
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
+
+    /// The endless modes' run history: every attempt, most recent first - see
+    /// `setupRunHistory`. Nil on the classic level screens, which have no runs to list.
+    var runHistoryTable: UITableView?
+    /// The rows, newest first: height, and when - `nil` for runs recorded before dates were.
+    var runHistory: [(height: Int, date: Date?)] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -412,6 +418,16 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 ? totalStatsArray[0].endlessIIHeights
                 : totalStatsArray[0].endlessModeHeight
             highscoreLabel.text = String(runs.max() ?? 0) + "m"
+
+            let dates = mode == .endlessII
+                ? (totalStatsArray[0].endlessIIModeHeightDate ?? [])
+                : totalStatsArray[0].endlessModeHeightDate
+            runHistory = runs.enumerated().map { index, height in
+                (height, dates.indices.contains(index) ? dates[index] : nil)
+            }.reversed()
+            // Dates align with heights by index, but heights synced from another device can
+            // outnumber the dates - a run without one still shows, it just cannot say when
+            setupRunHistory()
         } else {
             highscoreTitleLabel.text = "Highscore"
             if packLevelHighScoresArray![packNumber!-2][levelNumber!-startLevel!] > 0 {
@@ -423,6 +439,87 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
+    // MARK: - The run history
+
+    /// Puts every previous attempt on the screen, newest first, between the mode's logo and
+    /// the buttons - which means taking some of the logo's room: it is re-pinned smaller so
+    /// the list has somewhere to live.
+    func setupRunHistory() {
+        guard runHistoryTable == nil else { runHistoryTable?.reloadData(); return }
+
+        for constraint in levelStatsView.constraints {
+            let involves = constraint.firstItem === levelImageView
+                || constraint.secondItem === levelImageView
+            let horizontal = [NSLayoutConstraint.Attribute.leading, .trailing]
+                .contains(constraint.firstAttribute)
+            if involves && horizontal { constraint.isActive = false }
+        }
+        NSLayoutConstraint.activate([
+            levelImageView.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
+            levelImageView.widthAnchor.constraint(equalToConstant: 190),
+        ])
+        // The logo was pinned wall to wall and sized by its 1:1 aspect. Cutting it loose
+        // horizontally and giving it a width leaves the aspect doing the height, and the
+        // labels below follow it up because they were pinned to its bottom all along
+
+        let table = UITableView(frame: .zero, style: .plain)
+        table.translatesAutoresizingMaskIntoConstraints = false
+        table.backgroundColor = .clear
+        table.separatorColor = UIColor(white: 1, alpha: 0.12)
+        table.separatorInset = .zero
+        table.rowHeight = 34
+        table.dataSource = self
+        table.delegate = self
+        table.allowsSelection = false
+        levelStatsView.addSubview(table)
+        NSLayoutConstraint.activate([
+            table.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 14),
+            table.bottomAnchor.constraint(equalTo: backButtonCollectionView.topAnchor,
+                                          constant: -8),
+            table.leadingAnchor.constraint(equalTo: levelStatsView.leadingAnchor,
+                                           constant: 44),
+            table.trailingAnchor.constraint(equalTo: levelStatsView.trailingAnchor,
+                                            constant: -44),
+        ])
+        runHistoryTable = table
+    }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        runHistory.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "run")
+            ?? UITableViewCell(style: .value1, reuseIdentifier: "run")
+        cell.backgroundColor = .clear
+        let entry = runHistory[indexPath.row]
+
+        cell.textLabel?.text = "\(entry.height)m"
+        cell.textLabel?.font = .boldSystemFont(ofSize: 15)
+        let isBest = entry.height == runHistory.map(\.height).max()
+        cell.textLabel?.textColor = isBest
+            ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            : .white
+        // The best run wears the Giga-Ball green, so the figure above is findable in the
+        // list below it
+
+        if let date = entry.date {
+            cell.detailTextLabel?.text = LevelStatsViewController.runDateFormat.string(from: date)
+        } else {
+            cell.detailTextLabel?.text = "—"
+        }
+        cell.detailTextLabel?.font = .systemFont(ofSize: 13)
+        cell.detailTextLabel?.textColor = UIColor(white: 1, alpha: 0.55)
+        return cell
+    }
+
+    static let runDateFormat: DateFormatter = {
+        let format = DateFormatter()
+        format.dateStyle = .medium
+        format.timeStyle = .short
+        return format
+    }()
+
     func showGameCenterLeaderboards() {
         if gameCenterSetting {
             GameCenterHandler().gameCenterSave()
