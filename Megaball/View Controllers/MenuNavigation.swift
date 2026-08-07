@@ -120,7 +120,12 @@ final class MenuNavigation: NSObject, UIGestureRecognizerDelegate {
         // The same thing opening it would have done. Without it the screen underneath stays
         // where it was and both are visible at once
 
-        screen.view.frame = parent.view.frame
+        screen.view.transform = .identity
+        screen.view.frame = parent.view.bounds
+        // The transform first: the view still carries the 1.15 scale its dismissal left it
+        // with, and setting a frame on a transformed view garbles the bounds - the screen
+        // came back at the wrong size, which is most of what "no background" looked like.
+        // And bounds, not frame: the parent's frame lives in the grandparent's coordinates
         parent.view.addSubview(screen.view)
         screen.menuNavigationFadeIn()
         self.screen = nil
@@ -150,9 +155,29 @@ extension UIViewController {
     func menuNavigationFadeIn() {
         view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
         view.alpha = 0
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.25, animations: {
             self.view.alpha = 1
             self.view.transform = .identity
+        }, completion: { _ in
+            self.menuNavigationRestoreBlur(in: self.view)
+        })
+        // The blur has to be rebuilt after the fade, not during it: a UIVisualEffectView
+        // whose superview fades loses its effect and comes back as a plain wash, which is
+        // exactly how the forward swipe returned a screen "with no background"
+    }
+
+    /// Re-renders every blur in a returned screen.
+    ///
+    /// Assigning the effect it already has back to a UIVisualEffectView forces UIKit to
+    /// rebuild it. Recursive because each screen keeps its blur somewhere of its own.
+    private func menuNavigationRestoreBlur(in view: UIView) {
+        if let effectView = view as? UIVisualEffectView {
+            let effect = effectView.effect
+            effectView.effect = nil
+            effectView.effect = effect
+        }
+        for subview in view.subviews {
+            menuNavigationRestoreBlur(in: subview)
         }
     }
 

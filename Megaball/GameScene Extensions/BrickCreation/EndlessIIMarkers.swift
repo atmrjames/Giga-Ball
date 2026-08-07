@@ -378,7 +378,10 @@ extension GameScene {
             if landings[row] == nil || arrival < landings[row]! { landings[row] = arrival }
         }
         endlessIIBuildInBricks.removeAll()
-        endlessIIBuildInFinalY.removeAll()
+        // The destinations are kept until the fall completes, because a tap can skip it at
+        // any moment and a mid-fall brick has to snap to where it was *going* - the nearest
+        // row centre is where it happens to be, which is the wrong row for everything below
+        // the top
 
         // The row-down knock as each row lands, so the field arrives with the same feedback
         // it will give every time it moves for the rest of the run
@@ -389,7 +392,10 @@ extension GameScene {
 
         let total = (landings.values.max() ?? 0) + 0.05
         run(.sequence([.wait(forDuration: total),
-                       .run { [weak self] in self?.endlessIIBuildingIn = false }]))
+                       .run { [weak self] in
+                           self?.endlessIIBuildingIn = false
+                           self?.endlessIIBuildInFinalY.removeAll()
+                       }]))
         // Cleared on a timer rather than by counting bricks finishing, because the flag only
         // exists to know whether a tap should skip - and once everything has arrived there is
         // nothing left to skip
@@ -453,11 +459,18 @@ extension GameScene {
             brick.removeAllActions()
             brick.alpha = 1
             brick.setScale(1)
-            if unfinished { brick.position.y = self.endlessIIRowCentre(nearest: brick.position.y) }
-            // A brick caught mid-descent is put on the row it was heading for, or it would sit
-            // a fraction of a row out for the rest of the run - and a brick off its row centre
-            // is the one thing the descent and the bottom-row check cannot survive
+            guard unfinished else { return }
+            if let finalY = self.endlessIIBuildInFinalY[ObjectIdentifier(brick)] {
+                brick.position.y = finalY
+            } else {
+                brick.position.y = self.endlessIIRowCentre(nearest: brick.position.y)
+            }
+            // A brick caught mid-fall snaps to its own destination - the play test found
+            // them frozen wherever the tap caught them, which left the whole field one
+            // ragged diagonal. The nearest row centre is only the fallback for a brick
+            // this build-in never owned
         }
+        endlessIIBuildInFinalY.removeAll()
         return true
     }
 
