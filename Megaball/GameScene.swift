@@ -110,6 +110,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWrapAroundClock = EndlessIIClock()
 	var endlessIIPendingWraps: [SKSpriteNode] = []
 	var endlessIIWrapDressed = false
+	var endlessIIBackdropTiles: [SKSpriteNode] = []
+	var endlessIIBackdropScroll: CGFloat = 0
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	var endlessIIAimDrag: CGFloat = 0
 	var endlessIIAimArrow: SKShapeNode?

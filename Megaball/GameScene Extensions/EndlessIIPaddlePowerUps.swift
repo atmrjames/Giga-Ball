@@ -447,5 +447,6 @@ extension GameScene {
         if paddle.colorBlendFactor != 0 { paddle.colorBlendFactor = 0 }
         endlessIIAimHold = false
         endlessIIEndAim()
+        endlessIIResetBackdrop()
     }
 }

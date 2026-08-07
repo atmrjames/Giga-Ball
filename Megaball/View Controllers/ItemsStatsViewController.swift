@@ -147,12 +147,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                     hideCell(cell: cell)
                     return cell
                 }
-                if LevelPackSetup().powerUpTimerArray[passedIndex!] == "5" {
-                    cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+" catches"
-                }
-                if LevelPackSetup().powerUpTimerArray[passedIndex!] == "10" {
-                    cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]+"s"
-                }
+                cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]
+                // The array carries its own units now - seconds, catches or paddle hits -
+                // so this page stops guessing the unit from the number
                 return cell
             case 2:
                 cell.statDescription.text = "Released"

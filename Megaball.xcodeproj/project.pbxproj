@@ -19,6 +19,7 @@
 		1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000092 /* EndlessIIMultiBall.swift */; };
 		1AF170000000009B /* MenuNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009A /* MenuNavigation.swift */; };
 		1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000096 /* EndlessIIStickyPaddle.swift */; };
+		000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */; };
 		000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000080 /* EndlessIIWrapAround.swift */; };
 		000000001AF1800000000071 /* EndlessIIPaddleDressing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000070 /* EndlessIIPaddleDressing.swift */; };
 		000000001AF1800000000051 /* EndlessIIFieldPowerUps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000050 /* EndlessIIFieldPowerUps.swift */; };
@@ -333,6 +334,7 @@
 		1AF1700000000092 /* EndlessIIMultiBall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIMultiBall.swift; sourceTree = "<group>"; };
 		1AF170000000009A /* MenuNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuNavigation.swift; sourceTree = "<group>"; };
 		1AF1700000000096 /* EndlessIIStickyPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStickyPaddle.swift; sourceTree = "<group>"; };
+		000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIScrollingBackground.swift; sourceTree = "<group>"; };
 		000000001AF1800000000080 /* EndlessIIWrapAround.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIWrapAround.swift; sourceTree = "<group>"; };
 		000000001AF1800000000070 /* EndlessIIPaddleDressing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPaddleDressing.swift; sourceTree = "<group>"; };
 		000000001AF1800000000050 /* EndlessIIFieldPowerUps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFieldPowerUps.swift; sourceTree = "<group>"; };
@@ -1119,6 +1121,7 @@
 				1AF17000000000C0 /* BrickSeamBounce.swift */,
 				1AF1700000000092 /* EndlessIIMultiBall.swift */,
 				1AF1700000000096 /* EndlessIIStickyPaddle.swift */,
+				000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */,
 				000000001AF1800000000080 /* EndlessIIWrapAround.swift */,
 				000000001AF1800000000070 /* EndlessIIPaddleDressing.swift */,
 				000000001AF1800000000050 /* EndlessIIFieldPowerUps.swift */,
@@ -1473,6 +1476,7 @@
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,
 				1AF170000000009B /* MenuNavigation.swift in Sources */,
 				1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */,
+				000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */,
 				000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */,
 				000000001AF1800000000071 /* EndlessIIPaddleDressing.swift in Sources */,
 				000000001AF1800000000051 /* EndlessIIFieldPowerUps.swift in Sources */,

@@ -682,15 +682,19 @@ played and judged.
 
 ### 7.2 Dynamic backgrounds
 
-The background scrolls with the field. This needs **new backgrounds built to loop** — the
-existing four do not tile, and only Classic's grid would even come close.
+**The machinery is built** (`EndlessIIScrollingBackground`); the artwork is an asset slot.
+Two copies of one vertically-looping tile leapfrog each other, code-owned from the start
+because the scene file's background node will not accept a new texture at runtime. The
+backdrop scrolls six points per metre climbed - well under the field's own row per metre,
+which is what makes it parallax - and it eases toward the height rather than stepping with
+it, so it reads as distance rather than as another moving part. It sits above the painted
+background and below everything that plays, so the four selectable backgrounds remain
+available underneath it and simply do not scroll.
 
-- A repeating grid in the Classic style, seamlessly tiling vertically
-- A slow colour cycle that shifts hue as depth increases
-
-The existing four remain available and simply do not scroll. Note the background node in
-`GameScene.sks` will not accept a new texture at runtime, so the scrolling background must
-be a code-owned node from the start.
+Drop a looping tile named `EndlessMayhemBackdrop` into the asset catalogue and it is used
+as-is; until then a barely-there drawn gradient proves the scroll works. The original ideas
+stand for the artwork itself: a repeating grid in the Classic style, or a slow colour cycle
+that shifts hue with depth.
 
 ### 7.3 Legibility
 
@@ -763,6 +767,13 @@ without relying on colour alone (§7.3).
 
 Endless Mayhem currently reuses the original Endless infinity icon on the main menu, the
 mode detail screen and the game-over screen. It deserves its own mark.
+
+### The scrolling backdrop
+
+One vertically-looping tile, screen-wide, named `EndlessMayhemBackdrop` in the asset
+catalogue - the machinery in §7.2 picks it up by name the moment it exists. Quiet artwork
+wanted: it sits behind the whole field, and a backdrop that competes with the bricks is
+worse than none.
 
 ### In-scene drawing that may stay drawn
 
@@ -942,7 +953,7 @@ only at the end. Nothing in a later phase is a prerequisite for testing an earli
 | **6. Generation** ✅ | Phases, gentle opening, the **style progression** below, and the power-up introduction schedule | The heart of it: whether a run feels varied and whether the pacing works |
 | **7. Multi-Ball** | The collection of balls, and the run continuing while one survives | Performance with four balls, and whether it is as fun as it sounds |
 | **8. New power-ups** | In batches, simplest first: vision, then paddle, then rules-changing | Each batch on its own, which is the only way to tune rarity |
-| **9. Presentation** | Scrolling backgrounds, icons, the information page | The finish |
+| **9. Presentation** (code side ✅) | Scrolling backgrounds, icons, the information page | The finish. The backdrop machinery, the info pages and the reference content are built and current; what remains is §8.5's asset list - real icons, brick artwork, the mode's own menu mark, the backdrop tile, sounds - and the Quick Start Guide |
 
 Phases 3 to 5 can be reordered freely - they are independent. Phase 6 is where the mode
 stops being Endless with extra bricks and starts being its own thing, so it is worth
@@ -1187,6 +1198,14 @@ while it runs (launchControl): any ball landing on the paddle is held into the s
 Multi-Ball built, the arrow defaults to the bounce the ball would have taken, dragging swings
 it - and while aiming, the paddle deliberately does not move, which is this batch's
 sharpest play-test question.
+
+**Phase 9's code side is done.** The info pages derive their content, so they were already
+current when phase 8 finished; what was genuinely stale has been fixed - the timer column
+now carries its own units (seconds, catches, or paddle hits - the page used to guess the
+unit from the number, and nine turn-based power-ups made that guess wrong nine times), and
+the Fixed style's description says what anchoring now costs. The scrolling backdrop runs on
+a placeholder awaiting its tile. Everything left in phase 9 is asset work and the Quick
+Start Guide, which are not this codebase's to make - §8.5 is the list.
 
 **Phase 9 — presentation.** Scrolling backgrounds, the real artwork and sound (§8.5), and the
 information pages finished against a mode that has stopped moving. Deliberately last: a

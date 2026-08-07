@@ -141,7 +141,7 @@ enum BrickTypeCatalogue {
         case .flashing:
             return "Comes and goes. Solid and visible for a few seconds, then faded and passable for a few more. It will not turn solid while the ball is inside it, so it can never trap one."
         case .fixed:
-            return "An ordinary brick until it is struck once. From then on it stops descending and holds its position, and a second hit destroys it. Anything descending onto it is destroyed by it, so leaving one alive carves a channel up through everything arriving above."
+            return "An ordinary brick until it is struck once. From then on it stops descending, holds its position, and hardens - a plain brick becomes a fresh multi-hit, so digging out an anchor costs the full ladder. Anything descending onto it is destroyed by it, so leaving one alive carves a channel up through everything arriving above."
         case .gravity:
             return "Falls into any empty cell below it and keeps falling until something stops it. Destroy what it is resting on and it starts falling again."
         case .moving:

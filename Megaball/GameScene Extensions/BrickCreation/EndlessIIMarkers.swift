@@ -164,6 +164,7 @@ extension GameScene {
     /// aimed at sits.
     func seedEndlessIIMarkers() {
         showEndlessIILowerLimit()
+        setupEndlessIIBackdrop()
         guard gameMode == .endlessII else { return }
 
         for row in 0..<numberOfBrickRows {

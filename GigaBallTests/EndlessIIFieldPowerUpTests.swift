@@ -457,6 +457,53 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, gift.position.x)
     }
 
+    // MARK: - The scrolling backdrop
+
+    func testTheTilePairAlwaysCoversTheWindow() {
+        // Two copies of one tile leapfrog: at every scroll, one tile's bottom is at or below
+        // the window's floor and the pair spans at least a full tile above it
+        let height: CGFloat = 500
+        for scroll in stride(from: CGFloat(0), through: 2600, by: 130) {
+            let ys = EndlessIIBackdropScroll.tileYs(scroll: scroll, tileHeight: height)
+            XCTAssertLessThanOrEqual(min(ys.first, ys.second), 0, "scroll \(scroll)")
+            XCTAssertEqual(abs(ys.first - ys.second), height, accuracy: 0.001,
+                           "the pair stays exactly one tile apart")
+            XCTAssertGreaterThanOrEqual(max(ys.first, ys.second), 0)
+        }
+    }
+
+    func testTheScrollWrapsATileAtATime() {
+        let ys0 = EndlessIIBackdropScroll.tileYs(scroll: 0, tileHeight: 500)
+        let ysWrapped = EndlessIIBackdropScroll.tileYs(scroll: 500, tileHeight: 500)
+        XCTAssertEqual(ys0.first, ysWrapped.first, accuracy: 0.001,
+                       "a full tile of scroll is the same picture")
+    }
+
+    func testTheBackdropOnlyExistsInEndlessMayhem() {
+        let scene = fieldScene()
+        scene.gameMode = .classic
+        scene.setupEndlessIIBackdrop()
+        XCTAssertTrue(scene.endlessIIBackdropTiles.isEmpty)
+
+        scene.gameMode = .endlessII
+        scene.setupEndlessIIBackdrop()
+        XCTAssertEqual(scene.endlessIIBackdropTiles.count, 2)
+        scene.setupEndlessIIBackdrop()
+        XCTAssertEqual(scene.endlessIIBackdropTiles.count, 2, "set up once, not per call")
+    }
+
+    func testTheBackdropDriftsTowardTheHeightsOffset() {
+        let scene = fieldScene()
+        scene.gameMode = .endlessII
+        scene.setupEndlessIIBackdrop()
+        scene.endlessHeight = 100
+
+        for _ in 0..<600 { scene.tickEndlessIIBackdrop() }
+        XCTAssertEqual(scene.endlessIIBackdropScroll,
+                       100*EndlessIIBackdropScroll.pointsPerMetre, accuracy: 1,
+                       "eased, but it gets there")
+    }
+
     // MARK: - The ring and the save
 
     func testTheTimedPairReportToTheRingAndRoundTrip() {
