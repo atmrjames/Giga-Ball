@@ -30,7 +30,9 @@ enum GameMode: Int, CaseIterable {
         switch self {
         case .classic: return "Classic Mode"
         case .endless: return "Endless Mode"
-        case .endlessII: return "Endless 2.0"
+        case .endlessII: return "Endless Mayhem"
+        // Renamed from "Endless 2.0" in play-testing - every screen reads this, so the
+        // rename is this line
         }
     }
 

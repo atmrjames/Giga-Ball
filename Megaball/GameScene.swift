@@ -102,6 +102,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleHaloNode: SKShapeNode?
 	var endlessIIPaddleHaloDrawnReach: CGFloat = 0
 	var endlessIISteeringLastPaddleX: CGFloat = 0
+	var endlessIISteeringPending: CGFloat = 0
+	var endlessIITopExitStrip: SKSpriteNode?
+	var endlessIIPullLines: [SKShapeNode] = []
+	var endlessIILowerLimitLine: SKSpriteNode?
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	var endlessIIAimDrag: CGFloat = 0
 	var endlessIIAimArrow: SKShapeNode?

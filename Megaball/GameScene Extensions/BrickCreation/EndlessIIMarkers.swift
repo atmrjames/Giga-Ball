@@ -133,6 +133,25 @@ extension GameScene {
         return best > 0 && arriving == best
     }
 
+    /// Draws the line the field dies on.
+    ///
+    /// The lower limit - the row bricks are destroyed at, the depth the run is defending -
+    /// had nothing marking it, and the play test asked for the bottom row to be more
+    /// distinctive. A solid warm line under the last row says "here", unmistakably, in a
+    /// colour nothing else on the field uses.
+    func showEndlessIILowerLimit() {
+        guard gameMode == .endlessII, endlessIILowerLimitLine == nil else { return }
+        let line = SKSpriteNode(color: GameScene.endlessIILowerLimitColour,
+                                size: CGSize(width: gameWidth, height: 2.5))
+        line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
+        line.zPosition = 1
+        line.alpha = 0.55
+        addChild(line)
+        endlessIILowerLimitLine = line
+    }
+
+    static let endlessIILowerLimitColour = UIColor(red: 1.0, green: 0.45, blue: 0.3, alpha: 1)
+
     /// Puts the marks that are already in the opening field there.
     ///
     /// Every other marker enters at the top and descends into place, which works for heights
@@ -144,6 +163,7 @@ extension GameScene {
     /// 0m is the bottom row - where the field is now, and where the brick the first ball is
     /// aimed at sits.
     func seedEndlessIIMarkers() {
+        showEndlessIILowerLimit()
         guard gameMode == .endlessII else { return }
 
         for row in 0..<numberOfBrickRows {

@@ -17,7 +17,7 @@ final class GameModeTests: XCTestCase {
         XCTAssertEqual(GameMode.allCases.count, 3)
         XCTAssertEqual(GameMode.classic.name, "Classic Mode")
         XCTAssertEqual(GameMode.endless.name, "Endless Mode")
-        XCTAssertEqual(GameMode.endlessII.name, "Endless 2.0")
+        XCTAssertEqual(GameMode.endlessII.name, "Endless Mayhem")
     }
 
     func testRawValuesAreStableBecauseTheyArePersisted() {

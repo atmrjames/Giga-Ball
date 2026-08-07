@@ -153,6 +153,7 @@ extension GameScene {
         if gameState.currentState is Playing && isPaused == false {
             tickEndlessIIPaddleHalo()
         }
+        tickEndlessIIPaddleDressing()
         // The batch's clocks no longer run on time at all - they count paddle hits, spent in
         // `endlessIISpendPaddleTurns`, so there is nothing to run down here
 
@@ -192,7 +193,17 @@ extension GameScene {
         // frame moves the ball by that frame's paddle movement rather than by everything
         // since the run began
 
-        guard endlessIIBallSteeringClock.isRunning, paddleDelta != 0 else { return }
+        guard endlessIIBallSteeringClock.isRunning else {
+            endlessIISteeringPending = 0
+            return
+        }
+
+        endlessIISteeringPending += paddleDelta*EndlessIIPaddleEffects.steeringFactor
+        let step = EndlessIIPaddleEffects.steeringStep(pending: endlessIISteeringPending)
+        endlessIISteeringPending = step.remaining
+        guard step.apply != 0 else { return }
+        // One-to-one with a tiny bit of inertia: the paddle's movement pools, and the balls
+        // take most of the pool every frame - they visibly follow rather than teleport
 
         for subject in endlessIIBallsInPlay {
             guard subject.parent != nil else { continue }
@@ -201,7 +212,7 @@ extension GameScene {
             // A held ball already rides the paddle; steering it twice doubles the ride
 
             subject.position.x = EndlessIIPaddleEffects.steered(
-                x: subject.position.x, paddleMovedBy: paddleDelta,
+                x: subject.position.x, paddleMovedBy: step.apply,
                 leftWall: -gameWidth/2, rightWall: gameWidth/2,
                 radius: subject.size.width/2)
         }
@@ -348,6 +359,12 @@ extension GameScene {
         endlessIIPaddleHaloNode?.removeFromParent()
         endlessIIPaddleHaloNode = nil
         endlessIIPaddleHaloDrawnReach = 0
+        endlessIISteeringPending = 0
+        endlessIITopExitStrip?.removeFromParent()
+        endlessIITopExitStrip = nil
+        endlessIIPullLines.forEach { $0.removeFromParent() }
+        endlessIIPullLines.removeAll()
+        if paddle.colorBlendFactor != 0 { paddle.colorBlendFactor = 0 }
         endlessIIEndAim()
     }
 }

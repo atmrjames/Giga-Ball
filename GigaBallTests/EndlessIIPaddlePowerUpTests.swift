@@ -123,13 +123,20 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
         XCTAssertGreaterThan(near.dx, far.dx, "the magnet is a magnet, not a tractor beam")
     }
 
-    func testThePullIsCappedSoANearBallCurvesRatherThanSnaps() {
+    func testThePullIsCappedAndTheCapOpensUpNearThePaddle() {
+        // "Make the magnetism strong when the ball is near the paddle so it's very hard to
+        // miss" - the cap scales with proximity, so near the paddle the pull is hard homing
+        // and high in the field it is still only a lean
         let bent = EndlessIIPaddleEffects.magnetised(
             velocity: CGVector(dx: 0, dy: -100), ballAt: CGPoint(x: -200, y: 10),
             paddleAt: .zero, strength: 100, delta: 1.0/60.0)
         let turned = abs(atan2(bent.dy, bent.dx) - atan2(CGFloat(-100), CGFloat(0)))
-        XCTAssertLessThanOrEqual(turned,
-                                 EndlessIIPaddleEffects.magnetismTurnRate/60 + 0.001)
+        let falloff = 1 - 10/EndlessIIPaddleEffects.magnetismReach
+        let openedCap = EndlessIIPaddleEffects.magnetismTurnRate
+        let boosted = openedCap*(1 + EndlessIIPaddleEffects.magnetismCloseBoost*falloff)/60
+        XCTAssertLessThanOrEqual(turned, boosted + 0.001)
+        XCTAssertGreaterThan(turned, openedCap/60,
+                             "near the paddle the pull exceeds the far cap")
     }
 
     // MARK: Steering

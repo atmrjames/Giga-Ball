@@ -225,7 +225,7 @@ enum BrickTypeCatalogue {
                   facts: [Fact(label: "Behaviours", value: behaviours(carrying: style)),
                           Fact(label: "Sizes", value: sizes(carrying: style)),
                           Fact(label: "Stacks with", value: styles(stackingWith: style)),
-                          Fact(label: "Found in", value: "Endless 2.0")])
+                          Fact(label: "Found in", value: GameMode.endlessII.name)])
         }
     }
 
@@ -271,7 +271,7 @@ enum BrickTypeCatalogue {
               facts: [Fact(label: "Behaviours", value: "Its own"),
                       Fact(label: "Sizes", value: "1 × 2 cells"),
                       Fact(label: "Stacks with", value: "Nothing - on its own"),
-                      Fact(label: "Found in", value: "Endless 2.0")])
+                      Fact(label: "Found in", value: GameMode.endlessII.name)])
     }
 
     private static var sizes: [Entry] {
@@ -284,7 +284,7 @@ enum BrickTypeCatalogue {
                           Fact(label: "Behaviours", value: "Any"),
                           Fact(label: "Styles", value: size == .big ? "Any but Spinning" : "Any"),
                           Fact(label: "Found in",
-                               value: size == .normal ? "Every mode" : "Endless 2.0")])
+                               value: size == .normal ? "Every mode" : GameMode.endlessII.name)])
         }
     }
 }

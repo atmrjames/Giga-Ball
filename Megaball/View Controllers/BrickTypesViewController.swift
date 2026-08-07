@@ -158,11 +158,11 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         cell.iconImage.layer.cornerRadius = 0
 
-        cell.settingState.text = entry.isNew ? "2.0" : ""
+        cell.settingState.text = entry.isNew ? "NEW" : ""
         cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
         // §7.3 asks for the Endless 2.0 material to be marked as exclusive to it, so a player
         // does not go looking for a Portal in a Classic pack. The state column is sized for
-        // "on" and "x1.50", and "Endless 2.0" truncated to "Endless..." in it - the mode's
+        // "on" and "x1.50", and the mode's full name truncated to "Endless..." in it - the
         // number is the part that identifies it, and the detail page says it in full
 
         UIView.animate(withDuration: 0.2) {
