@@ -178,6 +178,19 @@ enum EndlessIIPaddleEffects {
         return angleDeg*Double.pi/180
     }
 
+    /// The angle that sends a ball from here to there, clamped to the launchable arc.
+    ///
+    /// Auto-Aim's whole rule. Nil when the target is not above the ball - a paddle cannot
+    /// aim downward, and pretending it could would fire the ball into the floor.
+    static func autoAimAngle(from ball: CGPoint, to target: CGPoint,
+                             minimumDeg: Double) -> Double? {
+        let dy = target.y - ball.y
+        guard dy > 0 else { return nil }
+        var angleDeg = atan2(Double(dy), Double(target.x - ball.x))*180/Double.pi
+        angleDeg = max(minimumDeg, min(180 - minimumDeg, angleDeg))
+        return angleDeg*Double.pi/180
+    }
+
     /// The bounce a ball arriving with this velocity would have taken off a flat paddle.
     ///
     /// Only the reflection, deliberately: the paddle's angular influence depends on where

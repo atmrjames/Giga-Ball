@@ -379,7 +379,8 @@ extension GameScene {
         while queue.isEmpty == false {
             let centre = queue.removeFirst()
             let blast = endlessIIBlastReach(of: centre)
-            for neighbour in field where blast.intersects(neighbour.frame) {
+            let copies = endlessIIWrappedBlastCopies(of: blast)
+            for neighbour in field where copies.contains(where: { $0.intersects(neighbour.frame) }) {
                 guard caught.insert(ObjectIdentifier(neighbour)).inserted else { continue }
                 // A Portal is not destructible by anything, explosions included
                 guard neighbour.endlessIIRole != .portal else { continue }
@@ -923,7 +924,12 @@ extension GameScene {
 
             let step = GameScene.movingSpeed*rate*brickWidth*CGFloat(delta)*wanderer.direction
             var x = wanderer.brick.position.x + step
-            if x >= limits.right {
+            if let wrapped = endlessIIWrapWandererX(at: x, limits: limits,
+                                                    halfWidth: wanderer.brick.size.width/2) {
+                x = wrapped
+                // Wrap-Around: a clear run to the wall carries on from the far one, same
+                // direction - the walls are not walls for the bricks either (§5.4)
+            } else if x >= limits.right {
                 x = limits.right
                 wanderer.direction = -1
             } else if x <= limits.left {

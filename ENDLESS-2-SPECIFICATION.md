@@ -1037,7 +1037,7 @@ playable and is worth a round of play-testing on its own.
 |---|---|---|---|
 | **8a. Vision** ✅ | Trajectory Line, Landing Marker | Both draw what the ball is *about* to do and change no rule. One predictor serves both, and it is pure geometry - testable rather than eyeballed | Whether four balls means four lines, and whether being told where the ball will land makes the mode easier or just calmer |
 | **8b. The paddle** ✅ | Aimed Sticky, Magnetism, Portal Paddle, Paddle Halo, Ball Steering, and the three bad ones - Inert Paddle, Flipped Angle, Reversed Controls | Every one of them changes what the paddle does, so they conflict with each other and want tuning against each other. Aimed Sticky inherits the queue Sticky Paddle already has (§5.5) | Whether a mode where the paddle keeps changing its rules is exciting or exhausting - and whether the bad ones are funny or just unfair |
-| **8c. The field** (seven of eight built) | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
+| **8c. The field** ✅ | Descent, Cull, Clear And Retreat, Laser Beam, Wrecking Ball, Aura, Infill, Wrap-Around | These act on bricks rather than on the ball, and each one has to be thought about against every brick style that already exists - Wrap-Around alone touches the paddle, Moving bricks and explosions (§5.4) | Whether a power-up that rewrites the field is a relief or a loss of the thing being played |
 
 **8c is built, seven of its eight.** Cull takes half the field at random and scores all of it,
 including the indestructibles the ordinary destroy path refuses to score; Clear And Retreat
@@ -1056,9 +1056,44 @@ because the step is the same step the field has always made. Everything else des
 nothing rolls a power-up. All of it spares Portals and power-up bricks, and the Aura also
 spares hidden bricks - an invisible brick it silently ate would never have been seen at all.
 
-**Wrap-Around is deliberately not built yet.** It asks the side walls to stop being walls -
-for the paddle and Moving bricks and explosions too - which is a careful visit to the wall
-physics, not a corner of a batch, and it wants its own play-test.
+**Wrap-Around is built, and with it phase 8's mechanics are complete.** It never touches the
+wall physics: the walls stay where they are, the ball still contacts them, and while the
+clock runs the contact is answered with a teleport to the far side instead of a bounce -
+deferred to didSimulatePhysics like every position written during contact resolution (§8.6),
+keeping the pre-step heading, which is what makes the two sides one surface. The paddle is
+free to overhang an edge and wraps once its centre crosses; a Moving brick whose run to the
+wall was clear carries on from the far one (blocked mid-field, it bounces as ever); an
+explosion against a wall reaches round it. The side walls wear the portal yellow while they
+are exits, and a paddle overhanging an edge when the walls come back is pushed inside them.
+
+**Revisions from the 8b play-test, recorded because they changed §5.4's table:**
+
+- **The whole paddle batch is turn-based** - five paddle hits per collection, like the sticky
+  paddle, not ten seconds. The contact is the turn, whatever the paddle then does with it,
+  and the ring shows the turns as segments. A power-up spent by using reads differently from
+  one that evaporates while the ball is away at the top of the field.
+- **Magnetism's cap opens with proximity** (five times the far cap at the paddle - "very hard
+  to miss" was the request), the paddle wears magnet red, and the pull is drawn as lines that
+  brighten as it strengthens. **Ball Steering went to 1:1 with a tiny bit of inertia**, and
+  draws a line from paddle to ball. **Portal Paddle** wears portal blue with the yellow exit
+  strip along the top - the strip also appears whenever exactly one Portal brick is in play,
+  because a single portal's exit is the top and nothing said so.
+- **Auto-Aim is a new paddle power-up** (uncommon, five turns): every bounce off the paddle
+  is aimed at the lowest brick, nearest first among equals - the brick threatening the run is
+  the one worth a free shot. It overrides only the outgoing angle; catches, swallows and
+  turns spent all happen first.
+- **The mode is renamed Endless Mayhem.** Internal identifiers stay `endlessII`; the rename
+  is one line, because every screen reads `GameMode.name`.
+
+**Open questions from the same play-test, answered in design rather than code:**
+
+- *Should the Portal Paddle and Portal bricks connect?* No. A Portal Paddle whose exit
+  depended on a Portal brick being in play would be a power-up that mostly does nothing -
+  the paddle's portal always exits at the top, and the shared blue/yellow language already
+  says they are the same kind of thing.
+- *Are Fixed bricks always multi-hit?* Effectively, by design: the Fixed style spends its
+  first hit anchoring itself (§4.6), so even a normal-behaviour brick takes two. That is the
+  style's cost working as intended, not a generator bias.
 | **8d. The rules** | Lock, Key, Wipe, Randomised Bounce | The ones that act on *other power-ups*. They need the rest of the set to exist before they mean anything, and Lock and Key only drop in each other's company | Whether a power-up about power-ups reads at all in the moment |
 
 Each batch needs the same four things, and none of them is optional: entries in every

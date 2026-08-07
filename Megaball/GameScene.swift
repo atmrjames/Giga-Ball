@@ -106,6 +106,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIITopExitStrip: SKSpriteNode?
 	var endlessIIPullLines: [SKShapeNode] = []
 	var endlessIILowerLimitLine: SKSpriteNode?
+	var endlessIIAutoAimClock = EndlessIIClock()
+	var endlessIIWrapAroundClock = EndlessIIClock()
+	var endlessIIPendingWraps: [SKSpriteNode] = []
+	var endlessIIWrapDressed = false
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	var endlessIIAimDrag: CGFloat = 0
 	var endlessIIAimArrow: SKShapeNode?
@@ -303,7 +307,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 46)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 48)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -825,6 +829,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpAura = SKTexture(image: PowerUpIcon.aura)
 	let powerUpInfill = SKTexture(image: PowerUpIcon.infill)
 	let powerUpDescent = SKTexture(image: PowerUpIcon.descent)
+	let powerUpAutoAim = SKTexture(image: PowerUpIcon.autoAim)
+	let powerUpWrapAround = SKTexture(image: PowerUpIcon.wrapAround)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1001,7 +1007,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -1592,13 +1598,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleX0 = paddle.position.x
 			paddleX1 = paddleX0 + (paddleMovedDistance*paddleMovementFactor)
 			
-			if paddleX1 > (gameWidth/2 - paddle.size.width/2) {
-				paddleX1 = gameWidth/2 - paddle.size.width/2
-			}
-			if paddleX1 < -(gameWidth/2 - paddle.size.width/2) {
-				paddleX1 = -(gameWidth/2 - paddle.size.width/2)
-			}
-			// Check paddle position isn't outside the frame
+			paddleX1 = endlessIIWrapPaddleX(paddleX1)
+			// Clamped at the walls, unless Wrap-Around has made the walls not walls - then a
+			// centre pushed past an edge comes back in from the other one
 			
 			paddle.position = CGPoint(x: paddleX1, y: paddle.position.y)
 			// Sets the paddle to match the new calculated position
@@ -1857,6 +1859,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didSimulatePhysics() {
         applyEndlessIIBallHandover()
         applyEndlessIIPaddlePhysics()
+        applyEndlessIIWraps()
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
     }
@@ -1874,6 +1877,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			tickEndlessIIVision(currentTime)
 			tickEndlessIIPaddlePowerUps(currentTime)
 			tickEndlessIIFieldPowerUps()
+			tickEndlessIIWrapAround()
 			tickEndlessIIAim()
 			tickEndlessIIBuildIn(currentTime)
 		}
@@ -2122,7 +2126,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 
-				frameBallControl(xSpeed: -struckVelocity.dx, for: struckBall)
+				if endlessIIWrapTook(struckBall) == false {
+					frameBallControl(xSpeed: -struckVelocity.dx, for: struckBall)
+				}
+				// While Wrap-Around runs the side is not a wall: the ball passes through and
+				// re-enters opposite, from didSimulatePhysics
 
 			}
 			// Ball hits Frame
@@ -2178,7 +2186,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				
 				if frameBlockSprite.size.width < frameBlockSprite.size.height {
 				// Ball hits side block
-					frameBallControl(xSpeed: -struckVelocity.dx, for: struckBall)
+					if endlessIIWrapTook(struckBall) == false {
+						frameBallControl(xSpeed: -struckVelocity.dx, for: struckBall)
+					}
 				} else {
 				// Ball hits top block
 					if endlessMode == false {
@@ -4168,6 +4178,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[45] += 1
 
+		case powerUpAutoAim:
+		// 46 - Auto-Aim
+			endlessIICollectAutoAim()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[46] += 1
+
+		case powerUpWrapAround:
+		// 47 - Wrap-Around
+			endlessIICollectWrapAround()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[47] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -4386,6 +4408,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		endlessIIResetVision()
 		endlessIIResetPaddlePowerUps()
 		endlessIIResetFieldPowerUps()
+		endlessIIResetWrapAround()
 		// Endless 2.0's own power-ups keep their own clocks, so the removeAllActions above
 		// does not reach them
 		powerUpsOnScreen = 0

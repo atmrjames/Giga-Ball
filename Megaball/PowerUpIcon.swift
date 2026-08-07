@@ -316,6 +316,50 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
+    /// Auto-Aim: the crosshair the paddle puts on the lowest brick.
+    static let autoAim: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let centre = CGPoint(x: rect.midX, y: rect.midY - rect.height*0.06)
+        let radius = rect.width*0.2
+        context.strokeEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                         width: radius*2, height: radius*2))
+        for (dx, dy) in [(CGFloat(0), radius), (0, -radius), (radius, 0), (-radius, 0)] {
+            context.move(to: CGPoint(x: centre.x + dx*0.55, y: centre.y + dy*0.55))
+            context.addLine(to: CGPoint(x: centre.x + dx*1.35, y: centre.y + dy*1.35))
+        }
+        context.strokePath()
+        dot(context, at: centre, radius: rect.width*0.05)
+
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.22, y: rect.maxY - rect.height*0.16))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.22, y: rect.maxY - rect.height*0.16))
+        context.strokePath()
+        // The paddle doing the aiming
+    }
+
+    /// Wrap-Around: out one side, in the other.
+    static let wrapAround: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.06)
+        for x in [rect.minX + rect.width*0.16, rect.maxX - rect.width*0.16] {
+            context.setLineDash(phase: 0, lengths: [rect.width*0.07, rect.width*0.06])
+            context.move(to: CGPoint(x: x, y: rect.minY + rect.height*0.2))
+            context.addLine(to: CGPoint(x: x, y: rect.maxY - rect.height*0.2))
+            context.strokePath()
+        }
+        context.setLineDash(phase: 0, lengths: [])
+        // The walls, dashed because they are not really there
+
+        let y = rect.midY
+        context.move(to: CGPoint(x: rect.midX - rect.width*0.1, y: y))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: y))
+        let tip = CGPoint(x: rect.maxX - rect.width*0.2, y: y)
+        context.move(to: CGPoint(x: tip.x - rect.width*0.09, y: y - rect.height*0.07))
+        context.addLine(to: tip)
+        context.addLine(to: CGPoint(x: tip.x - rect.width*0.09, y: y + rect.height*0.07))
+        context.strokePath()
+        dot(context, at: CGPoint(x: rect.minX + rect.width*0.28, y: y), radius: rect.width*0.08)
+        // Leaving right, so the ball on the left is the same ball arriving
+    }
+
     // MARK: - Drawing helpers
 
     private static func stroke(_ context: CGContext, width: CGFloat) {

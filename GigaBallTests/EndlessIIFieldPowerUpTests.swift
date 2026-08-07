@@ -268,6 +268,121 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         XCTAssertEqual(scene.endlessHeight, 0)
     }
 
+    // MARK: - Auto-Aim
+
+    func testAutoAimPointsAtTheTargetAndStaysInTheLaunchableArc() {
+        let straightUp = EndlessIIPaddleEffects.autoAimAngle(
+            from: .zero, to: CGPoint(x: 0, y: 100), minimumDeg: 10)
+        XCTAssertEqual(straightUp ?? 0, .pi/2, accuracy: 0.001)
+
+        let flat = EndlessIIPaddleEffects.autoAimAngle(
+            from: .zero, to: CGPoint(x: 1000, y: 1), minimumDeg: 10)
+        XCTAssertEqual(flat ?? 0, 10*Double.pi/180, accuracy: 0.001,
+                       "never shallower than the minimum the game already enforces")
+
+        XCTAssertNil(EndlessIIPaddleEffects.autoAimAngle(
+            from: .zero, to: CGPoint(x: 0, y: -50), minimumDeg: 10),
+            "a paddle cannot aim downward")
+    }
+
+    func testAutoAimGoesForTheLowestBrickAndTheNearestAmongEquals() {
+        let scene = fieldScene()
+        brick(in: scene, x: 0, y: 200)
+        let lowFar = brick(in: scene, x: -150, y: 60)
+        let lowNear = brick(in: scene, x: 40, y: 60)
+
+        let target = scene.endlessIIAutoAimTarget(from: 30)
+        XCTAssertEqual(target?.y, 60)
+        XCTAssertEqual(target?.x, lowNear.position.x, "nearest of the equally low")
+        _ = lowFar
+    }
+
+    func testAutoAimIgnoresHiddenBricksAndPortals() {
+        let scene = fieldScene()
+        let hidden = brick(in: scene, x: 0, y: 50)
+        hidden.isHidden = true
+        brick(in: scene, x: 20, y: 60, role: .portal)
+        let real = brick(in: scene, x: -60, y: 90)
+
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, real.position.x)
+    }
+
+    func testAutoAimOnlyFiresWithTheClock() {
+        let scene = fieldScene()
+        scene.ballSpeedLimit = 100
+        brick(in: scene, x: 0, y: 100)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+
+        XCTAssertFalse(scene.endlessIIApplyAutoAim(to: scene.ball))
+        scene.endlessIICollectAutoAim()
+        XCTAssertTrue(scene.endlessIIApplyAutoAim(to: scene.ball))
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "sent upward")
+    }
+
+    // MARK: - Wrap-Around
+
+    func testThePaddleClampsUntilTheWallsStopBeingWalls() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.paddle.size = CGSize(width: 100, height: 20)
+
+        XCTAssertEqual(scene.endlessIIWrapPaddleX(500), 150, "clamped at the wall")
+
+        scene.endlessIICollectWrapAround()
+        XCTAssertEqual(scene.endlessIIWrapPaddleX(190), 190, "free to overhang the edge")
+        XCTAssertEqual(scene.endlessIIWrapPaddleX(210), -190,
+                       "a centre pushed past the edge comes back in from the other one")
+    }
+
+    func testAWrappedBallKeepsTheHeadingItLeftWith() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.ball.position = CGPoint(x: 195, y: 0)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody?.velocity = CGVector(dx: -80, dy: 50)
+        // The engine has already bounced it by the time the contact reports - the pre-step
+        // sample is the honest heading
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 80, dy: 50))
+
+        XCTAssertFalse(scene.endlessIIWrapTook(scene.ball), "not without the clock")
+        scene.endlessIICollectWrapAround()
+        XCTAssertTrue(scene.endlessIIWrapTook(scene.ball))
+
+        scene.applyEndlessIIWraps()
+        XCTAssertLessThan(scene.ball.position.x, 0, "in from the other side")
+        XCTAssertEqual(scene.ball.physicsBody?.velocity.dx ?? 0, 80, accuracy: 0.01,
+                       "still travelling the same way")
+    }
+
+    func testAWandererOnlyWrapsWhenItsRunToTheWallWasClear() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.endlessIICollectWrapAround()
+
+        let clear = scene.endlessIIWrapWandererX(at: 180, limits: (left: -180, right: 180),
+                                                 halfWidth: 20)
+        XCTAssertEqual(clear, -180, "a clear run carries on from the far wall")
+
+        let blocked = scene.endlessIIWrapWandererX(at: 100, limits: (left: -180, right: 100),
+                                                   halfWidth: 20)
+        XCTAssertNil(blocked, "a brick mid-field is still a brick")
+    }
+
+    func testAnExplosionAgainstAWallReachesRoundIt() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        let reach = CGRect(x: 150, y: 0, width: 100, height: 60)
+
+        XCTAssertEqual(scene.endlessIIWrappedBlastCopies(of: reach).count, 1)
+        scene.endlessIICollectWrapAround()
+        let copies = scene.endlessIIWrappedBlastCopies(of: reach)
+        XCTAssertEqual(copies.count, 3)
+        XCTAssertTrue(copies.contains { $0.intersects(CGRect(x: -195, y: 10, width: 20, height: 20)) },
+                      "the far side of the wall is in reach")
+    }
+
     // MARK: - The ring and the save
 
     func testTheTimedPairReportToTheRingAndRoundTrip() {
@@ -291,13 +406,13 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         let scene = fieldScene()
         scene.gameMode = .endless
         scene.applyEndlessRowPowerUpWeights()
-        for index in 39...45 {
+        for index in 39...47 {
             XCTAssertEqual(scene.powerUpProbArray[index], 0, "power-up \(index)")
         }
 
         scene.gameMode = .endlessII
         scene.applyEndlessRowPowerUpWeights()
-        for index in 39...45 {
+        for index in 39...47 {
             XCTAssertGreaterThan(scene.powerUpProbArray[index], 0, "power-up \(index)")
         }
     }

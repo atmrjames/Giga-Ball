@@ -17,8 +17,8 @@ class TotalStats: Codable {
     var levelsCompleted: Int = 0
     var ballHits: Int = 0
     var ballsLost: Int = 0
-    var powerupsCollected: [Int] = Array(repeating: 0, count: 46)
-    var powerupsGenerated: [Int] = Array(repeating: 0, count: 46)
+    var powerupsCollected: [Int] = Array(repeating: 0, count: 48)
+    var powerupsGenerated: [Int] = Array(repeating: 0, count: 48)
     // One slot per power-up, in power-up order. Sized by count rather than written out,
     // because the literal was miscounted once already - and every new power-up grows this,
     // the unlock array below, and the iCloud copies in CloudKitHandler together
@@ -279,7 +279,7 @@ class TotalStats: Codable {
         true, // Trajectory Line - the same
         true, // Landing Marker - the same
         true, true, true, true, true, true, true, true, // The paddle batch - the same
-        true, true, true, true, true, true, true // The field batch - the same
+        true, true, true, true, true, true, true, true, true // The field batch and after - the same
     ]
     
     var achievementsUnlockedArray: [Bool] = [

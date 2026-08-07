@@ -141,7 +141,7 @@ is no continue.
 
 Endless has its own leaderboards (best height, total height) and its own achievements.
 
-### Endless 2.0
+### Endless Mayhem (Endless 2.0 in the code)
 
 The same shape as Endless — one life, height in metres, a generated field — with variety as
 the point rather than escalation. It is a separate mode with its own leaderboards and
@@ -305,7 +305,7 @@ Splash (animated logo, tap to skip)
   └─ Main Menu ─────── Classic Mode ── Pack Select ── Level Select ── Level Detail
      │                                                                   └─ Game
      ├─────────────── Endless Mode ── Endless Detail ── Game
-     ├─────────────── Endless 2.0 ─── Endless Detail ── Game
+     ├─────────────── Endless Mayhem ─ Endless Detail ── Game
      ├─ Info (i) ──── Items / Stats / Items Detail / Item Stats / Bricks / About
      └─ Settings ──── (also reachable from the pause menu)
 

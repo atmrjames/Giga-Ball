@@ -324,6 +324,11 @@ extension GameScene {
                 id: "endlessIIDescent", texture: SKTexture(image: PowerUpIcon.descent),
                 remaining: endlessIIDescentClock.fraction, segments: nil))
         }
+        if endlessIIWrapAroundClock.isRunning {
+            entries.append(PowerUpRingHUD.Entry(
+                id: "endlessIIWrapAround", texture: SKTexture(image: PowerUpIcon.wrapAround),
+                remaining: endlessIIWrapAroundClock.fraction, segments: nil))
+        }
         return entries
     }
 
@@ -331,7 +336,8 @@ extension GameScene {
                                                magnitude: Int)] {
         [("endlessIIWreckingBall", endlessIIWreckingBallClock),
          ("endlessIIAura", endlessIIAuraClock),
-         ("endlessIIDescent", endlessIIDescentClock)]
+         ("endlessIIDescent", endlessIIDescentClock),
+         ("endlessIIWrapAround", endlessIIWrapAroundClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -347,6 +353,8 @@ extension GameScene {
                                        deepestLevel: GameScene.endlessIIAuraReach.count - 1)
         case "endlessIIDescent":
             endlessIIDescentClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIWrapAround":
+            endlessIIWrapAroundClock.restore(remaining: remaining, total: total, level: 0)
         default:
             return false
         }

@@ -69,6 +69,45 @@ extension GameScene {
         endlessIIReversedControlsClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
     }
 
+    func endlessIICollectAutoAim() {
+        endlessIIAutoAimClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+    }
+
+    /// The brick an Auto-Aim bounce goes for: the lowest on the field, nearest first among
+    /// equals - the one that is threatening the run, which is the one worth a free shot.
+    func endlessIIAutoAimTarget(from x: CGFloat) -> CGPoint? {
+        var best: (position: CGPoint, distance: CGFloat)?
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard node.parent != nil, node.isHidden == false else { return }
+            guard node.endlessIIRole != .portal else { return }
+            let distance = abs(node.position.x - x)
+            if let current = best {
+                if node.position.y < current.position.y - 1
+                    || (abs(node.position.y - current.position.y) <= 1
+                        && distance < current.distance) {
+                    best = (node.position, distance)
+                }
+            } else {
+                best = (node.position, distance)
+            }
+        }
+        return best?.position
+    }
+
+    /// Sends a ball leaving the paddle at the lowest brick instead of wherever it was going.
+    /// Returns whether it did - asked at the end of the bounce, so it overrides the angle
+    /// but not the catches, the swallow, or anything else the paddle decided first.
+    func endlessIIApplyAutoAim(to subject: SKSpriteNode) -> Bool {
+        guard gameMode == .endlessII, endlessIIAutoAimClock.isRunning else { return false }
+        guard let target = endlessIIAutoAimTarget(from: subject.position.x) else { return false }
+        guard let angle = EndlessIIPaddleEffects.autoAimAngle(
+            from: subject.position, to: target, minimumDeg: minAngleDeg) else { return false }
+
+        subject.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
+                                                 dy: sin(angle)*Double(ballSpeedLimit))
+        return true
+    }
+
     // MARK: - The hooks the scene asks
 
     /// One paddle contact happened: every running paddle power-up spends a turn.
@@ -86,6 +125,7 @@ extension GameScene {
         endlessIIInertPaddleClock.spendTurn()
         endlessIIFlippedAngleClock.spendTurn()
         endlessIIReversedControlsClock.spendTurn()
+        endlessIIAutoAimClock.spendTurn()
     }
 
     /// What multiplies the paddle's angular influence on a bounce - see `paddleHit`.
@@ -283,6 +323,7 @@ extension GameScene {
             ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.inertPaddle),
             ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.flippedAngle),
             ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.reversedControls),
+            ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
         ]
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
@@ -309,7 +350,8 @@ extension GameScene {
          ("endlessIIBallSteering", endlessIIBallSteeringClock),
          ("endlessIIInertPaddle", endlessIIInertPaddleClock),
          ("endlessIIFlippedAngle", endlessIIFlippedAngleClock),
-         ("endlessIIReversedControls", endlessIIReversedControlsClock)]
+         ("endlessIIReversedControls", endlessIIReversedControlsClock),
+         ("endlessIIAutoAim", endlessIIAutoAimClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -339,6 +381,8 @@ extension GameScene {
             endlessIIFlippedAngleClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIReversedControls":
             endlessIIReversedControlsClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIAutoAim":
+            endlessIIAutoAimClock.restore(remaining: remaining, total: total, level: 0)
         default:
             return false
         }
@@ -355,6 +399,7 @@ extension GameScene {
         endlessIIInertPaddleClock.reset()
         endlessIIFlippedAngleClock.reset()
         endlessIIReversedControlsClock.reset()
+        endlessIIAutoAimClock.reset()
         endlessIIPendingPaddlePortals.removeAll()
         endlessIIPaddleHaloNode?.removeFromParent()
         endlessIIPaddleHaloNode = nil
