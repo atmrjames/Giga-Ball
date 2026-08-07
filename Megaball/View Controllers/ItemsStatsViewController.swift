@@ -134,11 +134,15 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                     return cell
                 } else {
                     cell.statValue.text = LevelPackSetup().powerUpMultiplierArray[passedIndex!]
-                    if LevelPackSetup().powerUpMultiplierArray[passedIndex!] == "+0.1x" {
-                        cell.statDescription.text = "Mutliplier bonus"
+                    if LevelPackSetup().powerUpMultiplierArray[passedIndex!].hasPrefix("+") {
+                        cell.statDescription.text = "Multiplier bonus"
                     } else {
-                        cell.statDescription.text = "Mutliplier penalty"
+                        cell.statDescription.text = "Multiplier penalty"
                     }
+                    // By the sign, not by matching one exact string - the old comparison
+                    // looked for "+0.1x", the array holds "+0.1", so every bonus in the
+                    // game has been labelled a penalty (and "Mutliplier" a typo) since
+                    // whenever that x was dropped
                 }
                 return cell
             case 1:
