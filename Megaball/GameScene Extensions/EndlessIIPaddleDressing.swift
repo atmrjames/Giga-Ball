@@ -68,8 +68,16 @@ extension GameScene {
             return
         }
 
+        let single = gameMode == .endlessII ? endlessIIPortals().first : nil
+        let colour = single?.endlessIIPortalIsBlue == true
+            ? GameScene.portalYellowColour
+            : (single != nil ? GameScene.portalBlueColour : GameScene.portalYellowColour)
+        // The strip is the other end of whatever portal is in play, so it wears the other
+        // colour of the pair - a blue brick's exit is yellow, a yellow brick's is blue.
+        // The Portal Paddle alone keeps the yellow exit it has always had
+
         let strip = endlessIITopExitStrip ?? {
-            let node = SKSpriteNode(color: GameScene.portalYellowColour,
+            let node = SKSpriteNode(color: colour,
                                     size: CGSize(width: gameWidth, height: 5))
             node.position = CGPoint(x: 0, y: frame.height/2 - topScreenBlock.size.height - 2.5)
             node.zPosition = 4
@@ -79,7 +87,7 @@ extension GameScene {
             endlessIITopExitStrip = node
             return node
         }()
-        _ = strip
+        strip.color = colour
     }
 
     // MARK: - The pull

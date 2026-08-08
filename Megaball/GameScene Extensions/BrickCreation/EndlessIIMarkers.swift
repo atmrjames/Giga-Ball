@@ -59,9 +59,10 @@ extension GameScene {
         // Above the background and below the bricks, which sit at 1. A marker in front of the
         // field would be something to look past rather than something to notice.
         //
-        // On the row's centre line rather than its top edge, because the row it arrives in is
-        // generated empty for it - see `endlessIIRowIsMilestone`. A line drawn across the
-        // middle of a row with nothing in it is a line you can read
+        // The line sits at the *bottom* of its row, where it lines up with the 10m ticks
+        // and the lower limit line - a centred line measured against edge-aligned marks
+        // read as being on the wrong row. The labels sit just above it, inside the empty
+        // row generated for the marker, so bricks on neighbouring rows cannot cover them
         addChild(marker)
 
         let colour = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.3)
@@ -77,11 +78,11 @@ extension GameScene {
             label.fontSize = fontSize*0.6
             label.fontColor = colour
             label.horizontalAlignmentMode = alignment
-            label.verticalAlignmentMode = .center
+            label.verticalAlignmentMode = .bottom
             label.position = CGPoint(x: alignment == .left
                                         ? -gameWidth/2 + labelSpacing
                                         : gameWidth/2 - labelSpacing,
-                                     y: 0)
+                                     y: -brickHeight/2 + 3)
             marker.addChild(label)
             textWidth = max(textWidth, label.frame.width)
         }
@@ -90,12 +91,16 @@ extension GameScene {
         // text fighting a rule drawn through its middle
 
         let gap = textWidth + labelSpacing*1.5
-        let middle = SKShapeNode(rect: CGRect(x: -gameWidth/2 + gap, y: -0.5,
-                                              width: max(0, gameWidth - gap*2), height: 1))
-        let leftStub = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: -0.5,
+        let lineY = -brickHeight/2 - 0.5
+        let middle = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: lineY,
+                                              width: gameWidth, height: 1))
+        let leftStub = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: lineY,
                                                 width: labelSpacing/2, height: 1))
-        let rightStub = SKShapeNode(rect: CGRect(x: gameWidth/2 - labelSpacing/2, y: -0.5,
-                                                 width: labelSpacing/2, height: 1))
+        let rightStub = SKShapeNode(rect: CGRect(x: gameWidth/2 - labelSpacing/2, y: lineY,
+                                                 width: 0, height: 0))
+        _ = gap
+        // The line no longer breaks around the labels - it runs the full width at the
+        // row's bottom edge and the labels float above it, so nothing fights
         for line in [middle, leftStub, rightStub] {
             line.fillColor = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.16)
             line.strokeColor = .clear
@@ -142,10 +147,11 @@ extension GameScene {
     func showEndlessIILowerLimit() {
         guard gameMode == .endlessII, endlessIILowerLimitLine == nil else { return }
         let line = SKSpriteNode(color: GameScene.endlessIILowerLimitColour,
-                                size: CGSize(width: gameWidth, height: 2.5))
+                                size: CGSize(width: gameWidth, height: 1.5))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
         line.zPosition = 1
-        line.alpha = 0.55
+        line.alpha = 0.25
+        // Subtler, by request: it should be findable when looked for, not part of the scene
         addChild(line)
         endlessIILowerLimitLine = line
     }

@@ -16,7 +16,7 @@ enum device {
     case SE
 }
 
-class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable {
+class SettingsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable, MenuNavigationPresenter {
     
     var navigatedFrom: String?
     
@@ -480,6 +480,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         backgroundSelectView.didMove(toParent: self)
     }
     
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
+    }
+    // The same fade opening a child gives - the forward swipe says it too, or the screen
+    // underneath stays readable through the one that came back (the play-test screenshot)
+
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.backgroundView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)

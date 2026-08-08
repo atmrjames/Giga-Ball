@@ -127,6 +127,11 @@ extension GameScene {
                 wall.color = GameScene.portalYellowColour
                 wall.colorBlendFactor = 0.6
             }
+            paddle.physicsBody?.collisionBitMask &= ~CollisionTypes.boarderCategory.rawValue
+            // The paddle's body is dynamic and collides with the frame's edge, so every
+            // overhang the touch wrote was resolved straight back by the engine - the balls
+            // wrapped and the paddle never could. While the walls are not walls, the paddle
+            // stops colliding with them
             endlessIIWrapDressed = true
             // The walls wear the exit yellow while they are exits - the same language the
             // portals already speak
@@ -134,6 +139,7 @@ extension GameScene {
             for wall in [sideScreenBlockLeft, sideScreenBlockRight] {
                 wall.colorBlendFactor = 0
             }
+            paddle.physicsBody?.collisionBitMask |= CollisionTypes.boarderCategory.rawValue
             endlessIIWrapDressed = false
 
             let limit = gameWidth/2 - paddle.size.width/2
@@ -152,6 +158,7 @@ extension GameScene {
             for wall in [sideScreenBlockLeft, sideScreenBlockRight] {
                 wall.colorBlendFactor = 0
             }
+            paddle.physicsBody?.collisionBitMask |= CollisionTypes.boarderCategory.rawValue
             endlessIIWrapDressed = false
         }
     }

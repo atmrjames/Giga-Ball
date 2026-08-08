@@ -83,6 +83,12 @@ extension GameScene {
         let retreat = SKAction.moveBy(x: 0, y: brickHeight, duration: 0.1)
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard self.endlessIIStaysPut(node) == false else { return }
+            if node.position.y + self.brickHeight > self.yBrickOffsetEndless + self.brickHeight/2 {
+                node.run(.sequence([.fadeOut(withDuration: 0.1), .removeFromParent()]))
+                return
+            }
+            // A brick the retreat would push past the top row leaves the field instead -
+            // play-testing found it sitting over the HUD, which is nobody's row
             node.run(retreat)
         }
         // Up by exactly a row, so every brick lands on a row centre again. Anchored bricks
@@ -203,6 +209,11 @@ extension GameScene {
                 let dx = nearestX - subject.position.x
                 let dy = nearestY - subject.position.y
                 guard dx*dx + dy*dy <= reach*reach else { return }
+                let ballRadius = subject.size.width/2
+                guard dx*dx + dy*dy > ballRadius*ballRadius else { return }
+                // The glow, not the ball: a brick the ball itself is touching is the ball's
+                // own business, and it bounces off it as ever. Play-testing found the
+                // straight-ahead destroy made the aura a Giga-Ball - the sides are the gift
                 self.endlessIIBrickDestroyed(brick)
                 self.endlessIIDestroy(brick)
                 destroyed = true

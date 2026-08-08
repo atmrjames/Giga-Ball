@@ -36,6 +36,8 @@ extension GameScene {
     /// the default angle is the mirror of.
     func endlessIIAimedCatch(_ subject: SKSpriteNode, isExtra: Bool) -> Bool {
         guard gameMode == .endlessII, endlessIIAimedStickyClock.isRunning else { return false }
+        guard endlessIIInertPaddleClock.isRunning == false else { return false }
+        // An inert paddle holds nothing - see paddleHit's sticky band
 
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
             ?? subject.physicsBody?.velocity ?? .zero

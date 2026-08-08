@@ -1036,7 +1036,15 @@ brick fading into its own place.
 
 | Item | Notes |
 |---|---|
-| A scatter cluster | §6.2.1 covers set formations with designed and undesigned contents. The third kind — particular bricks in a *random* arrangement — needs a generator rather than a grid |
+| In-game recents on the pause info pages | Play-test request: the Bricks and Power-Ups pages, reached mid-run, list what was recently hit and recently seen first - so a player can identify the thing that just happened. Unseen power-ups below, alphabetical |
+| Endless game-over stats | Summary on the game-over screen (balls hit, bricks destroyed, power-ups collected), a stats button to a detail screen, and the power-ups seen this run in order |
+| New brick geometries | Concave/convex faces, triangles (one pointed side), and a 2×1 square size available to all compatible behaviours - each is a physics-body shape plus §8.6's row discipline, so each is its own careful visit |
+| Lock and Key | §5.4's originals, still unbuilt. Lock freezes the timed clocks (the turn-based ones are immune by nature); Key ends it. Their conditional drop rules are most of the work |
+| Double Paddle, and an opposite-moving paddle | Play-test ideas for the next power-up batch - a second paddle is per-ball contact handling all over again, priced accordingly |
+| Classic mode menu redesign | Title and logo like the endless screens, packs as a grid of square cells rather than rows |
+| Grid background scaled to the marker grid | Needs the actual artwork's pitch measured against brickHeight - a visual-iteration task, not a blind one |
+| App Store review readiness pass | A deliberate pre-release review against the guidelines. The daily's test clock is the known must-fix; the pass should hunt for others |
+| A scatter cluster | ~~§6.2.1's third kind~~ **Built** - Buckshot, Ghost Field, Shrapnel |
 
 The new power-ups appear on the power-ups page already — the page derives from the arrays
 that define them, so all forty-eight are listed with their icons, timers and descriptions.

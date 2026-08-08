@@ -8,7 +8,7 @@
 
 import UIKit
 
-class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource , MenuNavigable {
+class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource , MenuNavigable, MenuNavigationPresenter {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -143,6 +143,9 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             break
         }
         
+        installPackPlayButton(on: cell,
+                              unlocked: totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2])
+
         if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
             cell.descriptionAndStateSharedWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = false
@@ -265,6 +268,57 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
     
+    /// The straight-in button on every pack row: skip the level list, play the pack.
+    func installPackPlayButton(on cell: UITableViewCell, unlocked: Bool) {
+        cell.contentView.viewWithTag(9901)?.removeFromSuperview()
+        guard unlocked else { return }
+
+        let play = UIButton(type: .system)
+        play.tag = 9901
+        play.setImage(UIImage(systemName: "play.fill",
+                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 17,
+                                                                             weight: .heavy)),
+                      for: .normal)
+        play.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        play.translatesAutoresizingMaskIntoConstraints = false
+        play.addTarget(self, action: #selector(packPlayTapped(_:)), for: .touchUpInside)
+        cell.contentView.addSubview(play)
+        NSLayoutConstraint.activate([
+            play.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor,
+                                           constant: -18),
+            play.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            play.widthAnchor.constraint(equalToConstant: 44),
+            play.heightAnchor.constraint(equalToConstant: 44),
+        ])
+    }
+
+    @objc func packPlayTapped(_ sender: UIButton) {
+        var view: UIView? = sender
+        while view != nil, (view as? UITableViewCell) == nil { view = view?.superview }
+        guard let cell = view as? UITableViewCell,
+              let indexPath = packTableView.indexPath(for: cell) else { return }
+        // The row is asked for at tap time rather than baked into the button, because
+        // cells are reused and a stale tag starts the wrong pack
+
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        let pack = indexPath.row + 2
+        MenuViewController().clearSavedGame()
+        moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
+                   numberOfLevels: LevelPackSetup().numberOfLevels[pack],
+                   sender: "MainMenu", levelPack: pack)
+    }
+
+    func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int) {
+        let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
+        gameView.menuViewControllerDelegate = self as? MenuViewControllerDelegate
+        gameView.selectedLevel = selectedLevel
+        gameView.numberOfLevels = numberOfLevels
+        gameView.levelSender = sender
+        gameView.levelPack = levelPack
+        self.navigationController?.pushViewController(gameView, animated: true)
+    }
+    // Straight into the pack, exactly as the level screens launch it
+
     func moveToLevelSelector(packNumber: Int, numberOfLevels: Int, startLevel: Int) {
         let levelSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "levelSelectorView") as! LevelSelectorViewController
         levelSelectorView.packNumber = packNumber
@@ -358,6 +412,12 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
     
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
+    }
+    // The same fade opening a child gives - the forward swipe says it too, or the screen
+    // underneath stays readable through the one that came back (the play-test screenshot)
+
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.packView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)

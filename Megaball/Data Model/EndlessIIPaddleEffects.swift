@@ -125,7 +125,9 @@ enum EndlessIIPaddleEffects {
 
     /// How far the halo reaches from the paddle's centre, by stacking level, as a multiple
     /// of the paddle's width.
-    static let haloReach: [CGFloat] = [0.9, 1.3]
+    static let haloReach: [CGFloat] = [1.5, 2.1]
+    // Raised from [0.9, 1.3] after play-testing found the glow never reached a brick -
+    // "into the lower rows" (§5.4) means actually getting there
 
     /// Whether a brick is inside the halo.
     ///

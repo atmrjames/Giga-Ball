@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable {
+class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -167,6 +167,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
             cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             // Setup cell buttons
+
+            installLevelPlayButton(on: cell)
             
             let packLevelHighScoresArray: [[Int]] = [
                 totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
@@ -388,6 +390,43 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
     }
     
+    /// The straight-in button on every level row: skip the detail screen, play the level.
+    func installLevelPlayButton(on cell: UITableViewCell) {
+        cell.contentView.viewWithTag(9901)?.removeFromSuperview()
+
+        let play = UIButton(type: .system)
+        play.tag = 9901
+        play.setImage(UIImage(systemName: "play.fill",
+                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 17,
+                                                                             weight: .heavy)),
+                      for: .normal)
+        play.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        play.translatesAutoresizingMaskIntoConstraints = false
+        play.addTarget(self, action: #selector(levelPlayTapped(_:)), for: .touchUpInside)
+        cell.contentView.addSubview(play)
+        NSLayoutConstraint.activate([
+            play.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor,
+                                           constant: -18),
+            play.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            play.widthAnchor.constraint(equalToConstant: 44),
+            play.heightAnchor.constraint(equalToConstant: 44),
+        ])
+    }
+
+    @objc func levelPlayTapped(_ sender: UIButton) {
+        var view: UIView? = sender
+        while view != nil, (view as? UITableViewCell) == nil { view = view?.superview }
+        guard let cell = view as? UITableViewCell,
+              let indexPath = levelsTableView.indexPath(for: cell) else { return }
+
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        MenuViewController().clearSavedGame()
+        moveToGame(selectedLevel: startLevel! + indexPath.row, numberOfLevels: 1,
+                   sender: levelSender, levelPack: packNumber!)
+        // Single level mode, straight in - the same launch the mode-select screen's
+        // "single level" choice performs
+    }
+
     func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
         gameView.menuViewControllerDelegate = self as? MenuViewControllerDelegate
@@ -473,6 +512,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         }
     }
     
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
+    }
+    // The same fade opening a child gives - the forward swipe says it too, or the screen
+    // underneath stays readable through the one that came back (the play-test screenshot)
+
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.levelSelectView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)

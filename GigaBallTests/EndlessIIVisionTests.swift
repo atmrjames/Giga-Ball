@@ -56,10 +56,20 @@ final class EndlessIIVisionTests: XCTestCase {
     }
 
     func testTheLandingMarkerExtendsToo() {
+        // In paddle hits now, not seconds - the play test moved it to the turn-based batch
         let scene = visionScene()
         scene.endlessIICollectLandingMarker()
         scene.endlessIICollectLandingMarker()
-        XCTAssertEqual(scene.endlessIILandingRemaining, GameScene.endlessIIVisionDuration*2)
+        XCTAssertEqual(scene.endlessIILandingRemaining,
+                       GameScene.endlessIIPaddlePowerUpTurns*2)
+    }
+
+    func testTheLandingMarkerSpendsOnPaddleHits() {
+        let scene = visionScene()
+        scene.endlessIICollectLandingMarker()
+        scene.endlessIISpendLandingTurn()
+        XCTAssertEqual(scene.endlessIILandingRemaining,
+                       GameScene.endlessIIPaddlePowerUpTurns - 1)
     }
 
     // MARK: - The clock
@@ -115,7 +125,7 @@ final class EndlessIIVisionTests: XCTestCase {
     func testTheRingShowsTheFractionRemaining() {
         let scene = visionScene()
         scene.endlessIICollectLandingMarker()
-        scene.endlessIILandingRemaining = GameScene.endlessIIVisionDuration/2
+        scene.endlessIILandingRemaining = GameScene.endlessIIPaddlePowerUpTurns/2
 
         XCTAssertEqual(scene.endlessIIVisionRingEntries().first?.remaining ?? 0, 0.5,
                        accuracy: 0.001)

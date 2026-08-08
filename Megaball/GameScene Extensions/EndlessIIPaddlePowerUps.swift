@@ -127,6 +127,19 @@ extension GameScene {
 
         subject.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
                                                  dy: sin(angle)*Double(ballSpeedLimit))
+
+        let beam = SKShapeNode()
+        let path = CGMutablePath()
+        path.move(to: subject.position)
+        path.addLine(to: target)
+        beam.path = path
+        beam.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.7)
+        beam.lineWidth = 2
+        beam.zPosition = 4
+        addChild(beam)
+        beam.run(.sequence([.fadeOut(withDuration: 0.3), .removeFromParent()]))
+        // The shot drawn for a beat, so an aimed bounce reads as aimed rather than lucky
+
         return true
     }
 
@@ -148,6 +161,7 @@ extension GameScene {
         endlessIIFlippedAngleClock.spendTurn()
         endlessIIReversedControlsClock.spendTurn()
         endlessIIAutoAimClock.spendTurn()
+        endlessIISpendLandingTurn()
     }
 
     /// What multiplies the paddle's angular influence on a bounce - see `paddleHit`.
@@ -255,9 +269,15 @@ extension GameScene {
         for subject in endlessIIBallsInPlay {
             guard subject.parent != nil, let body = subject.physicsBody else { continue }
             guard subject !== ball || ballIsOnPaddle == false else { continue }
+            let side: CGFloat = subject.position.x >= paddle.position.x ? 1 : -1
+            let target = CGPoint(x: paddle.position.x + side*paddle.size.width*0.3,
+                                 y: paddle.position.y)
+            // Pulled toward a spot a third out from the centre, on the ball's own side - a
+            // magnet aimed dead centre landed every ball vertically, and a vertical bounce
+            // is the least useful one the paddle can give
             body.velocity = EndlessIIPaddleEffects.magnetised(
                 velocity: body.velocity, ballAt: subject.position,
-                paddleAt: paddle.position, strength: strength, delta: delta)
+                paddleAt: target, strength: strength, delta: delta)
         }
     }
 

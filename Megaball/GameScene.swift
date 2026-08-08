@@ -2949,6 +2949,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			&& ball.position.x < paddleRightEdgePosition - ball.size.width/3
 			&& collisionPercentage < 1.0 && collisionPercentage > -1.0
 			&& stickyPaddleCatches != 0
+			&& endlessIIInertPaddleClock.isRunning == false
+		// An inert paddle is nothing but a wall: it does not angle the bounce and it does
+		// not hold the ball - the sticky waits until the paddle is a paddle again
 
 		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2
 			&& endlessIIAimedCatch(ball, isExtra: isExtra) {

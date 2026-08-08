@@ -45,10 +45,18 @@ extension GameScene {
         endlessIITrajectoryTotal = endlessIITrajectoryRemaining
     }
 
-    /// Starts or extends the Landing Marker.
+    /// Starts or extends the Landing Marker - in paddle hits, not seconds, like the rest
+    /// of the paddle-facing power-ups after the turn-based revision.
     func endlessIICollectLandingMarker() {
-        endlessIILandingRemaining += GameScene.endlessIIVisionDuration
+        endlessIILandingRemaining += GameScene.endlessIIPaddlePowerUpTurns
         endlessIILandingTotal = endlessIILandingRemaining
+    }
+
+    /// A paddle contact spends a Landing Marker turn. Called from the shared spend.
+    func endlessIISpendLandingTurn() {
+        guard endlessIILandingRemaining > 0 else { return }
+        endlessIILandingRemaining = max(0, endlessIILandingRemaining - 1)
+        if endlessIILandingRemaining == 0 { endlessIILandingTotal = 0 }
     }
 
     // MARK: - Each frame
@@ -69,9 +77,9 @@ extension GameScene {
         let running = gameState.currentState is Playing && isPaused == false
         if running {
             endlessIITrajectoryRemaining = max(0, endlessIITrajectoryRemaining - delta)
-            endlessIILandingRemaining = max(0, endlessIILandingRemaining - delta)
         }
-        // The clock only runs while play does - pausing freezes these like any other timer
+        // The trajectory's clock runs on time; the landing marker's runs on paddle hits
+        // (endlessIISpendLandingTurn) - pausing freezes both, each in its own way
 
         guard endlessIITrajectoryRemaining > 0 || endlessIILandingRemaining > 0 else {
             endlessIIClearVision()
@@ -119,11 +127,11 @@ extension GameScene {
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
                 marker.position = CGPoint(x: landing.x,
-                                          y: paddle.position.y - paddleHeight*1.6)
+                                          y: paddle.position.y + paddleHeight*1.9)
                 markerIndex += 1
             }
-            // Just below the paddle, pointing up at where the ball will cross - out of the
-            // paddle's own visual space, so the mark and the thing being aimed never overlap
+            // Just above the paddle, pointing down at where the ball will cross - below it,
+            // the Backstop covered it whenever the two ran together
         }
 
         endlessIITrimVision(lines: lineIndex, markers: markerIndex)
@@ -174,14 +182,15 @@ extension GameScene {
         while endlessIILandingMarkers.count <= index {
             let size = ballSize*0.7
             let path = CGMutablePath()
-            path.move(to: CGPoint(x: 0, y: size*0.6))
-            path.addLine(to: CGPoint(x: -size*0.55, y: -size*0.4))
-            path.addLine(to: CGPoint(x: size*0.55, y: -size*0.4))
+            path.move(to: CGPoint(x: 0, y: -size*0.6))
+            path.addLine(to: CGPoint(x: -size*0.55, y: size*0.4))
+            path.addLine(to: CGPoint(x: size*0.55, y: size*0.4))
             path.closeSubpath()
             let marker = SKShapeNode(path: path)
             marker.strokeColor = .clear
             marker.fillColor = UIColor(white: 1, alpha: 0.7)
-            marker.zPosition = 3
+            marker.zPosition = 5
+            // Pointing down now, and above the backstop's layer - it lives above the paddle
             // A small triangle pointing up at the crossing point, sitting under the paddle -
             // play-testing preferred it to the ghost ball, which crowded the paddle itself
             addChild(marker)

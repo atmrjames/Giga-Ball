@@ -35,8 +35,10 @@ struct EndlessIISetRow {
     static let designedForColumns = 11
 
     static let all: [EndlessIISetRow] = [
-        EndlessIISetRow(name: "Comb", rows: ["I.I.I.I.I.I"], minimumHeight: 0),
-        // The alternating indestructible row that already existed, written down
+        EndlessIISetRow(name: "Comb", rows: ["I.I.I.I.I.I"], minimumHeight: 150),
+        // The alternating indestructible row that already existed, written down. Pushed
+        // deep after play-testing: it is one of the hardest shapes in the pool, and it was
+        // arriving in the opening minutes
 
         EndlessIISetRow(name: "Gate", rows: ["NNNNN.NNNNN"], minimumHeight: 30),
         // A wall with one way through. The whole row is one shot
@@ -66,7 +68,9 @@ struct EndlessIISetRow {
                                               ".N.......N.",
                                               "..N.....N.."], minimumHeight: 70),
 
-        EndlessIISetRow(name: "Shoal", rows: ["?.?.?.?.?.?"], minimumHeight: 40),
+        EndlessIISetRow(name: "Shoal", rows: ["?.?.?.?.?.?"], minimumHeight: 0),
+        // The opening set row now the Comb has gone deep - designed spacing, undesigned
+        // contents, and nothing about it punishes a new player
         // Designed spacing, undesigned contents - a shape that still varies
 
         EndlessIISetRow(name: "Keep", rows: ["..IIIII....",

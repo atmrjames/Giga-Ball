@@ -115,6 +115,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
+        layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
+                                           right: cellSpacing/2)
+        // Half a gap each end: with equal gaps between the three, that puts the middle
+        // button's centre exactly on the row's centre - without it the whole row leans left
         backButtonCollectionView.collectionViewLayout = layout
 
         for constraint in backButtonCollectionView.constraints
@@ -134,7 +138,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        indexPath.row == 2
+        indexPath.row == 1
             ? CGSize(width: LevelStatsViewController.playButtonSize,
                      height: LevelStatsViewController.playButtonSize)
             : CGSize(width: 50, height: 50)
@@ -156,6 +160,11 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
+            cell.iconImage.image = UIImage(named:"ButtonPlay")
+            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
+            // The big play button belongs in the middle - X left, leaderboard right, the
+            // same order the pause menu reads in
+        case 2:
             if packNumber == 1 {
                 if gameCenterSetting {
                     cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
@@ -165,10 +174,6 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             }
-        case 2:
-            cell.iconImage.image = UIImage(named:"ButtonPlay")
-            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
-            // The one outsized button on the row - see playButtonSize
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -186,13 +191,13 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         if indexPath.row == 0 {
             menuNavigationGoBack()
         }
-        if indexPath.row == 1 {
+        if indexPath.row == 2 {
             if gameCenterSetting && packNumber == 1 {
                 showGameCenterLeaderboards()
             }
             // Only show leaderboard button for endless mode
         }
-        if indexPath.row == 2 {
+        if indexPath.row == 1 {
             if levelNumber! == 0 {
             // Endless mode - go straight to level
                 MenuViewController().clearSavedGame()
@@ -218,6 +223,11 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     }
                     cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
                 case 1:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
+                case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
@@ -226,11 +236,6 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")
                     }
-                case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -251,6 +256,11 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     }
                     cell.iconImage.image = UIImage(named:"ButtonClose")
                 case 1:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlay")
+                case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
@@ -259,11 +269,6 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")
                     }
-                case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPlay")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -449,6 +454,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     /// the buttons - which means taking some of the logo's room: it is re-pinned smaller so
     /// the list has somewhere to live.
     func setupRunHistory() {
+        guard runHistory.isEmpty == false else { return }
+        // Nothing to list yet: the table waits for a first run, and the logo keeps the room
         guard runHistoryTable == nil else { runHistoryTable?.reloadData(); return }
 
         for constraint in levelStatsView.constraints {
