@@ -337,6 +337,11 @@ important one: everything else stands on "every device computes the same day".
   KVS from newer clients, or accept silent divergence for the 14-day window?
 - **Abandoned first attempts** (§7): does quitting post the partial score or burn the
   attempt with nothing? Posting-partial is the anti-cheese answer and the recommendation.
+  *As built in phase 3: quitting to the menu burns it* - the quit path leaves the scene
+  without reaching the end-of-run recording, so the attempt reads "spent, nothing
+  posted", exactly like a force-quit. Honest, but not yet the recommendation; making
+  quit post the partial means routing the pause menu's home-confirm through the same
+  recording the run's natural end uses.
 - **Monochrome performance** (§5, §4 Blackout).
 
 - **App Store in-app events** (§11.5): App Store Connect setup, James's side.
