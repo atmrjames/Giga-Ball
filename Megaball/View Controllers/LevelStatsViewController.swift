@@ -494,9 +494,12 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         sort.addTarget(self, action: #selector(toggleRunHistorySort), for: .touchUpInside)
         levelStatsView.addSubview(sort)
         NSLayoutConstraint.activate([
-            sort.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 6),
+            sort.topAnchor.constraint(equalTo: levelImageView.bottomAnchor, constant: 18),
             sort.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
         ])
+        // Anchored to the mode's icon rather than to the emptied highscore labels
+        // (play-test round 6): with the Best Height figure gone, the list moves up to
+        // sit near the icon, and the room it frees goes to the bottom of the screen
         runHistorySortButton = sort
         // One small word, centred over the list where a column header would be (the
         // play test asked for it centred at the top of the table) - the list leads with

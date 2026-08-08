@@ -26,6 +26,16 @@ final class InGameRecents {
     /// the page answers, not "caught".
     private(set) var powerUpIndices: [Int] = []
 
+    /// What became of each seen power-up: caught, or fell past. The latest event wins -
+    /// a fresh drop of something caught earlier reads as the drop it is.
+    enum PowerUpFate { case seen, collected }
+    private(set) var powerUpFates: [Int: PowerUpFate] = [:]
+
+    /// What was running when the pause menu opened - the scene's snapshot, taken as the
+    /// menu goes up, because "currently active" is a question about that moment and the
+    /// reference pages have no scene to ask.
+    var activePowerUpIndices: Set<Int> = []
+
     /// Brick entry names (the catalogue's own), most recent first. Recorded on the strike,
     /// because a struck brick is the one the player is asking about.
     private(set) var brickNames: [String] = []
@@ -33,6 +43,21 @@ final class InGameRecents {
     func sawPowerUp(_ index: Int) {
         powerUpIndices.removeAll { $0 == index }
         powerUpIndices.insert(index, at: 0)
+        powerUpFates[index] = .seen
+    }
+
+    func collectedPowerUp(_ index: Int) {
+        powerUpIndices.removeAll { $0 == index }
+        powerUpIndices.insert(index, at: 0)
+        powerUpFates[index] = .collected
+        // A collection is also the most recent thing that happened to it
+    }
+
+    /// The recents section's note for a power-up (play-test request): collected, missed,
+    /// or currently active.
+    func statusNote(for index: Int) -> String {
+        if activePowerUpIndices.contains(index) { return "ACTIVE" }
+        return powerUpFates[index] == .collected ? "COLLECTED" : "MISSED"
     }
 
     func struckBrick(named name: String) {
@@ -44,6 +69,8 @@ final class InGameRecents {
     /// mid-run never carries the last run's memory.
     func reset() {
         powerUpIndices = []
+        powerUpFates = [:]
+        activePowerUpIndices = []
         brickNames = []
     }
 
@@ -76,6 +103,46 @@ final class InGameRecents {
 }
 
 extension GameScene {
+
+    /// Everything running right now, as recents indices - the pause menu's snapshot.
+    ///
+    /// The tray bars answer for the original power-ups: a lit bar means its *family* is
+    /// running (each slot covers a good-and-bad pair), and the family member seen most
+    /// recently is the one that was caught. Mayhem's own power-ups answer precisely,
+    /// through their clocks.
+    func activeRecentPowerUpIndices() -> Set<Int> {
+        var active: Set<Int> = []
+
+        let families: [[Int]] = [[2, 3], [4, 5], [15, 16], [6], [7], [20, 21], [22],
+                                 [26, 27]]
+        // Tray slot order: ball speed, paddle size, hidden bricks, sticky, gravity,
+        // Giga/Undestructi-Ball, lasers, ball size - the same order iconArray holds
+        for (slot, bar) in iconTimerArray.enumerated()
+        where bar.isHidden == false && bar.xScale > 0.001
+            && families.indices.contains(slot) {
+            if let seen = InGameRecents.shared.powerUpIndices
+                .first(where: { families[slot].contains($0) }) {
+                active.insert(seen)
+            } else if families[slot].count == 1 {
+                active.insert(families[slot][0])
+            }
+        }
+
+        guard gameMode == .endlessII else { return active }
+        let clocks: [(EndlessIIClock, Int)] = [
+            (endlessIIAimedStickyClock, 31), (endlessIIMagnetismClock, 32),
+            (endlessIIPortalPaddleClock, 33), (endlessIIPaddleHaloClock, 34),
+            (endlessIIBallSteeringClock, 35), (endlessIIInertPaddleClock, 36),
+            (endlessIIFlippedAngleClock, 37), (endlessIIReversedControlsClock, 38),
+            (endlessIIWreckingBallClock, 42), (endlessIIAuraClock, 43),
+            (endlessIIDescentClock, 45), (endlessIIAutoAimClock, 46),
+            (endlessIIWrapAroundClock, 47),
+        ]
+        for (clock, index) in clocks where clock.isRunning { active.insert(index) }
+        if endlessIITrajectoryRemaining > 0 { active.insert(29) }
+        if endlessIILandingRemaining > 0 { active.insert(30) }
+        return active
+    }
 
     /// Tells the recents what kind of brick was just struck, in the catalogue's names.
     ///

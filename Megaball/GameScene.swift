@@ -1343,7 +1343,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			iconArray[index].size.height = iconSize
 			iconArray[index].texture = iconLockedTexture
 			iconArray[index].position.x = -gameWidth/2 + iconSize + (iconSize+iconSpacing)*CGFloat(index)
-			iconArray[index].position.y = powerUpTray.position.y + labelSpacing/2
+			iconArray[index].position.y = powerUpTray.position.y
+			// Centred in the tray. The old offset upward left room for the bar beneath
+			// each icon - the ring took the bar's place, and icons still sitting high
+			// read as skewed (play-test round 6)
 			iconArray[index].zPosition = 3
 			iconArray[index].name = PowerIconCategoryName
 			iconEmptyTimerArray[index].size.width = iconSize
@@ -3240,13 +3243,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
 	func applyPowerUp (node: SKNode) {
-		
+
 		let sprite = node as! SKSpriteNode
-		
+
 		if ballLostBool {
 			return
 		}
 		// Don't apply the power up if the ball has been lost
+
+		if let texture = sprite.texture,
+		   let index = powerUpTextureArray.firstIndex(of: texture) {
+			InGameRecents.shared.collectedPowerUp(index)
+		}
+		// The recents' collected note (play-test request) - by texture, because this is
+		// the one funnel every collection passes through and the texture is the identity
+		// the switch below reads too
 		
 		if hapticsSetting {
 			rigidHaptic.impactOccurred()
@@ -5034,9 +5045,13 @@ laserTimer?.invalidate()
 	// changes, so it is safe to call again whenever the bounds or safe area change.
 
 	func showPauseMenu(sender: String) {
-		
+
 		self.removeAction(forKey: "gameTimer")
 		// Stop the level timer
+
+		InGameRecents.shared.activePowerUpIndices = activeRecentPowerUpIndices()
+		// The snapshot the reference pages' ACTIVE notes read - taken as the menu goes
+		// up, because "currently active" is a question about this moment
 		
 		readyCountdown.isHidden = true
 		goCountdown.isHidden = true

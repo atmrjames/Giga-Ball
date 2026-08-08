@@ -36,29 +36,30 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var senderID: Int?
     var navigatedFrom: String = "MainMenu"
 
-    /// The power-up page's rows, in the order they are shown.
-    ///
-    /// From the menus this is the identity - the page reads as it always has. From the
-    /// pause menu it leads with what this run has seen, most recent first, and the
-    /// unseen follow alphabetically (§12.0's play-test request): mid-run, the question
-    /// is "what was that", and the answer is almost always the thing at the top.
-    lazy var powerUpRowOrder: [Int] = {
-        let count = totalStatsArray[0].powerUpUnlockedArray.count
-        guard navigatedFrom == "PauseMenu", senderID == 2 else {
-            return Array(0..<count)
-        }
-        let setup = LevelPackSetup()
-        return InGameRecents.rowOrder(
-            rowCount: count,
-            recents: InGameRecents.shared.powerUpIndices,
-            powerUpIndex: { setup.powerUpCorrectOrderArray[$0] },
-            name: { setup.powerUpNameArray[setup.powerUpCorrectOrderArray[$0]] })
-    }()
+    /// Whether the power-ups page carries the extra Recent section (play-test rounds 4
+    /// and 6): opened from the pause menu, this run's sightings sit in their own section
+    /// above the standard list - which keeps its ordinary order below, so the page is
+    /// the reference it always was with the answer to "what was that" on top. No
+    /// sightings, no section.
+    var showsRecentsSection: Bool {
+        navigatedFrom == "PauseMenu" && senderID == 2
+            && InGameRecents.shared.powerUpIndices.isEmpty == false
+    }
 
-    /// The row the table's index path actually means, through the display order.
-    func powerUpRow(_ indexPath: IndexPath) -> Int {
-        powerUpRowOrder.indices.contains(indexPath.row)
-            ? powerUpRowOrder[indexPath.row] : indexPath.row
+    /// The power-up a row means. Recent rows carry indices directly, in recency order;
+    /// the standard section goes through the display-order array as ever.
+    func powerUpIndex(at indexPath: IndexPath) -> Int {
+        if showsRecentsSection, indexPath.section == 0,
+           InGameRecents.shared.powerUpIndices.indices.contains(indexPath.row) {
+            return InGameRecents.shared.powerUpIndices[indexPath.row]
+        }
+        return LevelPackSetup().powerUpCorrectOrderArray[indexPath.row]
+    }
+
+    /// Whether this row is in the Recent section, which is the only place the
+    /// collected/missed/active note appears.
+    func isRecentRow(_ indexPath: IndexPath) -> Bool {
+        showsRecentsSection && indexPath.section == 0
     }
     // Key properties
     
@@ -133,6 +134,24 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
 
+    func numberOfSections(in tableView: UITableView) -> Int {
+        showsRecentsSection ? 2 : 1
+    }
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        guard showsRecentsSection else { return nil }
+        let label = UILabel()
+        label.text = section == 0 ? "  RECENT THIS RUN" : "  ALL POWER-UPS"
+        label.font = .boldSystemFont(ofSize: 13)
+        label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        return label
+        // The same header treatment the bricks page gives its sections
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        showsRecentsSection ? 30 : 0
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if senderID == 0 {
         // App icons
@@ -142,6 +161,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             return totalStatsArray[0].themeUnlockedArray.count
         } else if senderID == 2 {
         // Power-ups
+            if showsRecentsSection, section == 0 {
+                return InGameRecents.shared.powerUpIndices.count
+            }
             return totalStatsArray[0].powerUpUnlockedArray.count
         } else if senderID == 3 {
         // Achievements
@@ -252,13 +274,22 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         if senderID == 2 {
         // Power-ups
-            let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[powerUpRow(indexPath)]
+            let powerUpIndexCorrection = powerUpIndex(at: indexPath)
 
             cell.iconImage.image = LevelPackSetup().powerUpImageArray[powerUpIndexCorrection]
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.settingDescription.text = LevelPackSetup().powerUpNameArray[powerUpIndexCorrection]
             cell.centreLabel.text = ""
             cell.settingState.text = ""
+
+            if isRecentRow(indexPath) {
+                cell.settingState.text = InGameRecents.shared
+                    .statusNote(for: powerUpIndexCorrection)
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                // What became of it (play-test request): caught, fell past, or running
+                // right now - ACTIVE reads from the snapshot the scene took as the
+                // pause menu went up
+            }
                         
             if totalStatsArray[0].powerupsGenerated.count < powerUpIndexCorrection-1 {
                 totalStatsArray[0].powerupsGenerated.append(0)
@@ -372,7 +403,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         if senderID == 2 {
         // Power-ups
-            let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[powerUpRow(indexPath)]
+            let powerUpIndexCorrection = powerUpIndex(at: indexPath)
 
             if totalStatsArray[0].powerUpUnlockedArray[powerUpIndexCorrection] {
                 hideAnimate()
