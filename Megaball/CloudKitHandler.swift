@@ -31,6 +31,21 @@ final class CloudKitHandler: NSObject {
         return cloud + local[cloud.count...]
     }
 
+    /// The daily records travel through the key-value store as one encoded blob rather
+    /// than as parallel arrays, because their merge is by *date*, not by index - two
+    /// devices that each played different days have records the other has never heard
+    /// of, and index-wise merging would pair unrelated days. `DailyChallengeRecord.merged`
+    /// is the arbiter; these two are just the wire format.
+    static func decodedDailyRecords(_ data: Data?) -> [DailyChallengeRecord] {
+        guard let data else { return [] }
+        return (try? PropertyListDecoder().decode([DailyChallengeRecord].self, from: data))
+            ?? []
+    }
+
+    static func encodedDailyRecords(_ records: [DailyChallengeRecord]) -> Data? {
+        try? PropertyListEncoder().encode(records)
+    }
+
     typealias CompletionBlock = (Error?) -> Void
     static let helper = CloudKitHandler()
 
@@ -165,7 +180,7 @@ final class CloudKitHandler: NSObject {
         if appOpenCount > appOpenCountCloud {
             iCloudStore.set(appOpenCount, forKey: "appOpenCount")
         }
-        
+
         firstPause = defaults.bool(forKey: "firstPause")
         let firstPauseCloud = iCloudStore.bool(forKey: "firstPause")
         if firstPause == false || firstPause != firstPauseCloud {
@@ -173,7 +188,17 @@ final class CloudKitHandler: NSObject {
         } else {
             iCloudStore.set(true, forKey: "firstPause")
         }
-        
+
+        let dailyRecordsMergedUp = DailyChallengeRecord.merged(
+            totalStatsArray[0].dailyRecords,
+            CloudKitHandler.decodedDailyRecords(iCloudStore.data(forKey: "dailyChallengeRecords")))
+        if let encodedDaily = CloudKitHandler.encodedDailyRecords(dailyRecordsMergedUp) {
+            iCloudStore.set(encodedDaily, forKey: "dailyChallengeRecords")
+        }
+        // The daily's per-day records (daily spec §10). Carried in iCloud partly for the
+        // usual reason and partly for honesty: the current day's attempt flag surviving
+        // a delete-and-reinstall is what keeps first-attempt-only meaning something
+
         cumulativeScore = totalStatsArray[0].cumulativeScore
         let cumulativeScoreCloud = Int(iCloudStore.longLong(forKey: "cumulativeScore"))
         if cumulativeScore! > cumulativeScoreCloud {
@@ -632,6 +657,13 @@ final class CloudKitHandler: NSObject {
         if appOpenCountCloud > appOpenCount {
             self.defaults.set(appOpenCountCloud, forKey: "appOpenCount")
         }
+
+        totalStatsArray[0].dailyChallengeRecords = DailyChallengeRecord.merged(
+            totalStatsArray[0].dailyRecords,
+            CloudKitHandler.decodedDailyRecords(iCloudStore.data(forKey: "dailyChallengeRecords")))
+        // The daily records come down the same way they went up: merged by date, so a
+        // day played on another device lands here without disturbing days played on this
+        // one - and the attempt flag arrives with it
         
         firstPause = defaults.bool(forKey: "firstPause")
         let firstPauseCloud = iCloudStore.bool(forKey: "firstPause")
@@ -1109,6 +1141,12 @@ final class CloudKitHandler: NSObject {
         iCloudStore.set(pack10LevelHighScores, forKey: "pack10LevelHighScores")
         iCloudStore.set(pack11LevelHighScores, forKey: "pack11LevelHighScores")
 
+        if let encodedDaily = CloudKitHandler.encodedDailyRecords(totalStatsArray[0].dailyRecords) {
+            iCloudStore.set(encodedDaily, forKey: "dailyChallengeRecords")
+        }
+        // Wholesale means the daily records too: a reset clears the daily history with
+        // the rest, and merging the cloud's old records back would resurrect it
+
         // iCloud now holds this device's state, so it holds its generation too.
         // Leaving the cloud behind would make every later sync push wholesale
         // again and never merge another device's play.
@@ -1287,6 +1325,10 @@ final class CloudKitHandler: NSObject {
         if self.pack11LevelHighScores != nil {
             totalStatsArray[0].pack11LevelHighScores = pack11LevelHighScores!
         }
+
+        totalStatsArray[0].dailyChallengeRecords =
+            CloudKitHandler.decodedDailyRecords(iCloudStore.data(forKey: "dailyChallengeRecords"))
+        // Adopting a reset adopts its daily history too, lower or absent as it may be
 
         // Having taken the cloud state whole, this device is caught up. Without
         // recording that, every later sync would adopt it again and discard

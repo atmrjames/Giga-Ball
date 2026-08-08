@@ -343,6 +343,39 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             levelNumberLabel.text = "Level \(self.levelNumberCorrected) of \(self.numberOfPackLevels)"
             levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
         }
+
+        if let challenge = DailyChallengeSession.shared.active {
+            packNameLabel.text = "Daily Challenge — "
+                + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey)
+                    .capitalized
+            levelNumberLabel.text = challenge.mode == .classic
+                ? LevelPackSetup().levelNameArray[levelNumber]
+                : challenge.mode.name
+            // Play-test request: the splash into the game says Daily Challenge, the
+            // date, the mode, and the twists with their icons - the last look at the
+            // rules before they apply
+
+            if challenge.twists.isEmpty {
+                levelNameLabel.text = ""
+            } else {
+                let line = NSMutableAttributedString()
+                for (index, twist) in challenge.twists.enumerated() {
+                    if index > 0 { line.append(NSAttributedString(string: "   ")) }
+                    line.append(twist.titleLine(
+                        font: levelNameLabel.font ?? .boldSystemFont(ofSize: 17),
+                        colour: levelNameLabel.textColor ?? .white))
+                }
+                let paragraph = NSMutableParagraphStyle()
+                paragraph.alignment = .center
+                line.addAttribute(.paragraphStyle, value: paragraph,
+                                  range: NSRange(location: 0, length: line.length))
+                levelNameLabel.adjustsFontSizeToFitWidth = true
+                levelNameLabel.attributedText = line
+                // One line, side by side: the nib sizes this label for a level name, and
+                // a second stacked line fell outside it - the play test's screenshot
+                // showed one twist where the day had two
+            }
+        }
     }
     
 //    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {

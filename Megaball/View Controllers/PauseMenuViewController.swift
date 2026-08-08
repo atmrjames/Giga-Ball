@@ -64,6 +64,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // through outlets and constraints there, and adding one more by hand risks the
     // layout of a screen that is otherwise working
 
+    let dailySummaryLabel = UILabel()
+    // The day's rules at a glance while a daily is paused (play-test request, and §6's
+    // "the pause menu shows a compact twist summary"): the day, then each twist by icon
+    // and name - names only, because mid-run is when someone forgets what Flipped Angle
+    // means, not when they want to read about it
+
+    var isDailyChallenge: Bool { DailyChallengeSession.shared.isActive }
+    // Asked of the session, which outlives the scene until the menus return
+
+    var dailyRank: Int?
+    // Where the posted run stands on today's board, once Game Center has answered
+
     @IBOutlet var levelTitleLowerConstraint: NSLayoutConstraint!
     @IBOutlet var levelNameLabelNormalConstraint: NSLayoutConstraint!
     
@@ -127,6 +139,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         collectionViewLayout()
         buttonCollectionView.reloadData()
         showAnimate()
+
+        if isDailyChallenge, sender != "Pause", DailyChallengeSession.shared.lastRunPosted {
+            GameCenterHandler().loadDailyRank { [weak self] rank in
+                guard let self, let rank else { return }
+                self.dailyRank = rank
+                self.updateDailySummary()
+            }
+            // The placing joins the summary when Game Center answers; a screen already
+            // dismissed just ignores it
+        }
     }
     
     func setUpLivesLabel() {
@@ -137,16 +159,46 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         livesLabel.isHidden = true
         containterView.addSubview(livesLabel)
 
+        dailySummaryLabel.translatesAutoresizingMaskIntoConstraints = false
+        dailySummaryLabel.textAlignment = .center
+        dailySummaryLabel.numberOfLines = 0
+        dailySummaryLabel.isHidden = true
+        containterView.addSubview(dailySummaryLabel)
+
         NSLayoutConstraint.activate([
             livesLabel.centerXAnchor.constraint(equalTo: highscoreLabel.centerXAnchor),
-            livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16)
+            livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16),
+            dailySummaryLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            dailySummaryLabel.topAnchor.constraint(equalTo: livesLabel.bottomAnchor,
+                                                   constant: 18),
+            dailySummaryLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
+                                                        containterView.leadingAnchor,
+                                                       constant: 30),
+            dailySummaryLabel.trailingAnchor.constraint(lessThanOrEqualTo:
+                                                        containterView.trailingAnchor,
+                                                        constant: -30),
         ])
+        // The daily summary hangs under the lives line - a hidden label still holds its
+        // position, so the summary sits in the same place whether lives are shown or not
     }
     // Matches the "Previous Highscore" title's font and colour, so it reads as another
     // line of the same block rather than something bolted on
 
     func updateLivesLabel() {
-        guard sender == "Pause", !endlessMode else {
+        guard sender == "Pause" else {
+            livesLabel.isHidden = true
+            return
+        }
+        if isDailyChallenge {
+            let balls = livesRemaining + 1
+            livesLabel.isHidden = false
+            livesLabel.text = balls == 1 ? "Last ball" : "\(balls) balls left"
+            // The daily counts balls, not the rack: the one in play plus the reserves.
+            // "1 life left" while holding the only ball read as one more to come - the
+            // play test counted lives the twist did not grant
+            return
+        }
+        guard !endlessMode else {
             livesLabel.isHidden = true
             return
         }
@@ -155,6 +207,57 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     // Only while paused mid-game. On game over the count is zero and saying so is just
     // rubbing it in, and endless mode has a single life and no counter anywhere else
+
+    /// The compact daily block: the day, then each twist by icon and name.
+    func updateDailySummary() {
+        guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
+            dailySummaryLabel.isHidden = true
+            return
+        }
+        dailySummaryLabel.isHidden = false
+
+        let summary = NSMutableAttributedString(
+            string: "DAILY CHALLENGE — "
+                + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey),
+            attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
+                         .foregroundColor: UIColor(white: 1, alpha: 0.55)])
+
+        for twist in challenge.twists {
+            summary.append(NSAttributedString(string: "\n"))
+            summary.append(twist.titleLine(font: .boldSystemFont(ofSize: 14),
+                                           colour: .white))
+        }
+        if challenge.twists.isEmpty {
+            summary.append(NSAttributedString(
+                string: "\nNo twists - a pure run",
+                attributes: [.font: UIFont.systemFont(ofSize: 14),
+                             .foregroundColor: UIColor.white]))
+        }
+
+        if sender != "Pause" {
+            let result: String
+            if DailyChallengeSession.shared.lastRunPosted {
+                result = dailyRank.map { "Posted — #\($0) on today's board" }
+                    ?? "Posted to today's board"
+                // The placing arrives asynchronously when Game Center answers; until
+                // then - or when it cannot answer at all (signed out, offline, board
+                // not yet in App Store Connect) - the post alone is the news
+            } else {
+                result = "Practice run — practice never posts"
+            }
+            summary.append(NSAttributedString(
+                string: "\n\n\(result)",
+                attributes: [.font: UIFont.systemFont(ofSize: 12),
+                             .foregroundColor: UIColor(white: 1, alpha: 0.55)]))
+        }
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.lineSpacing = 4
+        summary.addAttribute(.paragraphStyle, value: paragraph,
+                             range: NSRange(location: 0, length: summary.length))
+        dailySummaryLabel.attributedText = summary
+    }
 
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
@@ -204,6 +307,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         case 2:
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+            } else if isDailyChallenge {
+                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                // No play-again on a daily's game over (play-test rule): the scoring
+                // attempt is spent, and replaying from here would blur what phase 3's
+                // first-attempt tracking is about to make precise. Another go is a
+                // deliberate trip back through the briefing screen, labelled practice
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonRestart.png")
             }
@@ -216,7 +325,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
         }
-        
+
         return cell
     }
     
@@ -239,9 +348,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if self.sender == "Pause" {
                 hideAnimate()
                 moveToSettings()
-            } else {
+            } else if isDailyChallenge == false {
                 removeAnimate(nextAction: .restartGameNotificiation)
             }
+            // A daily's game over has no restart - the slot is a null button there
         }
         
         collectionView.deselectItem(at: indexPath, animated: true)
@@ -271,12 +381,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                         cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     }
                 case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     if self.sender == "Pause" {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
                         cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+                    } else if self.isDailyChallenge {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     } else {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
                         cell.iconImage.image = UIImage(named:"ButtonRestartHighlighted.png")
                     }
                 default:
@@ -286,7 +401,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             }
         }
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
         
         if let cell = self.buttonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
@@ -312,12 +427,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                         cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     }
                 case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     if self.sender == "Pause" {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
                         cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                    } else if self.isDailyChallenge {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     } else {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
                         cell.iconImage.image = UIImage(named:"ButtonRestart.png")
                     }
                 default:
@@ -366,6 +486,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     
     func updateLabels() {
         updateLivesLabel()
+        updateDailySummary()
 
         newItemsLabel.isHidden = true
         if sender == "Pause" {
@@ -405,20 +526,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             // Only at the end of a run. Pausing mid-run to watch your own height counted back
             // to you would be telling you something you already know
             highscoreLabelTitle.text = "Best"
-            
-            var heightBest = 0
-            if runs.count > 0 {
-                heightBest = runs.max()!
-                highscoreLabel.text = "\(heightBest)m"
-            }
-            
-            if sender == "Pause" {
+
+            if isDailyChallenge {
+                highscoreLabelTitle.text = ""
+                highscoreLabel.text = ""
+                // The endless modes' best heights are a different game's numbers (play-test
+                // note): a daily is measured against today's board, not against a best set
+                // under different rules. §9 keeps the daily out of those arrays; this keeps
+                // their figures out of the daily
+            } else if sender == "Pause" {
+                let heightBest = runs.max() ?? 0
                 if height > heightBest {
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
                 }
                 highscoreLabel.text = "\(heightBest)m"
             } else {
+                let heightBest = runs.max() ?? 0
+                highscoreLabel.text = "\(heightBest)m"
                 if runs.count <= 1 {
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
@@ -451,13 +576,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 } else {
                     levelNameLabelNormalConstraint.isActive = false
                     levelTitleLowerConstraint.isActive = true
-                    
-                    packNameLabel.text = "Single Level Mode"
+
+                    packNameLabel.text = isDailyChallenge ? "Daily Challenge"
+                                                          : "Single Level Mode"
                     levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
                     levelNameLabel.text = ""
                 }
             }
-            
+
             scoreLabelTitle.text = "Score"
             scoreLabel.text = "\(score)"
             if sender != "Pause" && numberOfLevels <= 1 {
@@ -467,13 +593,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             // carried into the next one, so counting it up would be counting up a running
             // total that has not finished running - where a single level is the whole result,
             // the same as a run's height is
-            highscoreLabelTitle.text = "Highscore"
-            // Get current highscore from level or pack
-            
-            highscoreLabel.text = String(previousHighscore)
-            if score > previousHighscore {
-                scoreLabelTitle.text = "New Highscore"
-                highscoreLabelTitle.text = "Previous Highscore"
+
+            if isDailyChallenge {
+                highscoreLabelTitle.text = ""
+                highscoreLabel.text = ""
+                // The level's campaign high score belongs to the campaign - a daily on
+                // that level is a different game with today's board to answer to
+            } else {
+                highscoreLabelTitle.text = "Highscore"
+                // Get current highscore from level or pack
+
+                highscoreLabel.text = String(previousHighscore)
+                if score > previousHighscore {
+                    scoreLabelTitle.text = "New Highscore"
+                    highscoreLabelTitle.text = "Previous Highscore"
+                }
             }
         }
         

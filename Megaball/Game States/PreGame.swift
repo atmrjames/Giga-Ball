@@ -81,12 +81,14 @@ class PreGame: GKState {
         
         scene.totalScore = 0
         if scene.startLevelNumber == 0 {
-            scene.numberOfLives = 0
+            scene.numberOfLives = scene.dailyStartingLives ?? 0
+            // The day's word first (Spare Balls racks reserves in an endless daily),
+            // the mode's own empty rack otherwise
         } else {
             scene.numberOfLives = scene.dailyStartingLives ?? 3
             // The day's word first, the mode's own three otherwise
         }
-        // 0 lives for endless mode, 3 for all other levels
+        // The count is the rack of reserve balls - the ball on the paddle is on top of it
         scene.multiplier = Scoring.multiplierBase
         scene.gameoverStatus = false
         

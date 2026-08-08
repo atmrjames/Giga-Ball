@@ -27,7 +27,18 @@ class SettingsTableViewCell: UITableViewCell {
     
     
     var blurViewLayer: UIVisualEffectView?
-    
+
+    /// The nib's pin holding the tick against the card's trailing edge.
+    ///
+    /// Found once, because deactivating a constraint removes it from the view's list and
+    /// it could never be found again. The pack screen puts a play button on that edge and
+    /// sits the tick beside it instead - and puts this back when a reused cell has no
+    /// button, or the tick would be left with no horizontal position at all.
+    lazy var tickTrailingEdgeConstraint: NSLayoutConstraint? = cellView2.constraints.first {
+        $0.firstAttribute == .trailing && $0.secondItem === tickImage
+            && $0.secondAttribute == .trailing
+    }
+
     override func awakeFromNib() {
         super.awakeFromNib()
         

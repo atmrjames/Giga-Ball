@@ -269,9 +269,18 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     /// The straight-in button on every pack row: skip the level list, play the pack.
-    func installPackPlayButton(on cell: UITableViewCell, unlocked: Bool) {
+    func installPackPlayButton(on cell: SettingsTableViewCell, unlocked: Bool) {
+        cell.contentView.isUserInteractionEnabled = true
+        // The settings cell's nib switches its contentView's interaction off - the settings
+        // screens never needed it - so a button added here was drawn but never tappable.
+        // This was the play-test's "play button not working when clicked"
         cell.contentView.viewWithTag(9901)?.removeFromSuperview()
-        guard unlocked else { return }
+        guard unlocked else {
+            cell.tickTrailingEdgeConstraint?.isActive = true
+            // A reused cell may have handed the trailing edge to a play button that has
+            // just been removed - the tick takes its edge back
+            return
+        }
 
         let play = UIButton(type: .system)
         play.tag = 9901
@@ -283,13 +292,22 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         play.translatesAutoresizingMaskIntoConstraints = false
         play.addTarget(self, action: #selector(packPlayTapped(_:)), for: .touchUpInside)
         cell.contentView.addSubview(play)
+
+        cell.tickTrailingEdgeConstraint?.isActive = false
         NSLayoutConstraint.activate([
-            play.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor,
-                                           constant: -18),
-            play.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            play.trailingAnchor.constraint(equalTo: cell.cellView2.trailingAnchor,
+                                           constant: -8),
+            play.centerYAnchor.constraint(equalTo: cell.cellView2.centerYAnchor),
             play.widthAnchor.constraint(equalToConstant: 44),
             play.heightAnchor.constraint(equalToConstant: 44),
+            cell.tickImage.trailingAnchor.constraint(equalTo: play.leadingAnchor,
+                                                     constant: -2),
         ])
+        // Centred on the card rather than the contentView - the card leaves a 20pt gap
+        // below itself, so the contentView's centre is 10pt below the card's. And the
+        // completed-pack tick moves in beside the button rather than sharing its edge,
+        // which is the overlap the play-test screenshotted. The tick constraint is
+        // removed with the button on reuse, so the nib's own pin can come back
     }
 
     @objc func packPlayTapped(_ sender: UIButton) {

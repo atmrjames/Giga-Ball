@@ -165,6 +165,198 @@ final class DailyChallengeTests: XCTestCase {
                         DailyChallengeGenerator.challenge(forKey: "2026-08-11")])
     }
 
+    // MARK: - Attempts, records and boards (phase 3)
+
+    func testRecordsMergeByDateTakingTheMost() {
+        // The sync rule: union by date, posted OR-ed, everything else take-the-higher -
+        // two devices that each played different days must both keep everything.
+        let here = [DailyChallengeRecord(dateKey: "2026-08-01", firstAttemptScore: 100,
+                                         posted: true, bestPracticeScore: 50,
+                                         attemptCount: 2, postedNormalisedScore: 100),
+                    DailyChallengeRecord(dateKey: "2026-08-02", firstAttemptScore: 10,
+                                         posted: false, bestPracticeScore: 0,
+                                         attemptCount: 1, postedNormalisedScore: 0)]
+        let there = [DailyChallengeRecord(dateKey: "2026-08-02", firstAttemptScore: 10,
+                                          posted: true, bestPracticeScore: 90,
+                                          attemptCount: 3, postedNormalisedScore: 1000),
+                     DailyChallengeRecord(dateKey: "2026-08-03", firstAttemptScore: 7,
+                                          posted: true, bestPracticeScore: 0,
+                                          attemptCount: 1, postedNormalisedScore: 700)]
+
+        let merged = DailyChallengeRecord.merged(here, there)
+        XCTAssertEqual(merged.map(\.dateKey), ["2026-08-01", "2026-08-02", "2026-08-03"])
+
+        let second = merged[1]
+        XCTAssertTrue(second.posted, "posted on either device is posted")
+        XCTAssertEqual(second.bestPracticeScore, 90)
+        XCTAssertEqual(second.attemptCount, 3)
+        XCTAssertEqual(second.postedNormalisedScore, 1000)
+    }
+
+    func testRecordsSurviveTheWireFormat() {
+        let records = [DailyChallengeRecord(dateKey: "2026-08-08", firstAttemptScore: 42,
+                                            posted: true, bestPracticeScore: 60,
+                                            attemptCount: 4, postedNormalisedScore: 4200)]
+        let decoded = CloudKitHandler.decodedDailyRecords(
+            CloudKitHandler.encodedDailyRecords(records))
+        XCTAssertEqual(decoded, records)
+        XCTAssertEqual(CloudKitHandler.decodedDailyRecords(nil), [],
+                       "a store that has never heard of the daily is an empty history")
+    }
+
+    func testTheOverallBoardNormalisesHeightsNotScores() {
+        // §7: Classic posts its score as it stands, an endless height rides ×100 so no
+        // one mode dominates the running total.
+        XCTAssertEqual(DailyChallengeBoards.normalised(score: 4200, mode: .classic), 4200)
+        XCTAssertEqual(DailyChallengeBoards.normalised(score: 34, mode: .endless), 3400)
+        XCTAssertEqual(DailyChallengeBoards.normalised(score: 34, mode: .endlessII), 3400)
+    }
+
+    func testTheTotalPostedScoreIsDerivedFromTheRecords() {
+        let stats = TotalStats()
+        stats.upsertDailyRecord(DailyChallengeRecord(dateKey: "2026-08-07",
+                                                     firstAttemptScore: 10, posted: true,
+                                                     bestPracticeScore: 0, attemptCount: 1,
+                                                     postedNormalisedScore: 1000))
+        stats.upsertDailyRecord(DailyChallengeRecord(dateKey: "2026-08-08",
+                                                     firstAttemptScore: 500, posted: true,
+                                                     bestPracticeScore: 0, attemptCount: 1,
+                                                     postedNormalisedScore: 500))
+        XCTAssertEqual(stats.dailyTotalPostedScore, 1500)
+
+        var replaced = stats.dailyRecord(forKey: "2026-08-08")!
+        replaced.postedNormalisedScore = 900
+        stats.upsertDailyRecord(replaced)
+        XCTAssertEqual(stats.dailyRecords.count, 2, "one record per date, always")
+        XCTAssertEqual(stats.dailyTotalPostedScore, 1900)
+    }
+
+    func testThePostingLineSaysWhatTheRunWillBe() {
+        // §6: whether this attempt posts or is practice, stated before the run starts.
+        XCTAssertEqual(
+            DailyChallengePosting.statusLine(record: nil, isToday: true, mode: .classic,
+                                             gameCenterOn: true),
+            "FIRST ATTEMPT — THIS RUN POSTS TO TODAY'S BOARD")
+        XCTAssertEqual(
+            DailyChallengePosting.statusLine(record: nil, isToday: true, mode: .classic,
+                                             gameCenterOn: false),
+            "FIRST ATTEMPT — SIGN IN TO GAME CENTER TO POST TODAY'S SCORE")
+        XCTAssertEqual(
+            DailyChallengePosting.statusLine(record: nil, isToday: false, mode: .classic,
+                                             gameCenterOn: true),
+            "PRACTICE — PAST CHALLENGES NEVER POST")
+
+        var spent = DailyChallengeRecord(dateKey: "t")
+        spent.attemptCount = 1
+        XCTAssertEqual(
+            DailyChallengePosting.statusLine(record: spent, isToday: true, mode: .classic,
+                                             gameCenterOn: true),
+            "ATTEMPT SPENT — PRACTICE FROM HERE",
+            "a force-quit or midnight-crossed attempt reads as spent, not as posted")
+
+        spent.posted = true
+        spent.firstAttemptScore = 34
+        XCTAssertEqual(
+            DailyChallengePosting.statusLine(record: spent, isToday: true, mode: .endless,
+                                             gameCenterOn: true),
+            "TODAY'S SCORE: 34m — PRACTICE FROM HERE",
+            "heights wear their metres")
+    }
+
+    func testTheScoringAttemptPostsAndPracticeOnlyRaisesThePracticeBest() {
+        let session = DailyChallengeSession.shared
+        let before = session.testDayOffset
+        defer { session.testDayOffset = before; session.active = nil }
+        session.testDayOffset = 0
+
+        let challenge = DailyChallenge(dateKey: session.todayKey, mode: .endlessII,
+                                       classicLevel: nil, twists: [])
+        let scene = dailyScene(challenge)
+        scene.endlessMode = true
+        scene.endlessHeight = 34
+
+        var spent = DailyChallengeRecord(dateKey: session.todayKey)
+        spent.attemptCount = 1
+        scene.totalStatsArray[0].upsertDailyRecord(spent)
+        // What the briefing screen wrote when play was pressed
+
+        session.isScoringAttempt = true
+        scene.recordDailyResult()
+
+        let posted = scene.totalStatsArray[0].dailyRecord(forKey: session.todayKey)!
+        XCTAssertEqual(posted.firstAttemptScore, 34)
+        XCTAssertTrue(posted.posted)
+        XCTAssertEqual(posted.postedNormalisedScore, 3400)
+        XCTAssertTrue(session.lastRunPosted)
+        XCTAssertFalse(session.isScoringAttempt, "the attempt is settled exactly once")
+
+        scene.endlessHeight = 60
+        scene.recordDailyResult()
+        let practised = scene.totalStatsArray[0].dailyRecord(forKey: session.todayKey)!
+        XCTAssertEqual(practised.firstAttemptScore, 34,
+                       "a better practice run never touches the posted score")
+        XCTAssertEqual(practised.bestPracticeScore, 60)
+        XCTAssertFalse(session.lastRunPosted)
+    }
+
+    func testAnAttemptThatCrossedMidnightPostsNothing() {
+        // §1: finished and submitted before the deadline, not just started. The attempt
+        // is spent - the briefing said so going in - but nothing goes to the board.
+        let session = DailyChallengeSession.shared
+        defer { session.active = nil }
+
+        let challenge = DailyChallenge(dateKey: "2000-01-01", mode: .endlessII,
+                                       classicLevel: nil, twists: [])
+        let scene = dailyScene(challenge)
+        scene.endlessMode = true
+        scene.endlessHeight = 50
+
+        session.isScoringAttempt = true
+        scene.recordDailyResult()
+
+        let record = scene.totalStatsArray[0].dailyRecord(forKey: "2000-01-01")!
+        XCTAssertEqual(record.firstAttemptScore, 50, "the score is still the player's")
+        XCTAssertFalse(record.posted)
+        XCTAssertEqual(record.postedNormalisedScore, 0)
+        XCTAssertFalse(session.lastRunPosted)
+    }
+
+    // MARK: - The briefing screen's day browsing
+
+    func testTodayAndYesterdaySaySoAndOlderDaysGiveTheirDate() {
+        // Play test: "the date for today, yesterday should just say today and yesterday.
+        // Prior days should have the date as it is."
+        let session = DailyChallengeSession.shared
+        let before = session.testDayOffset
+        defer { session.testDayOffset = before }
+        session.testDayOffset = 0
+
+        XCTAssertEqual(session.displayName(forKey: session.todayKey), "TODAY")
+
+        let yesterday = DailyDay.utcCalendar.date(byAdding: .day, value: -1,
+                                                  to: session.today)!
+        XCTAssertEqual(session.displayName(forKey: DailyDay.key(for: yesterday)),
+                       "YESTERDAY")
+
+        let older = DailyDay.utcCalendar.date(byAdding: .day, value: -3,
+                                              to: session.today)!
+        let name = session.displayName(forKey: DailyDay.key(for: older))
+        let year = DailyDay.utcCalendar.component(.year, from: older)
+        XCTAssertTrue(name.contains(String(year)),
+                      "an older day reads as its date, got \(name)")
+    }
+
+    func testDayBrowsingNeverPassesTodayAndStopsAtTheFirstDaily() {
+        // Play test: swipe back through all the available daily challenges, never
+        // further forward than the current day.
+        let screen = DailyChallengeViewController()
+        XCTAssertFalse(screen.canGoForward, "today is the newest day there is")
+
+        XCTAssertGreaterThanOrEqual(screen.earliestKey, DailyTwist.firstActivationKey)
+        // The floor is the first daily or thirty days, whichever is nearer - either way
+        // there is no browsing to before the pool existed
+    }
+
     // MARK: - The session and the test clock
 
     func testTheTestClockMovesTheDay() {
@@ -197,16 +389,97 @@ final class DailyChallengeTests: XCTestCase {
     }
 
     func testTheLivesTwistsSpeak() {
+        // Play test: "For the single life classic mode twist, I actually had 2 lives, as
+        // one ball starts on the paddle - I also had a ball in reserve. There should just
+        // be the ball on the paddle in this case - no balls in reserve." The scene's
+        // number is the rack of reserves, so One Life is an empty rack.
         let one = dailyScene(DailyChallenge(dateKey: "t", mode: .classic, classicLevel: 1,
                                             twists: [.oneLife]))
-        XCTAssertEqual(one.dailyStartingLives, 1)
+        XCTAssertEqual(one.dailyStartingLives, 0, "one ball total - none in reserve")
 
         DailyChallengeSession.shared.active = DailyChallenge(
             dateKey: "t", mode: .classic, classicLevel: 1, twists: [.loaded])
-        XCTAssertEqual(one.dailyStartingLives, 5)
+        XCTAssertEqual(one.dailyStartingLives, 4, "five balls total - four racked")
+
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [.spareBalls])
+        XCTAssertEqual(one.dailyStartingLives, 2,
+                       "the endless lives twist: two spares behind the ball in play")
 
         DailyChallengeSession.shared.active = nil
         XCTAssertNil(one.dailyStartingLives, "no daily, no opinion")
+    }
+
+    func testOneLifeHidesTheReserveRack() {
+        // Same report: "in fact the reserve ball container can be hidden in this case".
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic, classicLevel: 1,
+                                              twists: [.oneLife]))
+        scene.numberOfLives = 0
+        XCTAssertTrue(scene.livesRowSuppressed)
+
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .classic, classicLevel: 1, twists: [.loaded])
+        scene.numberOfLives = 4
+        XCTAssertFalse(scene.livesRowSuppressed, "a rack with balls in it stays")
+    }
+
+    func testSpareBallsPutsARackInAnEndlessRun() {
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .endlessII,
+                                              classicLevel: nil, twists: [.spareBalls]))
+        scene.gameMode = .endlessII
+        scene.endlessMode = true
+        scene.numberOfLives = 2
+        XCTAssertFalse(scene.livesRowSuppressed,
+                       "the one endless run that shows a lives counter")
+
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [])
+        XCTAssertTrue(scene.livesRowSuppressed,
+                      "an ordinary endless daily keeps the modes' own rule - no counter")
+    }
+
+    func testSuddenDeathIsParkedFromThePool() {
+        // Play test: "The sudden death twist doesn't make sense in endless modes" - the
+        // endless modes are one life already, and in Classic it is One Life by another
+        // name until Mayhem Rules can put several balls in a Classic level. No mode may
+        // draw it, which the generator's applicability filter enforces.
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            XCTAssertFalse(DailyTwist.suddenDeath.applies(to: mode),
+                           "\(mode) can still draw Sudden Death")
+        }
+    }
+
+    func testAClassicDailyStandsDownTheEconomyPowerUps() {
+        // §7 "Decided", and the play test's rule: the multiplier should still build up
+        // and down - just no power-up multipliers. Points, both multiplier power-ups and
+        // Next Level are out of every daily's drops, twists or none; the multiplier
+        // mechanic itself is untouched (it lives in Scoring, not in this table).
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: []))
+        let stats = TotalStats()
+        stats.powerUpUnlockedArray = stats.powerUpUnlockedArray.map { _ in true }
+        scene.totalStatsArray = [stats]
+        // Everything unlocked, so a zero can only mean the daily stood it down
+
+        scene.powerUpProbAllocation(levelNumber: LevelPackSetup().startLevelNumber[2] + 1)
+        // The pack's second level, where the points and multiplier drops are normally live
+        for index in [8, 9, 10, 11, 12, 13, 14] {
+            XCTAssertEqual(scene.powerUpProbArray[index], 0,
+                           "power-up \(index) still drops in a classic daily")
+        }
+        XCTAssertGreaterThan(scene.powerUpProbArray.reduce(0, +), 0,
+                             "the rest of the table survives")
+    }
+
+    func testALivesTwistOwnsTheLivesEconomy() {
+        // The low-lives bump re-armed Get a Life after the tables were dealt - on a One
+        // Life day that is a second life the twist just took away.
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: [.oneLife]))
+        scene.numberOfLives = 0
+        scene.powerUpProbAllocation(levelNumber: LevelPackSetup().startLevelNumber[2])
+        XCTAssertEqual(scene.powerUpProbArray[0], 0, "Get a Life stood down")
+        XCTAssertEqual(scene.powerUpProbArray[1], 0, "Lose a Life stood down")
     }
 
     func testNoPowerUpsEmptiesTheTables() {

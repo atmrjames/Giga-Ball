@@ -62,6 +62,36 @@ class TotalStats: Codable {
 
     /// Endless 2.0's runs, with the absent-means-none case already handled.
     var endlessIIHeights: [Int] { endlessIIModeHeight ?? [] }
+
+    /// The Daily Challenge's per-day records (daily spec §10), one per UTC date played.
+    /// Optional for the same decode-safety reason as the Endless 2.0 fields above.
+    var dailyChallengeRecords: [DailyChallengeRecord]?
+
+    /// The records with the absent-means-none case already handled.
+    var dailyRecords: [DailyChallengeRecord] { dailyChallengeRecords ?? [] }
+
+    func dailyRecord(forKey key: String) -> DailyChallengeRecord? {
+        dailyRecords.first { $0.dateKey == key }
+    }
+
+    /// Writes a day's record in place, or adds it. One record per date, always.
+    func upsertDailyRecord(_ record: DailyChallengeRecord) {
+        var records = dailyRecords
+        if let index = records.firstIndex(where: { $0.dateKey == record.dateKey }) {
+            records[index] = record
+        } else {
+            records.append(record)
+            records.sort { $0.dateKey < $1.dateKey }
+        }
+        dailyChallengeRecords = records
+    }
+
+    /// The overall board's source of truth (daily spec §7): the running total of every
+    /// posted day's normalised score. Derived, never stored - a second copy of a total
+    /// is wrong the first time a record changes.
+    var dailyTotalPostedScore: Int {
+        dailyRecords.reduce(0) { $0 + $1.postedNormalisedScore }
+    }
     
     var levelPackUnlockedArray: [Bool] = [
         true, // Tutorial

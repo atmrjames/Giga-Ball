@@ -2022,6 +2022,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
 		powerUpProbSum = powerUpProbArray.reduce(0, +)
 		// Increase probability of extra life if low on lives
+
+		applyDailyEconomyTwists()
+		// The bump above runs on every ball lost, after the allocation tables were dealt
+		// - on a One Life daily it was quietly re-arming the Get a Life the day excluded,
+		// so the day repeats its word here
 		
         if numberOfLives > 0 {
 			
@@ -2773,6 +2778,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Existing markers move first, then the new one is placed - otherwise the line just
 		// added would immediately travel a row and sit against the wrong height
 		
+		if isDailyChallenge == false {
 		if endlessHeight >= 10 && totalStatsArray[0].achievementsUnlockedArray[0] == false {
 			totalStatsArray[0].achievementsUnlockedArray[0] = true
 			totalStatsArray[0].achievementDates[0] = Date()
@@ -2817,7 +2823,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				}
 			}
 		}
-		// Check for endless mode height achievements
+		}
+		// Check for endless mode height achievements - never from a daily, whose heights
+		// are a different game's (§9): a daily run must not write the campaign's
+		// achievement arrays or report its Game Center achievements
 		
 		if multiplier < Scoring.multiplierCap {
 			multiplier = Scoring.steppedForBonus(multiplier)
@@ -3278,6 +3287,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			powerUpProbSum = powerUpProbArray.reduce(0, +)
 			// Increase probability of extra life if low on lives
+
+			applyDailyEconomyTwists()
+			// Same word as the ball-lost site: the bump must not re-arm what the day
+			// excluded
             
         case powerUpLoseALife:
         // Lose a life
@@ -4725,17 +4738,18 @@ laserTimer?.invalidate()
 	func refreshLivesRow() {
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
 		layoutLivesContainer()
-		livesContainer.isHidden = endlessMode
+		livesContainer.isHidden = livesRowSuppressed
 		for (index, icon) in lifeIcons.enumerated() {
 			icon.removeAllActions()
 			icon.position = livesRowHome(index: index)
 			icon.setScale(1)
 			icon.alpha = GameScene.lifeIconAlpha
 			icon.texture = ballTexture
-			icon.isHidden = endlessMode || index >= shown || livesAwaitingRollIn
+			icon.isHidden = livesRowSuppressed || index >= shown || livesAwaitingRollIn
 		}
 	}
-	// Endless mode has a single life and no counter, so the row is hidden there
+	// Endless mode has a single life and no counter, so the row is hidden there - unless
+	// a daily twist says otherwise, which is what livesRowSuppressed folds in
 
 	func setLivesRowHidden(_ hidden: Bool) {
 		if hidden {
@@ -4768,7 +4782,7 @@ laserTimer?.invalidate()
 	func rollInLivesRow() {
 		livesAwaitingRollIn = false
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
-		guard shown > 0, !endlessMode else { refreshLivesRow(); return }
+		guard shown > 0, !livesRowSuppressed else { refreshLivesRow(); return }
 		for index in 0..<shown {
 			rollInLife(at: index, delay: Double(index)*0.11)
 		}
@@ -4780,7 +4794,7 @@ laserTimer?.invalidate()
 	func rollInGainedLife() {
 		livesAwaitingRollIn = false
 		let shown = min(numberOfLives, GameScene.maxLivesShown)
-		guard shown > 0, !endlessMode else { refreshLivesRow(); return }
+		guard shown > 0, !livesRowSuppressed else { refreshLivesRow(); return }
 
 		layoutLivesContainer()
 		livesContainer.isHidden = false

@@ -178,8 +178,11 @@ class InbetweenLevels: GKState {
     
     func saveGameData() {
         if scene.isDailyChallenge {
+            scene.recordDailyResult()
             // A daily run records nothing here: not heights, not high scores, not pack
-            // progress. It is a different game that borrows the field (daily spec §9)
+            // progress. It is a different game that borrows the field (daily spec §9).
+            // What it does record is its own: the day's record, and - for the scoring
+            // attempt inside the window - the posts to the daily boards (§7)
         } else if scene.endlessMode {
             if scene.gameMode == .endlessII {
                 // Kept apart from the original mode's runs, which are a different game
@@ -279,7 +282,12 @@ class InbetweenLevels: GKState {
 //    }
     
     func achievementsCheck() {
-    
+
+        guard scene.isDailyChallenge == false else { return }
+        // The campaign's achievements are the campaign's (daily spec §9): a daily on a
+        // level someone has not earned must not unlock what earning it would have. The
+        // daily's own achievement set comes with phase 5, and it will be its own check
+
         if scene.endlessMode == false {
         // End of level
             let levelAchievementScore = scene.levelScore + scene.levelTimerBonus

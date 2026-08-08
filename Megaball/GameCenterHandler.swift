@@ -82,6 +82,42 @@ final class GameCenterHandler: NSObject {
         GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: [leaderboardID], completionHandler: { _ in })
     }
     // Replaces GKScore.report, deprecated in iOS 14
+
+    /// A posting daily run's two submissions (daily spec §7): the day's score to the
+    /// recurring daily board - Game Center's own daily reset is the 24-hour window - and
+    /// the running total of every posted day to the overall board.
+    ///
+    /// Signed out or offline, both quietly do nothing: the attempt is still spent and
+    /// the local record still holds the day, and the total board self-heals on the next
+    /// posting run because it is always the whole total. Deliberately not part of
+    /// `gameCenterSave()`, which resubmits standing bests on every save - the daily
+    /// board's entry is one run's result, made once, when that run ends.
+    func submitDailyScores(dayScore: Int, runningTotal: Int) {
+        submit(dayScore, to: DailyChallengeBoards.daily)
+        if runningTotal > 0 {
+            submit(runningTotal, to: DailyChallengeBoards.total)
+        }
+    }
+
+    /// Where the local player stands on today's board, for the game-over screen.
+    ///
+    /// Nil when it cannot be known - signed out, offline, or the board not existing in
+    /// App Store Connect yet - and the screen simply says nothing then.
+    func loadDailyRank(completion: @escaping (Int?) -> Void) {
+        guard GKLocalPlayer.local.isAuthenticated else { completion(nil); return }
+        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
+            guard let board = boards?.first else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            board.loadEntries(for: [GKLocalPlayer.local], timeScope: .allTime) {
+                localEntry, _, _ in
+                DispatchQueue.main.async { completion(localEntry?.rank) }
+                // A recurring board's current occurrence is what loads by default,
+                // which is exactly today's window
+            }
+        }
+    }
     
     func loadData() {
         if let totalData = try? Data(contentsOf: totalStatsStore!) {

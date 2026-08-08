@@ -378,7 +378,127 @@ enum PowerUpIcon {
             radius: rect.width*0.09)
     }
 
+    // MARK: - Daily twist icons
+
+    /// The violet every twist badge wears.
+    ///
+    /// Deliberately neither the power-up green nor the harmful red: a twist is not a
+    /// pickup, it is the day's rule, and it should read as its own kind of thing beside
+    /// the twist's name on the briefing screen, the pause summary and the level intro.
+    /// Lighter than the app's deep purple, which vanished against the dark menu blur.
+    /// Placeholders in the same sense as the power-up icons above - James's real twist
+    /// artwork replaces these here, and nowhere else.
+    static let twist = #colorLiteral(red: 0.4235294118, green: 0.1843137255, blue: 0.6196078431, alpha: 1)
+
+    /// One Life: a single ball, nothing behind it.
+    static let twistOneLife: UIImage = badge(twist) { context, rect in
+        dot(context, at: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width*0.14)
+    }
+
+    /// Loaded: the generous day - a rack full of balls.
+    static let twistLoaded: UIImage = badge(twist) { context, rect in
+        let r = rect.width*0.085
+        for (x, y) in [(0.5, 0.3), (0.3, 0.5), (0.7, 0.5), (0.38, 0.72), (0.62, 0.72)] {
+            dot(context, at: CGPoint(x: rect.minX + rect.width*x,
+                                     y: rect.minY + rect.height*y), radius: r)
+        }
+    }
+
+    /// Sudden Death: the run, crossed out.
+    static let twistSuddenDeath: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.09)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.3, y: rect.minY + rect.height*0.3))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.3, y: rect.maxY - rect.height*0.3))
+        context.move(to: CGPoint(x: rect.maxX - rect.width*0.3, y: rect.minY + rect.height*0.3))
+        context.addLine(to: CGPoint(x: rect.minX + rect.width*0.3, y: rect.maxY - rect.height*0.3))
+        context.strokePath()
+    }
+
+    /// Spare Balls: the ball in play, and the two racked behind it.
+    static let twistSpareBalls: UIImage = badge(twist) { context, rect in
+        dot(context, at: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.34),
+            radius: rect.width*0.13)
+        let r = rect.width*0.085
+        dot(context, at: CGPoint(x: rect.midX - rect.width*0.14, y: rect.maxY - rect.height*0.28), radius: r)
+        dot(context, at: CGPoint(x: rect.midX + rect.width*0.14, y: rect.maxY - rect.height*0.28), radius: r)
+    }
+
+    /// No Power-Ups: the pickup, barred.
+    static let twistNoPowerUps: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        let radius = rect.width*0.24
+        context.strokeEllipse(in: CGRect(x: rect.midX - radius, y: rect.midY - radius,
+                                         width: radius*2, height: radius*2))
+        context.move(to: CGPoint(x: rect.midX - radius*0.7, y: rect.midY + radius*0.7))
+        context.addLine(to: CGPoint(x: rect.midX + radius*0.7, y: rect.midY - radius*0.7))
+        context.strokePath()
+    }
+
+    /// No Good News: only the bad ones fall.
+    static let twistNoGoodNews: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.08)
+        let x = rect.midX
+        context.move(to: CGPoint(x: x, y: rect.minY + rect.height*0.26))
+        context.addLine(to: CGPoint(x: x, y: rect.maxY - rect.height*0.3))
+        context.move(to: CGPoint(x: x - rect.width*0.14, y: rect.maxY - rect.height*0.44))
+        context.addLine(to: CGPoint(x: x, y: rect.maxY - rect.height*0.3))
+        context.addLine(to: CGPoint(x: x + rect.width*0.14, y: rect.maxY - rect.height*0.44))
+        context.strokePath()
+        // A falling arrow: what is coming down is not good
+    }
+
+    /// No Bad News: only the good ones fall.
+    static let twistNoBadNews: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.08)
+        let x = rect.midX
+        context.move(to: CGPoint(x: x, y: rect.maxY - rect.height*0.26))
+        context.addLine(to: CGPoint(x: x, y: rect.minY + rect.height*0.3))
+        context.move(to: CGPoint(x: x - rect.width*0.14, y: rect.minY + rect.height*0.44))
+        context.addLine(to: CGPoint(x: x, y: rect.minY + rect.height*0.3))
+        context.addLine(to: CGPoint(x: x + rect.width*0.14, y: rect.minY + rect.height*0.44))
+        context.strokePath()
+    }
+
+    /// Power Shower: the drops, everywhere.
+    static let twistPowerShower: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        for (x, top) in [(0.3, 0.24), (0.5, 0.34), (0.7, 0.24)] {
+            let lineX = rect.minX + rect.width*x
+            context.move(to: CGPoint(x: lineX, y: rect.minY + rect.height*top))
+            context.addLine(to: CGPoint(x: lineX, y: rect.minY + rect.height*(top + 0.18)))
+            context.strokePath()
+            dot(context, at: CGPoint(x: lineX, y: rect.minY + rect.height*(top + 0.42)),
+                radius: rect.width*0.06)
+        }
+        // Three streaks with drops beneath - rain, in the set's own vocabulary
+    }
+
+    /// Drought: one drop, a long way apart from the next.
+    static let twistDrought: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        for x in [0.3, 0.5, 0.7] {
+            let dashX = rect.minX + rect.width*x
+            context.move(to: CGPoint(x: dashX, y: rect.minY + rect.height*0.3))
+            context.addLine(to: CGPoint(x: dashX, y: rect.minY + rect.height*0.38))
+            context.strokePath()
+        }
+        dot(context, at: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.28),
+            radius: rect.width*0.06)
+        // The shower's shape with almost everything missing
+    }
+
+    /// Fog of War: a brick you cannot see yet.
+    static let twistFogOfWar: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        context.setLineDash(phase: 0, lengths: [rect.width*0.1, rect.width*0.08])
+        context.stroke(CGRect(x: rect.minX + rect.width*0.24, y: rect.midY - rect.height*0.13,
+                              width: rect.width*0.52, height: rect.height*0.26))
+        context.setLineDash(phase: 0, lengths: [])
+        // A brick drawn in dashes: there, but not shown until struck
+    }
+
     // MARK: - Drawing helpers
+
 
     private static func stroke(_ context: CGContext, width: CGFloat) {
         context.setStrokeColor(UIColor.white.cgColor)
@@ -406,5 +526,47 @@ enum PowerUpIcon {
             path.fill()
             glyph(context.cgContext, rect)
         }
+    }
+}
+
+extension DailyTwist {
+
+    /// The twist's badge, everywhere a twist is named: the briefing screen, the pause
+    /// summary, the level intro.
+    ///
+    /// On the type rather than looked up by the screens, so a new twist cannot compile
+    /// without answering for its icon - the switch has no default for exactly that reason.
+    var icon: UIImage {
+        switch self {
+        case .oneLife: return PowerUpIcon.twistOneLife
+        case .loaded: return PowerUpIcon.twistLoaded
+        case .suddenDeath: return PowerUpIcon.twistSuddenDeath
+        case .spareBalls: return PowerUpIcon.twistSpareBalls
+        case .noPowerUps: return PowerUpIcon.twistNoPowerUps
+        case .noGoodNews: return PowerUpIcon.twistNoGoodNews
+        case .noBadNews: return PowerUpIcon.twistNoBadNews
+        case .powerShower: return PowerUpIcon.twistPowerShower
+        case .drought: return PowerUpIcon.twistDrought
+        case .fogOfWar: return PowerUpIcon.twistFogOfWar
+        }
+    }
+
+    /// The twist's name with its badge in front, sized to sit in a line of the given font.
+    ///
+    /// One builder for every screen that lists twists, so they cannot drift apart in how
+    /// a twist reads. The icon rides slightly below the baseline, which is where a glyph
+    /// the height of a capital sits without looking like it is floating.
+    func titleLine(font: UIFont, colour: UIColor) -> NSAttributedString {
+        let attachment = NSTextAttachment()
+        attachment.image = icon
+        let side = font.capHeight*1.5
+        attachment.bounds = CGRect(x: 0, y: (font.capHeight - side)/2,
+                                   width: side, height: side)
+
+        let line = NSMutableAttributedString(attachment: attachment)
+        line.append(NSAttributedString(string: "  \(displayName)",
+                                       attributes: [.font: font,
+                                                    .foregroundColor: colour]))
+        return line
     }
 }

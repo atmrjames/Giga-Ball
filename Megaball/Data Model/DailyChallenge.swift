@@ -73,6 +73,15 @@ enum DailyDay {
         let start = utcCalendar.startOfDay(for: date)
         return utcCalendar.date(byAdding: .day, value: 1, to: start)!
     }
+
+    /// The key turned back into the UTC midnight it names. Nil for a malformed key,
+    /// which no stored key ever is - they are all made by `key(for:)`.
+    static func date(forKey key: String) -> Date? {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return utcCalendar.date(from: DateComponents(year: parts[0], month: parts[1],
+                                                     day: parts[2]))
+    }
 }
 
 // MARK: - Twists
@@ -80,7 +89,7 @@ enum DailyDay {
 /// A named, self-describing rule change (§4). The raw value is the persistence and
 /// pool-identity name - append-only, never renamed.
 enum DailyTwist: String, CaseIterable, Codable {
-    case oneLife, loaded, suddenDeath
+    case oneLife, loaded, suddenDeath, spareBalls
     case noPowerUps, noGoodNews, noBadNews, powerShower, drought
     case fogOfWar
 
@@ -92,7 +101,7 @@ enum DailyTwist: String, CaseIterable, Codable {
 
     var category: Category {
         switch self {
-        case .oneLife, .loaded, .suddenDeath: return .lives
+        case .oneLife, .loaded, .suddenDeath, .spareBalls: return .lives
         case .noPowerUps, .noGoodNews, .noBadNews, .powerShower, .drought: return .economy
         case .fogOfWar: return .dress
         }
@@ -103,6 +112,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .oneLife: return "One Life"
         case .loaded: return "Loaded"
         case .suddenDeath: return "Sudden Death"
+        case .spareBalls: return "Spare Balls"
         case .noPowerUps: return "No Power-Ups"
         case .noGoodNews: return "No Good News"
         case .noBadNews: return "No Bad News"
@@ -117,6 +127,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .oneLife: return "One life. Make it count."
         case .loaded: return "Five lives. Spend them well."
         case .suddenDeath: return "Any ball lost ends the run - every ball, every mode."
+        case .spareBalls: return "Two balls in reserve - the run survives losing one."
         case .noPowerUps: return "Nothing drops. Just you and the bricks."
         case .noGoodNews: return "Only the bad power-ups drop. Don't catch them."
         case .noBadNews: return "Only the good power-ups drop. Catch everything."
@@ -132,6 +143,17 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .oneLife, .loaded:
             return mode == .classic
             // The endless modes already have exactly one life
+        case .spareBalls:
+            return mode == .endless || mode == .endlessII
+            // The generous day for the modes whose baseline is a single ball - James's
+            // suggestion from the first daily play test
+        case .suddenDeath:
+            return false
+            // Parked, on the same play test: in the endless modes it was One Life said
+            // twice, and in Classic (no Multi-Ball there) it is One Life by another name.
+            // It comes back when a twist can put several balls in a Classic level -
+            // Mayhem Rules (§4) - at which point "any ball lost ends the run" means
+            // something One Life does not. The scene keeps its teeth ready either way
         default:
             return true
         }
@@ -151,6 +173,12 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .fogOfWar: return 8
         default: return 10
         }
+    }
+
+    /// The earliest day any pool entry activates - the first daily there ever was, and
+    /// therefore the far end of the briefing screen's day browsing.
+    static var firstActivationKey: String {
+        allCases.map(\.activationKey).min() ?? "2026-08-01"
     }
 }
 
@@ -242,6 +270,103 @@ enum DailyChallengeGenerator {
     }
 }
 
+// MARK: - Attempts, records and boards (phase 3)
+
+/// Everything the phone knows about one day's challenge (§10), keyed by the UTC date.
+///
+/// The record is created the moment the day's first play press happens - that is what
+/// spends the attempt (§7): a force-quit later finds the record already there and the
+/// run after it is practice. The result lands in the record when the run ends.
+struct DailyChallengeRecord: Codable, Equatable {
+    var dateKey: String
+    /// What the scoring run finished on. Zero until it ends - and zero for ever if the
+    /// player force-quit it, which is the attempt being spent with nothing to show.
+    var firstAttemptScore: Int = 0
+    /// Whether the first attempt finished inside the window and went to the daily board.
+    var posted: Bool = false
+    var bestPracticeScore: Int = 0
+    var attemptCount: Int = 0
+    /// What the overall board counts for this day (§7): Classic's score as it stands, an
+    /// endless height × 100. Stored at posting time, so the total never re-derives a day
+    /// under rules that may since have changed.
+    var postedNormalisedScore: Int = 0
+}
+
+extension DailyChallengeRecord {
+
+    /// Two devices' histories, folded into one - the sync's merge rule.
+    ///
+    /// Union by date; where both sides know a day, everything is take-the-most: posted
+    /// is OR-ed, the scores and counts take the higher. All of these only ever grow on a
+    /// real device, so the rule is the same one every other synced stat uses.
+    static func merged(_ a: [DailyChallengeRecord],
+                       _ b: [DailyChallengeRecord]) -> [DailyChallengeRecord] {
+        var byDate: [String: DailyChallengeRecord] = [:]
+        for record in a { byDate[record.dateKey] = record }
+        for record in b {
+            guard var kept = byDate[record.dateKey] else {
+                byDate[record.dateKey] = record
+                continue
+            }
+            kept.firstAttemptScore = max(kept.firstAttemptScore, record.firstAttemptScore)
+            kept.posted = kept.posted || record.posted
+            kept.bestPracticeScore = max(kept.bestPracticeScore, record.bestPracticeScore)
+            kept.attemptCount = max(kept.attemptCount, record.attemptCount)
+            kept.postedNormalisedScore = max(kept.postedNormalisedScore,
+                                             record.postedNormalisedScore)
+            byDate[record.dateKey] = kept
+        }
+        return byDate.values.sorted { $0.dateKey < $1.dateKey }
+    }
+}
+
+enum DailyChallengePosting {
+
+    /// The briefing screen's posting line (§6): whether the next run posts or is
+    /// practice, stated *before* the run starts, never discovered after. Pure, so the
+    /// promise the screen makes is a promise the tests can hold it to.
+    static func statusLine(record: DailyChallengeRecord?, isToday: Bool, mode: GameMode,
+                           gameCenterOn: Bool) -> String {
+        guard isToday else { return "PRACTICE — PAST CHALLENGES NEVER POST" }
+        guard let record, record.attemptCount > 0 else {
+            return gameCenterOn
+                ? "FIRST ATTEMPT — THIS RUN POSTS TO TODAY'S BOARD"
+                : "FIRST ATTEMPT — SIGN IN TO GAME CENTER TO POST TODAY'S SCORE"
+        }
+        if record.posted {
+            return "TODAY'S SCORE: \(scoreText(record.firstAttemptScore, mode: mode))"
+                + " — PRACTICE FROM HERE"
+        }
+        return "ATTEMPT SPENT — PRACTICE FROM HERE"
+        // The spent-but-unposted case is real: a force-quit mid-attempt, or a run that
+        // crossed midnight. Saying so plainly is what keeps the rule feeling fair
+    }
+
+    /// A score in the mode's own terms: heights wear their metres.
+    static func scoreText(_ score: Int, mode: GameMode) -> String {
+        mode == .classic ? String(score) : "\(score)m"
+    }
+}
+
+enum DailyChallengeBoards {
+    /// The Game Center recurring leaderboard with a daily recurrence aligned to 00:00
+    /// UTC (§7). Both boards are James's App Store Connect side; until they exist there,
+    /// submissions fail silently - the same standing state as the Endless Mayhem boards.
+    static let daily = "leaderboardDailyChallenge"
+    /// The classic (non-recurring) board holding each player's running total of posted
+    /// daily scores. Game Center keeps the highest submission, and a running total only
+    /// grows, so resubmitting the whole total after every posting run is self-healing -
+    /// including across days that could not post for want of a connection.
+    static let total = "leaderboardDailyChallengeTotal"
+
+    /// What the overall board counts a score as (§7): no one mode may dominate, and
+    /// Classic scores (thousands) and endless heights (tens) are orders of magnitude
+    /// apart. The factor is §13's open question; the daily board is immune either way.
+    static func normalised(score: Int, mode: GameMode) -> Int {
+        mode == .classic ? score : score*100
+    }
+}
+
 // MARK: - The session
 
 /// The daily challenge currently being played, if one is.
@@ -257,6 +382,17 @@ final class DailyChallengeSession {
     var active: DailyChallenge?
 
     var isActive: Bool { active != nil }
+
+    /// Whether the run in play is the day's scoring attempt (§7): today's challenge, and
+    /// the play press that spent the attempt. Set by the briefing screen at launch,
+    /// read at the run's end to decide between posting and practice. Everything after
+    /// the first press is practice, labelled as such.
+    var isScoringAttempt = false
+
+    /// Whether the run that just ended posted to today's board - the game-over screen's
+    /// question. Written by `recordDailyResult` as it settles the run, so the screen
+    /// never has to re-derive what the scene already decided.
+    var lastRunPosted = false
 
     func has(_ twist: DailyTwist) -> Bool { active?.has(twist) ?? false }
 
@@ -285,4 +421,23 @@ final class DailyChallengeSession {
 
     var todayKey: String { DailyDay.key(for: today) }
     var todaysChallenge: DailyChallenge { DailyChallengeGenerator.challenge(forKey: todayKey) }
+
+    /// What a day's key is called on screen: "TODAY", "YESTERDAY", or its date.
+    ///
+    /// One answer for every screen that names a day - the briefing card, the pause
+    /// summary, the level intro - so they cannot disagree about what today is called.
+    func displayName(forKey key: String) -> String {
+        if key == todayKey { return "TODAY" }
+        if let date = DailyDay.date(forKey: key) {
+            let yesterday = DailyDay.utcCalendar.date(byAdding: .day, value: -1, to: today)!
+            if key == DailyDay.key(for: yesterday) { return "YESTERDAY" }
+
+            let display = DateFormatter()
+            display.dateStyle = .full
+            display.timeZone = TimeZone(identifier: "UTC")
+            display.locale = .autoupdatingCurrent
+            return display.string(from: date).uppercased()
+        }
+        return key
+    }
 }

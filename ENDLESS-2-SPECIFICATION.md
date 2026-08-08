@@ -776,6 +776,19 @@ without relying on colour alone (§7.3).
 Endless Mayhem currently reuses the original Endless infinity icon on the main menu, the
 mode detail screen and the game-over screen. It deserves its own mark.
 
+### The Daily Challenge's marks
+
+Two more rows on the list, both James's side (his own note from the first daily play
+test: "I should make some unique icons for the different twists"):
+
+- **The mode's menu icon** - the calendar mark is drawn (`PowerUpIcon.dailyChallenge`),
+  a real one replaces it there.
+- **A badge per twist** - each twist wears a drawn violet badge
+  (`PowerUpIcon.twist…`, mapped by `DailyTwist.icon`), shown beside its name on the
+  briefing screen, the pause summary and the level intro. Real artwork replaces them in
+  `PowerUpIcon.swift` and nowhere else - every screen reads `DailyTwist.icon`. The
+  badge-beside-title layout is already in place, so the art drops straight in.
+
 ### The scrolling backdrop
 
 One vertically-looping tile, screen-wide, named `EndlessMayhemBackdrop` in the asset
@@ -1059,7 +1072,7 @@ not cancel touches, so every button on the screen keeps working.
 |---|---|
 | Global leaderboard lines on the height markers | The Endless 2.0 boards existing in App Store Connect. Until they do, scores fail to post silently |
 | Artwork and sound for everything new | §8.5. Deliberately last, while mechanics are still moving |
-| Ring HUD in Classic and Endless | A shorter HUD bar changes `layoutUnit`, which changes brick size in levels people hold high scores on. Worth doing deliberately, not as a side effect |
+| Ring HUD in Classic and Endless | A shorter HUD bar changes `layoutUnit`, which changes brick size in levels people hold high scores on. Worth doing deliberately, not as a side effect. **Asked for again in the first daily play test** ("we should bring the new power-up HUD to the Classic and Endless modes"), so it is wanted, not just possible - but the brick-size question has to be answered first, deliberately, and the answer play-tested on levels with years of scores |
 | ~~Wrap-around applying to the paddle, Moving bricks and explosions~~ | **Built**, first time, the way §5.4 wrote it up |
 
 ### 12.1 Style progression, as part of phase 6

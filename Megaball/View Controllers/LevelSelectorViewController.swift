@@ -168,8 +168,14 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
             // Setup cell buttons
 
-            installLevelPlayButton(on: cell)
-            
+            if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] {
+                installLevelPlayButton(on: cell)
+            } else {
+                cell.contentView.viewWithTag(9901)?.removeFromSuperview()
+            }
+            // Only unlocked rows get the straight-in button - it sat on top of the locked
+            // blur too, where it would have launched a level the row says is locked
+
             let packLevelHighScoresArray: [[Int]] = [
                 totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
             ]
@@ -391,7 +397,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     /// The straight-in button on every level row: skip the detail screen, play the level.
-    func installLevelPlayButton(on cell: UITableViewCell) {
+    func installLevelPlayButton(on cell: LevelSelectorTableViewCell) {
         cell.contentView.viewWithTag(9901)?.removeFromSuperview()
 
         let play = UIButton(type: .system)
@@ -405,12 +411,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         play.addTarget(self, action: #selector(levelPlayTapped(_:)), for: .touchUpInside)
         cell.contentView.addSubview(play)
         NSLayoutConstraint.activate([
-            play.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor,
-                                           constant: -18),
-            play.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            play.trailingAnchor.constraint(equalTo: cell.cellView3.trailingAnchor,
+                                           constant: -8),
+            play.centerYAnchor.constraint(equalTo: cell.cellView3.centerYAnchor),
             play.widthAnchor.constraint(equalToConstant: 44),
             play.heightAnchor.constraint(equalToConstant: 44),
         ])
+        // Centred on the card, not the contentView: the card leaves a 20pt gap below
+        // itself, so the contentView's centre sat the button 10pt low - the play-test's
+        // "not centred vertically"
     }
 
     @objc func levelPlayTapped(_ sender: UIButton) {

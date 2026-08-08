@@ -128,6 +128,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     override func viewWillAppear(_ animated: Bool) {
         refreshView()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let modeCount = CGFloat(GameMode.allCases.count)
+        let fitted = min(150, modeSelectTableView.bounds.height/modeCount)
+        if modeSelectTableView.bounds.height > 0, modeSelectTableView.rowHeight != fitted {
+            modeSelectTableView.rowHeight = fitted
+            modeSelectTableView.reloadData()
+        }
+        // The first cells can be asked for before the table has its size, and a row height
+        // computed from a zero-height table would stick. Re-fitted here once the layout is
+        // real, and only when it actually changed - reloadData in a layout pass loops
+    }
     
     func setBlur() {
         backgroundBlurView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0)
@@ -197,13 +210,15 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "modeSelectCell", for: indexPath) as! ModeSelectTableViewCell
-        
-        modeSelectTableView.rowHeight = 150.0
-        
-        if view.frame.size.height > 1000 {
-            modeSelectTableView.rowHeight = 150.0
-        }
-                
+
+        let modeCount = CGFloat(GameMode.allCases.count)
+        let tableHeight = modeSelectTableView.bounds.height
+        modeSelectTableView.rowHeight = tableHeight > 0 ? min(150, tableHeight/modeCount) : 150
+        // Every mode fits on screen at once - the main menu never scrolls (play-test rule).
+        // Four rows at the old fixed 150 overflowed the 450pt table, and the fourth mode
+        // was below the fold. The card inside the cell is 75pt, so rows can bunch to the
+        // table's quarter-height and the gap between cards is what gives
+
         let mode = GameMode(rawValue: indexPath.row) ?? .classic
         cell.modeTextLabel.text = mode.name
         switch mode {

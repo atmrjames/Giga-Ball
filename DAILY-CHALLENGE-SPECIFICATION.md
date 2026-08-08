@@ -1,11 +1,32 @@
 # Daily Challenge — design specification
 
-**Status: phases 1-2 in build.** The generator exists exactly as §2 specifies - SplitMix64,
-pinned against reference outputs, exact-output tests as the cross-device contract - and the
-mode is playable end to end: the menu row, the briefing screen, and Classic/Endless/Mayhem
-dailies launching with the day's twists applied. The first twist batch is live (the
-economy five, the lives three, Fog of War). Not yet built: attempts and leaderboards
-(phase 3), the remaining twists, history, streaks, themes.
+**Status: phases 1-2 built and play-tested once; the first feedback round is folded in.**
+The generator exists exactly as §2 specifies - SplitMix64, pinned against reference
+outputs, exact-output tests as the cross-device contract - and the mode is playable end to
+end: the menu row, the briefing screen, and Classic/Endless/Mayhem dailies launching with
+the day's twists applied. The first twist batch is live (the economy five, Fog of War, and
+the lives twists as revised below). From the play test: the briefing screen now **browses
+days** - swipe or arrows, back through every daily to the pool's first day or thirty days
+(whichever is nearer), never forward past today, past days labelled practice - which is
+§8 arriving early because the browsing UI made it nearly free; every twist wears a drawn
+placeholder badge (`DailyTwist.icon`); the pause menu carries the §6 compact summary; a
+daily's game over has no play-again and no campaign high-score lines; and the §7 drop
+exclusions are standing. **Lives twists count total balls, not the rack**: One Life is
+the ball on the paddle and nothing in reserve (the rack is hidden), Loaded is five balls
+total, and the endless modes gained **Spare Balls** (three balls total) while **Sudden
+Death is parked** - see §4's table.
+
+**Phase 3 is built.** The play press spends the attempt (the record exists from that
+moment, so a force-quit finds the day already spent); the scoring run posts to the two
+Game Center boards at its end - the recurring daily board and the running-total overall
+board (`DailyChallengeBoards`; the boards themselves are App Store Connect work, James's
+side, and submissions fail silently until they exist, the same standing state as the
+Mayhem boards); the briefing screen's posting line states first-attempt / practice /
+spent-but-unposted before every run; per-day records live in `TotalStats` and ride iCloud
+as one date-merged blob, which is what carries the attempt flag across a reinstall (§10);
+and the game-over screen says posted-or-practice and adds the player's placing on today's
+board when Game Center can answer. Not yet built: the remaining twists (phase 4), history
+results-on-the-card, streaks, achievements (phase 5), themes (phase 6).
 
 **The test clock** - the play-test rig this feature needs, since days are the unit of
 content: the briefing screen carries ◀ DAY / LIVE / DAY ▶ controls that wind a simulated
@@ -108,9 +129,10 @@ and its hooks into the scene. The launch pool, from the brief plus fills:
 
 | Twist | What it does | Modes | Notes |
 |---|---|---|---|
-| **One Life** | Lives = 1 | Classic | Endless modes already have one life |
-| **Loaded** | Lives = 5 | Classic | The generous day |
-| **Sudden Death** | Any ball lost ends the run | All | In Mayhem this overrides Multi-Ball's carry-on rule — harsh and legible |
+| **One Life** | One ball total — the one on the paddle, none in reserve, rack hidden | Classic | The first build racked a spare on top of the paddle ball; the play test counted two lives. A lives twist's number is now the total |
+| **Loaded** | Five balls total — four racked | Classic | The generous day |
+| **Spare Balls** | Three balls total — two racked behind the ball in play, and the rack shows in an endless run for the one day it means something | Endless modes | The generous day for the modes whose baseline is a single ball (play-test suggestion) |
+| **Sudden Death** | Any ball lost ends the run | **Parked — no mode draws it** | Play-test verdict: in the endless modes it is One Life said twice, and in Classic (no Multi-Ball there) it is One Life by another name. It returns with Mayhem Rules, which can put several balls in a Classic level and give "any ball lost" its own meaning. The scene's gate (`dailySuddenDeath`) stays built and tested |
 | **No Power-Ups** | Nothing drops, no power-up bricks | All | The purist's day |
 | **No Good News** | Only harmful power-ups drop | All | Uses the harmful set Auto-Aim already derives |
 | **No Bad News** | Only beneficial power-ups drop | All | |
@@ -184,12 +206,30 @@ Flipped Angle means.
 - **The score is the mode's own score.** Classic: level score. Endless modes: height. No
   cross-mode normalisation is needed for the daily board, because everyone plays the same
   mode on the same day.
-- **Decided:** daily Classic quietly excludes the four ±points power-ups and both
-  multiplier power-ups from drops - the board compares play, not multiplier luck. Ordinary
-  multiplier mechanics otherwise stay, so daily scores still feel like Classic scores.
+- **Decided, and built:** every daily quietly excludes the four ±points power-ups, both
+  multiplier power-ups and Complete Level from drops - the board compares play, not
+  multiplier luck, and an instant level-complete is the purest luck there is. Ordinary
+  multiplier mechanics stay untouched (play-test confirmation: "the multiplier should
+  still build up and down - just no power-up multipliers"), so daily scores still feel
+  like Classic scores. When a lives twist runs, Get a Life and Lose a Life stand down
+  too - the day owns the lives economy, and the scene's low-lives kindness (it bumps Get
+  a Life's weight) would quietly hand One Life a second life. The endless modes' own
+  tables already excluded all of these; the daily rule is what makes it true of Classic.
   Ball resets stay available - they are part of the game being scored - with the briefing
   noting they cost time, which on a Time Trial day is its own deterrent. Endless dailies
   are uncapped.
+- **No Game Center, no internet** (play-test question): the mode is playable regardless -
+  the generator needs no server, so the challenge, the practice loop and the local per-day
+  records (§10) all work offline. What suffers is posting: a daily-board submission that
+  cannot be made inside the window is gone (the board resets at UTC midnight; there is
+  nothing to backfill into), and that is honest - the board is a same-day race. The
+  **overall total board self-heals**: it is a running total submitted fresh after every
+  posting run, so the first submission after connectivity returns carries everything the
+  offline days banked locally. The briefing screen says which situation the player is in
+  before the run: signed out ("sign in to Game Center to post today's score") or offline
+  ("today's score can't reach the leaderboard right now"). First-attempt tracking is
+  local-first either way - the attempt is spent whether or not the post got out, which is
+  what keeps the board honest from the phone's side.
 - **Only the first attempt posts, and only if it finishes in the window** (§1). The first
   time the play button is pressed on a given UTC day's challenge, that run is the scoring
   run — abandoning it spends it (quitting to menu posts the score of where you were;
@@ -207,16 +247,24 @@ Flipped Angle means.
   Center keeps the best (highest) submission, so the total only ever grows.
 - **Streaks** are tracked locally (§10) and surfaced on the challenge screen. A streak
   achievement set ships in phase 5.
+- **The game-over screen shows the day's result in its own terms** (play-test request):
+  the score, the daily summary with the twists, no campaign high-score lines, no
+  play-again. Where the player *placed* on today's board goes on this screen too - built
+  with phase 3, since it needs the boards to exist and a rank query after the post
+  (offline or signed out, the line simply stays away).
 
 ## 8. Playing the past
 
-Nice to have, not must have (James's call), and scoped accordingly: the challenge screen
-lists the **last 30 days** (newest first — the same furniture as the endless history list):
-date, mode, twist names, the player's result or "not played". Any listed day is playable as
-practice; no leaderboard posting, ever, for past days. Determinism plus append-only pools
-(§2.1) mean the window could be widened to for-ever later at zero cost — 30 days is a
-product choice, not a technical one, and it keeps the list a list rather than an archive.
-Ships in phase 5, after the daily loop itself is proven.
+Nice to have, not must have (James's call) — and the first half **arrived early**: the
+briefing screen browses days (swipe on the card, or the arrows beside the date), back
+through every daily to the pool's first day or 30 days, whichever is nearer, never forward
+past today. Today and yesterday say so in words; older days give their date; a past day's
+card says "practice — this challenge closed <date>" and plays without posting, ever. The
+play test asked for the swiping and the browsing UI made the rest nearly free. 30 days is
+a product choice, not a technical one — determinism plus append-only pools (§2.1) mean the
+window could be widened to for-ever later at zero cost. What remains for phase 5: the
+player's own **result per day** on the card ("not played" / the score), which needs §10's
+per-day records to exist first.
 
 ## 9. What the daily must never touch
 
@@ -267,9 +315,9 @@ briefing screen (§6).
 
 | Phase | What lands | What you can test |
 |---|---|---|
-| **1. The generator** | Seeded PRNG, `ChallengeDefinition`, pools with activation dates, exact-output tests | That two devices agree, for any date, for ever — entirely in unit tests |
-| **2. The mode exists** | Menu row, briefing screen (no twists yet), Classic/Endless/Mayhem dailies playable, day boundary handling | A full daily loop with no twists — the skeleton habit |
-| **3. Attempts and boards** | First-attempt tracking, recurring daily board, overall board, practice labelling | Post once, practice after, watch the board reset at midnight UTC |
+| **1. The generator** ✅ | Seeded PRNG, `ChallengeDefinition`, pools with activation dates, exact-output tests | That two devices agree, for any date, for ever — entirely in unit tests |
+| **2. The mode exists** ✅ | Menu row, briefing screen (no twists yet), Classic/Endless/Mayhem dailies playable, day boundary handling | A full daily loop with no twists — the skeleton habit |
+| **3. Attempts and boards** ✅ | First-attempt tracking, recurring daily board, overall board, practice labelling | Post once, practice after, watch the board reset at midnight UTC |
 | **4. Twists, in batches** | Economy twists first (they reuse the weight tables), then lives, then layout, then Always On | Each batch on its own, same as phase 8 was tuned |
 | **5. History, streaks, achievements** | The past-days list, replay-as-practice, streak tracking | The retention loop end to end |
 | **6. Themes** | Forced Retro; Monochrome behind the performance gate | The dress, last, like all presentation |

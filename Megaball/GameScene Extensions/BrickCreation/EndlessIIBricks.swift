@@ -128,6 +128,12 @@ extension GameScene {
         // Both endless modes. A best height is the thing a run is measured against, and the
         // original mode wanted it for exactly the same reason - it was only ever here because
         // this is where it was written
+        guard isDailyChallenge == false else {
+            multiplierLabel.isHidden = true
+            return
+        }
+        // A daily is measured against today's board, not the campaign's best - the figure
+        // is a different game's (play-test note), and §9 keeps the two apart both ways
         guard let best = endlessBestHeight, best > 0 else {
             multiplierLabel.isHidden = true
             return

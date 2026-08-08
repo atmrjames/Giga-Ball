@@ -59,9 +59,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     var runHistoryTable: UITableView?
     /// The rows, newest first: height, and when - `nil` for runs recorded before dates were.
     var runHistory: [(height: Int, date: Date?)] = []
-    /// Whether the list is ordered by height instead of by date. Date is the default -
-    /// the question the list usually answers is "what have I done lately".
-    var runHistorySortsByHeight = false
+    /// Whether the list is ordered by height instead of by date. Height is the default -
+    /// James's call from the play test: a best-scores list leads with the best scores,
+    /// and a tap flips it to "what have I done lately".
+    var runHistorySortsByHeight = true
     var runHistorySortButton: UIButton?
     
     override func viewDidLoad() {
@@ -475,19 +476,19 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
         let sort = UIButton(type: .system)
         sort.translatesAutoresizingMaskIntoConstraints = false
-        sort.setTitle("DATE ▾", for: .normal)
+        sort.setTitle("HEIGHT ▾", for: .normal)
         sort.setTitleColor(UIColor(white: 1, alpha: 0.55), for: .normal)
         sort.titleLabel?.font = .boldSystemFont(ofSize: 12)
         sort.addTarget(self, action: #selector(toggleRunHistorySort), for: .touchUpInside)
         levelStatsView.addSubview(sort)
         NSLayoutConstraint.activate([
             sort.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 6),
-            sort.trailingAnchor.constraint(equalTo: levelStatsView.trailingAnchor,
-                                           constant: -44),
+            sort.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
         ])
         runHistorySortButton = sort
-        // One small word, where a column header would be - the list is sorted by date
-        // until the player asks it the other question
+        // One small word, centred over the list where a column header would be (the
+        // play test asked for it centred at the top of the table) - the list leads with
+        // the best heights until the player asks it the other question
 
         let table = UITableView(frame: .zero, style: .plain)
         table.translatesAutoresizingMaskIntoConstraints = false
@@ -568,6 +569,9 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         let format = DateFormatter()
         format.dateStyle = .medium
         format.timeStyle = .short
+        format.locale = .autoupdatingCurrent
+        // The phone's own settings decide how a date and time read - region and 12/24
+        // hour clock both. Styles rather than a format string, for the same reason
         return format
     }()
 
