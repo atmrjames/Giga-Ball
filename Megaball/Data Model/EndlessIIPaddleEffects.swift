@@ -112,7 +112,11 @@ enum EndlessIIPaddleEffects {
     ///
     /// The paddle's movement goes into a pending pot and the ball takes most of it every
     /// frame - a tiny bit of inertia, so the ball visibly follows rather than teleports.
-    static let steeringSmoothing: CGFloat = 0.45
+    ///
+    /// Raised from 0.45 after the second play test: the ball still read as resisting the
+    /// paddle. The ask is close to 1:1 with only a hint of inertia, so the lag now clears
+    /// in about two frames rather than four.
+    static let steeringSmoothing: CGFloat = 0.7
 
     /// How much of the pending steering is applied this frame, and what remains.
     static func steeringStep(pending: CGFloat) -> (apply: CGFloat, remaining: CGFloat) {

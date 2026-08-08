@@ -1049,15 +1049,33 @@ brick fading into its own place.
 
 | Item | Notes |
 |---|---|
+| Ring HUD in Classic and original Endless | **Unblocked** - the play test answered the design question that kept this backlogged. The old modes keep their permanent all-power-ups tray in its existing order and geometry (`layoutUnit` untouched, so brick sizes on scored levels cannot move); what changes is the *indicator*: the tray icons gain the ring progress dial in the Giga-Ball yellow-green in place of the old bar. No only-active filtering, no reordering - those are Mayhem's rules for Mayhem's tray |
 | In-game recents on the pause info pages | Play-test request: the Bricks and Power-Ups pages, reached mid-run, list what was recently hit and recently seen first - so a player can identify the thing that just happened. Unseen power-ups below, alphabetical |
 | Endless game-over stats | Summary on the game-over screen (balls hit, bricks destroyed, power-ups collected), a stats button to a detail screen, and the power-ups seen this run in order |
+| Portal Paddle × Auto-Aim | Play-test finding: together, the portal is effectively not applied - Auto-Aim owns the outgoing angle, so the paddle-portal's jump never matters. Proposed resolution: let both speak in sequence - the hit still exits through the portal network, and Auto-Aim aims the *re-entry* (the drop from the top, or from the exit portal) at the lowest brick instead of the launch. James's alternatives if that reads badly: move the aim arrow to the top, or let the player choose where the ball drops in |
+| Sticky Paddle × Inert Paddle | Play-test decision: both stay active - the catch still works, but the launch angle comes from what the *inert bounce* would have been, not from the ball's position on the paddle. While both run, the sticky paddle graphic goes monochrome so the pairing is readable |
+| Big bricks overlap the lower-limit line | Play-test screenshot: a Big brick's body extends past its row centre, so on the bottom row its lower half crosses the limit line. Options: clip the line behind oversized bricks, or accept the overlap and make sure destruction still triggers at the right moment (it does - the row centre is what is read). Cosmetic, but the line is the kill line and should stay legible |
 | New brick geometries | Concave/convex faces, triangles (one pointed side), and a 2×1 square size available to all compatible behaviours - each is a physics-body shape plus §8.6's row discipline, so each is its own careful visit |
 | Lock and Key | §5.4's originals, still unbuilt. Lock freezes the timed clocks (the turn-based ones are immune by nature); Key ends it. Their conditional drop rules are most of the work |
-| Double Paddle, and an opposite-moving paddle | Play-test ideas for the next power-up batch - a second paddle is per-ball contact handling all over again, priced accordingly |
+| Ball Spin / Curve | New power-up (play-test idea, second round): the paddle's own velocity at contact grips the ball - as if there were friction between the two - and the ball leaves on a curved path, curving harder the faster the paddle was moving. Wears a grippy paddle texture while active. Conflicts with the paddle group (Aimed Sticky, Auto-Aim, Inert at least). Build note: the curve is a per-frame perpendicular nudge from `didSimulatePhysics` (§8.6 - never inside a contact), decaying over the flight, and the paddle velocity must be sampled from the touch handler, not the contact |
+| Double Paddle, and an opposite-moving paddle | Play-test ideas for the next power-up batch, refined in the second round: the paddle *splits in two*, each half the width of the original - a second paddle is per-ball contact handling all over again, priced accordingly |
 | Classic mode menu redesign | Title and logo like the endless screens, packs as a grid of square cells rather than rows |
 | Grid background scaled to the marker grid | Needs the actual artwork's pitch measured against brickHeight - a visual-iteration task, not a blind one |
-| App Store review readiness pass | A deliberate pre-release review against the guidelines. The daily's test clock is the known must-fix; the pass should hunt for others |
+| App Store review readiness pass | A deliberate pre-release review against the guidelines. The daily's test clock is the known must-fix; the pass should hunt for others. Includes the anti-cheat sweep: a finished game must never be resumable (a live report), and every path that posts to a board should be checked for what a dishonest player could replay or restore |
 | A scatter cluster | ~~§6.2.1's third kind~~ **Built** - Buckshot, Ghost Field, Shrapnel |
+
+**Fixed in the second wide play-test round, recorded here because each was reported with a
+screenshot:** skipping the opening build-in parked bricks above the play zone (the snap
+sweep's destinations were cleared one line too early, so mid-fall bricks took the
+nearest-row fallback - a brick still waiting out its delay sat above the top row, whose
+nearest row is above the field); a personal best on a multiple of ten drew the best line
+*and* a ten-metre tick in the same row (the milestone now always wins, the rule a best on
+a hundred already had); the lower-limit line dropped to tick subtlety (alpha 0.12, hairline)
+while keeping its width and warm colour; Ball Steering's smoothing went 0.45 → 0.7 - close
+to 1:1 with a hint of inertia, per the second-round note; the endless mode screens lost
+the headline Best Height figure (the run table's best row wears the emphasis instead); and
+the pack screen gained the big centred play button the other screens have, which continues
+the campaign at the furthest unlocked pack.
 
 The new power-ups appear on the power-ups page already — the page derives from the arrays
 that define them, so all forty-eight are listed with their icons, timers and descriptions.
@@ -1072,7 +1090,7 @@ not cancel touches, so every button on the screen keeps working.
 |---|---|
 | Global leaderboard lines on the height markers | The Endless 2.0 boards existing in App Store Connect. Until they do, scores fail to post silently |
 | Artwork and sound for everything new | §8.5. Deliberately last, while mechanics are still moving |
-| Ring HUD in Classic and Endless | A shorter HUD bar changes `layoutUnit`, which changes brick size in levels people hold high scores on. Worth doing deliberately, not as a side effect. **Asked for again in the first daily play test** ("we should bring the new power-up HUD to the Classic and Endless modes"), so it is wanted, not just possible - but the brick-size question has to be answered first, deliberately, and the answer play-tested on levels with years of scores |
+| ~~Ring HUD in Classic and Endless~~ | **Moved to the open queue** - the second play-test round decided the design that kept it here: the old modes keep their tray, order and geometry, and only the indicator becomes the ring. `layoutUnit` never moves, so the brick-size worry dissolves |
 | ~~Wrap-around applying to the paddle, Moving bricks and explosions~~ | **Built**, first time, the way §5.4 wrote it up |
 
 ### 12.1 Style progression, as part of phase 6

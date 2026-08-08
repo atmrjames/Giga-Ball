@@ -8,7 +8,7 @@
 
 import UIKit
 
-class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource , MenuNavigable, MenuNavigationPresenter {
+class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, MenuNavigable, MenuNavigationPresenter {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -76,6 +76,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        collectionViewLayout()
     }
 
     
@@ -219,51 +220,147 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        1
+    /// Where the bottom row's play button goes: the furthest pack the player has opened,
+    /// which is where their campaign actually is. The straight-in buttons on the rows
+    /// play any one pack; the big button continues the game.
+    var furthestUnlockedPack: Int {
+        var furthest = 2
+        for pack in 2..<LevelPackSetup().numberOfLevels.count
+        where totalStatsArray[0].levelPackUnlockedArray[pack] {
+            furthest = pack
+        }
+        return furthest
     }
-    
+
+    private var buttonRowWidened = false
+
+    func collectionViewLayout() {
+        if buttonRowWidened == false, let container = backButtonCollectionView.superview {
+            buttonRowWidened = true
+            for constraint in backButtonCollectionView.constraints
+            where constraint.firstAttribute == .width {
+                constraint.isActive = false
+            }
+            // The storyboard sized this row for the lone close button it used to hold:
+            // width 50, square. Three buttons need the whole row (play-test request:
+            // big play button in the centre, like the other views), so the fixed width
+            // and the aspect pin go, and the row spans the container instead. Leading
+            // and bottom pins stay the nib's own
+            NSLayoutConstraint.activate([
+                backButtonCollectionView.trailingAnchor.constraint(
+                    equalTo: container.trailingAnchor, constant: -20),
+                backButtonCollectionView.heightAnchor.constraint(
+                    equalToConstant: LevelStatsViewController.playButtonSize),
+            ])
+        }
+
+        let layout = UICollectionViewFlowLayout()
+        let available = backButtonCollectionView.frame.size.width
+        let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
+        layout.minimumInteritemSpacing = cellSpacing
+        layout.minimumLineSpacing = cellSpacing
+        layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
+                                           right: cellSpacing/2)
+        backButtonCollectionView.collectionViewLayout = layout
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        indexPath.row == 1
+            ? CGSize(width: LevelStatsViewController.playButtonSize,
+                     height: LevelStatsViewController.playButtonSize)
+            : CGSize(width: 50, height: 50)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        3
+    }
+
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
-        
+
         cell.frame.size.height = 50
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
-        cell.iconImage.image = UIImage(named:"ButtonClose.png")
-        
+
+        switch indexPath.row {
+        case 0:
+            cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        case 1:
+            cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
+            // Big and centred, like every other screen's (play-test request). It picks
+            // up the campaign at the furthest unlocked pack
+        case 2:
+            cell.iconImage.image = UIImage(named:"ButtonNull.png")
+        default:
+            Log.ui.error("Row index out of range in \(#function, privacy: .public)")
+            break
+        }
+
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
         }
-        
+
         return cell
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        menuNavigationGoBack()
+        if indexPath.row == 0 {
+            menuNavigationGoBack()
+        }
+        if indexPath.row == 1 {
+            let pack = furthestUnlockedPack
+            MenuViewController().clearSavedGame()
+            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
+                       numberOfLevels: LevelPackSetup().numberOfLevels[pack],
+                       sender: "MainMenu", levelPack: pack)
+        }
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                switch indexPath.row {
+                case 0:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                case 1:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
+                default:
+                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                }
             }
         }
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                switch indexPath.row {
+                case 0:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                case 1:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                default:
+                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                }
             }
         }
     }

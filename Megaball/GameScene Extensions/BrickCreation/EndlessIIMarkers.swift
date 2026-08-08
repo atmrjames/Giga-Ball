@@ -147,11 +147,13 @@ extension GameScene {
     func showEndlessIILowerLimit() {
         guard gameMode == .endlessII, endlessIILowerLimitLine == nil else { return }
         let line = SKSpriteNode(color: GameScene.endlessIILowerLimitColour,
-                                size: CGSize(width: gameWidth, height: 1.5))
+                                size: CGSize(width: gameWidth, height: 1))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
         line.zPosition = 1
-        line.alpha = 0.25
-        // Subtler, by request: it should be findable when looked for, not part of the scene
+        line.alpha = 0.12
+        // As subtle as the ten-metre ticks (second play-test round asked again - 0.25
+        // was still too visible), but the full width and the warm colour stay: reach and
+        // hue are what say "this line is the one that matters", not weight
         addChild(line)
         endlessIILowerLimitLine = line
     }
@@ -198,6 +200,13 @@ extension GameScene {
         guard arriving > 0, arriving % GameScene.endlessIITickSpacing == 0 else { return }
         guard arriving % GameScene.endlessIIMarkerSpacing != 0 else { return }
         // A hundred is a hundred, not a hundred and a tick
+
+        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
+        guard best <= 0 || arriving != best else { return }
+        // And a best is a best: a personal best on a ten was getting the full best line
+        // *and* a tick in the same row (the play-test's overlapping-markers screenshot).
+        // The milestone always wins - the same rule that already lets a best on a
+        // hundred replace the hundred-metre line entirely
 
         addEndlessIITick(at: yBrickOffsetEndless - brickHeight/2)
     }
@@ -476,9 +485,14 @@ extension GameScene {
                 brick.position.y = finalY
             }
         }
-        endlessIIBuildInFinalY.removeAll()
         // Anything still waiting its turn is sitting on the top row, so it is put where it was
-        // always going rather than moved down by a guess
+        // always going rather than moved down by a guess.
+        //
+        // The destinations are NOT cleared here - the sweep below still needs them. They
+        // were, and every brick a skip caught mid-fall took the nearest-row fallback
+        // instead of its own destination: a brick still waiting out its delay was sitting
+        // *above* the top row, whose nearest row centre is above the field - which is how
+        // skipped build-ins left bricks parked on top of the HUD (the play-test screenshot)
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }

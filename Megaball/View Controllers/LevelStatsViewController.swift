@@ -421,13 +421,14 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         
         if levelNumber == 0 {
             let mode = GameMode.current(in: defaults)
-            highscoreTitleLabel.text = "Best Height"
-            // Each endless mode's own runs. Sharing the figure would show a player a best
-            // height they set in a different game
+            highscoreTitleLabel.text = ""
+            highscoreLabel.text = ""
+            // The big Best Height figure came off this screen (play-test call): the run
+            // list below already leads with the best, so the headline was the same number
+            // said twice. The best row in the table wears the emphasis instead
             let runs = mode == .endlessII
                 ? totalStatsArray[0].endlessIIHeights
                 : totalStatsArray[0].endlessModeHeight
-            highscoreLabel.text = String(runs.max() ?? 0) + "m"
 
             let dates = mode == .endlessII
                 ? (totalStatsArray[0].endlessIIModeHeightDate ?? [])
@@ -547,13 +548,13 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         let entry = sortedRunHistory[indexPath.row]
 
         cell.textLabel?.text = "\(entry.height)m"
-        cell.textLabel?.font = .boldSystemFont(ofSize: 15)
         let isBest = entry.height == runHistory.map(\.height).max()
+        cell.textLabel?.font = .boldSystemFont(ofSize: isBest ? 19 : 15)
         cell.textLabel?.textColor = isBest
             ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
             : .white
-        // The best run wears the Giga-Ball green, so the figure above is findable in the
-        // list below it
+        // The best run wears the Giga-Ball green and a size up: with the headline Best
+        // Height figure gone, this row is where the best lives now (play-test call)
 
         if let date = entry.date {
             cell.detailTextLabel?.text = LevelStatsViewController.runDateFormat.string(from: date)
