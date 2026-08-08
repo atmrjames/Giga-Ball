@@ -34,6 +34,32 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     // UI property setup
     
     var senderID: Int?
+    var navigatedFrom: String = "MainMenu"
+
+    /// The power-up page's rows, in the order they are shown.
+    ///
+    /// From the menus this is the identity - the page reads as it always has. From the
+    /// pause menu it leads with what this run has seen, most recent first, and the
+    /// unseen follow alphabetically (§12.0's play-test request): mid-run, the question
+    /// is "what was that", and the answer is almost always the thing at the top.
+    lazy var powerUpRowOrder: [Int] = {
+        let count = totalStatsArray[0].powerUpUnlockedArray.count
+        guard navigatedFrom == "PauseMenu", senderID == 2 else {
+            return Array(0..<count)
+        }
+        let setup = LevelPackSetup()
+        return InGameRecents.rowOrder(
+            rowCount: count,
+            recents: InGameRecents.shared.powerUpIndices,
+            powerUpIndex: { setup.powerUpCorrectOrderArray[$0] },
+            name: { setup.powerUpNameArray[setup.powerUpCorrectOrderArray[$0]] })
+    }()
+
+    /// The row the table's index path actually means, through the display order.
+    func powerUpRow(_ indexPath: IndexPath) -> Int {
+        powerUpRowOrder.indices.contains(indexPath.row)
+            ? powerUpRowOrder[indexPath.row] : indexPath.row
+    }
     // Key properties
     
     @IBOutlet var backgroundView: UIView!
@@ -226,8 +252,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         if senderID == 2 {
         // Power-ups
-            let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[indexPath.row]
-            
+            let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[powerUpRow(indexPath)]
+
             cell.iconImage.image = LevelPackSetup().powerUpImageArray[powerUpIndexCorrection]
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.settingDescription.text = LevelPackSetup().powerUpNameArray[powerUpIndexCorrection]
@@ -346,8 +372,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         if senderID == 2 {
         // Power-ups
-            let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[indexPath.row]
-            
+            let powerUpIndexCorrection = LevelPackSetup().powerUpCorrectOrderArray[powerUpRow(indexPath)]
+
             if totalStatsArray[0].powerUpUnlockedArray[powerUpIndexCorrection] {
                 hideAnimate()
                 moveToItemStats(passedIndex: powerUpIndexCorrection, sender: "Power-Ups")

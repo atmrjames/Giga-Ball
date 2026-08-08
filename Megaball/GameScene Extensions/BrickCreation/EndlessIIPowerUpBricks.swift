@@ -152,6 +152,9 @@ extension GameScene {
     func endlessIITriggerPowerUpBrick(_ brick: SKSpriteNode) -> Bool {
         guard gameMode == .endlessII, let index = brick.endlessIIPowerUpIndex else { return false }
 
+        InGameRecents.shared.sawPowerUp(index)
+        // Seen the moment the brick releases it - the reference pages lead with it (§12.0)
+
         let carrier = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         carrier.position = brick.position
         carrier.alpha = 0

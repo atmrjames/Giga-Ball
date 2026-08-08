@@ -30,7 +30,32 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     var group: UIMotionEffectGroup?
     // UI property setup
 
-    private let sections = BrickTypeCatalogue.sections
+    var navigatedFrom: String = "MainMenu"
+
+    /// The sections as shown: the catalogue's own order from the menus; recently struck
+    /// entries first within each section when reached from the pause menu (§12.0) -
+    /// mid-run, the brick being looked up is the one that just did something.
+    private var sections: [BrickTypeCatalogue.Section] = []
+    /// Each shown row's position in `BrickTypeCatalogue.allEntries`, which is what the
+    /// detail page is handed - reordering the display must not reorder the reference.
+    private var flatIndices: [[Int]] = []
+
+    private func buildSections() {
+        sections = []
+        flatIndices = []
+        var flatBase = 0
+        for section in BrickTypeCatalogue.sections {
+            let order = navigatedFrom == "PauseMenu"
+                ? InGameRecents.entryOrder(names: section.entries.map(\.name),
+                                           recents: InGameRecents.shared.brickNames)
+                : Array(section.entries.indices)
+            sections.append(BrickTypeCatalogue.Section(
+                title: section.title,
+                entries: order.map { section.entries[$0] }))
+            flatIndices.append(order.map { flatBase + $0 })
+            flatBase += section.entries.count
+        }
+    }
 
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var titleLabel: UILabel!
@@ -42,6 +67,9 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         super.viewDidLoad()
         installMenuNavigationSwipes()
         // Back from the left edge, forward from the right - see MenuNavigation
+
+        buildSections()
+        // After navigatedFrom is set and before the table asks for anything
 
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(self.returnItemStatsNotificationKeyReceived),
@@ -191,7 +219,13 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     /// Where a row sits in `BrickTypeCatalogue.allEntries`, which is what the detail page is
     /// handed - it takes an index, as it does for a power-up or an achievement.
     private func flatIndex(of indexPath: IndexPath) -> Int {
-        sections[..<indexPath.section].reduce(0) { $0 + $1.entries.count } + indexPath.row
+        flatIndices.indices.contains(indexPath.section)
+            && flatIndices[indexPath.section].indices.contains(indexPath.row)
+            ? flatIndices[indexPath.section][indexPath.row]
+            : sections[..<indexPath.section].reduce(0) { $0 + $1.entries.count }
+                + indexPath.row
+        // Through the display order's map, because the displayed rows may lead with the
+        // recents - counting positions would hand the detail page the wrong entry
     }
 
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {

@@ -439,6 +439,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         hideAnimate()
         let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
         itemsDetailView.senderID = senderID
+        itemsDetailView.navigatedFrom = navigatedFrom
+        // Carried through so the power-ups page can lead with this run's recents when
+        // the whole stack was opened from the pause menu (§12.0)
         self.addChild(itemsDetailView)
         itemsDetailView.view.frame = self.view.frame
         self.view.addSubview(itemsDetailView.view)
@@ -448,6 +451,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func moveToBrickTypes() {
         hideAnimate()
         let brickTypesView = self.storyboard?.instantiateViewController(withIdentifier: "brickTypesView") as! BrickTypesViewController
+        brickTypesView.navigatedFrom = navigatedFrom
         self.addChild(brickTypesView)
         brickTypesView.view.frame = self.view.frame
         self.view.addSubview(brickTypesView.view)

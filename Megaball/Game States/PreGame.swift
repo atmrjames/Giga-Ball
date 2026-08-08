@@ -80,6 +80,10 @@ class PreGame: GKState {
         // Set the background texture
         
         scene.totalScore = 0
+        InGameRecents.shared.reset()
+        // A new run starts with nothing seen - the pause reference pages' recents are
+        // this run's, never the last one's
+
         if scene.startLevelNumber == 0 {
             scene.numberOfLives = scene.dailyStartingLives ?? 0
             // The day's word first (Spare Balls racks reserves in an endless daily),

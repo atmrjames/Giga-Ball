@@ -187,3 +187,41 @@ final class PowerUpCatalogueTests: XCTestCase {
         }
     }
 }
+
+/// The pause reference pages' recents (§12.0's play-test request): "the Bricks and
+/// Power-Ups pages, reached mid-run, list what was recently hit and recently seen first -
+/// so a player can identify the thing that just happened. Unseen power-ups below,
+/// alphabetical."
+final class InGameRecentsTests: XCTestCase {
+
+    func testSeeingAPowerUpAgainMovesItToTheFront() {
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(4)
+        recents.sawPowerUp(7)
+        recents.sawPowerUp(4)
+        XCTAssertEqual(recents.powerUpIndices, [4, 7],
+                       "the most recent is first, and nothing is listed twice")
+        recents.reset()
+        XCTAssertTrue(recents.powerUpIndices.isEmpty, "a new run has seen nothing")
+    }
+
+    func testRowOrderLeadsWithRecentsAndAlphabetisesTheRest() {
+        // Four rows whose power-up indices are 10, 11, 12, 13 and whose names reverse
+        // the row order alphabetically. 12 then 10 were seen, 12 most recently.
+        let names = ["Delta", "Charlie", "Bravo", "Alpha"]
+        let order = InGameRecents.rowOrder(rowCount: 4, recents: [12, 10],
+                                           powerUpIndex: { 10 + $0 },
+                                           name: { names[$0] })
+        XCTAssertEqual(order, [2, 0, 3, 1],
+                       "seen rows first in recency order, unseen below, alphabetical")
+    }
+
+    func testEntryOrderLeadsWithRecentsAndKeepsTheCatalogueOrderForTheRest() {
+        let names = ["Spinning", "Flashing", "Portal", "Fixed"]
+        let order = InGameRecents.entryOrder(names: names,
+                                             recents: ["Portal", "Missing", "Spinning"])
+        XCTAssertEqual(order, [2, 0, 1, 3],
+                       "recently struck first; the rest stay as the catalogue gives them")
+    }
+}

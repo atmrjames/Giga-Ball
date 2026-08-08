@@ -2445,6 +2445,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// switch, because those are exactly the types that never reach the switch and so
 		// stayed invisible for ever (play test: "some bricks never show up")
 
+		recordBrickRecents(sprite)
+		// Also ahead of the early returns, so a struck Portal or power-up brick makes
+		// the recents too - they are exactly the bricks a player pauses to look up
+
 		if sprite.endlessIIRole == .portal {
 			stopLaser()
 			if laserNode == nil {
@@ -3211,6 +3215,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
         powerUp.texture = powerUpTextureArray[powerUpSelection]
+        InGameRecents.shared.sawPowerUp(powerUpSelection)
+        // Seen the moment it enters play - the reference pages lead with it (§12.0)
         // The textures are held in power-up order, so the switch that assigned twenty-nine of
         // them one case at a time was a second copy of that order - and it had 28 listed
         // between 25 and 26
