@@ -217,6 +217,35 @@ final class InGameRecentsTests: XCTestCase {
                        "seen rows first in recency order, unseen below, alphabetical")
     }
 
+    func testStatusNotesReadTheMostCurrentFact() {
+        // Round 7: "A falling power-up shouldn't be considered missed - maybe put
+        // falling as an option." Active beats falling beats collected beats missed.
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(5)
+        XCTAssertEqual(recents.statusNote(for: 5), "MISSED")
+        recents.fallingPowerUpIndices = [5]
+        XCTAssertEqual(recents.statusNote(for: 5), "FALLING")
+        recents.collectedPowerUp(5)
+        recents.fallingPowerUpIndices = []
+        XCTAssertEqual(recents.statusNote(for: 5), "COLLECTED")
+        recents.activePowerUpIndices = [5]
+        XCTAssertEqual(recents.statusNote(for: 5), "ACTIVE")
+        recents.reset()
+    }
+
+    func testTheStandardListDropsWhatTheRecentsAlreadyShow() {
+        // Round 7: "Remove any power-ups that are in the recent list from the standard
+        // power-up list below" - one list per power-up, not the same one twice.
+        let rows = InGameRecents.standardRows(rowCount: 4, recents: [12, 10],
+                                              powerUpIndex: { 10 + $0 })
+        XCTAssertEqual(rows, [1, 3], "rows whose power-ups are listed above are gone")
+
+        let untouched = InGameRecents.standardRows(rowCount: 4, recents: [],
+                                                   powerUpIndex: { 10 + $0 })
+        XCTAssertEqual(untouched, [0, 1, 2, 3], "no recents, the full list as ever")
+    }
+
     func testEntryOrderLeadsWithRecentsAndKeepsTheCatalogueOrderForTheRest() {
         let names = ["Spinning", "Flashing", "Portal", "Fixed"]
         let order = InGameRecents.entryOrder(names: names,

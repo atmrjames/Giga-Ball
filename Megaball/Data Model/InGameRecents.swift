@@ -36,6 +36,23 @@ final class InGameRecents {
     /// reference pages have no scene to ask.
     var activePowerUpIndices: Set<Int> = []
 
+    /// What was still falling when the pause menu opened - the same snapshot. A drop
+    /// mid-air is not missed, it is a decision the player has not made yet (play-test
+    /// round 7).
+    var fallingPowerUpIndices: Set<Int> = []
+
+    /// Bricks destroyed this run, whichever path destroyed them - the game-over
+    /// summary's count.
+    private(set) var bricksDestroyedThisRun = 0
+
+    func brickDestroyed() {
+        bricksDestroyedThisRun += 1
+    }
+
+    /// The finished run's headline numbers, set by the scene as the game-over screen
+    /// goes up - the screen and the detail page read, never compute.
+    var runSummary: (paddleHits: Int, bricksDestroyed: Int, powerUpsCollected: Int)?
+
     /// Brick entry names (the catalogue's own), most recent first. Recorded on the strike,
     /// because a struck brick is the one the player is asking about.
     private(set) var brickNames: [String] = []
@@ -53,10 +70,12 @@ final class InGameRecents {
         // A collection is also the most recent thing that happened to it
     }
 
-    /// The recents section's note for a power-up (play-test request): collected, missed,
-    /// or currently active.
+    /// The recents section's note for a power-up (play-test request): active, still
+    /// falling, collected, or missed - in that order of precedence, because each earlier
+    /// state is the more current fact about it.
     func statusNote(for index: Int) -> String {
         if activePowerUpIndices.contains(index) { return "ACTIVE" }
+        if fallingPowerUpIndices.contains(index) { return "FALLING" }
         return powerUpFates[index] == .collected ? "COLLECTED" : "MISSED"
     }
 
@@ -71,7 +90,18 @@ final class InGameRecents {
         powerUpIndices = []
         powerUpFates = [:]
         activePowerUpIndices = []
+        fallingPowerUpIndices = []
+        bricksDestroyedThisRun = 0
+        runSummary = nil
         brickNames = []
+    }
+
+    /// The standard section's rows, with everything the Recent section already lists
+    /// taken out (play-test round 7) - one list per power-up, not two.
+    static func standardRows(rowCount: Int, recents: [Int],
+                             powerUpIndex: (Int) -> Int) -> [Int] {
+        let listed = Set(recents)
+        return (0..<rowCount).filter { listed.contains(powerUpIndex($0)) == false }
     }
 
     // MARK: - Ordering

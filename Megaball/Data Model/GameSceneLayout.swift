@@ -25,10 +25,22 @@ struct GameSceneLayout {
     static let brickRows = 22
     static var brickColumns: Int { brickRows/2 }
 
-    /// The HUD row (2 units), the power-up tray (3 units) and the spacing between them, in
-    /// layout units. Must cover everything stacked below the safe area inset, or the tray
-    /// overhangs into the playfield.
-    static let hudUnits: CGFloat = 5.5
+    /// The HUD row (2 units), the power-up tray (2.25 units) and the spacing between
+    /// them, in layout units. Must cover everything stacked below the safe area inset,
+    /// or the tray overhangs into the playfield.
+    ///
+    /// Shortened from 5.5 when the tray's bars became rings (play-test round 7): the
+    /// tray was two icon-heights tall to give each bar its room, and the ring needs
+    /// none. A deliberate change, not a side effect - the whole layout scales from this,
+    /// so the play zone keeps its ratio and the game is geometrically identical, just
+    /// with a little more of the screen.
+    ///
+    /// Five exactly, not less: at 4.75 the solved field grows past the width of current
+    /// iPhones and the layout clamps, which wastes the very height the shortening was
+    /// meant to spend - the layout tests caught it on the 17 Pro and Pro Max. Five keeps
+    /// every phone height-constrained, and still leaves Mayhem's shorter bar (4.7) with
+    /// a wider field to buy.
+    static let hudUnits: CGFloat = 5.0
     /// The same bar in Endless 2.0, which does not carry the eight-slot tray.
     static let endlessIIHudUnits: CGFloat = 4.7
 

@@ -224,6 +224,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Power-up empty progress bars
 	
 	var powerUpTray = SKSpriteNode()
+	var powerUpTrayCapsule: SKShapeNode?
 	/// Endless 2.0's power-up display. The tray above is left untouched for the modes that
 	/// already use it.
 	let powerUpRings = PowerUpRingHUD()
@@ -1261,9 +1262,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.isUserInteractionEnabled = false
 		
 		powerUpTray.zPosition = 2
+		powerUpTray.texture = nil
+		powerUpTray.color = .clear
+		powerUpTray.setScale(1)
+		// Texture and scale cleared *before* the size is set: sizing a textured sprite
+		// writes its scale, and the capsule child below would inherit the distortion -
+		// which drew it as a stretched, cornerless wash on the first attempt
 		powerUpTray.size.width = gameWidth
-		powerUpTray.size.height = iconSize*2
+		powerUpTray.size.height = iconSize*1.5
 		powerUpTray.position.x = 0
+		// An icon and a half tall rather than two: the ring around each icon took the
+		// place of the bar beneath it, so the extra half-icon of bar room came off the
+		// whole HUD (see GameSceneLayout.hudUnits)
+
+		powerUpTrayCapsule?.removeFromParent()
+		let capsule = SKShapeNode()
+		let capsuleWidth = powerUpTray.size.width - labelSpacing
+		let trayRect = CGRect(x: -capsuleWidth/2, y: -powerUpTray.size.height/2,
+							  width: capsuleWidth,
+							  height: powerUpTray.size.height)
+		capsule.path = CGPath(roundedRect: trayRect,
+							  cornerWidth: powerUpTray.size.height/2,
+							  cornerHeight: powerUpTray.size.height/2,
+							  transform: nil)
+		capsule.fillColor = UIColor(white: 1, alpha: 0.15)
+		capsule.strokeColor = .clear
+		powerUpTray.addChild(capsule)
+		powerUpTrayCapsule = capsule
+		// Rounded ends, their diameter the tray's height (play-test round 7) - drawn as
+		// a child so it follows every position and hidden decision the sprite makes.
+		// Inset a little from the field's edges and brighter than the lives rack's wash,
+		// because it sits over the HUD backdrop rather than over the dark field - flush
+		// and faint, the rounded ends vanished against it
 		
 		scoreBacker.isHidden = true
 		// Authored visible in GameScene.sks, so it has to be hidden explicitly. It was a
@@ -2608,12 +2638,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func removeBrick(node: SKNode, sprite: SKSpriteNode) {
-		
+
 		if sprite.texture == brickNullTexture {
 			node.removeFromParent()
 			countBricks()
 			return
 		}
+
+		InGameRecents.shared.brickDestroyed()
+		// The run's count for the game-over summary - after the null-cell return, which
+		// is a placeholder leaving, not a brick dying
 		
 		if ball.texture == undestructiballTexture {
 			countBricks()
@@ -5050,8 +5084,20 @@ laserTimer?.invalidate()
 		// Stop the level timer
 
 		InGameRecents.shared.activePowerUpIndices = activeRecentPowerUpIndices()
-		// The snapshot the reference pages' ACTIVE notes read - taken as the menu goes
-		// up, because "currently active" is a question about this moment
+		var falling: Set<Int> = []
+		enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
+			if let sprite = node as? SKSpriteNode, let texture = sprite.texture,
+			   let index = self.powerUpTextureArray.firstIndex(of: texture) {
+				falling.insert(index)
+			}
+		}
+		InGameRecents.shared.fallingPowerUpIndices = falling
+		InGameRecents.shared.runSummary = (paddleHits: paddleHitsPerLevel,
+										   bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
+										   powerUpsCollected: powerUpsCollectedPerLevel)
+		// The snapshot the reference pages and the game-over stats read - taken as the
+		// menu goes up, because "currently active", "still falling" and the run's
+		// numbers are all questions about this moment
 		
 		readyCountdown.isHidden = true
 		goCountdown.isHidden = true

@@ -23,6 +23,7 @@
 		000000001AF18000000000C1 /* InGameRecents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000C0 /* InGameRecents.swift */; };
 		000000001AF18000000000A3 /* DailyTwists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A2 /* DailyTwists.swift */; };
 		000000001AF18000000000A5 /* DailyChallengeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A4 /* DailyChallengeViewController.swift */; };
+		000000001AF18000000000D1 /* RunStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000D0 /* RunStatsViewController.swift */; };
 		000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */; };
 		000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000080 /* EndlessIIWrapAround.swift */; };
 		000000001AF1800000000071 /* EndlessIIPaddleDressing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000070 /* EndlessIIPaddleDressing.swift */; };
@@ -343,6 +344,7 @@
 		000000001AF18000000000C0 /* InGameRecents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameRecents.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A2 /* DailyTwists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTwists.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A4 /* DailyChallengeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeViewController.swift; sourceTree = "<group>"; };
+		000000001AF18000000000D0 /* RunStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStatsViewController.swift; sourceTree = "<group>"; };
 		000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIScrollingBackground.swift; sourceTree = "<group>"; };
 		000000001AF1800000000080 /* EndlessIIWrapAround.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIWrapAround.swift; sourceTree = "<group>"; };
 		000000001AF1800000000070 /* EndlessIIPaddleDressing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPaddleDressing.swift; sourceTree = "<group>"; };
@@ -1190,6 +1192,7 @@
 			isa = PBXGroup;
 			children = (
 				000000001AF18000000000A4 /* DailyChallengeViewController.swift */,
+		000000001AF18000000000D0 /* RunStatsViewController.swift */,
 				1AF170000000009A /* MenuNavigation.swift */,
 				1AF170000000006C /* BrickTypesViewController.swift */,
 				1AF1700000000066 /* BackgroundSelectViewController.swift */,
@@ -1496,6 +1499,7 @@
 		000000001AF18000000000C1 /* InGameRecents.swift in Sources */,
 				000000001AF18000000000A3 /* DailyTwists.swift in Sources */,
 				000000001AF18000000000A5 /* DailyChallengeViewController.swift in Sources */,
+		000000001AF18000000000D1 /* RunStatsViewController.swift in Sources */,
 				000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */,
 				000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */,
 				000000001AF1800000000071 /* EndlessIIPaddleDressing.swift in Sources */,

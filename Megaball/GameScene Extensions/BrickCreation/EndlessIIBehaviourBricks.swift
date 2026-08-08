@@ -420,6 +420,8 @@ extension GameScene {
     /// work. The score is awarded here and the field counted once at the end.
     func endlessIIDestroy(_ brick: SKSpriteNode) {
         guard brick.parent != nil else { return }
+        InGameRecents.shared.brickDestroyed()
+        // The crush path skips removeBrick, so it counts itself for the run summary
         if brick.texture != brickIndestructible2Texture {
             levelScore = levelScore + Scoring.award(brickDestroyScore, multiplier: multiplier)
         }

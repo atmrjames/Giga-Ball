@@ -46,14 +46,26 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             && InGameRecents.shared.powerUpIndices.isEmpty == false
     }
 
+    /// The standard section's rows, with everything the Recent section already lists
+    /// taken out (play-test round 7): one list per power-up, not the same one twice.
+    var standardPowerUpRows: [Int] {
+        let setup = LevelPackSetup()
+        return InGameRecents.standardRows(
+            rowCount: totalStatsArray[0].powerUpUnlockedArray.count,
+            recents: showsRecentsSection ? InGameRecents.shared.powerUpIndices : [],
+            powerUpIndex: { setup.powerUpCorrectOrderArray[$0] })
+    }
+
     /// The power-up a row means. Recent rows carry indices directly, in recency order;
-    /// the standard section goes through the display-order array as ever.
+    /// the standard section goes through the display-order array, minus the recents.
     func powerUpIndex(at indexPath: IndexPath) -> Int {
         if showsRecentsSection, indexPath.section == 0,
            InGameRecents.shared.powerUpIndices.indices.contains(indexPath.row) {
             return InGameRecents.shared.powerUpIndices[indexPath.row]
         }
-        return LevelPackSetup().powerUpCorrectOrderArray[indexPath.row]
+        let rows = standardPowerUpRows
+        let row = rows.indices.contains(indexPath.row) ? rows[indexPath.row] : indexPath.row
+        return LevelPackSetup().powerUpCorrectOrderArray[row]
     }
 
     /// Whether this row is in the Recent section, which is the only place the
@@ -141,7 +153,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard showsRecentsSection else { return nil }
         let label = UILabel()
-        label.text = section == 0 ? "  RECENT THIS RUN" : "  ALL POWER-UPS"
+        label.text = section == 0 ? "  RECENT THIS RUN" : "  OTHER POWER-UPS"
         label.font = .boldSystemFont(ofSize: 13)
         label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         return label
@@ -164,7 +176,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if showsRecentsSection, section == 0 {
                 return InGameRecents.shared.powerUpIndices.count
             }
-            return totalStatsArray[0].powerUpUnlockedArray.count
+            return standardPowerUpRows.count
         } else if senderID == 3 {
         // Achievements
             return LevelPackSetup().achievementsNameArray.count

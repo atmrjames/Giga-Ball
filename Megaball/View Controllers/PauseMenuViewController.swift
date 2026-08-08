@@ -74,6 +74,45 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
     /// A finished daily: no replay, no restart, one way out - so Home takes the middle.
     var dailyGameOver: Bool { isDailyChallenge && sender != "Pause" }
+
+    /// A finished endless run outside the daily: the one screen with a stats button
+    /// (§12.0's game-over stats), in the centre slot a game over otherwise leaves empty.
+    var endlessGameOver: Bool {
+        endlessMode && sender != "Pause" && isDailyChallenge == false
+    }
+
+    let runStatsLabel = UILabel()
+    // Code-built like livesLabel, and for the same reason: the storyboard's labels are
+    // wired and working, and one more by hand risks none of them
+
+    func setUpRunStatsLabel() {
+        runStatsLabel.translatesAutoresizingMaskIntoConstraints = false
+        runStatsLabel.textAlignment = .center
+        runStatsLabel.font = .systemFont(ofSize: 14)
+        runStatsLabel.textColor = UIColor(white: 1, alpha: 0.7)
+        runStatsLabel.numberOfLines = 0
+        runStatsLabel.isHidden = true
+        containterView.addSubview(runStatsLabel)
+        NSLayoutConstraint.activate([
+            runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            runStatsLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
+                                               constant: 16),
+        ])
+    }
+
+    /// The finished run's numbers, in one line under the height (§12.0: balls hit,
+    /// bricks destroyed, power-ups collected). The detail is behind the stats button.
+    func updateRunStatsLabel() {
+        guard endlessMode, sender != "Pause",
+              let summary = InGameRecents.shared.runSummary else {
+            runStatsLabel.isHidden = true
+            return
+        }
+        runStatsLabel.isHidden = false
+        runStatsLabel.text = "Paddle hits \(summary.paddleHits) · "
+            + "Bricks \(summary.bricksDestroyed) · "
+            + "Power-ups \(summary.powerUpsCollected)"
+    }
     // Asked of the session, which outlives the scene until the menus return
 
     var dailyRank: Int?
@@ -137,6 +176,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             addParallaxToView()
         }
         setUpLivesLabel()
+        setUpRunStatsLabel()
         loadData()
         updateLabels()
         collectionViewLayout()
@@ -305,6 +345,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             }
             cell.widthConstraint.constant = 40
         case 1:
+            cell.widthConstraint.constant = 75
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonPlay.png")
             } else if dailyGameOver {
@@ -312,10 +353,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 // Home is the only thing a finished daily offers, so it takes the middle
                 // and the full size - the way every other screen's one button does
                 // (play-test round 3)
+            } else if endlessGameOver {
+                cell.iconImage.image = UIImage(named:"ButtonAchievements.png")
+                cell.widthConstraint.constant = 40
+                // The run's stats detail (§12.0), in the slot a game over leaves empty.
+                // The achievements rosette stands in until §8.5 has a stats button of
+                // its own
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull.png")
             }
-            cell.widthConstraint.constant = 75
         case 2:
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
@@ -358,6 +404,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 MenuViewController().clearSavedGame()
                 moveToMainMenu()
                 // The big centred Home, which is the whole of a finished daily's exit
+            } else if endlessGameOver {
+                openRunStats()
             }
         }
         if indexPath.row == 2 {
@@ -516,6 +564,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     
     func updateLabels() {
         updateLivesLabel()
+        updateRunStatsLabel()
         updateDailySummary()
 
         newItemsLabel.isHidden = true
@@ -738,6 +787,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         itemsView.view.frame = self.view.frame
         self.view.addSubview(itemsView.view)
         itemsView.didMove(toParent: self)
+    }
+
+    /// The finished run's detail (§12.0), over the game-over screen the way the
+    /// reference pages sit over the pause menu.
+    func openRunStats() {
+        if hapticsSetting {
+            interfaceHaptic.impactOccurred()
+        }
+        hideAnimate()
+        let statsView = RunStatsViewController()
+        self.addChild(statsView)
+        statsView.view.frame = self.view.frame
+        self.view.addSubview(statsView.view)
+        statsView.didMove(toParent: self)
+        statsView.showAnimate()
     }
 
     func moveToSettings() {
