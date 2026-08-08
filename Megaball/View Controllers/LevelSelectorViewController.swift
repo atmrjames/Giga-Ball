@@ -301,10 +301,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
         
-        cell.frame.size.height = 50
-        cell.frame.size.width = cell.frame.size.height
-        
         cell.widthConstraint.constant = 40
+        // The layout owns the cell's frame - see LevelStatsViewController's note
         
         switch indexPath.row {
         case 0:

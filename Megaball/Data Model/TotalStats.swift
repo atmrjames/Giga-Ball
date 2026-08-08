@@ -89,8 +89,11 @@ class TotalStats: Codable {
     /// The overall board's source of truth (daily spec §7): the running total of every
     /// posted day's normalised score. Derived, never stored - a second copy of a total
     /// is wrong the first time a record changes.
+    ///
+    /// Only days that actually *landed* count (§12.5): a pending day joins the moment
+    /// its post is confirmed, and a missed one never does.
     var dailyTotalPostedScore: Int {
-        dailyRecords.reduce(0) { $0 + $1.postedNormalisedScore }
+        dailyRecords.reduce(0) { $0 + ($1.posted ? $1.postedNormalisedScore : 0) }
     }
     
     var levelPackUnlockedArray: [Bool] = [

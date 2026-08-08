@@ -104,16 +104,20 @@ extension GameScene {
             record.firstAttemptScore = score
             if challenge.dateKey == session.todayKey {
                 session.lastRunPosted = true
-                record.posted = true
+                record.pendingPost = true
                 record.postedNormalisedScore =
                     DailyChallengeBoards.normalised(score: score, mode: challenge.mode)
                 totalStatsArray[0].upsertDailyRecord(record)
-                GameCenterHandler().submitDailyScores(
-                    dayScore: score,
-                    runningTotal: totalStatsArray[0].dailyTotalPostedScore)
-                // The record goes in before the total is read, so the total includes
-                // today - and the total board only ever grows, so resubmitting the
-                // whole of it is safe and self-healing (§7)
+                GameCenterHandler().submitDailyScores(dayScore: score) { landed in
+                    if landed {
+                        DailyChallengePosting.confirmPosted(dateKey: challenge.dateKey)
+                    }
+                }
+                // Pending until Game Center confirms it landed (§12.5): offline, signed
+                // out or a board that does not exist yet all leave the record pending,
+                // and the retry loop carries it while the window is open. `posted`, the
+                // badge and the overall total all wait for the confirmation - which is
+                // also why the total is submitted from there, not here
             }
         } else {
             record.bestPracticeScore = max(record.bestPracticeScore, score)

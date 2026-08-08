@@ -257,26 +257,24 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             NSLayoutConstraint.activate([
                 backButtonCollectionView.trailingAnchor.constraint(
                     equalTo: container.trailingAnchor, constant: -20),
-                backButtonCollectionView.heightAnchor.constraint(
-                    equalToConstant: LevelStatsViewController.playButtonSize),
+                backButtonCollectionView.heightAnchor.constraint(equalToConstant: 50),
             ])
+            // Full width, but the ordinary 50pt height: with no big play button on this
+            // screen (round 5 removed it - eleven packs, no pack to choose), the two
+            // small buttons sit back down where the settings and info screens keep
+            // theirs, spread to the row's ends
         }
 
         let layout = UICollectionViewFlowLayout()
         let available = backButtonCollectionView.frame.size.width
-        let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
+        let cellSpacing = max(0, (available - 50*3)/2)
+        layout.itemSize = CGSize(width: 50, height: 50)
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
-        layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
-                                           right: cellSpacing/2)
         backButtonCollectionView.collectionViewLayout = layout
+        // Three 50pt slots - close, an empty middle, Game Center - pushed to the ends
     }
 
-    func collectionView(_ collectionView: UICollectionView,
-                        layout collectionViewLayout: UICollectionViewLayout,
-                        sizeForItemAt indexPath: IndexPath) -> CGSize {
-        CGSize(width: 50, height: 50)
-    }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         3
@@ -285,9 +283,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
 
-        cell.frame.size.height = 50
-        cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
+        // The layout owns the cell's frame - see LevelStatsViewController's note
 
         switch indexPath.row {
         case 0:

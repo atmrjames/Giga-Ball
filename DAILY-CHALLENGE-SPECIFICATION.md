@@ -197,7 +197,13 @@ an endless day wears the mode icon); and the bottom row is the app's standard fu
 close left, **big play centred**, the Game Center leaderboard button right.
 
 - Mode, and the level name, pack and picture if Classic
-- Each twist by name with its one-line description; "No twists — a pure run" on baseline days
+- Each twist by name with its icon and one-line description; a baseline day is **Vanilla**,
+  named and badged like any twist
+- The countdown rides under the date ("Closes in 9h 14m"; past days just say practice),
+  and the day's own result shows with its posted/waiting/not-posted badge
+- Whether an attempt posts is said **as a pop-up on the play press** when it will not -
+  practice, spent attempts, past days - rather than as a standing banner; the scoring
+  attempt plays with nothing in its way (play-test round 5)
 - Theme, if forced
 - The countdown to the end of the scoring window
 - Whether this attempt **posts** (first attempt today, window open) or is **practice** —
@@ -358,21 +364,22 @@ design below is what shipped:
   deliberately.
 
 **A score earned offline is posted when the app next reaches Game Center - if the window
-is still open.** The rule that makes this honest is the one already in §1: a score must
-be *posted* inside the window, not merely earned in it. So:
+is still open. Built.** The rule that makes this honest is the one already in §1: a score
+must be *posted* inside the window, not merely earned in it. As shipped:
 
-- A posting run whose submission fails is written to the day's record as **pending**,
-  with the score and the normalised total it would post.
-- Every launch, foreground and daily-screen visit retries the pending posts whose window
-  is still open, oldest first.
-- A pending post whose window closes before it lands is marked **missed** and never
-  posted. The briefing's result line already has the vocabulary for this - the badge
-  beside the day's score says posted or not posted, and "not posted" is where a missed
-  one lands.
-- The overall total (§7) is submitted from the local tally after any successful daily
-  post, so it self-heals: a day that posts late still reaches the total.
-
-Neither is built. Both are phase-4 work, and the save half is the larger of the two.
+- A scoring run's record is written as **pending** the moment the run ends, and `posted`
+  waits for Game Center to confirm the submission landed. Signed out, offline, and
+  board-not-in-App-Store-Connect all leave it pending.
+- Launch, foregrounding and opening the briefing screen retry the pending post - today's
+  only, because any older pending post is by definition out of its window and becomes a
+  **miss**: never posted, score kept locally, the badge reads "not posted".
+- The briefing's badge has the third state: a green check once landed ("on the board"),
+  an hourglass while pending ("waiting to post"), and the grey "not posted" for
+  everything that never will. The game-over line says "submitted", which is the honest
+  word before a confirmation.
+- The overall total (§7) is submitted from the confirmation, not the attempt - a day
+  joins the total when its post lands, never before, and the whole total is resubmitted
+  each time so a late-landing day self-heals into it.
 
 ## 13. Open questions
 

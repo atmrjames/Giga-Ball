@@ -56,7 +56,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     private let twistsStack = UIStackView()
     private let resultLabel = UILabel()
     private let countdownLabel = UILabel()
-    private let postingLabel = UILabel()
+    // The standing posting banner is gone (play-test round 5): the countdown line under
+    // the date says Practice when it applies, and the play press itself warns when a run
+    // will not post
     private let leaderboardButton = UIButton(type: .custom)
     private let testClockLabel = UILabel()
     private var developerResetButton: UIButton?
@@ -74,6 +76,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.insertSubview(blur, at: 0)
         // The same dark blur every menu screen stands on
+
+        DailyChallengePosting.retryPendingPosts()
+        // One of §12.5's retry moments: opening this screen is when a player comes
+        // looking for their score, which is the best time to have just carried it
 
         loadData()
         buildLayout()
@@ -182,7 +188,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         dayCard.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(dayCard)
 
-        for label in [modeLabel, levelLabel, countdownLabel, postingLabel, resultLabel] {
+        for label in [modeLabel, levelLabel, countdownLabel, resultLabel] {
             label.textAlignment = .center
             label.numberOfLines = 0
         }
@@ -192,9 +198,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         levelLabel.textColor = UIColor(white: 1, alpha: 0.8)
         countdownLabel.font = .boldSystemFont(ofSize: 15)
         countdownLabel.textColor = UIColor(white: 1, alpha: 0.7)
-        postingLabel.font = .boldSystemFont(ofSize: 13)
-        postingLabel.textColor = #colorLiteral(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
-        // Its text is the posting status, set per viewed day in showChallenge()
 
         levelImageView.contentMode = .scaleAspectFit
         levelImageView.layer.masksToBounds = false
@@ -234,9 +237,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // The shared delegate's only job is allowing simultaneous recognition, which is
         // exactly what lets this live beside the edge swipe on the same view
         view.addGestureRecognizer(daySwipe)
-
-        postingLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(postingLabel)
 
         let close = roundButton(system: "xmark", action: #selector(closeTapped))
         let play = roundButton(system: "play.fill", action: #selector(playTapped), size: 75)
@@ -330,11 +330,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
             levelImageView.heightAnchor.constraint(equalToConstant: 72),
 
-            postingLabel.topAnchor.constraint(equalTo: dayCard.bottomAnchor, constant: 16),
-            postingLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
-            postingLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor,
-                                                   constant: -34),
-
             close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -20),
@@ -384,7 +379,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     func showChallenge() {
         let challenge = DailyChallengeGenerator.challenge(forKey: viewedKey)
 
-        dateLabel.text = DailyChallengeSession.shared.displayName(forKey: viewedKey)
+        dateLabel.text = headerDateText
         if viewedOffset == 0 {
             dateLabel.font = .boldSystemFont(ofSize: 20)
             dateLabel.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
@@ -448,24 +443,27 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // The same rule the level screens use: no Game Center, no leaderboard button.
         // The boards themselves are App Store Connect work (James's side, §7)
 
-        postingLabel.text = DailyChallengePosting.statusLine(
-            record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
-            isToday: viewedOffset == 0,
-            mode: challenge.mode,
-            gameCenterOn: GKLocalPlayer.local.isAuthenticated)
-        // Whether this run posts or is practice - stated before the run starts (§6)
-
         let offset = DailyChallengeSession.shared.testDayOffset
-        let stamp = DateFormatter()
-        stamp.dateFormat = "d MMM"
-        stamp.timeZone = TimeZone(identifier: "UTC")
         testClockLabel.text = offset == 0
-            ? "TEST CLOCK: LIVE — \(stamp.string(from: viewedDate))"
+            ? "TEST CLOCK: LIVE"
             : "TEST CLOCK: \(offset > 0 ? "+" : "")\(offset) day\(abs(offset) == 1 ? "" : "s")"
-                + " — \(stamp.string(from: viewedDate))"
-        // The real date the clock is sitting on. Winding it left the title saying TODAY
-        // whatever day it was, which read as the buttons doing nothing (play-test round 3)
         refreshCountdown()
+    }
+
+    /// The date the header shows for the viewed day.
+    ///
+    /// TODAY and YESTERDAY in words when the clock is live - but the *actual date* once
+    /// the test clock is wound, because a wound clock whose header still said TODAY read
+    /// as the developer buttons doing nothing (play-test rounds 4 and 5).
+    var headerDateText: String {
+        if DailyChallengeSession.shared.testDayOffset == 0 {
+            return DailyChallengeSession.shared.displayName(forKey: viewedKey)
+        }
+        let stamp = DateFormatter()
+        stamp.dateStyle = .full
+        stamp.timeZone = TimeZone(identifier: "UTC")
+        stamp.locale = .autoupdatingCurrent
+        return stamp.string(from: viewedDate).uppercased()
     }
 
     /// The day's own result, with a badge saying whether it reached the live board.
@@ -481,25 +479,46 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         }
         resultLabel.isHidden = false
 
-        let best = max(record.firstAttemptScore, record.bestPracticeScore)
         let unit = mode == .classic ? "" : "m"
+        let headline = record.posted
+            ? "Posted: \(record.firstAttemptScore)\(unit)   "
+            : "Your best: \(max(record.firstAttemptScore, record.bestPracticeScore))\(unit)   "
+        // Once a score is on the board, the board's number is the day's number - a
+        // practice best beside it made no sense (play-test round 5). Before then the
+        // best of whatever was played is the honest summary
         let line = NSMutableAttributedString(
-            string: "Your best: \(best)\(unit)   ",
+            string: headline,
             attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
                          .foregroundColor: UIColor.white])
 
+        let pendingToday = record.isPending && viewedOffset == 0
+        let symbol: String
+        let caption: String
+        let tint: UIColor
+        if record.posted {
+            symbol = "checkmark.seal.fill"
+            caption = "  on the board"
+            tint = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        } else if pendingToday {
+            symbol = "hourglass"
+            caption = "  waiting to post"
+            tint = UIColor(white: 1, alpha: 0.6)
+            // Earned in the window, not yet landed (§12.5) - the retry loop is carrying
+            // it, and this badge flips to the green check the moment it does
+        } else {
+            symbol = "clock.badge.xmark"
+            caption = "  not posted"
+            tint = UIColor(white: 1, alpha: 0.45)
+        }
+
         let badge = NSTextAttachment()
-        let symbol = record.posted ? "checkmark.seal.fill" : "clock.badge.xmark"
-        let tint: UIColor = record.posted
-            ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-            : UIColor(white: 1, alpha: 0.45)
         badge.image = UIImage(systemName: symbol)?
             .withTintColor(tint, renderingMode: .alwaysOriginal)
         badge.bounds = CGRect(x: 0, y: -2, width: 17, height: 15)
         line.append(NSAttributedString(attachment: badge))
 
         line.append(NSAttributedString(
-            string: record.posted ? "  posted" : "  not posted",
+            string: caption,
             attributes: [.font: UIFont.systemFont(ofSize: 13),
                          .foregroundColor: tint]))
         resultLabel.attributedText = line
@@ -512,16 +531,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
                 .timeIntervalSince(session.today)
             let hours = Int(remaining)/3600
             let minutes = (Int(remaining) % 3600)/60
-            countdownLabel.text = "Challenge changes in \(hours)h \(minutes)m"
+            countdownLabel.text = "Closes in \(hours)h \(minutes)m"
         } else {
-            let closed = DateFormatter()
-            closed.dateStyle = .medium
-            closed.timeZone = TimeZone(identifier: "UTC")
-            closed.locale = .autoupdatingCurrent
-            countdownLabel.text = "Practice - this challenge closed "
-                + closed.string(from: viewedDate)
-            // A past day plays for ever and posts nothing (§8) - said before the run,
-            // never discovered after
+            countdownLabel.text = "Practice - scores aren't posted"
+            // A past day plays for ever and posts nothing (§8). One word under the date
+            // is the whole of it now - the standing yellow banner it used to share the
+            // screen with is gone (play-test round 5), and the pop-up on the play press
+            // says the rest to exactly the presses it applies to
         }
     }
 
@@ -636,6 +652,27 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     @objc private func playTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         let challenge = DailyChallengeGenerator.challenge(forKey: viewedKey)
+
+        if let notice = DailyChallengePosting.practiceNotice(
+            record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
+            isToday: viewedOffset == 0,
+            mode: challenge.mode) {
+            let alert = UIAlertController(title: "Practice run", message: notice,
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Play", style: .default) { [weak self] _ in
+                self?.startRun(challenge)
+            })
+            present(alert, animated: true)
+            // The promise is still made before the run starts (§6) - but as a pop-up on
+            // exactly the presses it applies to, instead of a banner shouting at all of
+            // them (play-test round 5). A scoring attempt goes straight through
+            return
+        }
+        startRun(challenge)
+    }
+
+    private func startRun(_ challenge: DailyChallenge) {
         DailyChallengeSession.shared.active = challenge
 
         var record = totalStatsArray[0].dailyRecord(forKey: viewedKey)

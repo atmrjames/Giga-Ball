@@ -241,10 +241,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             let result: String
             if DailyChallengeSession.shared.lastRunPosted {
                 result = dailyRank.map { "Posted — #\($0) on today's board" }
-                    ?? "Posted to today's board"
-                // The placing arrives asynchronously when Game Center answers; until
-                // then - or when it cannot answer at all (signed out, offline, board
-                // not yet in App Store Connect) - the post alone is the news
+                    ?? "Submitted to today's board"
+                // The placing arrives asynchronously when Game Center answers. Until
+                // then "submitted" is the honest word (§12.5): the score is on its way,
+                // and if it cannot land - signed out, offline, board not yet in App
+                // Store Connect - the retry loop carries it and the briefing screen's
+                // badge tells the truth of where it got to
             } else {
                 result = "Practice run — practice never posts"
             }

@@ -229,38 +229,44 @@ final class DailyChallengeTests: XCTestCase {
         stats.upsertDailyRecord(replaced)
         XCTAssertEqual(stats.dailyRecords.count, 2, "one record per date, always")
         XCTAssertEqual(stats.dailyTotalPostedScore, 1900)
+
+        var pending = DailyChallengeRecord(dateKey: "2026-08-09")
+        pending.postedNormalisedScore = 700
+        pending.pendingPost = true
+        stats.upsertDailyRecord(pending)
+        XCTAssertEqual(stats.dailyTotalPostedScore, 1900,
+                       "a day joins the total when its post lands, not before (§12.5)")
     }
 
-    func testThePostingLineSaysWhatTheRunWillBe() {
-        // §6: whether this attempt posts or is practice, stated before the run starts.
+    func testThePracticeNoticeInterruptsOnlyThePressesItAppliesTo() {
+        // §6's promise, reshaped by play-test round 5: the standing banner became a
+        // pop-up on the play press - "maybe show this as a pop-up after pressing play.
+        // Maybe the same pop-up can be used when playing previous days".
+        XCTAssertNil(
+            DailyChallengePosting.practiceNotice(record: nil, isToday: true,
+                                                 mode: .classic),
+            "the scoring attempt plays with nothing in its way")
+
         XCTAssertEqual(
-            DailyChallengePosting.statusLine(record: nil, isToday: true, mode: .classic,
-                                             gameCenterOn: true),
-            "FIRST ATTEMPT — THIS RUN POSTS TO TODAY'S BOARD")
-        XCTAssertEqual(
-            DailyChallengePosting.statusLine(record: nil, isToday: true, mode: .classic,
-                                             gameCenterOn: false),
-            "FIRST ATTEMPT — SIGN IN TO GAME CENTER TO POST TODAY'S SCORE")
-        XCTAssertEqual(
-            DailyChallengePosting.statusLine(record: nil, isToday: false, mode: .classic,
-                                             gameCenterOn: true),
-            "PRACTICE — PAST CHALLENGES NEVER POST")
+            DailyChallengePosting.practiceNotice(record: nil, isToday: false,
+                                                 mode: .classic),
+            "This challenge has closed.\nPractice scores are never posted.")
 
         var spent = DailyChallengeRecord(dateKey: "t")
         spent.attemptCount = 1
         XCTAssertEqual(
-            DailyChallengePosting.statusLine(record: spent, isToday: true, mode: .classic,
-                                             gameCenterOn: true),
-            "ATTEMPT SPENT — PRACTICE FROM HERE",
+            DailyChallengePosting.practiceNotice(record: spent, isToday: true,
+                                                 mode: .classic),
+            "Today's attempt is spent.\nThis run won't post a score.",
             "a force-quit or midnight-crossed attempt reads as spent, not as posted")
 
         spent.posted = true
         spent.firstAttemptScore = 34
         XCTAssertEqual(
-            DailyChallengePosting.statusLine(record: spent, isToday: true, mode: .endless,
-                                             gameCenterOn: true),
-            "TODAY'S SCORE: 34m — PRACTICE FROM HERE",
-            "heights wear their metres")
+            DailyChallengePosting.practiceNotice(record: spent, isToday: true,
+                                                 mode: .endless),
+            "Your score of 34m is on today's board.\nPlaying again won't post a new score.",
+            "once posted, the board's number is the day's number - heights wear their metres")
     }
 
     func testTheScoringAttemptPostsAndPracticeOnlyRaisesThePracticeBest() {
@@ -285,7 +291,9 @@ final class DailyChallengeTests: XCTestCase {
 
         let posted = scene.totalStatsArray[0].dailyRecord(forKey: session.todayKey)!
         XCTAssertEqual(posted.firstAttemptScore, 34)
-        XCTAssertTrue(posted.posted)
+        XCTAssertTrue(posted.isPending,
+                      "the score is pending until Game Center confirms it landed (§12.5)")
+        XCTAssertFalse(posted.posted, "posted waits for the confirmation")
         XCTAssertEqual(posted.postedNormalisedScore, 3400)
         XCTAssertTrue(session.lastRunPosted)
         XCTAssertFalse(session.isScoringAttempt, "the attempt is settled exactly once")
@@ -319,6 +327,44 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertFalse(record.posted)
         XCTAssertEqual(record.postedNormalisedScore, 0)
         XCTAssertFalse(session.lastRunPosted)
+    }
+
+    func testAPendingPostWhoseWindowClosedBecomesAMiss() {
+        // §12.5: "If not connected before the daily deadline, the score isn't posted."
+        var stale = DailyChallengeRecord(dateKey: "2026-08-01")
+        stale.firstAttemptScore = 40
+        stale.postedNormalisedScore = 4000
+        stale.pendingPost = true
+        var fresh = DailyChallengeRecord(dateKey: "2026-08-08")
+        fresh.pendingPost = true
+
+        let settled = DailyChallengePosting.settlingMisses(in: [stale, fresh],
+                                                           today: "2026-08-08")
+        XCTAssertTrue(settled.changed)
+        XCTAssertFalse(settled.records[0].isPending, "the closed window is a miss")
+        XCTAssertFalse(settled.records[0].posted, "and it never becomes a post")
+        XCTAssertEqual(settled.records[0].firstAttemptScore, 40,
+                       "the score is still the player's, board or no board")
+        XCTAssertTrue(settled.records[1].isPending,
+                      "today's window is still open - the retry keeps carrying it")
+
+        let unchanged = DailyChallengePosting.settlingMisses(in: settled.records,
+                                                             today: "2026-08-08")
+        XCTAssertFalse(unchanged.changed, "settling twice writes nothing new")
+    }
+
+    func testTheMergeCarriesAPendingPostButNeverPastAConfirmation() {
+        var pendingHere = DailyChallengeRecord(dateKey: "d")
+        pendingHere.pendingPost = true
+        var postedThere = DailyChallengeRecord(dateKey: "d")
+        postedThere.posted = true
+
+        let merged = DailyChallengeRecord.merged([pendingHere], [postedThere])
+        XCTAssertTrue(merged[0].posted, "the device that saw it land wins")
+        XCTAssertFalse(merged[0].isPending, "a landed post has nothing left to carry")
+
+        let bothWaiting = DailyChallengeRecord.merged([pendingHere], [pendingHere])
+        XCTAssertTrue(bothWaiting[0].isPending, "still waiting on both sides, still carried")
     }
 
     // MARK: - The briefing screen's day browsing

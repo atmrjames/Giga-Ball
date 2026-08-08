@@ -83,20 +83,28 @@ final class GameCenterHandler: NSObject {
     }
     // Replaces GKScore.report, deprecated in iOS 14
 
-    /// A posting daily run's two submissions (daily spec §7): the day's score to the
-    /// recurring daily board - Game Center's own daily reset is the 24-hour window - and
-    /// the running total of every posted day to the overall board.
+    /// A daily run's score, on its way to the recurring daily board - Game Center's own
+    /// daily reset is the 24-hour window.
     ///
-    /// Signed out or offline, both quietly do nothing: the attempt is still spent and
-    /// the local record still holds the day, and the total board self-heals on the next
-    /// posting run because it is always the whole total. Deliberately not part of
-    /// `gameCenterSave()`, which resubmits standing bests on every save - the daily
-    /// board's entry is one run's result, made once, when that run ends.
-    func submitDailyScores(dayScore: Int, runningTotal: Int) {
-        submit(dayScore, to: DailyChallengeBoards.daily)
-        if runningTotal > 0 {
-            submit(runningTotal, to: DailyChallengeBoards.total)
+    /// The completion says whether it *landed* (§12.5): signed out, offline, or the
+    /// board not existing yet all come back false, and the caller keeps the post
+    /// pending for the retry loop. Deliberately not part of `gameCenterSave()`, which
+    /// resubmits standing bests on every save - the daily board's entry is one run's
+    /// result, made once, confirmed once.
+    func submitDailyScores(dayScore: Int, completion: ((Bool) -> Void)? = nil) {
+        guard GKLocalPlayer.local.isAuthenticated else { completion?(false); return }
+        GKLeaderboard.submitScore(dayScore, context: 0, player: GKLocalPlayer.local,
+                                  leaderboardIDs: [DailyChallengeBoards.daily]) { error in
+            DispatchQueue.main.async { completion?(error == nil) }
         }
+    }
+
+    /// The overall board's running total (§7), submitted whole after a day's post is
+    /// confirmed. Always the whole total, so it is safe to resubmit and self-heals: a
+    /// day that lands late still reaches it.
+    func submitDailyTotal(_ total: Int) {
+        guard total > 0 else { return }
+        submit(total, to: DailyChallengeBoards.total)
     }
 
     /// Where the local player stands on today's board, for the game-over screen.

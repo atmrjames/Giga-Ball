@@ -50,16 +50,24 @@ class SettingsTableViewCell: UITableViewCell {
     func hugDescriptionToText(_ hug: Bool) {
         descriptionHugsTextConstraint?.isActive = false
         descriptionHugsTextConstraint = nil
+        settingDescription.numberOfLines = hug ? 1 : 0
+        // One line while hugging, always: a multiline label's intrinsic width remembers
+        // whatever narrow wrap the last layout pass gave it, so measuring it here could
+        // pin the label at its *wrapped* width - which is exactly how the pack names
+        // ended up folded onto two lines (play-test round 5)
         guard hug else { return }
 
-        settingDescription.sizeToFit()
+        let width = (settingDescription.text ?? "")
+            .size(withAttributes: [.font: settingDescription.font as Any]).width
         let constraint = settingDescription.widthAnchor.constraint(
-            equalToConstant: settingDescription.intrinsicContentSize.width)
-        constraint.priority = .required
+            equalToConstant: ceil(width))
+        constraint.priority = UILayoutPriority(rawValue: 998)
         constraint.isActive = true
         descriptionHugsTextConstraint = constraint
-        // Measured after the text is set, and torn down on reuse - a stale width from
-        // another row's name would truncate this one
+        // Measured from the text itself, after it is set, and torn down on reuse - a
+        // stale width from another row's name would truncate this one. Just below
+        // required, so an impossibly long name truncates instead of breaking the
+        // tick-and-button chain beside it
     }
 
     override func awakeFromNib() {

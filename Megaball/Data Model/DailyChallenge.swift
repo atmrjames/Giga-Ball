@@ -290,6 +290,13 @@ struct DailyChallengeRecord: Codable, Equatable {
     /// endless height × 100. Stored at posting time, so the total never re-derives a day
     /// under rules that may since have changed.
     var postedNormalisedScore: Int = 0
+    /// Whether the day's score is still waiting to reach Game Center (§12.5): earned in
+    /// the window, submission dispatched or due, not yet confirmed landed. Retried while
+    /// the window is open; a window that closes first makes this a miss, and `posted`
+    /// stays false for ever. Optional so older records decode.
+    var pendingPost: Bool?
+
+    var isPending: Bool { pendingPost ?? false }
 }
 
 extension DailyChallengeRecord {
@@ -314,6 +321,8 @@ extension DailyChallengeRecord {
             kept.attemptCount = max(kept.attemptCount, record.attemptCount)
             kept.postedNormalisedScore = max(kept.postedNormalisedScore,
                                              record.postedNormalisedScore)
+            kept.pendingPost = (kept.isPending || record.isPending) && kept.posted == false
+            // A pending post survives the merge unless either side already landed it
             byDate[record.dateKey] = kept
         }
         return byDate.values.sorted { $0.dateKey < $1.dateKey }
@@ -322,24 +331,107 @@ extension DailyChallengeRecord {
 
 enum DailyChallengePosting {
 
-    /// The briefing screen's posting line (§6): whether the next run posts or is
-    /// practice, stated *before* the run starts, never discovered after. Pure, so the
-    /// promise the screen makes is a promise the tests can hold it to.
-    static func statusLine(record: DailyChallengeRecord?, isToday: Bool, mode: GameMode,
-                           gameCenterOn: Bool) -> String {
-        guard isToday else { return "PRACTICE — PAST CHALLENGES NEVER POST" }
-        guard let record, record.attemptCount > 0 else {
-            return gameCenterOn
-                ? "FIRST ATTEMPT — THIS RUN POSTS TO TODAY'S BOARD"
-                : "FIRST ATTEMPT — SIGN IN TO GAME CENTER TO POST TODAY'S SCORE"
+    /// What the player is told when the play press is about to start a *practice* run -
+    /// nil when the run is the scoring attempt, which plays with nothing in its way.
+    ///
+    /// Shown as a pop-up on the press (play-test round 5), not as a standing label: the
+    /// promise is still made *before* the run starts, never discovered after (§6), but
+    /// it interrupts only the presses it applies to. Pure, so the promise the screen
+    /// makes is a promise the tests can hold it to.
+    static func practiceNotice(record: DailyChallengeRecord?, isToday: Bool,
+                               mode: GameMode) -> String? {
+        guard isToday else {
+            return "This challenge has closed.\nPractice scores are never posted."
         }
+        guard let record, record.attemptCount > 0 else { return nil }
         if record.posted {
-            return "TODAY'S SCORE: \(scoreText(record.firstAttemptScore, mode: mode))"
-                + " — PRACTICE FROM HERE"
+            return "Your score of \(scoreText(record.firstAttemptScore, mode: mode))"
+                + " is on today's board.\nPlaying again won't post a new score."
         }
-        return "ATTEMPT SPENT — PRACTICE FROM HERE"
-        // The spent-but-unposted case is real: a force-quit mid-attempt, or a run that
-        // crossed midnight. Saying so plainly is what keeps the rule feeling fair
+        return "Today's attempt is spent.\nThis run won't post a score."
+    }
+
+    // MARK: - Pending posts (§12.5)
+
+    /// Settles the pending posts whose windows have closed: they become misses.
+    ///
+    /// Pure - the record keeps its scores and `posted` stays false for ever, which is
+    /// what the briefing's "not posted" badge reads. Returns whether anything changed,
+    /// so the caller knows whether to write.
+    static func settlingMisses(in records: [DailyChallengeRecord],
+                               today: String) -> (records: [DailyChallengeRecord],
+                                                  changed: Bool) {
+        var changed = false
+        let settled = records.map { record -> DailyChallengeRecord in
+            guard record.isPending, record.dateKey != today else { return record }
+            var missed = record
+            missed.pendingPost = false
+            changed = true
+            return missed
+        }
+        return (settled, changed)
+    }
+
+    /// Marks a day's post as landed, in the store itself.
+    ///
+    /// The confirmation arrives from Game Center after the scene that posted has gone,
+    /// so this writes through the stats file rather than through anyone's loaded copy -
+    /// and submits the overall total, which the day has only now joined.
+    static func confirmPosted(dateKey: String) {
+        guard let stats = loadStats() else { return }
+        guard var record = stats.dailyRecord(forKey: dateKey), record.isPending else {
+            return
+        }
+        record.posted = true
+        record.pendingPost = false
+        stats.upsertDailyRecord(record)
+        save(stats)
+        GameCenterHandler().submitDailyTotal(stats.dailyTotalPostedScore)
+    }
+
+    /// Carries anything still waiting: misses settled, today's pending post retried.
+    ///
+    /// Called at launch, on foregrounding and when the briefing screen opens - the
+    /// moments a connection may have come back (§12.5). Oldest business first: windows
+    /// that closed while offline become misses, then today's score tries again.
+    static func retryPendingPosts() {
+        guard let stats = loadStats() else { return }
+        let today = DailyChallengeSession.shared.todayKey
+
+        let settled = settlingMisses(in: stats.dailyRecords, today: today)
+        if settled.changed {
+            stats.dailyChallengeRecords = settled.records
+            save(stats)
+        }
+
+        guard let record = stats.dailyRecord(forKey: today), record.isPending else {
+            return
+        }
+        GameCenterHandler().submitDailyScores(dayScore: record.firstAttemptScore) {
+            landed in
+            if landed { confirmPosted(dateKey: today) }
+        }
+    }
+
+    private static func loadStats() -> TotalStats? {
+        guard let store = FileManager.default.urls(for: .documentDirectory,
+                                                   in: .userDomainMask).first?
+            .appendingPathComponent("totalStatsStore.plist"),
+              let data = try? Data(contentsOf: store),
+              let array = try? PropertyListDecoder().decode([TotalStats].self, from: data),
+              let stats = array.first else { return nil }
+        stats.makeStoredArraysConsistent()
+        return stats
+    }
+
+    private static func save(_ stats: TotalStats) {
+        guard let store = FileManager.default.urls(for: .documentDirectory,
+                                                   in: .userDomainMask).first?
+            .appendingPathComponent("totalStatsStore.plist"),
+              let data = try? PropertyListEncoder().encode([stats]) else { return }
+        try? data.write(to: store)
+        CloudKitHandler().saveToiCloud()
+        // The posted flag rides to iCloud like the attempt flag does (§10)
     }
 
     /// A score in the mode's own terms: heights wear their metres.

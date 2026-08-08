@@ -682,6 +682,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     @objc private func splashScreenEndedNotificationKeyReceived(_ notification: Notification) {
         updateGCAuth()
+        DailyChallengePosting.retryPendingPosts()
+        // Launch is the third of §12.5's retry moments
         refreshView()
         
         if resumeGameToLoad {
@@ -718,6 +720,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
         authGCPlayer()
+        DailyChallengePosting.retryPendingPosts()
+        // Foregrounding is when a connection is likeliest to have come back (§12.5)
         refreshView()
         if musicSetting {
             MusicHandler.sharedHelper.resumeMusic()
