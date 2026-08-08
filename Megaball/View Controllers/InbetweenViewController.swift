@@ -355,26 +355,27 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             // date, the mode, and the twists with their icons - the last look at the
             // rules before they apply
 
+            let font = levelNameLabel.font ?? .boldSystemFont(ofSize: 17)
+            let colour = levelNameLabel.textColor ?? .white
+            let lines = NSMutableAttributedString()
             if challenge.twists.isEmpty {
-                levelNameLabel.text = ""
+                lines.append(DailyTwist.vanillaLine(font: font, colour: colour))
             } else {
-                let line = NSMutableAttributedString()
                 for (index, twist) in challenge.twists.enumerated() {
-                    if index > 0 { line.append(NSAttributedString(string: "   ")) }
-                    line.append(twist.titleLine(
-                        font: levelNameLabel.font ?? .boldSystemFont(ofSize: 17),
-                        colour: levelNameLabel.textColor ?? .white))
+                    if index > 0 { lines.append(NSAttributedString(string: "\n")) }
+                    lines.append(twist.titleLine(font: font, colour: colour))
                 }
-                let paragraph = NSMutableParagraphStyle()
-                paragraph.alignment = .center
-                line.addAttribute(.paragraphStyle, value: paragraph,
-                                  range: NSRange(location: 0, length: line.length))
-                levelNameLabel.adjustsFontSizeToFitWidth = true
-                levelNameLabel.attributedText = line
-                // One line, side by side: the nib sizes this label for a level name, and
-                // a second stacked line fell outside it - the play test's screenshot
-                // showed one twist where the day had two
             }
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .center
+            paragraph.paragraphSpacing = 2
+            lines.addAttribute(.paragraphStyle, value: paragraph,
+                               range: NSRange(location: 0, length: lines.length))
+            levelNameLabel.numberOfLines = 0
+            levelNameLabel.adjustsFontSizeToFitWidth = true
+            levelNameLabel.attributedText = lines
+            // One twist per line, the same as the pause summary (play-test round 3), and
+            // a no-twist day says Vanilla with its own badge rather than saying nothing
         }
     }
     

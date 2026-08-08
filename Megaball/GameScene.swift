@@ -2410,6 +2410,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// meets is not going through anything
 		let stopLaser = { if gigaLaser == false { laserNode?.removeFromParent() } }
 
+		revealDailyFog(sprite)
+		// Fog of War lifts on the first strike, whatever struck it and whatever type it
+		// is - before the Portal and power-up brick returns below, and before the type
+		// switch, because those are exactly the types that never reach the switch and so
+		// stayed invisible for ever (play test: "some bricks never show up")
+
 		if sprite.endlessIIRole == .portal {
 			stopLaser()
 			if laserNode == nil {
@@ -4506,23 +4512,29 @@ laserTimer?.invalidate()
 		})
 		// Ball size reset
 		
-		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-			let temporarySprite = node as! SKSpriteNode
-			if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
-				let startingScale = SKAction.scale(to: 1, duration: 0)
-				let startingFade = SKAction.fadeOut(withDuration: 0)
-				let scaleUp = SKAction.scale(to: 1, duration: 0)
-				let fadeIn = SKAction.fadeIn(withDuration: 0.2)
-				let startingGroup = SKAction.group([startingFade, startingScale])
-				let brickGroup = SKAction.group([scaleUp, fadeIn])
-				node.run(startingGroup, completion: {
-					node.isHidden = false
-					node.run(brickGroup)
-				})
+		if dailyFogIsOn == false {
+			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+				let temporarySprite = node as! SKSpriteNode
+				if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
+					let startingScale = SKAction.scale(to: 1, duration: 0)
+					let startingFade = SKAction.fadeOut(withDuration: 0)
+					let scaleUp = SKAction.scale(to: 1, duration: 0)
+					let fadeIn = SKAction.fadeIn(withDuration: 0.2)
+					let startingGroup = SKAction.group([startingFade, startingScale])
+					let brickGroup = SKAction.group([scaleUp, fadeIn])
+					node.run(startingGroup, completion: {
+						node.isHidden = false
+						node.run(brickGroup)
+					})
+				}
 			}
 		}
 		hiddenBricksIconBar.isHidden = true
-		// Invisible bricks reset
+		// Invisible bricks reset - the Hide Bricks power-up expires with the ball that was
+		// lost. Not on a Fog of War day: losing a ball there handed back the whole field,
+		// which is the twist ending itself (play test - "I had a spare ball and all the
+		// invisible bricks became visible"). The fog is the day's rule, not a power-up,
+		// so nothing but a strike lifts it
 		
 		powerUpIconReset(sender: "")
 		// Remove any existing power-up icons

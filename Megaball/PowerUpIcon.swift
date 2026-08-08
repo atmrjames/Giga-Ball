@@ -497,6 +497,17 @@ enum PowerUpIcon {
         // A brick drawn in dashes: there, but not shown until struck
     }
 
+    /// Vanilla: a plain brick and a plain ball - the day with nothing added.
+    static let twistVanilla: UIImage = badge(twist) { context, rect in
+        context.setFillColor(UIColor.white.cgColor)
+        context.fill(CGRect(x: rect.minX + rect.width*0.22,
+                            y: rect.midY + rect.height*0.04,
+                            width: rect.width*0.56, height: rect.height*0.18))
+        dot(context, at: CGPoint(x: rect.midX, y: rect.midY - rect.height*0.22),
+            radius: rect.width*0.1)
+        // The whole game in two marks: a brick, and the ball on its way to it
+    }
+
     // MARK: - Drawing helpers
 
 
@@ -557,6 +568,27 @@ extension DailyTwist {
     /// a twist reads. The icon rides slightly below the baseline, which is where a glyph
     /// the height of a capital sits without looking like it is floating.
     func titleLine(font: UIFont, colour: UIColor) -> NSAttributedString {
+        DailyTwist.badgedLine(icon: icon, name: displayName, font: font, colour: colour)
+    }
+
+    /// What a day with no twists is called, and its badge.
+    ///
+    /// A baseline day is a *kind* of day, not an absence of one - the play test asked for
+    /// it to be named and iconned like any twist, which is also what §3 means by "the
+    /// baseline day is what makes twist days feel like twists".
+    static let vanillaName = "Vanilla"
+    static let vanillaBlurb = "No twists - the game exactly as it comes."
+
+    static func vanillaLine(font: UIFont, colour: UIColor) -> NSAttributedString {
+        badgedLine(icon: PowerUpIcon.twistVanilla, name: vanillaName, font: font,
+                   colour: colour)
+    }
+
+    /// One builder for every screen that names a twist, so they cannot drift apart in how
+    /// a twist reads. The icon rides slightly below the baseline, which is where a glyph
+    /// the height of a capital sits without looking like it is floating.
+    static func badgedLine(icon: UIImage, name: String, font: UIFont,
+                           colour: UIColor) -> NSAttributedString {
         let attachment = NSTextAttachment()
         attachment.image = icon
         let side = font.capHeight*1.5
@@ -564,7 +596,7 @@ extension DailyTwist {
                                    width: side, height: side)
 
         let line = NSMutableAttributedString(attachment: attachment)
-        line.append(NSAttributedString(string: "  \(displayName)",
+        line.append(NSAttributedString(string: "  \(name)",
                                        attributes: [.font: font,
                                                     .foregroundColor: colour]))
         return line

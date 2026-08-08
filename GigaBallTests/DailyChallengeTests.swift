@@ -514,16 +514,49 @@ final class DailyChallengeTests: XCTestCase {
                        "false means the life is lost - the run does not carry on")
     }
 
-    func testFogHidesOnlyWhatCanComeBack() {
+    func testFogHidesEveryBrickType() {
+        // Play test: "In fog of war, some brick types are visible as they build in. All
+        // brick types should start invisible." The first build fogged only the types
+        // whose own hit rules pass through the reveal, which left Indestructibles and
+        // Portals sitting in plain sight in a fogged field.
         let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
                                               classicLevel: 1, twists: [.fogOfWar]))
         let plain = SKSpriteNode(texture: scene.brickNormalTexture)
         let wall = SKSpriteNode(texture: scene.brickIndestructible2Texture)
-        scene.applyDailyFog(to: [plain, wall])
+        let multi = SKSpriteNode(texture: scene.brickMultiHit3Texture)
+        let empty = SKSpriteNode(texture: scene.brickNullTexture)
+        scene.applyDailyFog(to: [plain, wall, multi, empty])
 
         XCTAssertTrue(plain.isHidden)
-        XCTAssertFalse(wall.isHidden,
-                       "a fogged Indestructible would stay invisible for ever")
+        XCTAssertTrue(wall.isHidden)
+        XCTAssertTrue(multi.isHidden)
+        XCTAssertFalse(empty.isHidden, "an empty cell has nothing to hide")
+    }
+
+    func testFogLiftsOnTheFirstStrike() {
+        // The other half of the same report: "some bricks never show up. All brick types
+        // should appear on the first hit, including the standard invisible bricks."
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: [.fogOfWar]))
+        let wall = SKSpriteNode(texture: scene.brickIndestructible2Texture)
+        scene.applyDailyFog(to: [wall])
+        XCTAssertTrue(wall.isHidden)
+
+        scene.revealDailyFog(wall)
+        XCTAssertFalse(wall.isHidden, "every type comes back on the strike that finds it")
+    }
+
+    func testFogSurvivesLosingABall() {
+        // Play test: "When I died in fog of war mode and I had a spare ball all the
+        // invisible bricks became visible." The Hide Bricks power-up expires with the
+        // ball that was lost; the day's fog is not a power-up and does not.
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: [.fogOfWar]))
+        XCTAssertTrue(scene.dailyFogIsOn)
+
+        DailyChallengeSession.shared.active = DailyChallenge(dateKey: "t", mode: .classic,
+                                                             classicLevel: 1, twists: [])
+        XCTAssertFalse(scene.dailyFogIsOn, "no fog, no exemption - the reset runs as ever")
     }
 
     func testADailyRunRecordsNoHeights() {

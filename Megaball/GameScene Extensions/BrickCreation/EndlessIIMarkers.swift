@@ -54,8 +54,12 @@ extension GameScene {
 
         let marker = SKNode()
         marker.name = GameScene.endlessIIMarkerName
-        marker.position = CGPoint(x: 0, y: yBrickOffsetEndless)
+        marker.position = CGPoint(x: 0, y: yBrickOffsetEndless - brickHeight/2)
         marker.zPosition = 0.6
+        // The node sits *on* the line it draws, the same convention a tick uses, so one
+        // floor test retires both correctly. It used to sit on the row centre and draw
+        // half a brick lower, which is how a line carried on below the lower limit for
+        // another half row after the check said it was done (play test)
         // Above the background and below the bricks, which sit at 1. A marker in front of the
         // field would be something to look past rather than something to notice.
         //
@@ -82,7 +86,7 @@ extension GameScene {
             label.position = CGPoint(x: alignment == .left
                                         ? -gameWidth/2 + labelSpacing
                                         : gameWidth/2 - labelSpacing,
-                                     y: -brickHeight/2 + 3)
+                                     y: 3)
             marker.addChild(label)
             textWidth = max(textWidth, label.frame.width)
         }
@@ -91,7 +95,7 @@ extension GameScene {
         // text fighting a rule drawn through its middle
 
         let gap = textWidth + labelSpacing*1.5
-        let lineY = -brickHeight/2 - 0.5
+        let lineY: CGFloat = -0.5
         let middle = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: lineY,
                                               width: gameWidth, height: 1))
         let leftStub = SKShapeNode(rect: CGRect(x: -gameWidth/2, y: lineY,
@@ -107,6 +111,15 @@ extension GameScene {
             line.alpha = isBest ? 0.5 : 1
             marker.addChild(line)
         }
+    }
+
+    /// The columns a milestone marker's labels sit in.
+    ///
+    /// The labels are pinned a label-spacing in from each wall, so it is the outermost
+    /// column at each side that can cover one. Everything between them is fair game for
+    /// bricks (play test: a whole empty row every hundred metres was a free rest).
+    func endlessIIColumnIsMilestoneLabel(_ column: Int) -> Bool {
+        column == 0 || column == numberOfBrickColumns - 1
     }
 
     /// How often the small unlabelled ticks appear.
@@ -149,16 +162,17 @@ extension GameScene {
         let line = SKSpriteNode(color: GameScene.endlessIILowerLimitColour,
                                 size: CGSize(width: gameWidth, height: 1))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
-        line.zPosition = 1
-        line.alpha = 0.12
-        // As subtle as the ten-metre ticks (second play-test round asked again - 0.25
-        // was still too visible), but the full width and the warm colour stay: reach and
-        // hue are what say "this line is the one that matters", not weight
+        line.zPosition = 0.5
+        line.alpha = 0.09
+        // Plain transparent white, like the ticks, and fainter than every height mark -
+        // third play-test round: the warm colour still read as red, and a marker drawn
+        // over this line has to stay readable, which means this one gives way. Below the
+        // markers' zPosition too, for the same reason
         addChild(line)
         endlessIILowerLimitLine = line
     }
 
-    static let endlessIILowerLimitColour = UIColor(red: 1.0, green: 0.45, blue: 0.3, alpha: 1)
+    static let endlessIILowerLimitColour = UIColor.white
 
     /// Puts the marks that are already in the opening field there.
     ///
@@ -201,24 +215,36 @@ extension GameScene {
         guard arriving % GameScene.endlessIIMarkerSpacing != 0 else { return }
         // A hundred is a hundred, not a hundred and a tick
 
-        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
-        guard best <= 0 || arriving != best else { return }
-        // And a best is a best: a personal best on a ten was getting the full best line
-        // *and* a tick in the same row (the play-test's overlapping-markers screenshot).
-        // The milestone always wins - the same rule that already lets a best on a
-        // hundred replace the hundred-metre line entirely
-
         addEndlessIITick(at: yBrickOffsetEndless - brickHeight/2)
+        // Whether a best-height line already owns this row is `addEndlessIITick`'s
+        // question now - one rule, asked of the scene, rather than repeated arithmetic
     }
 
-    /// A tick sits on the *bottom* edge of the row it belongs to, where a milestone marker
-    /// sits on the row's centre line.
+    /// Whether a marker or tick is already drawn at this height.
     ///
-    /// They are doing different jobs. A milestone row is generated empty and the line is the
-    /// thing in it, so the middle is where it belongs. A tick shares its row with whatever the
-    /// field put there, and the boundary between two rows is the one place in a row that
-    /// nothing is ever drawn - so that is where a mark can be read without competing.
+    /// The rule the play test asked for, stated once: a best-height line beats a hundred,
+    /// and both beat a ten-metre tick. Rather than repeating the arithmetic at each
+    /// caller - which is how a tick ended up drawn over a hundred-metre line - the
+    /// question is asked of the scene: is there already a mark on this line.
+    func endlessIIMarkExists(at y: CGFloat) -> Bool {
+        var found = false
+        enumerateChildNodes(withName: GameScene.endlessIIMarkerName) { node, stop in
+            if abs(node.position.y - y) < self.brickHeight/2 {
+                found = true
+                stop.initialize(to: true)
+            }
+        }
+        return found
+    }
+
+    /// Both a tick and a milestone marker sit on the *boundary* between two rows - the one
+    /// place in a row that nothing else is ever drawn, so a mark can be read there without
+    /// competing with the field.
     func addEndlessIITick(at y: CGFloat) {
+        guard endlessIIMarkExists(at: y) == false else { return }
+        // A hundred-metre line or a best-height line already owns this row: they say
+        // everything a tick would, and more (play test - the ticks were drawing over them)
+
         let tick = SKNode()
         tick.name = GameScene.endlessIIMarkerName
         tick.position = CGPoint(x: 0, y: y)

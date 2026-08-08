@@ -39,6 +39,29 @@ class SettingsTableViewCell: UITableViewCell {
             && $0.secondAttribute == .trailing
     }
 
+    /// Pins the description label to the width of its own text, so whatever follows it
+    /// sits against the words rather than against the cell's far edge.
+    ///
+    /// The nib lets the label fill the row, which is right for a settings row - its value
+    /// is at the other end. A completion tick belongs *beside the name* (play-test round
+    /// 3), and that needs the label to stop where the text does.
+    private var descriptionHugsTextConstraint: NSLayoutConstraint?
+
+    func hugDescriptionToText(_ hug: Bool) {
+        descriptionHugsTextConstraint?.isActive = false
+        descriptionHugsTextConstraint = nil
+        guard hug else { return }
+
+        settingDescription.sizeToFit()
+        let constraint = settingDescription.widthAnchor.constraint(
+            equalToConstant: settingDescription.intrinsicContentSize.width)
+        constraint.priority = .required
+        constraint.isActive = true
+        descriptionHugsTextConstraint = constraint
+        // Measured after the text is set, and torn down on reuse - a stale width from
+        // another row's name would truncate this one
+    }
+
     override func awakeFromNib() {
         super.awakeFromNib()
         

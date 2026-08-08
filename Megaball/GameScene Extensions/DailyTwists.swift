@@ -190,21 +190,38 @@ extension GameScene {
         // before drawing, but everything else that reads the sum should read the truth
     }
 
+    /// Whether the day hides its field until it is struck.
+    var dailyFogIsOn: Bool {
+        isDailyChallenge && DailyChallengeSession.shared.has(.fogOfWar)
+    }
+
     /// Hides the day's bricks, where Fog of War is on.
     ///
-    /// Only the bricks that know how to come back: the reveal machinery answers a *hit*,
-    /// and Portals, power-up bricks and Indestructibles have hit rules of their own that
-    /// never pass through it - a fogged Indestructible would stay invisible for ever.
+    /// *Every* type, including Portals, power-up bricks and Indestructibles. The first
+    /// build fogged only the bricks whose own hit rules pass through the reveal - which
+    /// meant a fogged field with visible Indestructibles and Portals in it, and the play
+    /// test saw exactly that ("some brick types are visible as they build in"). The
+    /// reveal now happens at the top of `hitBrick`, before any type's own rules, so
+    /// there is no type that can be fogged and not come back.
     func applyDailyFog(to bricks: [SKNode]) {
-        guard isDailyChallenge, DailyChallengeSession.shared.has(.fogOfWar) else { return }
+        guard dailyFogIsOn else { return }
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
-            guard brick.endlessIIRole != .portal else { continue }
-            guard brick.endlessIIPowerUpIndex == nil else { continue }
-            guard brick.texture != brickIndestructible1Texture,
-                  brick.texture != brickIndestructible2Texture,
-                  brick.texture != brickNullTexture else { continue }
+            guard brick.texture != brickNullTexture else { continue }
+            // An empty cell has nothing to hide
             brick.isHidden = true
         }
+    }
+
+    /// Brings one brick out of the fog, the first time anything strikes it.
+    ///
+    /// Called before every type's own rules, so it reaches the bricks that never reach
+    /// the type switch - and takes whatever struck it: ball, laser, explosion or halo.
+    func revealDailyFog(_ brick: SKSpriteNode) {
+        guard dailyFogIsOn, brick.isHidden else { return }
+        brick.isHidden = false
+        brick.alpha = 0
+        brick.run(.fadeIn(withDuration: 0.2))
+        // The same fade an invisible brick has always come back with
     }
 }

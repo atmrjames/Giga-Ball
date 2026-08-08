@@ -602,10 +602,17 @@ extension GameScene {
                 }
             }
             
-            if milestoneRow {
+            if milestoneRow && endlessIIColumnIsMilestoneLabel(j) {
                 brick.texture = brickNullTexture
-                // The row a hundred-metre line is about to arrive in, left empty so the line
-                // can be read. Everything else about generation carries on around it
+                // Only the columns the labels sit in are cleared, not the whole row. The
+                // line itself reads perfectly well through a field - it is the two
+                // labels at the walls that a brick can cover - and a whole empty row
+                // every hundred metres was a free rest the play test asked to take back
+            } else if milestoneRow, let _ = setRow {
+                brick.texture = brickNullTexture
+                // A designed pattern is never *started* on a milestone row (see above), so
+                // this only catches a row already carrying one - it keeps the old
+                // behaviour rather than drawing half a pattern
             } else if let setRow {
                 brick.texture = endlessIISetRowTexture(setRow, column: j)
                 brick.endlessIIStaysPlain = true

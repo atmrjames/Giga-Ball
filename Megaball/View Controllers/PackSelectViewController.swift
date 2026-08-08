@@ -106,17 +106,23 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         cell.descriptionTickWidthConstraint.isActive = false
         cell.decriptionFullWidthConstraint.isActive = true
         cell.tickImage.isHidden = true
-        
+        cell.hugDescriptionToText(false)
+
+        cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        cell.settingDescription.font = cell.settingDescription.font.withSize(18)
+
         if totalStatsArray[0].packBestTimes[indexPath.row] > 0 {
             cell.descriptionAndStateSharedWidthConstraint.isActive = false
             cell.decriptionFullWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = true
             cell.tickImage.isHidden = false
+            cell.tickTrailingEdgeConstraint?.isActive = false
+            cell.hugDescriptionToText(true)
         }
-        // Show tick if pack has been completed at least once
-        
-        cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        cell.settingDescription.font = cell.settingDescription.font.withSize(18)
+        // Show tick if pack has been completed at least once - right beside the pack's
+        // name (play-test round 3), which means letting go of the cell's trailing edge
+        // and holding the label to its own text. Set after the font, or the width is
+        // measured against the wrong one
         
         switch indexPath.row+2 {
         case 2:
@@ -269,10 +275,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        indexPath.row == 1
-            ? CGSize(width: LevelStatsViewController.playButtonSize,
-                     height: LevelStatsViewController.playButtonSize)
-            : CGSize(width: 50, height: 50)
+        CGSize(width: 50, height: 50)
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -290,10 +293,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose.png")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonPlay.png")
-            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
-            // Big and centred, like every other screen's (play-test request). It picks
-            // up the campaign at the furthest unlocked pack
+            cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            // No play button here. It was added on request and taken back on sight
+            // (play-test round 3): this screen lists eleven packs, so a single button at
+            // the bottom has no pack to play - the straight-in button on each row is the
+            // one that means something
         case 2:
             if gameCenterSetting {
                 cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
@@ -318,13 +322,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
             menuNavigationGoBack()
-        }
-        if indexPath.row == 1 {
-            let pack = furthestUnlockedPack
-            MenuViewController().clearSavedGame()
-            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
-                       numberOfLevels: LevelPackSetup().numberOfLevels[pack],
-                       sender: "MainMenu", levelPack: pack)
         }
         if indexPath.row == 2, gameCenterSetting {
             showGameCenterLeaderboards()
@@ -360,10 +357,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
                     }
                     cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
                 case 1:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
+                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
@@ -391,10 +385,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
                     }
                     cell.iconImage.image = UIImage(named:"ButtonClose.png")
                 case 1:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
