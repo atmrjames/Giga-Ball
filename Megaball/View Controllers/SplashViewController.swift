@@ -33,14 +33,27 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var scoreLabel: UILabel!
 
+    var skipInProgress = false
+
     @IBAction func tapGesture(_ sender: Any) {
-        if self.resumeInProgress == false {
+        if self.resumeInProgress == false && self.skipInProgress == false {
+            skipInProgress = true
             view.subviews.forEach { $0.layer.removeAllAnimations() }
             view.layer.removeAllAnimations()
-            // The keyframed logos otherwise play their remaining frames out over the
-            // fade, so the skip showed the animation's tail for a beat before the menu
-            // (play-test round 8)
-            removeAnimate(duration: 0.1)
+            splashScreenLogo2.alpha = 0
+            splashScreenLogo3.alpha = 0
+            splashScreenLogo4.alpha = 0
+            splashScreenLogo5.alpha = 0
+            splashScreenLogo6.alpha = 1
+            creatorLabel.alpha = 1
+            creatorLabel.transform = .identity
+            // A skip jumps to the animation's *end state* and holds it for a second
+            // (play-test round 9) - the finished logo and the credit, not the tail of
+            // the animation playing itself out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self, self.resumeInProgress == false else { return }
+                self.removeAnimate(duration: 0.25)
+            }
         }
     }
     // Tap to dismiss splash screen. With a resume prompt waiting this fast-forwards *to*
@@ -317,9 +330,11 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 self.creatorLabel.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
             })
         }, completion:{ _ in
-            if self.resumeInProgress == false {
+            if self.resumeInProgress == false && self.skipInProgress == false {
                 self.removeAnimate(duration: 0.25)
             }
+            // A skip removes the animations, which fires this completion early - the
+            // skip owns the dismissal then, after its one-second hold
         })
     }
 

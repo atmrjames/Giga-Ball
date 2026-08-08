@@ -117,6 +117,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalPaddleOwedTurn = false
 	var endlessIIAimedStickyOwedTurn = false
 	var endlessIIAutoAimOwedTurn = false
+	/// The launch angle a sticky catch under an inert paddle owes: the angle the inert
+	/// bounce would have given, remembered at the catch and spent at the launch.
+	var stickyInertLaunchAngleRad: Double?
 	var endlessIIWrapAroundClock = EndlessIIClock()
 	var endlessIIPendingWraps: [SKSpriteNode] = []
 	var endlessIIWrapDressed = false
@@ -1886,7 +1889,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         // Limit ball position to bounds of paddle
         
-        if ballPositionOnPaddle == 0 {
+        if let inertAngle = stickyInertLaunchAngleRad {
+            ballLaunchAngleRad = inertAngle
+            stickyInertLaunchAngleRad = nil
+            // A ball caught while the paddle was inert launches at the angle the inert
+            // bounce would have given (James's design) - the wall's answer, not the
+            // paddle's
+        } else if ballPositionOnPaddle == 0 {
             let randomLaunchDirection = Bool.random()
             if randomLaunchDirection {
                 ballLaunchAngleRad = straightLaunchAngleRad + minLaunchAngleRad
@@ -3053,9 +3062,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			&& ball.position.x < paddleRightEdgePosition - ball.size.width/3
 			&& collisionPercentage < 1.0 && collisionPercentage > -1.0
 			&& stickyPaddleCatches != 0
-			&& endlessIIInertPaddleClock.isRunning == false
-		// An inert paddle is nothing but a wall: it does not angle the bounce and it does
-		// not hold the ball - the sticky waits until the paddle is a paddle again
+		// Sticky and Inert together both still work (James's design, §12.0): the catch
+		// happens, and the *launch* is what the inert bounce takes over - the angle the
+		// wall would have returned, not the ball's spot on the paddle
+
+		if inTheStickyBand && endlessIIInertPaddleClock.isRunning {
+			let arriving = ballStateBeforeStep[ObjectIdentifier(ball)]?.velocity
+				?? CGVector(dx: 0, dy: -ballSpeedLimit)
+			stickyInertLaunchAngleRad =
+				EndlessIIPaddleEffects.defaultLaunchAngle(arriving: arriving)
+			// Remembered at the catch, from the pre-step heading (§8.6): the launch reads
+			// it instead of the ball's position on the paddle
+		}
 
 		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2
 			&& endlessIIAimedCatch(ball, isExtra: isExtra) {

@@ -45,6 +45,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// the browsing is never allowed forward of it.
     var viewedOffset = 0
 
+    var todayRank: Int?
+    var todayRankRequested = false
+    // Where today's posted score stands, once Game Center has answered - asked for at
+    // most once per visit to the screen, because the answer barely moves and the ask
+    // is a network round trip
+
     private let dayCard = UIView()
     private let cardStack = UIStackView()
     private let dateLabel = UILabel()
@@ -152,7 +158,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     private func buildLayout() {
         let title = UILabel()
         title.text = "DAILY CHALLENGE"
-        title.font = UIFont(name: "HelveticaNeue-Bold", size: 40) ?? .boldSystemFont(ofSize: 40)
+        title.font = .systemFont(ofSize: 35, weight: .black)
+        // The same face and size the storyboard gives every other mode menu's title
+        // (play-test round 9) - this screen is runtime-built, but it should not look it
         title.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         title.textAlignment = .center
         title.adjustsFontSizeToFitWidth = true
@@ -497,8 +505,23 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         let tint: UIColor
         if record.posted {
             symbol = "checkmark.seal.fill"
-            caption = "  on the board"
+            if viewedOffset == 0, let rank = todayRank {
+                caption = "  #\(rank) on the board"
+            } else {
+                caption = "  on the board"
+            }
             tint = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            if viewedOffset == 0, todayRank == nil, todayRankRequested == false {
+                todayRankRequested = true
+                GameCenterHandler().loadDailyRank { [weak self] rank in
+                    guard let self, let rank else { return }
+                    self.todayRank = rank
+                    self.showResult(for: record, mode: mode)
+                }
+                // The placing joins the badge when Game Center answers - and only
+                // today's, because the recurring board resets at the deadline and a
+                // past day's rank no longer exists to ask for
+            }
         } else if pendingToday {
             symbol = "hourglass"
             caption = "  waiting to post"
@@ -533,7 +556,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             let minutes = (Int(remaining) % 3600)/60
             countdownLabel.text = "Closes in \(hours)h \(minutes)m"
         } else {
-            countdownLabel.text = "Practice - scores aren't posted"
+            countdownLabel.text = "Challenge closed, practice only"
             // A past day plays for ever and posts nothing (§8). One word under the date
             // is the whole of it now - the standing yellow banner it used to share the
             // screen with is gone (play-test round 5), and the pop-up on the play press
@@ -618,32 +641,50 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     /// Turns the page a day back or forward, carrying on from wherever the finger left
     /// it - older days leave to the right, newer to the left.
+    ///
+    /// The outgoing day leaves as a snapshot so the incoming one can enter *while* it
+    /// goes (play-test round 9: the next day should appear soon after the swipe starts,
+    /// not wait its turn) - and it enters from just past the edge rather than a full
+    /// screen away, which is what closes the gap between days.
     private func step(by delta: Int, from offset: CGFloat = 0) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         viewedOffset += delta
         let width = view.bounds.width
         let exitX: CGFloat = delta < 0 ? width : -width
 
-        let remaining = max(0.08, min(0.2, Double(abs(exitX - offset)/width)*0.2))
+        var ghosts: [UIView] = []
+        for page in pageViews {
+            guard let ghost = page.snapshotView(afterScreenUpdates: false),
+                  let holder = page.superview else { continue }
+            ghost.frame = view.convert(page.frame, from: holder)
+            ghost.alpha = page.alpha
+            view.addSubview(ghost)
+            ghosts.append(ghost)
+            // The frame is read with the drag's translation still applied, so the ghost
+            // carries on from wherever the finger left the real page
+        }
+
+        showChallenge()
+        for page in pageViews {
+            page.transform = CGAffineTransform(translationX: -exitX*0.55, y: 0)
+            page.alpha = 0
+        }
+
+        let remaining = max(0.1, min(0.22, Double(abs(exitX - offset)/width)*0.22))
         // The rest of the way out takes the time the rest of the way deserves, so a page
         // flicked most of the way across does not then travel slowly
 
         UIView.animate(withDuration: remaining, delay: 0, options: .curveEaseOut, animations: {
+            for ghost in ghosts {
+                ghost.transform = CGAffineTransform(translationX: exitX - offset, y: 0)
+                ghost.alpha = 0
+            }
             for page in self.pageViews {
-                page.transform = CGAffineTransform(translationX: exitX, y: 0)
-                page.alpha = 0
+                page.transform = .identity
+                page.alpha = 1
             }
         }) { _ in
-            self.showChallenge()
-            for page in self.pageViews {
-                page.transform = CGAffineTransform(translationX: -exitX, y: 0)
-            }
-            UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
-                for page in self.pageViews {
-                    page.transform = .identity
-                    page.alpha = 1
-                }
-            }
+            ghosts.forEach { $0.removeFromSuperview() }
         }
     }
 

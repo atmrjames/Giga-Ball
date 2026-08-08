@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import GameKit
 
 class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
     
@@ -96,7 +97,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NSLayoutConstraint.activate([
             runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             runStatsLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
-                                               constant: 16),
+                                               constant: 6),
+            // Tight under the height block (play-test round 9): the stats are the
+            // height's small print, and the gap belongs between them and whatever
+            // hangs below - on the daily, the challenge summary was crowding them
         ])
     }
 
@@ -230,7 +234,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16),
             dailySummaryLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             dailySummaryLabel.topAnchor.constraint(equalTo: livesLabel.bottomAnchor,
-                                                   constant: 18),
+                                                   constant: 24),
             dailySummaryLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
                                                         containterView.leadingAnchor,
                                                        constant: 30),
@@ -356,7 +360,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonInfo.png")
             } else if dailyGameOver {
-                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+                // Straight through to today's board (play-test round 9) - the score
+                // line above says where the run landed, and this is the proof
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonHome.png")
             }
@@ -408,7 +414,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         if indexPath.row == 0 {
             if sender == "Pause" {
                 openInformation()
-            } else if dailyGameOver == false {
+            } else if dailyGameOver {
+                openDailyLeaderboard()
+            } else {
                 MenuViewController().clearSavedGame()
                 moveToMainMenu()
                 // No warning: the run is already over, so there is nothing to lose
@@ -452,7 +460,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     cell.iconImage.image = self.sender == "Pause"
                         ? UIImage(named:"ButtonInfoHighlighted.png")
                         : (self.dailyGameOver
-                            ? UIImage(named:"ButtonNull.png")
+                            ? UIImage(named:"ButtonLeaderboardHighlighted.png")
                             : UIImage(named:"ButtonHomeHighlighted.png"))
                 case 1:
                     if self.sender == "Pause" {
@@ -505,7 +513,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     cell.iconImage.image = self.sender == "Pause"
                         ? UIImage(named:"ButtonInfo.png")
                         : (self.dailyGameOver
-                            ? UIImage(named:"ButtonNull.png")
+                            ? UIImage(named:"ButtonLeaderboard.png")
                             : UIImage(named:"ButtonHome.png"))
                 case 1:
                     if self.sender == "Pause" {
@@ -821,6 +829,19 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         statsView.showAnimate()
     }
 
+    /// Today's board, from the finished daily (play-test round 9) - the same sheet the
+    /// briefing screen's leaderboard button shows, so the two doors open the same room.
+    func openDailyLeaderboard() {
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+        if hapticsSetting {
+            interfaceHaptic.impactOccurred()
+        }
+        let boards = GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
+                                                playerScope: .global, timeScope: .allTime)
+        boards.gameCenterDelegate = self
+        view.window?.rootViewController?.present(boards, animated: true)
+    }
+
     func moveToSettings() {
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
         settingsView.navigatedFrom = "PauseMenu"
@@ -934,6 +955,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         heightTallyLink?.invalidate()
         heightTallyLink = nil
         scoreLabel.text = "\(heightTallyTarget)" + heightTallySuffix
+    }
+}
+
+extension PauseMenuViewController: GKGameCenterControllerDelegate {
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true)
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
     }
 }
 

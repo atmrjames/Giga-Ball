@@ -221,6 +221,45 @@ final class InGameRecentsTests: XCTestCase {
         recents.reset()
     }
 
+    func testSuperlativesAreTheMostsNotTheDiary() {
+        // Round 9: "rather than showing all the power-ups in order, just show the most
+        // collected, most missed, etc."
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(4)                 // one miss of 4
+        recents.sawPowerUp(7)
+        recents.sawPowerUp(7)
+        recents.collectedPowerUp(7)           // 7: seen twice, one caught, one missed
+        recents.sawPowerUp(2)
+        recents.collectedPowerUp(2)
+        recents.sawPowerUp(2)
+        recents.collectedPowerUp(2)           // 2: seen twice, both caught
+        recents.sawPowerUp(4)                 // 4: seen twice, both missed
+
+        let highlights = recents.superlatives
+        XCTAssertEqual(highlights.map(\.title),
+                       ["Most seen", "Most collected", "Most missed"])
+        XCTAssertEqual(highlights.first { $0.title == "Most seen" }.map { [$0.index, $0.count] },
+                       [2, 2], "a three-way tie on two sightings reads to the lowest index")
+        XCTAssertEqual(highlights.first { $0.title == "Most collected" }.map { [$0.index, $0.count] },
+                       [2, 2])
+        XCTAssertEqual(highlights.first { $0.title == "Most missed" }.map { [$0.index, $0.count] },
+                       [4, 2])
+        recents.reset()
+    }
+
+    func testASingleEventEarnsNoRosette() {
+        // A count of one is just "a thing that happened once" - no superlative below two
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(4)
+        recents.sawPowerUp(7)
+        recents.collectedPowerUp(7)
+        XCTAssertTrue(recents.superlatives.isEmpty,
+                      "one miss and one catch make no mosts")
+        recents.reset()
+    }
+
     func testRowOrderLeadsWithRecentsAndAlphabetisesTheRest() {
         // Four rows whose power-up indices are 10, 11, 12, 13 and whose names reverse
         // the row order alphabetically. 12 then 10 were seen, 12 most recently.

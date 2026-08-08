@@ -400,6 +400,16 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   recording the run's natural end uses.
 - **Monochrome performance** (§5, §4 Blackout).
 
+- **Fog of War's opening reveal** (queued, ninth play-test round): the level should
+  *show its hand first* - the bricks animate in visible, then a blur-style fade takes
+  them to invisible, so the player gets one look at the field before the fog closes.
+  Build notes from cold: `applyDailyFog` currently hides the field at creation
+  (`BrickCreation`, skipped on resume); the reveal instead wants the field built
+  visible, then a one-shot fade run *after* the build-in settles - and it must not be a
+  repeating `SKAction` on the bricks (ENDLESS-2 §8.6), must skip already-invisible
+  bricks (they self-hide), and on the classic build-in (also queued, ENDLESS-2 §12.0)
+  the fade waits for that animation's end hook, wherever it lands.
+
 - **App Store in-app events** (§11.5): App Store Connect setup, James's side.
 
 - **Answered, fourth round — how the daily board works in Game Center.** One board, not

@@ -3,8 +3,8 @@
 //  Megaball
 //
 //  The finished endless run, in detail (§12.0's game-over stats): the headline numbers
-//  the game-over screen summarises, and every power-up the run met, in the order it met
-//  them, each with what became of it.
+//  the game-over screen summarises, and the run's power-up superlatives - most seen,
+//  most collected, most missed (play-test round 9: the highlights, not the diary).
 //
 //  Runtime-built like the daily briefing, and deliberately small: it reads what
 //  InGameRecents recorded and the scene snapshotted - the screen computes nothing, so
@@ -19,9 +19,9 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
     var hapticsSetting: Bool = true
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
-    /// The power-ups the run met, in the order it met them - InGameRecents keeps them
-    /// newest first, and a story reads from the start. Every appearance is its own row.
-    private let seenPowerUps: [Int] = InGameRecents.shared.powerUpIndices.reversed()
+    /// The run's power-up highlights - the superlatives, not the whole diary (play-test
+    /// round 9: the full in-order list did not justify the screen).
+    private let highlights = InGameRecents.shared.superlatives
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -104,12 +104,12 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         view.addSubview(numbers)
 
         let header = UILabel()
-        header.text = "POWER-UPS SEEN, IN ORDER"
+        header.text = "POWER-UP HIGHLIGHTS"
         header.font = .boldSystemFont(ofSize: 13)
         header.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         header.textAlignment = .center
         header.translatesAutoresizingMaskIntoConstraints = false
-        header.isHidden = seenPowerUps.isEmpty
+        header.isHidden = highlights.isEmpty
         view.addSubview(header)
 
         let table = ContentAwareTableView(frame: .zero, style: .plain)
@@ -161,29 +161,26 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        seenPowerUps.count
+        highlights.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "seen")
-            ?? UITableViewCell(style: .value1, reuseIdentifier: "seen")
+        let cell = tableView.dequeueReusableCell(withIdentifier: "highlight")
+            ?? UITableViewCell(style: .value1, reuseIdentifier: "highlight")
         cell.backgroundColor = .clear
-        let index = seenPowerUps[indexPath.row]
+        let highlight = highlights[indexPath.row]
         let setup = LevelPackSetup()
 
-        cell.textLabel?.text = setup.powerUpNameArray.indices.contains(index)
-            ? setup.powerUpNameArray[index] : "?"
+        cell.textLabel?.text = setup.powerUpNameArray.indices.contains(highlight.index)
+            ? "\(highlight.title): \(setup.powerUpNameArray[highlight.index])" : highlight.title
         cell.textLabel?.font = .boldSystemFont(ofSize: 15)
         cell.textLabel?.textColor = .white
-        cell.imageView?.image = setup.powerUpImageArray.indices.contains(index)
-            ? setup.powerUpImageArray[index] : nil
+        cell.imageView?.image = setup.powerUpImageArray.indices.contains(highlight.index)
+            ? setup.powerUpImageArray[highlight.index] : nil
 
-        cell.detailTextLabel?.text = InGameRecents.shared
-            .statusNoteOldestFirst(at: indexPath.row)
-        cell.detailTextLabel?.font = .systemFont(ofSize: 13)
-        cell.detailTextLabel?.textColor = UIColor(white: 1, alpha: 0.55)
-        // The same collected/missed/falling/brick/active note the pause reference page
-        // shows, for this particular appearance
+        cell.detailTextLabel?.text = "×\(highlight.count)"
+        cell.detailTextLabel?.font = .boldSystemFont(ofSize: 15)
+        cell.detailTextLabel?.textColor = UIColor(white: 1, alpha: 0.7)
         return cell
     }
 

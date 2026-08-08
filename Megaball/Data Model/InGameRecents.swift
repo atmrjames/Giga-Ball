@@ -117,6 +117,43 @@ final class InGameRecents {
         statusNote(at: sightings.count - 1 - position)
     }
 
+    /// The run's power-up highlights (play-test round 9): the superlatives, not the
+    /// whole diary - most seen, most collected, most missed, each the index with the
+    /// highest count and only where the count says something (two or more, or it is
+    /// just "a thing that happened once" wearing a rosette).
+    struct Superlative {
+        let title: String
+        let index: Int
+        let count: Int
+    }
+
+    var superlatives: [Superlative] {
+        var seen: [Int: Int] = [:]
+        var collected: [Int: Int] = [:]
+        var missed: [Int: Int] = [:]
+        for sighting in sightings {
+            seen[sighting.index, default: 0] += 1
+            if sighting.fate == .collected {
+                collected[sighting.index, default: 0] += 1
+            } else {
+                missed[sighting.index, default: 0] += 1
+            }
+        }
+
+        var highlights: [Superlative] = []
+        for (title, counts) in [("Most seen", seen), ("Most collected", collected),
+                                ("Most missed", missed)] {
+            if let top = counts.max(by: { $0.value < $1.value || ($0.value == $1.value
+                    && $0.key > $1.key) }),
+               top.value >= 2 {
+                highlights.append(Superlative(title: title, index: top.key,
+                                              count: top.value))
+            }
+            // Ties break to the lower index, so the same run always reads the same
+        }
+        return highlights
+    }
+
     func struckBrick(named name: String) {
         brickNames.removeAll { $0 == name }
         brickNames.insert(name, at: 0)
@@ -195,6 +232,11 @@ extension GameScene {
                 active.insert(families[slot][0])
             }
         }
+
+        if backstopCatches > 0 { active.insert(25) }
+        // The Backstop has no tray bar - the wall itself is the indicator - so the
+        // catches it has left are the only place "still in play" is written down
+        // (play-test round 9: it read as COLLECTED while visibly standing there)
 
         guard gameMode == .endlessII else { return active }
         let clocks: [(EndlessIIClock, Int)] = [

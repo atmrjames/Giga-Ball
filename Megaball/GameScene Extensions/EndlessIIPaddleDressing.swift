@@ -26,6 +26,16 @@ extension GameScene {
         dressEndlessIIPaddle()
         showEndlessIITopExitStrip()
         drawEndlessIIPullLines()
+
+        let stickyUnderInert = stickyPaddleCatches != 0
+            && endlessIIInertPaddleClock.isRunning
+        for sticky in [paddleSticky, paddleRetroStickyTexture] {
+            sticky.color = .gray
+            sticky.colorBlendFactor = stickyUnderInert ? 0.85 : 0
+        }
+        // The sticky wears monochrome while the paddle is inert (James's design): the
+        // catch still works, but the launch is the wall's answer, and the greyed
+        // graphic is how the pairing says so
     }
 
     // MARK: - The paddle's colour

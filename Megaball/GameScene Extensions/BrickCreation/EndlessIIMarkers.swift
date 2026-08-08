@@ -55,7 +55,7 @@ extension GameScene {
         let marker = SKNode()
         marker.name = GameScene.endlessIIMarkerName
         marker.position = CGPoint(x: 0, y: yBrickOffsetEndless - brickHeight/2)
-        marker.zPosition = 0.6
+        marker.zPosition = 0.65
         // The node sits *on* the line it draws, the same convention a tick uses, so one
         // floor test retires both correctly. It used to sit on the row centre and draw
         // half a brick lower, which is how a line carried on below the lower limit for
@@ -158,15 +158,28 @@ extension GameScene {
     /// distinctive. A solid warm line under the last row says "here", unmistakably, in a
     /// colour nothing else on the field uses.
     func showEndlessIILowerLimit() {
-        guard gameMode == .endlessII, endlessIILowerLimitLine == nil else { return }
+        guard gameMode == .endlessII else { return }
+        if let line = endlessIILowerLimitLine {
+            if line.parent == nil { addChild(line) }
+            line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
+            return
+        }
+        // Re-adopted, not just guarded: a restart tears the scene's children down but
+        // the reference survived, so the once-only guard skipped every run after the
+        // first and the line was "still not visible" however bright it was made -
+        // which is what two rounds of alpha-raising were actually chasing
+
         let line = SKSpriteNode(color: GameScene.endlessIILowerLimitColour,
                                 size: CGSize(width: gameWidth, height: 1))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
-        line.zPosition = 0.5
-        line.alpha = 0.18
-        // Plain transparent white, like the ticks - and visibly there: 0.09 vanished
-        // entirely on device (play-test round 8: "feint but not invisible"). Still below
-        // the markers' zPosition, so a height line drawn over it stays the readable one
+        line.zPosition = 0.62
+        line.alpha = 0.22
+        // Plain transparent white, like the ticks, brighter than them - feint but
+        // present. Above the scrolling backdrop (0.6) - at 0.5 the backdrop tiles sat
+        // over it, which is why it stayed invisible after the re-adoption fix and the
+        // alpha raises: the ticks at 0.6 rendered after the tiles and showed, the line
+        // never did. Still below the markers (0.65), so a height line drawn over it
+        // stays the readable one
         addChild(line)
         endlessIILowerLimitLine = line
     }
@@ -247,7 +260,7 @@ extension GameScene {
         let tick = SKNode()
         tick.name = GameScene.endlessIIMarkerName
         tick.position = CGPoint(x: 0, y: y)
-        tick.zPosition = 0.6
+        tick.zPosition = 0.65
         addChild(tick)
 
         let length = gameWidth*GameScene.endlessIITickLength
