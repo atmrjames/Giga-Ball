@@ -184,6 +184,15 @@ class WarningViewController: UIViewController {
     }
     
     func moveToMainMenu() {
+        if let pauseMenu = parent as? PauseMenuViewController {
+            pauseMenu.moveToMainMenu()
+            return
+        }
+        // The quit-confirm is a child of the pause menu, whose own return carries the
+        // pack number the menus need to reopen the right level list - this used to post
+        // a bare copy of the same notifications, and a quit-while-paused was the one
+        // path that landed on the pack list instead of the played pack's levels
+
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
         NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)

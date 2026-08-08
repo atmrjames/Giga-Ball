@@ -429,4 +429,32 @@ final class SavedGameTests: XCTestCase {
 
         XCTAssertEqual(SavedGame.load(from: defaults)?.numberOfLives, 3)
     }
+
+    // MARK: - A finished game must never be saved
+
+    func testAGameOverIsNeverSaved() {
+        // Play test: "When relaunching app a previously completed game can sometimes
+        // pick back up. This needs to be fixed. When a game is over it mustn't be
+        // saved - this could allow users to cheat."
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameoverStatus = true
+        XCTAssertTrue(scene.runIsOver)
+
+        UserDefaults.standard.set(true, forKey: "resumeGameToLoad")
+        scene.saveCurrentGame()
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: "resumeGameToLoad"),
+                       "a finished game must never be offered for resume")
+    }
+
+    func testTheLastLevelMidPlayStillSaves() {
+        // The completion check must not fire while the final level is still being
+        // played - a pause on the last level is an ordinary save.
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.levelNumber = 9
+        scene.endLevelNumber = 9
+        XCTAssertFalse(scene.runIsOver,
+                       "the last level in play is not a finished run")
+    }
 }

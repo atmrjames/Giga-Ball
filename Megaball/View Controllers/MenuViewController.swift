@@ -628,17 +628,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if musicSetting {
             MusicHandler.sharedHelper.playMusic(sender: "Menu")
         }
-        returnToModeMenu(playedDaily: playedDaily)
+        returnToModeMenu(playedDaily: playedDaily,
+                         packNumber: notification.userInfo?["packNumber"] as? Int ?? 0)
     }
 
     /// Puts the player back on the menu of the mode they just played (play-test rule:
-    /// every game returns to its own mode's menu, not the main menu).
+    /// every game returns to its own mode's menu, not the main menu - and for Classic,
+    /// to the played pack's own level list, James's call from the third round).
     ///
     /// Rebuilt fresh rather than resurrected: the screens the run was launched from may
     /// or may not still be children here depending on the path taken - the daily
     /// briefing removes itself on play, the mode screens do not - and a fresh present
     /// behaves the same from every path and reads the latest stats by construction.
-    func returnToModeMenu(playedDaily: Bool) {
+    func returnToModeMenu(playedDaily: Bool, packNumber: Int) {
         for child in children {
             child.viewIfLoaded?.removeFromSuperview()
             child.willMove(toParent: nil)
@@ -654,6 +656,18 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         switch GameMode.current(in: defaults) {
         case .classic:
             moveToPackSelector()
+            let setup = LevelPackSetup()
+            if packNumber >= 2, packNumber < setup.numberOfLevels.count,
+               let packScreen = children.last as? PackSelectViewController {
+                packScreen.hideAnimate()
+                packScreen.moveToLevelSelector(
+                    packNumber: packNumber,
+                    numberOfLevels: setup.numberOfLevels[packNumber],
+                    startLevel: setup.startLevelNumber[packNumber])
+            }
+            // The level list of the pack just played, stacked over the pack list the
+            // way navigating there stacks it - so back goes pack list, then main menu.
+            // A run without a classic pack (the tutorial) stops at the pack list
         case .endless, .endlessII:
             moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1],
                              levelNumber: LevelPackSetup().startLevelNumber[1],

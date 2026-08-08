@@ -131,7 +131,11 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     
     func moveToMainMenu() {
         CloudKitHandler().saveToiCloud()
-        NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+        NotificationCenter.default.post(name: .returnMenuNotification, object: nil,
+                                        userInfo: ["packNumber": levelPack ?? 0])
+        // The pack rides along so the menus can reopen the screen the run was launched
+        // from - every game returns to its own mode's menu, and for Classic that means
+        // the played pack's level list
         NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
         self.view.removeFromSuperview()

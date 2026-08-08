@@ -5537,18 +5537,40 @@ laserTimer?.invalidate()
         // Save total stats
 	}
 	
+	/// Whether the run this scene is playing has already finished - game over, or the
+	/// last level of the selection cleared.
+	///
+	/// The completion half is asked as "the final level, and the scene has moved past
+	/// playing it": `levelNumber == endLevelNumber` alone is true for the whole of the
+	/// last level, which a mid-level pause must still be able to save.
+	var runIsOver: Bool {
+		if gameoverStatus { return true }
+		guard endlessMode == false else { return false }
+		return levelNumber == endLevelNumber && gameState.currentState is InbetweenLevels
+	}
+
 	func saveCurrentGame() {
 		guard isDailyChallenge == false else { return }
 		// A daily run is never saved: resuming a twisted game into the campaign - or a
 		// campaign save into a twisted game - would be the wrong game either way. A daily
 		// interrupted is a daily abandoned, which phase 3's attempt rules will formalise
 
-				
+
 		if numberOfLives <= 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
 			return
 		}
 		// If number of lives is 0 and ball lost animtion has started, don't save current game
+
+		if runIsOver {
+			clearSavedGame()
+			return
+		}
+		// A finished game must never be saved (the play-test's cheating review): the
+		// level-end save exists so a run interrupted *between* levels resumes at the
+		// next one, but the same call runs when the final level completes - and the
+		// finished game sat on disk, where relaunching the app offered to pick it back
+		// up. Replaying a completed run from its last level is a score printed twice
 		
 		saveGameStats()
 		// Save total, pack and level stats arrays

@@ -729,7 +729,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     
     func moveToMainMenu() {
-        NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+        NotificationCenter.default.post(name: .returnMenuNotification, object: nil,
+                                        userInfo: ["packNumber": packNumber])
+        // The pack rides along for the same reason GameViewController sends it: the
+        // menus reopen the played pack's level list for a Classic run
         NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
         NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
         navigationController?.popToRootViewController(animated: true)
