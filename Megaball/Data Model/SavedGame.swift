@@ -152,6 +152,24 @@ struct SavedGame: Codable, Equatable {
     /// remaining count, which shows a full bar rather than a wrong one.
     var stickyPaddleCatchesTotal: Int?
 
+    // MARK: - The Daily Challenge
+
+    /// The UTC date key of the daily this save belongs to, or nil for a campaign run.
+    ///
+    /// The key alone restores the whole challenge, because the generator is a pure
+    /// function of it (daily spec §2) - so nothing about the twists, the mode or the
+    /// level needs saving, and a save can never disagree with the challenge it claims
+    /// to be. It is also the guard that stops a daily resuming into the campaign or the
+    /// other way round: a key that is not the run being started is not this save.
+    var dailyDateKey: String?
+
+    /// Whether the run being saved was the day's scoring attempt.
+    ///
+    /// Kept rather than recomputed, because "was this the first attempt" is a question
+    /// about the moment the play button was pressed, and the answer changes the instant
+    /// the record is written. Optional so older saves decode.
+    var dailyWasScoringAttempt: Bool?
+
     // MARK: - Consistency
 
     /// The five values `ballProperties` carries when a ball is in play:

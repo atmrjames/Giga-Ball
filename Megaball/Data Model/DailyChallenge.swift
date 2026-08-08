@@ -394,6 +394,34 @@ final class DailyChallengeSession {
     /// never has to re-derive what the scene already decided.
     var lastRunPosted = false
 
+    /// Whether the run in play was resumed after its scoring window had closed.
+    ///
+    /// The run carries on - an interrupted daily is not a lost one - but it cannot post,
+    /// and the player is told before the resume rather than after it (§12.5). The screens
+    /// read this to say why a run that started as the scoring attempt is now practice.
+    var resumedAfterDeadline = false
+
+    /// Puts a saved run's daily back, or clears the session if the save is a campaign one.
+    ///
+    /// Called before the scene is built, because the twists are applied as the field is
+    /// generated. The challenge itself is *recomputed* from the date key rather than
+    /// restored from the save: the generator is a pure function of the key (§2), so this
+    /// cannot disagree with what the briefing screen showed, and the save carries one
+    /// short string instead of a copy of the rules.
+    func restore(from save: SavedGame) {
+        guard let key = save.dailyDateKey else {
+            active = nil
+            isScoringAttempt = false
+            resumedAfterDeadline = false
+            return
+        }
+        active = DailyChallengeGenerator.challenge(forKey: key)
+        resumedAfterDeadline = key != todayKey
+        isScoringAttempt = (save.dailyWasScoringAttempt ?? false) && resumedAfterDeadline == false
+        // A run resumed on a later day is practice from here, whatever it set out to be.
+        // The window is the day, and the day has gone
+    }
+
     func has(_ twist: DailyTwist) -> Bool { active?.has(twist) ?? false }
 
     /// The date the daily screens consider "today".

@@ -339,16 +339,16 @@ Both came out of playing the phase-3 build, and both are about the gap between "
 happened" and "the score is on the board". Written up here because each changes §1's
 window rule at the edges.
 
-**A daily run must survive being interrupted.** Today a daily is never saved, so
-force-quitting mid-run drops the player back at the menu with the attempt spent and
-nothing to show. That was the right first cut - a daily save must never be confusable
-with a campaign save - but it is not the right answer: the run should resume where it
-was left, exactly as a campaign run does. The design:
+**A daily run must survive being interrupted — built.** The first cut refused to save a
+daily at all, so force-quitting mid-run spent the attempt and left nothing to come back
+to. It now saves into the same slot, stamped with the challenge's date key, and the
+design below is what shipped:
 
-- The daily gets **its own save slot**, separate from the campaign's (§9 already says
-  this), carrying the challenge's date key alongside the ordinary save. A save whose
-  date key is not the day being resumed into is never loaded - which is what stops a
-  twisted run resuming into an untwisted one.
+- The save carries the challenge's **date key**, and nothing else about the challenge:
+  the generator is a pure function of the key (§2), so the whole thing is recomputed on
+  resume and the save can never disagree with what the briefing showed. A save with no
+  key is a campaign save and clears any daily left in the session, which is what stops a
+  campaign run resuming into a twisted one.
 - **A run resumed after its window has closed still plays, and posts nothing.** The
   briefing said the attempt was the scoring one; the deadline says it no longer is.
   The player is told *before* the resume, not after: a warning on the resume prompt -

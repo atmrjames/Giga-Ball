@@ -747,6 +747,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         guard let savedGame else { return }
         // Reached from the resume prompt, so there is always a save - but returning
         // quietly beats trapping if the prompt is ever shown without one
+
+        DailyChallengeSession.shared.restore(from: savedGame)
+        // Before the scene is built, because the twists are applied as the field is
+        // generated. A save with no date key clears the session, which is what stops a
+        // campaign run resuming into whatever daily was last played
+
         levelSender = "MainMenu"
         numberOfLevels = savedGame.endLevelNumber - savedGame.levelNumber + 1
         moveToGame(selectedLevel: savedGame.levelNumber, numberOfLevels: numberOfLevels!, sender: levelSender!, levelPack: savedGame.packNumber)

@@ -5562,11 +5562,11 @@ laserTimer?.invalidate()
 	}
 
 	func saveCurrentGame() {
-		guard isDailyChallenge == false else { return }
-		// A daily run is never saved: resuming a twisted game into the campaign - or a
-		// campaign save into a twisted game - would be the wrong game either way. A daily
-		// interrupted is a daily abandoned, which phase 3's attempt rules will formalise
-
+		// A daily *is* saved now, in the same slot but stamped with its date key (§12.5).
+		// The first build refused, so a force-quit mid-daily spent the attempt and left
+		// nothing to come back to - the play test called that out. The key is what keeps
+		// the two apart: a save claiming a daily is only ever resumed into that daily,
+		// and a campaign run will not load one
 
 		if numberOfLives <= 0 && ballLostBool && ballIsOnPaddle == false {
 			clearSavedGame()
@@ -6057,7 +6057,10 @@ laserTimer?.invalidate()
 			activePowerUpMagnitudes: powerUpActiveArray != [] ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? [],
 			laserXPositions: laserXPositionArray,
 			laserYPositions: laserYPositionArray,
-			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal
+			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal,
+			dailyDateKey: DailyChallengeSession.shared.active?.dateKey,
+			dailyWasScoringAttempt: isDailyChallenge
+				? DailyChallengeSession.shared.isScoringAttempt : nil
 		)
 		savedGame?.save()
 		

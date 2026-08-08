@@ -119,6 +119,30 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                     footnote: lives == 1 ? "1 life left" : "\(lives) lives left")
             }
             
+            if let key = savedGame.dailyDateKey {
+                let session = DailyChallengeSession.shared
+                let challenge = DailyChallengeGenerator.challenge(forKey: key)
+                packNameLabel.text = "Daily Challenge — "
+                    + session.displayName(forKey: key).capitalized
+                levelNumberLabel.text = challenge.mode == .classic
+                    ? LevelPackSetup().levelNameArray[savedGame.levelNumber]
+                    : challenge.mode.name
+
+                let closed = key != session.todayKey
+                let footnote = closed
+                    ? "This challenge closed while you were away.\nThe run continues - the score will not be posted."
+                    : ((savedGame.dailyWasScoringAttempt ?? false)
+                        ? "Still your scoring attempt."
+                        : "Practice run.")
+                scoreLabel.attributedText = resumeDetail(
+                    title: challenge.mode == .classic ? "Score" : "Height",
+                    value: challenge.mode == .classic
+                        ? "\(savedGame.totalScore)" : "\(savedGame.endlessHeight)m",
+                    footnote: footnote)
+                // Said before the resume, never discovered after it (§12.5) - the same
+                // rule the briefing screen follows for whether an attempt posts
+            }
+
             packNameLabel.isHidden = false
             levelNumberLabel.isHidden = false
             scoreLabel.isHidden = false

@@ -447,6 +447,55 @@ final class SavedGameTests: XCTestCase {
                        "a finished game must never be offered for resume")
     }
 
+    // MARK: - The daily's own slot
+
+    func testADailySaveRestoresItsChallengeFromTheDateKey() {
+        // Play test: "When playing daily challenge and force quitting the app, it didn't
+        // resume the level, it went back to the main menu. It should resume the level."
+        // The key alone restores the challenge, because the generator is pure.
+        var game = sampleGame()
+        let key = DailyChallengeSession.shared.todayKey
+        game.dailyDateKey = key
+        game.dailyWasScoringAttempt = true
+
+        DailyChallengeSession.shared.restore(from: game)
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertEqual(DailyChallengeSession.shared.active,
+                       DailyChallengeGenerator.challenge(forKey: key))
+        XCTAssertTrue(DailyChallengeSession.shared.isScoringAttempt,
+                      "resumed inside its own day, it is still the scoring attempt")
+        XCTAssertFalse(DailyChallengeSession.shared.resumedAfterDeadline)
+    }
+
+    func testADailyResumedAfterItsDeadlineBecomesPractice() {
+        // "We need a method of dealing with paused or incomplete games that resume after
+        // the deadline" - the run continues, the score does not post (spec §12.5).
+        var game = sampleGame()
+        game.dailyDateKey = "2020-01-01"
+        game.dailyWasScoringAttempt = true
+
+        DailyChallengeSession.shared.restore(from: game)
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertNotNil(DailyChallengeSession.shared.active, "the run still resumes")
+        XCTAssertTrue(DailyChallengeSession.shared.resumedAfterDeadline)
+        XCTAssertFalse(DailyChallengeSession.shared.isScoringAttempt,
+                       "the window is the day, and the day has gone")
+    }
+
+    func testACampaignSaveClearsAnyDailyLeftInTheSession() {
+        DailyChallengeSession.shared.active = DailyChallengeGenerator.challenge(
+            forKey: DailyChallengeSession.shared.todayKey)
+        DailyChallengeSession.shared.isScoringAttempt = true
+
+        DailyChallengeSession.shared.restore(from: sampleGame())
+
+        XCTAssertNil(DailyChallengeSession.shared.active,
+                     "a campaign save must never resume into a twisted game")
+        XCTAssertFalse(DailyChallengeSession.shared.isScoringAttempt)
+    }
+
     func testTheLastLevelMidPlayStillSaves() {
         // The completion check must not fire while the final level is still being
         // played - a pause on the last level is an ordinary save.
