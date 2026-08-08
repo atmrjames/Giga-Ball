@@ -72,6 +72,22 @@ scene. The ones that bite widest:
   and the progression is not enough. From the outside, "never offered" looks exactly like
   "very rare".
 
+## Where outstanding work is tracked
+
+Each spec owns its queue - there is no separate TODO file, deliberately, so the list can
+never drift from the document that explains it:
+
+- **ENDLESS-2-SPECIFICATION.md §12.0** - "Open, in rough priority order" (queued play-test
+  features) and "Backlogged" (items blocked on something external). §8.5 is the asset and
+  sound shopping list, which is James's side along with the Quick Start Guide and the
+  App Store Connect leaderboards.
+- **DAILY-CHALLENGE-SPECIFICATION.md** - the status header says which build phases exist,
+  §12 is the phase plan, §13 the open questions. The daily's **test clock** (the DAY
+  stepper on the briefing screen) must be removed or debug-gated before release; the
+  status header is the tracking for that.
+- Play-test feedback arrives as lists from James; the convention is: fix what fits,
+  queue the rest in §12.0 with enough context to build from cold.
+
 ## Scope
 
 Ordinary work, done as asked. Where a fix touches shared mechanics — physics, scoring,
