@@ -1877,15 +1877,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if gameMode == .endlessII {
 			powerUpRings.update(with: activePowerUpEntries())
-			tickEndlessIIBricks(currentTime)
-			tickEndlessIIExtraBalls()
 			tickEndlessIIHeldBalls()
-			tickEndlessIIVision(currentTime)
-			tickEndlessIIPaddlePowerUps(currentTime)
-			tickEndlessIIFieldPowerUps()
-			tickEndlessIIWrapAround()
 			tickEndlessIIAim()
 			tickEndlessIIBuildIn(currentTime)
+
+			if endlessIIAimHold {
+				endlessIILastTick = currentTime
+				endlessIIPaddleLastTick = currentTime
+				// The aim hold freezes the *world*, and most of the world is driven from
+				// right here rather than from node actions - the descent, the spinners
+				// and movers, the timed clocks. The play test caught the gap: lasers
+				// kept firing and the field kept stepping while the ball sat on the
+				// paddle, and released into bricks that had descended past it. So while
+				// the hold is on, only the held balls and the aim itself tick - and the
+				// last-tick clocks are pinned to now, so on release every delta is one
+				// frame and everything resumes where it stopped rather than leaping the
+				// frozen seconds in a bound
+			} else {
+				tickEndlessIIBricks(currentTime)
+				tickEndlessIIExtraBalls()
+				tickEndlessIIVision(currentTime)
+				tickEndlessIIPaddlePowerUps(currentTime)
+				tickEndlessIIFieldPowerUps()
+				tickEndlessIIWrapAround()
+			}
 		}
 		
 		if gameState.currentState is Paused {
@@ -5381,9 +5396,15 @@ laserTimer?.invalidate()
 	}
 	
     @objc func laserGenerator() {
-		
+
+		guard endlessIIAimHold == false else { return }
+		// The aim hold freezes the world, but this runs on a Foundation Timer, which no
+		// amount of node-pausing touches - it kept firing over a held ball (play test).
+		// The beat is skipped rather than banked: the cadence carries on when the world
+		// does
+
 		if gameState.currentState is Playing {
-        
+
 			let laser = SKSpriteNode(imageNamed: "laserNormal")
 			laser.texture = laserNormalTexture
 			
