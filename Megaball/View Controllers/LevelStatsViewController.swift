@@ -64,6 +64,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     /// and a tap flips it to "what have I done lately".
     var runHistorySortsByHeight = true
     var runHistorySortButton: UIButton?
+    var runHistoryCountLabel: UILabel?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -463,7 +464,12 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func setupRunHistory() {
         guard runHistory.isEmpty == false else { return }
         // Nothing to list yet: the table waits for a first run, and the logo keeps the room
-        guard runHistoryTable == nil else { runHistoryTable?.reloadData(); return }
+        guard runHistoryTable == nil else {
+            runHistoryCountLabel?.text = runHistory.count == 1
+                ? "1 run" : "\(runHistory.count) runs"
+            runHistoryTable?.reloadData()
+            return
+        }
 
         for constraint in levelStatsView.constraints {
             let involves = constraint.firstItem === levelImageView
@@ -496,7 +502,22 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         // play test asked for it centred at the top of the table) - the list leads with
         // the best heights until the player asks it the other question
 
-        let table = UITableView(frame: .zero, style: .plain)
+        let count = UILabel()
+        count.translatesAutoresizingMaskIntoConstraints = false
+        count.font = .systemFont(ofSize: 12)
+        count.textColor = UIColor(white: 1, alpha: 0.4)
+        count.text = runHistory.count == 1 ? "1 run" : "\(runHistory.count) runs"
+        levelStatsView.addSubview(count)
+        NSLayoutConstraint.activate([
+            count.centerYAnchor.constraint(equalTo: sort.centerYAnchor),
+            count.trailingAnchor.constraint(equalTo: levelStatsView.trailingAnchor,
+                                            constant: -44),
+        ])
+        runHistoryCountLabel = count
+        // Small and subtle, at the end of the header row (play-test request): how many
+        // times the mode has been played, without making the list say it
+
+        let table = ContentAwareTableView(frame: .zero, style: .plain)
         table.translatesAutoresizingMaskIntoConstraints = false
         table.backgroundColor = .clear
         table.separatorColor = UIColor(white: 1, alpha: 0.12)
@@ -509,13 +530,16 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         NSLayoutConstraint.activate([
             table.topAnchor.constraint(equalTo: sort.bottomAnchor, constant: 4),
             table.bottomAnchor.constraint(equalTo: backButtonCollectionView.topAnchor,
-                                          constant: -8),
+                                          constant: -20),
             table.leadingAnchor.constraint(equalTo: levelStatsView.leadingAnchor,
                                            constant: 44),
             table.trailingAnchor.constraint(equalTo: levelStatsView.trailingAnchor,
                                             constant: -44),
         ])
         runHistoryTable = table
+        // ContentAwareTableView rather than a plain table (play-test request): when the
+        // list has more runs than fit, the content fades at whichever edge continues,
+        // and the extra clearance keeps the fade from crowding the buttons below
     }
 
     /// Flips between the two orders a run list can answer for: when, and how high.

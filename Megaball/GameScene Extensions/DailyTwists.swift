@@ -217,15 +217,34 @@ extension GameScene {
         }
     }
 
-    /// Brings one brick out of the fog, the first time anything strikes it.
+    /// Brings one brick out of the fog, spending the strike on the reveal. Returns
+    /// whether it did, so the caller stops there.
     ///
-    /// Called before every type's own rules, so it reaches the bricks that never reach
-    /// the type switch - and takes whatever struck it: ball, laser, explosion or halo.
-    func revealDailyFog(_ brick: SKSpriteNode) {
-        guard dailyFogIsOn, brick.isHidden else { return }
+    /// The fog borrows the invisible bricks' own convention (§4): the first strike shows
+    /// you the brick and costs the hit; what the brick does about being hit starts from
+    /// the second. The first fix revealed *before* the type switch without spending the
+    /// strike - which unhid a brick straight into its own destroy branch, so a fogged
+    /// field's bricks died mid-fade and "no bricks appeared when hit" (the fifth round's
+    /// report). Only the types whose own switch branches already reveal-and-stop are
+    /// left to themselves; everything else - multi-hits, Indestructibles, Portals,
+    /// power-up bricks - is revealed here, because their own rules never look at the
+    /// hidden flag.
+    func revealDailyFog(_ brick: SKSpriteNode) -> Bool {
+        guard dailyFogIsOn, brick.isHidden else { return false }
+
+        let ownBranchReveals = brick.endlessIIRole != .portal
+            && brick.endlessIIPowerUpIndex == nil
+            && [brickMultiHit1Texture, brickMultiHit2Texture, brickMultiHit3Texture,
+                brickMultiHit4Texture, brickIndestructible1Texture,
+                brickIndestructible2Texture].contains(brick.texture) == false
+        guard ownBranchReveals == false else { return false }
+        // Normal-shaped bricks (styled ones included) and the invisible texture reach
+        // switch branches that already do first-hit-reveals-only - the fog leans on them
+
         brick.isHidden = false
         brick.alpha = 0
         brick.run(.fadeIn(withDuration: 0.2))
         // The same fade an invisible brick has always come back with
+        return true
     }
 }

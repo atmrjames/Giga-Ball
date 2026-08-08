@@ -579,17 +579,32 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertFalse(empty.isHidden, "an empty cell has nothing to hide")
     }
 
-    func testFogLiftsOnTheFirstStrike() {
-        // The other half of the same report: "some bricks never show up. All brick types
-        // should appear on the first hit, including the standard invisible bricks."
+    func testFogSpendsTheFirstStrikeOnTheReveal() {
+        // Round 4: "some bricks never show up. All brick types should appear on the
+        // first hit." Round 5, after the first fix: "In fog of war, no bricks appeared
+        // when hit" - revealing before the type switch unhid a brick straight into its
+        // own destroy branch. The reveal spends the strike now, the invisible bricks'
+        // own convention.
         let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
                                               classicLevel: 1, twists: [.fogOfWar]))
         let wall = SKSpriteNode(texture: scene.brickIndestructible2Texture)
-        scene.applyDailyFog(to: [wall])
-        XCTAssertTrue(wall.isHidden)
+        let stack = SKSpriteNode(texture: scene.brickMultiHit3Texture)
+        scene.applyDailyFog(to: [wall, stack])
 
-        scene.revealDailyFog(wall)
-        XCTAssertFalse(wall.isHidden, "every type comes back on the strike that finds it")
+        XCTAssertTrue(scene.revealDailyFog(wall),
+                      "an Indestructible's own rules never look at the hidden flag - "
+                        + "the fog reveals it, and the strike stops there")
+        XCTAssertFalse(wall.isHidden)
+        XCTAssertTrue(scene.revealDailyFog(stack), "multi-hits likewise")
+        XCTAssertFalse(stack.isHidden)
+
+        let plain = SKSpriteNode(texture: scene.brickNormalTexture)
+        scene.applyDailyFog(to: [plain])
+        XCTAssertFalse(scene.revealDailyFog(plain),
+                       "a normal-shaped brick reaches a switch branch that already does "
+                        + "first-hit-reveals-only - the fog must not reveal it early, or "
+                        + "its first strike lands in the destroy branch and nothing appears")
+        XCTAssertTrue(plain.isHidden, "still hidden here - its own branch does the reveal")
     }
 
     func testFogSurvivesLosingABall() {

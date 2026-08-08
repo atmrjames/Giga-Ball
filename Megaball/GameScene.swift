@@ -2439,15 +2439,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// meets is not going through anything
 		let stopLaser = { if gigaLaser == false { laserNode?.removeFromParent() } }
 
-		revealDailyFog(sprite)
-		// Fog of War lifts on the first strike, whatever struck it and whatever type it
-		// is - before the Portal and power-up brick returns below, and before the type
-		// switch, because those are exactly the types that never reach the switch and so
-		// stayed invisible for ever (play test: "some bricks never show up")
-
 		recordBrickRecents(sprite)
-		// Also ahead of the early returns, so a struck Portal or power-up brick makes
-		// the recents too - they are exactly the bricks a player pauses to look up
+		// Ahead of the early returns, so a struck Portal or power-up brick makes the
+		// recents too - they are exactly the bricks a player pauses to look up
+
+		if revealDailyFog(sprite) {
+			stopLaser()
+			if hapticsSetting { lightHaptic.impactOccurred() }
+			if soundsSetting { self.run(brickHitNormalSound) }
+			return
+		}
+		// Fog of War: the first strike reveals and is spent on the reveal, whatever the
+		// type - the invisible bricks' own convention, applied to the types whose hit
+		// rules never look at the hidden flag. The types that do reveal themselves fall
+		// through to their own branches below
 
 		if sprite.endlessIIRole == .portal {
 			stopLaser()

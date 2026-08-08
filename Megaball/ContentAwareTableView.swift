@@ -54,6 +54,22 @@ final class ContentAwareTableView: UITableView {
 
     override func awakeFromNib() {
         super.awakeFromNib()
+        configure()
+    }
+
+    override init(frame: CGRect, style: UITableView.Style) {
+        super.init(frame: frame, style: style)
+        configure()
+    }
+    // Both births: the storyboard tables arrive through awakeFromNib, and the endless
+    // run history is built in code - which used to mean an unconfigured fade mask, and a
+    // gradient layer with no colours masks everything away
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+
+    private func configure() {
         contentInsetAdjustmentBehavior = .never
         // These tables sit inside a container that already keeps clear of the safe area,
         // so an adjusted inset on top of that is padding nothing and only muddies the
