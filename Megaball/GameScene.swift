@@ -227,6 +227,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Endless 2.0's power-up display. The tray above is left untouched for the modes that
 	/// already use it.
 	let powerUpRings = PowerUpRingHUD()
+	let trayRings = PowerUpTrayRings()
 	var scoreBacker = SKSpriteNode()
 	
 	var screenBlockArray: [SKSpriteNode] = []
@@ -1382,11 +1383,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// rings read - hiding them here would have switched off the very signal the
 			// new display depends on.
 			iconArray.forEach { $0.alpha = 0 }
-			iconEmptyTimerArray.forEach { $0.alpha = 0 }
-			iconTimerArray.forEach { $0.alpha = 0 }
 		}
-		// Endless 2.0 shows only what is running, as rings. Forty-six power-ups will not
-		// fit a fixed row of eight, and most of that row would be empty anyway
+		iconEmptyTimerArray.forEach { $0.alpha = 0 }
+		iconTimerArray.forEach { $0.alpha = 0 }
+		// Endless 2.0 shows only what is running, as rings - forty-six power-ups will not
+		// fit a fixed row of eight. The old modes keep the row of eight and lose only the
+		// bars: invisible in every mode now, because everywhere the timer shows it shows
+		// as a ring. The bars keep running underneath as the signal the rings read
+
+		trayRings.build(over: iconArray, iconSize: iconSize)
+		trayRings.zPosition = 4
+		trayRings.isHidden = gameMode == .endlessII
+		if trayRings.parent == nil { addChild(trayRings) }
+		// The old modes' tray, wearing the ring (James's design - same tray, same order,
+		// same geometry, only the indicator changes)
 
 //MARK: - Game Properties Initialisation
         
@@ -1874,6 +1884,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+
+		updateTrayRings()
+		// The old modes' tray rings read the bars' state the way Mayhem's row does -
+		// every frame, because the bars animate every frame
 
 		if gameMode == .endlessII {
 			powerUpRings.update(with: activePowerUpEntries())
@@ -4777,6 +4791,26 @@ laserTimer?.invalidate()
 	}
 	// Endless mode has a single life and no counter, so the row is hidden there - unless
 	// a daily twist says otherwise, which is what livesRowSuppressed folds in
+
+	/// Brings the old modes' tray rings in line with the bars they replaced.
+	///
+	/// The bar's hidden flag means "running" and its horizontal scale is the fraction
+	/// left - the exact signal Mayhem's ring row reads, and the save format too. The
+	/// sticky paddle counts catches rather than seconds, so its ring is segmented,
+	/// the same as the turn-based rings in Mayhem.
+	func updateTrayRings() {
+		guard gameMode != .endlessII else { return }
+		trayRings.isHidden = powerUpTray.isHidden
+
+		trayRings.update(remaining: iconTimerArray.enumerated().map { index, bar in
+			guard bar.isHidden == false, bar.xScale > 0.001 else { return nil }
+			let segments: Int? = index == GameScene.stickyPaddleTrayIndex
+				&& stickyPaddleCatchesTotal > 0 ? stickyPaddleCatchesTotal : nil
+			return (fraction: bar.xScale, segments: segments)
+		})
+		// The same running-and-how-far read `activePowerUpEntries` makes for Mayhem's
+		// row, against the same arrays
+	}
 
 	func setLivesRowHidden(_ hidden: Bool) {
 		if hidden {

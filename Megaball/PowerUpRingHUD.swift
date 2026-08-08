@@ -241,21 +241,30 @@ final class PowerUpRingHUD: SKNode {
         iconSize/2 - iconSize*PowerUpRingHUD.ringInset
     }
 
+    private func ringPath(remaining: CGFloat, segments: Int?) -> CGPath {
+        PowerUpRingHUD.ringPath(remaining: remaining, segments: segments,
+                                radius: radius())
+    }
+
     /// An arc from twelve o'clock, clockwise, covering what is left.
     ///
     /// Broken into segments where the power-up counts turns rather than time, with a gap
     /// between each - so three catches read as three marks rather than as three quarters.
-    private func ringPath(remaining: CGFloat, segments: Int?) -> CGPath {
+    ///
+    /// Static and radius-parameterised because two displays draw it now: Mayhem's
+    /// only-active row, and the old modes' fixed tray - one geometry, or the same
+    /// power-up would read differently between modes.
+    static func ringPath(remaining: CGFloat, segments: Int?, radius: CGFloat) -> CGPath {
         let fraction = min(max(remaining, 0), 1)
 
         guard let segments, segments > 1 else {
             if fraction >= 1 {
-                return CGPath(ellipseIn: CGRect(x: -radius(), y: -radius(),
-                                                width: radius()*2, height: radius()*2),
+                return CGPath(ellipseIn: CGRect(x: -radius, y: -radius,
+                                                width: radius*2, height: radius*2),
                               transform: nil)
             }
             let path = CGMutablePath()
-            path.addArc(center: .zero, radius: radius(),
+            path.addArc(center: .zero, radius: radius,
                         startAngle: .pi/2, endAngle: .pi/2 - .pi*2*fraction, clockwise: true)
             return path
         }
@@ -271,10 +280,100 @@ final class PowerUpRingHUD: SKNode {
             // Moved to before each arc, not just drawn. `addArc` joins to whatever the
             // current point is, so without this every gap is filled in by the line
             // connecting one segment to the next and the ring reads as solid
-            path.move(to: CGPoint(x: cos(start)*radius(), y: sin(start)*radius()))
-            path.addArc(center: .zero, radius: radius(),
+            path.move(to: CGPoint(x: cos(start)*radius, y: sin(start)*radius))
+            path.addArc(center: .zero, radius: radius,
                         startAngle: start, endAngle: start - (sweep - gap), clockwise: true)
         }
         return path
+    }
+}
+
+/// The old modes' tray, wearing the ring.
+///
+/// Classic and the original Endless keep their permanent row of eight - same icons, same
+/// order, same geometry, so `layoutUnit` and the brick sizes on scored levels cannot
+/// move - and only the *indicator* changes: the bar under each icon becomes the ring
+/// dial around it, in the same Giga-Ball colour Mayhem's row wears (James's design,
+/// which is what unblocked this port).
+///
+/// The bars are still in the scene, invisible: their hidden state and horizontal scale
+/// are the signal the activation code writes and the save format reads, and this draws
+/// the rings from what they say - the same read-the-state trick the Mayhem row uses, so
+/// no activation code changes here either.
+final class PowerUpTrayRings: SKNode {
+
+    private struct Slot {
+        let holder: SKNode
+        let ring: SKShapeNode
+        let halo: SKShapeNode
+        var wasActive = false
+    }
+
+    private var slots: [Slot] = []
+    private var radius: CGFloat = 14
+
+    private static let ringWidth: CGFloat = 2
+    private static let appearDuration: TimeInterval = 0.2
+
+    /// Puts one (empty) ring over each tray icon. Called once the tray has its layout.
+    func build(over icons: [SKSpriteNode], iconSize: CGFloat) {
+        removeAllChildren()
+        slots = []
+        radius = iconSize/2 + PowerUpTrayRings.ringWidth
+        // Just outside the icon's edge: the tray icons are art, not padded badges like
+        // Mayhem's, and a ring drawn inside them sat across the artwork
+
+        for icon in icons {
+            let holder = SKNode()
+            holder.position = icon.position
+            holder.alpha = 0
+
+            let halo = SKShapeNode()
+            halo.strokeColor = PowerUpRingHUD.ringColour
+            halo.lineWidth = PowerUpTrayRings.ringWidth*2
+            halo.lineCap = .round
+            halo.fillColor = .clear
+            halo.alpha = 0.16
+            halo.blendMode = .add
+            holder.addChild(halo)
+
+            let ring = SKShapeNode()
+            ring.strokeColor = PowerUpRingHUD.ringColour
+            ring.lineWidth = PowerUpTrayRings.ringWidth
+            ring.lineCap = .round
+            ring.fillColor = .clear
+            ring.zPosition = 1
+            holder.addChild(ring)
+
+            addChild(holder)
+            slots.append(Slot(holder: holder, ring: ring, halo: halo))
+        }
+    }
+
+    /// Brings each slot's ring in line with its bar. Called every frame.
+    ///
+    /// An entry is nil where the power-up is not running - the ring fades out the way
+    /// Mayhem's expire, rather than vanishing.
+    func update(remaining: [(fraction: CGFloat, segments: Int?)?]) {
+        for (index, entry) in remaining.enumerated() where slots.indices.contains(index) {
+            if let entry {
+                let path = PowerUpRingHUD.ringPath(remaining: entry.fraction,
+                                                  segments: entry.segments,
+                                                  radius: radius)
+                slots[index].ring.path = path
+                slots[index].halo.path = path
+                if slots[index].wasActive == false {
+                    slots[index].wasActive = true
+                    slots[index].holder.removeAllActions()
+                    slots[index].holder.run(
+                        .fadeIn(withDuration: PowerUpTrayRings.appearDuration))
+                }
+            } else if slots[index].wasActive {
+                slots[index].wasActive = false
+                slots[index].holder.removeAllActions()
+                slots[index].holder.run(
+                    .fadeOut(withDuration: PowerUpTrayRings.appearDuration))
+            }
+        }
     }
 }
