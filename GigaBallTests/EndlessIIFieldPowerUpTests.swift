@@ -410,7 +410,7 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
             BallState(position: scene.ball.position, velocity: CGVector(dx: 20, dy: -90))
 
-        XCTAssertTrue(scene.endlessIIPaddlePortalTook(scene.ball))
+        XCTAssertTrue(scene.endlessIIPaddlePortalTook(scene.ball, collision: 0))
         scene.applyEndlessIIPaddlePortals()
 
         XCTAssertEqual(scene.ball.position.x, portal.position.x, "out of the portal brick")
@@ -426,7 +426,7 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
             BallState(position: scene.ball.position, velocity: CGVector(dx: 20, dy: -90))
 
-        XCTAssertTrue(scene.endlessIIPaddlePortalTook(scene.ball))
+        XCTAssertTrue(scene.endlessIIPaddlePortalTook(scene.ball, collision: 0))
         scene.applyEndlessIIPaddlePortals()
         XCTAssertLessThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
                           "falling back in from the top, as before")

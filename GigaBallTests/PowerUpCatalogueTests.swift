@@ -194,16 +194,31 @@ final class PowerUpCatalogueTests: XCTestCase {
 /// alphabetical."
 final class InGameRecentsTests: XCTestCase {
 
-    func testSeeingAPowerUpAgainMovesItToTheFront() {
+    func testEveryAppearanceIsItsOwnEntry() {
+        // Round 8: "if a power-up showed up multiple times show it on the list multiple
+        // times. Each time is a new entry."
         let recents = InGameRecents.shared
         recents.reset()
         recents.sawPowerUp(4)
         recents.sawPowerUp(7)
         recents.sawPowerUp(4)
-        XCTAssertEqual(recents.powerUpIndices, [4, 7],
-                       "the most recent is first, and nothing is listed twice")
+        XCTAssertEqual(recents.powerUpIndices, [4, 7, 4],
+                       "newest first, duplicates and all")
         recents.reset()
         XCTAssertTrue(recents.powerUpIndices.isEmpty, "a new run has seen nothing")
+    }
+
+    func testACollectionMarksTheNewestUncaughtAppearance() {
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(4)
+        recents.sawPowerUp(4)
+        recents.collectedPowerUp(4)
+        XCTAssertEqual(recents.statusNote(at: 0), "COLLECTED",
+                       "the newest appearance is the one that was caught")
+        XCTAssertEqual(recents.statusNote(at: 1), "MISSED",
+                       "the earlier appearance stays the miss it was")
+        recents.reset()
     }
 
     func testRowOrderLeadsWithRecentsAndAlphabetisesTheRest() {
@@ -219,18 +234,25 @@ final class InGameRecentsTests: XCTestCase {
 
     func testStatusNotesReadTheMostCurrentFact() {
         // Round 7: "A falling power-up shouldn't be considered missed - maybe put
-        // falling as an option." Active beats falling beats collected beats missed.
+        // falling as an option." Round 8 adds BRICK for one still sitting in a power-up
+        // brick. Active beats falling beats brick beats collected beats missed, and the
+        // live states only speak for the newest appearance.
         let recents = InGameRecents.shared
         recents.reset()
         recents.sawPowerUp(5)
-        XCTAssertEqual(recents.statusNote(for: 5), "MISSED")
+        XCTAssertEqual(recents.statusNote(at: 0), "MISSED")
         recents.fallingPowerUpIndices = [5]
-        XCTAssertEqual(recents.statusNote(for: 5), "FALLING")
-        recents.collectedPowerUp(5)
+        XCTAssertEqual(recents.statusNote(at: 0), "FALLING")
         recents.fallingPowerUpIndices = []
-        XCTAssertEqual(recents.statusNote(for: 5), "COLLECTED")
+        recents.brickHeldPowerUpIndices = [5]
+        XCTAssertEqual(recents.statusNote(at: 0), "BRICK")
+        recents.brickHeldPowerUpIndices = []
+        recents.collectedPowerUp(5)
+        XCTAssertEqual(recents.statusNote(at: 0), "COLLECTED")
         recents.activePowerUpIndices = [5]
-        XCTAssertEqual(recents.statusNote(for: 5), "ACTIVE")
+        XCTAssertEqual(recents.statusNote(at: 0), "ACTIVE")
+        XCTAssertEqual(recents.statusNoteOldestFirst(at: 0), "ACTIVE",
+                       "the run-stats page reads the same note from the other end")
         recents.reset()
     }
 

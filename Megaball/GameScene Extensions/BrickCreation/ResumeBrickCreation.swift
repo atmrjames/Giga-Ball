@@ -58,6 +58,14 @@ extension GameScene {
             default:
                 brickTexture = brickNormalTexture
             }
+
+            if let hidden = savedGame.brickHidden, hidden.indices.contains(i) {
+                brick.isHidden = hidden[i]
+            }
+            // The saved field's own word beats the texture encoding: the texture index
+            // only carries hidden for two of the types, and a Fog of War day fogs them
+            // all - resuming re-fogged everything the run had revealed (play-test
+            // round 8). Saves from before the array exists keep the old behaviour
             brick.texture = brickTexture!
             
             if savedGame.brickColours.count > 0 {

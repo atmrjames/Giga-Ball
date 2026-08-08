@@ -21,15 +21,26 @@ final class InGameRecents {
     static let shared = InGameRecents()
     private init() {}
 
-    /// Power-up indices, most recent first. Recorded when one enters play - falling from
-    /// a brick, or released by Mayhem's power-up brick - because "seen" is the question
-    /// the page answers, not "caught".
-    private(set) var powerUpIndices: [Int] = []
+    /// One appearance of a power-up in play - a drop falling, or a power-up brick
+    /// arriving. Each appearance is its own entry (play-test round 8: "if a power-up
+    /// showed up multiple times show it multiple times"), newest first, with what became
+    /// of that particular appearance.
+    struct Sighting {
+        let index: Int
+        var fate: PowerUpFate
+    }
 
-    /// What became of each seen power-up: caught, or fell past. The latest event wins -
-    /// a fresh drop of something caught earlier reads as the drop it is.
     enum PowerUpFate { case seen, collected }
-    private(set) var powerUpFates: [Int: PowerUpFate] = [:]
+
+    private(set) var sightings: [Sighting] = []
+
+    /// The indices in sighting order, duplicates and all - the pages' row source, and
+    /// the dedupe set for the standard list below them.
+    var powerUpIndices: [Int] { sightings.map(\.index) }
+
+    /// What sat in a power-up brick when the pause menu opened - the same snapshot as
+    /// the actives, marking those sightings BRICK.
+    var brickHeldPowerUpIndices: Set<Int> = []
 
     /// What was running when the pause menu opened - the scene's snapshot, taken as the
     /// menu goes up, because "currently active" is a question about that moment and the
@@ -49,34 +60,61 @@ final class InGameRecents {
         bricksDestroyedThisRun += 1
     }
 
-    /// The finished run's headline numbers, set by the scene as the game-over screen
-    /// goes up - the screen and the detail page read, never compute.
-    var runSummary: (paddleHits: Int, bricksDestroyed: Int, powerUpsCollected: Int)?
+    /// The finished run's numbers, set by the scene as the game-over screen goes up -
+    /// the screen and the detail page read, never compute. Grown to a proper record in
+    /// round 8: the detail screen wants more than the game-over line shows.
+    struct RunSummary {
+        let height: Int
+        let durationSeconds: Int
+        let paddleHits: Int
+        let bricksDestroyed: Int
+        let ballsLost: Int
+        let powerUpsSeen: Int
+        let powerUpsCollected: Int
+    }
+    var runSummary: RunSummary?
 
     /// Brick entry names (the catalogue's own), most recent first. Recorded on the strike,
     /// because a struck brick is the one the player is asking about.
     private(set) var brickNames: [String] = []
 
     func sawPowerUp(_ index: Int) {
-        powerUpIndices.removeAll { $0 == index }
-        powerUpIndices.insert(index, at: 0)
-        powerUpFates[index] = .seen
+        sightings.insert(Sighting(index: index, fate: .seen), at: 0)
     }
 
     func collectedPowerUp(_ index: Int) {
-        powerUpIndices.removeAll { $0 == index }
-        powerUpIndices.insert(index, at: 0)
-        powerUpFates[index] = .collected
-        // A collection is also the most recent thing that happened to it
+        if let position = sightings.firstIndex(where: { $0.index == index
+                && $0.fate == .seen }) {
+            sightings[position].fate = .collected
+            // The newest uncaught appearance of it is the one that was caught
+        } else {
+            sightings.insert(Sighting(index: index, fate: .collected), at: 0)
+        }
     }
 
-    /// The recents section's note for a power-up (play-test request): active, still
-    /// falling, collected, or missed - in that order of precedence, because each earlier
-    /// state is the more current fact about it.
-    func statusNote(for index: Int) -> String {
-        if activePowerUpIndices.contains(index) { return "ACTIVE" }
-        if fallingPowerUpIndices.contains(index) { return "FALLING" }
-        return powerUpFates[index] == .collected ? "COLLECTED" : "MISSED"
+    /// The note for one sighting (play-test request): active, still falling, sitting in
+    /// a brick, collected, or missed - each earlier state the more current fact. The
+    /// live states only apply to the newest appearance of an index; an older duplicate
+    /// reads as the history it is.
+    func statusNote(at position: Int) -> String {
+        guard sightings.indices.contains(position) else { return "" }
+        let sighting = sightings[position]
+        let newest = sightings.firstIndex { $0.index == sighting.index } == position
+
+        if sighting.fate == .collected {
+            return newest && activePowerUpIndices.contains(sighting.index)
+                ? "ACTIVE" : "COLLECTED"
+        }
+        if newest {
+            if fallingPowerUpIndices.contains(sighting.index) { return "FALLING" }
+            if brickHeldPowerUpIndices.contains(sighting.index) { return "BRICK" }
+        }
+        return "MISSED"
+    }
+
+    /// The note the run-stats page shows for a sighting given in oldest-first order.
+    func statusNoteOldestFirst(at position: Int) -> String {
+        statusNote(at: sightings.count - 1 - position)
     }
 
     func struckBrick(named name: String) {
@@ -87,10 +125,10 @@ final class InGameRecents {
     /// A new run starts with nothing seen. Called as the run is set up, so a list opened
     /// mid-run never carries the last run's memory.
     func reset() {
-        powerUpIndices = []
-        powerUpFates = [:]
+        sightings = []
         activePowerUpIndices = []
         fallingPowerUpIndices = []
+        brickHeldPowerUpIndices = []
         bricksDestroyedThisRun = 0
         runSummary = nil
         brickNames = []

@@ -572,8 +572,30 @@ extension GameScene {
     func endlessIICrushedByAnchor(_ node: SKNode, anchored: Set<EndlessIICell>) -> Bool {
         guard gameMode == .endlessII, anchored.isEmpty == false else { return false }
         guard node.endlessIIIsAnchored == false else { return false }
-        let cell = endlessIIGeometry.cell(at: node.position)
-        return anchored.contains(EndlessIICell(column: cell.column, row: cell.row + 1))
+
+        guard let sprite = node as? SKSpriteNode, sprite.size.width > brickWidth*1.5
+                || sprite.size.height > brickHeight*1.5 else {
+            let cell = endlessIIGeometry.cell(at: node.position)
+            return anchored.contains(EndlessIICell(column: cell.column, row: cell.row + 1))
+        }
+
+        // An oversized brick descends onto an anchor with any part of its body, not just
+        // the cell its node sits in - a Big brick slid straight past a Fixed brick under
+        // its other half (play test). Every column the frame covers is asked, against
+        // the row below the frame's lowest occupied row.
+        let frame = sprite.frame
+        let inset = brickWidth*0.25
+        let left = endlessIIGeometry.cell(at: CGPoint(x: frame.minX + inset,
+                                                      y: node.position.y)).column
+        let right = endlessIIGeometry.cell(at: CGPoint(x: frame.maxX - inset,
+                                                       y: node.position.y)).column
+        let bottomRow = endlessIIGeometry.cell(at: CGPoint(x: node.position.x,
+                                                           y: frame.minY + brickHeight*0.25)).row
+        for column in min(left, right)...max(left, right)
+        where anchored.contains(EndlessIICell(column: column, row: bottomRow + 1)) {
+            return true
+        }
+        return false
     }
 
     static let fixedBrickColour = UIColor(red: 0.60, green: 0.80, blue: 0.35, alpha: 1)

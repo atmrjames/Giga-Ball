@@ -170,6 +170,16 @@ struct SavedGame: Codable, Equatable {
     /// the record is written. Optional so older saves decode.
     var dailyWasScoringAttempt: Bool?
 
+    /// Each surviving brick's hidden state, indexed with the brick arrays.
+    ///
+    /// The texture indices encode hidden for normal and invisible bricks, but not for
+    /// multi-hits and Indestructibles - and a Fog of War day fogs those too, so a resume
+    /// re-fogged the whole field and everything the run had revealed went dark again
+    /// (play-test round 8). Declared down here rather than with its siblings because the
+    /// memberwise initialiser follows declaration order, and the older callers list
+    /// these newcomers last. Optional so older saves decode.
+    var brickHidden: [Bool]?
+
     // MARK: - Consistency
 
     /// The five values `ballProperties` carries when a ball is in play:

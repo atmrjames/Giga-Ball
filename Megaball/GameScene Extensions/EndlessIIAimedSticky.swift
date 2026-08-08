@@ -35,7 +35,11 @@ extension GameScene {
     /// own velocity has already been bounced by the engine (§8.6), and the *arrival* is what
     /// the default angle is the mirror of.
     func endlessIIAimedCatch(_ subject: SKSpriteNode, isExtra: Bool) -> Bool {
-        guard gameMode == .endlessII, endlessIIAimedStickyClock.isRunning else { return false }
+        guard gameMode == .endlessII,
+              endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn
+        else { return false }
+        endlessIIAimedStickyOwedTurn = false
+        // The last catch still catches - the turn that expired the clock is this one
         guard endlessIIInertPaddleClock.isRunning == false else { return false }
         // An inert paddle holds nothing - see paddleHit's sticky band
 

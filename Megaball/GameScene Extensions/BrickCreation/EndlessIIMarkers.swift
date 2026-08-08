@@ -163,11 +163,10 @@ extension GameScene {
                                 size: CGSize(width: gameWidth, height: 1))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
         line.zPosition = 0.5
-        line.alpha = 0.09
-        // Plain transparent white, like the ticks, and fainter than every height mark -
-        // third play-test round: the warm colour still read as red, and a marker drawn
-        // over this line has to stay readable, which means this one gives way. Below the
-        // markers' zPosition too, for the same reason
+        line.alpha = 0.18
+        // Plain transparent white, like the ticks - and visibly there: 0.09 vanished
+        // entirely on device (play-test round 8: "feint but not invisible"). Still below
+        // the markers' zPosition, so a height line drawn over it stays the readable one
         addChild(line)
         endlessIILowerLimitLine = line
     }

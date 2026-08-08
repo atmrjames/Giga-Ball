@@ -96,9 +96,13 @@ extension GameScene {
         seedEndlessIIMarkers()
         // The opening field already stands for 0m up to 21m, so the marks belonging to those
         // rows have to be put there rather than waiting to descend into them
-        applyDailyFog(to: brickBuildArray)
+        if resumeGameToLoad == false {
+            applyDailyFog(to: brickBuildArray)
+        }
         // Fog of War hides the day's field - after the animations are set up, because
-        // isHidden and the arrival animations work independently
+        // isHidden and the arrival animations work independently. Never on a resume:
+        // the saved field carries its own hidden flags, and re-fogging it took back
+        // everything the run had revealed (play-test round 8)
 
         applyEndlessIISizes(to: &brickBuildArray)
         applyEndlessIIBehaviours(to: brickBuildArray)

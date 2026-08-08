@@ -295,12 +295,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.settingState.text = ""
 
             if isRecentRow(indexPath) {
-                cell.settingState.text = InGameRecents.shared
-                    .statusNote(for: powerUpIndexCorrection)
+                cell.settingState.text = InGameRecents.shared.statusNote(at: indexPath.row)
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
-                // What became of it (play-test request): caught, fell past, or running
-                // right now - ACTIVE reads from the snapshot the scene took as the
-                // pause menu went up
+                cell.settingState.font = .boldSystemFont(ofSize: 11)
+                cell.settingState.minimumScaleFactor = 0.5
+                // What became of that appearance: caught, fell past, in a brick, or
+                // running right now. Sized so COLLECTED fits the state column - at the
+                // column's usual size it truncated (play-test round 8's screenshot)
             }
                         
             if totalStatsArray[0].powerupsGenerated.count < powerUpIndexCorrection-1 {

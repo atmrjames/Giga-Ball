@@ -270,18 +270,33 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
     func testThePortalPaddleOnlySwallowsWhileItRuns() {
         let scene = paddleScene()
         let subject = SKSpriteNode()
-        XCTAssertFalse(scene.endlessIIPaddlePortalTook(subject))
+        XCTAssertFalse(scene.endlessIIPaddlePortalTook(subject, collision: 0))
 
         scene.endlessIICollectPortalPaddle()
-        XCTAssertTrue(scene.endlessIIPaddlePortalTook(subject))
+        XCTAssertTrue(scene.endlessIIPaddlePortalTook(subject, collision: 0.4))
         XCTAssertEqual(scene.endlessIIPendingPaddlePortals.count, 1)
+        XCTAssertEqual(scene.endlessIIPendingPortalCollisions[ObjectIdentifier(subject)],
+                       0.4, "where the ball went through rides along for the exit angle")
+    }
+
+    func testThePortalPaddlesLastTurnStillSwallows() {
+        // Play test: "Portal paddle on its last turn doesn't work, the ball just
+        // bounces off." Spending the last turn expires the clock before the paddle
+        // acts; the turn being spent still delivers what it was spent on.
+        let scene = paddleScene()
+        scene.endlessIIPortalPaddleClock.collect(1)
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertFalse(scene.endlessIIPortalPaddleClock.isRunning,
+                       "the last turn is spent")
+        XCTAssertTrue(scene.endlessIIPaddlePortalTook(SKSpriteNode(), collision: 0),
+                      "and it still swallows")
     }
 
     func testOtherModesNeverSwallowABall() {
         let scene = paddleScene()
         scene.gameMode = .classic
         scene.endlessIIPortalPaddleClock.collect(10)
-        XCTAssertFalse(scene.endlessIIPaddlePortalTook(SKSpriteNode()))
+        XCTAssertFalse(scene.endlessIIPaddlePortalTook(SKSpriteNode(), collision: 0))
     }
 
     func testEveryRunningClockReportsToTheRing() {

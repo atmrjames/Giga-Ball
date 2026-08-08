@@ -20,7 +20,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
     /// The power-ups the run met, in the order it met them - InGameRecents keeps them
-    /// newest first, and a story reads from the start.
+    /// newest first, and a story reads from the start. Every appearance is its own row.
     private let seenPowerUps: [Int] = InGameRecents.shared.powerUpIndices.reversed()
 
     override func viewDidLoad() {
@@ -53,21 +53,52 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         numbers.textAlignment = .center
         numbers.numberOfLines = 0
         if let summary = InGameRecents.shared.runSummary {
-            let lines = [("Paddle hits", summary.paddleHits),
-                         ("Bricks destroyed", summary.bricksDestroyed),
-                         ("Power-ups collected", summary.powerUpsCollected)]
+            let minutes = summary.durationSeconds/60
+            let seconds = summary.durationSeconds % 60
+            let caught = summary.powerUpsSeen > 0
+                ? Int((Double(summary.powerUpsCollected)/Double(summary.powerUpsSeen)*100)
+                    .rounded())
+                : 0
+            let bricksPerMetre = summary.height > 0
+                ? String(format: "%.1f", Double(summary.bricksDestroyed)/Double(summary.height))
+                : "—"
+            // Derived figures the game-over line has no room for - the detail screen is
+            // where a run's texture lives (play-test round 8 asked it to earn its keep)
+
+            let lines: [(String, String, String)] = [
+                ("arrow.up", "Height", "\(summary.height)m"),
+                ("clock", "Time", String(format: "%d:%02d", minutes, seconds)),
+                ("rectangle.fill", "Paddle hits", "\(summary.paddleHits)"),
+                ("square.grid.3x2.fill", "Bricks destroyed", "\(summary.bricksDestroyed)"),
+                ("ruler", "Bricks per metre", bricksPerMetre),
+                ("circle.slash", "Balls lost", "\(summary.ballsLost)"),
+                ("arrow.down.circle.fill", "Power-ups seen", "\(summary.powerUpsSeen)"),
+                ("checkmark.circle.fill", "Power-ups collected",
+                 "\(summary.powerUpsCollected) (\(caught)%)"),
+            ]
             let text = NSMutableAttributedString()
             for (index, line) in lines.enumerated() {
                 if index > 0 { text.append(NSAttributedString(string: "\n")) }
+                let badge = NSTextAttachment()
+                badge.image = UIImage(systemName: line.0)?
+                    .withTintColor(UIColor(white: 1, alpha: 0.45),
+                                   renderingMode: .alwaysOriginal)
+                badge.bounds = CGRect(x: 0, y: -2, width: 16, height: 14)
+                text.append(NSAttributedString(attachment: badge))
                 text.append(NSAttributedString(
-                    string: "\(line.0)  ",
-                    attributes: [.font: UIFont.systemFont(ofSize: 17),
+                    string: "  \(line.1)  ",
+                    attributes: [.font: UIFont.systemFont(ofSize: 16),
                                  .foregroundColor: UIColor(white: 1, alpha: 0.7)]))
                 text.append(NSAttributedString(
-                    string: "\(line.1)",
-                    attributes: [.font: UIFont.boldSystemFont(ofSize: 17),
+                    string: line.2,
+                    attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
                                  .foregroundColor: UIColor.white]))
             }
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .center
+            paragraph.paragraphSpacing = 5
+            text.addAttribute(.paragraphStyle, value: paragraph,
+                              range: NSRange(location: 0, length: text.length))
             numbers.attributedText = text
         }
         view.addSubview(numbers)
@@ -147,10 +178,12 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         cell.imageView?.image = setup.powerUpImageArray.indices.contains(index)
             ? setup.powerUpImageArray[index] : nil
 
-        cell.detailTextLabel?.text = InGameRecents.shared.statusNote(for: index)
+        cell.detailTextLabel?.text = InGameRecents.shared
+            .statusNoteOldestFirst(at: indexPath.row)
         cell.detailTextLabel?.font = .systemFont(ofSize: 13)
         cell.detailTextLabel?.textColor = UIColor(white: 1, alpha: 0.55)
-        // The same collected/missed/falling/active note the pause reference page shows
+        // The same collected/missed/falling/brick/active note the pause reference page
+        // shows, for this particular appearance
         return cell
     }
 

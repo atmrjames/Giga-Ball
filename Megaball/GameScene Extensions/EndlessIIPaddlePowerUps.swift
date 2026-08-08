@@ -120,7 +120,11 @@ extension GameScene {
     /// Returns whether it did - asked at the end of the bounce, so it overrides the angle
     /// but not the catches, the swallow, or anything else the paddle decided first.
     func endlessIIApplyAutoAim(to subject: SKSpriteNode) -> Bool {
-        guard gameMode == .endlessII, endlessIIAutoAimClock.isRunning else { return false }
+        guard gameMode == .endlessII,
+              endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn
+        else { return false }
+        endlessIIAutoAimOwedTurn = false
+        // The last turn still aims - the turn that expired the clock is this bounce
         guard let target = endlessIIAutoAimTarget(from: subject.position.x) else { return false }
         guard let angle = EndlessIIPaddleEffects.autoAimAngle(
             from: subject.position, to: target, minimumDeg: minAngleDeg) else { return false }
@@ -152,6 +156,12 @@ extension GameScene {
     /// spends one, which is the price of running four balls through a five-turn power-up.
     func endlessIISpendPaddleTurns() {
         guard gameMode == .endlessII else { return }
+        endlessIIPortalPaddleOwedTurn = endlessIIPortalPaddleClock.isRunning
+        endlessIIAimedStickyOwedTurn = endlessIIAimedStickyClock.isRunning
+        endlessIIAutoAimOwedTurn = endlessIIAutoAimClock.isRunning
+        // Snapshotted before the spend: the effects these buy land later in the same
+        // contact, and a clock expired by its own last turn must still deliver it
+
         endlessIIAimedStickyClock.spendTurn()
         endlessIIMagnetismClock.spendTurn()
         endlessIIPortalPaddleClock.spendTurn()
@@ -180,9 +190,16 @@ extension GameScene {
     /// Deferred rather than done: this is called from inside a contact, and a position
     /// written there is undone by the rest of the step (§8.6). Returns whether the paddle
     /// took the ball, so the caller skips the bounce it would otherwise be correcting.
-    func endlessIIPaddlePortalTook(_ subject: SKSpriteNode) -> Bool {
-        guard gameMode == .endlessII, endlessIIPortalPaddleClock.isRunning else { return false }
+    func endlessIIPaddlePortalTook(_ subject: SKSpriteNode, collision: Double) -> Bool {
+        guard gameMode == .endlessII,
+              endlessIIPortalPaddleClock.isRunning || endlessIIPortalPaddleOwedTurn
+        else { return false }
+        endlessIIPortalPaddleOwedTurn = false
         endlessIIPendingPaddlePortals.append(subject)
+        endlessIIPendingPortalCollisions[ObjectIdentifier(subject)] = collision
+        // Where on the paddle the ball went through, kept for the exit: the re-entry
+        // angle is the bounce this spot would have given (play test: the ball just
+        // carried on, and the portal gave no control)
         if hapticsSetting { mediumHaptic.impactOccurred() }
         return true
     }
@@ -204,11 +221,22 @@ extension GameScene {
             // The velocity it entered with, sampled before the engine's own bounce - the
             // reported one has already been turned round (§8.6)
 
+            let collision = endlessIIPendingPortalCollisions
+                .removeValue(forKey: ObjectIdentifier(subject)) ?? 0
+            let speed = Double(max(hypot(arriving.dx, arriving.dy), ballSpeedLimit))
+            var angleDeg = atan2(Double(abs(arriving.dy)), Double(arriving.dx))*180/Double.pi
+            angleDeg -= angleAdjustmentK*collision*endlessIIPaddleAngleInfluence
+            angleDeg = min(max(angleDeg, minAngleDeg), 180 - minAngleDeg)
+            let angleRad = angleDeg*Double.pi/180
+            // The bounce this spot on the paddle would have given (the same formula
+            // paddleHit uses), so where the ball goes through decides where it comes
+            // out - the play test found the pass-through gave no control at all
+
             if let portal = endlessIIPortals().randomElement() {
                 let from = subject.position
                 subject.position = CGPoint(x: portal.position.x,
                                            y: portal.frame.maxY + subject.size.height)
-                body.velocity = CGVector(dx: arriving.dx, dy: abs(arriving.dy))
+                body.velocity = CGVector(dx: cos(angleRad)*speed, dy: sin(angleRad)*speed)
                 endlessIIShowPortalJump(from: from, to: subject.position)
                 portal.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                                       .fadeAlpha(to: 1, duration: 0.12)]))
@@ -218,8 +246,22 @@ extension GameScene {
                 subject.position = CGPoint(x: subject.position.x,
                                            y: frame.height/2 - topScreenBlock.size.height
                                               - subject.size.height)
-                body.velocity = CGVector(dx: arriving.dx, dy: -abs(arriving.dy))
-                // On its own the paddle's portal exits at the top, falling back in
+                body.velocity = CGVector(dx: cos(angleRad)*speed, dy: -sin(angleRad)*speed)
+                // On its own the paddle's portal exits at the top, falling back in - the
+                // bounce angle mirrored downward
+            }
+
+            if endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn,
+               let target = endlessIIAutoAimTarget(from: subject.position.x) {
+                endlessIIAutoAimOwedTurn = false
+                let dx = Double(target.x - subject.position.x)
+                let dy = Double(target.y - subject.position.y)
+                let length = max(hypot(dx, dy), 1)
+                body.velocity = CGVector(dx: dx/length*speed, dy: dy/length*speed)
+                // Portal Paddle × Auto-Aim (§12.0): both speak in sequence - the hit
+                // still portals, and the aim owns the *re-entry*, pointed at the lowest
+                // brick worth hitting. Together they were cancelling out: the aim set
+                // the launch and the portal threw it away
             }
         }
     }
@@ -266,9 +308,15 @@ extension GameScene {
         let strength = EndlessIIPaddleEffects.magnetismStrength[
             min(endlessIIMagnetismClock.level, EndlessIIPaddleEffects.magnetismStrength.count - 1)]
 
+        let pullCeiling = finalBrickRowHeight + brickHeight*2
+        // The pull only wakes once the ball is below the field's bottom couple of rows
+        // (play test: it started drawing the ball in far too early) - the magnet is a
+        // landing aid, not a tractor beam through the field
+
         for subject in endlessIIBallsInPlay {
             guard subject.parent != nil, let body = subject.physicsBody else { continue }
             guard subject !== ball || ballIsOnPaddle == false else { continue }
+            guard subject.position.y < pullCeiling else { continue }
             let side: CGFloat = subject.position.x >= paddle.position.x ? 1 : -1
             let target = CGPoint(x: paddle.position.x + side*paddle.size.width*0.3,
                                  y: paddle.position.y)

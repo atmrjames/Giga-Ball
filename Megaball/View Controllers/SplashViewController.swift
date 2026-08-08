@@ -35,10 +35,17 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
 
     @IBAction func tapGesture(_ sender: Any) {
         if self.resumeInProgress == false {
+            view.subviews.forEach { $0.layer.removeAllAnimations() }
+            view.layer.removeAllAnimations()
+            // The keyframed logos otherwise play their remaining frames out over the
+            // fade, so the skip showed the animation's tail for a beat before the menu
+            // (play-test round 8)
             removeAnimate(duration: 0.1)
         }
     }
-    // Tap to dismiss splash screen
+    // Tap to dismiss splash screen. With a resume prompt waiting this fast-forwards *to*
+    // the prompt, never past it - the prompt only answers its own Resume and Cancel
+    // buttons, so an accidental tap cannot spend a saved run
     
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true

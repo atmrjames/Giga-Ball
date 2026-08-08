@@ -99,6 +99,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleLastTick: TimeInterval = 0
 	var endlessIIPaddleFrameDelta: TimeInterval = 0
 	var endlessIIPendingPaddlePortals: [SKSpriteNode] = []
+	var endlessIIPendingPortalCollisions: [ObjectIdentifier: Double] = [:]
 	var endlessIIPaddleHaloNode: SKShapeNode?
 	var endlessIIPaddleHaloDrawnReach: CGFloat = 0
 	var endlessIISteeringLastPaddleX: CGFloat = 0
@@ -107,6 +108,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPullLines: [SKShapeNode] = []
 	var endlessIILowerLimitLine: SKSpriteNode?
 	var endlessIIAutoAimClock = EndlessIIClock()
+	/// Whether the contact being handled still owns its power-up's effect, per turn-based
+	/// paddle power-up whose effect lands *after* the turns are spent. Spending the last
+	/// turn expires the clock before the paddle acts, and the last catch stopped
+	/// catching, the last portal stopped swallowing and the last aimed shot stopped
+	/// aiming (play test: "portal paddle on its last turn doesn't work"). The turn being
+	/// spent still delivers what it was spent on.
+	var endlessIIPortalPaddleOwedTurn = false
+	var endlessIIAimedStickyOwedTurn = false
+	var endlessIIAutoAimOwedTurn = false
 	var endlessIIWrapAroundClock = EndlessIIClock()
 	var endlessIIPendingWraps: [SKSpriteNode] = []
 	var endlessIIWrapDressed = false
@@ -1305,7 +1315,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Measured from the physical top edge, not the safe area inset - see
 		// hudTopClearance. The HUD row must stay clear of the centre for this to be safe
 		pauseButton.position.y = safeTopEdge - pauseButton.size.height/2
-		powerUpTray.position.y = pauseButton.position.y - pauseButton.size.height/2 - labelSpacing/2 - powerUpTray.size.height/2
+		powerUpTray.position.y = frame.size.height/2 - screenBlockTopHeight
+			+ powerUpTray.size.height/2 + labelSpacing/4
+		// Pinned just above the HUD's bottom edge rather than hung under the pause
+		// button (play-test round 8): the shorter capsule sits low, nearer the field,
+		// and the slack it freed goes to the score row above
 		// HUD sits directly below the safe area, tray below it, playfield below both.
 		// One arrangement for every device. Both are measured from safeAreaInsets rather
 		// than the screen edge, so nothing can overhang into the playfield
@@ -3084,11 +3098,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Don't try to adjust the ball's angle if it is on the paddle
 		}
 		
-		if isOnPaddle == false && endlessIIPaddlePortalTook(ball) {
+		if isOnPaddle == false && endlessIIPaddlePortalTook(ball,
+														   collision: collisionPercentage) {
 			return
 		}
 		// A Portal Paddle swallows the ball instead of bouncing it; it re-enters at the top
-		// after the step resolves. Past the catches, so a held ball is held first
+		// after the step resolves, at the angle the bounce off this spot would have given.
+		// Past the catches, so a held ball is held first
 
 		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage < 1.0 && collisionPercentage > -1.0) {
 		// Only applies if the ball hits the top surface of the paddle
@@ -5092,12 +5108,24 @@ laserTimer?.invalidate()
 			}
 		}
 		InGameRecents.shared.fallingPowerUpIndices = falling
-		InGameRecents.shared.runSummary = (paddleHits: paddleHitsPerLevel,
-										   bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
-										   powerUpsCollected: powerUpsCollectedPerLevel)
+
+		var held: Set<Int> = []
+		enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+			if let index = node.endlessIIPowerUpIndex { held.insert(index) }
+		}
+		InGameRecents.shared.brickHeldPowerUpIndices = held
+
+		InGameRecents.shared.runSummary = InGameRecents.RunSummary(
+			height: endlessHeight,
+			durationSeconds: levelTimerValue,
+			paddleHits: paddleHitsPerLevel,
+			bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
+			ballsLost: deathsPerLevel,
+			powerUpsSeen: InGameRecents.shared.sightings.count,
+			powerUpsCollected: powerUpsCollectedPerLevel)
 		// The snapshot the reference pages and the game-over stats read - taken as the
-		// menu goes up, because "currently active", "still falling" and the run's
-		// numbers are all questions about this moment
+		// menu goes up, because "currently active", "still falling", "in a brick" and
+		// the run's numbers are all questions about this moment
 		
 		readyCountdown.isHidden = true
 		goCountdown.isHidden = true
@@ -5762,6 +5790,7 @@ laserTimer?.invalidate()
 		var brickColourArray: [Int]? = []
 		var brickXPositionArray: [Int]? = []
 		var brickYPositionArray: [Int]? = []
+		var brickHiddenArray: [Bool] = []
 		var ballPropertiesArray: [Double]? = []
 		var extraBallPropertiesArray: [Double] = []
 		
@@ -6015,6 +6044,9 @@ laserTimer?.invalidate()
 				let currentBrickColour = spriteColourIndex
 				brickTextureArray!.append(currentBrickTexture!)
 				brickColourArray!.append(currentBrickColour!)
+				brickHiddenArray.append(node.isHidden)
+				// Alongside the texture, because the texture index only encodes hidden
+				// for two of the types and a Fog of War day fogs them all (§12.5)
 				
 				var currentBrickXIndex = Double((self.gameWidth/2 - self.brickWidth/2 - sprite.position.x)/self.brickWidth)
 				var currentBrickYIndex = Double((self.yBrickOffset - sprite.position.y)/self.brickHeight)
@@ -6187,7 +6219,9 @@ laserTimer?.invalidate()
 			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal,
 			dailyDateKey: DailyChallengeSession.shared.active?.dateKey,
 			dailyWasScoringAttempt: isDailyChallenge
-				? DailyChallengeSession.shared.isScoringAttempt : nil
+				? DailyChallengeSession.shared.isScoringAttempt : nil,
+			brickHidden: brickXPositionArray != [] ? brickHiddenArray
+				: previous?.brickHidden
 		)
 		savedGame?.save()
 		

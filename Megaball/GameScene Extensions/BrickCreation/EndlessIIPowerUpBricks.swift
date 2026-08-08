@@ -127,6 +127,9 @@ extension GameScene {
         brick.name = BrickCategoryName
         brick.endlessIIPowerUpIndex = index
         brick.endlessIIStaysPlain = true
+        InGameRecents.shared.sawPowerUp(index)
+        // Seen the moment the brick arrives wearing its icon - the pause snapshot marks
+        // it BRICK while it sits in the field (play-test round 8)
         // Never given a style. It is already saying one thing loudly, and a spinning, flashing
         // power-up brick would be saying three
         brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: plan.size,
@@ -151,9 +154,9 @@ extension GameScene {
     @discardableResult
     func endlessIITriggerPowerUpBrick(_ brick: SKSpriteNode) -> Bool {
         guard gameMode == .endlessII, let index = brick.endlessIIPowerUpIndex else { return false }
-
-        InGameRecents.shared.sawPowerUp(index)
-        // Seen the moment the brick releases it - the reference pages lead with it (§12.0)
+        // Already in the recents from the moment the brick arrived - the release goes
+        // through applyPowerUp, which marks that sighting collected rather than adding
+        // a second one for the same appearance
 
         let carrier = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         carrier.position = brick.position

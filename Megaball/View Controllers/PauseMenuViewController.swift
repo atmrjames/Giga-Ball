@@ -109,9 +109,26 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             return
         }
         runStatsLabel.isHidden = false
-        runStatsLabel.text = "Paddle hits \(summary.paddleHits) · "
-            + "Bricks \(summary.bricksDestroyed) · "
-            + "Power-ups \(summary.powerUpsCollected)"
+        let line = NSMutableAttributedString()
+        let items: [(String, Int)] = [("rectangle.fill", summary.paddleHits),
+                                      ("square.grid.3x2.fill", summary.bricksDestroyed),
+                                      ("arrow.down.circle.fill", summary.powerUpsCollected)]
+        for (position, item) in items.enumerated() {
+            if position > 0 { line.append(NSAttributedString(string: "    ")) }
+            let badge = NSTextAttachment()
+            badge.image = UIImage(systemName: item.0)?
+                .withTintColor(UIColor(white: 1, alpha: 0.45),
+                               renderingMode: .alwaysOriginal)
+            badge.bounds = CGRect(x: 0, y: -2, width: 15, height: 13)
+            line.append(NSAttributedString(attachment: badge))
+            line.append(NSAttributedString(
+                string: " \(item.1)",
+                attributes: [.font: UIFont.systemFont(ofSize: 14),
+                             .foregroundColor: UIColor(white: 1, alpha: 0.7)]))
+        }
+        runStatsLabel.attributedText = line
+        // Small subtle icons beside each number (play-test round 8): the paddle, the
+        // field, the drop - placeholders in SF symbols until §8.5 draws its own
     }
     // Asked of the session, which outlives the scene until the menus return
 
