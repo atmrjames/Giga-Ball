@@ -619,12 +619,50 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
+        let playedDaily = DailyChallengeSession.shared.isActive
         DailyChallengeSession.shared.active = nil
+        // Read before it is cleared - which mode menu to return to depends on it.
         // Back in the menus, the daily is over - whatever happens next is not it
         refreshView()
         MusicHandler.sharedHelper.stopMusic()
         if musicSetting {
             MusicHandler.sharedHelper.playMusic(sender: "Menu")
+        }
+        returnToModeMenu(playedDaily: playedDaily)
+    }
+
+    /// Puts the player back on the menu of the mode they just played (play-test rule:
+    /// every game returns to its own mode's menu, not the main menu).
+    ///
+    /// Rebuilt fresh rather than resurrected: the screens the run was launched from may
+    /// or may not still be children here depending on the path taken - the daily
+    /// briefing removes itself on play, the mode screens do not - and a fresh present
+    /// behaves the same from every path and reads the latest stats by construction.
+    func returnToModeMenu(playedDaily: Bool) {
+        for child in children {
+            child.viewIfLoaded?.removeFromSuperview()
+            child.willMove(toParent: nil)
+            child.removeFromParent()
+        }
+        MenuNavigation.shared.forget()
+        // The forward history pointed into the screens just removed
+
+        if playedDaily {
+            moveToDailyChallenge()
+            return
+        }
+        switch GameMode.current(in: defaults) {
+        case .classic:
+            moveToPackSelector()
+        case .endless, .endlessII:
+            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1],
+                             levelNumber: LevelPackSetup().startLevelNumber[1],
+                             packNumber: 1)
+        case .daily:
+            moveToDailyChallenge()
+            // The scene never records .daily as current (see didSelectRowAt) - the flag
+            // above is how a daily is known - but a switch with a hole in it is a bug
+            // waiting for the day that changes
         }
     }
     

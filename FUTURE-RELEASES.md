@@ -71,6 +71,44 @@ held back for a release that would follow immediately after. The foundations sti
 first within it, for the reason argued above: the player-visible work lands on top of
 them.
 
+### The 1.3 line, decided (8 August 2026)
+
+Reviewed together against the full open-items lists; recorded here so it is written down
+rather than remembered. The play-test queues stay where they live
+(ENDLESS-2-SPECIFICATION.md §12.0 and DAILY-CHALLENGE-SPECIFICATION.md's status header) —
+this is the release boundary only.
+
+**In 1.3**, on top of everything already landed (Endless Mayhem complete, Daily Challenge
+phases 1–3, two wide play-test rounds):
+
+- The §12.0 queue: ring HUD port to Classic/Endless (indicator-only — tray, order and
+  geometry unchanged), in-game recents, endless game-over stats, Portal Paddle × Auto-Aim,
+  Sticky × Inert, the Big-brick line overlap, new brick geometries, Lock & Key, Double
+  Paddle (split-in-two), Ball Spin/Curve, Classic mode menu redesign
+- Daily Challenge: a phase-4 twist subset (Time Trial, Mayhem Bricks, Upside Down,
+  Mirrored, No Pausing — the rest follow post-release), phase-5 streaks and per-day
+  results on the browsing card
+- A small Game Center achievement set for the new modes
+- The anti-cheat pass: a finished game must never be resumable (live bug), plus a sweep
+  of every path that posts to a board
+- Giant widget app icon (configurable shortcut), iPad multitasking compatibility,
+  Liquid Glass/vibrancy pass over the UI, 120 fps
+- The release pass: debug-gate the daily's test clock, App Store review readiness,
+  biggest/smallest device matrix (fold the iPad stutter/pixelation checks in)
+- James's side: §8.5 art and sound, Quick Start Guide update, and the three App Store
+  Connect boards — Endless Mayhem, Daily (recurring, 00:00 UTC), Daily overall
+  (classic, all-time; a monthly recurring variant is a cheap 1.4 addition if wanted)
+
+**To 1.4+**: playable tutorial, iPad cursor support, localisation, Mac/AVP,
+monetisation decision, the remaining daily twists (Blackout, Always On, Brick Swap,
+Mayhem Rules, Landslide), share card, and every future game mode (zen, speed-run,
+Classic 2.0, falling-brick, multiplayer, level editor).
+
+**Dropped, agreed**: keychain score encryption (Game Center is the score of record; the
+resume fix and posting-path sweep carry the real value), the wholesale MVC/OO refactor
+line-items (opportunistic only), the tip-the-creator achievement, and everything already
+in the Cut section below.
+
 **Status:** the safe-area rewrite, the monetisation removal, the test target, the audio
 session, the Icon Composer migration, the save-game format, the iCloud reset fix and the
 logging sweep have all landed. What remains below is marked.

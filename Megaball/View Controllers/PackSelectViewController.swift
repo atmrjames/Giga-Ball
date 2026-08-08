@@ -7,15 +7,17 @@
 //
 
 import UIKit
+import GameKit
 
-class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, MenuNavigable, MenuNavigationPresenter {
-    
+class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
+
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
     var musicSetting: Bool = true
     var hapticsSetting: Bool = true
     var parallaxSetting: Bool = true
     var paddleSensitivitySetting: Int = 2
+    var gameCenterSetting: Bool = false
     // User settings
     
     
@@ -293,7 +295,14 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
             // Big and centred, like every other screen's (play-test request). It picks
             // up the campaign at the furthest unlocked pack
         case 2:
-            cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            if gameCenterSetting {
+                cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+            } else {
+                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            }
+            // The Game Center button on the right (play-test request), opening the full
+            // leaderboards sheet - the packs each have a board, and this screen is all
+            // of them
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -317,8 +326,27 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
                        numberOfLevels: LevelPackSetup().numberOfLevels[pack],
                        sender: "MainMenu", levelPack: pack)
         }
+        if indexPath.row == 2, gameCenterSetting {
+            showGameCenterLeaderboards()
+        }
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
+    }
+
+    func showGameCenterLeaderboards() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        GameCenterHandler().gameCenterSave()
+        // Standing bests go up first, the same as every other leaderboard button
+        let boards = GKGameCenterViewController(state: .leaderboards)
+        boards.gameCenterDelegate = self
+        view.window?.rootViewController?.present(boards, animated: true)
+    }
+
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true, completion: nil)
+        if hapticsSetting {
+            interfaceHaptic.impactOccurred()
+        }
     }
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
@@ -336,6 +364,15 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted.png")
+                case 2:
+                    if self.gameCenterSetting {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    }
                 default:
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 }
@@ -358,6 +395,15 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
                         self.interfaceHaptic.impactOccurred()
                     }
                     cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                case 2:
+                    if self.gameCenterSetting {
+                        if self.hapticsSetting {
+                            self.interfaceHaptic.impactOccurred()
+                        }
+                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+                    } else {
+                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    }
                 default:
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 }
@@ -452,6 +498,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         parallaxSetting = defaults.bool(forKey: "parallaxSetting")
         paddleSensitivitySetting = defaults.integer(forKey: "paddleSensitivitySetting")
+        gameCenterSetting = defaults.bool(forKey: "gameCenterSetting")
         // Load user settings
     }
     

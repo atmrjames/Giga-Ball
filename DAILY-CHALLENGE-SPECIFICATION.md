@@ -187,9 +187,16 @@ player's own clothes are back tomorrow.
 
 ## 6. The briefing screen
 
-Between the menu and the game — every element earns its place:
+Between the menu and the game — every element earns its place. The layout, as revised by
+the second play-test round: the **date rides centred above the card** with the browse
+arrows fixed either side of it (the date animates with a day swipe, the arrows are the
+rail and hold still); a **swipe anywhere on the screen** turns the day, not just on the
+card, standing down inside MenuNavigation's edge strips which belong to back and forward;
+the card carries a **small picture of the day's level** (the level screens' own artwork —
+an endless day wears the mode icon); and the bottom row is the app's standard furniture —
+close left, **big play centred**, the Game Center leaderboard button right.
 
-- Mode, and the level name if Classic
+- Mode, and the level name, pack and picture if Classic
 - Each twist by name with its one-line description; "No twists — a pure run" on baseline days
 - Theme, if forced
 - The countdown to the end of the scoring window
@@ -256,7 +263,8 @@ Flipped Angle means.
 ## 8. Playing the past
 
 Nice to have, not must have (James's call) — and the first half **arrived early**: the
-briefing screen browses days (swipe on the card, or the arrows beside the date), back
+briefing screen browses days (swipe anywhere on the screen, or the arrows beside the
+date), back
 through every daily to the pool's first day or 30 days, whichever is nearer, never forward
 past today. Today and yesterday say so in words; older days give their date; a past day's
 card says "practice — this challenge closed <date>" and plays without posting, ever. The

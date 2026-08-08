@@ -3,12 +3,13 @@
 //  Megaball
 //
 //  The briefing screen (§6 of the daily spec): what a day's challenge is, before it is
-//  played. Mode, level if Classic, each twist by name with its icon and one line, the
-//  countdown to the window closing, and one play button.
+//  played. Mode, the level's picture and name if Classic, each twist by name with its
+//  icon and one line, the countdown to the window closing, and one play button.
 //
-//  Since the first play test the screen also *browses*: the details live in a card that
-//  swipes (and arrows) between days - back through every daily there has been, never
-//  forward past today. Today and yesterday say so in words; older days give their date.
+//  Since the first play test the screen also *browses*: swipe anywhere (or the arrows
+//  beside the date) to move between days - back through every daily there has been,
+//  never forward past today. The date rides above the card and animates with it; the
+//  arrows hold still. Today and yesterday say so in words; older days give their date.
 //  A past day is playable as practice, which is §8 arriving early because the browsing
 //  UI made it nearly free.
 //
@@ -50,12 +51,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     private let backArrow = UIButton(type: .system)
     private let forwardArrow = UIButton(type: .system)
     private let modeLabel = UILabel()
+    private let levelImageView = UIImageView()
     private let levelLabel = UILabel()
     private let twistsStack = UIStackView()
     private let countdownLabel = UILabel()
     private let postingLabel = UILabel()
-    private let leaderboardTitle = UILabel()
-    private let leaderboardLabel = UILabel()
+    private let leaderboardButton = UIButton(type: .custom)
     private let testClockLabel = UILabel()
     private var countdownTimer: Timer?
 
@@ -150,19 +151,39 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         title.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(title)
 
-        // The card the days swipe through - a subtle container, so what animates between
-        // days reads as one object rather than a page of loose labels
+        // The date lives above the card, centred on the screen (play-test round 2: inside
+        // the card's stack it sat skewed left). It animates with the swipe; the arrows
+        // hold still at fixed offsets, which is why they are not in a stack with it
+        dateLabel.font = .boldSystemFont(ofSize: 16)
+        dateLabel.textColor = UIColor(white: 1, alpha: 0.55)
+        dateLabel.textAlignment = .center
+        dateLabel.adjustsFontSizeToFitWidth = true
+        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(dateLabel)
+
+        for arrow in [backArrow, forwardArrow] {
+            arrow.setTitleColor(.white, for: .normal)
+            arrow.setTitleColor(UIColor(white: 1, alpha: 0.2), for: .disabled)
+            arrow.titleLabel?.font = .boldSystemFont(ofSize: 20)
+            arrow.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(arrow)
+        }
+        backArrow.setTitle("◀", for: .normal)
+        forwardArrow.setTitle("▶", for: .normal)
+        backArrow.addTarget(self, action: #selector(dayEarlier), for: .touchUpInside)
+        forwardArrow.addTarget(self, action: #selector(dayLater), for: .touchUpInside)
+
+        // The card the day's details swipe through - a subtle container, so what animates
+        // between days reads as one object rather than a page of loose labels
         dayCard.backgroundColor = UIColor(white: 1, alpha: 0.07)
         dayCard.layer.cornerRadius = 18
         dayCard.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(dayCard)
 
-        for label in [dateLabel, modeLabel, levelLabel, countdownLabel, postingLabel] {
+        for label in [modeLabel, levelLabel, countdownLabel, postingLabel] {
             label.textAlignment = .center
             label.numberOfLines = 0
         }
-        dateLabel.font = .boldSystemFont(ofSize: 16)
-        dateLabel.textColor = UIColor(white: 1, alpha: 0.55)
         modeLabel.font = .boldSystemFont(ofSize: 30)
         modeLabel.textColor = .white
         levelLabel.font = .systemFont(ofSize: 17)
@@ -173,22 +194,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         postingLabel.textColor = #colorLiteral(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
         // Its text is the posting status, set per viewed day in showChallenge()
 
-        for arrow in [backArrow, forwardArrow] {
-            arrow.setTitleColor(.white, for: .normal)
-            arrow.setTitleColor(UIColor(white: 1, alpha: 0.2), for: .disabled)
-            arrow.titleLabel?.font = .boldSystemFont(ofSize: 20)
-        }
-        backArrow.setTitle("◀", for: .normal)
-        forwardArrow.setTitle("▶", for: .normal)
-        backArrow.addTarget(self, action: #selector(dayEarlier), for: .touchUpInside)
-        forwardArrow.addTarget(self, action: #selector(dayLater), for: .touchUpInside)
-
-        let dateRow = UIStackView(arrangedSubviews: [backArrow, dateLabel, forwardArrow])
-        dateRow.axis = .horizontal
-        dateRow.alignment = .center
-        dateRow.spacing = 10
-        dateLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        // The arrows hug their glyphs and the date takes the middle
+        levelImageView.contentMode = .scaleAspectFit
+        levelImageView.layer.masksToBounds = false
+        levelImageView.layer.shadowOffset = .zero
+        levelImageView.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).cgColor
+        levelImageView.layer.shadowOpacity = 0.5
+        levelImageView.layer.shadowRadius = 6
+        // A small picture of the day's level (play-test request) - the same artwork the
+        // level screens use, so an unseen pack's level is genuinely a preview. Endless
+        // days wear the mode's icon instead
 
         twistsStack.axis = .vertical
         twistsStack.spacing = 10
@@ -197,48 +211,38 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         cardStack.axis = .vertical
         cardStack.spacing = 12
         cardStack.translatesAutoresizingMaskIntoConstraints = false
-        [dateRow, modeLabel, levelLabel, twistsStack, countdownLabel]
+        [modeLabel, levelImageView, levelLabel, twistsStack, countdownLabel]
             .forEach { cardStack.addArrangedSubview($0) }
         dayCard.addSubview(cardStack)
 
-        // Swiping between days happens on the card itself, so the left-edge back swipe
-        // and the right-edge forward swipe (MenuNavigation's) keep the screen edges
-        let older = UISwipeGestureRecognizer(target: self, action: #selector(swipedRight))
-        older.direction = .right
-        let newer = UISwipeGestureRecognizer(target: self, action: #selector(swipedLeft))
-        newer.direction = .left
-        dayCard.addGestureRecognizer(older)
-        dayCard.addGestureRecognizer(newer)
+        // Day browsing answers a swipe anywhere on the screen (play-test round 2), not
+        // just on the card - measured the same way MenuNavigation measures its edge
+        // swipes, and standing down for starts inside the edge strips, which belong to
+        // back and forward
+        let daySwipe = UIPanGestureRecognizer(target: self, action: #selector(daySwiped(_:)))
+        daySwipe.delegate = MenuNavigation.shared
+        // The shared delegate's only job is allowing simultaneous recognition, which is
+        // exactly what lets this live beside the edge swipe on the same view
+        view.addGestureRecognizer(daySwipe)
 
-        // The daily leaderboards' place on the screen, held for phase 3: the recurring
-        // daily board and the all-time total both live behind this label once the Game
-        // Center boards exist in App Store Connect
-        leaderboardTitle.text = "DAILY LEADERBOARD"
-        leaderboardTitle.font = .boldSystemFont(ofSize: 13)
-        leaderboardTitle.textColor = UIColor(white: 1, alpha: 0.55)
-        leaderboardTitle.textAlignment = .center
-        leaderboardLabel.font = .systemFont(ofSize: 13)
-        leaderboardLabel.textColor = UIColor(white: 1, alpha: 0.4)
-        leaderboardLabel.textAlignment = .center
-        leaderboardLabel.numberOfLines = 0
-        // Its text follows the Game Center state, set in showChallenge()
-
-        let leaderboardStack = UIStackView(arrangedSubviews: [leaderboardTitle,
-                                                              leaderboardLabel])
-        leaderboardStack.axis = .vertical
-        leaderboardStack.spacing = 4
-        leaderboardStack.translatesAutoresizingMaskIntoConstraints = false
-        leaderboardStack.isUserInteractionEnabled = true
-        leaderboardStack.addGestureRecognizer(
-            UITapGestureRecognizer(target: self, action: #selector(leaderboardTapped)))
         postingLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(leaderboardStack)
         view.addSubview(postingLabel)
 
         let close = roundButton(system: "xmark", action: #selector(closeTapped))
         let play = roundButton(system: "play.fill", action: #selector(playTapped), size: 75)
         view.addSubview(close)
         view.addSubview(play)
+
+        leaderboardButton.setImage(UIImage(named: "ButtonLeaderboard"), for: .normal)
+        leaderboardButton.setImage(UIImage(named: "ButtonLeaderboardHighlighted"),
+                                   for: .highlighted)
+        leaderboardButton.translatesAutoresizingMaskIntoConstraints = false
+        leaderboardButton.addTarget(self, action: #selector(leaderboardTapped),
+                                    for: .touchUpInside)
+        view.addSubview(leaderboardButton)
+        // The bottom row every other screen has (play-test round 2): close on the left,
+        // the big play in the centre, Game Center on the right - the same artwork the
+        // level screens' leaderboard button wears
 
         // The test clock: winds the simulated *today*, loudly labelled
         let back = UIButton(type: .system)
@@ -271,7 +275,17 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
-            dayCard.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 18),
+            dateLabel.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 16),
+            dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
+
+            backArrow.centerYAnchor.constraint(equalTo: dateLabel.centerYAnchor),
+            backArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -150),
+            forwardArrow.centerYAnchor.constraint(equalTo: dateLabel.centerYAnchor),
+            forwardArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor,
+                                                  constant: 150),
+
+            dayCard.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 12),
             dayCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
             dayCard.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
 
@@ -281,15 +295,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
                                                 constant: -16),
             cardStack.bottomAnchor.constraint(equalTo: dayCard.bottomAnchor, constant: -18),
 
-            leaderboardStack.topAnchor.constraint(equalTo: dayCard.bottomAnchor,
-                                                  constant: 16),
-            leaderboardStack.leadingAnchor.constraint(equalTo: view.leadingAnchor,
-                                                      constant: 34),
-            leaderboardStack.trailingAnchor.constraint(equalTo: view.trailingAnchor,
-                                                       constant: -34),
+            levelImageView.heightAnchor.constraint(equalToConstant: 72),
 
-            postingLabel.topAnchor.constraint(equalTo: leaderboardStack.bottomAnchor,
-                                              constant: 14),
+            postingLabel.topAnchor.constraint(equalTo: dayCard.bottomAnchor, constant: 16),
             postingLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             postingLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor,
                                                    constant: -34),
@@ -300,10 +308,16 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             close.widthAnchor.constraint(equalToConstant: 50),
             close.heightAnchor.constraint(equalToConstant: 50),
 
-            play.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
+            play.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             play.centerYAnchor.constraint(equalTo: close.centerYAnchor),
             play.widthAnchor.constraint(equalToConstant: 75),
             play.heightAnchor.constraint(equalToConstant: 75),
+
+            leaderboardButton.trailingAnchor.constraint(equalTo: view.trailingAnchor,
+                                                        constant: -44),
+            leaderboardButton.centerYAnchor.constraint(equalTo: close.centerYAnchor),
+            leaderboardButton.widthAnchor.constraint(equalToConstant: 50),
+            leaderboardButton.heightAnchor.constraint(equalToConstant: 50),
 
             clockRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
             clockRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
@@ -340,11 +354,14 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             let number = DailyChallengeGenerator.levelNumber(forClassicLevel: level)
             let pack = DailyChallengeGenerator.pack(forClassicLevel: level)
             let setup = LevelPackSetup()
+            levelImageView.image = setup.levelImageArray[number]
             levelLabel.text = "\(setup.levelNameArray[number]) - \(setup.levelPackNameArray[pack])"
                 + "\nA single level - clear it for the score"
-            // The level by its name and home, not its number (play-test note): a number
-            // says nothing, a name from a pack you have not opened is the tasting menu
+            // The level by its name, home and picture, not its number (play-test notes):
+            // a number says nothing, and a glimpse of a level from a pack you have not
+            // opened is the tasting menu
         } else {
+            levelImageView.image = UIImage(named: "EndlessIcon.png")
             levelLabel.text = "How high can you get?"
         }
 
@@ -377,11 +394,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             }
         }
 
-        leaderboardLabel.text = GKLocalPlayer.local.isAuthenticated
-            ? "View today's board ▸"
-            : "Sign in to Game Center to compete"
-        // The boards themselves are App Store Connect work (James's side, §7) - until
-        // they exist there, the Game Center sheet opens onto an empty board
+        leaderboardButton.isHidden = GKLocalPlayer.local.isAuthenticated == false
+        // The same rule the level screens use: no Game Center, no leaderboard button.
+        // The boards themselves are App Store Connect work (James's side, §7)
 
         postingLabel.text = DailyChallengePosting.statusLine(
             record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
@@ -419,27 +434,54 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     // MARK: - Day browsing
 
-    @objc private func swipedRight() { if canGoBack { step(by: -1) } }
-    @objc private func swipedLeft() { if canGoForward { step(by: 1) } }
     @objc private func dayEarlier() { if canGoBack { step(by: -1) } }
     @objc private func dayLater() { if canGoForward { step(by: 1) } }
 
-    /// Moves the card a day back or forward, sliding it the way the days are ordered -
-    /// older days come in from the left, newer from the right.
+    /// The whole-screen day swipe, measured the way MenuNavigation measures its edge
+    /// swipes: the true start is worked back from the translation, because a pan only
+    /// begins after the touch has travelled its slop.
+    @objc private func daySwiped(_ gesture: UIPanGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        guard menuNavigationIsFrontmost else { return }
+        let moved = gesture.translation(in: view)
+        let now = gesture.location(in: view)
+        let startX = now.x - moved.x
+
+        guard abs(moved.x) > MenuNavigation.travel, abs(moved.x) > abs(moved.y)*2 else {
+            return
+        }
+        guard startX > MenuNavigation.edgeWidth,
+              startX < view.bounds.width - MenuNavigation.edgeWidth else { return }
+        // The edge strips belong to back and forward - a day swipe starting there would
+        // fire alongside the navigation swipe and do two things with one finger
+
+        if moved.x > 0 { dayEarlier() } else { dayLater() }
+        // Dragging right pulls the older day in from the left, like turning back a page
+    }
+
+    /// Moves the card and the date a day back or forward, sliding them the way the days
+    /// are ordered - older days come in from the left, newer from the right. The arrows
+    /// stay put (play-test round 2): they are the rail, not the page.
     private func step(by delta: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         viewedOffset += delta
         let exitX: CGFloat = delta < 0 ? 70 : -70
 
         UIView.animate(withDuration: 0.13, animations: {
-            self.dayCard.transform = CGAffineTransform(translationX: exitX, y: 0)
-            self.dayCard.alpha = 0
+            for page in [self.dayCard, self.dateLabel] {
+                page.transform = CGAffineTransform(translationX: exitX, y: 0)
+                page.alpha = 0
+            }
         }) { _ in
             self.showChallenge()
-            self.dayCard.transform = CGAffineTransform(translationX: -exitX, y: 0)
+            for page in [self.dayCard, self.dateLabel] {
+                page.transform = CGAffineTransform(translationX: -exitX, y: 0)
+            }
             UIView.animate(withDuration: 0.13) {
-                self.dayCard.transform = .identity
-                self.dayCard.alpha = 1
+                for page in [self.dayCard, self.dateLabel] {
+                    page.transform = .identity
+                    page.alpha = 1
+                }
             }
         }
     }
