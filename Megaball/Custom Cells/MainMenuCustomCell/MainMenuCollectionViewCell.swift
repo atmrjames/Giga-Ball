@@ -16,7 +16,15 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        
+
+        clipsToBounds = false
+        contentView.clipsToBounds = false
+        // The nib clips both, which is invisible while every button is the 50pt the cell
+        // is sized for - and crops the big 75pt play button to a *square* the moment a
+        // flow layout hands this cell the smaller size. That is the play-test's "the play
+        // button turns square", and it is a clip rather than a wrong image: the square is
+        // the middle of the circle with its edges cut off
+
         iconImage.layer.masksToBounds = false
         iconImage.layer.shadowOffset = CGSize(width: 0, height: 0)
         iconImage.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)

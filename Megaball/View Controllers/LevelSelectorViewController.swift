@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
+class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
     
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -265,17 +265,34 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     
     func collectionViewLayout() {
         let layout = UICollectionViewFlowLayout()
-        let cellWidth: CGFloat = 50
         let available = backButtonCollectionView.frame.size.width
         // Spread across the width the buttons actually occupy. This used to measure the
         // whole screen, or the container, neither of which is the row the buttons are in
         // once the content is capped - so on iPad they bunched to one side.
-        let cellSpacing = max(0, (available - cellWidth*3)/3)
+        let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
+        layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
+                                           right: cellSpacing/2)
+        layout.estimatedItemSize = .zero
         backButtonCollectionView.collectionViewLayout = layout
+
+        for constraint in backButtonCollectionView.constraints
+        where constraint.firstAttribute == .height {
+            constraint.constant = LevelStatsViewController.playButtonSize
+        }
+        // The row grows for the big play button, the same way the mode screens' does
     }
     // Set the spacing between collection view cells
+
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        indexPath.row == 1
+            ? CGSize(width: LevelStatsViewController.playButtonSize,
+                     height: LevelStatsViewController.playButtonSize)
+            : CGSize(width: 50, height: 50)
+    }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         3
@@ -293,13 +310,16 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
         case 1:
+            cell.iconImage.image = UIImage(named:"ButtonPlay")
+            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
+            // Big and centred, like every other screen (play-test round 4): the button
+            // that starts the pack is the one worth the room
+        case 2:
             if gameCenterSetting {
                 cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull")
             }
-        case 2:
-            cell.iconImage.image = UIImage(named:"ButtonPlay")
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -317,13 +337,13 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             menuNavigationGoBack()
         }
         if indexPath.row == 1 {
+            MenuViewController().clearSavedGame()
+            moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
+        }
+        if indexPath.row == 2 {
             if gameCenterSetting {
                 showGameCenterLeaderboards()
             }
-        }
-        if indexPath.row == 2 {
-            MenuViewController().clearSavedGame()
-            moveToGame(selectedLevel: startLevel!, numberOfLevels: numberOfLevels!, sender: levelSender, levelPack: packNumber!)
         }
         
         collectionView.deselectItem(at: indexPath, animated: true)
@@ -342,6 +362,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     }
                     cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
                 case 1:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
+                case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
@@ -350,11 +375,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")
                     }
-                case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -375,6 +395,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     }
                     cell.iconImage.image = UIImage(named:"ButtonClose")
                 case 1:
+                    if self.hapticsSetting {
+                        self.interfaceHaptic.impactOccurred()
+                    }
+                    cell.iconImage.image = UIImage(named:"ButtonPlay")
+                case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
@@ -383,11 +408,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")
                     }
-                case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
-                    cell.iconImage.image = UIImage(named:"ButtonPlay")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break

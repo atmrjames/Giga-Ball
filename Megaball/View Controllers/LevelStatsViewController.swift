@@ -116,6 +116,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
         layout.minimumInteritemSpacing = cellSpacing
         layout.minimumLineSpacing = cellSpacing
+        layout.estimatedItemSize = .zero
+        // Self-sizing off: with an estimate set, a cell measures itself from its own
+        // constraints and the delegate's 75pt play button never reaches the layout - the
+        // cell stays 50 and the button is cropped square (see MainMenuCollectionViewCell)
         layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
                                            right: cellSpacing/2)
         // Half a gap each end: with equal gaps between the three, that puts the middle
