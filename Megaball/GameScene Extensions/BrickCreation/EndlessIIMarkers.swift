@@ -256,6 +256,10 @@ extension GameScene {
         guard endlessIIMarkExists(at: y) == false else { return }
         // A hundred-metre line or a best-height line already owns this row: they say
         // everything a tick would, and more (play test - the ticks were drawing over them)
+        guard y > endlessIIMarkerFloor + 0.5 else { return }
+        // And the lower-limit line owns its own row outright (play-test round 10: the
+        // 10m tick sat on the kill line) - which also unseeds the 0m tick the opening
+        // field used to start with, since 0m *is* the kill line
 
         let tick = SKNode()
         tick.name = GameScene.endlessIIMarkerName
@@ -283,11 +287,14 @@ extension GameScene {
         let move = SKAction.moveBy(x: 0, y: -brickHeight, duration: 0.05)
 
         enumerateChildNodes(withName: GameScene.endlessIIMarkerName) { node, _ in
-            if node.position.y <= self.endlessIIMarkerFloor {
+            if node.position.y - self.brickHeight <= self.endlessIIMarkerFloor + 0.5 {
                 node.name = nil
                 node.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
                 // Renamed first so the next descent does not find it again and restart the
-                // fade it is already running
+                // fade it is already running. Retired as it *steps onto* the floor rather
+                // than after a rest there: the floor is the lower-limit line's own row,
+                // and a marker parked on the kill line for a descent beat read as part of
+                // it (play-test round 10)
                 return
             }
             node.run(move)

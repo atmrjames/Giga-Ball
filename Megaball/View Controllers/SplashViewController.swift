@@ -38,8 +38,16 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBAction func tapGesture(_ sender: Any) {
         if self.resumeInProgress == false && self.skipInProgress == false {
             skipInProgress = true
-            view.subviews.forEach { $0.layer.removeAllAnimations() }
-            view.layer.removeAllAnimations()
+            func stripAnimations(_ subject: UIView) {
+                subject.layer.removeAllAnimations()
+                subject.subviews.forEach(stripAnimations)
+            }
+            stripAnimations(view)
+            // Recursive, because the logos sit inside a container view - stripping only
+            // the first level left their layers still playing the keyframes, which is
+            // why the first fix showed no end state at all: the animation simply carried
+            // on over the values set below, and the hold faded out mid-sequence
+            // (play-test round 10, "still isn't right")
             splashScreenLogo2.alpha = 0
             splashScreenLogo3.alpha = 0
             splashScreenLogo4.alpha = 0

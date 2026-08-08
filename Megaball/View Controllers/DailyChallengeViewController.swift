@@ -246,7 +246,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // exactly what lets this live beside the edge swipe on the same view
         view.addGestureRecognizer(daySwipe)
 
-        let close = roundButton(system: "xmark", action: #selector(closeTapped))
+        let close = UIButton(type: .custom)
+        close.setImage(UIImage(named: "ButtonClose"), for: .normal)
+        close.setImage(UIImage(named: "ButtonCloseHighlighted"), for: .highlighted)
+        close.translatesAutoresizingMaskIntoConstraints = false
+        close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+        // The same artwork and size every other menu's close wears (play-test round 10:
+        // this screen's were bigger and drawn by hand)
         let play = roundButton(system: "play.fill", action: #selector(playTapped), size: 75)
         view.addSubview(close)
         view.addSubview(play)
@@ -306,9 +312,18 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
-            dateLabel.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 16),
+            dayCard.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 22),
+            dayCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
+            dayCard.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
+
+            dateLabel.topAnchor.constraint(equalTo: dayCard.bottomAnchor, constant: 18),
             dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
+            dateLabel.heightAnchor.constraint(equalToConstant: 26),
+            // Below the card now (play-test round 10): the date and its arrows are the
+            // controls, and controls live near the thumb. The fixed height is what pins
+            // the arrows - the date's font changes size between today and other days,
+            // and arrows centred on a label that breathes were bobbing with it
 
             backArrow.centerYAnchor.constraint(equalTo: dateLabel.centerYAnchor),
             backArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -150),
@@ -325,11 +340,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // Under the date, where the play test put it: the day, then how long is left
             // of it
 
-            dayCard.topAnchor.constraint(equalTo: countdownLabel.bottomAnchor,
-                                         constant: 14),
-            dayCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
-            dayCard.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
-
             cardStack.topAnchor.constraint(equalTo: dayCard.topAnchor, constant: 18),
             cardStack.leadingAnchor.constraint(equalTo: dayCard.leadingAnchor, constant: 16),
             cardStack.trailingAnchor.constraint(equalTo: dayCard.trailingAnchor,
@@ -340,9 +350,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
             close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
-                                          constant: -20),
-            close.widthAnchor.constraint(equalToConstant: 50),
-            close.heightAnchor.constraint(equalToConstant: 50),
+                                          constant: -25),
+            close.widthAnchor.constraint(equalToConstant: 40),
+            close.heightAnchor.constraint(equalToConstant: 40),
 
             play.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             play.centerYAnchor.constraint(equalTo: close.centerYAnchor),
@@ -352,8 +362,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             leaderboardButton.trailingAnchor.constraint(equalTo: view.trailingAnchor,
                                                         constant: -44),
             leaderboardButton.centerYAnchor.constraint(equalTo: close.centerYAnchor),
-            leaderboardButton.widthAnchor.constraint(equalToConstant: 50),
-            leaderboardButton.heightAnchor.constraint(equalToConstant: 50),
+            leaderboardButton.widthAnchor.constraint(equalToConstant: 40),
+            leaderboardButton.heightAnchor.constraint(equalToConstant: 40),
+            // 40pt like every other menu's small buttons - only the play is big
 
             clockRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
             clockRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
@@ -666,9 +677,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
         showChallenge()
         for page in pageViews {
-            page.transform = CGAffineTransform(translationX: -exitX*0.55, y: 0)
-            page.alpha = 0
+            page.transform = CGAffineTransform(translationX: -exitX*0.3, y: 0)
+            page.alpha = 0.2
         }
+        // From barely past the edge, already faintly visible (round 10: the gap between
+        // days was "still far too big" at half a screen) - the next day is adjacent, not
+        // somewhere else
 
         let remaining = max(0.1, min(0.22, Double(abs(exitX - offset)/width)*0.22))
         // The rest of the way out takes the time the rest of the way deserves, so a page
@@ -746,6 +760,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     }
 
     @objc private func closeTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        // The tick every other close gives (play-test round 10: this one was silent)
         menuNavigationGoBack()
     }
 

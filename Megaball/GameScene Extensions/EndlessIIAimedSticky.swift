@@ -38,10 +38,20 @@ extension GameScene {
         guard gameMode == .endlessII,
               endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn
         else { return false }
-        endlessIIAimedStickyOwedTurn = false
-        // The last catch still catches - the turn that expired the clock is this one
         guard endlessIIInertPaddleClock.isRunning == false else { return false }
         // An inert paddle holds nothing - see paddleHit's sticky band
+        if endlessIIAimedStickyClock.isRunning == false {
+            endlessIIAimedStickyOwedTurn = false
+            endlessIIAimOwedHold = true
+        }
+        // The last catch still catches - the turn that expired the clock is this one.
+        // The owed flag becomes a *hold* flag rather than vanishing, because everything
+        // downstream - the arrow, the drag, the launch on release - asks the clock, and
+        // on the owed turn the clock has already stopped. Without the hold flag the last
+        // catch froze the world with no owner: no arrow, no way to launch, and the ball
+        // eventually fell through a paddle that had moved on (play-test round 10).
+        // Set only once the inert guard has let the catch happen, so a refused catch
+        // cannot leave a stale hold behind
 
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
             ?? subject.physicsBody?.velocity ?? .zero
@@ -136,29 +146,37 @@ extension GameScene {
         endlessIIHideExtraDirectionMarkers()
     }
 
-    /// The ball whose launch is currently being aimed: the head of the held queue.
+    /// The ball whose launch is currently being aimed: the head of the held queue. The
+    /// owed hold counts - the last catch of an expired clock is still an aimed catch.
     var endlessIIAimTarget: SKSpriteNode? {
-        guard gameMode == .endlessII, endlessIIAimedStickyClock.isRunning else { return nil }
+        guard gameMode == .endlessII,
+              endlessIIAimedStickyClock.isRunning || endlessIIAimOwedHold
+        else { return nil }
         return endlessIINextHeldBall
     }
 
-    /// The angle the aim currently points at.
+    /// The angle the aim currently points at: the finger's absolute position across the
+    /// screen once it has moved, the default bounce until then.
     func endlessIIAimAngle(for target: SKSpriteNode) -> Double {
+        if endlessIIAimTouched {
+            return EndlessIIPaddleEffects.aimedAngle(
+                fingerFraction: Double(endlessIIAimTouchX/(gameWidth/2)),
+                straight: straightLaunchAngleRad,
+                maximum: maxLaunchAngleRad)
+        }
         let fallback = straightLaunchAngleRad + minLaunchAngleRad
-        let defaultAngle = endlessIIAimDefaultAngles[ObjectIdentifier(target)] ?? fallback
-        return EndlessIIPaddleEffects.aimedAngle(
-            default: defaultAngle, draggedBy: endlessIIAimDrag,
-            minimum: straightLaunchAngleRad - maxLaunchAngleRad,
-            maximum: straightLaunchAngleRad + maxLaunchAngleRad)
+        return endlessIIAimDefaultAngles[ObjectIdentifier(target)] ?? fallback
     }
 
     // MARK: - The touches
 
-    /// A drag while a ball is being aimed swings the aim. Returns whether it did - the
-    /// caller skips moving the paddle, because while aiming, the drag *is* the aim.
-    func endlessIIAimDragged(by dx: CGFloat) -> Bool {
+    /// A moving finger while a ball is being aimed *is* the aim - absolute, so where the
+    /// thumb sits on the screen is where the arrow points. Returns whether it took the
+    /// touch - the caller skips moving the paddle while aiming.
+    func endlessIIAimMoved(to x: CGFloat) -> Bool {
         guard endlessIIAimTarget != nil else { return false }
-        endlessIIAimDrag += dx
+        endlessIIAimTouchX = x
+        endlessIIAimTouched = true
         return true
     }
 
@@ -174,7 +192,8 @@ extension GameScene {
         target.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
                                                 dy: sin(angle)*Double(ballSpeedLimit))
         endlessIIAimDefaultAngles[ObjectIdentifier(target)] = nil
-        endlessIIAimDrag = 0
+        endlessIIAimTouched = false
+        endlessIIAimOwedHold = false
         endlessIIReleasedFromPaddle(target)
         // Out of the queue, and no sticky catch is spent - this owns the launch (§5.4)
 
@@ -206,7 +225,9 @@ extension GameScene {
 
         let arrow = endlessIIAimArrow ?? {
             let node = SKShapeNode()
-            let length = ballSize*3
+            let length = ballSize*4.5
+            // Half again longer than it started (play-test round 10: "the arrow should
+            // be longer") - an aim read at a glance under a thumb
             let path = CGMutablePath()
             path.move(to: .zero)
             path.addLine(to: CGPoint(x: length, y: 0))
@@ -231,7 +252,8 @@ extension GameScene {
 
     /// Removes the aim state entirely. For resets and the batch ending.
     func endlessIIEndAim() {
-        endlessIIAimDrag = 0
+        endlessIIAimTouched = false
+        endlessIIAimOwedHold = false
         endlessIIAimDefaultAngles.removeAll()
         endlessIIAimArrow?.removeFromParent()
         endlessIIAimArrow = nil

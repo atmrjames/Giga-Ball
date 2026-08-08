@@ -123,10 +123,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWrapAroundClock = EndlessIIClock()
 	var endlessIIPendingWraps: [SKSpriteNode] = []
 	var endlessIIWrapDressed = false
+	/// The paddle's far-side half while it straddles a wrapped edge - see EndlessIIWrapAround.
+	var endlessIIWrapGhostPaddle: SKSpriteNode?
 	var endlessIIBackdropTiles: [SKSpriteNode] = []
 	var endlessIIBackdropScroll: CGFloat = 0
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
-	var endlessIIAimDrag: CGFloat = 0
+	/// Where the aiming finger is, and whether it has moved yet - the aim is the finger's
+	/// absolute position once it moves, the default bounce until then.
+	var endlessIIAimTouchX: CGFloat = 0
+	var endlessIIAimTouched = false
+	/// Whether the current hold is the owed last turn of an expired clock - the catch
+	/// that spent the final turn still gets its arrow and its launch.
+	var endlessIIAimOwedHold = false
 	var endlessIIAimArrow: SKShapeNode?
 	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
 	var endlessIIAimHold = false
@@ -1635,7 +1643,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleMovedDistance = touchLocation.x - previousLocation.x
 
 			if endlessIIAimHold {
-				endlessIIAimDragged(by: paddleMovedDistance)
+				endlessIIAimMoved(to: touchLocation.x)
 				return
 			}
 			// While the aim hold is on, the drag is the aim and nothing else moves - the
@@ -2785,17 +2793,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 	}
 	
+	/// Whether this brick has reached the field's bottom zone - where it blocks the
+	/// descent, and past which nothing may draw.
+	///
+	/// The row test answers for ordinary bricks: the final row is the last one. The frame
+	/// test answers for the oversized: a Big brick keeps its node on a row centre and
+	/// hangs its body below it (§8.6), so its *body* reaches the lower-limit line a full
+	/// row before its row centre does - and one row above the line is where it stops
+	/// (play-test round 10: a Big brick's lower half sat below the kill line).
+	func brickHasReachedTheBottomZone(_ sprite: SKSpriteNode) -> Bool {
+		if sprite.position.y <= finalBrickRowHeight + brickHeight/2 { return true }
+		return sprite.frame.minY <= finalBrickRowHeight - brickHeight/2 + 1
+	}
+
 	func countBricks() {
 		bricksLeft = 0
 		var endlessModeBricks = 0
-		
+
 		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
 			let spriteBrick = nodeBrick as! SKSpriteNode
 			if spriteBrick.texture != self.brickIndestructible2Texture {
 				self.bricksLeft+=1
 				// Count the number of active bricks remaining
-				
-				if self.endlessMode && spriteBrick.position.y <= self.finalBrickRowHeight + self.brickHeight/2
+
+				if self.endlessMode && self.brickHasReachedTheBottomZone(spriteBrick)
 					&& spriteBrick.endlessIIIsAnchored == false {
 					endlessModeBricks+=1
 				}
@@ -2844,11 +2865,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let anchored = endlessIIAnchoredCells()
 
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-			if node.position.y <= self.finalBrickRowHeight + self.brickHeight/2 {
+			if let sprite = node as? SKSpriteNode, self.brickHasReachedTheBottomZone(sprite) {
 				node.removeFromParent()
 				return
 			}
-			// Count number of active bricks in bottom row of bricks in endless mode
+			// Anything already in the bottom zone leaves before the field steps - by the
+			// same rule the counting uses, so a Big brick goes at the same moment it
+			// would have started blocking
 
 			if self.endlessIIStaysPut(node) { return }
 			// An anchored brick is the one thing the field descends around
@@ -3023,17 +3046,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         totalStatsArray[0].ballHits+=1
 		resetBrickBounce(for: ball)
+		let paddleWrapX = gameMode == .endlessII
+			? endlessIIPaddleXNearest(to: ball.position.x) : paddle.position.x
+		// The paddle copy this ball actually landed on: the paddle itself, or its
+		// wrap-around ghost on the far side - every position measurement below reads
+		// off this, so a bounce off the ghost half bends like a bounce off the paddle
 		if isExtra == false {
-			ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
+			ballRelativePositionOnPaddle = ball.position.x - paddleWrapX
 		}
 		// Where on the paddle the ball sits is about the ball that can be caught, which is
 		// the first one - a Sticky Paddle holds one ball, not whichever arrived last
 
 		let xSpeed = ball.physicsBody!.velocity.dx
 		let ySpeed = ball.physicsBody!.velocity.dy
-		let paddleLeftEdgePosition = paddle.position.x - paddle.size.width/2
-		let paddleRightEdgePosition = paddle.position.x + paddle.size.width/2
-		var collisionPercentage = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
+		let paddleLeftEdgePosition = paddleWrapX - paddle.size.width/2
+		let paddleRightEdgePosition = paddleWrapX + paddle.size.width/2
+		var collisionPercentage = Double((ball.position.x - paddleWrapX)/(paddle.size.width/2))
 		// Define collision position between the ball and paddle
 		let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
 		// Assumes the ball's ySpeed is always positive

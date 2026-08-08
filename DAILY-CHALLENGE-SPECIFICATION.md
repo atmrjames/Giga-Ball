@@ -314,14 +314,30 @@ briefing screen (§6).
 
 ## 11.5 Notifications and sharing
 
-- **Local notifications, opt-in, three kinds** (from the ideas list): "a new challenge is
-  up" (scheduled at the UTC rollover, delivered at a civilised local hour by default),
-  "one hour left" only if today is unplayed, and a user-chosen time of day. All local
-  scheduling — no server, in keeping with the whole design. Asked for once, politely, after
-  the player's third daily, never on first launch.
-- **The share sheet**: after a posting run, one tap builds a share card — day, mode, twist
-  names, score, streak — as an image for Messages and social media. Promoted from stretch
-  to phase 5, because a daily's scores are only social if they can leave the phone.
+- **Local notifications, opt-in, three kinds** (from the ideas list, firmed up in the
+  tenth play-test round): "a new challenge is up" (scheduled at the UTC rollover,
+  delivered at a civilised local hour by default), a **warning before it closes** (the
+  round asked for a custom duration before the end *or* a specific time of day, only if
+  today is unplayed), and **the day's result once the board closes** (rank fetched on
+  next launch; the notification is the nudge to look). Each individually toggleable with
+  its own timing controls on a small notifications-settings screen reached from the
+  briefing. All local scheduling — no server, in keeping with the whole design. Asked
+  for once, politely, after the player's third daily, never on first launch.
+- **The share card** (tenth round made it concrete): after a finished daily — from the
+  briefing once played, and from the game-over screen — one tap builds an image for the
+  share sheet: the app icon and Giga-Ball logo, "Daily Challenge" and the day, the mode
+  and level, the twist icons and names, the score and board position, drawn in the app's
+  own dark-purple-and-green look. Build note: render a UIView offscreen with
+  `UIGraphicsImageRenderer` rather than screenshotting the screen, so the card is
+  composed for sharing (square-ish, legible small) rather than shaped like a phone.
+  Promoted from stretch to phase 5, because a daily's scores are only social if they can
+  leave the phone.
+- **Special-day levels** (tenth round): specific levels pinned to specific dates — a
+  Christmas level on Christmas Day. The generator is seeded by the date already, so this
+  is a small override table consulted before the seed (`dateKey → pack/level`) plus the
+  levels themselves, which are content work. The override must be in the app before the
+  date arrives, so these ship in releases, not from a server; the table lives beside the
+  generator so the tests can hold the pinning.
 - **App Store in-app events** (ideas list): a fit for special weeks once the mode is live —
   App Store Connect work, James's side, noted in §13.
 

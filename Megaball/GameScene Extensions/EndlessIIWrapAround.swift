@@ -81,6 +81,64 @@ extension GameScene {
         // one edge, reappears at the other" (§5.4)
     }
 
+    /// The x of the paddle copy nearest this ball: the paddle itself, or - while the wrap
+    /// runs and the paddle straddles an edge - its ghost on the other side. `paddleHit`
+    /// measures every landing against this, so a bounce off the ghost's half bends the
+    /// angle by where the ball really sat on it, not by a paddle a screen away.
+    func endlessIIPaddleXNearest(to x: CGFloat) -> CGFloat {
+        let real = paddle.position.x
+        guard endlessIIWrapIsRunning, abs(x - real) > gameWidth/2 else { return real }
+        return real + (x > real ? gameWidth : -gameWidth)
+    }
+
+    /// Keeps the ghost half in step: while the paddle overhangs an edge, a second paddle
+    /// sprite shows the overhang re-entering the far side, with a body of its own so the
+    /// re-entering half bounces balls - "a paddle half off one side should appear half on
+    /// the other, and its physics body has to follow" (§12.0). Dressed like the paddle
+    /// every frame, because the paddle's dress changes under the power-up batch.
+    func tickEndlessIIWrapGhost() {
+        let limit = gameWidth/2 - paddle.size.width/2
+        let overhangs = endlessIIWrapIsRunning && abs(paddle.position.x) > limit
+        guard overhangs else {
+            endlessIIWrapGhostPaddle?.removeFromParent()
+            endlessIIWrapGhostPaddle = nil
+            return
+        }
+
+        let ghost = endlessIIWrapGhostPaddle ?? {
+            let node = SKSpriteNode(texture: paddle.texture, size: paddle.size)
+            node.zPosition = paddle.zPosition
+            node.name = PaddleCategoryName
+            addChild(node)
+            endlessIIWrapGhostPaddle = node
+            return node
+        }()
+
+        if ghost.size != paddle.size || ghost.physicsBody == nil {
+            ghost.size = paddle.size
+            let body = SKPhysicsBody(rectangleOf: paddle.size)
+            body.allowsRotation = false
+            body.friction = 0
+            body.affectedByGravity = false
+            body.isDynamic = false
+            body.restitution = 1
+            body.usesPreciseCollisionDetection = true
+            body.categoryBitMask = CollisionTypes.paddleCategory.rawValue
+            body.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+            ghost.physicsBody = body
+            // Remade only when the size changes (paddle size power-ups) - a rectangle,
+            // because the ghost exists for its edges, not its silhouette
+        }
+
+        ghost.texture = paddle.texture
+        ghost.color = paddle.color
+        ghost.colorBlendFactor = paddle.colorBlendFactor
+        ghost.position = CGPoint(
+            x: paddle.position.x > 0 ? paddle.position.x - gameWidth
+                                     : paddle.position.x + gameWidth,
+            y: paddle.position.y)
+    }
+
     // MARK: - The field
 
     /// Where a wandering brick that has reached a wall carries on from.
@@ -121,12 +179,17 @@ extension GameScene {
             endlessIIWrapAroundClock.run(down: endlessIIPaddleFrameDelta)
         }
 
+        tickEndlessIIWrapGhost()
+
         let running = endlessIIWrapIsRunning
         if running, endlessIIWrapDressed == false {
+            sideScreenBlockLeft.color = GameScene.portalBlueColour
+            sideScreenBlockRight.color = GameScene.portalYellowColour
             for wall in [sideScreenBlockLeft, sideScreenBlockRight] {
-                wall.color = GameScene.portalYellowColour
                 wall.colorBlendFactor = 0.6
             }
+            // Blue left, yellow right (§12.0's note): the walls are the two ends of one
+            // portal pair, so they wear the pair's two colours
             paddle.physicsBody?.collisionBitMask &= ~CollisionTypes.boarderCategory.rawValue
             // The paddle's body is dynamic and collides with the frame's edge, so every
             // overhang the touch wrote was resolved straight back by the engine - the balls
@@ -154,6 +217,8 @@ extension GameScene {
     func endlessIIResetWrapAround() {
         endlessIIWrapAroundClock.reset()
         endlessIIPendingWraps.removeAll()
+        endlessIIWrapGhostPaddle?.removeFromParent()
+        endlessIIWrapGhostPaddle = nil
         if endlessIIWrapDressed {
             for wall in [sideScreenBlockLeft, sideScreenBlockRight] {
                 wall.colorBlendFactor = 0

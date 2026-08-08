@@ -50,6 +50,15 @@ final class ContentAwareTableView: UITableView {
     /// having to move.
     private static let fadeLength: CGFloat = 48
 
+    /// The height of a pinned section header at the top, kept out of the fade.
+    ///
+    /// The fade masks the table's whole layer, and a plain-style table pins its section
+    /// headers inside that layer - so the header faded with the rows it was supposed to
+    /// preside over (play-test round 10: the sticky headings were "slightly hidden under
+    /// the scrolling blur"). A screen with pinned headers declares their height here and
+    /// the top fade starts below them instead.
+    var stickyHeaderBand: CGFloat = 0
+
     private let fadeMask = CAGradientLayer()
 
     override func awakeFromNib() {
@@ -120,10 +129,28 @@ final class ContentAwareTableView: UITableView {
         // visible area for free
 
         let height = max(bounds.height, 1)
-        fadeMask.locations = [0,
-                              NSNumber(value: Double(top/height)),
-                              NSNumber(value: Double(1 - bottom/height)),
-                              1]
+        let band = min(stickyHeaderBand, height/2)
+        if band > 0 {
+            fadeMask.colors = [UIColor.black.cgColor, UIColor.black.cgColor,
+                               UIColor.clear.cgColor, UIColor.black.cgColor,
+                               UIColor.black.cgColor, UIColor.clear.cgColor]
+            fadeMask.locations = [0,
+                                  NSNumber(value: Double(band/height)),
+                                  NSNumber(value: Double(band/height)),
+                                  NSNumber(value: Double((band + top)/height)),
+                                  NSNumber(value: Double(1 - bottom/height)),
+                                  1]
+            // The band stays solid for the pinned header; the rows fade in below it,
+            // sliding "under" the header rather than through it. With nothing scrolled
+            // the middle stops collapse to one point and there is no top fade at all
+        } else {
+            fadeMask.colors = [UIColor.clear.cgColor, UIColor.black.cgColor,
+                               UIColor.black.cgColor, UIColor.clear.cgColor]
+            fadeMask.locations = [0,
+                                  NSNumber(value: Double(top/height)),
+                                  NSNumber(value: Double(1 - bottom/height)),
+                                  1]
+        }
         CATransaction.commit()
     }
 }

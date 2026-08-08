@@ -356,6 +356,48 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                        "still travelling the same way")
     }
 
+    func testAStraddlingPaddleAnswersFromItsNearestCopy() {
+        // §12.0's Wrap-Around item: "a paddle half off one side should appear half on
+        // the other - and its physics body has to follow." The ghost carries the body;
+        // this is the measurement rule that makes a bounce off the ghost's half bend
+        // like a bounce off the paddle rather than off a paddle a screen away.
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.paddle.size = CGSize(width: 100, height: 20)
+        scene.paddle.position.x = 190
+        // Overhanging the right edge, so its ghost stands at -210
+
+        XCTAssertEqual(scene.endlessIIPaddleXNearest(to: -195), 190,
+                       "without the clock there is no ghost to answer from")
+        scene.endlessIICollectWrapAround()
+        XCTAssertEqual(scene.endlessIIPaddleXNearest(to: -195), -210,
+                       "a ball at the far wall landed on the ghost's half")
+        XCTAssertEqual(scene.endlessIIPaddleXNearest(to: 180), 190,
+                       "a ball beside the paddle still landed on the paddle")
+    }
+
+    func testTheGhostPaddleExistsExactlyWhileThePaddleStraddles() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.paddle.size = CGSize(width: 100, height: 20)
+        scene.endlessIICollectWrapAround()
+
+        scene.paddle.position.x = 0
+        scene.tickEndlessIIWrapGhost()
+        XCTAssertNil(scene.endlessIIWrapGhostPaddle, "mid-field, one paddle is enough")
+
+        scene.paddle.position.x = 190
+        scene.tickEndlessIIWrapGhost()
+        XCTAssertEqual(scene.endlessIIWrapGhostPaddle?.position.x, -210,
+                       "half off the right edge appears half on the left")
+        XCTAssertNotNil(scene.endlessIIWrapGhostPaddle?.physicsBody,
+                        "and the body follows, which is the real work")
+
+        scene.paddle.position.x = 0
+        scene.tickEndlessIIWrapGhost()
+        XCTAssertNil(scene.endlessIIWrapGhostPaddle, "back inside, the ghost goes")
+    }
+
     func testAWandererOnlyWrapsWhenItsRunToTheWallWasClear() {
         let scene = fieldScene()
         scene.gameWidth = 400
@@ -521,6 +563,29 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         }
         XCTAssertTrue(restored.endlessIIWreckingBallClock.isRunning)
         XCTAssertEqual(restored.endlessIIAuraClock.level, 1)
+    }
+
+    func testABigBrickReachesTheBottomZoneARowEarly() {
+        // Round 10 report, with screenshot: "big brick below bottom brick line - shouldn't
+        // happen, should stop one normal brick height higher." The brick's own body is
+        // what the line must not cross, and a Big brick's body hangs a row below its node.
+        let scene = fieldScene()
+        scene.finalBrickRowHeight = -100
+        // The kill line sits at -110: the bottom edge of the final row
+
+        let normalOnFinalRow = brick(in: scene, y: -100)
+        XCTAssertTrue(scene.brickHasReachedTheBottomZone(normalOnFinalRow))
+        let normalARowUp = brick(in: scene, y: -80)
+        XCTAssertFalse(scene.brickHasReachedTheBottomZone(normalARowUp),
+                       "an ordinary brick a row up has a row still to travel")
+
+        let big = brick(in: scene, y: -80)
+        big.size.height = 40
+        big.anchorPoint = CGPoint(x: 0.5, y: 0.75)
+        // Node on its row centre, body reaching a full row below it (§8.6's convention
+        // for oversized bricks)
+        XCTAssertTrue(scene.brickHasReachedTheBottomZone(big),
+                      "a Big brick's body already touches the line from a row up, so that is where it stops")
     }
 
     func testTheOriginalEndlessNeverOffersTheFieldBatch() {

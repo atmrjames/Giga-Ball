@@ -125,7 +125,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         
         itemsTableView.rowHeight = 70.0
-        
+        (itemsTableView as? ContentAwareTableView)?.stickyHeaderBand =
+            showsRecentsSection ? 30 : 0
+        // Keeps the pinned section headers out of the edge fade - see stickyHeaderBand
+
         userSettings()
         loadData()
         if parallaxSetting {
@@ -152,12 +155,25 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard showsRecentsSection else { return nil }
+        let container = UIView()
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        blur.frame = container.bounds
+        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        container.addSubview(blur)
+        // Its own blur backing, so rows sliding beneath the pinned header disappear
+        // behind it instead of showing through the bare label - the header sits on top
+        // of the scroll, it does not scroll under it (play-test round 10)
+
         let label = UILabel()
-        label.text = section == 0 ? "  RECENT THIS RUN" : "  OTHER POWER-UPS"
+        label.text = section == 0 ? "  THIS RUN" : "  OTHER"
+        // Shortened from "Recent this run" and "Other power-ups" (same round) - the
+        // page's title already says power-ups
         label.font = .boldSystemFont(ofSize: 13)
         label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        return label
-        // The same header treatment the bricks page gives its sections
+        label.frame = container.bounds
+        label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        container.addSubview(label)
+        return container
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {

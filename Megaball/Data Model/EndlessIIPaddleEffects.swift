@@ -152,23 +152,21 @@ enum EndlessIIPaddleEffects {
 
     // MARK: - Aimed Sticky
 
-    /// The launch angle a drag has chosen, in radians.
+    /// The launch angle a finger has chosen, in radians.
     ///
-    /// The default is the angle the ball would have bounced at anyway (§5.4), so releasing
-    /// without dragging changes nothing. Dragging swings it between the same limits every
-    /// launch respects - an aim that could point along the paddle would be an aim into the
-    /// wall beside it.
-    static func aimedAngle(default defaultAngle: Double, draggedBy dx: CGFloat,
-                           minimum: Double, maximum: Double) -> Double {
-        let swing = Double(dx)*EndlessIIPaddleEffects.aimRadiansPerPoint
-        return max(minimum, min(maximum, defaultAngle + swing))
+    /// Absolute, not accumulated (play-test round 10: "the arrow direction should adjust
+    /// based on the absolute position of the user's finger - more left on the screen =
+    /// further left"). The finger's x as a fraction of the half-width maps straight onto
+    /// the usable arc: the left wall is the leftmost aim, the centre is straight up, the
+    /// right wall the rightmost. An absolute aim cannot drift from the thumb the way an
+    /// accumulated drag could. The default angle - the bounce the ball would have taken -
+    /// still applies until the finger first moves, so releasing without dragging changes
+    /// nothing (§5.4).
+    static func aimedAngle(fingerFraction: Double, straight: Double,
+                           maximum: Double) -> Double {
+        let clamped = max(-1.0, min(1.0, fingerFraction))
+        return straight - clamped*maximum
     }
-
-    /// How far a point of drag swings the aim.
-    ///
-    /// The whole usable arc is about two radians, so a comfortable thumb's travel - a couple
-    /// of hundred points - sweeps all of it without a hand having to cross the screen.
-    static let aimRadiansPerPoint: Double = 0.011
 
     /// The angle a ball leaves the paddle at, given where it lands and how it arrives.
     ///

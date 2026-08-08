@@ -171,20 +171,31 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
 
     // MARK: The aim
 
-    func testReleasingWithoutDraggingChangesNothing() {
-        // §5.4's promise: the default is the angle the ball would have bounced at anyway
-        let angle = EndlessIIPaddleEffects.aimedAngle(default: 1.2, draggedBy: 0,
-                                                      minimum: 0.3, maximum: 2.8)
-        XCTAssertEqual(angle, 1.2)
+    func testTheAimReadsTheFingersAbsolutePosition() {
+        // Round 10: "the arrow direction should adjust based on the absolute position of
+        // the user's finger. More left on the screen = further left and vice versa."
+        let straight = Double.pi/2
+        let arc = 70*Double.pi/180
+        let centre = EndlessIIPaddleEffects.aimedAngle(fingerFraction: 0,
+                                                       straight: straight, maximum: arc)
+        let left = EndlessIIPaddleEffects.aimedAngle(fingerFraction: -1,
+                                                     straight: straight, maximum: arc)
+        let right = EndlessIIPaddleEffects.aimedAngle(fingerFraction: 1,
+                                                      straight: straight, maximum: arc)
+        XCTAssertEqual(centre, straight, "the centre of the screen aims straight up")
+        XCTAssertEqual(left, straight + arc, accuracy: 0.001,
+                       "the left wall is the leftmost aim")
+        XCTAssertEqual(right, straight - arc, accuracy: 0.001)
     }
 
-    func testDraggingSwingsTheAimAndTheLimitsHold() {
-        let swungLeft = EndlessIIPaddleEffects.aimedAngle(default: 1.2, draggedBy: -1000,
-                                                          minimum: 0.3, maximum: 2.8)
-        let swungRight = EndlessIIPaddleEffects.aimedAngle(default: 1.2, draggedBy: 1000,
-                                                           minimum: 0.3, maximum: 2.8)
-        XCTAssertEqual(swungLeft, 0.3, "an aim that could point along the paddle is an aim into the wall")
-        XCTAssertEqual(swungRight, 2.8)
+    func testTheAimClampsAtTheWalls() {
+        // A finger dragged past the play area cannot aim along the paddle
+        let straight = Double.pi/2
+        let arc = 70*Double.pi/180
+        let past = EndlessIIPaddleEffects.aimedAngle(fingerFraction: -3,
+                                                     straight: straight, maximum: arc)
+        XCTAssertEqual(past, straight + arc, accuracy: 0.001,
+                       "an aim that could point along the paddle is an aim into the wall")
     }
 
     func testTheDefaultAngleIsTheMirrorOfTheArrival() {
@@ -226,6 +237,30 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
             scene.endlessIISpendPaddleTurns()
         }
         XCTAssertFalse(scene.endlessIIMagnetismClock.isRunning, "five turns and it is gone")
+    }
+
+    func testTheLastAimedCatchStillOwnsItsLaunch() {
+        // Round 10 report: "On the last go of an aimed sticky power up the ball stuck to
+        // the paddle, no arrow appeared... The ball then fell to the bottom of the screen
+        // below the paddle and started to vibrate." The last turn expired the clock
+        // before the catch, and everything downstream asked the clock - so the hold had
+        // no owner: no aim target, no arrow, no launch.
+        let scene = paddleScene()
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.endlessIICollectAimedSticky()
+        for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) {
+            scene.endlessIISpendPaddleTurns()
+        }
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning,
+                       "the last landing spends the clock out")
+
+        XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false),
+                      "the turn that expired the clock still catches")
+        XCTAssertNotNil(scene.endlessIIAimTarget,
+                        "and the catch has an owner: the arrow and the drag both key off the target")
+        XCTAssertTrue(scene.endlessIIAimLaunch(), "and the tap still launches it")
+        XCTAssertFalse(scene.endlessIIAimOwedHold, "the owed hold is spent by its launch")
     }
 
     func testATurnClockSpendsWholeTurns() {
@@ -380,8 +415,9 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
                        "the default is the bounce it would have taken")
     }
 
-    func testDraggingSwingsTheAim() {
+    func testMovingTheFingerSwingsTheAimToWhereItSits() {
         let scene = paddleScene()
+        scene.gameWidth = 400
         scene.addChild(scene.ball)
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
         scene.endlessIICollectAimedSticky()
@@ -389,15 +425,16 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
         scene.endlessIIAimedCatch(scene.ball, isExtra: false)
 
-        XCTAssertTrue(scene.endlessIIAimDragged(by: 30), "the drag swings the aim - and the paddle moves too")
+        XCTAssertTrue(scene.endlessIIAimMoved(to: 150), "the moving finger is the aim")
         let target = scene.endlessIIAimTarget!
         let swung = scene.endlessIIAimAngle(for: target)
-        XCTAssertNotEqual(swung, .pi/2, accuracy: 0.01)
+        XCTAssertLessThan(swung, .pi/2,
+                          "a finger on the right of the screen aims right of straight up")
     }
 
     func testNothingIsConsumedWhenNothingIsAimed() {
         let scene = paddleScene()
-        XCTAssertFalse(scene.endlessIIAimDragged(by: 30))
+        XCTAssertFalse(scene.endlessIIAimMoved(to: 30))
         XCTAssertFalse(scene.endlessIIAimLaunch())
     }
 

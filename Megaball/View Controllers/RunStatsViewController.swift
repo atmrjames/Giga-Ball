@@ -117,7 +117,8 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         table.backgroundColor = .clear
         table.separatorColor = UIColor(white: 1, alpha: 0.12)
         table.separatorInset = .zero
-        table.rowHeight = 44
+        table.rowHeight = 56
+        // Roomier rows (play-test round 10: the icons were crowding each other)
         table.dataSource = self
         table.delegate = self
         table.allowsSelection = false
@@ -175,8 +176,17 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             ? "\(highlight.title): \(setup.powerUpNameArray[highlight.index])" : highlight.title
         cell.textLabel?.font = .boldSystemFont(ofSize: 15)
         cell.textLabel?.textColor = .white
-        cell.imageView?.image = setup.powerUpImageArray.indices.contains(highlight.index)
-            ? setup.powerUpImageArray[highlight.index] : nil
+        if setup.powerUpImageArray.indices.contains(highlight.index) {
+            let icon = setup.powerUpImageArray[highlight.index]
+            let size = CGSize(width: 34, height: 34)
+            cell.imageView?.image = UIGraphicsImageRenderer(size: size).image { _ in
+                icon.draw(in: CGRect(origin: .zero, size: size))
+            }
+            // Drawn down to a fixed 34pt: the raw icon fills the whole row and the rows
+            // read as touching (play-test round 10 asked for air between them)
+        } else {
+            cell.imageView?.image = nil
+        }
 
         cell.detailTextLabel?.text = "×\(highlight.count)"
         cell.detailTextLabel?.font = .boldSystemFont(ofSize: 15)
