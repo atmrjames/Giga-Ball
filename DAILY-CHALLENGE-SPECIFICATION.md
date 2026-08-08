@@ -333,6 +333,47 @@ briefing screen (§6).
 Each phase ships behind the previous one's tests. Phase 1 has no UI at all and is the most
 important one: everything else stands on "every device computes the same day".
 
+## 12.5 Interruption and connection — the fourth round's two design questions
+
+Both came out of playing the phase-3 build, and both are about the gap between "the run
+happened" and "the score is on the board". Written up here because each changes §1's
+window rule at the edges.
+
+**A daily run must survive being interrupted.** Today a daily is never saved, so
+force-quitting mid-run drops the player back at the menu with the attempt spent and
+nothing to show. That was the right first cut - a daily save must never be confusable
+with a campaign save - but it is not the right answer: the run should resume where it
+was left, exactly as a campaign run does. The design:
+
+- The daily gets **its own save slot**, separate from the campaign's (§9 already says
+  this), carrying the challenge's date key alongside the ordinary save. A save whose
+  date key is not the day being resumed into is never loaded - which is what stops a
+  twisted run resuming into an untwisted one.
+- **A run resumed after its window has closed still plays, and posts nothing.** The
+  briefing said the attempt was the scoring one; the deadline says it no longer is.
+  The player is told *before* the resume, not after: a warning on the resume prompt -
+  "this challenge closed while you were away; the run continues, the score will not be
+  posted" - and the run is relabelled practice for its remainder.
+- The attempt stays spent either way. Nothing about interruption should be worth doing
+  deliberately.
+
+**A score earned offline is posted when the app next reaches Game Center - if the window
+is still open.** The rule that makes this honest is the one already in §1: a score must
+be *posted* inside the window, not merely earned in it. So:
+
+- A posting run whose submission fails is written to the day's record as **pending**,
+  with the score and the normalised total it would post.
+- Every launch, foreground and daily-screen visit retries the pending posts whose window
+  is still open, oldest first.
+- A pending post whose window closes before it lands is marked **missed** and never
+  posted. The briefing's result line already has the vocabulary for this - the badge
+  beside the day's score says posted or not posted, and "not posted" is where a missed
+  one lands.
+- The overall total (§7) is submitted from the local tally after any successful daily
+  post, so it self-heals: a day that posts late still reaches the total.
+
+Neither is built. Both are phase-4 work, and the save half is the larger of the two.
+
 ## 13. Open questions
 
 - **Deterministic endless fields**: should an Endless daily's field itself be seeded, so
@@ -353,6 +394,13 @@ important one: everything else stands on "every device computes the same day".
 - **Monochrome performance** (§5, §4 Blackout).
 
 - **App Store in-app events** (§11.5): App Store Connect setup, James's side.
+
+- **Answered, fourth round — how the daily board works in Game Center.** One board, not
+  one a day: a **recurring** leaderboard with a daily recurrence starting at 00:00 UTC.
+  Game Center resets and archives it itself, which is exactly the 24-hour window with no
+  server of ours. The overall total is a second, ordinary (non-recurring) board. A
+  monthly race, if it is ever wanted, is a third board with a monthly recurrence and one
+  extra submission - not a change to either of these.
 
 ---
 

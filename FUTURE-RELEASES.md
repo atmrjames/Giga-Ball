@@ -95,6 +95,14 @@ phases 1–3, two wide play-test rounds):
   Liquid Glass/vibrancy pass over the UI, 120 fps
 - The release pass: debug-gate the daily's test clock, App Store review readiness,
   biggest/smallest device matrix (fold the iPad stutter/pixelation checks in)
+- Endless mode screens: the run table moves up into the room the Best Height headline
+  left, with more clearance above the buttons, a fade where it scrolls under them, and a
+  small "N runs" label
+- Daily interruption and offline posting (DAILY-CHALLENGE-SPECIFICATION §12.5): a daily
+  save slot so an interrupted run resumes, warned-and-unposted past its deadline; and
+  pending posts retried until the window closes
+- TestFlight for friends and family — James's side, worth doing as soon as the daily
+  settles
 - James's side: §8.5 art and sound, Quick Start Guide update, and the three App Store
   Connect boards — Endless Mayhem, Daily (recurring, 00:00 UTC), Daily overall
   (classic, all-time; a monthly recurring variant is a cheap 1.4 addition if wanted)
