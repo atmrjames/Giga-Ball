@@ -156,10 +156,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                                           constant: 60),
 
             modeIcon.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            modeIcon.bottomAnchor.constraint(equalTo: levelNumberLabel.topAnchor,
-                                             constant: -6),
+            modeIcon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor,
+                                             constant: -4),
             modeIcon.widthAnchor.constraint(equalToConstant: 42),
             modeIcon.heightAnchor.constraint(equalToConstant: 42),
+            // Above the *pack* line, not the level line: in Classic and the daily there
+            // is a label above the one naming the mode, and anchoring to the lower of
+            // the two put the icon straight through it (play-test round 14's screenshots).
+            // Endless leaves the pack line empty, so the icon simply sits a little higher
+            // there rather than needing a rule of its own
         ])
     }
 

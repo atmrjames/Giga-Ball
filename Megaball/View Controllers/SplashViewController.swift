@@ -68,30 +68,30 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     // the prompt, never past it - the prompt only answers its own Resume and Cancel
     // buttons, so an accidental tap cannot spend a saved run
     
-    /// The two credits the splash carries, the way the About screen carries them
-    /// (play-test round 13): the game's author, then the music's.
+    /// The music credit, under the author's line exactly as the About screen has it: same
+    /// font, same colour, five points below.
     ///
-    /// Both in one label rather than two, because the label is already positioned,
-    /// already animated and already faded in with the logo - a second label would need
-    /// its own constraints in the storyboard and its own place in the keyframes, for a
-    /// line of text.
+    /// A second label rather than a second line in the first one. Putting both in
+    /// `creatorLabel` made it two lines tall, and the label is centred - so growing it
+    /// downwards pushed James's name *up* off its mark (play-test round 14). This leaves
+    /// that label exactly the size and place it has always been.
+    ///
+    /// It is added as a child of `creatorLabel` so it inherits the alpha and the transform
+    /// the splash animation applies - the credit fades in with the name, for free, without
+    /// the keyframes needing to know it exists. Constrained below the parent's own bottom,
+    /// which draws fine because a label does not clip its children.
     private func setUpCreatorCredit() {
-        let first = creatorLabel.font ?? .systemFont(ofSize: 17)
-        let colour = creatorLabel.textColor ?? .white
-        let credit = NSMutableAttributedString(
-            string: "A game by James Harding\n",
-            attributes: [.font: first, .foregroundColor: colour])
-        credit.append(NSAttributedString(
-            string: "Music by Brendan Lawton",
-            attributes: [.font: first.withSize(first.pointSize*0.72),
-                         .foregroundColor: colour.withAlphaComponent(0.7)]))
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-        paragraph.paragraphSpacing = 2
-        credit.addAttribute(.paragraphStyle, value: paragraph,
-                            range: NSRange(location: 0, length: credit.length))
-        creatorLabel.numberOfLines = 0
-        creatorLabel.attributedText = credit
+        let music = UILabel()
+        music.text = "Music by Brendan Lawton"
+        music.font = creatorLabel.font
+        music.textColor = creatorLabel.textColor
+        music.textAlignment = .center
+        music.translatesAutoresizingMaskIntoConstraints = false
+        creatorLabel.addSubview(music)
+        NSLayoutConstraint.activate([
+            music.topAnchor.constraint(equalTo: creatorLabel.bottomAnchor, constant: 5),
+            music.centerXAnchor.constraint(equalTo: creatorLabel.centerXAnchor),
+        ])
     }
 
     let defaults = UserDefaults.standard

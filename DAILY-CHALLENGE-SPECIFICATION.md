@@ -341,9 +341,11 @@ briefing screen (§6).
   composed for sharing (square-ish, legible small) rather than shaped like a phone.
   Promoted from stretch to phase 5, because a daily's scores are only social if they can
   leave the phone.
-- **Live board stats** (eleventh round): once today's run is finished, the game-over
-  screen and the briefing should show the board's live shape and keep it fresh as
-  scores land through the day - current best, current average, the player's position
+- **Live board stats** — *backlogged by James (round 14): build it once the Game Center
+  leaderboards are set up in App Store Connect, since none of it can be seen working
+  until there are real boards with real scores on them.* Once today's run is finished,
+  the game-over screen and the briefing should show the board's live shape and keep it
+  fresh as scores land through the day - current best, current average, the player's position
   and percentile, and how many scores have been posted. Build notes:
   `GKLeaderboard.loadEntries(for:timeScope:range:)` returns the top entries *and* the
   total player count in one call; the player's own entry gives rank, and percentile is

@@ -23,7 +23,7 @@ extension UIView {
     ///
     /// `radius` is in points and scales with the thing glowing: a 35pt heading wants less
     /// spread than a full-width wordmark, or the halo stops belonging to the letters.
-    func applyGigaBallGlow(radius: CGFloat = 14, opacity: Float = 0.45) {
+    func applyGigaBallGlow(radius: CGFloat = 14, opacity: Float = 0.6) {
         layer.shadowColor = GigaBallGlow.colour.cgColor
         layer.shadowOffset = .zero
         layer.shadowRadius = radius

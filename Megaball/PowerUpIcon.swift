@@ -501,12 +501,10 @@ enum PowerUpIcon {
     /// icon") - the plain game is the game. The drawn brick-and-ball stays as the
     /// fallback for the unlikely build where the icon files cannot be read.
     static let twistVanilla: UIImage = {
-        if let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
-           let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
-           let files = primary["CFBundleIconFiles"] as? [String],
-           let name = files.last, let icon = UIImage(named: name) {
-            return icon
-        }
+        if let icon = GameMode.appIconArtwork { return icon }
+        // The app's own icon, read from the one copy of it the app can load - see
+        // GameMode.appIconArtwork. It used to go through CFBundleIcons, which returns
+        // the small home-screen sizes rather than the artwork
         return badge(twist) { context, rect in
             context.setFillColor(UIColor.white.cgColor)
             context.fill(CGRect(x: rect.minX + rect.width*0.22,

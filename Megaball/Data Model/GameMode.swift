@@ -30,6 +30,15 @@ enum GameMode: Int, CaseIterable {
     /// Where the mode is remembered between launches, so a resumed run knows what it is.
     static let defaultsKey = "gameMode"
 
+    /// The app's own icon, as artwork *inside* the app - the About screen, the Vanilla
+    /// twist's badge, and Classic mode's own icon, which is the app icon by design.
+    ///
+    /// Taken from the icon selector's preview art, which is drawn from the same source as
+    /// the real icon and is the one copy of it the app can actually load: the `.icon`
+    /// bundles Icon Composer produces are layered sources, not images, and nothing can
+    /// read them at runtime.
+    static let appIconArtwork = UIImage(named: "IconPreviewPurple")
+
     /// The icon this mode wears wherever it introduces itself: the main menu's row, the
     /// level intro splash, the pause and game-over screens, and the daily briefing.
     ///
@@ -38,7 +47,9 @@ enum GameMode: Int, CaseIterable {
     /// main menu ended up able to disagree about what a Daily Challenge looks like.
     static func menuIcon(for mode: GameMode) -> UIImage? {
         switch mode {
-        case .classic: return UIImage(named: "ClassicIcon.png")
+        case .classic: return appIconArtwork ?? UIImage(named: "ClassicIcon.png")
+        // Classic mode's icon is the app's icon (play-test round 13): the game's own
+        // face belongs to the mode the game started as
         case .endless, .endlessII: return UIImage(named: "EndlessIcon.png")
         // Endless 2.0 shares the endless icon until §8.5 draws it one of its own
         case .daily: return PowerUpIcon.dailyChallenge

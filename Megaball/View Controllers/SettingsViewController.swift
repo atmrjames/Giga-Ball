@@ -301,10 +301,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 8:
             // Swipe up to pause
-                cell.settingDescription.attributedText = describedWithInfoGlyph(
-                    "Swipe Up To Pause", like: cell.settingDescription)
+                cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconPause.png")!
+                addSwipeInfoButton(to: cell)
                 if swipeUpPause {
                     cell.settingState.text = "on"
                     cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
@@ -363,27 +363,44 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         return rowHeight
     }
     
-    /// A settings row's title with a small ⓘ after it, drawn in the label's own font so it
-    /// sits on the text's baseline rather than beside it.
+    private static let swipeInfoTag = 8801
+
+    /// A real, finger-sized info button on the swipe-up row.
     ///
-    /// A glyph rather than a button: this cell's description and state labels share a
-    /// width constraint, so anything added as a sibling lands wherever that arithmetic
-    /// puts it rather than beside the words. Drawn into the text, it is always exactly
-    /// after the title, at every width.
-    func describedWithInfoGlyph(_ title: String, like label: UILabel) -> NSAttributedString {
-        let font = label.font ?? .systemFont(ofSize: 17)
-        let text = NSMutableAttributedString(
-            string: title + "  ",
-            attributes: [.font: font,
-                         .foregroundColor: label.textColor ?? UIColor.black])
-        let glyph = NSTextAttachment()
-        glyph.image = UIImage(systemName: "info.circle")?
-            .withTintColor(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.55),
-                           renderingMode: .alwaysOriginal)
-        let size = font.pointSize*0.85
-        glyph.bounds = CGRect(x: 0, y: -1, width: size, height: size)
-        text.append(NSAttributedString(attachment: glyph))
-        return text
+    /// It began as a glyph drawn into the label's text, which put it exactly after the
+    /// words but made it part of a label - nothing to tap (play-test round 14 asked for
+    /// something bigger and easier to hit). This is a 44-point button, the size Apple
+    /// asks for, sitting just left of the on/off state where the row has room. The image
+    /// inside it is smaller than its touch area, which is what makes it easy to hit
+    /// without looking heavy.
+    ///
+    /// Cells are reused, so any previous one is removed before a new one is added -
+    /// otherwise scrolling would stack them up on rows that never asked for one.
+    func addSwipeInfoButton(to cell: SettingsTableViewCell) {
+        cell.contentView.viewWithTag(Self.swipeInfoTag)?.removeFromSuperview()
+
+        let info = UIButton(type: .system)
+        info.tag = Self.swipeInfoTag
+        info.setImage(UIImage(systemName: "info.circle",
+                              withConfiguration: UIImage.SymbolConfiguration(
+                                  pointSize: 20, weight: .regular)), for: .normal)
+        info.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
+        info.translatesAutoresizingMaskIntoConstraints = false
+        info.addTarget(self, action: #selector(swipeInfoTapped), for: .touchUpInside)
+        cell.contentView.addSubview(info)
+
+        NSLayoutConstraint.activate([
+            info.trailingAnchor.constraint(equalTo: cell.settingState.leadingAnchor,
+                                           constant: -6),
+            info.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            info.widthAnchor.constraint(equalToConstant: 44),
+            info.heightAnchor.constraint(equalToConstant: 44),
+        ])
+    }
+
+    @objc func swipeInfoTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        explainSwipeUpToPause()
     }
 
     /// What the swipe-up gesture is for, said in the words the play test asked for.

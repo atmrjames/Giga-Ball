@@ -755,6 +755,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalCooldown: TimeInterval = 0
 	/// Paces the standing gravity settle - see tickEndlessIIRoles.
 	var endlessIIGravitySettleAccumulator: TimeInterval = 0
+	/// The last thousand of score, and the last hundred metres, that were marked with a
+	/// pulse - see pulseMilestone.
+	var lastScoreMilestone = 0
+	var lastHeightMilestone = 0
 	var endlessIIPendingPortalExit: CGPoint?
 	var endlessIIPortalKeepsHeading = false
 	/// Which ball is waiting to be moved to a portal's exit. Not always the first one.
@@ -1824,6 +1828,43 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Endless mode has no multiplier, and its label carries the best height instead. Four
     /// places wrote the multiplier straight into it, so the best height appeared at the start
     /// of a run and was replaced by "x1.0" by the first brick.
+    /// Writes the classic score into its label, and marks each thousand as it passes.
+    ///
+    /// Every place that used to write the label calls this instead - eleven of them - so
+    /// the milestone is noticed once rather than at each site remembering to check.
+    func showScoreLabel() {
+        let score = totalScore + levelScore
+        scoreLabel.text = String(score)
+        pulseMilestone(scoreLabel, value: score, step: 1000, passed: &lastScoreMilestone)
+    }
+
+    /// The same for the endless modes' height, every hundred metres.
+    func showHeightLabel() {
+        scoreLabel.text = "\(endlessHeight)m"
+        pulseMilestone(scoreLabel, value: endlessHeight, step: 100,
+                       passed: &lastHeightMilestone)
+    }
+
+    /// Pulses a label when its value crosses another multiple of `step`.
+    ///
+    /// The same beat the multiplier uses, for the same reason: a number that changes
+    /// constantly cannot mark every change, but the round numbers are the ones a player
+    /// is counting towards. Only upwards - a score falling back past a thousand is not an
+    /// achievement - though the marker follows it down so the next crossing lands again.
+    private func pulseMilestone(_ label: SKLabelNode, value: Int, step: Int,
+                                passed: inout Int) {
+        let milestone = value/step
+        defer { passed = milestone }
+        guard milestone > passed, value > 0 else { return }
+
+        label.removeAction(forKey: "milestonePulse")
+        label.setScale(1)
+        label.run(.sequence([
+            .scale(to: 1.25, duration: 0.09),
+            .scale(to: 1, duration: 0.18),
+        ]), withKey: "milestonePulse")
+    }
+
     func showMultiplier() {
         guard endlessMode == false else { return }
         let wanted = "x\(scoreFactorString)"
@@ -2106,14 +2147,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove any remaining lasers
 		
 		if endlessMode == false {
-			scoreLabel.text = String(totalScore + levelScore)
+			showScoreLabel()
 		}
 		// Update score
 
 		multiplier = Scoring.multiplierBase
 		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight)m"
+			showHeightLabel()
 		}
 		showMultiplier()
 		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
@@ -2618,7 +2659,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if sprite.texture == brickMultiHit1Texture || sprite.texture == brickMultiHit2Texture || sprite.texture == brickMultiHit3Texture || sprite.isHidden {
 			levelScore = levelScore + Scoring.award(brickDestroyScore, multiplier: multiplier)
 			if endlessMode == false {
-				scoreLabel.text = String(totalScore + levelScore)
+				showScoreLabel()
 			}
 		}
         		
@@ -2760,11 +2801,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		
 		if endlessMode == false {
-			scoreLabel.text = String(totalScore + levelScore)
+			showScoreLabel()
 		}
 		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight)m"
+			showHeightLabel()
 		}
 		setMultiplierColour(multiplier >= 2 ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		showMultiplier()
@@ -2780,7 +2821,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Stop the level timer
 			levelTimerBonus = Scoring.timerBonus(from: levelTimerBonus, elapsed: levelTimerValue, multiplier: multiplier)
 			levelScore = levelScore + Scoring.levelCompletionAward()
-			scoreLabel.text = String(totalScore + levelScore)
+			showScoreLabel()
             gameState.enter(InbetweenLevels.self)
 			return
         }
@@ -2984,12 +3025,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		levelScore = levelScore + Scoring.award(100, multiplier: multiplier)
 		if endlessMode == false {
-			scoreLabel.text = String(totalScore + levelScore)
+			showScoreLabel()
 		}
 		
 		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight)m"
+			showHeightLabel()
 		}
 		
 		showMultiplier()
@@ -4016,7 +4057,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				checkPaddleHitsAchievement()
 				levelScore = levelScore + Scoring.levelCompletionAward()
 				if endlessMode == false {
-					scoreLabel.text = String(totalScore + levelScore)
+					showScoreLabel()
 				}
 				self.removeAction(forKey: "gameTimer")
 				// Stop the level timer
@@ -4534,11 +4575,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		setMultiplierColour(Scoring.isAtCap(multiplier) ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		// Ensure multiplier never goes below 1 or above 2
 		if endlessMode == false {
-			scoreLabel.text = String(totalScore + levelScore)
+			showScoreLabel()
 		}
 		scoreFactorString = Scoring.displayString(multiplier)
 		if endlessMode {
-			scoreLabel.text = "\(endlessHeight)m"
+			showHeightLabel()
 		}
 		showMultiplier()
         // Update score

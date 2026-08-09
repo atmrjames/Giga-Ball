@@ -146,22 +146,28 @@ rejection.
    bounces), Auto-Aim target choice and direction hint, tap-to-skip for the intro and
    build-in, the build-in animations for Classic and original Endless, fog of war's
    opening reveal (all §12.0 / daily spec rows).
-3. **Daily phase 4 and 5** - the twist subset (Time Trial first, then Mayhem Bricks,
+3. **The daily's day pager, properly** — decided in round 14, after the browsing was
+   asked about three times. Not another tuning pass: a real horizontal paging
+   collection view, one cell per day, per the daily spec's §11.5 entry. Everything that
+   drives `viewedOffset` today reroutes through it.
+4. **Daily phase 4 and 5** - the twist subset (Time Trial first, then Mayhem Bricks,
    Upside Down, Mirrored, No Pausing), streaks, per-day results on the browsing card,
    and round 12's posted-score container. The free-play rename has landed.
-4. **The remaining §12.0 features**, each its own round: Lock & Key; Ball Spin/Curve;
+   *Live board stats are backlogged until the App Store Connect boards exist.*
+5. **The remaining §12.0 features**, each its own round: Lock & Key; Ball Spin/Curve;
    Double Paddle.
-5. **The menu round** - Classic mode menu redesign, the icon pass (settings rows, mode
+6. **The menu round** - Classic mode menu redesign, the icon pass (settings rows, mode
    menu icons, icons-above-titles everywhere), stats page sections, big-play on every
    pause sub-screen, the game-over score tally for all modes.
-6. **Boards and telling people** - live daily board stats, global rank on game-overs,
+7. **Boards and telling people** - the daily's live board stats (backlogged until the
+   boards exist), global rank on game-overs,
    daily notifications and their management screen, the Mayhem badge on the power-ups
    page. *Boundary question for James:* the **share card** was placed in 1.4 when the
    line was drawn but re-requested in round 10 - it is specced in the daily spec §11.5
    and ready to build whenever it is called into 1.3.
-7. **Platform polish** - small achievement set for the new modes, giant widget icon,
+8. **Platform polish** - small achievement set for the new modes, giant widget icon,
    iPad multitasking, Liquid Glass/vibrancy pass, 120 fps.
-8. **The release pass, last** - debug-gate the daily test clock (tracked in the daily
+9. **The release pass, last** - debug-gate the daily test clock (tracked in the daily
    spec's status header), App Store review readiness, the posting-path anti-cheat
    sweep, biggest/smallest device matrix.
 

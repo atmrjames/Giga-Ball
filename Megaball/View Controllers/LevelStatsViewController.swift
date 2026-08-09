@@ -400,6 +400,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func updateLabels() {
         levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber!].uppercased()
+        levelNameLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
+        // The mode's title glows like the wordmark does (play-test round 14)
         if levelNumber == 0 {
             levelNameLabel.text = GameMode.current(in: defaults).name.uppercased()
             // Both endless modes share level 0, so the name comes from the mode
@@ -486,15 +488,18 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         levelStatsView.addSubview(sort)
         NSLayoutConstraint.activate([
             sort.topAnchor.constraint(equalTo: levelImageView.bottomAnchor, constant: 18),
-            sort.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
+            sort.leadingAnchor.constraint(equalTo: levelStatsView.leadingAnchor,
+                                          constant: 44),
         ])
+        // Left-aligned with the table's own leading edge, so the sort and the run count
+        // bracket the header row symmetrically (play-test round 14) - centred, it read as
+        // a title floating over a row that already had something at its end
         // Anchored to the mode's icon rather than to the emptied highscore labels
         // (play-test round 6): with the Best Height figure gone, the list moves up to
         // sit near the icon, and the room it frees goes to the bottom of the screen
         runHistorySortButton = sort
-        // One small word, centred over the list where a column header would be (the
-        // play test asked for it centred at the top of the table) - the list leads with
-        // the best heights until the player asks it the other question
+        // One small word at the head of the list, where a column header would be - the
+        // list leads with the best heights until the player asks it the other question
 
         let count = UILabel()
         count.translatesAutoresizingMaskIntoConstraints = false
