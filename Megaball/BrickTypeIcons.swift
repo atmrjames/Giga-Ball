@@ -134,7 +134,7 @@ enum BrickTypeIcons {
         case .portal: return GameScene.portalBrickColour
         case .fixed: return GameScene.fixedBrickColour
         case .flashing: return #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        case .rounded, .spinning: return standardColour
+        case .rounded, .spinning, .convex, .concave, .wedge: return standardColour
         }
     }
     // The six field-changing roles keep the scene's own constants. Rounded and Spinning are
@@ -146,6 +146,23 @@ enum BrickTypeIcons {
         let tint = colour(of: style)
 
         switch style {
+        case .convex, .concave, .wedge:
+            // Clipped to the very path the game builds the body and the outline from, so
+            // the picture cannot drift from the shape - `EndlessIIFaceGeometry` draws in
+            // scene coordinates (y up) about the shape's own centre, which is what the
+            // transform below undoes
+            guard let face = style.face else { return }
+            context.saveGState()
+            context.translateBy(x: frame.midX, y: frame.midY)
+            context.scaleBy(x: 1, y: -1)
+            context.addPath(EndlessIIFaceGeometry.silhouette(face, size: frame.size))
+            context.clip()
+            context.scaleBy(x: 1, y: -1)
+            context.translateBy(x: -frame.midX, y: -frame.midY)
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            context.restoreGState()
+            return
+
         case .rounded:
             // The body is the rounded rectangle, filled with the brick's own texture and
             // colour, exactly as `makeRounded` builds it

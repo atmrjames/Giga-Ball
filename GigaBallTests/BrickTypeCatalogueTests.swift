@@ -152,13 +152,16 @@ final class BrickTypeCatalogueTests: XCTestCase {
     }
 
     func testTheStackingLineIsSaidWhicheverWayIsShorter() {
-        // Rounded only rewrites a shape, so it argues with nothing
-        XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .rounded), "Any other style")
+        // Rounded rewrites the brick's outline, so its only argument is with the three
+        // styles that do the same - and naming those three is shorter than naming the nine
+        // it takes
+        XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .rounded),
+                       "Any but Convex, Concave, Wedge")
 
-        // Spinning refuses two of the nine. Naming the seven it takes is a list to work
-        // through; naming the two it does not is a fact
+        // Spinning refuses the shapes and two others. Naming what it takes is a list to
+        // work through; naming what it does not is a fact
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .spinning),
-                       "Any but Moving, Directional")
+                       "Any but Convex, Concave, Wedge, Moving, Directional")
 
         // A Portal is never damaged and never destroyed, so anything about being destroyed or
         // about being solid has nothing to attach to - and there its exclusions are no shorter

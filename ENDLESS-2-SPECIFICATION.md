@@ -104,6 +104,9 @@ remove, presenting a different angle every time the ball reaches it.
 |---|---|---|
 | Plain | Nothing. What every brick in Classic and Endless is | — |
 | Rounded | Rounded-rectangle body, so glancing hits deflect unpredictably | 4.5 |
+| Convex | A dome. Off-centre hits leave wider than they arrived — it scatters | 4.12 |
+| Concave | A dish. Hits near an edge are turned back inward — it collects | 4.12 |
+| Wedge | A right triangle. Everything reaching the slope leaves the same way | 4.12 |
 | Spinning | Rotates on the spot; the bounce angle changes with it | 4.1 |
 | Flashing | Alternates solid-and-visible with passable-and-faded | 4.2 |
 | Gravity | Falls into empty cells below it | 4.6 |
@@ -130,6 +133,9 @@ each other rather than the ones that are merely strange.
 | Style | Standard | Multi-hit | Indest. ×1 | Indest. ×2 | Invisible |
 |---|---|---|---|---|---|
 | Rounded | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Convex | ✓ | ✓ | ✓ | ✓ | ✗ ⁷ |
+| Concave | ✓ | ✓ | ✓ | ✓ | ✗ ⁷ |
+| Wedge | ✓ | ✓ | ✓ | ✓ | ✗ ⁷ |
 | Spinning | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Fixed | ✓ | ✓ | ✓ | ✗ ² | ✓ |
 | Flashing | ✓ | ✓ | ✓ | ✓ | ✗ ¹ |
@@ -152,10 +158,15 @@ each other rather than the ones that are merely strange.
    the trigger instead — a brick that clears its neighbours each time you hit it, or one that
    keeps refilling them. Both are self-limiting: an explosion with nothing beside it does
    nothing, and a Spawner only fills cells that are empty.
+7. A shaped face is something to aim off deliberately, and an Invisible brick is not drawn
+   until it has been struck. A slope nobody can see answers the shot before the player knows
+   it is there.
 
-**Sizes** combine with every behaviour and every style, with one exception: a Big brick
+**Sizes** combine with every behaviour and every style, with two exceptions: a Big brick
 cannot be Spinning, because the clearance a full-size brick needs to turn is already two
-cells in each direction and a Big one would need four.
+cells in each direction and a Big one would need four; and the three shaped faces are
+Normal-size only, because a face is built from the brick's own size and drawn about its
+node, which holds only for a brick that is one cell sitting centred.
 
 ### 4.0.2 Stacking two styles
 
@@ -327,6 +338,46 @@ The two colours are a label rather than a direction: they let a player see which
 with which before committing to the shot. Three would be ambiguous about where a jump lands. A brief cooldown stops the ball re-entering the far end immediately, and the
 ball is pushed clear of the exit along its heading so it does not arrive inside the brick it
 just came out of.
+
+### 4.12a Shaped faces — Convex, Concave and Wedge
+
+Every brick the game has had since 2020 is a rectangle, so every bounce off the field has
+been one of four answers. These three are the same brick — the same behaviour, the same
+score, the same descent — with a different outline, and the outline is the whole feature.
+
+| Face | Shape | What it does to a shot |
+|---|---|---|
+| Convex | A dome: full height in the middle, shoulders a tenth below the mid-line | Off-centre hits leave *wider* than they arrived. One of these scatters a shot across a tight field; straight up the middle still comes straight back |
+| Concave | A dish: a notch cut to a tenth *above* the mid-line | Hits near either edge are turned back toward the middle. The one brick that gathers a shot rather than spreading it, and two facing each other make a corridor |
+| Wedge | A right triangle, pointing left or right, decided when it is built | Everything reaching the slope leaves the same way whatever angle it arrived at — the closest the field comes to a brick you can aim with |
+
+Two things make this harder than it looks, and both are why the geometry is a pure,
+tested type (`EndlessIIFaceGeometry`) rather than paths written inline:
+
+- **A physics body must be convex.** `SKPhysicsBody(polygonFrom:)` takes convex paths only,
+  and a notch is not one. So a face declares its *silhouette* (drawn, may be concave)
+  separately from its *body pieces* (always convex, assembled with `SKPhysicsBody(bodies:)`
+  when there is more than one). A non-convex path is not rejected by SpriteKit — it is
+  silently mangled, and the brick then bounces off a shape nobody drew, which reads as a
+  physics bug rather than a path bug. A test asserts every piece is convex.
+- **The sprite has to hide inside the shape.** The face is drawn as a shape node filled with
+  the brick's own texture, the way Rounded does it, because the sprite behind it must keep
+  its texture — `endlessIIBehaviour(of:)` and every line in `hitBrick` identify a brick by
+  that texture and masking it would blind them. Rounded shrinks its sprite to 78% and that
+  hides a rectangle inside a rounded rectangle. It is not enough here: **a Wedge's
+  hypotenuse passes through the node's own centre, so no centred rectangle fits inside it
+  at any scale.** Each face therefore names the rectangle its sprite hides in, applied as a
+  size and an anchor point — the Big brick's trick (§8.6), for the same reason: the node
+  stays on its row centre and only the drawing moves. A test asserts all four corners of
+  that rectangle are inside the silhouette.
+
+**Normal size only, and they stack with little.** A face rebuilds the outline, the body and
+where the sprite sits, so it refuses anything that redraws the outline (Rounded), turns the
+brick (Spinning), decides where it sits (Gravity, Moving, Fixed), reads a hit against a
+rectangle (Directional) or replaces what a hit means (Portal). What is left — Flashing,
+Exploding, Spawner — touches colour, alpha and neighbours, none of which a shape cares
+about. That rule is stated once in `EndlessIIStyle.refusedByAFace` and the reference page
+derives its line from it rather than repeating it.
 
 ---
 
@@ -1058,7 +1109,7 @@ brick fading into its own place.
 | ~~Portal Paddle × Auto-Aim~~ | **Built**, to the proposed resolution: both speak in sequence - the hit still portals, and Auto-Aim aims the *re-entry* at the lowest brick worth hitting, from wherever the ball comes back in. James's alternatives (aim arrow at the top, player-chosen drop point) stay in reserve if it reads badly in play |
 | ~~Sticky Paddle × Inert Paddle~~ | **Built**, to the play-test decision: both stay active - the catch still works, but the launch leaves at the angle the *inert bounce* would have produced, sampled from the pre-step heading at the catch (§8.6) and consumed at the launch, so where the ball sits on the paddle says nothing. While both run the sticky graphic wears monochrome (grey, blended per frame from the clocks like all paddle dressing), which is how the pairing says the wall is answering |
 | Big bricks overlap the lower-limit line | Play-test screenshot: a Big brick's body extends past its row centre, so on the bottom row its lower half crosses the limit line. Options: clip the line behind oversized bricks, or accept the overlap and make sure destruction still triggers at the right moment (it does - the row centre is what is read). Cosmetic, but the line is the kill line and should stay legible |
-| New brick geometries | Concave/convex faces, triangles (one pointed side), and a 2×1 square size available to all compatible behaviours - each is a physics-body shape plus §8.6's row discipline, so each is its own careful visit. **Next round's headline** (asked for in rounds 10 and 11; round 11's turn went to the App Store rejection website and the play-test batch) |
+| ~~New brick geometries~~ | **Built** (§4.12a): Convex, Concave and Wedge, as three new styles rather than a fourth axis - so they inherit the progression ramp, the motif phases, the compatibility grid, the reference page and the recents naming without any of it being written twice. The geometry is a pure tested type: every body piece is proved convex (a concave path is silently mangled by `polygonFrom`, not rejected), and each face's sprite-hiding rectangle is proved to be inside its own silhouette (the Wedge's hypotenuse runs through the node centre, so no centred rectangle fits it at any scale). **Still open from the original row: the 2×1 square size** - the power-up brick already builds one, so the machinery exists; it wants the reserve-and-build sequence generalised out of `EndlessIIPowerUpBricks` and offered as a size |
 | Aura rework | Play-test round 11, the third Aura report: still too powerful. The decided shape: the ball *bounces off bricks normally*, and bricks adjacent to the struck one - within the aura's boundary, in front and just to the side - take **the effect of a single hit** as if the ball had hit them (multi-hits step down, specials fire their on-hit rules), rather than being destroyed outright. Aura + Giga-Ball together should equal today's Aura, and that is the intended good combo. Most of the work is routing the neighbours through `hitBrick`'s rules without the ball's contact side |
 | Auto-Aim target choice | Play-test round 11: it should skip bricks that are pointless to hit - indestructibles, anything whose hit does nothing, and bad-power-up bricks - and aim at the next nearest worth hitting. Plus a subtle graphic showing the general direction the ball is being steered (the pull-line language `drawEndlessIIPullLines` already speaks is the natural fit) |
 | Ghost Ball power-up idea | Play-test round 11, new bad power-up: the ball is invisible until it drops below the lowest brick line - you see where it lands, not where it flies. Pool/duration/conflicts undecided; visibility is a per-frame alpha rule from `update`, like all Mayhem dressing |

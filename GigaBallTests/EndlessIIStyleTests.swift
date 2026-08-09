@@ -130,10 +130,13 @@ extension EndlessIIStyleTests {
         XCTAssertFalse(EndlessIIStyle.exploding.stacksWith(.spawner))
     }
 
-    func testRoundedGoesWithEverythingElse() {
-        // It only changes the brick's outline, so it has nothing to fight over.
+    func testRoundedGoesWithEverythingThatIsNotItselfAShape() {
+        // It only changes the brick's outline, so it has nothing to fight over - until the
+        // shaped faces arrived, which change the outline too. Two answers to "what shape is
+        // this brick" is the one argument Rounded can have.
         for style in EndlessIIStyle.allCases where style != .rounded {
-            XCTAssertTrue(EndlessIIStyle.rounded.stacksWith(style), "\(style)")
+            XCTAssertEqual(EndlessIIStyle.rounded.stacksWith(style), style.isFace == false,
+                           "\(style)")
         }
     }
 

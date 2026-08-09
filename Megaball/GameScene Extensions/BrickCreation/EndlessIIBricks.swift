@@ -353,6 +353,7 @@ extension GameScene {
         if brick.childNode(withName: GameScene.roundedBrickOutlineName) != nil {
             found.append(.rounded)
         }
+        if let face = brick.endlessIIFace { found.append(face.style) }
         if endlessIISpinners.contains(where: { $0.brick === brick }) { found.append(.spinning) }
         if endlessIIFlashers.contains(where: { $0.brick === brick }) { found.append(.flashing) }
         switch brick.endlessIIRole {
@@ -396,6 +397,13 @@ extension GameScene {
             && abs(brick.anchorPoint.y - 0.5) < 0.01
         switch style {
         case .rounded: return centred
+        case .convex, .concave, .wedge:
+            // The same demand Rounded makes, plus one of its own: a shaped face is built
+            // from the brick's own size, so it has to be a brick of ordinary size sitting
+            // centred on its node. A Big brick's sprite hangs off its node and a Tiny one
+            // is a quarter of a cell - shaping either would put the silhouette somewhere
+            // other than where the brick appears to be
+            return centred && isOrdinaryCellSized(brick)
         case .spinning: return centred && isOrdinaryCellSized(brick)
         case .fixed:
             // Ordinary size only, for the same reason as Gravity: only some quarters of a
@@ -437,7 +445,10 @@ extension GameScene {
     /// Called after the row's arrival animation has been set up, because that animation
     /// resets the colour blend on every normal brick and would undo the tinting here.
     func applyEndlessIIBehaviours(to bricks: [SKNode]) {
-        applyEndlessIIStyles([.rounded, .flashing], to: bricks)
+        applyEndlessIIStyles([.rounded, .flashing, .convex, .concave, .wedge], to: bricks)
+        // The shapes go in the appearance pool beside Rounded, which is the pool for
+        // "changes how the brick answers a hit" - and a style has to be in a pool to
+        // exist at all (§8.6), which is the trap this line exists to avoid
     }
 
     /// Offers each brick a style from a pool, at whatever rate the run's depth calls for.
@@ -491,6 +502,8 @@ extension GameScene {
         case .spawner: makeSpawner(brick)
         case .portal: makePortal(brick)
         case .fixed: makeFixed(brick)
+        case .convex, .concave, .wedge:
+            if let face = style.face { makeFace(face, on: brick) }
         }
     }
 
@@ -630,6 +643,7 @@ extension GameScene {
         tickEndlessIIRoles(delta)
         tickEndlessIIRescue(delta)
         refreshEndlessIIRoundedFaces()
+        refreshEndlessIIShapedFaces()
     }
 
     /// Clears the tracked bricks. For starting a run, not for a brick being destroyed -

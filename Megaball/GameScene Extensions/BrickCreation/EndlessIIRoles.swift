@@ -38,6 +38,21 @@ enum EndlessIIStyle: String, CaseIterable {
     case gravity, moving, directional, exploding, spawner, portal
     /// Anchors itself where it is when first struck (§4.11a).
     case fixed
+    /// The shaped faces (§12.0's brick geometries) - a dome, a notch and a right triangle.
+    /// They change where the ball goes and nothing else about the brick.
+    case convex, concave, wedge
+
+    /// The shape this style is, if it is one. See EndlessIIFaces.
+    var face: EndlessIIFace? {
+        switch self {
+        case .convex: return .convex
+        case .concave: return .concave
+        case .wedge: return .wedge
+        default: return nil
+        }
+    }
+
+    var isFace: Bool { face != nil }
 
     /// Whether this style contradicts a behaviour, rather than merely being strange with it.
     func suits(_ behaviour: EndlessIIBehaviour) -> Bool {
@@ -68,6 +83,11 @@ enum EndlessIIStyle: String, CaseIterable {
             // It needs a first hit to anchor it and a second to destroy it, so a behaviour
             // that never takes damage would leave it as an ordinary brick that never fixes
             return behaviour != .indestructibleAlways
+        case .convex, .concave, .wedge:
+            // Any behaviour but Invisible. An invisible brick is not drawn until it is
+            // struck, so a shaped one would be answering hits with a slope nobody can see -
+            // and the whole appeal of a shaped brick is aiming off it deliberately
+            return behaviour != .invisible
         }
     }
 
@@ -89,9 +109,29 @@ enum EndlessIIStyle: String, CaseIterable {
     /// all. See §4.0.2 of the specification.
     func stacksWith(_ other: EndlessIIStyle) -> Bool {
         guard self != other else { return false }
+
+        if isFace || other.isFace {
+            guard isFace != other.isFace else { return false }
+            // Two shapes are two answers to the same question
+            return EndlessIIStyle.refusedByAFace.contains(isFace ? other : self) == false
+        }
+
         let pair: Set<EndlessIIStyle> = [self, other]
         return EndlessIIStyle.incompatiblePairs.contains(pair) == false
     }
+
+    /// What a shaped face cannot share a brick with, and why - stated as a rule rather than
+    /// as thirty pairs, because it is one rule.
+    ///
+    /// A face rebuilds three things at once: the outline that is drawn, the physics body,
+    /// and where the sprite hides. So it cannot live with anything that redraws the outline
+    /// (Rounded), turns the brick (Spinning), decides where it sits (Gravity, Moving,
+    /// Fixed), reads a hit against a rectangle (Directional), or replaces what a hit means
+    /// entirely (Portal). What is left - Flashing, Exploding, Spawner - touches colour,
+    /// alpha and neighbours, none of which the shape cares about.
+    static let refusedByAFace: Set<EndlessIIStyle> = [
+        .rounded, .spinning, .gravity, .moving, .fixed, .directional, .portal,
+    ]
 
     static let incompatiblePairs: [Set<EndlessIIStyle>] = [
         [.spinning, .moving],       // both want to say where the brick is
@@ -162,6 +202,20 @@ extension SKNode {
         set {
             if userData == nil { userData = NSMutableDictionary() }
             userData?[SKNode.plainKey] = newValue
+        }
+    }
+
+    /// The shape this brick was given, if it was given one. Recorded rather than measured:
+    /// the silhouette is a child node whose path could be read back, but a stored answer is
+    /// what lets `endlessIIStyles(on:)` name the shape without doing geometry.
+    var endlessIIFace: EndlessIIFace? {
+        get {
+            guard let raw = userData?["endlessIIFace"] as? String else { return nil }
+            return EndlessIIFace(rawValue: raw)
+        }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?["endlessIIFace"] = newValue?.rawValue
         }
     }
 

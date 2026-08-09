@@ -120,6 +120,9 @@ enum BrickTypeCatalogue {
         case .spawner: return "Spawner"
         case .portal: return "Portal"
         case .fixed: return "Fixed"
+        case .convex: return "Convex"
+        case .concave: return "Concave"
+        case .wedge: return "Wedge"
         }
     }
 
@@ -128,9 +131,12 @@ enum BrickTypeCatalogue {
     /// The ones that only change how a brick looks or bounces first, then the ones that change
     /// what the field does. A player reading down the page meets the small ideas before the
     /// large ones, which is also the order a run introduces them in.
-    static let styleOrder: [EndlessIIStyle] = [.rounded, .spinning, .flashing, .fixed,
+    static let styleOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge,
+                                               .spinning, .flashing, .fixed,
                                                .gravity, .moving, .directional,
                                                .exploding, .spawner, .portal]
+    // The three shapes sit with Rounded, because they are the same idea carried further:
+    // the brick is not a rectangle, and the bounce says so
 
     private static func description(of style: EndlessIIStyle) -> String {
         switch style {
@@ -154,6 +160,12 @@ enum BrickTypeCatalogue {
             return "The opposite of Exploding: when it is destroyed it fills the empty cells around it with ordinary bricks. Never with another Spawner, and only where a cell is already empty, so it cannot run away with itself."
         case .portal:
             return "Struck rather than damaged. The ball entering one leaves from the other, keeping its speed. Alone it is a lift to the top of the field; in a pair it is a doorway, and it works both ways - the two colours say which end pairs with which, not which end is the way in."
+        case .convex:
+            return "A dome. A ball arriving anywhere but the middle leaves wider than it came in, so one of these in a tight field scatters a shot across it. Straight up the centre still comes straight back."
+        case .concave:
+            return "A dish. The notch in its face turns hits near either edge back toward the middle rather than away, which makes it the one brick that gathers a shot instead of spreading it - and a pair of them facing each other is a corridor."
+        case .wedge:
+            return "A right triangle: three sides, one of them a slope. Everything that reaches the slope leaves the same way, whatever angle it arrived at, so a Wedge is the closest the field comes to a brick you can aim with. Which way it points is decided when it is built."
         }
     }
 
@@ -211,6 +223,10 @@ enum BrickTypeCatalogue {
             // Both the room it looks for and the position it measures from assume a brick
             // sitting in exactly one cell
             return "Tiny and Normal"
+        case .convex, .concave, .wedge:
+            // The silhouette is built from the brick's own size and drawn about its node,
+            // which only holds for a brick that is one ordinary cell sitting centred
+            return "Normal"
         case .rounded, .flashing, .directional, .exploding, .spawner, .portal:
             return "Any"
         }
