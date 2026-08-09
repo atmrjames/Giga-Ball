@@ -169,10 +169,20 @@ rejection.
 room, otherwise 1.4): safety paddle, Drift, Ghost Ball, paddle surface shapes, the
 round-11 twist candidates (No Standard Bricks, Disguise), special-day levels, ring glow.
 
-**James's side, running in parallel:** deploy website/ and set the two App Store
-Connect URLs, update the App Privacy questionnaire (AdMob's declarations are stale),
-resubmit 1.2; the domain email; §8.5 art and sound; the three App Store Connect boards;
-Quick Start Guide; TestFlight for friends and family.
+**The website lives in its own repository**, github.com/atmrjames/Giga-Ball-Website,
+served by GitHub Pages at giga-ball.app from the branch root. It was drafted in this
+repo under `website/` and moved out once it was deployed, so there is one copy rather
+than two that can drift — edit it by cloning that repo, not here. Two things about it
+are worth remembering, because both cost a rebuild to discover: **Pages serves the
+branch root**, so the pages must sit at the top level and not in a folder (the first
+deploy 404'd for exactly that reason, which is the fault App Review rejected 1.2 for);
+and the `CNAME` file at the root is what holds the custom domain.
+
+**James's side, running in parallel:** tick Enforce HTTPS once GitHub finishes issuing
+the certificate, then set the two App Store Connect URLs, update the App Privacy
+questionnaire (AdMob's declarations are stale) and resubmit 1.2; the domain email;
+§8.5 art and sound; the three App Store Connect boards; Quick Start Guide; TestFlight
+for friends and family.
 
 ### Foundations
 
