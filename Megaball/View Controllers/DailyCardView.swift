@@ -36,10 +36,20 @@ final class DailyCardView: UIView {
         build()
     }
 
+    private let detailsCard = UIView()
+    private let resultCard = UIView()
+    private let column = UIStackView()
+
     private func build() {
-        backgroundColor = UIColor(white: 1, alpha: 0.07)
-        layer.cornerRadius = 18
         translatesAutoresizingMaskIntoConstraints = false
+
+        for card in [detailsCard, resultCard] {
+            card.backgroundColor = UIColor(white: 1, alpha: 0.07)
+            card.layer.cornerRadius = 18
+        }
+        // Two containers, not one (play-test round 16): the day's rules are one thing to
+        // read and what you scored on it is another. They travel together because they
+        // are both this day's, which is what makes them one page of the pager
 
         for label in [modeLabel, levelLabel, resultLabel] {
             label.textAlignment = .center
@@ -62,17 +72,42 @@ final class DailyCardView: UIView {
         twistsStack.alignment = .center
 
         stack.axis = .vertical
-        stack.spacing = 18
+        stack.spacing = 12
+        stack.alignment = .fill
         stack.translatesAutoresizingMaskIntoConstraints = false
-        [modeLabel, levelImageView, levelLabel, twistsStack, resultLabel]
+        [modeLabel, levelImageView, levelLabel, twistsStack]
             .forEach { stack.addArrangedSubview($0) }
-        addSubview(stack)
+        stack.setCustomSpacing(18, after: levelLabel)
+        detailsCard.addSubview(stack)
+        // Tighter at the top than it was: the mode's name, its picture and the level's
+        // line belong together as a heading, and only the twists below them need air
+
+        resultLabel.translatesAutoresizingMaskIntoConstraints = false
+        resultCard.addSubview(resultLabel)
+
+        column.axis = .vertical
+        column.spacing = 12
+        column.translatesAutoresizingMaskIntoConstraints = false
+        column.addArrangedSubview(detailsCard)
+        column.addArrangedSubview(resultCard)
+        addSubview(column)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: 18),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -18),
+            column.topAnchor.constraint(equalTo: topAnchor),
+            column.leadingAnchor.constraint(equalTo: leadingAnchor),
+            column.trailingAnchor.constraint(equalTo: trailingAnchor),
+            column.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+
+            stack.topAnchor.constraint(equalTo: detailsCard.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: detailsCard.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: detailsCard.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: detailsCard.bottomAnchor, constant: -18),
+
+            resultLabel.topAnchor.constraint(equalTo: resultCard.topAnchor, constant: 14),
+            resultLabel.leadingAnchor.constraint(equalTo: resultCard.leadingAnchor, constant: 16),
+            resultLabel.trailingAnchor.constraint(equalTo: resultCard.trailingAnchor, constant: -16),
+            resultLabel.bottomAnchor.constraint(equalTo: resultCard.bottomAnchor, constant: -14),
+
             levelImageView.heightAnchor.constraint(equalToConstant: 72),
         ])
     }
@@ -135,11 +170,10 @@ final class DailyCardView: UIView {
             pair.axis = .vertical
             pair.spacing = 3
             pair.alignment = .center
-            if let twist {
-                pair.isUserInteractionEnabled = true
-                pair.addGestureRecognizer(DailyTwistTap(twist: twist, target: self,
-                                                        action: #selector(twistWasTapped)))
-            }
+            _ = twist
+            // Not tappable here (play-test round 16): the blurb is already printed
+            // underneath. It is the *pause* screen, which shows only icons and names,
+            // where a twist needs explaining
             twistsStack.addArrangedSubview(pair)
         }
     }
@@ -156,10 +190,10 @@ final class DailyCardView: UIView {
                             isToday: Bool, rank: Int?) {
         guard let record, record.attemptCount > 0 else {
             resultLabel.attributedText = nil
-            resultLabel.isHidden = true
+            resultCard.isHidden = true
             return
         }
-        resultLabel.isHidden = false
+        resultCard.isHidden = false
 
         let unit = mode == .classic ? "" : "m"
         let headline = record.posted
@@ -232,10 +266,13 @@ final class DailyCardCell: UICollectionViewCell {
         contentView.addSubview(card)
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor),
-            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            card.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 26),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -26),
         ])
+        // Hugging the top rather than filling the page: pinned top *and* bottom, the card
+        // stretched to whatever height the page had and spread its contents down the
+        // screen (play-test round 16's screenshot)
         // The inset lives on the cell rather than on the collection view, so each page is
         // a full screen wide - which is what makes paging land on whole days - while the
         // card inside it keeps the margins the screen has always had

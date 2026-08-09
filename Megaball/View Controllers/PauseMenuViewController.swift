@@ -61,6 +61,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     @IBOutlet var newItemsLabel: UILabel!
     
     let livesLabel = UILabel()
+    let signedOutLabel = UILabel()
+    private var livesUnderHighscore: NSLayoutConstraint!
+    private var livesUnderScore: NSLayoutConstraint!
+    private var summaryUnderStats: NSLayoutConstraint!
     // Added in code rather than the storyboard: the pause screen's labels are all wired
     // through outlets and constraints there, and adding one more by hand risks the
     // layout of a screen that is otherwise working
@@ -117,13 +121,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NSLayoutConstraint.activate([
             runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             runStatsLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
-                                               constant: 18),
+                                               constant: 34),
             moreStatsButton.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             moreStatsButton.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor,
                                                  constant: 8),
-            // Room between the blocks (play-test round 15 asked for it): the score, the
-            // stats list and the daily summary each get air, rather than the stats being
-            // squeezed against the height above them
+            // Room between the blocks (play-test rounds 15 and 16 both asked for it): the
+            // score, the stats list and the daily summary each get air, rather than the
+            // stats being squeezed against the height above them
         ])
     }
 
@@ -182,10 +186,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
               let summary = InGameRecents.shared.runSummary else {
             runStatsLabel.isHidden = true
             moreStatsButton.isHidden = true
+            summaryUnderStats.isActive = false
             return
         }
         runStatsLabel.isHidden = false
         moreStatsButton.isHidden = false
+        summaryUnderStats.isActive = true
         let text = NSMutableAttributedString()
         let items: [(String, String, Int)] = [
             ("rectangle.fill", "Paddle hits", summary.paddleHits),
@@ -312,21 +318,58 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         dailySummaryLabel.isHidden = true
         containterView.addSubview(dailySummaryLabel)
 
+        signedOutLabel.translatesAutoresizingMaskIntoConstraints = false
+        signedOutLabel.textAlignment = .center
+        signedOutLabel.numberOfLines = 0
+        signedOutLabel.font = .systemFont(ofSize: 12)
+        signedOutLabel.textColor = UIColor(white: 1, alpha: 0.38)
+        signedOutLabel.text = GameCenterHandler.notSignedInNote
+        signedOutLabel.isHidden = true
+        containterView.addSubview(signedOutLabel)
+
+        summaryUnderStats = dailySummaryLabel.topAnchor.constraint(
+            greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 20)
+
+        livesUnderHighscore = livesLabel.topAnchor.constraint(
+            equalTo: highscoreLabel.bottomAnchor, constant: 6)
+        livesUnderScore = livesLabel.topAnchor.constraint(
+            equalTo: scoreLabel.bottomAnchor, constant: 6)
+        // Which of the two applies is decided in updateLivesLabel: the daily prints no
+        // high score, and a label with no text still holds its place, so hanging the
+        // lives line off it left "Last ball" stranded a third of a screen below the
+        // score it belongs to (play-test round 16's screenshot)
+
         NSLayoutConstraint.activate([
+            signedOutLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            signedOutLabel.topAnchor.constraint(equalTo: dailySummaryLabel.bottomAnchor,
+                                                constant: 14),
+            signedOutLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
+                                                        containterView.leadingAnchor,
+                                                    constant: 30),
+            signedOutLabel.trailingAnchor.constraint(lessThanOrEqualTo:
+                                                        containterView.trailingAnchor,
+                                                     constant: -30),
+            // Last line of the score block, under everything else it belongs with. The
+            // summary above it is hidden outside the daily, and a hidden label still holds
+            // its place, so this lands under the stats either way
+
             livesLabel.centerXAnchor.constraint(equalTo: highscoreLabel.centerXAnchor),
-            livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16),
+            // Tight to the score it belongs with (play-test round 16) - the air goes
+            // below it, between the run's numbers and the day's rules
             dailySummaryLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             dailySummaryLabel.topAnchor.constraint(
-                greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 20),
+                greaterThanOrEqualTo: livesLabel.bottomAnchor, constant: 34),
             {
                 let preferred = dailySummaryLabel.topAnchor.constraint(
-                    equalTo: livesLabel.bottomAnchor, constant: 24)
+                    equalTo: livesLabel.bottomAnchor, constant: 34)
                 preferred.priority = .defaultHigh
                 return preferred
             }(),
-            // Under the lives line by preference, but never over the game-over stats
-            // list (grown to labelled rows in round 11) - the inequality wins when the
-            // stats and their More Stats button need the room
+            // A gap under the lives line, then the day's rules (play-test round 16). Where
+            // there are run stats they sit in between and push this down - but only where
+            // there are: the constraint that makes room for them is switched on with them,
+            // because hidden labels still hold their place and this screen was leaving a
+            // third of itself blank for a stats list the daily never shows
             dailySummaryLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
                                                         containterView.leadingAnchor,
                                                        constant: 30),
@@ -341,6 +384,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // line of the same block rather than something bolted on
 
     func updateLivesLabel() {
+        // The daily leaves the high score blank, so the lives line follows the score
+        // itself there and the "Best" block everywhere else
+        livesUnderHighscore.isActive = !isDailyChallenge
+        livesUnderScore.isActive = isDailyChallenge
+
         guard sender == "Pause" else {
             livesLabel.isHidden = true
             return
@@ -364,6 +412,33 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // Only while paused mid-game. On game over the count is zero and saying so is just
     // rubbing it in, and endless mode has a single life and no counter anywhere else
 
+    /// Tells a signed-out player, once their run is over, that the figure above them went
+    /// no further than this device (play-test round 16).
+    ///
+    /// Only at the end of a run, and only where there was a board to miss. Mid-pause it
+    /// would be nagging about something that has not happened yet, and a player who has
+    /// never signed in and never intends to should not read it on every screen - so it
+    /// appears exactly where the score would otherwise have been posted.
+    func updateSignedOutNote() {
+        signedOutLabel.isHidden = sender == "Pause" || GameCenterHandler.isAuthenticated
+    }
+
+    /// Explains a twist, tapped on the pause screen.
+    ///
+    /// Here rather than on the briefing card (play-test round 16): the briefing prints
+    /// each twist's blurb underneath it already, and this screen shows only an icon and a
+    /// name - which is exactly where "what does Fog of War do again" gets asked.
+    @objc func dailyTwistsTapped() {
+        guard let challenge = DailyChallengeSession.shared.active,
+              challenge.twists.isEmpty == false else { return }
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+
+        let body = challenge.twists
+            .map { "\($0.displayName)\n\($0.blurb)" }
+            .joined(separator: "\n\n")
+        GigaBallAlert.show(on: self, title: "Today's Twists", message: body)
+    }
+
     /// The compact daily block: the day, then each twist by icon and name.
     func updateDailySummary() {
         guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
@@ -371,6 +446,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             return
         }
         dailySummaryLabel.isHidden = false
+        if dailySummaryLabel.gestureRecognizers?.isEmpty ?? true {
+            dailySummaryLabel.isUserInteractionEnabled = true
+            dailySummaryLabel.addGestureRecognizer(
+                UITapGestureRecognizer(target: self, action: #selector(dailyTwistsTapped)))
+        }
 
         let summary = NSMutableAttributedString(
             string: "DAILY CHALLENGE — "
@@ -661,6 +741,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         updateLivesLabel()
         updateRunStatsLabel()
         updateDailySummary()
+        updateSignedOutNote()
 
         newItemsLabel.isHidden = true
         if sender == "Pause" {
@@ -760,13 +841,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
             scoreLabelTitle.text = "Score"
             scoreLabel.text = "\(score)"
-            if sender != "Pause" && numberOfLevels <= 1 {
+            if sender != "Pause" {
                 startTally(to: score, suffix: "")
             }
-            // Single Level Mode only. A level inside a pack is one of many and its score is
-            // carried into the next one, so counting it up would be counting up a running
-            // total that has not finished running - where a single level is the whole result,
-            // the same as a run's height is
+            // Every ending, not only Single Level Mode (play-test round 16: "the game over
+            // screen should tally like the other screens do"). A pack's total was held back
+            // because a level inside a run is one of many and its score carries into the
+            // next - but this screen is only reached when there is no next: the run is over,
+            // or the pack is complete. Mid-run counting stays where it belongs, on the
+            // level summary between levels
 
             if isDailyChallenge {
                 highscoreLabelTitle.text = ""

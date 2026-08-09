@@ -15,6 +15,15 @@ final class GameCenterHandler: NSObject {
     static var isAuthenticated: Bool {
         return GKLocalPlayer.local.isAuthenticated
     }
+
+    /// What a screen says when it would have posted a score and could not (play-test round
+    /// 16: a player who is not signed in has no way of knowing their runs are going nowhere).
+    ///
+    /// Deliberately a sentence rather than a warning. Nothing is broken and nothing is lost -
+    /// the game plays and the numbers are kept - so this belongs in the same quiet grey as
+    /// the rest of the small print, not behind an alert. Written once here so the game-over
+    /// screen and the daily briefing cannot end up phrasing it two different ways.
+    static let notSignedInNote = "Not signed in to Game Center · scores stay on this device"
     var viewController: UIViewController?
     
     override init() {

@@ -392,12 +392,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         info.addTarget(self, action: #selector(swipeInfoTapped), for: .touchUpInside)
         cell.contentView.addSubview(info)
 
+        let title = cell.settingDescription.text ?? ""
+        let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
+        let written = (title as NSString).size(withAttributes: [.font: font]).width
+        // Measured rather than anchored: the description and state labels share a width
+        // constraint, so the description's *frame* ends near the middle of the row while
+        // its words end wherever they end. Anchoring to either edge put the button in
+        // open space (play-test round 16's screenshot); measuring the text puts it
+        // immediately after the last letter, which is where a footnote belongs
+
         NSLayoutConstraint.activate([
-            info.trailingAnchor.constraint(equalTo: cell.settingState.leadingAnchor,
-                                           constant: -6),
-            info.centerYAnchor.constraint(equalTo: cell.settingState.centerYAnchor),
-            // Level with the row's own text rather than with the cell: the card inside
-            // the cell is inset, so the cell's centre is not the row's centre
+            info.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
+                                          constant: written + 2),
+            info.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
             info.widthAnchor.constraint(equalToConstant: 44),
             info.heightAnchor.constraint(equalToConstant: 44),
         ])
@@ -410,12 +417,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
     /// What the swipe-up gesture is for, said in the words the play test asked for.
     func explainSwipeUpToPause() {
-        let notice = UIAlertController(
-            title: "Swipe Up To Pause",
-            message: "Swipe up in game to pause for a breather, or to reach settings and the reference pages.",
-            preferredStyle: .alert)
-        notice.addAction(UIAlertAction(title: "Got it", style: .default))
-        present(notice, animated: true)
+        GigaBallAlert.show(
+            on: self, title: "Swipe Up To Pause",
+            message: "Swipe up in game to pause for a breather, or to reach settings and the reference pages.")
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

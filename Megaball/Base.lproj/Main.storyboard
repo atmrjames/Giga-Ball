@@ -1593,7 +1593,7 @@ U N L O C K E D</string>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="adf-Kn-psG">
                                         <rect key="frame" x="0.0" y="118" width="150" height="34"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="34" id="Pbw-WU-oui"/>
+                                            <constraint firstAttribute="height" constant="44" id="Pbw-WU-oui"/>
                                         </constraints>
                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
                                         <state key="normal" title="Cancel">
@@ -1606,7 +1606,7 @@ U N L O C K E D</string>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="aNp-JK-Qt8">
                                         <rect key="frame" x="150" y="118" width="150" height="34"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="34" id="h3r-l8-2A9"/>
+                                            <constraint firstAttribute="height" constant="44" id="h3r-l8-2A9"/>
                                         </constraints>
                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
                                         <state key="normal" title="OK">
@@ -1619,7 +1619,7 @@ U N L O C K E D</string>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4wM-81-l84">
                                         <rect key="frame" x="20" y="118" width="260" height="34"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="34" id="i9c-aV-ZoG"/>
+                                            <constraint firstAttribute="height" constant="44" id="i9c-aV-ZoG"/>
                                         </constraints>
                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
                                         <state key="normal" title="OK">
@@ -1632,22 +1632,22 @@ U N L O C K E D</string>
                                 </subviews>
                                 <color key="backgroundColor" red="0.87058823529411766" green="0.87058823529411766" blue="0.87058823529411766" alpha="1" colorSpace="deviceRGB"/>
                                 <constraints>
-                                    <constraint firstAttribute="centerX" secondItem="adf-Kn-psG" secondAttribute="trailing" id="3SG-HB-e3h"/>
-                                    <constraint firstItem="adf-Kn-psG" firstAttribute="leading" secondItem="YOj-vh-rKH" secondAttribute="leading" id="5K5-t4-Q5z"/>
-                                    <constraint firstAttribute="bottom" secondItem="adf-Kn-psG" secondAttribute="bottom" constant="10" id="68p-bN-CXO"/>
-                                    <constraint firstAttribute="bottom" secondItem="aNp-JK-Qt8" secondAttribute="bottom" constant="10" id="6Pg-Qn-KEI"/>
+                                    <constraint firstAttribute="centerX" secondItem="adf-Kn-psG" secondAttribute="trailing" constant="5" id="3SG-HB-e3h"/>
+                                    <constraint firstItem="adf-Kn-psG" firstAttribute="leading" secondItem="YOj-vh-rKH" secondAttribute="leading" constant="16" id="5K5-t4-Q5z"/>
+                                    <constraint firstAttribute="bottom" secondItem="adf-Kn-psG" secondAttribute="bottom" constant="20" id="68p-bN-CXO"/>
+                                    <constraint firstAttribute="bottom" secondItem="aNp-JK-Qt8" secondAttribute="bottom" constant="20" id="6Pg-Qn-KEI"/>
                                     <constraint firstItem="4wM-81-l84" firstAttribute="centerX" secondItem="YOj-vh-rKH" secondAttribute="centerX" id="IPR-8q-D2m"/>
-                                    <constraint firstItem="aNp-JK-Qt8" firstAttribute="leading" secondItem="adf-Kn-psG" secondAttribute="trailing" id="KBZ-y8-HR4"/>
-                                    <constraint firstAttribute="bottom" secondItem="4wM-81-l84" secondAttribute="bottom" constant="10" id="XgQ-AH-fvg"/>
+                                    <constraint firstItem="aNp-JK-Qt8" firstAttribute="leading" secondItem="adf-Kn-psG" secondAttribute="trailing" constant="10" id="KBZ-y8-HR4"/>
+                                    <constraint firstAttribute="bottom" secondItem="4wM-81-l84" secondAttribute="bottom" constant="20" id="XgQ-AH-fvg"/>
                                     <constraint firstItem="NKD-Ty-8ix" firstAttribute="top" secondItem="8ou-pw-LAs" secondAttribute="bottom" constant="10" id="ZaA-LC-DN1"/>
                                     <constraint firstItem="8ou-pw-LAs" firstAttribute="leading" secondItem="YOj-vh-rKH" secondAttribute="leading" constant="10" id="goS-rT-xy1"/>
                                     <constraint firstAttribute="trailing" secondItem="8ou-pw-LAs" secondAttribute="trailing" constant="10" id="pM2-9Q-wJ0"/>
                                     <constraint firstAttribute="width" constant="300" id="rLC-Wc-r6v"/>
                                     <constraint firstItem="NKD-Ty-8ix" firstAttribute="centerX" secondItem="YOj-vh-rKH" secondAttribute="centerX" id="sba-RG-o09"/>
-                                    <constraint firstItem="4wM-81-l84" firstAttribute="leading" secondItem="YOj-vh-rKH" secondAttribute="leading" constant="20" id="uL7-Ae-KAk"/>
-                                    <constraint firstItem="aNp-JK-Qt8" firstAttribute="top" secondItem="NKD-Ty-8ix" secondAttribute="bottom" constant="15" id="v2f-iV-jzt"/>
-                                    <constraint firstItem="8ou-pw-LAs" firstAttribute="top" secondItem="YOj-vh-rKH" secondAttribute="top" constant="10" id="x2A-LS-BHp"/>
-                                    <constraint firstAttribute="trailing" secondItem="aNp-JK-Qt8" secondAttribute="trailing" id="z9S-ct-ePZ"/>
+                                    <constraint firstItem="4wM-81-l84" firstAttribute="leading" secondItem="YOj-vh-rKH" secondAttribute="leading" constant="16" id="uL7-Ae-KAk"/>
+                                    <constraint firstItem="aNp-JK-Qt8" firstAttribute="top" secondItem="NKD-Ty-8ix" secondAttribute="bottom" constant="22" id="v2f-iV-jzt"/>
+                                    <constraint firstItem="8ou-pw-LAs" firstAttribute="top" secondItem="YOj-vh-rKH" secondAttribute="top" constant="22" id="x2A-LS-BHp"/>
+                                    <constraint firstAttribute="trailing" secondItem="aNp-JK-Qt8" secondAttribute="trailing" constant="16" id="z9S-ct-ePZ"/>
                                 </constraints>
                             </view>
                         </subviews>

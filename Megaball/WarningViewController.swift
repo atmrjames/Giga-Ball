@@ -80,7 +80,51 @@ class WarningViewController: UIViewController {
             addParallaxToView()
         }
         updateLabels()
+        wearTheGameDress()
         showAnimate()
+    }
+
+    /// Dresses the storyboard's warning sheet as a `GigaBallAlert`.
+    ///
+    /// The play test asked for one pop-up style across the app (round 16), and this screen
+    /// was the other one: a pale grey card with pink and blue system buttons. Restyled here
+    /// rather than replaced, because everything it does - resetting the ball, resetting the
+    /// data, quitting to the menu - hangs off storyboard actions and notifications that
+    /// work. What it looks like is the only thing that was wrong with it.
+    private func wearTheGameDress() {
+        warningView.backgroundColor = UIColor(white: 1, alpha: 0.08)
+        warningView.layer.cornerRadius = 20
+        warningView.layer.borderWidth = 1
+        warningView.layer.borderColor = UIColor(white: 1, alpha: 0.12).cgColor
+
+        warningTitleLabel.font = .systemFont(ofSize: 22, weight: .black)
+        warningTitleLabel.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        warningTitleLabel.applyGigaBallGlow(radius: 10, opacity: 0.35)
+
+        warningTextLabel.font = .systemFont(ofSize: 15)
+        warningTextLabel.textColor = UIColor(white: 1, alpha: 0.8)
+
+        let ink = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+        for button in [leftButton, centerButton] {
+            button?.setTitleColor(ink, for: .normal)
+            button?.backgroundColor = UIColor(white: 0.92, alpha: 1)
+            button?.titleLabel?.font = .boldSystemFont(ofSize: 17)
+        }
+        rightButton.setTitleColor(ink, for: .normal)
+        rightButton.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        rightButton.titleLabel?.font = .boldSystemFont(ofSize: 17)
+        // Green does the thing, pale steps back - the same pairing the new alert uses, so
+        // the OK on this sheet and the Play on that one read as the same button
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        for button in [leftButton, centerButton, rightButton] {
+            guard let button, button.isHidden == false else { continue }
+            button.layer.cornerRadius = button.bounds.height/2
+        }
+        // Pills, worked out from the height the storyboard gives them rather than assumed -
+        // the buttons on this sheet are not the same height on every device
     }
     
     func setBlur() {

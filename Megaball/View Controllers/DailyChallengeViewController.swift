@@ -69,6 +69,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     // the date says Practice when it applies, and the play press itself warns when a run
     // will not post
     private let leaderboardButton = UIButton(type: .custom)
+    private let signedOutLabel = UILabel()
     private let testClockLabel = UILabel()
     private var developerResetButton: UIButton?
     private var countdownTimer: Timer?
@@ -245,6 +246,19 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         countdownLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(countdownLabel)
 
+        signedOutLabel.translatesAutoresizingMaskIntoConstraints = false
+        signedOutLabel.textAlignment = .center
+        signedOutLabel.numberOfLines = 0
+        signedOutLabel.font = .systemFont(ofSize: 12)
+        signedOutLabel.textColor = UIColor(white: 1, alpha: 0.38)
+        signedOutLabel.text = GameCenterHandler.notSignedInNote
+        signedOutLabel.isHidden = true
+        view.addSubview(signedOutLabel)
+        // Under the title, where a subtitle would go. The leaderboard button is already
+        // missing from the bottom row for a signed-out player, and its absence explains
+        // nothing (play-test round 16) - this is the screen's whole point being quietly
+        // qualified, so it belongs with the heading and not in an alert
+
         let close = UIButton(type: .custom)
         close.setImage(UIImage(named: "ButtonClose"), for: .normal)
         close.setImage(UIImage(named: "ButtonCloseHighlighted"), for: .highlighted)
@@ -316,7 +330,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
-            days.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 22),
+            signedOutLabel.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 6),
+            signedOutLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+                                                    constant: 34),
+            signedOutLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor,
+                                                     constant: -34),
+
+            days.topAnchor.constraint(equalTo: signedOutLabel.bottomAnchor, constant: 16),
+            // Hung off the note rather than the title: hidden, the note has no height, so
+            // the pager sits 22pt under the title exactly as it did before
             days.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             days.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             days.bottomAnchor.constraint(equalTo: clockRow.topAnchor, constant: -10),
@@ -429,7 +451,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         forwardArrow.isEnabled = canGoForward
 
         leaderboardButton.isHidden = GKLocalPlayer.local.isAuthenticated == false
-        // The same rule the level screens use: no Game Center, no leaderboard button.
+        signedOutLabel.isHidden = GKLocalPlayer.local.isAuthenticated
+        // The same rule the level screens use: no Game Center, no leaderboard button - and
+        // now a line saying why, because the button's absence said nothing.
         // The boards themselves are App Store Connect work (James's side, §7)
 
         let offset = DailyChallengeSession.shared.testDayOffset
@@ -544,13 +568,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
             isToday: viewedOffset == 0,
             mode: challenge.mode) {
-            let alert = UIAlertController(title: "Free play", message: notice,
-                                          preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            alert.addAction(UIAlertAction(title: "Play", style: .default) { [weak self] _ in
-                self?.startRun(challenge)
-            })
-            present(alert, animated: true)
+            GigaBallAlert.show(on: self, title: "Free play", message: notice,
+                                dismissTitle: "Cancel", confirmTitle: "Play") {
+                [weak self] in self?.startRun(challenge)
+            }
             // The promise is still made before the run starts (§6) - but as a pop-up on
             // exactly the presses it applies to, instead of a banner shouting at all of
             // them (play-test round 5). A scoring attempt goes straight through
@@ -738,9 +759,6 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
     /// than remembered.
     func explain(_ twist: DailyTwist) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
-        let notice = UIAlertController(title: twist.displayName, message: twist.blurb,
-                                       preferredStyle: .alert)
-        notice.addAction(UIAlertAction(title: "Got it", style: .default))
-        present(notice, animated: true)
+        GigaBallAlert.show(on: self, title: twist.displayName, message: twist.blurb)
     }
 }
