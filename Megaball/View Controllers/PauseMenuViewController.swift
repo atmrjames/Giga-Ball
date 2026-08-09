@@ -433,10 +433,27 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
               challenge.twists.isEmpty == false else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
 
-        let body = challenge.twists
-            .map { "\($0.displayName)\n\($0.blurb)" }
-            .joined(separator: "\n\n")
-        GigaBallAlert.show(on: self, title: "Today's Twists", message: body)
+        let centred = NSMutableParagraphStyle()
+        centred.alignment = .center
+
+        let body = NSMutableAttributedString()
+        for (position, twist) in challenge.twists.enumerated() {
+            if position > 0 { body.append(NSAttributedString(string: "\n\n")) }
+            body.append(DailyTwist.badgedLine(icon: twist.icon, name: twist.displayName,
+                                              font: .boldSystemFont(ofSize: 16),
+                                              colour: .white))
+            body.append(NSAttributedString(
+                string: "\n\(twist.blurb)",
+                attributes: [.font: UIFont.systemFont(ofSize: 15),
+                             .foregroundColor: UIColor(white: 1, alpha: 0.75)]))
+        }
+        body.addAttribute(.paragraphStyle, value: centred,
+                          range: NSRange(location: 0, length: body.length))
+        // The badge in front of the name, as every other screen that names a twist does
+        // (play-test round 17) - the briefing, the pause summary and the level intro all
+        // read icon-then-name, and the explainer was the one place that did not
+
+        GigaBallAlert.show(on: self, title: "Today's Twists", attributed: body)
     }
 
     /// The compact daily block: the day, then each twist by icon and name.

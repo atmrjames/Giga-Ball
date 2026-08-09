@@ -98,6 +98,8 @@ class WarningViewController: UIViewController {
         warningView.layer.borderColor = UIColor(white: 1, alpha: 0.12).cgColor
 
         warningTitleLabel.font = .systemFont(ofSize: 22, weight: .black)
+        // Capitals without the letter-spacing these titles used to carry: every pop-up in
+        // the app now says its name the same way (play-test round 17)
         warningTitleLabel.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         warningTitleLabel.applyGigaBallGlow(radius: 10, opacity: 0.35)
 
@@ -186,22 +188,22 @@ class WarningViewController: UIViewController {
         leftButton.isHidden = false
         rightButton.isHidden = false
         if senderID == "killBall" {
-            warningTitleLabel.text = "R E S E T   B A L L"
+            warningTitleLabel.text = "RESET BALL"
             warningTextLabel.text = "Only reset if the ball becomes stuck."
         }
         if senderID == "resetData" {
-            warningTitleLabel.text = "R E S E T   D A T A"
+            warningTitleLabel.text = "RESET DATA"
             warningTextLabel.text = "Are you sure you want to reset the game data? You will irreversibly lose all game progress, statistics and settings.\nIn-app purchases will remain."
         }
         if senderID == "pauseMenu" {
-            warningTitleLabel.text = "M A I N   M E N U"
+            warningTitleLabel.text = "MAIN MENU"
             warningTextLabel.text = "Are you sure?\nCurrent progress will be lost."
         }
         if senderID == "firstPause" {
             centerButton.isHidden = false
             leftButton.isHidden = true
             rightButton.isHidden = true
-            warningTitleLabel.text = "S W I P E   U P"
+            warningTitleLabel.text = "SWIPE UP"
             warningTextLabel.text = "Swipe up anywhere to pause.\nDisable in Settings."
         }
         

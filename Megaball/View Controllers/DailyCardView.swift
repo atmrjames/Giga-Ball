@@ -55,8 +55,13 @@ final class DailyCardView: UIView {
             label.textAlignment = .center
             label.numberOfLines = 0
         }
-        modeLabel.font = .boldSystemFont(ofSize: 30)
-        modeLabel.textColor = .white
+        modeLabel.font = .systemFont(ofSize: 24, weight: .black)
+        modeLabel.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        modeLabel.adjustsFontSizeToFitWidth = true
+        modeLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
+        // The mode's own title, in the face and colour its menu gives it (play-test round
+        // 17) - but at 24pt against the screen title's 35, so the day's mode reads as the
+        // card's heading rather than competing with DAILY CHALLENGE above it
         levelLabel.font = .systemFont(ofSize: 17)
         levelLabel.textColor = UIColor(white: 1, alpha: 0.8)
 

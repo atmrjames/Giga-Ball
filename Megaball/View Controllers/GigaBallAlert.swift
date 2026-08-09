@@ -30,6 +30,19 @@ enum GigaBallAlert {
                      dismissTitle: String = "Got it",
                      confirmTitle: String? = nil,
                      confirm: (() -> Void)? = nil) {
+        show(on: presenter, title: title,
+             attributed: NSAttributedString(string: message),
+             dismissTitle: dismissTitle, confirmTitle: confirmTitle, confirm: confirm)
+    }
+
+    /// The same pop-up, for a message that carries more than words - the twists explainer
+    /// wants each twist's badge in front of its name, the way every other screen names a
+    /// twist (play-test round 17).
+    static func show(on presenter: UIViewController, title: String,
+                     attributed message: NSAttributedString,
+                     dismissTitle: String = "Got it",
+                     confirmTitle: String? = nil,
+                     confirm: (() -> Void)? = nil) {
         let alert = GigaBallAlertViewController(title: title, message: message,
                                                 dismissTitle: dismissTitle,
                                                 confirmTitle: confirmTitle,
@@ -46,7 +59,7 @@ enum GigaBallAlert {
 final class GigaBallAlertViewController: UIViewController {
 
     private let heading: String
-    private let body: String
+    private let body: NSAttributedString
     private let dismissTitle: String
     private let confirmTitle: String?
     private let confirm: (() -> Void)?
@@ -55,9 +68,11 @@ final class GigaBallAlertViewController: UIViewController {
     private let hapticsSetting = UserDefaults.standard.bool(forKey: "hapticsSetting")
     private let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
-    init(title: String, message: String, dismissTitle: String,
+    init(title: String, message: NSAttributedString, dismissTitle: String,
          confirmTitle: String? = nil, confirm: (() -> Void)? = nil) {
-        self.heading = title
+        self.heading = title.uppercased()
+        // Every pop-up wears the app's heading in capitals (play-test round 17), decided
+        // here so no caller has to remember to shout
         self.body = message
         self.dismissTitle = dismissTitle
         self.confirmTitle = confirmTitle
@@ -97,11 +112,13 @@ final class GigaBallAlertViewController: UIViewController {
         titleLabel.applyGigaBallGlow(radius: 10, opacity: 0.35)
 
         let bodyLabel = UILabel()
-        bodyLabel.text = body
         bodyLabel.font = .systemFont(ofSize: 15)
         bodyLabel.textColor = UIColor(white: 1, alpha: 0.8)
         bodyLabel.textAlignment = .center
         bodyLabel.numberOfLines = 0
+        bodyLabel.attributedText = body
+        // Set after the font and colour, not before: a plain-string message arrives with no
+        // attributes of its own and would otherwise land as unstyled black text
 
         let button = UIButton(type: .system)
         button.setTitle(dismissTitle, for: .normal)
