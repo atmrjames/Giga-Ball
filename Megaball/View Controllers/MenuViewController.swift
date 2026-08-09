@@ -76,11 +76,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 //        SKPaymentQueue.default().add(self)
                 
         logoImage.image = UIImage(named: "Logo")
-        logoImage.layer.shadowColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1).cgColor
-        logoImage.layer.shadowOffset = CGSize(width: 0, height: 5)
-        logoImage.layer.shadowRadius = 14
-        logoImage.layer.shadowOpacity = 0.4
-        // The slight Giga-Ball green glow beneath the wordmark (play-test round 11)
+        logoImage.applyGigaBallGlow(radius: GigaBallGlow.wordmarkRadius)
+        // Radiating evenly rather than downward (play-test round 13): the offset version
+        // read as motion blur on a wordmark this wide - see GigaBallGlow
 
         modeSelectTableView.delegate = self
         modeSelectTableView.dataSource = self
@@ -226,16 +224,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         let mode = GameMode(rawValue: indexPath.row) ?? .classic
         cell.modeTextLabel.text = mode.name
-        switch mode {
-        case .classic:
-            cell.modeImageIcon.image = UIImage(named: "ClassicIcon.png")
-        case .endless, .endlessII:
-            cell.modeImageIcon.image = UIImage(named: "EndlessIcon.png")
-            // Endless 2.0 shares the endless icon until it has one of its own
-        case .daily:
-            cell.modeImageIcon.image = PowerUpIcon.dailyChallenge
-            // Drawn, like the power-up placeholders, until §8.5's art lands
-        }
+        cell.modeImageIcon.image = GameMode.menuIcon(for: mode)
         
         UIView.animate(withDuration: 0.1) {
             cell.cellView1.transform = .identity

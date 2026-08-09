@@ -371,6 +371,17 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                     lines.append(twist.titleLine(font: font, colour: colour))
                 }
             }
+            let scoring = DailyChallengeSession.shared.isScoringAttempt
+            lines.append(NSAttributedString(
+                string: "\n\n" + (scoring ? "COMPETITION RUN" : "FREE PLAY"),
+                attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
+                             .foregroundColor: scoring
+                                ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+                                : UIColor(white: 1, alpha: 0.55)]))
+            // Which kind of run this is, said before it starts (play-test round 13) - the
+            // pop-up on the play press says it too, but the splash is the last look at
+            // the rules and a spent attempt is exactly the thing to be sure of
+
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = .center
             paragraph.paragraphSpacing = 2
@@ -390,14 +401,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     private func showModeIcon() {
         guard modeIconView == nil else { return }
         let icon = UIImageView()
-        if DailyChallengeSession.shared.active != nil {
-            icon.image = PowerUpIcon.dailyChallenge
-        } else {
-            switch GameMode.current() {
-            case .classic: icon.image = UIImage(named: "ClassicIcon.png")
-            default: icon.image = UIImage(named: "EndlessIcon.png")
-            }
-        }
+        icon.image = GameMode.menuIcon(
+            for: DailyChallengeSession.shared.active != nil ? .daily : GameMode.current())
         icon.contentMode = .scaleAspectFit
         icon.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(icon)

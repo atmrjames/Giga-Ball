@@ -14,7 +14,7 @@
 //  are asked of it instead.
 //
 
-import Foundation
+import UIKit
 
 enum GameMode: Int, CaseIterable {
     case classic = 0
@@ -29,6 +29,21 @@ enum GameMode: Int, CaseIterable {
 
     /// Where the mode is remembered between launches, so a resumed run knows what it is.
     static let defaultsKey = "gameMode"
+
+    /// The icon this mode wears wherever it introduces itself: the main menu's row, the
+    /// level intro splash, the pause and game-over screens, and the daily briefing.
+    ///
+    /// One definition, because play-testing kept asking for the icon in one more place and
+    /// each place was choosing its own artwork - which is how the daily briefing and the
+    /// main menu ended up able to disagree about what a Daily Challenge looks like.
+    static func menuIcon(for mode: GameMode) -> UIImage? {
+        switch mode {
+        case .classic: return UIImage(named: "ClassicIcon.png")
+        case .endless, .endlessII: return UIImage(named: "EndlessIcon.png")
+        // Endless 2.0 shares the endless icon until §8.5 draws it one of its own
+        case .daily: return PowerUpIcon.dailyChallenge
+        }
+    }
 
     var name: String {
         switch self {

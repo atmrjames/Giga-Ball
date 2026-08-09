@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1AF1700000000111 /* PowerUpIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000110 /* PowerUpIcon.swift */; };
+		1AF10000000000E4 /* GigaBallGlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000000E5 /* GigaBallGlow.swift */; };
 		1AF17000000000F1 /* EndlessIIPowerUpBricks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000F0 /* EndlessIIPowerUpBricks.swift */; };
 		1AF17000000000E1 /* PowerUpArrayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000E0 /* PowerUpArrayTests.swift */; };
 		1AF17000000000D1 /* BallBounceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000D0 /* BallBounceTests.swift */; };
@@ -331,6 +332,7 @@
 
 /* Begin PBXFileReference section */
 		1AF1700000000110 /* PowerUpIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpIcon.swift; sourceTree = "<group>"; };
+		1AF10000000000E5 /* GigaBallGlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GigaBallGlow.swift; sourceTree = "<group>"; };
 		1AF17000000000F0 /* EndlessIIPowerUpBricks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPowerUpBricks.swift; sourceTree = "<group>"; };
 		1AF17000000000E0 /* PowerUpArrayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpArrayTests.swift; sourceTree = "<group>"; };
 		1AF17000000000D0 /* BallBounceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallBounceTests.swift; sourceTree = "<group>"; };
@@ -909,6 +911,7 @@
 			isa = PBXGroup;
 			children = (
 				1AF1700000000110 /* PowerUpIcon.swift */,
+				1AF10000000000E5 /* GigaBallGlow.swift */,
 				1AF170000000006A /* BrickTypeIcons.swift */,
 				1AF1700000000064 /* GameSceneMockView.swift */,
 				1AF0FF0100000003 /* Fonts */,
@@ -1496,6 +1499,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1AF1700000000111 /* PowerUpIcon.swift in Sources */,
+				1AF10000000000E4 /* GigaBallGlow.swift in Sources */,
 				1AF17000000000F1 /* EndlessIIPowerUpBricks.swift in Sources */,
 				1AF17000000000C1 /* BrickSeamBounce.swift in Sources */,
 				1AF17000000000A1 /* EndlessIIClusters.swift in Sources */,

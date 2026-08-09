@@ -134,7 +134,19 @@ class LevelPackSetup {
         "Rainbow",
         "Retro"
     ]
-    
+
+    /// What each icon is *called* on screen, which is not always what the system calls it.
+    ///
+    /// `appIconNameArray` holds the alternate-icon keys `setAlternateIconName` is given,
+    /// and those must match the icon bundles exactly - "Purple" is a real key with a real
+    /// Purple.icon behind it. But the first entry is the app's own icon, and calling it by
+    /// its colour told the player nothing (play-test round 13), so it reads Classic. The
+    /// list is derived from the keys rather than written out again, so a new icon appears
+    /// here the moment it appears there.
+    var appIconDisplayNameArray: [String] {
+        appIconNameArray.enumerated().map { $0.offset == 0 ? "Classic" : $0.element }
+    }
+
     let appIconImageArray: [UIImage] = [
         UIImage(named:"IconPreviewPurple.png")!,
         UIImage(named:"IconPreviewWhite.png")!,

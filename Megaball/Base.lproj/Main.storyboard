@@ -2267,13 +2267,13 @@ U N L O C K E D</string>
                                     <constraint firstItem="Bgs-tl-004" firstAttribute="top" secondItem="Bgs-cv-003" secondAttribute="top" constant="20" id="Bgs-ct-001"/>
                                     <constraint firstItem="Bgs-tl-004" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-002"/>
                                     <constraint firstItem="Bgs-tl-004" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-003"/>
-                                    <constraint firstItem="Bgs-nl-006" firstAttribute="top" secondItem="Bgs-tl-004" secondAttribute="bottom" constant="2" id="Bgs-ct-004"/>
+                                    <constraint firstItem="Bgs-nl-006" firstAttribute="top" secondItem="Bgs-mc-005" secondAttribute="bottom" constant="8" id="Bgs-ct-004"/>
                                     <constraint firstItem="Bgs-mc-005" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" id="Bgs-ct-005"/>
                                     <constraint firstAttribute="trailing" secondItem="Bgs-mc-005" secondAttribute="trailing" id="Bgs-ct-006"/>
-                                    <constraint firstItem="Bgs-mc-005" firstAttribute="top" secondItem="Bgs-nl-006" secondAttribute="bottom" constant="10" id="Bgs-ct-007"/>
+                                    <constraint firstItem="Bgs-mc-005" firstAttribute="top" secondItem="Bgs-tl-004" secondAttribute="bottom" constant="10" id="Bgs-ct-007"/>
                                     <constraint firstItem="Bgs-nl-006" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-008"/>
                                     <constraint firstItem="Bgs-nl-006" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-009"/>
-                                    <constraint firstItem="Bgs-pc-008" firstAttribute="top" secondItem="Bgs-mc-005" secondAttribute="bottom" constant="12" id="Bgs-ct-013"/>
+                                    <constraint firstItem="Bgs-pc-008" firstAttribute="top" secondItem="Bgs-nl-006" secondAttribute="bottom" constant="4" id="Bgs-ct-013"/>
                                     <constraint firstItem="Bgs-pc-008" firstAttribute="centerX" secondItem="Bgs-cv-003" secondAttribute="centerX" id="Bgs-ct-014"/>
                                     <constraint firstItem="Bgs-bb-009" firstAttribute="top" secondItem="Bgs-pc-008" secondAttribute="bottom" constant="12" id="Bgs-ct-015"/>
                                     <constraint firstItem="Bgs-bb-009" firstAttribute="leading" secondItem="Bgs-cv-003" secondAttribute="leading" constant="20" id="Bgs-ct-016"/>

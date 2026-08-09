@@ -223,7 +223,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.iconImage.image = LevelPackSetup().appIconImageArray[indexPath.row]
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.layer.cornerRadius = 10
-            cell.settingDescription.text = LevelPackSetup().appIconNameArray[indexPath.row]
+            cell.settingDescription.text =
+                LevelPackSetup().appIconDisplayNameArray[indexPath.row]
             cell.centreLabel.text = ""
             cell.settingState.text = ""
             cell.tickImage.isHidden = true

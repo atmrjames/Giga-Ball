@@ -68,6 +68,32 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     // the prompt, never past it - the prompt only answers its own Resume and Cancel
     // buttons, so an accidental tap cannot spend a saved run
     
+    /// The two credits the splash carries, the way the About screen carries them
+    /// (play-test round 13): the game's author, then the music's.
+    ///
+    /// Both in one label rather than two, because the label is already positioned,
+    /// already animated and already faded in with the logo - a second label would need
+    /// its own constraints in the storyboard and its own place in the keyframes, for a
+    /// line of text.
+    private func setUpCreatorCredit() {
+        let first = creatorLabel.font ?? .systemFont(ofSize: 17)
+        let colour = creatorLabel.textColor ?? .white
+        let credit = NSMutableAttributedString(
+            string: "A game by James Harding\n",
+            attributes: [.font: first, .foregroundColor: colour])
+        credit.append(NSAttributedString(
+            string: "Music by Brendan Lawton",
+            attributes: [.font: first.withSize(first.pointSize*0.72),
+                         .foregroundColor: colour.withAlphaComponent(0.7)]))
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.paragraphSpacing = 2
+        credit.addAttribute(.paragraphStyle, value: paragraph,
+                            range: NSRange(location: 0, length: credit.length))
+        creatorLabel.numberOfLines = 0
+        creatorLabel.attributedText = credit
+    }
+
     let defaults = UserDefaults.standard
     var hapticsSetting: Bool = true
     var savedGame: SavedGame?
@@ -99,6 +125,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         splashScreenLogo6.alpha = 0.0
         creatorLabel.alpha = 0.0
         creatorLabel.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+        setUpCreatorCredit()
         // Pre animation setup
         
         cancelResumeButton.delegate = self

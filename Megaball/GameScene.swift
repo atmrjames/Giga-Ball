@@ -1826,7 +1826,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// of a run and was replaced by "x1.0" by the first brick.
     func showMultiplier() {
         guard endlessMode == false else { return }
-        multiplierLabel.text = "x\(scoreFactorString)"
+        let wanted = "x\(scoreFactorString)"
+        guard multiplierLabel.text != wanted else { return }
+        // Only when it actually changes: this is called on a great many events, and a
+        // label that pulsed every time it was *written* would pulse continuously
+
+        let rising = (Double(scoreFactorString) ?? 0)
+            > (Double(multiplierLabel.text?.dropFirst() ?? "") ?? 0)
+        multiplierLabel.text = wanted
+
+        multiplierLabel.removeAction(forKey: "multiplierChange")
+        multiplierLabel.setScale(1)
+        let peak: CGFloat = rising ? 1.35 : 0.75
+        // Up when it climbs, down when it falls - the direction is the news, and a pulse
+        // that looked the same either way said only "something happened"
+        multiplierLabel.run(.sequence([
+            .scale(to: peak, duration: 0.09),
+            .scale(to: 1, duration: 0.16),
+        ]), withKey: "multiplierChange")
+        // A scale rather than a colour flash: the colour already means which multiplier
+        // band the run is in (see setMultiplierColour), and borrowing it to mean "just
+        // changed" would make the band unreadable for a fifth of a second
     }
 
     func spendStickyPaddleCatch() {

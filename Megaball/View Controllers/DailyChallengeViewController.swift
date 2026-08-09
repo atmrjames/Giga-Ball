@@ -160,7 +160,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     private func buildLayout() {
         view.addLayoutGuide(dateBlockGuide)
 
-        let modeIcon = UIImageView(image: PowerUpIcon.dailyChallenge)
+        let modeIcon = UIImageView(image: GameMode.menuIcon(for: .daily))
         modeIcon.contentMode = .scaleAspectFit
         modeIcon.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(modeIcon)
@@ -428,8 +428,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
         dateLabel.text = headerDateText
         if viewedOffset == 0 {
-            dateLabel.font = .boldSystemFont(ofSize: 20)
+            dateLabel.font = .systemFont(ofSize: 20, weight: .black)
             dateLabel.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            // The app's own heading face, scaled down (play-test round 13) - TODAY is a
+            // heading for the day, so it should read like one
         } else {
             dateLabel.font = .boldSystemFont(ofSize: 16)
             dateLabel.textColor = UIColor(white: 1, alpha: 0.55)

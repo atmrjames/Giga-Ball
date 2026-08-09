@@ -355,13 +355,33 @@ briefing screen (§6).
   checkmark icon and unmistakable "score posted" reading, with the score and rank. Free
   play attempts played after the post get listed in the same container. (The same round
   renamed the practice language: it is **free play** everywhere the player can read.)
-- **A real pager for day browsing** (eleventh round, third gap report): the next day's
-  card should be visible *during* the swipe, like a horizontal list that snaps - not
-  loaded at release. That means two live card instances (or a UIScrollView/
-  UICollectionView pager with one cell per day), which is the rebuild the current
-  transform-the-one-card approach has been approximating. Worth doing as its own visit;
-  the card's content population is already a function of `viewedOffset`, which is the
-  hard part done.
+- **A real pager for day browsing** (asked for in rounds 11, 12 and 13 — "is what I'm
+  asking for not possible?"). **It is possible; it has simply been approximated three
+  times instead of built.** Every version so far moves *one* card with a transform and
+  swaps its contents at the end of the gesture, so the next day cannot be on screen
+  during the swipe — there is only ever one card, and it is showing today. No amount of
+  tuning offsets fixes that; the fix is more than one card.
+  **Build it as a real pager**: a horizontal paging `UICollectionView`, one cell per day,
+  newest at one end, `isPagingEnabled` doing the snap. The background-selection screen in
+  this app is already exactly this pattern and worth copying wholesale — including its
+  trick for endless browsing (a copy of the far end at each end, silently recentred while
+  standing still). The card's content is already a pure function of `viewedOffset`, so
+  cell configuration is `configure(cell, forOffset:)` and that part is done; what has to
+  change is that the *screen* stops owning one card. Budget it a round of its own — the
+  swipe gesture, the arrows, the date-tap-returns-to-today and the deep-link from the
+  main menu all currently drive `viewedOffset` directly and each needs rerouting through
+  the collection view's scroll position.
+- **One Shot** (thirteenth round's new twist): no pausing and no quitting. A single run,
+  and the game cannot be paused at all. If the app is quit the run *ends* and the score
+  it had reached is posted. Distinct from the queued "No Pausing", which only removes the
+  pause button — this also removes the escape hatch, which is what makes it a twist
+  rather than an inconvenience. Build notes: the scene already saves on backgrounding
+  (§12.5's daily save slot), so this inverts that path — background means "record and
+  post", and the daily record must be written before the app is suspended, in the same
+  `sceneDidEnterBackground` moment, with the pending-post retry loop carrying it if the
+  network is not there. Worth pairing with the anti-cheat sweep: a twist that posts on
+  quit is a twist where force-quitting is a *move*, so the posted score must be the one
+  actually reached.
 - **Twist candidates from round eleven**, for §4's pool when the next batch is built:
   **No Standard Bricks** (every regular brick replaced by another type - the field is
   all specials); **Disguise** (every brick *looks* standard but could be any type -

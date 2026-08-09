@@ -133,12 +133,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         let logo = UIImageView(image: UIImage(named: "Logo"))
         logo.contentMode = .scaleAspectFit
         logo.translatesAutoresizingMaskIntoConstraints = false
-        logo.layer.shadowColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1).cgColor
-        logo.layer.shadowOffset = CGSize(width: 0, height: 5)
-        logo.layer.shadowRadius = 14
-        logo.layer.shadowOpacity = 0.4
-        // The subtle Giga-Ball green glow beneath it (play-test round 11)
+        logo.applyGigaBallGlow()
+        // The subtle Giga-Ball green glow around it (play-test rounds 11 and 13)
         containterView.addSubview(logo)
+
+        let modeIcon = UIImageView(image: GameMode.menuIcon(for: currentMode))
+        modeIcon.contentMode = .scaleAspectFit
+        modeIcon.translatesAutoresizingMaskIntoConstraints = false
+        containterView.addSubview(modeIcon)
+        // The mode's icon above its name, the same order the level intro splash uses
+        // (play-test round 13): icon, then which mode, then what happened
+
+        titleLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
+        // PAUSED / GAME OVER / COMPLETE glow like the wordmark does
+
         NSLayoutConstraint.activate([
             logo.topAnchor.constraint(equalTo: containterView.safeAreaLayoutGuide.topAnchor,
                                       constant: 46),
@@ -146,7 +154,19 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             logo.heightAnchor.constraint(equalToConstant: 36),
             logo.leadingAnchor.constraint(greaterThanOrEqualTo: containterView.leadingAnchor,
                                           constant: 60),
+
+            modeIcon.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            modeIcon.bottomAnchor.constraint(equalTo: levelNumberLabel.topAnchor,
+                                             constant: -6),
+            modeIcon.widthAnchor.constraint(equalToConstant: 42),
+            modeIcon.heightAnchor.constraint(equalToConstant: 42),
         ])
+    }
+
+    /// Which mode this screen belongs to. The daily is a menu identity rather than a scene
+    /// one, so it is asked of the session first and the remembered mode second.
+    var currentMode: GameMode {
+        isDailyChallenge ? .daily : GameMode.current(in: defaults)
     }
 
     /// The finished run's numbers under the height, one labelled row per stat
@@ -352,6 +372,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey),
             attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
                          .foregroundColor: UIColor(white: 1, alpha: 0.55)])
+
+        if sender == "Pause" {
+            let scoring = DailyChallengeSession.shared.isScoringAttempt
+            summary.append(NSAttributedString(
+                string: "\n" + (scoring ? "COMPETITION RUN" : "FREE PLAY"),
+                attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
+                             .foregroundColor: scoring
+                                ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+                                : UIColor(white: 1, alpha: 0.55)]))
+            // Mid-run, what is riding on this one (play-test round 13). On the game-over
+            // screen the posted-or-not line below already says it, and better
+        }
 
         for twist in challenge.twists {
             summary.append(NSAttributedString(string: "\n"))

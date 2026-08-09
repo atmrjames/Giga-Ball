@@ -200,7 +200,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "App Icon"
                     cell.centreLabel.text = ""
-                    cell.iconImage.image = UIImage(named:"iconAppIcon.png")!
+                    let icons = LevelPackSetup().appIconImageArray
+                    cell.iconImage.image = icons.indices.contains(appIconSetting)
+                        ? icons[appIconSetting]
+                        : UIImage(named: "iconAppIcon.png")!
+                    // The icon you are actually wearing, not a generic one (play-test
+                    // round 13) - the row is about a choice, so it should show the choice
                     cell.settingState.text = ""
 //                }
             case 1:
@@ -296,7 +301,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 8:
             // Swipe up to pause
-                cell.settingDescription.text = "Swipe Up To Pause"
+                cell.settingDescription.attributedText = describedWithInfoGlyph(
+                    "Swipe Up To Pause", like: cell.settingDescription)
                 cell.centreLabel.text = ""
                 cell.iconImage.image = UIImage(named:"iconPause.png")!
                 if swipeUpPause {
@@ -357,6 +363,39 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         return rowHeight
     }
     
+    /// A settings row's title with a small ⓘ after it, drawn in the label's own font so it
+    /// sits on the text's baseline rather than beside it.
+    ///
+    /// A glyph rather than a button: this cell's description and state labels share a
+    /// width constraint, so anything added as a sibling lands wherever that arithmetic
+    /// puts it rather than beside the words. Drawn into the text, it is always exactly
+    /// after the title, at every width.
+    func describedWithInfoGlyph(_ title: String, like label: UILabel) -> NSAttributedString {
+        let font = label.font ?? .systemFont(ofSize: 17)
+        let text = NSMutableAttributedString(
+            string: title + "  ",
+            attributes: [.font: font,
+                         .foregroundColor: label.textColor ?? UIColor.black])
+        let glyph = NSTextAttachment()
+        glyph.image = UIImage(systemName: "info.circle")?
+            .withTintColor(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.55),
+                           renderingMode: .alwaysOriginal)
+        let size = font.pointSize*0.85
+        glyph.bounds = CGRect(x: 0, y: -1, width: size, height: size)
+        text.append(NSAttributedString(attachment: glyph))
+        return text
+    }
+
+    /// What the swipe-up gesture is for, said in the words the play test asked for.
+    func explainSwipeUpToPause() {
+        let notice = UIAlertController(
+            title: "Swipe Up To Pause",
+            message: "Swipe up in game to pause for a breather, or to reach settings and the reference pages.",
+            preferredStyle: .alert)
+        notice.addAction(UIAlertAction(title: "Got it", style: .default))
+        present(notice, animated: true)
+    }
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
             switch settingRow(for: indexPath) {
@@ -431,6 +470,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Swipe up pause
                 swipeUpPause = !swipeUpPause
                 defaults.set(swipeUpPause, forKey: "swipeUpPause")
+                if swipeUpPause { explainSwipeUpToPause() }
+                // Explained when it is switched *on* (play-test round 13), which is the
+                // moment the gesture starts existing and the only moment the explanation
+                // is news. Switching it off needs no essay
             case 9:
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
