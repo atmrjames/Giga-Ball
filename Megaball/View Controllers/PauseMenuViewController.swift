@@ -117,13 +117,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NSLayoutConstraint.activate([
             runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             runStatsLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
-                                               constant: 6),
+                                               constant: 18),
             moreStatsButton.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             moreStatsButton.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor,
-                                                 constant: 2),
-            // Tight under the height block (play-test round 9): the stats are the
-            // height's small print, and the gap belongs between them and whatever
-            // hangs below - on the daily, the challenge summary was crowding them
+                                                 constant: 8),
+            // Room between the blocks (play-test round 15 asked for it): the score, the
+            // stats list and the daily summary each get air, rather than the stats being
+            // squeezed against the height above them
         ])
     }
 
@@ -317,7 +317,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16),
             dailySummaryLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             dailySummaryLabel.topAnchor.constraint(
-                greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 8),
+                greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 20),
             {
                 let preferred = dailySummaryLabel.topAnchor.constraint(
                     equalTo: livesLabel.bottomAnchor, constant: 24)

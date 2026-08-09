@@ -141,16 +141,55 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
 
     // MARK: Steering
 
-    func testASteeredBallInheritsHalfThePaddlesMovement() {
-        let x = EndlessIIPaddleEffects.steered(x: 0, paddleMovedBy: 40,
-                                               leftWall: -200, rightWall: 200, radius: 5)
-        XCTAssertEqual(x, 40*EndlessIIPaddleEffects.steeringFactor)
+    func testASteeredBallIsDrawnTowardsThePaddleRatherThanNudgedByIt() {
+        // Round 15: "the paddle needs to control the x-position of the ball with some
+        // inertia - the ball should forget its original trajectory." So the target is
+        // where the paddle *is*, not how far it moved, and the ball closes part of the
+        // gap each frame rather than arriving at once.
+        let first = EndlessIIPaddleEffects.steeredTowards(
+            paddleX: 100, from: 0, leftWall: -200, rightWall: 200, radius: 5)
+        XCTAssertGreaterThan(first, 0, "it sets off towards the paddle")
+        XCTAssertLessThan(first, 100, "and does not teleport there")
+
+        var x: CGFloat = 0
+        for _ in 0..<60 {
+            x = EndlessIIPaddleEffects.steeredTowards(paddleX: 100, from: x,
+                                                      leftWall: -200, rightWall: 200,
+                                                      radius: 5)
+        }
+        XCTAssertEqual(x, 100, accuracy: 1, "a second of holding still gathers it in")
     }
 
-    func testSteeringCannotPushABallThroughAWall() {
-        let x = EndlessIIPaddleEffects.steered(x: 198, paddleMovedBy: 100,
-                                               leftWall: -200, rightWall: 200, radius: 5)
+    func testAStationaryPaddleStillHoldsASteeredBall() {
+        // The old version moved the ball by the paddle's *movement*, so a paddle standing
+        // still steered nothing and the ball wandered off on its own trajectory - which
+        // is what made it feel like the power-up was not working
+        let x = EndlessIIPaddleEffects.steeredTowards(
+            paddleX: 0, from: 60, leftWall: -200, rightWall: 200, radius: 5)
+        XCTAssertLessThan(x, 60, "a still paddle is still pulling")
+    }
+
+    func testSteeringCannotPullABallThroughAWall() {
+        let x = EndlessIIPaddleEffects.steeredTowards(
+            paddleX: 1000, from: 198, leftWall: -200, rightWall: 200, radius: 5)
         XCTAssertEqual(x, 195, "clamped a radius inside the wall")
+    }
+
+    func testASteeredBallLosesItsSidewaysSpeedWithoutLosingPace() {
+        let before = CGVector(dx: 300, dy: 300)
+        let after = EndlessIIPaddleEffects.steeredVelocity(before)
+        let speedBefore = (before.dx*before.dx + before.dy*before.dy).squareRoot()
+        let speedAfter = (after.dx*after.dx + after.dy*after.dy).squareRoot()
+
+        XCTAssertLessThan(abs(after.dx), abs(before.dx), "the sideways motion bleeds away")
+        XCTAssertGreaterThan(after.dy, before.dy, "into the vertical")
+        XCTAssertEqual(speedAfter, speedBefore, accuracy: 0.001,
+                       "a steered ball is not a slower ball")
+    }
+
+    func testSteeringKeepsTheBallGoingTheWayItWasVertically() {
+        let falling = EndlessIIPaddleEffects.steeredVelocity(CGVector(dx: -200, dy: -400))
+        XCTAssertLessThan(falling.dy, 0, "a falling ball keeps falling")
     }
 
     // MARK: The halo

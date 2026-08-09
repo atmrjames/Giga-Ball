@@ -47,9 +47,10 @@ enum GameMode: Int, CaseIterable {
     /// main menu ended up able to disagree about what a Daily Challenge looks like.
     static func menuIcon(for mode: GameMode) -> UIImage? {
         switch mode {
-        case .classic: return appIconArtwork ?? UIImage(named: "ClassicIcon.png")
-        // Classic mode's icon is the app's icon (play-test round 13): the game's own
-        // face belongs to the mode the game started as
+        case .classic: return UIImage(named: "ClassicIcon.png")
+        // Round rather than the app icon's rounded square (play-test round 15): the mode
+        // rows are a set, and one of them wearing a different silhouette breaks the set.
+        // The app icon still appears as itself on the About screen and the Vanilla badge
         case .endless, .endlessII: return UIImage(named: "EndlessIcon.png")
         // Endless 2.0 shares the endless icon until §8.5 draws it one of its own
         case .daily: return PowerUpIcon.dailyChallenge

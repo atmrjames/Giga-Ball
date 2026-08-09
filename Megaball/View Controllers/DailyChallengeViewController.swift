@@ -47,22 +47,23 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     let dateBlockGuide = UILayoutGuide()
 
+    /// Whether the pager has been put on today yet - see viewDidLayoutSubviews.
+    private var landedOnOpening = false
+
     var todayRank: Int?
     var todayRankRequested = false
     // Where today's posted score stands, once Game Center has answered - asked for at
     // most once per visit to the screen, because the answer barely moves and the ask
     // is a network round trip
 
-    private let dayCard = UIView()
-    private let cardStack = UIStackView()
+    /// The days on offer, oldest first - one page each. The last is today, which is where
+    /// the screen opens.
+    private var dayKeys: [String] = []
+    private var days: UICollectionView!
+
     private let dateLabel = UILabel()
     private let backArrow = UIButton(type: .system)
     private let forwardArrow = UIButton(type: .system)
-    private let modeLabel = UILabel()
-    private let levelImageView = UIImageView()
-    private let levelLabel = UILabel()
-    private let twistsStack = UIStackView()
-    private let resultLabel = UILabel()
     private let countdownLabel = UILabel()
     // The standing posting banner is gone (play-test round 5): the countdown line under
     // the date says Practice when it applies, and the play press itself warns when a run
@@ -96,6 +97,17 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {
             [weak self] _ in self?.refreshCountdown()
         }
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard days.bounds.width > 0, landedOnOpening == false else { return }
+        landedOnOpening = true
+        days.reloadData()
+        scrollToViewedDay(animated: false)
+        // The pager opens on today, which is the last page - and it can only be put there
+        // once the collection view knows how wide a page is. Once, hence the flag: doing
+        // it on every layout pass would drag the screen back to today mid-browse
     }
 
     func loadData() {
@@ -205,62 +217,33 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         backArrow.addTarget(self, action: #selector(dayEarlier), for: .touchUpInside)
         forwardArrow.addTarget(self, action: #selector(dayLater), for: .touchUpInside)
 
-        // The card the day's details swipe through - a subtle container, so what animates
-        // between days reads as one object rather than a page of loose labels
-        dayCard.backgroundColor = UIColor(white: 1, alpha: 0.07)
-        dayCard.layer.cornerRadius = 18
-        dayCard.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(dayCard)
-
-        for label in [modeLabel, levelLabel, countdownLabel, resultLabel] {
-            label.textAlignment = .center
-            label.numberOfLines = 0
-        }
-        modeLabel.font = .boldSystemFont(ofSize: 30)
-        modeLabel.textColor = .white
-        levelLabel.font = .systemFont(ofSize: 17)
-        levelLabel.textColor = UIColor(white: 1, alpha: 0.8)
+        countdownLabel.textAlignment = .center
+        countdownLabel.numberOfLines = 0
         countdownLabel.font = .boldSystemFont(ofSize: 15)
         countdownLabel.textColor = UIColor(white: 1, alpha: 0.7)
 
-        levelImageView.contentMode = .scaleAspectFit
-        levelImageView.layer.masksToBounds = false
-        levelImageView.layer.shadowOffset = .zero
-        levelImageView.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).cgColor
-        levelImageView.layer.shadowOpacity = 0.5
-        levelImageView.layer.shadowRadius = 6
-        // A small picture of the day's level (play-test request) - the same artwork the
-        // level screens use, so an unseen pack's level is genuinely a preview. Endless
-        // days wear the mode's icon instead
-
-        twistsStack.axis = .vertical
-        twistsStack.spacing = 16
-        twistsStack.alignment = .center
-
-        resultLabel.textAlignment = .center
-        resultLabel.numberOfLines = 0
-
-        cardStack.axis = .vertical
-        cardStack.spacing = 18
-        cardStack.translatesAutoresizingMaskIntoConstraints = false
-        [modeLabel, levelImageView, levelLabel, twistsStack, resultLabel]
-            .forEach { cardStack.addArrangedSubview($0) }
-        dayCard.addSubview(cardStack)
-        // Roomier throughout (play-test round 3 asked for the details spaced out), and the
-        // countdown has left the card for its place under the date
+        // The days, as pages. A horizontal paging collection view with one card per day -
+        // which is what makes the next day visible *during* the swipe and makes it snap,
+        // and is what three rounds of animating a single card could never do (play-test
+        // rounds 11-15). The same shape as the background picker's strip
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+        days = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        days.isPagingEnabled = true
+        days.showsHorizontalScrollIndicator = false
+        days.backgroundColor = .clear
+        days.contentInsetAdjustmentBehavior = .never
+        days.dataSource = self
+        days.delegate = self
+        days.register(DailyCardCell.self,
+                      forCellWithReuseIdentifier: DailyCardCell.reuseID)
+        days.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(days)
 
         countdownLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(countdownLabel)
-
-        // Day browsing answers a swipe anywhere on the screen (play-test round 2), not
-        // just on the card - measured the same way MenuNavigation measures its edge
-        // swipes, and standing down for starts inside the edge strips, which belong to
-        // back and forward
-        let daySwipe = UIPanGestureRecognizer(target: self, action: #selector(daySwiped(_:)))
-        daySwipe.delegate = MenuNavigation.shared
-        // The shared delegate's only job is allowing simultaneous recognition, which is
-        // exactly what lets this live beside the edge swipe on the same view
-        view.addGestureRecognizer(daySwipe)
 
         let close = UIButton(type: .custom)
         close.setImage(UIImage(named: "ButtonClose"), for: .normal)
@@ -333,9 +316,16 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
-            dayCard.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 22),
-            dayCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
-            dayCard.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
+            days.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 22),
+            days.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            days.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            days.bottomAnchor.constraint(equalTo: clockRow.topAnchor, constant: -10),
+            // Above the developer rig, not just above the date: the rig sits between the
+            // cards and the date block, and a card reaching past it drew straight through
+            // the test clock. It goes out with the rig before release, and the card grows
+            // into the room then
+            // Edge to edge, so a page is a whole screen and paging lands on whole days;
+            // the card's own margins live on the cell
 
             dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
@@ -366,14 +356,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // Under the date, where the play test put it: the day, then how long is left
             // of it - and the pair stands on the play row, which is what fixes them in
             // space
-
-            cardStack.topAnchor.constraint(equalTo: dayCard.topAnchor, constant: 18),
-            cardStack.leadingAnchor.constraint(equalTo: dayCard.leadingAnchor, constant: 16),
-            cardStack.trailingAnchor.constraint(equalTo: dayCard.trailingAnchor,
-                                                constant: -16),
-            cardStack.bottomAnchor.constraint(equalTo: dayCard.bottomAnchor, constant: -18),
-
-            levelImageView.heightAnchor.constraint(equalToConstant: 72),
 
             close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 55),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
@@ -423,8 +405,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     // MARK: - The challenge on screen
 
+    /// Rebuilds the day list and refreshes everything outside the cards.
+    ///
+    /// The cards themselves are the pager's business - they configure from `dayKeys` when
+    /// the collection view asks. This is the furniture around them: the date, the arrows,
+    /// the countdown, the leaderboard button and the test clock's readout.
     func showChallenge() {
-        let challenge = DailyChallengeGenerator.challenge(forKey: viewedKey)
+        rebuildDayKeys()
 
         dateLabel.text = headerDateText
         if viewedOffset == 0 {
@@ -441,53 +428,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         backArrow.isEnabled = canGoBack
         forwardArrow.isEnabled = canGoForward
 
-        modeLabel.text = challenge.mode.name.uppercased()
-        if let level = challenge.classicLevel {
-            let number = DailyChallengeGenerator.levelNumber(forClassicLevel: level)
-            let pack = DailyChallengeGenerator.pack(forClassicLevel: level)
-            let setup = LevelPackSetup()
-            levelImageView.image = setup.levelImageArray[number]
-            levelLabel.text = "\(setup.levelNameArray[number]) - \(setup.levelPackNameArray[pack])"
-                + "\nA single level - clear it for the score"
-            // The level by its name, home and picture, not its number (play-test notes):
-            // a number says nothing, and a glimpse of a level from a pack you have not
-            // opened is the tasting menu
-        } else {
-            levelImageView.image = UIImage(named: "EndlessIcon.png")
-            levelLabel.text = "How high can you get?"
-        }
-
-        twistsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let listed: [(NSAttributedString, String)] = challenge.twists.isEmpty
-            ? [(DailyTwist.vanillaLine(font: .boldSystemFont(ofSize: 16), colour: .white),
-                DailyTwist.vanillaBlurb)]
-            : challenge.twists.map {
-                ($0.titleLine(font: .boldSystemFont(ofSize: 16), colour: .white), $0.blurb)
-            }
-        // A day with no twists is Vanilla, named and badged like any other (play-test
-        // round 3) - the baseline day is a kind of day, not the absence of one
-        for (title, blurbText) in listed {
-            let name = UILabel()
-            name.attributedText = title
-            name.textAlignment = .center
-
-            let blurb = UILabel()
-            blurb.text = blurbText
-            blurb.font = .systemFont(ofSize: 14)
-            blurb.textColor = UIColor(white: 1, alpha: 0.7)
-            blurb.textAlignment = .center
-            blurb.numberOfLines = 0
-
-            let pair = UIStackView(arrangedSubviews: [name, blurb])
-            pair.axis = .vertical
-            pair.spacing = 3
-            pair.alignment = .center
-            twistsStack.addArrangedSubview(pair)
-        }
-
-        showResult(for: totalStatsArray[0].dailyRecord(forKey: viewedKey),
-                   mode: challenge.mode)
-
         leaderboardButton.isHidden = GKLocalPlayer.local.isAuthenticated == false
         // The same rule the level screens use: no Game Center, no leaderboard button.
         // The boards themselves are App Store Connect work (James's side, §7)
@@ -497,6 +437,53 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             ? "TEST CLOCK: LIVE"
             : "TEST CLOCK: \(offset > 0 ? "+" : "")\(offset) day\(abs(offset) == 1 ? "" : "s")"
         refreshCountdown()
+        askForTodaysRank()
+    }
+
+    /// Every day the pager can reach, oldest first, ending with today.
+    private func rebuildDayKeys() {
+        var keys: [String] = []
+        var offset = 0
+        while true {
+            let date = DailyDay.utcCalendar.date(byAdding: .day, value: offset,
+                                                 to: DailyChallengeSession.shared.today)!
+            let key = DailyDay.key(for: date)
+            guard key >= earliestKey else { break }
+            keys.append(key)
+            offset -= 1
+        }
+        dayKeys = keys.reversed()
+        // Oldest first so scrolling right moves forward in time, which is the direction a
+        // list of dates is read in
+    }
+
+    /// Which page a day sits on, and the reverse - the pager counts up from the oldest day,
+    /// the rest of the screen counts back from today.
+    private var pageForViewedOffset: Int { max(0, dayKeys.count - 1 + viewedOffset) }
+
+    private func viewedOffset(forPage page: Int) -> Int { page - (dayKeys.count - 1) }
+
+    /// Puts the pager on a day. Without animation while the screen is being built, so the
+    /// first thing shown is today rather than the oldest day scrolling past.
+    func scrollToViewedDay(animated: Bool) {
+        guard dayKeys.isEmpty == false, days.bounds.width > 0 else { return }
+        let x = CGFloat(pageForViewedOffset)*days.bounds.width
+        days.setContentOffset(CGPoint(x: x, y: 0), animated: animated)
+    }
+
+    /// The rank of today's posted score, asked of Game Center at most once per visit.
+    private func askForTodaysRank() {
+        guard viewedOffset == 0, todayRank == nil, todayRankRequested == false,
+              totalStatsArray[0].dailyRecord(forKey: viewedKey)?.posted == true
+        else { return }
+        todayRankRequested = true
+        GameCenterHandler().loadDailyRank { [weak self] rank in
+            guard let self, let rank else { return }
+            self.todayRank = rank
+            self.days.reloadData()
+            // The placing joins the card when Game Center answers; the recurring board
+            // resets at the deadline, so only today has one to ask for
+        }
     }
 
     /// The date the header shows for the viewed day.
@@ -513,79 +500,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         stamp.timeZone = TimeZone(identifier: "UTC")
         stamp.locale = .autoupdatingCurrent
         return stamp.string(from: viewedDate).uppercased()
-    }
-
-    /// The day's own result, with a badge saying whether it reached the live board.
-    ///
-    /// Play-test request: an icon beside the score depicting whether it is posted. Three
-    /// states, because there are three - posted, played but not posted (practice, or a
-    /// scoring run that could not reach Game Center), and not played at all.
-    func showResult(for record: DailyChallengeRecord?, mode: GameMode) {
-        guard let record, record.attemptCount > 0 else {
-            resultLabel.attributedText = nil
-            resultLabel.isHidden = true
-            return
-        }
-        resultLabel.isHidden = false
-
-        let unit = mode == .classic ? "" : "m"
-        let headline = record.posted
-            ? "Posted: \(record.firstAttemptScore)\(unit)   "
-            : "Your best: \(max(record.firstAttemptScore, record.bestPracticeScore))\(unit)   "
-        // Once a score is on the board, the board's number is the day's number - a
-        // practice best beside it made no sense (play-test round 5). Before then the
-        // best of whatever was played is the honest summary
-        let line = NSMutableAttributedString(
-            string: headline,
-            attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
-                         .foregroundColor: UIColor.white])
-
-        let pendingToday = record.isPending && viewedOffset == 0
-        let symbol: String
-        let caption: String
-        let tint: UIColor
-        if record.posted {
-            symbol = "checkmark.seal.fill"
-            if viewedOffset == 0, let rank = todayRank {
-                caption = "  #\(rank) on the board"
-            } else {
-                caption = "  on the board"
-            }
-            tint = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-            if viewedOffset == 0, todayRank == nil, todayRankRequested == false {
-                todayRankRequested = true
-                GameCenterHandler().loadDailyRank { [weak self] rank in
-                    guard let self, let rank else { return }
-                    self.todayRank = rank
-                    self.showResult(for: record, mode: mode)
-                }
-                // The placing joins the badge when Game Center answers - and only
-                // today's, because the recurring board resets at the deadline and a
-                // past day's rank no longer exists to ask for
-            }
-        } else if pendingToday {
-            symbol = "hourglass"
-            caption = "  waiting to post"
-            tint = UIColor(white: 1, alpha: 0.6)
-            // Earned in the window, not yet landed (§12.5) - the retry loop is carrying
-            // it, and this badge flips to the green check the moment it does
-        } else {
-            symbol = "clock.badge.xmark"
-            caption = "  not posted"
-            tint = UIColor(white: 1, alpha: 0.45)
-        }
-
-        let badge = NSTextAttachment()
-        badge.image = UIImage(systemName: symbol)?
-            .withTintColor(tint, renderingMode: .alwaysOriginal)
-        badge.bounds = CGRect(x: 0, y: -2, width: 17, height: 15)
-        line.append(NSAttributedString(attachment: badge))
-
-        line.append(NSAttributedString(
-            string: caption,
-            attributes: [.font: UIFont.systemFont(ofSize: 13),
-                         .foregroundColor: tint]))
-        resultLabel.attributedText = line
     }
 
     func refreshCountdown() {
@@ -607,129 +521,17 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     // MARK: - Day browsing
 
-    @objc private func dayEarlier() { if canGoBack { step(by: -1) } }
-    @objc private func dayLater() { if canGoForward { step(by: 1) } }
+    /// The arrows and the date-tap drive the pager rather than the day directly, so every
+    /// way of changing day - swipe, arrow, tap - ends in the same place: a scroll, whose
+    /// landing is what sets `viewedOffset`.
+    @objc private func dayEarlier() { if canGoBack { turn(to: viewedOffset - 1) } }
+    @objc private func dayLater() { if canGoForward { turn(to: viewedOffset + 1) } }
 
-    /// Everything that turns with the day. The arrows are not in it - they are the rail,
-    /// not the page (play-test round 2).
-    private var pageViews: [UIView] { [dateLabel, countdownLabel, dayCard] }
-
-    /// Whether this swipe is one the page should follow, decided once at `.began` and
-    /// held for the gesture.
-    private var daySwipeIsOurs = false
-
-    /// The whole-screen day swipe, following the finger.
-    ///
-    /// A standard page swipe (play-test round 3 - the old one jumped at the end of the
-    /// gesture instead of moving with the finger): the page tracks the drag, resists at
-    /// the ends of the range, and on release either completes the turn or springs back.
-    ///
-    /// The start is worked back from the translation, because a pan only begins after the
-    /// touch has travelled its slop - the same correction MenuNavigation makes.
-    @objc private func daySwiped(_ gesture: UIPanGestureRecognizer) {
-        let moved = gesture.translation(in: view)
-
-        switch gesture.state {
-        case .began:
-            let now = gesture.location(in: view)
-            let startX = now.x - moved.x
-            daySwipeIsOurs = menuNavigationIsFrontmost
-                && startX > MenuNavigation.edgeWidth
-                && startX < view.bounds.width - MenuNavigation.edgeWidth
-            // The edge strips belong to back and forward - a day swipe starting there
-            // would fire alongside the navigation swipe and do two things with one finger
-
-        case .changed:
-            guard daySwipeIsOurs, abs(moved.x) > abs(moved.y) else { return }
-            let wanted = moved.x > 0 ? canGoBack : canGoForward
-            let travel = wanted ? moved.x : moved.x*0.2
-            // Rubber-banding at the ends of the range: today refuses to turn forward, and
-            // the oldest day refuses to turn back, but the page still gives a little so
-            // the refusal is something you feel rather than a dead screen
-            for page in pageViews {
-                page.transform = CGAffineTransform(translationX: travel, y: 0)
-                page.alpha = 1 - min(0.6, abs(travel)/view.bounds.width)
-            }
-
-        case .ended, .cancelled, .failed:
-            defer { daySwipeIsOurs = false }
-            guard daySwipeIsOurs else { return }
-            let velocity = gesture.velocity(in: view).x
-            let far = abs(moved.x) > view.bounds.width*0.25 || abs(velocity) > 600
-            let wanted = moved.x > 0 ? canGoBack : canGoForward
-
-            if far, wanted, abs(moved.x) > abs(moved.y) {
-                step(by: moved.x > 0 ? -1 : 1, from: moved.x)
-            } else {
-                settlePage()
-            }
-
-        default:
-            break
-        }
-    }
-
-    /// Springs the page back to where it was, for a swipe that did not go far enough.
-    private func settlePage() {
-        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.8,
-                       initialSpringVelocity: 0.4) {
-            for page in self.pageViews {
-                page.transform = .identity
-                page.alpha = 1
-            }
-        }
-    }
-
-    /// Turns the page a day back or forward, carrying on from wherever the finger left
-    /// it - older days leave to the right, newer to the left.
-    ///
-    /// The outgoing day leaves as a snapshot so the incoming one can enter *while* it
-    /// goes (play-test round 9: the next day should appear soon after the swipe starts,
-    /// not wait its turn) - and it enters from just past the edge rather than a full
-    /// screen away, which is what closes the gap between days.
-    private func step(by delta: Int, from offset: CGFloat = 0) {
+    private func turn(to offset: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
-        viewedOffset += delta
-        let width = view.bounds.width
-        let exitX: CGFloat = delta < 0 ? width : -width
-
-        var ghosts: [UIView] = []
-        for page in pageViews {
-            guard let ghost = page.snapshotView(afterScreenUpdates: false),
-                  let holder = page.superview else { continue }
-            ghost.frame = view.convert(page.frame, from: holder)
-            ghost.alpha = page.alpha
-            view.addSubview(ghost)
-            ghosts.append(ghost)
-            // The frame is read with the drag's translation still applied, so the ghost
-            // carries on from wherever the finger left the real page
-        }
-
+        viewedOffset = offset
+        scrollToViewedDay(animated: true)
         showChallenge()
-        for page in pageViews {
-            page.transform = CGAffineTransform(translationX: -exitX*0.3, y: 0)
-            page.alpha = 0.2
-        }
-        // From barely past the edge, already faintly visible (round 10: the gap between
-        // days was "still far too big" at half a screen) - the next day is adjacent, not
-        // somewhere else
-
-        let remaining = max(0.1, min(0.22, Double(abs(exitX - offset)/width)*0.22))
-        // The rest of the way out takes the time the rest of the way deserves, so a page
-        // flicked most of the way across does not then travel slowly
-
-        UIView.animate(withDuration: remaining, delay: 0, options: .curveEaseOut, animations: {
-            for ghost in ghosts {
-                ghost.transform = CGAffineTransform(translationX: exitX - offset, y: 0)
-                ghost.alpha = 0
-            }
-            for page in self.pageViews {
-                page.transform = .identity
-                page.alpha = 1
-            }
-        }) { _ in
-            ghosts.forEach { $0.removeFromSuperview() }
-        }
     }
 
     // MARK: - Actions
@@ -791,9 +593,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     @objc private func dateTapped() {
         guard viewedOffset != 0 else { return }
-        step(by: -viewedOffset)
-        // One page turn, however many days out - the browse was one gesture, the way
-        // back is one tap
+        turn(to: 0)
+        // Straight back to today however many days out - the browse was one gesture, the
+        // way back is one tap
     }
 
     @objc private func closeTapped() {
@@ -876,5 +678,69 @@ extension DailyChallengeViewController: GKGameCenterControllerDelegate {
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true)
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+    }
+}
+
+// MARK: - The days, as pages
+
+extension DailyChallengeViewController: UICollectionViewDataSource,
+                                        UICollectionViewDelegateFlowLayout {
+
+    func collectionView(_ collectionView: UICollectionView,
+                        numberOfItemsInSection section: Int) -> Int {
+        dayKeys.count
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: DailyCardCell.reuseID, for: indexPath) as! DailyCardCell
+        let key = dayKeys[indexPath.item]
+        let isToday = key == DailyChallengeSession.shared.todayKey
+        cell.card.show(key: key, isToday: isToday,
+                       record: totalStatsArray[0].dailyRecord(forKey: key),
+                       rank: isToday ? todayRank : nil)
+        cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
+        return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        collectionView.bounds.size
+        // A page is the whole viewport, which is what makes paging land on whole days
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { dayDidLand() }
+
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) { dayDidLand() }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        if decelerate == false { dayDidLand() }
+    }
+
+    /// The pager has settled on a day: that day becomes the viewed one, and everything
+    /// outside the cards catches up.
+    ///
+    /// The scroll position is the source of truth now, rather than something kept in step
+    /// with `viewedOffset` - which is what stops the two disagreeing after a fast swipe.
+    private func dayDidLand() {
+        guard days.bounds.width > 0 else { return }
+        let page = Int((days.contentOffset.x/days.bounds.width).rounded())
+        let landed = viewedOffset(forPage: max(0, min(dayKeys.count - 1, page)))
+        guard landed != viewedOffset else { return }
+        viewedOffset = landed
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        showChallenge()
+    }
+
+    /// What a twist does, when its name is tapped (play-test round 15). The same words the
+    /// card already shows, in a pop-up - so a twist met mid-run can be looked up rather
+    /// than remembered.
+    func explain(_ twist: DailyTwist) {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        let notice = UIAlertController(title: twist.displayName, message: twist.blurb,
+                                       preferredStyle: .alert)
+        notice.addAction(UIAlertAction(title: "Got it", style: .default))
+        present(notice, animated: true)
     }
 }

@@ -54,7 +54,10 @@ extension GameScene {
     }
 
     func endlessIICollectBallSteering() {
-        endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        // Timed, alone in this batch (play-test round 15). Turns are the right unit for a
+        // power-up that acts *on* a paddle hit; steering acts continuously between them,
+        // and counting hits meant the effect ended in the middle of using it
     }
 
     func endlessIICollectInertPaddle() {
@@ -166,8 +169,9 @@ extension GameScene {
         endlessIIMagnetismClock.spendTurn()
         endlessIIPortalPaddleClock.spendTurn()
         endlessIIPaddleHaloClock.spendTurn()
-        endlessIIBallSteeringClock.spendTurn()
         endlessIIInertPaddleClock.spendTurn()
+        // Ball Steering is not here: it runs on time now, and spending it a turn as well
+        // would end it twice as fast as its ring says
         endlessIIFlippedAngleClock.spendTurn()
         endlessIIReversedControlsClock.spendTurn()
         endlessIIAutoAimClock.spendTurn()
@@ -285,8 +289,12 @@ extension GameScene {
             tickEndlessIIPaddleHalo()
         }
         tickEndlessIIPaddleDressing()
-        // The batch's clocks no longer run on time at all - they count paddle hits, spent in
-        // `endlessIISpendPaddleTurns`, so there is nothing to run down here
+        if gameState.currentState is Playing && isPaused == false {
+            endlessIIBallSteeringClock.run(down: delta)
+        }
+        // The rest of the batch counts paddle hits, spent in `endlessIISpendPaddleTurns`.
+        // Ball Steering is the exception: it acts continuously rather than on contact, so
+        // it runs on the clock (play-test round 15)
 
         if endlessIIPaddleHaloClock.isRunning == false {
             endlessIIPaddleHaloNode?.removeFromParent()
@@ -330,23 +338,7 @@ extension GameScene {
     }
 
     private func applyEndlessIIBallSteering() {
-        let paddleDelta = paddle.position.x - endlessIISteeringLastPaddleX
-        endlessIISteeringLastPaddleX = paddle.position.x
-        // Sampled every frame whether or not the power-up is running, so the first steered
-        // frame moves the ball by that frame's paddle movement rather than by everything
-        // since the run began
-
-        guard endlessIIBallSteeringClock.isRunning else {
-            endlessIISteeringPending = 0
-            return
-        }
-
-        endlessIISteeringPending += paddleDelta*EndlessIIPaddleEffects.steeringFactor
-        let step = EndlessIIPaddleEffects.steeringStep(pending: endlessIISteeringPending)
-        endlessIISteeringPending = step.remaining
-        guard step.apply != 0 else { return }
-        // One-to-one with a tiny bit of inertia: the paddle's movement pools, and the balls
-        // take most of the pool every frame - they visibly follow rather than teleport
+        guard endlessIIBallSteeringClock.isRunning else { return }
 
         for subject in endlessIIBallsInPlay {
             guard subject.parent != nil else { continue }
@@ -354,10 +346,18 @@ extension GameScene {
             guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { continue }
             // A held ball already rides the paddle; steering it twice doubles the ride
 
-            subject.position.x = EndlessIIPaddleEffects.steered(
-                x: subject.position.x, paddleMovedBy: step.apply,
+            subject.position.x = EndlessIIPaddleEffects.steeredTowards(
+                paddleX: paddle.position.x, from: subject.position.x,
                 leftWall: -gameWidth/2, rightWall: gameWidth/2,
                 radius: subject.size.width/2)
+
+            if let body = subject.physicsBody {
+                body.velocity = EndlessIIPaddleEffects.steeredVelocity(body.velocity)
+            }
+            // The ball is drawn to the paddle's column and its sideways momentum bleeds
+            // away into vertical, so it forgets the trajectory it arrived on. Bricks and
+            // walls still bounce it - the bounce simply does not last, because the pull
+            // gathers it back in over the next few frames (play-test round 15)
         }
     }
 

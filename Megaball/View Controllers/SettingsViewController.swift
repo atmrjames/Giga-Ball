@@ -187,6 +187,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
             settingsTableView.rowHeight = 70.0
+            cell.contentView.viewWithTag(Self.swipeInfoTag)?.removeFromSuperview()
+            // Every row, not just the one that adds it. Removing it only where it is
+            // added meant a recycled cell carried the info button into whatever row it
+            // was reused for - which is how one button became one on nearly every row
+            // (play-test round 15)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.isHidden = false
             
@@ -377,8 +382,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     /// Cells are reused, so any previous one is removed before a new one is added -
     /// otherwise scrolling would stack them up on rows that never asked for one.
     func addSwipeInfoButton(to cell: SettingsTableViewCell) {
-        cell.contentView.viewWithTag(Self.swipeInfoTag)?.removeFromSuperview()
-
         let info = UIButton(type: .system)
         info.tag = Self.swipeInfoTag
         info.setImage(UIImage(systemName: "info.circle",
@@ -392,7 +395,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         NSLayoutConstraint.activate([
             info.trailingAnchor.constraint(equalTo: cell.settingState.leadingAnchor,
                                            constant: -6),
-            info.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            info.centerYAnchor.constraint(equalTo: cell.settingState.centerYAnchor),
+            // Level with the row's own text rather than with the cell: the card inside
+            // the cell is inset, so the cell's centre is not the row's centre
             info.widthAnchor.constraint(equalToConstant: 44),
             info.heightAnchor.constraint(equalToConstant: 44),
         ])

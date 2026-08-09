@@ -51,6 +51,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     
     @IBOutlet var packNameLabel: UILabel!
     private var modeIconView: UIImageView?
+    private var runKindLabel: UILabel?
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var levelNameLabel: UILabel!
     @IBOutlet var completeLabel: UILabel!
@@ -371,16 +372,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                     lines.append(twist.titleLine(font: font, colour: colour))
                 }
             }
-            let scoring = DailyChallengeSession.shared.isScoringAttempt
-            lines.append(NSAttributedString(
-                string: "\n\n" + (scoring ? "COMPETITION RUN" : "FREE PLAY"),
-                attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
-                             .foregroundColor: scoring
-                                ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-                                : UIColor(white: 1, alpha: 0.55)]))
-            // Which kind of run this is, said before it starts (play-test round 13) - the
-            // pop-up on the play press says it too, but the splash is the last look at
-            // the rules and a spent attempt is exactly the thing to be sure of
+            showRunKind()
 
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = .center
@@ -393,6 +385,32 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             // One twist per line, the same as the pause summary (play-test round 3), and
             // a no-twist day says Vanilla with its own badge rather than saying nothing
         }
+    }
+
+    /// Whether this daily run is the scoring attempt or free play, said before it starts.
+    ///
+    /// Its own label, because the splash's labels carry fixed height constraints from the
+    /// storyboard - appending these words to the twists list simply clipped them, which is
+    /// why the line was reported missing twice (play-test rounds 14 and 15). A label built
+    /// here has no height to run out of.
+    private func showRunKind() {
+        guard runKindLabel == nil else { return }
+        let scoring = DailyChallengeSession.shared.isScoringAttempt
+
+        let label = UILabel()
+        label.text = scoring ? "COMPETITION RUN" : "FREE PLAY"
+        label.font = .boldSystemFont(ofSize: 13)
+        label.textColor = scoring
+            ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            : UIColor(white: 1, alpha: 0.55)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        levelNameLabel.superview?.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: levelNameLabel.bottomAnchor, constant: 10),
+            label.centerXAnchor.constraint(equalTo: levelNameLabel.centerXAnchor),
+        ])
+        runKindLabel = label
     }
 
     /// The mode's icon above its name (play-test round 11) - the same artwork the main

@@ -91,38 +91,47 @@ enum EndlessIIPaddleEffects {
 
     // MARK: - Ball Steering
 
-    /// Where a steered ball ends up after the paddle moved.
+    /// Where a steered ball is pulled to: the paddle's own column, approached rather than
+    /// snapped to, and never past a wall.
     ///
-    /// A fraction of the paddle's own movement, applied to the ball's position and clamped
-    /// inside the walls - steering must never be able to push a ball through one.
-    static func steered(x: CGFloat, paddleMovedBy delta: CGFloat,
-                        leftWall: CGFloat, rightWall: CGFloat, radius: CGFloat) -> CGFloat {
-        max(leftWall + radius, min(rightWall - radius, x + delta))
-        // The factor is applied where the movement pools - this only moves and clamps
+    /// Rebuilt in play-test round 15. It used to add a share of the paddle's *movement* to
+    /// the ball, which meant a stationary paddle steered nothing and the ball kept whatever
+    /// sideways trajectory it already had - "horrid", and rightly: the power-up said the
+    /// paddle steers the ball and the ball was still mostly steering itself. Now the paddle
+    /// owns the ball's column outright. The ball is drawn toward wherever the paddle is,
+    /// closing a fixed fraction of the gap each frame, which is what gives the movement
+    /// weight rather than making the ball a cursor.
+    static func steeredTowards(paddleX: CGFloat, from x: CGFloat,
+                               leftWall: CGFloat, rightWall: CGFloat,
+                               radius: CGFloat) -> CGFloat {
+        let wanted = x + (paddleX - x)*steeringFollow
+        return max(leftWall + radius, min(rightWall - radius, wanted))
     }
 
-    /// How much of the paddle's movement the ball inherits.
+    /// How much of the gap to the paddle a steered ball closes each frame.
     ///
-    /// All of it, one to one - half was tried first and play-testing found it very hard to
-    /// control. The inertia below is what keeps 1:1 from feeling like dragging the ball on
-    /// a stick.
-    static let steeringFactor: CGFloat = 1.0
+    /// The inertia, in one number. High enough that the ball answers the paddle at once,
+    /// low enough that it arrives rather than teleports - and low enough that a bounce off
+    /// a brick visibly throws it off course before it is gathered back in.
+    static let steeringFollow: CGFloat = 0.16
 
-    /// What fraction of the outstanding steering the ball closes each frame.
+    /// How much of a steered ball's sideways speed survives each frame.
     ///
-    /// The paddle's movement goes into a pending pot and the ball takes most of it every
-    /// frame - a tiny bit of inertia, so the ball visibly follows rather than teleports.
-    ///
-    /// Raised from 0.45 after the second play test: the ball still read as resisting the
-    /// paddle. The ask is close to 1:1 with only a hint of inertia, so the lag now clears
-    /// in about two frames rather than four.
-    static let steeringSmoothing: CGFloat = 0.7
+    /// The other half of "the ball should forget its original trajectory": bleeding the
+    /// horizontal velocity away stops the physics engine arguing with the steering every
+    /// frame, which is what would otherwise make a steered ball jitter. What is taken out
+    /// sideways is put back vertically by `steeredVelocity`, so the ball keeps its pace -
+    /// a steered ball is not a slower ball.
+    static let steeringVelocityDamping: CGFloat = 0.82
 
-    /// How much of the pending steering is applied this frame, and what remains.
-    static func steeringStep(pending: CGFloat) -> (apply: CGFloat, remaining: CGFloat) {
-        let apply = pending*steeringSmoothing
-        let remaining = pending - apply
-        return (apply, abs(remaining) < 0.05 ? 0 : remaining)
+    /// A steered ball's velocity after this frame's damping: less sideways, the same speed.
+    static func steeredVelocity(_ velocity: CGVector) -> CGVector {
+        let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
+        guard speed > 0 else { return velocity }
+        let dx = velocity.dx*steeringVelocityDamping
+        let upward: CGFloat = velocity.dy >= 0 ? 1 : -1
+        let dy = upward*max(0, speed*speed - dx*dx).squareRoot()
+        return CGVector(dx: dx, dy: dy)
     }
 
     // MARK: - Paddle Halo
