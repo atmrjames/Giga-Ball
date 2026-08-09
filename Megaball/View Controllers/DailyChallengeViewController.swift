@@ -45,6 +45,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// the browsing is never allowed forward of it.
     var viewedOffset = 0
 
+    let dateBlockGuide = UILayoutGuide()
+
     var todayRank: Int?
     var todayRankRequested = false
     // Where today's posted score stands, once Game Center has answered - asked for at
@@ -156,6 +158,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     // MARK: - Layout
 
     private func buildLayout() {
+        view.addLayoutGuide(dateBlockGuide)
+
+        let modeIcon = UIImageView(image: PowerUpIcon.dailyChallenge)
+        modeIcon.contentMode = .scaleAspectFit
+        modeIcon.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(modeIcon)
+        // The mode's icon above its title (play-test round 12): icon, then title, then
+        // everything else - the order every mode menu is heading for
+
         let title = UILabel()
         title.text = "DAILY CHALLENGE"
         title.font = .systemFont(ofSize: 35, weight: .black)
@@ -175,6 +186,11 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         dateLabel.textAlignment = .center
         dateLabel.adjustsFontSizeToFitWidth = true
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        dateLabel.isUserInteractionEnabled = true
+        dateLabel.addGestureRecognizer(
+            UITapGestureRecognizer(target: self, action: #selector(dateTapped)))
+        // Tapping the date is the way home (play-test round 12): from any browsed day,
+        // one tap turns the page back to today
         view.addSubview(dateLabel)
 
         for arrow in [backArrow, forwardArrow] {
@@ -307,8 +323,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         developerResetButton = reset
 
         NSLayoutConstraint.activate([
-            title.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
-                                       constant: 34),
+            modeIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
+                                          constant: 16),
+            modeIcon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            modeIcon.widthAnchor.constraint(equalToConstant: 48),
+            modeIcon.heightAnchor.constraint(equalToConstant: 48),
+
+            title.topAnchor.constraint(equalTo: modeIcon.bottomAnchor, constant: 6),
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
@@ -325,11 +346,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // arrows - the date's font changes size between today and other days, and
             // arrows centred on a label that breathes were bobbing with it
 
-            backArrow.centerYAnchor.constraint(equalTo: dateLabel.centerYAnchor),
+            dateBlockGuide.topAnchor.constraint(equalTo: dateLabel.topAnchor),
+            dateBlockGuide.bottomAnchor.constraint(equalTo: countdownLabel.bottomAnchor),
+            backArrow.centerYAnchor.constraint(equalTo: dateBlockGuide.centerYAnchor),
             backArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -150),
-            forwardArrow.centerYAnchor.constraint(equalTo: dateLabel.centerYAnchor),
+            forwardArrow.centerYAnchor.constraint(equalTo: dateBlockGuide.centerYAnchor),
             forwardArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor,
                                                   constant: 150),
+            // Centred on the date-and-countdown pair as one block (play-test round 12),
+            // via a layout guide spanning both
 
             countdownLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor,
                                                 constant: 4),
@@ -570,7 +595,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             let minutes = (Int(remaining) % 3600)/60
             countdownLabel.text = "Closes in \(hours)h \(minutes)m"
         } else {
-            countdownLabel.text = "Challenge closed, practice only"
+            countdownLabel.text = "Challenge closed, free play only"
             // A past day plays for ever and posts nothing (§8). One word under the date
             // is the whole of it now - the standing yellow banner it used to share the
             // screen with is gone (play-test round 5), and the pop-up on the play press
@@ -715,7 +740,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
             isToday: viewedOffset == 0,
             mode: challenge.mode) {
-            let alert = UIAlertController(title: "Practice run", message: notice,
+            let alert = UIAlertController(title: "Free play", message: notice,
                                           preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
             alert.addAction(UIAlertAction(title: "Play", style: .default) { [weak self] _ in
@@ -760,6 +785,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
                              levelPack: 1)
         }
         removeAnimate()
+    }
+
+    @objc private func dateTapped() {
+        guard viewedOffset != 0 else { return }
+        step(by: -viewedOffset)
+        // One page turn, however many days out - the browse was one gesture, the way
+        // back is one tap
     }
 
     @objc private func closeTapped() {

@@ -1,6 +1,15 @@
 # Daily Challenge — design specification
 
-**Status: phases 1-2 built and play-tested once; the first feedback round is folded in.**
+**Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full; ten
+feedback rounds folded in. Still open: phase 4's twist subset, phase 5 (streaks,
+per-day results, round 12's posted-score container), phase 6 themes, and §11.5's
+notifications and share card. The test clock (the DAY stepper and RESET ATTEMPTS on the
+briefing screen) is still in the build and must be removed or debug-gated before
+release - this header is the tracking for that. "Practice" is called free play
+everywhere the player reads it (round 12).**
+
+*The paragraphs below record the build as it grew; §12 holds the phase plan and
+FUTURE-RELEASES.md holds the release map.*
 The generator exists exactly as §2 specifies - SplitMix64, pinned against reference
 outputs, exact-output tests as the cross-device contract - and the mode is playable end to
 end: the menu row, the briefing screen, and Classic/Endless/Mayhem dailies launching with
@@ -341,6 +350,11 @@ briefing screen (§6).
   rank over total. Average needs a sweep of entries (paged, cap it) or an approximation
   from the top page - decide when building. Refresh on screen-appear plus a modest
   timer; never block the screen on the network.
+- **The posted-score container** (twelfth round): once a day's score is posted, it
+  deserves its own container *beneath* the details card, not a line inside it - a
+  checkmark icon and unmistakable "score posted" reading, with the score and rank. Free
+  play attempts played after the post get listed in the same container. (The same round
+  renamed the practice language: it is **free play** everywhere the player can read.)
 - **A real pager for day browsing** (eleventh round, third gap report): the next day's
   card should be visible *during* the swipe, like a horizontal list that snaps - not
   loaded at release. That means two live card instances (or a UIScrollView/

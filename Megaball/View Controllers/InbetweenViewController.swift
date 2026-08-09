@@ -403,7 +403,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         view.addSubview(icon)
         NSLayoutConstraint.activate([
             icon.centerXAnchor.constraint(equalTo: packNameLabel.centerXAnchor),
-            icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor, constant: -14),
+            icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor, constant: -6),
+            // Close under the icon (play-test round 12: "nearer the title")
             icon.widthAnchor.constraint(equalToConstant: 56),
             icon.heightAnchor.constraint(equalToConstant: 56),
         ])

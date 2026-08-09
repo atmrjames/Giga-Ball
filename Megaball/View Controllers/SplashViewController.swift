@@ -164,7 +164,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                     ? "This challenge closed while you were away.\nThe run continues - the score will not be posted."
                     : ((savedGame.dailyWasScoringAttempt ?? false)
                         ? "Still your scoring attempt."
-                        : "Practice run.")
+                        : "Free play.")
                 scoreLabel.attributedText = resumeDetail(
                     title: challenge.mode == .classic ? "Score" : "Height",
                     value: challenge.mode == .classic

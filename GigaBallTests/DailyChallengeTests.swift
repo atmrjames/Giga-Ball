@@ -250,7 +250,7 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertEqual(
             DailyChallengePosting.practiceNotice(record: nil, isToday: false,
                                                  mode: .classic),
-            "This challenge has closed.\nPractice scores are never posted.")
+            "This challenge has closed.\nFree play scores are never posted.")
 
         var spent = DailyChallengeRecord(dateKey: "t")
         spent.attemptCount = 1

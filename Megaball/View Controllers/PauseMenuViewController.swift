@@ -376,7 +376,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 // Store Connect - the retry loop carries it and the briefing screen's
                 // badge tells the truth of where it got to
             } else {
-                result = "Practice run — practice never posts"
+                result = "Free play — free play never posts"
             }
             summary.append(NSAttributedString(
                 string: "\n\n\(result)",

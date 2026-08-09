@@ -397,6 +397,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Haptics
                 hapticsSetting = !hapticsSetting
                 defaults.set(hapticsSetting, forKey: "hapticsSetting")
+                if hapticsSetting { interfaceHaptic.impactOccurred() }
+                // Switching haptics on answers with one tick - the demonstration.
+                // Switching them off answers with the silence it just bought
+                // (play-test round 12: the release path fired on the *old* value,
+                // so turning them off buzzed)
             case 5:
             // Game background
                 hideAnimate()
@@ -537,15 +542,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
-            if settingRow(for: indexPath) != 4 {
-                interfaceHaptic.impactOccurred()
-            }
-        } else {
-            if settingRow(for: indexPath) == 4 {
-                interfaceHaptic.impactOccurred()
-            }
+            interfaceHaptic.impactOccurred()
         }
-        
+        // With haptics off, every press is silent - including the haptics row itself
+        // (play-test round 12: turning haptics *off* was firing one). The tick that
+        // demonstrates the toggle lives in didSelect, after the setting has flipped
+
         if let cell = self.settingsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
@@ -555,12 +557,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting && settingRow(for: indexPath) == 4 {
-            interfaceHaptic.impactOccurred()
-        }
-        // Releases are silent now (play-test round 11: press-and-release double-buzzed
-        // every button) - except the haptics toggle itself, whose release tick is the
-        // demonstration of what was just switched on
+        // Releases are silent (play-test rounds 11 and 12) - the toggle's demonstration
+        // tick lives in didSelect, where the flipped setting is already the truth
         if let cell = self.settingsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .identity

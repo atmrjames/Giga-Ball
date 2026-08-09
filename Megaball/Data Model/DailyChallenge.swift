@@ -341,7 +341,7 @@ enum DailyChallengePosting {
     static func practiceNotice(record: DailyChallengeRecord?, isToday: Bool,
                                mode: GameMode) -> String? {
         guard isToday else {
-            return "This challenge has closed.\nPractice scores are never posted."
+            return "This challenge has closed.\nFree play scores are never posted."
         }
         guard let record, record.attemptCount > 0 else { return nil }
         if record.posted {
