@@ -489,15 +489,9 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonClose")
                 case 1:
                     if self.gameCenterSetting {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")

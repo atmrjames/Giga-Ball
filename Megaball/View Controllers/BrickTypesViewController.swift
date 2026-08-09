@@ -241,9 +241,6 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .identity
@@ -295,9 +292,6 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity

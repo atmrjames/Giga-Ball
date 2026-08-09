@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giga-Ball — a brick-breaker for iPhone and iPad</title>
+<meta name="description" content="Giga-Ball is a fast, colourful brick-breaker for iPhone and iPad. Classic levels, two endless modes and a daily challenge. Free to download — no ads, no in-app purchases.">
+<meta property="og:title" content="Giga-Ball">
+<meta property="og:description" content="A fast, colourful brick-breaker for iPhone and iPad. Free — no ads, no in-app purchases.">
+<meta property="og:image" content="https://giga-ball.app/assets/icon.png">
+<meta property="og:url" content="https://giga-ball.app">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<style>
+  :root {
+    --purple-deep: #1b0026;
+    --purple: #290040;
+    --green: #d2ff00;
+    --white-soft: rgba(255, 255, 255, 0.82);
+    --white-faint: rgba(255, 255, 255, 0.55);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(120% 90% at 50% 0%, var(--purple) 0%, var(--purple-deep) 70%);
+    color: var(--white-soft);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    text-align: center;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 56px 24px 40px; }
+  .icon {
+    width: 132px; height: 132px; border-radius: 30px;
+    box-shadow: 0 10px 40px rgba(210, 255, 0, 0.25), 0 4px 18px rgba(0, 0, 0, 0.5);
+  }
+  .logo { max-width: 320px; width: 80%; margin: 28px auto 0; display: block;
+          filter: drop-shadow(0 6px 18px rgba(210, 255, 0, 0.35)); }
+  h1 { position: absolute; left: -9999px; }
+  .tagline {
+    font-size: 1.35rem; font-weight: 700; color: #fff; margin-top: 22px;
+    letter-spacing: 0.01em;
+  }
+  .blurb {
+    max-width: 560px; margin: 14px auto 0; line-height: 1.55; font-size: 1.02rem;
+  }
+  .free-line {
+    margin-top: 18px; font-weight: 700; color: var(--green); font-size: 1rem;
+    letter-spacing: 0.03em;
+  }
+  .store {
+    display: inline-block; margin-top: 26px; padding: 14px 30px;
+    background: var(--green); color: var(--purple); font-weight: 800;
+    font-size: 1.05rem; border-radius: 999px; text-decoration: none;
+    letter-spacing: 0.02em;
+    box-shadow: 0 6px 24px rgba(210, 255, 0, 0.35);
+    transition: transform 0.12s ease;
+  }
+  .store:hover { transform: scale(1.04); }
+  .shots {
+    display: flex; gap: 26px; justify-content: center; flex-wrap: wrap;
+    margin-top: 54px;
+  }
+  .shots img {
+    width: 260px; max-width: 42vw; border-radius: 26px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+  }
+  .features {
+    display: flex; gap: 18px 40px; justify-content: center; flex-wrap: wrap;
+    margin: 50px auto 0; max-width: 720px; padding: 0;
+    list-style: none;
+  }
+  .features li {
+    color: var(--white-soft); font-size: 0.98rem; font-weight: 600;
+  }
+  .features li::before { content: "●  "; color: var(--green); font-size: 0.7rem; vertical-align: 2px; }
+  .support {
+    margin-top: 64px; padding-top: 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .support h2 { color: #fff; font-size: 1.1rem; margin-bottom: 8px; }
+  .support p { font-size: 0.95rem; line-height: 1.5; }
+  a { color: var(--green); }
+  footer {
+    margin-top: 44px; padding-bottom: 12px; font-size: 0.85rem; color: var(--white-faint);
+  }
+  footer a { color: var(--white-faint); }
+</style>
+</head>
+<body>
+<main>
+  <img class="icon" src="assets/icon.png" alt="Giga-Ball app icon">
+  <img class="logo" src="assets/logo.png" alt="Giga-Ball">
+  <h1>Giga-Ball</h1>
+
+  <p class="tagline">Smash bricks. Catch power-ups. Climb forever.</p>
+  <p class="blurb">
+    Giga-Ball is a fast, colourful brick-breaker for iPhone and iPad.
+    Battle through handcrafted level packs in Classic Mode, chase your best height
+    in two endless modes, and take on a fresh Daily Challenge with new twists every
+    day. Dozens of power-ups, Game Center leaderboards and achievements, and
+    progress that syncs across all your devices with iCloud.
+  </p>
+  <p class="free-line">Free to download &nbsp;·&nbsp; No ads &nbsp;·&nbsp; No in-app purchases</p>
+
+  <a class="store" href="https://apps.apple.com/app/id1494628204">Download on the App&nbsp;Store</a>
+
+  <div class="shots">
+    <img src="assets/shot-menu.png" alt="Giga-Ball main menu showing Classic, Endless and Daily Challenge modes">
+    <img src="assets/shot-game.png" alt="Giga-Ball gameplay in Endless Mayhem mode">
+  </div>
+
+  <ul class="features">
+    <li>Handcrafted level packs</li>
+    <li>Two endless modes</li>
+    <li>Daily Challenge</li>
+    <li>Dozens of power-ups</li>
+    <li>Game Center leaderboards</li>
+    <li>iCloud sync</li>
+  </ul>
+
+  <section class="support" id="support">
+    <h2>Support</h2>
+    <p>
+      Questions, problems, or ideas? Email
+      <a href="mailto:contact@giga-ball.app">contact@giga-ball.app</a>
+      and you'll get a reply from the developer.
+    </p>
+  </section>
+
+  <footer>
+    <p><a href="privacy.html">Privacy Policy</a></p>
+    <p>© 2026 James Harding. All rights reserved.</p>
+  </footer>
+</main>
+</body>
+</html>

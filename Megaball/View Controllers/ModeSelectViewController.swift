@@ -155,9 +155,6 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .identity
@@ -203,9 +200,6 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.backCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity

@@ -333,9 +333,6 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     }
 
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity

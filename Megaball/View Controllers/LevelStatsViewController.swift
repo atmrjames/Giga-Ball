@@ -258,20 +258,11 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonClose")
                 case 1:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonPlay")
                 case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")

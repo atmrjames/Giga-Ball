@@ -497,16 +497,26 @@ enum PowerUpIcon {
         // A brick drawn in dashes: there, but not shown until struck
     }
 
-    /// Vanilla: a plain brick and a plain ball - the day with nothing added.
-    static let twistVanilla: UIImage = badge(twist) { context, rect in
-        context.setFillColor(UIColor.white.cgColor)
-        context.fill(CGRect(x: rect.minX + rect.width*0.22,
-                            y: rect.midY + rect.height*0.04,
-                            width: rect.width*0.56, height: rect.height*0.18))
-        dot(context, at: CGPoint(x: rect.midX, y: rect.midY - rect.height*0.22),
-            radius: rect.width*0.1)
-        // The whole game in two marks: a brick, and the ball on its way to it
-    }
+    /// Vanilla: the app icon itself (play-test round 11: "for vanilla icon, just use app
+    /// icon") - the plain game is the game. The drawn brick-and-ball stays as the
+    /// fallback for the unlikely build where the icon files cannot be read.
+    static let twistVanilla: UIImage = {
+        if let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+           let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
+           let files = primary["CFBundleIconFiles"] as? [String],
+           let name = files.last, let icon = UIImage(named: name) {
+            return icon
+        }
+        return badge(twist) { context, rect in
+            context.setFillColor(UIColor.white.cgColor)
+            context.fill(CGRect(x: rect.minX + rect.width*0.22,
+                                y: rect.midY + rect.height*0.04,
+                                width: rect.width*0.56, height: rect.height*0.18))
+            dot(context, at: CGPoint(x: rect.midX, y: rect.midY - rect.height*0.22),
+                radius: rect.width*0.1)
+            // The whole game in two marks: a brick, and the ball on its way to it
+        }
+    }()
 
     // MARK: - Drawing helpers
 

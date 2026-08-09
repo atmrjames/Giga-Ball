@@ -332,6 +332,27 @@ briefing screen (§6).
   composed for sharing (square-ish, legible small) rather than shaped like a phone.
   Promoted from stretch to phase 5, because a daily's scores are only social if they can
   leave the phone.
+- **Live board stats** (eleventh round): once today's run is finished, the game-over
+  screen and the briefing should show the board's live shape and keep it fresh as
+  scores land through the day - current best, current average, the player's position
+  and percentile, and how many scores have been posted. Build notes:
+  `GKLeaderboard.loadEntries(for:timeScope:range:)` returns the top entries *and* the
+  total player count in one call; the player's own entry gives rank, and percentile is
+  rank over total. Average needs a sweep of entries (paged, cap it) or an approximation
+  from the top page - decide when building. Refresh on screen-appear plus a modest
+  timer; never block the screen on the network.
+- **A real pager for day browsing** (eleventh round, third gap report): the next day's
+  card should be visible *during* the swipe, like a horizontal list that snaps - not
+  loaded at release. That means two live card instances (or a UIScrollView/
+  UICollectionView pager with one cell per day), which is the rebuild the current
+  transform-the-one-card approach has been approximating. Worth doing as its own visit;
+  the card's content population is already a function of `viewedOffset`, which is the
+  hard part done.
+- **Twist candidates from round eleven**, for §4's pool when the next batch is built:
+  **No Standard Bricks** (every regular brick replaced by another type - the field is
+  all specials); **Disguise** (every brick *looks* standard but could be any type -
+  fog of war's cousin, revealed by the strike; the note suggests it could also live as
+  a bad power-up applied permanently as a twist).
 - **Special-day levels** (tenth round): specific levels pinned to specific dates — a
   Christmas level on Christmas Day. The generator is seeded by the date already, so this
   is a small override table consulted before the seed (`dateKey → pack/level`) plus the

@@ -251,9 +251,6 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
        
         if tableView == self.levelsTableView {
-            if hapticsSetting {
-                interfaceHaptic.impactOccurred()
-            }
             if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
                 UIView.animate(withDuration: 0.1) {
                     cell.cellView3.transform = .identity
@@ -388,20 +385,11 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonClose")
                 case 1:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonPlay")
                 case 2:
                     if self.gameCenterSetting {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull")

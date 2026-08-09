@@ -244,9 +244,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .identity
@@ -340,9 +337,6 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonClose")
                 case 1:
                     cell.iconImage.image = UIImage(named:"ButtonNull")

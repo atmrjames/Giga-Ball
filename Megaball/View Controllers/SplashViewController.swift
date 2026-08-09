@@ -137,7 +137,10 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             let lives = savedGame.numberOfLives
             if currentLevelNumber == 0 {
                 packNameLabel.text = ""
-                levelNumberLabel.text = "Endless Mode"
+                levelNumberLabel.text = GameMode.current() == .endlessII
+                    ? GameMode.endlessII.name : GameMode.endless.name
+                // The save has no mode field; the remembered mode does, and a level-0
+                // save can only be the mode that was being played when it was written
                 scoreLabel.attributedText = resumeDetail(title: "Height", value: "\(height)m", footnote: nil)
                 // Endless has a single life and no counter anywhere else
             } else {
@@ -286,9 +289,6 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .identity

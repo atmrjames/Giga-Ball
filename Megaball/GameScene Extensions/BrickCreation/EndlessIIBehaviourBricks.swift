@@ -951,6 +951,18 @@ extension GameScene {
         endlessIIPortalCooldown = max(0, endlessIIPortalCooldown - delta)
         if wasCooling && endlessIIPortalCooldown <= 0 { showEndlessIIPortalsReady() }
 
+        endlessIIGravitySettleAccumulator += delta
+        if endlessIIGravitySettleAccumulator >= 0.25 {
+            endlessIIGravitySettleAccumulator = 0
+            settleEndlessIIGravityBricks()
+        }
+        // A standing settle, four times a second, on top of the settle a destruction
+        // triggers. Destruction was the only trigger, and it is not the only way support
+        // goes: a Moving brick slides out from underneath, the field steps down, a
+        // neighbour finishes its own fall - which is how gravity bricks "sometimes
+        // don't fall right away" (play-test round 11). The pass is cheap and idempotent:
+        // a brick with support stays exactly where it is
+
         let rate = CGFloat(endlessIIProgression.motionRate(at: endlessHeight))
         // Everything that moves starts slow and speeds up. A spinning brick at full rate in
         // the first ten metres is noise; the same brick at 40% is something to read

@@ -316,14 +316,14 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             dayCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
             dayCard.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
 
-            dateLabel.topAnchor.constraint(equalTo: dayCard.bottomAnchor, constant: 18),
             dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
             dateLabel.heightAnchor.constraint(equalToConstant: 26),
-            // Below the card now (play-test round 10): the date and its arrows are the
-            // controls, and controls live near the thumb. The fixed height is what pins
-            // the arrows - the date's font changes size between today and other days,
-            // and arrows centred on a label that breathes were bobbing with it
+            // The date row hangs from the bottom now, not from the card (play-test round
+            // 11): anchored above the play row, so the controls sit in the same place on
+            // every screen whatever the card holds. The fixed height is what pins the
+            // arrows - the date's font changes size between today and other days, and
+            // arrows centred on a label that breathes were bobbing with it
 
             backArrow.centerYAnchor.constraint(equalTo: dateLabel.centerYAnchor),
             backArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -150),
@@ -333,12 +333,14 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
             countdownLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor,
                                                 constant: 4),
+            countdownLabel.bottomAnchor.constraint(equalTo: play.topAnchor, constant: -20),
             countdownLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor,
                                                     constant: 34),
             countdownLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor,
                                                      constant: -34),
             // Under the date, where the play test put it: the day, then how long is left
-            // of it
+            // of it - and the pair stands on the play row, which is what fixes them in
+            // space
 
             cardStack.topAnchor.constraint(equalTo: dayCard.topAnchor, constant: 18),
             cardStack.leadingAnchor.constraint(equalTo: dayCard.leadingAnchor, constant: 16),
@@ -348,11 +350,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
             levelImageView.heightAnchor.constraint(equalToConstant: 72),
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
+            close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 55),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -25),
             close.widthAnchor.constraint(equalToConstant: 40),
             close.heightAnchor.constraint(equalToConstant: 40),
+            // 55pt in from the edge, where the collection-view rows on the other mode
+            // menus put their outer buttons (play-test round 11: these sat wider)
 
             play.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             play.centerYAnchor.constraint(equalTo: close.centerYAnchor),
@@ -360,7 +364,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             play.heightAnchor.constraint(equalToConstant: 75),
 
             leaderboardButton.trailingAnchor.constraint(equalTo: view.trailingAnchor,
-                                                        constant: -44),
+                                                        constant: -55),
             leaderboardButton.centerYAnchor.constraint(equalTo: close.centerYAnchor),
             leaderboardButton.widthAnchor.constraint(equalToConstant: 40),
             leaderboardButton.heightAnchor.constraint(equalToConstant: 40),
@@ -368,15 +372,14 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
             clockRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
             clockRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
-            clockRow.bottomAnchor.constraint(equalTo: play.topAnchor, constant: -34),
             testClockLabel.topAnchor.constraint(equalTo: clockRow.bottomAnchor, constant: 2),
             testClockLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             reset.topAnchor.constraint(equalTo: testClockLabel.bottomAnchor, constant: 2),
             reset.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            reset.bottomAnchor.constraint(lessThanOrEqualTo: play.topAnchor, constant: -6),
-            // Measured from the big play button rather than the small close button - the
-            // play button is 25pt taller, so a row cleared by the close button still
-            // clipped it (play-test round 3)
+            reset.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -8),
+            // The developer rig stacks above the date block now (play-test round 11) -
+            // it goes out with the test clock before release, so the real controls get
+            // the reachable spot
         ])
     }
 

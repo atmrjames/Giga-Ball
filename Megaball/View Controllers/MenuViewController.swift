@@ -76,7 +76,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 //        SKPaymentQueue.default().add(self)
                 
         logoImage.image = UIImage(named: "Logo")
-        
+        logoImage.layer.shadowColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1).cgColor
+        logoImage.layer.shadowOffset = CGSize(width: 0, height: 5)
+        logoImage.layer.shadowRadius = 14
+        logoImage.layer.shadowOpacity = 0.4
+        // The slight Giga-Ball green glow beneath the wordmark (play-test round 11)
+
         modeSelectTableView.delegate = self
         modeSelectTableView.dataSource = self
         modeSelectTableView.register(UINib(nibName: "ModeSelectTableViewCell", bundle: nil), forCellReuseIdentifier: "modeSelectCell")
@@ -290,9 +295,6 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView1.transform = .identity
@@ -395,16 +397,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             
                 switch indexPath.row {
                 case 0:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonInfo.png")
                 case 1:
                     cell.iconImage.image = nil
                 case 2:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = UIImage(named:"ButtonSettings.png")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")

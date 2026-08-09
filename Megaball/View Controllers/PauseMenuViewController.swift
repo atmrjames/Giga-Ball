@@ -83,6 +83,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
 
     let runStatsLabel = UILabel()
+    let moreStatsButton = UIButton(type: .system)
     // Code-built like livesLabel, and for the same reason: the storyboard's labels are
     // wired and working, and one more by hand risks none of them
 
@@ -94,10 +95,32 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         runStatsLabel.numberOfLines = 0
         runStatsLabel.isHidden = true
         containterView.addSubview(runStatsLabel)
+
+        var stats = AttributedString("More Stats…")
+        stats.font = .boldSystemFont(ofSize: 14)
+        var moreStats = UIButton.Configuration.plain()
+        moreStats.attributedTitle = stats
+        moreStats.image = UIImage(systemName: "star.fill",
+                                  withConfiguration: UIImage.SymbolConfiguration(
+                                      pointSize: 12, weight: .bold))
+        moreStats.imagePadding = 6
+        moreStats.baseForegroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        moreStatsButton.configuration = moreStats
+        moreStatsButton.translatesAutoresizingMaskIntoConstraints = false
+        moreStatsButton.isHidden = true
+        moreStatsButton.addTarget(self, action: #selector(moreStatsTapped),
+                                  for: .touchUpInside)
+        containterView.addSubview(moreStatsButton)
+        // The door to the run's detail, at the bottom of the stats list (play-test
+        // round 11) - it replaces the rosette that sat unexplained in the button row
+
         NSLayoutConstraint.activate([
             runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             runStatsLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
                                                constant: 6),
+            moreStatsButton.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            moreStatsButton.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor,
+                                                 constant: 2),
             // Tight under the height block (play-test round 9): the stats are the
             // height's small print, and the gap belongs between them and whatever
             // hangs below - on the daily, the challenge summary was crowding them
@@ -110,10 +133,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         let logo = UIImageView(image: UIImage(named: "Logo"))
         logo.contentMode = .scaleAspectFit
         logo.translatesAutoresizingMaskIntoConstraints = false
+        logo.layer.shadowColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1).cgColor
+        logo.layer.shadowOffset = CGSize(width: 0, height: 5)
+        logo.layer.shadowRadius = 14
+        logo.layer.shadowOpacity = 0.4
+        // The subtle Giga-Ball green glow beneath it (play-test round 11)
         containterView.addSubview(logo)
         NSLayoutConstraint.activate([
             logo.topAnchor.constraint(equalTo: containterView.safeAreaLayoutGuide.topAnchor,
-                                      constant: 28),
+                                      constant: 46),
             logo.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             logo.heightAnchor.constraint(equalToConstant: 36),
             logo.leadingAnchor.constraint(greaterThanOrEqualTo: containterView.leadingAnchor,
@@ -121,35 +149,46 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         ])
     }
 
-    /// The finished run's numbers, in one line under the height (§12.0: balls hit,
-    /// bricks destroyed, power-ups collected). The detail is behind the stats button.
+    /// The finished run's numbers under the height, one labelled row per stat
+    /// (play-test round 11: "the icons alone are not enough"), with the door to the
+    /// detail screen as a small labelled button at the bottom of the list.
     func updateRunStatsLabel() {
         guard endlessMode, sender != "Pause",
               let summary = InGameRecents.shared.runSummary else {
             runStatsLabel.isHidden = true
+            moreStatsButton.isHidden = true
             return
         }
         runStatsLabel.isHidden = false
-        let line = NSMutableAttributedString()
-        let items: [(String, Int)] = [("rectangle.fill", summary.paddleHits),
-                                      ("square.grid.3x2.fill", summary.bricksDestroyed),
-                                      ("arrow.down.circle.fill", summary.powerUpsCollected)]
+        moreStatsButton.isHidden = false
+        let text = NSMutableAttributedString()
+        let items: [(String, String, Int)] = [
+            ("rectangle.fill", "Paddle hits", summary.paddleHits),
+            ("square.grid.3x2.fill", "Bricks destroyed", summary.bricksDestroyed),
+            ("arrow.down.circle.fill", "Power-ups collected", summary.powerUpsCollected)]
         for (position, item) in items.enumerated() {
-            if position > 0 { line.append(NSAttributedString(string: "    ")) }
+            if position > 0 { text.append(NSAttributedString(string: "\n")) }
             let badge = NSTextAttachment()
             badge.image = UIImage(systemName: item.0)?
                 .withTintColor(UIColor(white: 1, alpha: 0.45),
                                renderingMode: .alwaysOriginal)
             badge.bounds = CGRect(x: 0, y: -2, width: 15, height: 13)
-            line.append(NSAttributedString(attachment: badge))
-            line.append(NSAttributedString(
-                string: " \(item.1)",
+            text.append(NSAttributedString(attachment: badge))
+            text.append(NSAttributedString(
+                string: "  \(item.1)  ",
                 attributes: [.font: UIFont.systemFont(ofSize: 14),
-                             .foregroundColor: UIColor(white: 1, alpha: 0.7)]))
+                             .foregroundColor: UIColor(white: 1, alpha: 0.55)]))
+            text.append(NSAttributedString(
+                string: "\(item.2)",
+                attributes: [.font: UIFont.boldSystemFont(ofSize: 14),
+                             .foregroundColor: UIColor(white: 1, alpha: 0.85)]))
         }
-        runStatsLabel.attributedText = line
-        // Small subtle icons beside each number (play-test round 8): the paddle, the
-        // field, the drop - placeholders in SF symbols until §8.5 draws its own
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.paragraphSpacing = 3
+        text.addAttribute(.paragraphStyle, value: paragraph,
+                          range: NSRange(location: 0, length: text.length))
+        runStatsLabel.attributedText = text
     }
     // Asked of the session, which outlives the scene until the menus return
 
@@ -213,8 +252,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         if parallaxSetting {
             addParallaxToView()
         }
-        setUpLivesLabel()
         setUpRunStatsLabel()
+        setUpLivesLabel()
+        // In this order: the daily summary's constraints reference the More Stats button
         setUpPauseLogo()
         loadData()
         updateLabels()
@@ -251,8 +291,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             livesLabel.centerXAnchor.constraint(equalTo: highscoreLabel.centerXAnchor),
             livesLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor, constant: 16),
             dailySummaryLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            dailySummaryLabel.topAnchor.constraint(equalTo: livesLabel.bottomAnchor,
-                                                   constant: 24),
+            dailySummaryLabel.topAnchor.constraint(
+                greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 8),
+            {
+                let preferred = dailySummaryLabel.topAnchor.constraint(
+                    equalTo: livesLabel.bottomAnchor, constant: 24)
+                preferred.priority = .defaultHigh
+                return preferred
+            }(),
+            // Under the lives line by preference, but never over the game-over stats
+            // list (grown to labelled rows in round 11) - the inequality wins when the
+            // stats and their More Stats button need the room
             dailySummaryLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
                                                         containterView.leadingAnchor,
                                                        constant: 30),
@@ -401,12 +450,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 cell.iconImage.image = UIImage(named:"ButtonSettings.png")
             } else if dailyGameOver {
                 cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
-            } else if endlessGameOver {
-                cell.iconImage.image = UIImage(named:"ButtonAchievements.png")
-                // The achievements rosette stands in until §8.5 has a stats button of
-                // its own
             } else {
                 cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                // The endless run's detail moved to the More Stats… button under the
+                // stats list (play-test round 11) - the rosette here said nothing
             }
             cell.widthConstraint.constant = 40
         default:
@@ -445,8 +492,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 moveToSettings()
             } else if dailyGameOver {
                 openDailyLeaderboard()
-            } else if endlessGameOver {
-                openRunStats()
             }
         }
         
@@ -492,11 +537,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                             self.interfaceHaptic.impactOccurred()
                         }
                         cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted.png")
-                    } else if self.endlessGameOver {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
-                        cell.iconImage.image = UIImage(named:"ButtonAchievementsHighlighted.png")
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     }
@@ -518,41 +558,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 switch indexPath.row {
                 case 0:
                     if self.sender == "Pause" {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonInfo.png")
                     } else if self.isDailyChallenge {
                         cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     } else {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonRestart.png")
                     }
                 case 1:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                    }
                     cell.iconImage.image = self.sender == "Pause"
                         ? UIImage(named:"ButtonPlay.png")
                         : UIImage(named:"ButtonHome.png")
                 case 2:
                     if self.sender == "Pause" {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonSettings.png")
                     } else if self.dailyGameOver {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
                         cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
-                    } else if self.endlessGameOver {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                        }
-                        cell.iconImage.image = UIImage(named:"ButtonAchievements.png")
                     } else {
                         cell.iconImage.image = UIImage(named:"ButtonNull.png")
                     }
@@ -829,6 +849,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
     /// The finished run's detail (§12.0), over the game-over screen the way the
     /// reference pages sit over the pause menu.
+    @objc private func moreStatsTapped() {
+        openRunStats()
+    }
+
     func openRunStats() {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()

@@ -127,11 +127,12 @@ extension GameScene {
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
                 marker.position = CGPoint(x: landing.x,
-                                          y: paddle.position.y + paddleHeight*1.9)
+                                          y: paddle.position.y + paddleHeight*1.2)
                 markerIndex += 1
             }
             // Just above the paddle, pointing down at where the ball will cross - below it,
-            // the Backstop covered it whenever the two ran together
+            // the Backstop covered it whenever the two ran together. Pulled in closer to
+            // the paddle's top in round 11 ("move landing marker closer to top of paddle")
         }
 
         endlessIITrimVision(lines: lineIndex, markers: markerIndex)

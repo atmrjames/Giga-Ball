@@ -555,15 +555,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            if settingRow(for: indexPath) != 4 {
-                interfaceHaptic.impactOccurred()
-            }
-        } else {
-            if settingRow(for: indexPath) == 4 {
-                interfaceHaptic.impactOccurred()
-            }
+        if hapticsSetting && settingRow(for: indexPath) == 4 {
+            interfaceHaptic.impactOccurred()
         }
+        // Releases are silent now (play-test round 11: press-and-release double-buzzed
+        // every button) - except the haptics toggle itself, whose release tick is the
+        // demonstration of what was just switched on
         if let cell = self.settingsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView2.transform = .identity
@@ -608,9 +605,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity

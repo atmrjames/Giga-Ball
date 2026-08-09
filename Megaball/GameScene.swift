@@ -753,6 +753,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
 	var endlessIIPortalCooldown: TimeInterval = 0
+	/// Paces the standing gravity settle - see tickEndlessIIRoles.
+	var endlessIIGravitySettleAccumulator: TimeInterval = 0
 	var endlessIIPendingPortalExit: CGPoint?
 	var endlessIIPortalKeepsHeading = false
 	/// Which ball is waiting to be moved to a portal's exit. Not always the first one.

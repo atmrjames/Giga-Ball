@@ -50,6 +50,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBOutlet var contentView: UIView!
     
     @IBOutlet var packNameLabel: UILabel!
+    private var modeIconView: UIImageView?
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var levelNameLabel: UILabel!
     @IBOutlet var completeLabel: UILabel!
@@ -330,9 +331,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         levelScoreLabel.text = String(levelScore)
         if levelNumber == 0 {
             packNameLabel.text = ""
-            levelNumberLabel.text = String(LevelPackSetup().levelNameArray[0])
+            levelNumberLabel.text = GameMode.current() == .endlessII
+                ? GameMode.endlessII.name : GameMode.endless.name
+            // The mode's own name, not levelNameArray[0]'s - which is how a Mayhem run's
+            // intro kept saying "Endless Mode" (play-test rounds 10 and 11)
             levelNameLabel.text = ""
         }
+        showModeIcon()
         if numberOfLevels == 1 && levelNumber > 0 {
             packNameLabel.text = "Single Level Mode"
             levelNumberLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
@@ -377,6 +382,32 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             // One twist per line, the same as the pause summary (play-test round 3), and
             // a no-twist day says Vanilla with its own badge rather than saying nothing
         }
+    }
+
+    /// The mode's icon above its name (play-test round 11) - the same artwork the main
+    /// menu's rows wear. A child of the intro's own view, so every entrance and exit the
+    /// intro plays carries the icon with the name for free.
+    private func showModeIcon() {
+        guard modeIconView == nil else { return }
+        let icon = UIImageView()
+        if DailyChallengeSession.shared.active != nil {
+            icon.image = PowerUpIcon.dailyChallenge
+        } else {
+            switch GameMode.current() {
+            case .classic: icon.image = UIImage(named: "ClassicIcon.png")
+            default: icon.image = UIImage(named: "EndlessIcon.png")
+            }
+        }
+        icon.contentMode = .scaleAspectFit
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(icon)
+        NSLayoutConstraint.activate([
+            icon.centerXAnchor.constraint(equalTo: packNameLabel.centerXAnchor),
+            icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor, constant: -14),
+            icon.widthAnchor.constraint(equalToConstant: 56),
+            icon.heightAnchor.constraint(equalToConstant: 56),
+        ])
+        modeIconView = icon
     }
     
 //    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
