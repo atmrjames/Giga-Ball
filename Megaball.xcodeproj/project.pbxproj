@@ -76,6 +76,7 @@
 		1AF1700000000022 /* PowerUpCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000021 /* PowerUpCatalogue.swift */; };
 		1AF1700000000026 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000025 /* GameMode.swift */; };
 		000000001AF18000000000F1 /* FixedWidthDigits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000F2 /* FixedWidthDigits.swift */; };
+		000000001AF18000000000F5 /* FixedWidthNumberNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000F6 /* FixedWidthNumberNode.swift */; };
 		1AE2B3010000000000000601 /* EndlessIIProgression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000602 /* EndlessIIProgression.swift */; };
 		1AE2B3010000000000000901 /* EndlessIISetRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000902 /* EndlessIISetRows.swift */; };
 		1AF1700000000016 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000015 /* Log.swift */; };
@@ -404,6 +405,7 @@
 		1AF1700000000021 /* PowerUpCatalogue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogue.swift; sourceTree = "<group>"; };
 		1AF1700000000025 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		000000001AF18000000000F2 /* FixedWidthDigits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixedWidthDigits.swift; sourceTree = "<group>"; };
+		000000001AF18000000000F6 /* FixedWidthNumberNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixedWidthNumberNode.swift; sourceTree = "<group>"; };
 		1AE2B3010000000000000602 /* EndlessIIProgression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIProgression.swift; sourceTree = "<group>"; };
 		1AE2B3010000000000000902 /* EndlessIISetRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISetRows.swift; sourceTree = "<group>"; };
 		1AF1700000000015 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
@@ -1258,6 +1260,7 @@
 				1AF1700000000021 /* PowerUpCatalogue.swift */,
 				1AF1700000000025 /* GameMode.swift */,
 				000000001AF18000000000F2 /* FixedWidthDigits.swift */,
+				000000001AF18000000000F6 /* FixedWidthNumberNode.swift */,
 				1AE2B3010000000000000602 /* EndlessIIProgression.swift */,
 				1AE2B3010000000000000902 /* EndlessIISetRows.swift */,
 				1AF1700000000015 /* Log.swift */,
@@ -1656,6 +1659,7 @@
 				1AF1700000000022 /* PowerUpCatalogue.swift in Sources */,
 				1AF1700000000026 /* GameMode.swift in Sources */,
 				000000001AF18000000000F1 /* FixedWidthDigits.swift in Sources */,
+				000000001AF18000000000F5 /* FixedWidthNumberNode.swift in Sources */,
 				1AF1700000000016 /* Log.swift in Sources */,
 				1AF170000000001A /* ContentAwareTableView.swift in Sources */,
 				1AF1700000000020 /* MenuLayout.swift in Sources */,

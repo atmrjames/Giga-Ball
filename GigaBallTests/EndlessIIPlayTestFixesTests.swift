@@ -452,11 +452,17 @@ final class EndlessIIBestHeightLabelTests: XCTestCase {
         scene.scoreFactorString = "2.0"
         scene.showMultiplier()
 
-        XCTAssertEqual(scene.multiplierLabel.attributedText?.string, "x2.0")
-        // Read from the attributed text rather than `text`: the HUD numbers are drawn with
-        // padded digits now so they stop dancing as they change (play-test round 18), and a
-        // label carrying attributed text reports `text` as nil. What is on screen is what
-        // this test was always asking about
+        let drawn = scene.multiplierLabel.childNode(withName: "digits")?.children
+            .compactMap { ($0 as? SKLabelNode) }
+            .filter { $0.isHidden == false }
+            .sorted { $0.position.x < $1.position.x }
+            .compactMap(\.text)
+            .joined()
+        XCTAssertEqual(drawn, "x2.0")
+        // Read off the characters actually drawn rather than the label's own `text`: the
+        // HUD numbers are placed one character at a time now so they stop dancing as they
+        // change (play-test rounds 18 and 19). What is on screen is what this test was
+        // always asking about
     }
 
     func testEachEndlessModeReadsItsOwnBest() {

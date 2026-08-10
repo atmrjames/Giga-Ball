@@ -443,15 +443,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             message: "This challenge closed while you were away.\n\n"
                 + "You can carry on playing it, but the score will not be posted.",
             dismissTitle: "Main Menu",
-            confirmTitle: "Continue",
-            confirm: { [weak self] in
-                self?.removeAnimate(nextAction: .unpause)
-            },
             dismiss: { [weak self] in
                 MenuViewController().clearSavedGame()
                 self?.moveToMainMenu()
                 // The same pair of steps quitting from the pause menu takes: the save goes
                 // first, or the run this player just abandoned is offered back to them
+            },
+            confirmTitle: "Continue",
+            confirm: { [weak self] in
+                self?.removeAnimate(nextAction: .unpause)
             })
     }
 

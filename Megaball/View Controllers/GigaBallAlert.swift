@@ -28,14 +28,18 @@ enum GigaBallAlert {
     /// menu's own blur instead of sliding a white card over the top of it.
     static func show(on presenter: UIViewController, title: String, message: String,
                      dismissTitle: String = "Got it",
+                     dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
-                     confirm: (() -> Void)? = nil,
-                     dismiss: (() -> Void)? = nil) {
+                     confirm: (() -> Void)? = nil) {
         show(on: presenter, title: title,
              attributed: NSAttributedString(string: message),
-             dismissTitle: dismissTitle, confirmTitle: confirmTitle,
-             confirm: confirm, dismiss: dismiss)
+             dismissTitle: dismissTitle, dismiss: dismiss,
+             confirmTitle: confirmTitle, confirm: confirm)
     }
+    // `confirm` is deliberately the *last* parameter, so a trailing closure means the green
+    // button - the one that does the thing. When `dismiss` was added after it, the daily's
+    // free-play prompt silently rebound its trailing closure to the pale button and Cancel
+    // started the run (play-test round 19). The order is the guard against that
 
     /// The same pop-up, for a message that carries more than words - the twists explainer
     /// wants each twist's badge in front of its name, the way every other screen names a
@@ -43,9 +47,9 @@ enum GigaBallAlert {
     static func show(on presenter: UIViewController, title: String,
                      attributed message: NSAttributedString,
                      dismissTitle: String = "Got it",
+                     dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
-                     confirm: (() -> Void)? = nil,
-                     dismiss: (() -> Void)? = nil) {
+                     confirm: (() -> Void)? = nil) {
         let alert = GigaBallAlertViewController(title: title, message: message,
                                                 dismissTitle: dismissTitle,
                                                 confirmTitle: confirmTitle,

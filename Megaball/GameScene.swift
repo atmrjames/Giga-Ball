@@ -1860,16 +1860,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Writes a number into a HUD label with every digit the same width.
     ///
     /// Fugaz One's digits are not the same width, so a ticking number shuffles sideways as
-    /// it changes - the play test called it dancing (round 18). `FixedWidthDigits` pads each
-    /// one out to the widest, which needs attributed text, which in turn needs the font and
-    /// colour spelling out because `attributedText` ignores `fontName` and `fontColor`.
+    /// it changes - the play test called it dancing (rounds 18 and 19). The label draws
+    /// nothing itself now; a `FixedWidthNumberNode` hung off it places each character on a
+    /// fixed pitch. The first attempt asked for the same thing with kerning inside an
+    /// attributed string, which `SKLabelNode` ignores - hence placing rather than asking.
     private func write(_ text: String, into label: SKLabelNode) {
-        guard let font = UIFont(name: label.fontName ?? "", size: label.fontSize) else {
+        guard let fontName = label.fontName else {
             label.text = text
             return
         }
-        label.attributedText = FixedWidthDigits.attributed(
-            text, font: font, colour: label.fontColor ?? .white)
+        label.text = ""
+        let strip: FixedWidthNumberNode
+        if let existing = label.childNode(withName: "digits") as? FixedWidthNumberNode {
+            strip = existing
+        } else {
+            strip = FixedWidthNumberNode()
+            strip.name = "digits"
+            label.addChild(strip)
+        }
+        strip.show(text, fontNamed: fontName, fontSize: label.fontSize,
+                   colour: label.fontColor ?? .white,
+                   alignment: label.horizontalAlignmentMode,
+                   verticalAlignment: label.verticalAlignmentMode)
     }
 
     /// Pulses a label when its value crosses another multiple of `step`.

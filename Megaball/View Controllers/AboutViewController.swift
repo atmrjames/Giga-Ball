@@ -87,7 +87,9 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
 
         NSLayoutConstraint.activate([
             links.centerXAnchor.constraint(equalTo: aboutView.centerXAnchor),
-            links.topAnchor.constraint(equalTo: rightsLabel.bottomAnchor, constant: 18),
+            links.bottomAnchor.constraint(equalTo: buildLabel.topAnchor, constant: -18),
+            // Above the build number, not below it (play-test round 19): the build is the
+            // last line of the small print, and a way of getting in touch is not small print
             links.leadingAnchor.constraint(greaterThanOrEqualTo: aboutView.leadingAnchor,
                                            constant: 20),
         ])

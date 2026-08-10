@@ -4,6 +4,8 @@
 //
 //  Play-test round 18: "The score is dancing around a bit as it changes. I guess this font
 //  that's being used is not a fixed width font."
+//  Round 19: "Classic mode score is still dancing around and the space between the numbers
+//  in the score and the multiplier looks weird."
 //
 
 import XCTest
@@ -18,22 +20,9 @@ final class FixedWidthDigitsTests: XCTestCase {
         UIFont(name: "FugazOne-Regular", size: 24) ?? .systemFont(ofSize: 24)
     }
 
-    func testEveryDigitEndsUpTheSameWidth() {
-        let font = hudFont
-        let widths = (0...9).map { digit -> CGFloat in
-            let line = FixedWidthDigits.attributed("\(digit)", font: font, colour: .white)
-            return line.size().width
-        }
-        guard let widest = widths.max(), let narrowest = widths.min() else {
-            return XCTFail("no digits measured")
-        }
-        XCTAssertEqual(widest, narrowest, accuracy: 0.5,
-                       "every digit should occupy the same column once padded")
-    }
-
-    func testTheDigitsWereNotTheSameWidthToStartWith() {
-        // The premise of the fix. If this ever stops being true the padding is doing
-        // nothing, and the test above would pass for the wrong reason
+    func testTheDigitsAreNotTheSameWidthToStartWith() {
+        // The premise of the fix. If this ever stops being true the columns are doing
+        // nothing, and every test below would pass for the wrong reason
         let font = hudFont
         let plain = (0...9).map { digit in
             ("\(digit)" as NSString).size(withAttributes: [.font: font]).width
@@ -42,30 +31,59 @@ final class FixedWidthDigitsTests: XCTestCase {
                              "the HUD font's digits differ in width - that is the bug")
     }
 
-    func testANumberIsAsWideAsItsDigitCountWhateverTheDigitsAre() {
-        // The report in its own terms: a score ticking from 111 to 999 should not move
+    func testEveryDigitGetsTheSameColumn() {
         let font = hudFont
-        let ones = FixedWidthDigits.attributed("111", font: font, colour: .white).size().width
-        let nines = FixedWidthDigits.attributed("999", font: font, colour: .white).size().width
-        XCTAssertEqual(ones, nines, accuracy: 0.5)
-    }
-
-    func testTheTextItselfIsUnchanged() {
-        let line = FixedWidthDigits.attributed("1234m", font: hudFont, colour: .white)
-        XCTAssertEqual(line.string, "1234m")
-    }
-
-    func testNonDigitsAreLeftAlone() {
-        // Only the characters that change from frame to frame are padded. Padding the "m"
-        // or the "x" would put a gap in the middle of "x1.0" for no gain
-        let font = hudFont
-        let line = FixedWidthDigits.attributed("x1.0", font: font, colour: .white)
-        var padded: [Int] = []
-        line.enumerateAttribute(.kern, in: NSRange(location: 0, length: line.length)) {
-            value, range, _ in
-            if let kern = value as? CGFloat, kern > 0 { padded.append(range.location) }
+        let widths = (0...9).map { FixedWidthDigits.layout("\($0)", font: font).width }
+        guard let widest = widths.max(), let narrowest = widths.min() else {
+            return XCTFail("no digits measured")
         }
-        XCTAssertFalse(padded.contains(0), "the x should not be padded")
-        XCTAssertFalse(padded.contains(2), "the decimal point should not be padded")
+        XCTAssertEqual(widest, narrowest, accuracy: 0.01)
+    }
+
+    func testANumberIsAsWideAsItsDigitCountWhateverTheDigitsAre() {
+        // The report in its own terms: a score ticking from 111 to 999 must not move
+        let font = hudFont
+        XCTAssertEqual(FixedWidthDigits.layout("111", font: font).width,
+                       FixedWidthDigits.layout("999", font: font).width, accuracy: 0.01)
+    }
+
+    func testEveryDigitStaysWhereItWasWhenAnotherDigitChanges() {
+        // The dancing itself: 100 becoming 199 must leave the leading 1 exactly where it is
+        let font = hudFont
+        let before = FixedWidthDigits.layout("100", font: font).centres
+        let after = FixedWidthDigits.layout("199", font: font).centres
+        XCTAssertEqual(before, after)
+    }
+
+    func testTheColumnsAreEvenlySpaced() {
+        // Round 19 also called the gaps weird. Equal columns means equal gaps
+        let font = hudFont
+        let centres = FixedWidthDigits.layout("1234", font: font).centres
+        let steps = zip(centres, centres.dropFirst()).map { $1 - $0 }
+        for step in steps {
+            XCTAssertEqual(step, steps[0], accuracy: 0.01)
+        }
+    }
+
+    func testNonDigitsKeepTheirOwnWidth() {
+        // Only the characters that change from frame to frame get a column. Giving the "m"
+        // of a height or the "x" of a multiplier one would put a gap in the middle of it
+        let font = hudFont
+        let em = ("m" as NSString).size(withAttributes: [.font: font]).width
+        let withUnit = FixedWidthDigits.layout("7m", font: font).width
+        let digitOnly = FixedWidthDigits.layout("7", font: font).width
+        XCTAssertEqual(withUnit - digitOnly, em, accuracy: 0.01)
+    }
+
+    func testACharacterIsCentredInItsOwnColumn() {
+        let font = hudFont
+        let column = FixedWidthDigits.columnWidth(in: font)
+        XCTAssertEqual(FixedWidthDigits.layout("8", font: font).centres.first, column/2)
+    }
+
+    func testAnEmptyNumberIsEmptyRatherThanACrash() {
+        let placed = FixedWidthDigits.layout("", font: hudFont)
+        XCTAssertTrue(placed.centres.isEmpty)
+        XCTAssertEqual(placed.width, 0)
     }
 }

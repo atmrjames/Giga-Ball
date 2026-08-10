@@ -70,8 +70,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     // will not post
     private let leaderboardButton = UIButton(type: .custom)
     private let signedOutLabel = UILabel()
-    private let testClockLabel = UILabel()
-    private var developerResetButton: UIButton?
     private var countdownTimer: Timer?
 
     override func viewDidLoad() {
@@ -281,59 +279,11 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // the big play in the centre, Game Center on the right - the same artwork the
         // level screens' leaderboard button wears
 
-        // The developer rig - a test clock that winds the simulated *today*, and a button
-        // that wipes every daily record so the same day can be played first-attempt again.
-        //
-        // Debug builds only (play-test round 18). It was always going out before release;
-        // gating it rather than deleting it keeps the only way there is to play tomorrow's
-        // challenge today, which is how every daily bug so far has been reproduced. Release
-        // builds never construct it, so there is nothing to hide and nothing to forget.
-        var rigTop: NSLayoutYAxisAnchor?
-        #if DEBUG
-        let back = UIButton(type: .system)
-        back.setTitle("◀ DAY", for: .normal)
-        let forward = UIButton(type: .system)
-        forward.setTitle("DAY ▶", for: .normal)
-        let live = UIButton(type: .system)
-        live.setTitle("LIVE", for: .normal)
-        for (button, action) in [(back, #selector(dayBack)), (live, #selector(dayLive)),
-                                 (forward, #selector(dayForward))] {
-            button.setTitleColor(#colorLiteral(red: 1.0, green: 0.85, blue: 0.20, alpha: 1), for: .normal)
-            button.titleLabel?.font = .boldSystemFont(ofSize: 14)
-            button.addTarget(self, action: action, for: .touchUpInside)
-        }
-        testClockLabel.font = .boldSystemFont(ofSize: 12)
-        testClockLabel.textColor = UIColor(white: 1, alpha: 0.85)
-        testClockLabel.textAlignment = .center
-
-        let reset = UIButton(type: .system)
-        reset.setTitle("RESET ATTEMPTS", for: .normal)
-        reset.setTitleColor(#colorLiteral(red: 1.0, green: 0.85, blue: 0.20, alpha: 1), for: .normal)
-        reset.titleLabel?.font = .boldSystemFont(ofSize: 14)
-        reset.addTarget(self, action: #selector(resetAttempts), for: .touchUpInside)
-        reset.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(reset)
-
-        let clockRow = UIStackView(arrangedSubviews: [back, live, forward])
-        clockRow.axis = .horizontal
-        clockRow.distribution = .equalCentering
-        clockRow.translatesAutoresizingMaskIntoConstraints = false
-        testClockLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(clockRow)
-        view.addSubview(testClockLabel)
-        developerResetButton = reset
-        rigTop = clockRow.topAnchor
-
-        NSLayoutConstraint.activate([
-            clockRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
-            clockRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
-            testClockLabel.topAnchor.constraint(equalTo: clockRow.bottomAnchor, constant: 2),
-            testClockLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            reset.topAnchor.constraint(equalTo: testClockLabel.bottomAnchor, constant: 2),
-            reset.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            reset.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -8),
-        ])
-        #endif
+        // The developer rig is gone (play-test round 19). It was debug-gated in round 18,
+        // which took it out of release builds but left it on screen in every build James
+        // actually plays, so it kept being reported. The simulated day it drove lives on as
+        // `DailyChallengeSession.testDayOffset`, backed by a user default - the tests set it
+        // directly, and a future day can still be reached without a control on the menu.
 
         NSLayoutConstraint.activate([
             modeIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -357,12 +307,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // the pager sits 22pt under the title exactly as it did before
             days.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             days.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            days.bottomAnchor.constraint(equalTo: rigTop ?? dateLabel.topAnchor,
-                                         constant: -10),
-            // Above the developer rig where there is one, above the date block where there
-            // is not - which is the release build, and where the card gets the room the
-            // rig used to take. Edge to edge, so a page is a whole screen and paging lands
-            // on whole days; the card's own margins live on the cell
+            days.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -14),
+            // Straight down to the date block now the rig has gone, so the card has the
+            // room the rig used to take. Edge to edge, so a page is a whole screen and
+            // paging lands on whole days; the card's own margins live on the cell
 
             dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
@@ -461,10 +409,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // now a line saying why, because the button's absence said nothing.
         // The boards themselves are App Store Connect work (James's side, §7)
 
-        let offset = DailyChallengeSession.shared.testDayOffset
-        testClockLabel.text = offset == 0
-            ? "TEST CLOCK: LIVE"
-            : "TEST CLOCK: \(offset > 0 ? "+" : "")\(offset) day\(abs(offset) == 1 ? "" : "s")"
         refreshCountdown()
         askForTodaysRank()
     }
@@ -574,9 +518,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             isToday: viewedOffset == 0,
             mode: challenge.mode) {
             GigaBallAlert.show(on: self, title: "Free play", message: notice,
-                                dismissTitle: "Cancel", confirmTitle: "Play") {
-                [weak self] in self?.startRun(challenge)
-            }
+                                dismissTitle: "Cancel", confirmTitle: "Play",
+                                confirm: { [weak self] in self?.startRun(challenge) })
             // The promise is still made before the run starts (§6) - but as a pop-up on
             // exactly the presses it applies to, instead of a banner shouting at all of
             // them (play-test round 5). A scoring attempt goes straight through
