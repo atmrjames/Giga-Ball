@@ -393,6 +393,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         info.translatesAutoresizingMaskIntoConstraints = false
         info.addTarget(self, action: #selector(swipeInfoTapped), for: .touchUpInside)
         cell.contentView.addSubview(info)
+        cell.contentView.bringSubviewToFront(info)
+        // In front of everything else in the cell, or a touch near its edge reaches the row
+        // underneath and flips the setting the player was only asking about
 
         let title = cell.settingDescription.text ?? ""
         let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
@@ -407,14 +410,31 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             info.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
                                           constant: written + 2),
             info.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
-            info.widthAnchor.constraint(equalToConstant: 44),
-            info.heightAnchor.constraint(equalToConstant: 44),
+            info.widthAnchor.constraint(equalToConstant: 56),
+            info.heightAnchor.constraint(equalToConstant: 56),
+            // Wider than Apple's 44 (play-test round 21: still too easy to miss). The glyph
+            // inside is unchanged, so it looks the same and simply catches more
         ])
     }
 
     @objc func swipeInfoTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        infoTappedAt = Date().timeIntervalSince1970
         explainSwipeUpToPause()
+    }
+
+    /// When the information button was last pressed.
+    ///
+    /// A `UIButton` inside a cell normally swallows its own touch, and normally that is the
+    /// end of it. It was not: a press landing just off the glyph reached the row and flipped
+    /// the setting, which is the opposite of what somebody asking what it does wants
+    /// (play-test round 21). The button is bigger now, and this is the belt to that pair of
+    /// braces - a row toggle arriving in the same instant as the button's own press is the
+    /// same press, and is ignored.
+    private var infoTappedAt: TimeInterval = 0
+
+    private var infoWasJustTapped: Bool {
+        Date().timeIntervalSince1970 - infoTappedAt < 0.4
     }
 
     /// What the swipe-up gesture is for, said in the words the play test asked for.
@@ -496,6 +516,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 defaults.set(paddleSensitivitySetting, forKey: "paddleSensitivitySetting")
             case 8:
             // Swipe up pause
+                if infoWasJustTapped { break }
                 swipeUpPause = !swipeUpPause
                 defaults.set(swipeUpPause, forKey: "swipeUpPause")
                 if swipeUpPause { explainSwipeUpToPause() }

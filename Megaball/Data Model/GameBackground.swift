@@ -27,6 +27,7 @@ enum GameBackground: Int, CaseIterable {
     case solid = 1
     case gradient = 2
     case black = 3
+    case glow = 4
 
     /// The setting as it is stored, falling back to Classic for a value that no longer names
     /// anything - which is what an older build's setting looks like after a background is
@@ -41,6 +42,7 @@ enum GameBackground: Int, CaseIterable {
         case .solid: return "Solid"
         case .gradient: return "Gradient"
         case .black: return "Black"
+        case .glow: return "Glow"
         }
     }
 
@@ -51,6 +53,7 @@ enum GameBackground: Int, CaseIterable {
         case .solid: return "One flat colour, so nothing competes with the bricks"
         case .gradient: return "Light at the top, falling away below the paddle"
         case .black: return "Black, for the most contrast the screen can give"
+        case .glow: return "The gradient, with a haze of Giga-Ball green above the field"
         }
     }
 
@@ -66,6 +69,8 @@ enum GameBackground: Int, CaseIterable {
         case solid(UIColor)
         /// A vertical fade, top to bottom.
         case gradient
+        /// The same fade with a speckled green haze over the upper part of it.
+        case glow
     }
 
     var paint: Paint {
@@ -74,6 +79,7 @@ enum GameBackground: Int, CaseIterable {
         case .solid: return .solid(GameBackground.purple)
         case .gradient: return .gradient
         case .black: return .solid(.black)
+        case .glow: return .glow
         }
     }
 
@@ -94,6 +100,75 @@ enum GameBackground: Int, CaseIterable {
                                                            locations: [CGFloat]) {
         let fraction = min(max(paddleFraction, 0), 1)
         return ([borderPurple, purple, deepPurple], [0, 1 - fraction, 1])
+    }
+
+    /// The Giga-Ball green, which the glow is made of.
+    static let glowGreen = UIColor(red: 210/255, green: 1, blue: 0, alpha: 1)
+
+    /// Where the haze sits, as fractions of the background: left of centre and high up.
+    ///
+    /// Off-centre on purpose (play-test round 21). A glow in the middle of the field reads as
+    /// a vignette and sits under every brick equally, which is the one thing it must not do -
+    /// it is there to give the top of the field some depth, not to light it.
+    static let glowCentre = CGPoint(x: 0.34, y: 0.24)
+    static let glowRadius: CGFloat = 0.62
+
+    /// The gradient with the haze over it.
+    ///
+    /// Speckle rather than a clean radial fade: a smooth circle of green over a smooth purple
+    /// gradient bands badly on an OLED screen at these very low alphas. Scattering it into a
+    /// few hundred soft dots breaks the bands up, and at this size and blur they read as one
+    /// hazy cloud rather than as dots.
+    ///
+    /// The scatter is generated from a fixed seed, so the same background is the same picture
+    /// every time it is drawn. A background that reshuffled itself whenever the scene resized
+    /// would be a background that twinkles when you rotate the phone.
+    static func glowImage(size: CGSize, paddleFraction: CGFloat) -> UIImage? {
+        guard size.width > 0, size.height > 0 else { return nil }
+        guard let base = gradientImage(size: size, paddleFraction: paddleFraction) else {
+            return nil
+        }
+
+        return UIGraphicsImageRenderer(size: size).image { context in
+            base.draw(in: CGRect(origin: .zero, size: size))
+
+            let cg = context.cgContext
+            cg.setBlendMode(.plusLighter)
+            // Added to what is beneath rather than painted over it, so the purple still shows
+            // through and the haze lifts it instead of covering it
+
+            let centre = CGPoint(x: size.width*glowCentre.x, y: size.height*glowCentre.y)
+            let reach = size.width*glowRadius
+            var seed: UInt64 = 0x9E3779B97F4A7C15
+
+            func next() -> CGFloat {
+                seed = seed &* 6364136223846793005 &+ 1442695040888963407
+                return CGFloat((seed >> 33) % 100_000)/100_000
+            }
+
+            for _ in 0..<340 {
+                // Polar, with the radius square-rooted so the dots do not bunch in the middle
+                let angle = next()*2*CGFloat.pi
+                let distance = reach*sqrt(next())
+                let spot = CGPoint(x: centre.x + cos(angle)*distance,
+                                   y: centre.y + sin(angle)*distance*0.72)
+                // Squashed vertically, so the haze lies across the top of the field rather
+                // than sitting in it as a ball
+
+                let fade = 1 - distance/reach
+                let alpha = 0.075*fade*fade*(0.4 + next()*0.6)
+                let dot = reach*(0.10 + next()*0.22)
+
+                let colours = [glowGreen.withAlphaComponent(alpha).cgColor,
+                               glowGreen.withAlphaComponent(0).cgColor] as CFArray
+                guard let haze = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                            colors: colours,
+                                            locations: [0, 1]) else { continue }
+                cg.drawRadialGradient(haze, startCenter: spot, startRadius: 0,
+                                      endCenter: spot, endRadius: dot,
+                                      options: [])
+            }
+        }
     }
 
     /// The gradient drawn out at a given size.

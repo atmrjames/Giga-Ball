@@ -348,15 +348,17 @@ final class GameBackgroundView: UIView {
         case .solid(let colour):
             colour.setFill()
             context.fill(area)
-        case .gradient:
+        case .gradient, .glow:
             // Measured from the bottom of the background, which is where the scene measures
             // it from - the fade turns at the paddle rather than at the halfway mark
             let paddle = layout.topBarHeight + layout.topGap
                 + CGFloat(GameSceneLayout.brickRows)*layout.brickHeight
                 + layout.paddleGap + layout.paddleHeight/2
             let fraction = (area.maxY - paddle)/area.height
-            GameBackground.gradientImage(size: area.size, paddleFraction: fraction)?
-                .draw(in: area)
+            let drawn = background == .glow
+                ? GameBackground.glowImage(size: area.size, paddleFraction: fraction)
+                : GameBackground.gradientImage(size: area.size, paddleFraction: fraction)
+            drawn?.draw(in: area)
         }
         context.restoreGState()
     }

@@ -478,3 +478,43 @@ final class EndlessIIBestHeightLabelTests: XCTestCase {
         XCTAssertEqual(scene.endlessBestHeight, 500)
     }
 }
+
+/// "Endless Mode menu view table scores have no dates. Why is that?"
+final class EndlessRunDatePairingTests: XCTestCase {
+
+    private let day = TimeInterval(60*60*24)
+
+    func testEveryRunGetsItsOwnDateWhenTheListsMatch() {
+        let dates = [Date(timeIntervalSince1970: 0), Date(timeIntervalSince1970: 100)]
+        let paired = LevelStatsViewController.pair([10, 20], with: dates)
+
+        XCTAssertEqual(paired.map(\.height), [10, 20])
+        XCTAssertEqual(paired.map(\.date), dates)
+    }
+
+    func testTheRunsWithoutDatesAreTheOldOnes() {
+        // The bug in the report. Dates were added to the save long after heights were, so a
+        // player from before that has more heights than dates - and pairing from the start
+        // left the *newest* runs undated, which are the ones at the top of the list
+        let recent = [Date(timeIntervalSince1970: 900), Date(timeIntervalSince1970: 1000)]
+        let paired = LevelStatsViewController.pair([10, 20, 30, 40], with: recent)
+
+        XCTAssertNil(paired[0].date, "the oldest run predates dates being recorded")
+        XCTAssertNil(paired[1].date)
+        XCTAssertEqual(paired[2].date, recent[0])
+        XCTAssertEqual(paired[3].date, recent[1], "the newest run has the newest date")
+    }
+
+    func testNoDatesAtAllIsNotACrash() {
+        let paired = LevelStatsViewController.pair([10, 20], with: [])
+        XCTAssertEqual(paired.count, 2)
+        XCTAssertTrue(paired.allSatisfy { $0.date == nil })
+    }
+
+    func testMoreDatesThanHeightsStillPairsTheHeightsItHas() {
+        // Heights synced from another device can arrive without their dates, and the reverse
+        // is possible too. Neither may drop a run from the list
+        let dates = (0..<3).map { Date(timeIntervalSince1970: TimeInterval($0)) }
+        XCTAssertEqual(LevelStatsViewController.pair([10], with: dates).count, 1)
+    }
+}

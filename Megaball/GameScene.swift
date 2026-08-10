@@ -6481,21 +6481,28 @@ laserTimer?.invalidate()
 			overlay.colorBlendFactor = 0
 			overlay.color = .clear
 			overlay.texture = gradientBackgroundTexture(size: overlay.size)
+		case .glow:
+			overlay.isHidden = false
+			overlay.colorBlendFactor = 0
+			overlay.color = .clear
+			overlay.texture = gradientBackgroundTexture(size: overlay.size, glowing: true)
 		}
 		background.isHidden = setting != .classic
 	}
 
 	/// The borders' purple at the top, the Classic background's purple by the paddle, then
 	/// away to near black at the bottom of the playfield.
-	func gradientBackgroundTexture(size: CGSize) -> SKTexture? {
+	func gradientBackgroundTexture(size: CGSize, glowing: Bool = false) -> SKTexture? {
 		guard size.width > 0, size.height > 0 else { return nil }
 
 		// Where the paddle sits within the background, measured from its bottom.
 		let bottom = background.frame.minY
 		let paddleFraction = (paddlePositionY - bottom)/size.height
 
-		guard let image = GameBackground.gradientImage(size: size,
-													   paddleFraction: paddleFraction) else {
+		let drawn = glowing
+			? GameBackground.glowImage(size: size, paddleFraction: paddleFraction)
+			: GameBackground.gradientImage(size: size, paddleFraction: paddleFraction)
+		guard let image = drawn else {
 			return nil
 		}
 		return SKTexture(image: image)

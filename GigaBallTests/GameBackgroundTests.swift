@@ -51,7 +51,7 @@ final class GameBackgroundTests: XCTestCase {
             switch background.paint {
             case .artwork:
                 XCTAssertEqual(background, .classic)
-            case .solid, .gradient:
+            case .solid, .gradient, .glow:
                 XCTAssertNotEqual(background, .classic)
             }
         }
@@ -85,5 +85,28 @@ final class GameBackgroundTests: XCTestCase {
         XCTAssertNil(GameBackground.gradientImage(size: .zero, paddleFraction: 0.3))
         XCTAssertNil(GameBackground.gradientImage(size: CGSize(width: 10, height: 0),
                                                   paddleFraction: 0.3))
+    }
+
+    func testTheGlowSitsHighAndOffCentre() {
+        // Play-test round 21 asked for it in the top half and not centred: a haze in the
+        // middle of the field reads as a vignette and sits under every brick equally
+        XCTAssertLessThan(GameBackground.glowCentre.y, 0.5, "it belongs in the upper half")
+        XCTAssertNotEqual(GameBackground.glowCentre.x, 0.5, "and not down the middle")
+    }
+
+    func testTheGlowIsTheSamePictureEveryTimeItIsDrawn() {
+        // The scatter is seeded, not random. A background that reshuffled itself whenever
+        // the scene resized would twinkle when the phone is rotated
+        let first = GameBackground.glowImage(size: CGSize(width: 80, height: 140),
+                                             paddleFraction: 0.3)
+        let again = GameBackground.glowImage(size: CGSize(width: 80, height: 140),
+                                             paddleFraction: 0.3)
+        XCTAssertEqual(first?.pngData(), again?.pngData())
+    }
+
+    func testTheGlowStillDrawsWhereTheGradientWould() {
+        XCTAssertNotNil(GameBackground.glowImage(size: CGSize(width: 40, height: 70),
+                                                 paddleFraction: 0.25))
+        XCTAssertNil(GameBackground.glowImage(size: .zero, paddleFraction: 0.25))
     }
 }

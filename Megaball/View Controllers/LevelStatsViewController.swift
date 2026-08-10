@@ -432,11 +432,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             let dates = mode == .endlessII
                 ? (totalStatsArray[0].endlessIIModeHeightDate ?? [])
                 : totalStatsArray[0].endlessModeHeightDate
-            runHistory = runs.enumerated().map { index, height in
-                (height, dates.indices.contains(index) ? dates[index] : nil)
-            }.reversed()
-            // Dates align with heights by index, but heights synced from another device can
-            // outnumber the dates - a run without one still shows, it just cannot say when
+            runHistory = LevelStatsViewController.pair(runs, with: dates).reversed()
             setupRunHistory()
         } else {
             highscoreTitleLabel.text = "Highscore"
@@ -552,6 +548,22 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
     /// The rows in the order the toggle asks for.
     ///
+    /// Heights with the dates they were set on, oldest first.
+    ///
+    /// Aligned from the **end**, not the start (play-test round 21: "Endless Mode table
+    /// scores have no dates"). Dates were added to the save format long after heights were,
+    /// so a player from before that has more heights than dates - and pairing them by index
+    /// from the start gave every early run a date belonging to a later one and left the most
+    /// recent runs, which are the ones at the top of the list, with nothing at all. The runs
+    /// that have no date are the old ones, so that is the end the shortfall belongs at.
+    static func pair(_ heights: [Int], with dates: [Date]) -> [(height: Int, date: Date?)] {
+        let undated = max(0, heights.count - dates.count)
+        return heights.enumerated().map { index, height in
+            let position = index - undated
+            return (height, dates.indices.contains(position) ? dates[position] : nil)
+        }
+    }
+
     /// By date is the stored order - newest first. By height sorts descending, ties newest
     /// first, so equal runs keep their recency order rather than shuffling.
     var sortedRunHistory: [(height: Int, date: Date?)] {

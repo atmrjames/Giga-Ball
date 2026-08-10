@@ -692,8 +692,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     ///
     /// Three gates, and the reason for each:
     ///
-    /// - **Ten launches and ten minutes of play.** Somebody who opened it once has nothing to
-    ///   review, and being asked on the way in is the fastest way to a one-star.
+    /// - **Ten launches and two minutes of play.** Somebody who opened it once has nothing to
+    ///   review, and being asked on the way in is the fastest way to a one-star. Ten minutes
+    ///   was the original bar and it is a long time in a game played in short bursts
+    ///   (play-test round 21); ten separate launches is the gate that means "plays this".
     /// - **One launch in ten.** Even a qualifying player is not asked every time; the point is
     ///   to catch somebody on an ordinary day rather than to keep trying until they answer.
     /// - **Not within four months of the last ask** (play-test round 20). iOS caps this at
@@ -702,7 +704,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     ///   resets with each new version, and without a memory of our own a player who updates
     ///   regularly could be asked again within days of the last time.
     private func askForAReviewIfItIsTime() {
-        guard appOpenCount > 10, totalStatsArray[0].playTimeSecs > 60*10 else { return }
+        guard appOpenCount > 10, totalStatsArray[0].playTimeSecs > 60*2 else { return }
         guard Int.random(in: 1...10) == 1 else { return }
 
         let lastAsked = defaults.double(forKey: MenuViewController.lastReviewAskKey)
