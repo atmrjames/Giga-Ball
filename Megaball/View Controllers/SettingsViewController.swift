@@ -120,6 +120,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         DispatchQueue.main.async {
              self.settingsTableView.reloadData()
         }
+        installReturnToGameButton()
+        // The way back into a paused run, from wherever this screen was reached
         showAnimate()
     }
 

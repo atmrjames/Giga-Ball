@@ -50,6 +50,8 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
             setBlur()
         }
         backButtonCollectionView.reloadData()
+        installReturnToGameButton()
+        // The way back into a paused run, from wherever this screen was reached
         showAnimate()
     }
     
