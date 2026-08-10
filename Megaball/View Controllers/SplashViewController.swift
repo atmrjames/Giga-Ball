@@ -180,7 +180,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             if let key = savedGame.dailyDateKey {
                 let session = DailyChallengeSession.shared
                 let challenge = DailyChallengeGenerator.challenge(forKey: key)
-                packNameLabel.text = "Daily Challenge — "
+                packNameLabel.text = "Daily Challenge, "
                     + session.displayName(forKey: key).capitalized
                 levelNumberLabel.text = challenge.mode == .classic
                     ? LevelPackSetup().levelNameArray[savedGame.levelNumber]

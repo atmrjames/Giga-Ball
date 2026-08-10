@@ -587,7 +587,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         if let date = entry.date {
             cell.detailTextLabel?.text = LevelStatsViewController.runDateFormat.string(from: date)
         } else {
-            cell.detailTextLabel?.text = "—"
+            cell.detailTextLabel?.text = "-"
         }
         cell.detailTextLabel?.font = .systemFont(ofSize: 13)
         cell.detailTextLabel?.textColor = UIColor(white: 1, alpha: 0.55)

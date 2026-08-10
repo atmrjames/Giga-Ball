@@ -514,7 +514,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
 
         let summary = NSMutableAttributedString(
-            string: "DAILY CHALLENGE — "
+            string: "DAILY CHALLENGE, "
                 + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey),
             attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
                          .foregroundColor: UIColor(white: 1, alpha: 0.55)])
@@ -546,7 +546,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         if sender != "Pause" {
             let result: String
             if DailyChallengeSession.shared.lastRunPosted {
-                result = dailyRank.map { "Posted — #\($0) on today's board" }
+                result = dailyRank.map { "Posted, #\($0) on today's board" }
                     ?? "Submitted to today's board"
                 // The placing arrives asynchronously when Game Center answers. Until
                 // then "submitted" is the honest word (§12.5): the score is on its way,
@@ -554,7 +554,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 // Store Connect - the retry loop carries it and the briefing screen's
                 // badge tells the truth of where it got to
             } else {
-                result = "Free play — free play never posts"
+                result = "Free play, which never posts"
             }
             summary.append(NSAttributedString(
                 string: "\n\n\(result)",

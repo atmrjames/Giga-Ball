@@ -388,7 +388,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         }
 
         if let challenge = DailyChallengeSession.shared.active {
-            packNameLabel.text = "Daily Challenge — "
+            packNameLabel.text = "Daily Challenge, "
                 + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey)
                     .capitalized
             levelNumberLabel.text = challenge.mode == .classic

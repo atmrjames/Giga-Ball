@@ -61,7 +61,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
                 : 0
             let bricksPerMetre = summary.height > 0
                 ? String(format: "%.1f", Double(summary.bricksDestroyed)/Double(summary.height))
-                : "—"
+                : "-"
             // Derived figures the game-over line has no room for - the detail screen is
             // where a run's texture lives (play-test round 8 asked it to earn its keep)
 
