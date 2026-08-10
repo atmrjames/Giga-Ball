@@ -509,10 +509,17 @@ final class DailyChallengeSession {
         }
         active = DailyChallengeGenerator.challenge(forKey: key)
         resumedAfterDeadline = key != todayKey
+        closedDayNeedsAnnouncing = resumedAfterDeadline
         isScoringAttempt = (save.dailyWasScoringAttempt ?? false) && resumedAfterDeadline == false
         // A run resumed on a later day is practice from here, whatever it set out to be.
         // The window is the day, and the day has gone
     }
+
+    /// Set when a run is restored into a day that has already closed, cleared by whoever
+    /// says so. One shot, because the answer is announced once per resume and not once per
+    /// pause: the splash used to carry it as a footnote, where it was read past on the way
+    /// into the game (play-test round 18 asked for it to stop the game and offer a way out).
+    var closedDayNeedsAnnouncing = false
 
     func has(_ twist: DailyTwist) -> Bool { active?.has(twist) ?? false }
 

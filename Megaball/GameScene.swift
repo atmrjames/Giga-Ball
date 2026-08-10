@@ -201,6 +201,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var livesLabel = SKLabelNode()
     var scoreLabel = SKLabelNode()
+    var multiplierShown = ""
+    // What the multiplier label is currently showing. Its own `text` is empty once the
+    // label carries attributed text, and the pulse needs to know which way the value moved
 	var multiplierLabel = SKLabelNode()
 	var readyCountdown = SKSpriteNode()
 	var goCountdown = SKSpriteNode()
@@ -1544,6 +1547,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
+
+        if DailyChallengeSession.shared.closedDayNeedsAnnouncing {
+            gameState.enter(Paused.self)
+        }
+        // A run resumed into a day that has already closed pauses the moment it loads, so
+        // the pause menu can say so and offer the way out (play-test round 18). It used to
+        // be a footnote on the resume splash, which is read past on the way into a game
+        // nobody yet knows is no longer worth anything. The message itself belongs to the
+        // pause screen, which is what the player is now looking at
     }
 	
 	func loadGameData() {
@@ -1834,15 +1846,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// the milestone is noticed once rather than at each site remembering to check.
     func showScoreLabel() {
         let score = totalScore + levelScore
-        scoreLabel.text = String(score)
+        write(String(score), into: scoreLabel)
         pulseMilestone(scoreLabel, value: score, step: 1000, passed: &lastScoreMilestone)
     }
 
     /// The same for the endless modes' height, every hundred metres.
     func showHeightLabel() {
-        scoreLabel.text = "\(endlessHeight)m"
+        write("\(endlessHeight)m", into: scoreLabel)
         pulseMilestone(scoreLabel, value: endlessHeight, step: 100,
                        passed: &lastHeightMilestone)
+    }
+
+    /// Writes a number into a HUD label with every digit the same width.
+    ///
+    /// Fugaz One's digits are not the same width, so a ticking number shuffles sideways as
+    /// it changes - the play test called it dancing (round 18). `FixedWidthDigits` pads each
+    /// one out to the widest, which needs attributed text, which in turn needs the font and
+    /// colour spelling out because `attributedText` ignores `fontName` and `fontColor`.
+    private func write(_ text: String, into label: SKLabelNode) {
+        guard let font = UIFont(name: label.fontName ?? "", size: label.fontSize) else {
+            label.text = text
+            return
+        }
+        label.attributedText = FixedWidthDigits.attributed(
+            text, font: font, colour: label.fontColor ?? .white)
     }
 
     /// Pulses a label when its value crosses another multiple of `step`.
@@ -1868,13 +1895,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func showMultiplier() {
         guard endlessMode == false else { return }
         let wanted = "x\(scoreFactorString)"
-        guard multiplierLabel.text != wanted else { return }
+        guard multiplierShown != wanted else { return }
         // Only when it actually changes: this is called on a great many events, and a
-        // label that pulsed every time it was *written* would pulse continuously
+        // label that pulsed every time it was *written* would pulse continuously.
+        // Compared against a remembered string rather than the label's own `text`, because
+        // attributed text - which is what fixed-width digits need - leaves `text` empty
 
         let rising = (Double(scoreFactorString) ?? 0)
-            > (Double(multiplierLabel.text?.dropFirst() ?? "") ?? 0)
-        multiplierLabel.text = wanted
+            > (Double(multiplierShown.dropFirst()) ?? 0)
+        multiplierShown = wanted
+        write(wanted, into: multiplierLabel)
 
         multiplierLabel.removeAction(forKey: "multiplierChange")
         multiplierLabel.setScale(1)

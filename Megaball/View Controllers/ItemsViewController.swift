@@ -102,7 +102,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     /// SoundCloud link. Rows that are not offered are now simply not in the list.
     enum InfoRow {
         case powerUps, brickTypes, achievements, statistics, gameCenter, quickStart, soundCloud
-        case rate, share, about
+        case rate, share, website, contact, about
 
         var title: String {
             switch self {
@@ -115,9 +115,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             case .soundCloud: return "SoundCloud Link"
             case .rate: return "Rate Giga-Ball"
             case .share: return "Share"
+            case .website: return "giga-ball.app"
+            case .contact: return "contact@giga-ball.app"
             case .about: return "About"
             }
         }
+        // The website and the email address are written out rather than labelled "Website"
+        // and "Contact" (play-test round 18): they are the answer as well as the door, and
+        // somebody who wants to write it down should not have to open it first
 
         var iconName: String {
             switch self {
@@ -131,6 +136,22 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             case .rate: return "iconReview.png"
             case .share: return "iconShare.png"
             case .about: return "iconAbout.png"
+            case .website, .contact: return ""
+            }
+        }
+
+        /// The row's mark. The two new rows have no drawn icon yet (§8.5), so they borrow
+        /// SF Symbols in the same pale ink the drawn ones use.
+        var icon: UIImage? {
+            switch self {
+            case .website:
+                return UIImage(systemName: "globe")?
+                    .withTintColor(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1), renderingMode: .alwaysOriginal)
+            case .contact:
+                return UIImage(systemName: "envelope.fill")?
+                    .withTintColor(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1), renderingMode: .alwaysOriginal)
+            default:
+                return UIImage(named: iconName)
             }
         }
     }
@@ -146,7 +167,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // somewhere else entirely, which is not what somebody who paused to look something up
         // is after
 
-        rows += [.quickStart, .soundCloud, .rate, .share, .about]
+        rows += [.quickStart, .soundCloud, .rate, .share, .website, .contact, .about]
         return rows
     }
 
@@ -169,7 +190,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         let row = infoRows[indexPath.row]
         cell.settingDescription.text = row.title
-        cell.iconImage.image = UIImage(named: row.iconName)
+        cell.iconImage.image = row.icon
+        cell.iconImage.contentMode = .scaleAspectFit
 
         return cell
     }
@@ -195,6 +217,14 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             showGameCenterLeaderboards()
         case .quickStart:
             moveToIntro()
+        case .website:
+            if let site = URL(string: "https://giga-ball.app") {
+                UIApplication.shared.open(site)
+            }
+        case .contact:
+            if let mail = URL(string: "mailto:contact@giga-ball.app?subject=Giga-Ball") {
+                UIApplication.shared.open(mail)
+            }
         case .soundCloud:
             if let purchaseSoundTrackURL = URL(string: "https://soundcloud.com/user-371123791/sets/giga-ball-original-sound-track?ref=clipboard&p=i&c=1") {
                 UIApplication.shared.open(purchaseSoundTrackURL)

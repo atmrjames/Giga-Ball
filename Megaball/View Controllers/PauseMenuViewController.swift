@@ -292,6 +292,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         collectionViewLayout()
         buttonCollectionView.reloadData()
         showAnimate()
+        announceClosedDayIfNeeded()
 
         if isDailyChallenge, sender != "Pause", DailyChallengeSession.shared.lastRunPosted {
             GameCenterHandler().loadDailyRank { [weak self] rank in
@@ -425,21 +426,58 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
     /// Explains a twist, tapped on the pause screen.
     ///
+    /// Says, once, that the day this run belongs to has closed - and offers the way out.
+    ///
+    /// The message used to be a line on the resume splash, which is exactly where a player
+    /// is not reading (play-test round 18). Here it stops the game, on top of the pause
+    /// screen, with the two answers there are: carry on for the practice, or leave.
+    func announceClosedDayIfNeeded() {
+        guard DailyChallengeSession.shared.closedDayNeedsAnnouncing else { return }
+        DailyChallengeSession.shared.closedDayNeedsAnnouncing = false
+        // Cleared first: this screen can be built again on the way back from settings, and
+        // the answer has not changed since it was given
+
+        GigaBallAlert.show(
+            on: self,
+            title: "Challenge Closed",
+            message: "This challenge closed while you were away.\n\n"
+                + "You can carry on playing it, but the score will not be posted.",
+            dismissTitle: "Main Menu",
+            confirmTitle: "Continue",
+            confirm: { [weak self] in
+                self?.removeAnimate(nextAction: .unpause)
+            },
+            dismiss: { [weak self] in
+                MenuViewController().clearSavedGame()
+                self?.moveToMainMenu()
+                // The same pair of steps quitting from the pause menu takes: the save goes
+                // first, or the run this player just abandoned is offered back to them
+            })
+    }
+
     /// Here rather than on the briefing card (play-test round 16): the briefing prints
     /// each twist's blurb underneath it already, and this screen shows only an icon and a
     /// name - which is exactly where "what does Fog of War do again" gets asked.
     @objc func dailyTwistsTapped() {
-        guard let challenge = DailyChallengeSession.shared.active,
-              challenge.twists.isEmpty == false else { return }
+        guard let challenge = DailyChallengeSession.shared.active else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
 
         let centred = NSMutableParagraphStyle()
         centred.alignment = .center
 
+        // A twistless day is a Vanilla day, and it explains itself like any other
+        // (play-test round 18): "Vanilla" says nothing to somebody who has not read the
+        // rest of the game, and it was the one badge on this screen that did not answer
+        // a tap. Named and blurbed from the same constants the briefing prints
+        let named: [(icon: UIImage, name: String, blurb: String)] =
+            challenge.twists.isEmpty
+            ? [(PowerUpIcon.twistVanilla, DailyTwist.vanillaName, DailyTwist.vanillaBlurb)]
+            : challenge.twists.map { ($0.icon, $0.displayName, $0.blurb) }
+
         let body = NSMutableAttributedString()
-        for (position, twist) in challenge.twists.enumerated() {
+        for (position, twist) in named.enumerated() {
             if position > 0 { body.append(NSAttributedString(string: "\n\n")) }
-            body.append(DailyTwist.badgedLine(icon: twist.icon, name: twist.displayName,
+            body.append(DailyTwist.badgedLine(icon: twist.icon, name: twist.name,
                                               font: .boldSystemFont(ofSize: 16),
                                               colour: .white))
             body.append(NSAttributedString(

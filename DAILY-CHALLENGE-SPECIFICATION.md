@@ -3,10 +3,11 @@
 **Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full; ten
 feedback rounds folded in. Still open: phase 4's twist subset, phase 5 (streaks,
 per-day results, round 12's posted-score container), phase 6 themes, and §11.5's
-notifications and share card. The test clock (the DAY stepper and RESET ATTEMPTS on the
-briefing screen) is still in the build and must be removed or debug-gated before
-release - this header is the tracking for that. "Practice" is called free play
-everywhere the player reads it (round 12).**
+notifications and share card. **The test clock is debug-gated** (round 18): the DAY
+stepper, the LIVE readout and RESET ATTEMPTS are built only under `#if DEBUG`, so a
+release build has none of them and the briefing card takes the room back, while every
+future day stays reachable for testing. "Practice" is called free play everywhere the
+player reads it (round 12).**
 
 *The paragraphs below record the build as it grew; §12 holds the phase plan and
 FUTURE-RELEASES.md holds the release map.*

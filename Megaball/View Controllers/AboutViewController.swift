@@ -57,8 +57,52 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         if parallaxSetting {
             addParallax()
         }
+        addContactLinks()
         backButtonCollectionView.reloadData()
         showAnimate()
+    }
+
+    /// The website and the email address, under the small print.
+    ///
+    /// The About screen said who made the game and gave no way of reaching them (play-test
+    /// round 18). Written out in full rather than labelled, and tappable, so the same line
+    /// serves whether somebody wants to visit or to write it down.
+    private func addContactLinks() {
+        let links = UIStackView()
+        links.axis = .vertical
+        links.alignment = .center
+        links.spacing = 6
+        links.translatesAutoresizingMaskIntoConstraints = false
+        aboutView.addSubview(links)
+
+        for (text, action) in [("giga-ball.app", #selector(openWebsite)),
+                               ("contact@giga-ball.app", #selector(openMail))] {
+            let link = UIButton(type: .system)
+            link.setTitle(text, for: .normal)
+            link.setTitleColor(#colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1), for: .normal)
+            link.titleLabel?.font = .boldSystemFont(ofSize: 15)
+            link.addTarget(self, action: action, for: .touchUpInside)
+            links.addArrangedSubview(link)
+        }
+
+        NSLayoutConstraint.activate([
+            links.centerXAnchor.constraint(equalTo: aboutView.centerXAnchor),
+            links.topAnchor.constraint(equalTo: rightsLabel.bottomAnchor, constant: 18),
+            links.leadingAnchor.constraint(greaterThanOrEqualTo: aboutView.leadingAnchor,
+                                           constant: 20),
+        ])
+    }
+
+    @objc private func openWebsite() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        if let site = URL(string: "https://giga-ball.app") { UIApplication.shared.open(site) }
+    }
+
+    @objc private func openMail() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        if let mail = URL(string: "mailto:contact@giga-ball.app?subject=Giga-Ball") {
+            UIApplication.shared.open(mail)
+        }
     }
 
     override func viewDidLayoutSubviews() {

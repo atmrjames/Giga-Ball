@@ -281,7 +281,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // the big play in the centre, Game Center on the right - the same artwork the
         // level screens' leaderboard button wears
 
-        // The test clock: winds the simulated *today*, loudly labelled
+        // The developer rig - a test clock that winds the simulated *today*, and a button
+        // that wipes every daily record so the same day can be played first-attempt again.
+        //
+        // Debug builds only (play-test round 18). It was always going out before release;
+        // gating it rather than deleting it keeps the only way there is to play tomorrow's
+        // challenge today, which is how every daily bug so far has been reproduced. Release
+        // builds never construct it, so there is nothing to hide and nothing to forget.
+        var rigTop: NSLayoutYAxisAnchor?
+        #if DEBUG
         let back = UIButton(type: .system)
         back.setTitle("◀ DAY", for: .normal)
         let forward = UIButton(type: .system)
@@ -297,8 +305,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         testClockLabel.font = .boldSystemFont(ofSize: 12)
         testClockLabel.textColor = UIColor(white: 1, alpha: 0.85)
         testClockLabel.textAlignment = .center
-        // Bright enough to read where it now sits: half-white over the lighter part of
-        // the blur was invisible, which made the clock look like it had no readout
 
         let reset = UIButton(type: .system)
         reset.setTitle("RESET ATTEMPTS", for: .normal)
@@ -307,8 +313,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         reset.addTarget(self, action: #selector(resetAttempts), for: .touchUpInside)
         reset.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(reset)
-        // The other half of the play-test rig: wipes every daily record so the same day
-        // can be played first-attempt again. Goes out with the test clock before release
 
         let clockRow = UIStackView(arrangedSubviews: [back, live, forward])
         clockRow.axis = .horizontal
@@ -318,6 +322,18 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         view.addSubview(clockRow)
         view.addSubview(testClockLabel)
         developerResetButton = reset
+        rigTop = clockRow.topAnchor
+
+        NSLayoutConstraint.activate([
+            clockRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
+            clockRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
+            testClockLabel.topAnchor.constraint(equalTo: clockRow.bottomAnchor, constant: 2),
+            testClockLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            reset.topAnchor.constraint(equalTo: testClockLabel.bottomAnchor, constant: 2),
+            reset.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            reset.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -8),
+        ])
+        #endif
 
         NSLayoutConstraint.activate([
             modeIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
@@ -341,13 +357,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // the pager sits 22pt under the title exactly as it did before
             days.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             days.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            days.bottomAnchor.constraint(equalTo: clockRow.topAnchor, constant: -10),
-            // Above the developer rig, not just above the date: the rig sits between the
-            // cards and the date block, and a card reaching past it drew straight through
-            // the test clock. It goes out with the rig before release, and the card grows
-            // into the room then
-            // Edge to edge, so a page is a whole screen and paging lands on whole days;
-            // the card's own margins live on the cell
+            days.bottomAnchor.constraint(equalTo: rigTop ?? dateLabel.topAnchor,
+                                         constant: -10),
+            // Above the developer rig where there is one, above the date block where there
+            // is not - which is the release build, and where the card gets the room the
+            // rig used to take. Edge to edge, so a page is a whole screen and paging lands
+            // on whole days; the card's own margins live on the cell
 
             dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
@@ -399,16 +414,6 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             leaderboardButton.heightAnchor.constraint(equalToConstant: 40),
             // 40pt like every other menu's small buttons - only the play is big
 
-            clockRow.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
-            clockRow.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
-            testClockLabel.topAnchor.constraint(equalTo: clockRow.bottomAnchor, constant: 2),
-            testClockLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            reset.topAnchor.constraint(equalTo: testClockLabel.bottomAnchor, constant: 2),
-            reset.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            reset.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -8),
-            // The developer rig stacks above the date block now (play-test round 11) -
-            // it goes out with the test clock before release, so the real controls get
-            // the reachable spot
         ])
     }
 

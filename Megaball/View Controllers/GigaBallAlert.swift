@@ -29,10 +29,12 @@ enum GigaBallAlert {
     static func show(on presenter: UIViewController, title: String, message: String,
                      dismissTitle: String = "Got it",
                      confirmTitle: String? = nil,
-                     confirm: (() -> Void)? = nil) {
+                     confirm: (() -> Void)? = nil,
+                     dismiss: (() -> Void)? = nil) {
         show(on: presenter, title: title,
              attributed: NSAttributedString(string: message),
-             dismissTitle: dismissTitle, confirmTitle: confirmTitle, confirm: confirm)
+             dismissTitle: dismissTitle, confirmTitle: confirmTitle,
+             confirm: confirm, dismiss: dismiss)
     }
 
     /// The same pop-up, for a message that carries more than words - the twists explainer
@@ -42,11 +44,12 @@ enum GigaBallAlert {
                      attributed message: NSAttributedString,
                      dismissTitle: String = "Got it",
                      confirmTitle: String? = nil,
-                     confirm: (() -> Void)? = nil) {
+                     confirm: (() -> Void)? = nil,
+                     dismiss: (() -> Void)? = nil) {
         let alert = GigaBallAlertViewController(title: title, message: message,
                                                 dismissTitle: dismissTitle,
                                                 confirmTitle: confirmTitle,
-                                                confirm: confirm)
+                                                confirm: confirm, dismiss: dismiss)
         presenter.addChild(alert)
         alert.view.frame = presenter.view.bounds
         alert.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -63,13 +66,15 @@ final class GigaBallAlertViewController: UIViewController {
     private let dismissTitle: String
     private let confirmTitle: String?
     private let confirm: (() -> Void)?
+    private let dismiss: (() -> Void)?
     private let card = UIView()
 
     private let hapticsSetting = UserDefaults.standard.bool(forKey: "hapticsSetting")
     private let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
     init(title: String, message: NSAttributedString, dismissTitle: String,
-         confirmTitle: String? = nil, confirm: (() -> Void)? = nil) {
+         confirmTitle: String? = nil, confirm: (() -> Void)? = nil,
+         dismiss: (() -> Void)? = nil) {
         self.heading = title.uppercased()
         // Every pop-up wears the app's heading in capitals (play-test round 17), decided
         // here so no caller has to remember to shout
@@ -77,6 +82,7 @@ final class GigaBallAlertViewController: UIViewController {
         self.dismissTitle = dismissTitle
         self.confirmTitle = confirmTitle
         self.confirm = confirm
+        self.dismiss = dismiss
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -92,9 +98,13 @@ final class GigaBallAlertViewController: UIViewController {
         blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.insertSubview(blur, at: 0)
 
-        view.addGestureRecognizer(UITapGestureRecognizer(target: self,
-                                                         action: #selector(dismissTapped)))
-        // Tapping outside closes it, the way the app's other overlays behave
+        if dismiss == nil {
+            view.addGestureRecognizer(
+                UITapGestureRecognizer(target: self, action: #selector(dismissTapped)))
+        }
+        // Tapping outside closes it, the way the app's other overlays behave - unless both
+        // buttons *do* something, in which case there is no harmless answer to give on the
+        // player's behalf and the choice has to be made on the card
 
         card.backgroundColor = UIColor(white: 1, alpha: 0.08)
         card.layer.cornerRadius = 20
@@ -185,7 +195,8 @@ final class GigaBallAlertViewController: UIViewController {
 
     @objc private func dismissTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
-        close(then: nil)
+        let action = dismiss
+        close { action?() }
     }
 
     private func close(then next: (() -> Void)?) {
