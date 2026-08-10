@@ -188,10 +188,14 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
 
                 let closed = key != session.todayKey
                 let footnote = closed
-                    ? "This challenge closed while you were away.\nThe run continues - the score will not be posted."
+                    ? nil
                     : ((savedGame.dailyWasScoringAttempt ?? false)
                         ? "Still your scoring attempt."
                         : "Free play.")
+                // A closed day says nothing here now (play-test round 20). It used to carry
+                // the whole explanation as a footnote on the way into a game nobody had yet
+                // realised was no longer worth anything; the pause menu stops the run and
+                // says it properly instead (see `announceClosedDayIfNeeded`)
                 scoreLabel.attributedText = resumeDetail(
                     title: challenge.mode == .classic ? "Score" : "Height",
                     value: challenge.mode == .classic

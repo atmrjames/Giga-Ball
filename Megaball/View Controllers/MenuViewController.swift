@@ -674,17 +674,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if resumeGameToLoad {
             loadSavedGame()
         } else {
-            let rand = Int.random(in: 1...10)
-            if appOpenCount > 10 && totalStatsArray[0].playTimeSecs > 60*10 && rand == 1 {
-                if let windowScene = view.window?.windowScene {
-                    if #available(iOS 16.0, *) {
-                        AppStore.requestReview(in: windowScene)
-                    } else {
-                        requestReviewLegacy(in: windowScene)
-                    }
-                }
-                // Show app rating pop-up when over 10 times opened the app and 10 minutes of play time with a 1 in 10 chance on launching the app
-            }
+            askForAReviewIfItIsTime()
         }
         
         if appOpenCount == 0 {
@@ -696,6 +686,44 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // Present onboarding screen if first time opening app
     }
     // Runs when the splash screen has ended
+
+    /// Asks for a review, if this is somebody who has played it enough and has not been
+    /// asked lately.
+    ///
+    /// Three gates, and the reason for each:
+    ///
+    /// - **Ten launches and ten minutes of play.** Somebody who opened it once has nothing to
+    ///   review, and being asked on the way in is the fastest way to a one-star.
+    /// - **One launch in ten.** Even a qualifying player is not asked every time; the point is
+    ///   to catch somebody on an ordinary day rather than to keep trying until they answer.
+    /// - **Not within four months of the last ask** (play-test round 20). iOS caps this at
+    ///   three prompts a year by itself and shows nothing to somebody who has already reviewed
+    ///   the current version, so this is not the only guard - but the system's allowance
+    ///   resets with each new version, and without a memory of our own a player who updates
+    ///   regularly could be asked again within days of the last time.
+    private func askForAReviewIfItIsTime() {
+        guard appOpenCount > 10, totalStatsArray[0].playTimeSecs > 60*10 else { return }
+        guard Int.random(in: 1...10) == 1 else { return }
+
+        let lastAsked = defaults.double(forKey: MenuViewController.lastReviewAskKey)
+        let sinceLastAsk = Date().timeIntervalSince1970 - lastAsked
+        guard lastAsked == 0 || sinceLastAsk > MenuViewController.reviewAskCooldown else {
+            return
+        }
+
+        guard let windowScene = view.window?.windowScene else { return }
+        defaults.set(Date().timeIntervalSince1970, forKey: MenuViewController.lastReviewAskKey)
+        if #available(iOS 16.0, *) {
+            AppStore.requestReview(in: windowScene)
+        } else {
+            requestReviewLegacy(in: windowScene)
+        }
+        // Recorded whether or not iOS actually draws it: the app cannot tell, and an ask that
+        // was swallowed is still an ask as far as not pestering is concerned
+    }
+
+    private static let lastReviewAskKey = "lastReviewAsk"
+    private static let reviewAskCooldown: TimeInterval = 60*60*24*120
 
     @available(iOS, introduced: 14.0, deprecated: 16.0, message: "Superseded by AppStore.requestReview(in:)")
     private func requestReviewLegacy(in windowScene: UIWindowScene) {

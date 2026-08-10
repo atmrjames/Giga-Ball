@@ -73,19 +73,25 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         let links = UIStackView()
         links.axis = .vertical
         links.alignment = .center
-        links.spacing = 6
+        links.spacing = 2
         links.translatesAutoresizingMaskIntoConstraints = false
         aboutView.addSubview(links)
+        contactLinks = links
 
         for (text, action) in [("giga-ball.app", #selector(openWebsite)),
                                ("contact@giga-ball.app", #selector(openMail))] {
-            let link = UIButton(type: .system)
-            link.setTitle(text, for: .normal)
-            link.setTitleColor(#colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1), for: .normal)
-            link.titleLabel?.font = .boldSystemFont(ofSize: 15)
-            link.addTarget(self, action: action, for: .touchUpInside)
+            let link = UILabel()
+            link.text = text
+            link.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            link.font = composerLabel.font
+            link.textAlignment = .center
+            link.isUserInteractionEnabled = true
+            link.addGestureRecognizer(UITapGestureRecognizer(target: self, action: action))
             links.addArrangedSubview(link)
         }
+        // Labels rather than buttons (play-test round 20): a button carries its own padding,
+        // which put more air between the two lines than any other pair on this screen has.
+        // Same face as the credits above them, so the block reads as one list
 
         NSLayoutConstraint.activate([
             links.centerXAnchor.constraint(equalTo: aboutView.centerXAnchor),
@@ -96,6 +102,9 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
                                            constant: 20),
         ])
     }
+
+    /// Kept so the fade-in can include it, in its place in the order.
+    private var contactLinks: UIStackView?
 
     @objc private func openWebsite() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
@@ -270,6 +279,10 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         composerLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         composerLabel.center.y += distance
         
+        contactLinks?.alpha = 0.0
+        contactLinks?.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+        contactLinks?.center.y += distance
+
         buildLabel.alpha = 0.0
         buildLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         buildLabel.center.y += distance
@@ -310,6 +323,15 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             delayFactor+=1
         })
         
+        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
+            self.contactLinks?.alpha = 1.0
+            self.contactLinks?.transform = CGAffineTransform(scaleX: 1, y: 1)
+            self.contactLinks?.center.y -= distance
+            delayFactor+=1
+        })
+        // In its place in the cascade rather than simply present (play-test round 20) - it
+        // sits between the credits and the build number on screen, so it arrives there too
+
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.buildLabel.alpha = 1.0
             self.buildLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
