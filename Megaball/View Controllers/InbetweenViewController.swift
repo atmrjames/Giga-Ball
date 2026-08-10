@@ -77,6 +77,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             interfaceHaptic.impactOccurred()
         }
         if finishScoreTallyIfRunning() { return }
+        if skipIntroHoldIfRunning() { return }
         removeAnimate()
     }
     @IBAction func tapBackgroundGestureAction(_ sender: Any) {
@@ -84,7 +85,41 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             interfaceHaptic.impactOccurred()
         }
         if finishScoreTallyIfRunning() { return }
+        if skipIntroHoldIfRunning() { return }
         removeAnimate()
+    }
+
+    /// True while the next level's name is being held on screen before it fades.
+    private var introHoldRunning = false
+
+    /// Skips the hold and clears the intro now.
+    ///
+    /// The level summary already answers a tap twice - once to finish the score tally, once
+    /// to dismiss - and then holds the *next* level's name for a second and a half with
+    /// nothing to press (play-test round 11 asked for the intro to be skippable too). A tap
+    /// during that hold now runs the dismissal it was going to run anyway.
+    ///
+    /// The notifications still go out in the same order, because the scene's opening field
+    /// waits on `levelIntroWillClear` and its lives roll in on `levelIntroDidClear` - a skip
+    /// that dropped either would leave a run with no bricks or no reserve balls.
+    @discardableResult
+    private func skipIntroHoldIfRunning() -> Bool {
+        guard introHoldRunning else { return false }
+        introHoldRunning = false
+        view.layer.removeAllAnimations()
+        // The hold's own completion is called with `finished: false` by this, and it is
+        // guarded on `finished` - so it will not also run what is about to run here
+
+        NotificationCenter.default.post(name: .levelIntroWillClear, object: nil)
+        UIView.animate(withDuration: 0.25, animations: {
+            self.view.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+            self.view.alpha = 0.0
+        }) { finished in
+            guard finished else { return }
+            self.view.removeFromSuperview()
+            NotificationCenter.default.post(name: .levelIntroDidClear, object: nil)
+        }
+        return true
     }
     
     override func viewDidLoad() {
@@ -291,11 +326,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                     self.contentView.alpha = 1.0})
                 { (finished: Bool) in
                     if (finished) {
+                        self.introHoldRunning = true
                         UIView.animate(withDuration: 1.50, animations: {
                             self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
                             self.view.alpha = 1.0})
                         { (finished: Bool) in
                             if (finished) {
+                                self.introHoldRunning = false
                                 NotificationCenter.default.post(name: .levelIntroWillClear, object: nil)
                                 // The final fade is about to run. The opening field starts
                                 // on this rather than on .levelIntroDidClear, so its first

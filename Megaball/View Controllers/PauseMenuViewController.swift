@@ -182,7 +182,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     /// (play-test round 11: "the icons alone are not enough"), with the door to the
     /// detail screen as a small labelled button at the bottom of the list.
     func updateRunStatsLabel() {
-        guard endlessMode, sender != "Pause",
+        guard sender != "Pause",
               let summary = InGameRecents.shared.runSummary else {
             runStatsLabel.isHidden = true
             moreStatsButton.isHidden = true
@@ -193,10 +193,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         moreStatsButton.isHidden = false
         summaryUnderStats.isActive = true
         let text = NSMutableAttributedString()
-        let items: [(String, String, Int)] = [
+        var items: [(String, String, Int)] = [
             ("rectangle.fill", "Paddle hits", summary.paddleHits),
             ("square.grid.3x2.fill", "Bricks destroyed", summary.bricksDestroyed),
             ("arrow.down.circle.fill", "Power-ups collected", summary.powerUpsCollected)]
+        if summary.isEndless == false {
+            items.insert(("flag.fill", "Levels cleared", summary.levelsCleared), at: 0)
+        }
+        // Every game over carries its run's numbers now, not only the endless ones
+        // (play-test round 13) - and a classic run leads with how far it got, which is the
+        // thing an endless run says with its height
         for (position, item) in items.enumerated() {
             if position > 0 { text.append(NSAttributedString(string: "\n")) }
             let badge = NSTextAttachment()

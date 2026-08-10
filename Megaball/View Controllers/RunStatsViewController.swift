@@ -65,12 +65,21 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             // Derived figures the game-over line has no room for - the detail screen is
             // where a run's texture lives (play-test round 8 asked it to earn its keep)
 
-            let lines: [(String, String, String)] = [
-                ("arrow.up", "Height", "\(summary.height)m"),
+            // The headline is whatever the run was measured in. An endless run has a height
+            // and metres to divide by; a classic one has a score and a count of levels, and
+            // was being shown "0m" and a dash where its own result should have been
+            // (play-test round 13)
+            let headline: [(String, String, String)] = summary.isEndless
+                ? [("arrow.up", "Height", "\(summary.height)m")]
+                : [("star.fill", "Score", "\(summary.score)"),
+                   ("flag.fill", "Levels cleared", "\(summary.levelsCleared)")]
+
+            let lines: [(String, String, String)] = headline + [
                 ("clock", "Time", String(format: "%d:%02d", minutes, seconds)),
                 ("rectangle.fill", "Paddle hits", "\(summary.paddleHits)"),
                 ("square.grid.3x2.fill", "Bricks destroyed", "\(summary.bricksDestroyed)"),
-                ("ruler", "Bricks per metre", bricksPerMetre),
+            ] + (summary.isEndless
+                 ? [("ruler", "Bricks per metre", bricksPerMetre)] : []) + [
                 ("circle.slash", "Balls lost", "\(summary.ballsLost)"),
                 ("arrow.down.circle.fill", "Power-ups seen", "\(summary.powerUpsSeen)"),
                 ("checkmark.circle.fill", "Power-ups collected",

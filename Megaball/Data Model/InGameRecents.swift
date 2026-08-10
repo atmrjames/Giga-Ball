@@ -71,6 +71,13 @@ final class InGameRecents {
         let ballsLost: Int
         let powerUpsSeen: Int
         let powerUpsCollected: Int
+
+        /// What a classic run has instead of a height (play-test round 13): the score, and
+        /// how far through the pack it got. Both are zero for an endless run, which is what
+        /// the stats screen reads to decide which of the two headline figures it is showing.
+        var score: Int = 0
+        var levelsCleared: Int = 0
+        var isEndless: Bool = true
     }
     var runSummary: RunSummary?
 
