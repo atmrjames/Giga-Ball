@@ -213,9 +213,64 @@ extension GameScene {
             guard let brick = node as? SKSpriteNode else { continue }
             guard brick.texture != brickNullTexture else { continue }
             // An empty cell has nothing to hide
-            brick.isHidden = true
+
+            guard dailyFogHasClosed == false else {
+                brick.isHidden = true
+                continue
+            }
+            // A row arriving mid-run is fogged the moment it exists. The look below is the
+            // *opening* field's, and a row that showed itself every time one was generated
+            // would not be a fog at all
+
+            dailyFogPending.append(brick)
         }
     }
+
+    /// Takes the opening field away, once the player has had a look at it.
+    ///
+    /// Fog of War used to hide the field at creation, so a fogged day opened on an empty
+    /// screen and the first shot was blind (queued from the ninth play-test round: the level
+    /// should show its hand first). The bricks now build in visible, hold for a beat, and
+    /// fade out together - so you get one look at what you are about to lose sight of, which
+    /// is the difference between a twist and a blindfold.
+    ///
+    /// Called when the build-in finishes, however it finished: a skipped build-in still gets
+    /// its look, just a shorter one. Idempotent, because all three of those paths can be
+    /// reached in one run.
+    func closeDailyFog(animated: Bool = true) {
+        guard dailyFogIsOn, dailyFogHasClosed == false else { return }
+        dailyFogHasClosed = true
+
+        let showing = dailyFogPending
+        dailyFogPending.removeAll()
+        guard showing.isEmpty == false else { return }
+
+        guard animated else {
+            for brick in showing { brick.isHidden = true }
+            return
+        }
+        // Without the look, for tests: what the fade arrives at is the part worth asserting,
+        // and a test that waited out the animation would be a test about a timer
+
+        for brick in showing where brick.parent != nil {
+            brick.run(.sequence([
+                .wait(forDuration: GameScene.dailyFogLook),
+                .fadeOut(withDuration: GameScene.dailyFogClose),
+                .run { brick.isHidden = true; brick.alpha = 1 },
+            ]))
+            // Hidden *and* returned to full alpha at the end: `revealDailyFog` fades a
+            // struck brick back in from zero, and a brick left on alpha zero would be
+            // revealed to nothing
+        }
+    }
+
+    /// How long the field is readable before the fog takes it, and how long the fog takes.
+    ///
+    /// Long enough to look at and too short to memorise. The twist is meant to make you
+    /// remember a field rather than read one, and a fade that lingered would hand back most
+    /// of what the twist takes away.
+    static let dailyFogLook: TimeInterval = 1.1
+    static let dailyFogClose: TimeInterval = 0.55
 
     /// Brings one brick out of the fog, spending the strike on the reveal. Returns
     /// whether it did, so the caller stops there.

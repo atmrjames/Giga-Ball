@@ -171,9 +171,20 @@ rejection.
    spec's status header), App Store review readiness, the posting-path anti-cheat
    sweep, biggest/smallest device matrix.
 
-**Idea backlog, deliberately uncommitted** (in §12.0 with context, built if a round has
-room, otherwise 1.4): safety paddle, Drift, Ghost Ball, paddle surface shapes, the
-round-11 twist candidates (No Standard Bricks, Disguise), special-day levels, ring glow.
+**The idea backlog is now committed to 1.3** (James's call, round 23). It was
+"built if a round has room, otherwise 1.4": safety paddle, Drift, Ghost Ball, paddle
+surface shapes, Ball Spin/Curve, Double Paddle, the round-11 twist candidates (No
+Standard Bricks, Disguise) and the rest of §4's unbuilt twists, special-day levels, ring
+glow, and the share card that §11.5 already specifies. They are in §12.0 with their build
+notes; nothing is being held back for a 1.4 now.
+
+**What that means for the order.** The art and sound in §8.5 are James's side and are
+being made later, so every one of these ships wearing a placeholder that reads correctly -
+which is the same bargain the rest of 1.3 is already on. The two things that genuinely
+gate a release are unchanged and both belong to James: the Game Center boards clearing
+review one per day, and the TestFlight public link. Work that depends on the boards -
+the daily's live board stats, global rank on game-overs - waits for them rather than
+being built against a board that does not exist yet.
 
 **The website lives in its own repository**, github.com/atmrjames/Giga-Ball-Website,
 served by GitHub Pages at giga-ball.app from the branch root. It was drafted in this

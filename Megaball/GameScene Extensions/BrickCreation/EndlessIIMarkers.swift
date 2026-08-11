@@ -505,6 +505,7 @@ extension GameScene {
                        .run { [weak self] in
                            self?.endlessIIBuildingIn = false
                            self?.endlessIIBuildInFinalY.removeAll()
+                           self?.closeDailyFog()
                        }]))
         // Cleared on a timer rather than by counting bricks finishing, because the flag only
         // exists to know whether a tap should skip - and once everything has arrived there is
@@ -557,6 +558,7 @@ extension GameScene {
                        .run { [weak self] in
                            self?.endlessIIBuildingIn = false
                            self?.endlessIIBuildInFinalY.removeAll()
+                           self?.closeDailyFog()
                        }]))
     }
 
@@ -640,6 +642,8 @@ extension GameScene {
             // this build-in never owned
         }
         endlessIIBuildInFinalY.removeAll()
+        closeDailyFog()
+        // A skipped build-in still gets its look at a fogged field, just a shorter one
         return true
     }
 

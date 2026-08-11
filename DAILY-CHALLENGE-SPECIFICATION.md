@@ -474,9 +474,16 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   recording the run's natural end uses.
 - **Monochrome performance** (§5, §4 Blackout).
 
-- **Fog of War's opening reveal** (queued, ninth play-test round): the level should
-  *show its hand first* - the bricks animate in visible, then a blur-style fade takes
-  them to invisible, so the player gets one look at the field before the fog closes.
+- ~~**Fog of War's opening reveal**~~ **Built** (round 23). The opening field builds in
+  visible, holds for 1.1 seconds and fades out together over half a second: one look at
+  what you are about to lose sight of, which is the difference between a twist and a
+  blindfold. `applyDailyFog` collects the opening bricks rather than hiding them and
+  `closeDailyFog` takes them away when the build-in finishes, however it finished - a
+  skipped build-in still gets its look, just a shorter one. A row generated later is
+  fogged the moment it exists, because the look belongs to the opening field. The bricks
+  are returned to full alpha as they are hidden, since `revealDailyFog` fades a struck
+  brick back in from zero and one left on alpha zero would be revealed to nothing.
+  Original note, ninth play-test round: the level should show its hand first.
   Build notes from cold: `applyDailyFog` currently hides the field at creation
   (`BrickCreation`, skipped on resume); the reveal instead wants the field built
   visible, then a one-shot fade run *after* the build-in settles - and it must not be a

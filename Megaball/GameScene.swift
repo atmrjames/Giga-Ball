@@ -778,6 +778,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIBuildingIn = false
 	/// The opening field, held above where it belongs until the build-in runs.
 	var endlessIIBuildInBricks: [SKSpriteNode] = []
+	/// The opening field, while it is still on show. Fog of War lets the level be seen once
+	/// and then takes it away - see `closeDailyFog`.
+	var dailyFogPending: [SKSpriteNode] = []
+	var dailyFogHasClosed = false
 	/// Whether the opening field is still waiting for a clear screen to arrive on.
 	var endlessIIBuildInWaiting = false
 	/// Where each waiting brick is going, while it sits on the top row waiting its turn.

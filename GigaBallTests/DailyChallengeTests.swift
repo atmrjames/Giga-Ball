@@ -572,6 +572,10 @@ final class DailyChallengeTests: XCTestCase {
         let multi = SKSpriteNode(texture: scene.brickMultiHit3Texture)
         let empty = SKSpriteNode(texture: scene.brickNullTexture)
         scene.applyDailyFog(to: [plain, wall, multi, empty])
+        scene.closeDailyFog(animated: false)
+        // The field is shown once and then taken away (round 9's queued item), so the
+        // question this test asks - does *every* type get fogged - is asked after the
+        // fog closes rather than at creation
 
         XCTAssertTrue(plain.isHidden)
         XCTAssertTrue(wall.isHidden)
@@ -590,6 +594,7 @@ final class DailyChallengeTests: XCTestCase {
         let wall = SKSpriteNode(texture: scene.brickIndestructible2Texture)
         let stack = SKSpriteNode(texture: scene.brickMultiHit3Texture)
         scene.applyDailyFog(to: [wall, stack])
+        scene.closeDailyFog(animated: false)
 
         XCTAssertTrue(scene.revealDailyFog(wall),
                       "an Indestructible's own rules never look at the hidden flag - "
@@ -599,7 +604,9 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertFalse(stack.isHidden)
 
         let plain = SKSpriteNode(texture: scene.brickNormalTexture)
-        scene.applyDailyFog(to: [plain])
+        plain.isHidden = true
+        // Fogged the way the closed fog leaves a brick - the fog has already shut by this
+        // point in the run, so a brick reaching here is hidden rather than pending
         XCTAssertFalse(scene.revealDailyFog(plain),
                        "a normal-shaped brick reaches a switch branch that already does "
                         + "first-hit-reveals-only - the fog must not reveal it early, or "
@@ -627,5 +634,82 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertTrue(scene.isDailyChallenge)
         DailyChallengeSession.shared.active = nil
         XCTAssertFalse(scene.isDailyChallenge)
+    }
+}
+
+/// "The level should show its hand first: the bricks animate in visible, then a fade takes
+/// them to invisible, so the player gets one look at the field before the fog closes."
+final class DailyFogRevealTests: XCTestCase {
+
+    private func fogScene() -> GameScene {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallengeGenerator.challenge(
+            forKey: DailyChallengeSession.shared.todayKey)
+        return scene
+    }
+
+    private func brick(in scene: GameScene) -> SKSpriteNode {
+        let node = SKSpriteNode()
+        node.name = BrickCategoryName
+        scene.addChild(node)
+        return node
+    }
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    func testTheOpeningFieldIsNotHiddenAsItIsBuilt() {
+        let scene = fogScene()
+        guard scene.dailyFogIsOn else { return }
+        // Only meaningful on a Fog of War day; the pool decides which days those are
+
+        let opening = brick(in: scene)
+        scene.applyDailyFog(to: [opening])
+        XCTAssertFalse(opening.isHidden, "the field shows its hand first")
+    }
+
+    func testARowArrivingAfterTheFogHasClosedIsHiddenAtOnce() {
+        // The look belongs to the opening field. A row that showed itself every time one
+        // was generated would not be a fog at all
+        let scene = fogScene()
+        guard scene.dailyFogIsOn else { return }
+        scene.dailyFogHasClosed = true
+
+        let later = brick(in: scene)
+        scene.applyDailyFog(to: [later])
+        XCTAssertTrue(later.isHidden)
+    }
+
+    func testClosingTheFogHappensOnceHoweverManyTimesItIsAsked() {
+        // The build-in can finish, be skipped, or both across one run
+        let scene = fogScene()
+        guard scene.dailyFogIsOn else { return }
+
+        scene.applyDailyFog(to: [brick(in: scene)])
+        scene.closeDailyFog()
+        XCTAssertTrue(scene.dailyFogHasClosed)
+        XCTAssertTrue(scene.dailyFogPending.isEmpty)
+
+        scene.closeDailyFog()
+        XCTAssertTrue(scene.dailyFogPending.isEmpty, "asking twice changes nothing")
+    }
+
+    func testTheLookIsShortEnoughToNotHandTheFieldBack() {
+        // Long enough to read, too short to memorise: the twist is meant to make you
+        // remember a field rather than study one
+        XCTAssertLessThan(GameScene.dailyFogLook, 2.0)
+        XCTAssertGreaterThan(GameScene.dailyFogLook, 0.5)
+    }
+
+    func testNothingHappensOnADayWithoutTheTwist() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = nil
+        let plain = brick(in: scene)
+        scene.applyDailyFog(to: [plain])
+
+        XCTAssertFalse(plain.isHidden)
+        XCTAssertTrue(scene.dailyFogPending.isEmpty)
     }
 }
