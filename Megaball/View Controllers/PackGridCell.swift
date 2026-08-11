@@ -30,6 +30,8 @@ final class PackGridCell: UICollectionViewCell {
     var onOpenList: (() -> Void)?
 
     private let card = UIView()
+    /// The icon and the name, so the pair can be centred as one thing.
+    private let block = UIStackView()
     private let icon = UIImageView()
     private let name = UILabel()
     private let tick = UIImageView()
@@ -59,7 +61,13 @@ final class PackGridCell: UICollectionViewCell {
 
         icon.translatesAutoresizingMaskIntoConstraints = false
         icon.contentMode = .scaleAspectFit
-        card.addSubview(icon)
+
+        block.translatesAutoresizingMaskIntoConstraints = false
+        block.axis = .vertical
+        block.alignment = .center
+        block.spacing = 6
+        block.addArrangedSubview(icon)
+        card.addSubview(block)
 
         name.translatesAutoresizingMaskIntoConstraints = false
         name.textAlignment = .center
@@ -68,7 +76,7 @@ final class PackGridCell: UICollectionViewCell {
         name.minimumScaleFactor = 0.7
         name.font = .systemFont(ofSize: 13, weight: .semibold)
         name.textColor = PackGridCell.ink
-        card.addSubview(name)
+        block.addArrangedSubview(name)
 
         tick.translatesAutoresizingMaskIntoConstraints = false
         tick.contentMode = .scaleAspectFit
@@ -101,17 +109,19 @@ final class PackGridCell: UICollectionViewCell {
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
-            // The icon hangs from the top and the name follows it, so the pair reads as one
-            // block. Sized as a fraction of the card rather than in points, because the grid
+            // The icon and the name are one block, centred in the card as a pair rather than
+            // hung from the top - top-anchored they sat high with a pool of empty card under
+            // them, which is what the play-test saw. `block` is what gets centred; the two
+            // just fill it, so the pair moves together and neither has to know the other's
+            // height. Sized as a fraction of the card rather than in points, because the grid
             // works its cell size out from the screen it finds itself on
-            icon.centerXAnchor.constraint(equalTo: card.centerXAnchor),
-            icon.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
+            block.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            block.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            block.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 4),
+            block.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -4),
+
             icon.widthAnchor.constraint(equalTo: card.widthAnchor, multiplier: 0.42),
             icon.heightAnchor.constraint(equalTo: icon.widthAnchor),
-
-            name.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 4),
-            name.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -4),
-            name.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 4),
 
             lock.centerXAnchor.constraint(equalTo: icon.centerXAnchor),
             lock.centerYAnchor.constraint(equalTo: icon.centerYAnchor),

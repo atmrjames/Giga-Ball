@@ -230,16 +230,12 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         // with a canyon down the middle, on a screen where the arithmetic said three fitted.
         // A floor costs at most two points of width and can never overflow
 
-        // The cells fill the height they are given rather than staying square and leaving the
-        // rest of the screen empty, which is what the first grid did (play-test round 33: "the
-        // grid doesn't fill or fit the space very well"). A square is the *floor*, not the
-        // shape: a cell is never shorter than it is wide, so on a screen with too little room
-        // the grid grows past the bottom and scrolls instead of squashing.
-        let rows = ceil(CGFloat(packCount)/columns)
-        let heightOnOffer = collectionView.bounds.height - gap*(rows - 1)
-        return CGSize(width: width, height: max(width, (heightOnOffer/rows).rounded(.down)))
-        // Floored for the same reason the width is: four rows that are each a fraction too
-        // tall overflow, and an overflowing grid scrolls when it should have fitted
+        // Square, and left square. Stretching the cells to fill whatever height was going made
+        // the grid look pressed into the page (play-test round 34), because the icon and the
+        // name are the same size whatever the card does - a taller card is just more empty
+        // card. Scrolling is the better answer, and this screen scrolls properly now, with the
+        // same edge fade every other list on these menus has.
+        return CGSize(width: width, height: width)
     }
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
