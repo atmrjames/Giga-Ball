@@ -65,6 +65,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     private var livesUnderHighscore: NSLayoutConstraint!
     private var livesUnderScore: NSLayoutConstraint!
     private var summaryUnderStats: NSLayoutConstraint!
+    private weak var activePowerUpHUD: PausedPowerUpHUD?
     // Added in code rather than the storyboard: the pause screen's labels are all wired
     // through outlets and constraints there, and adding one more by hand risks the
     // layout of a screen that is otherwise working
@@ -192,6 +193,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         runStatsLabel.isHidden = false
         moreStatsButton.isHidden = false
         summaryUnderStats.isActive = true
+        showActivePowerUps()
         let text = NSMutableAttributedString()
         var items: [(String, String, Int)] = [
             ("rectangle.fill", "Paddle hits", summary.paddleHits),
@@ -1071,6 +1073,53 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                                                 playerScope: .global, timeScope: .allTime)
         boards.gameCenterDelegate = self
         view.window?.rootViewController?.present(boards, animated: true)
+    }
+
+    /// The in-game power-up row, on the pause screen (play-test rounds 37-39).
+    ///
+    /// What is running is drawn on the scene behind this menu, and the menu covers it - so the
+    /// question "what have I still got?" could only be answered by unpausing. The row is drawn
+    /// again here, identically, and each icon opens the pop-up that says what it does.
+    private func showActivePowerUps() {
+        let rings = InGameRecents.shared.activePowerUpRings
+        if activePowerUpHUD == nil, rings.isEmpty == false {
+            let hud = PausedPowerUpHUD()
+            hud.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(hud)
+            NSLayoutConstraint.activate([
+                hud.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                hud.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor, constant: 14),
+                hud.heightAnchor.constraint(equalToConstant: 34),
+                hud.widthAnchor.constraint(equalTo: view.widthAnchor),
+            ])
+            hud.onSelect = { [weak self] index in self?.explainPowerUp(index) }
+            activePowerUpHUD = hud
+        }
+
+        let setup = LevelPackSetup()
+        let items: [PausedPowerUpHUD.Item] = rings.compactMap { ring in
+            guard setup.powerUpImageArray.indices.contains(ring.index) else { return nil }
+            return PausedPowerUpHUD.Item(powerUpIndex: ring.index,
+                                         icon: setup.powerUpImageArray[ring.index],
+                                         remaining: ring.remaining,
+                                         segments: ring.segments)
+        }
+        activePowerUpHUD?.isHidden = items.isEmpty
+        activePowerUpHUD?.show(items)
+    }
+
+    /// What that power-up does, in the app's own pop-up.
+    private func explainPowerUp(_ index: Int) {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        let setup = LevelPackSetup()
+        guard setup.powerUpNameArray.indices.contains(index) else { return }
+
+        GigaBallAlert.show(on: self,
+                           title: setup.powerUpNameArray[index],
+                           message: setup.powerUpDescriptionArray[index])
+        // Through the type's own presenter rather than by building one: it puts the pop-up on
+        // as a child, sizes it, and keeps the parameter order that stops a trailing closure
+        // binding to the wrong button (round 19)
     }
 
     func moveToSettings() {

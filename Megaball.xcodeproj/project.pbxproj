@@ -28,6 +28,7 @@
 		000000001AF18000000000E3 /* GigaBallAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000E2 /* GigaBallAlert.swift */; };
 		000000001AF18000000000F7 /* ReturnToGameButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000F8 /* ReturnToGameButton.swift */; };
 		1AF1700000000411 /* PackGridCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000410 /* PackGridCell.swift */; };
+		1AF1700000000441 /* PausedPowerUpHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000440 /* PausedPowerUpHUD.swift */; };
 		1AF1700000000431 /* StickyCatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000430 /* StickyCatch.swift */; };
 		000000001AF18000000000FC /* PowerUpGlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000FD /* PowerUpGlow.swift */; };
 		000000001AF18000000000E1 /* DailyCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000E0 /* DailyCardView.swift */; };
@@ -366,6 +367,7 @@
 		000000001AF18000000000E2 /* GigaBallAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GigaBallAlert.swift; sourceTree = "<group>"; };
 		000000001AF18000000000F8 /* ReturnToGameButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnToGameButton.swift; sourceTree = "<group>"; };
 		1AF1700000000410 /* PackGridCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackGridCell.swift; sourceTree = "<group>"; };
+		1AF1700000000440 /* PausedPowerUpHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PausedPowerUpHUD.swift; sourceTree = "<group>"; };
 		1AF1700000000430 /* StickyCatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickyCatch.swift; sourceTree = "<group>"; };
 		000000001AF18000000000FD /* PowerUpGlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpGlow.swift; sourceTree = "<group>"; };
 		000000001AF18000000000E0 /* DailyCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCardView.swift; sourceTree = "<group>"; };
@@ -1240,6 +1242,7 @@
 		000000001AF18000000000E2 /* GigaBallAlert.swift */,
 		000000001AF18000000000F8 /* ReturnToGameButton.swift */,
 		1AF1700000000410 /* PackGridCell.swift */,
+		1AF1700000000440 /* PausedPowerUpHUD.swift */,
 		000000001AF18000000000E0 /* DailyCardView.swift */,
 				1AF170000000009A /* MenuNavigation.swift */,
 				1AF170000000006C /* BrickTypesViewController.swift */,
@@ -1559,6 +1562,7 @@
 		000000001AF18000000000E3 /* GigaBallAlert.swift in Sources */,
 		000000001AF18000000000F7 /* ReturnToGameButton.swift in Sources */,
 		1AF1700000000411 /* PackGridCell.swift in Sources */,
+		1AF1700000000441 /* PausedPowerUpHUD.swift in Sources */,
 		1AF1700000000431 /* StickyCatch.swift in Sources */,
 		000000001AF18000000000E1 /* DailyCardView.swift in Sources */,
 				000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */,

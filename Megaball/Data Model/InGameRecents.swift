@@ -47,6 +47,13 @@ final class InGameRecents {
     /// reference pages have no scene to ask.
     var activePowerUpIndices: Set<Int> = []
 
+    /// The same power-ups with their rings' readings, for the pause screen's copy of the HUD.
+    ///
+    /// Separate from the set above rather than replacing it, because the set answers "is this
+    /// running" for the reference pages and this answers "how much is left" for a row of
+    /// dials - and the first is asked far more often than the second.
+    var activePowerUpRings: [(index: Int, remaining: CGFloat, segments: Int?)] = []
+
     /// What was still falling when the pause menu opened - the same snapshot. A drop
     /// mid-air is not missed, it is a decision the player has not made yet (play-test
     /// round 7).
@@ -259,6 +266,12 @@ extension GameScene {
             (endlessIIWrapAroundClock, 47),
         ]
         for (clock, index) in clocks where clock.isRunning { active.insert(index) }
+        InGameRecents.shared.activePowerUpRings = clocks
+            .filter { $0.0.isRunning }
+            .map { (index: $0.1, remaining: $0.0.fraction, segments: nil) }
+        // The rings the pause screen redraws. Mayhem's clocks carry a fraction already; the
+        // original tray power-ups are added by the caller from their bars, which is the only
+        // place that reading exists
         if endlessIITrajectoryRemaining > 0 { active.insert(29) }
         if endlessIILandingRemaining > 0 { active.insert(30) }
         return active
