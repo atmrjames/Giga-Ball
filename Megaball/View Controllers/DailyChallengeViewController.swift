@@ -582,38 +582,11 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         view.window?.rootViewController?.present(boards, animated: true)
     }
 
-    @objc private func resetAttempts() {
-        if hapticsSetting { interfaceHaptic.impactOccurred() }
-        totalStatsArray[0].dailyChallengeRecords = []
-        saveData()
-        showChallenge()
-        // Every day playable first-attempt again. The whole record set, because a
-        // half-wiped history is a state a real device can never be in and not worth
-        // testing against - and the overall total is derived from these, so it goes with
-        // them rather than needing its own reset
-    }
-
-    @objc private func dayBack() {
-        DailyChallengeSession.shared.testDayOffset -= 1
-        if hapticsSetting { interfaceHaptic.impactOccurred() }
-        viewedOffset = 0
-        showChallenge()
-        // The test clock moves today itself, so browsing starts over from the new today
-    }
-
-    @objc private func dayForward() {
-        DailyChallengeSession.shared.testDayOffset += 1
-        if hapticsSetting { interfaceHaptic.impactOccurred() }
-        viewedOffset = 0
-        showChallenge()
-    }
-
-    @objc private func dayLive() {
-        DailyChallengeSession.shared.testDayOffset = 0
-        if hapticsSetting { interfaceHaptic.impactOccurred() }
-        viewedOffset = 0
-        showChallenge()
-    }
+    // The test rig's four handlers - RESET ATTEMPTS, and the day stepper's back, forward and
+    // live - were removed with the controls that called them (round 19). They had sat here
+    // wired to nothing since, which reads to anyone opening this file as though the rig is
+    // still on the screen. `DailyChallengeSession.testDayOffset` is what survives, and it is
+    // set by the tests directly rather than by anything a player can reach.
 
     // MARK: - Menu plumbing
 

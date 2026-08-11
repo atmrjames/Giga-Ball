@@ -3,10 +3,13 @@
 **Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full; ten
 feedback rounds folded in. Still open: phase 4's twist subset, phase 5 (streaks,
 per-day results, round 12's posted-score container), phase 6 themes, and §11.5's
-notifications and share card. **The test clock is debug-gated** (round 18): the DAY
-stepper, the LIVE readout and RESET ATTEMPTS are built only under `#if DEBUG`, so a
-release build has none of them and the briefing card takes the room back, while every
-future day stays reachable for testing. "Practice" is called free play everywhere the
+notifications and share card. **The test clock's controls are gone** (round 19): debug-gating them
+in round 18 took them out of release builds but left them on screen in every build James
+actually plays, so they kept being reported. The DAY stepper, the LIVE readout and RESET
+ATTEMPTS were removed outright and the briefing card took the room back. The simulated day
+itself survives as `DailyChallengeSession.testDayOffset`, backed by a user default with no
+control on any screen - the tests set it directly, so a future day is still reachable
+without anything for a player to find. **Nothing further is needed here before release.** "Practice" is called free play everywhere the
 player reads it (round 12).**
 
 *The paragraphs below record the build as it grew; §12 holds the phase plan and

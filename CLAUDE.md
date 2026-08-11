@@ -65,9 +65,14 @@ scene. The ones that bite widest:
 - **Nothing runs a repeating `SKAction` on a brick.** `countBricks()` gates row generation on
   `hasActions()`, so a permanent action stops the field descending for ever. Spinning,
   flashing, falling and wandering are driven from `update`.
-- **Adding a power-up lengthens arrays in two places.** The stats file *and*
-  `NSUbiquitousKeyValueStore`. Missing the second crashed the app on launch for a player with
-  years of synced data.
+- **Adding a power-up lengthens about a dozen parallel arrays.** Name, icon, description,
+  multiplier, timer, two unlock-description lists, display order, pack order, the unlock array,
+  the two counters in the stats file, the probability array and the texture array. The suite
+  fails loudly on any one missed, which is the only reason this is survivable - see the
+  fifty-first power-up, Wipe. The iCloud copies used to be the one the tests could not catch,
+  and missing them crashed the app on launch for a player with years of synced data;
+  `CloudKitHandler.padded(_:toMatch:)` now grows a short cloud array to match the local one, so
+  that particular trap is closed.
 - **A style has to be in a pool to exist.** Being in the enum, the grid, the reference page
   and the progression is not enough. From the outside, "never offered" looks exactly like
   "very rare".
@@ -82,9 +87,10 @@ never drift from the document that explains it:
   sound shopping list, which is James's side along with the Quick Start Guide and the
   App Store Connect leaderboards.
 - **DAILY-CHALLENGE-SPECIFICATION.md** - the status header says which build phases exist,
-  §12 is the phase plan, §13 the open questions. The daily's **test clock** (the DAY
-  stepper on the briefing screen) must be removed or debug-gated before release; the
-  status header is the tracking for that.
+  §12 is the phase plan, §13 the open questions. The daily's test clock was the standing
+  release blocker; its controls are gone as of round 19 and only
+  `DailyChallengeSession.testDayOffset` remains, driven by a user default that no screen
+  writes. Nothing is left to do there.
 - Play-test feedback arrives as lists from James; the convention is: fix what fits,
   queue the rest in §12.0 with enough context to build from cold.
 

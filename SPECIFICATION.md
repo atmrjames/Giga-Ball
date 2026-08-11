@@ -243,8 +243,8 @@ rather than written out.
 
 ## 6. Power-ups
 
-Bricks may drop a falling power-up, caught with the paddle. There are **28**, a mix of
-beneficial and harmful, some instant and some timed:
+Bricks may drop a falling power-up, caught with the paddle. Classic and Endless have
+**28**, a mix of beneficial and harmful, some instant and some timed:
 
 ```
 Extra Ball          Lose A Ball         Slow Ball           Fast Ball
@@ -257,6 +257,13 @@ Mystery             Backstop            Expand Ball         Shrink Ball
 ```
 
 Timed power-ups show an icon with a depleting bar in the tray beneath the HUD.
+
+**Endless Mayhem adds 23 more**, listed in ENDLESS-2-SPECIFICATION.md §5.4, bringing the
+game to 51. They are additive and mode-locked: `powerUpNameArray` is the original 28
+followed by Mayhem's, `LevelPackSetup.firstEndlessIIPowerUp` is where the line falls, and
+the drop probabilities are only ever set for the first 28 in Classic and Endless. That
+ordering is not a convention anyone is free to change - the save file, the iCloud key-value
+store and the drop table all count in it.
 
 **Allocation.** `PowerUpAllocation.swift` holds a probability weight per power-up, with a
 default table overridden per level. A `powerUpProbFactor` (default 10) scales the overall
@@ -328,7 +335,17 @@ deep — the menus are shallow, and a screen swiped away several steps ago is no
 remembers wanting back. See `MenuNavigation`.
 
 **Stats** are tracked extensively — per level, per pack and lifetime — covering scores,
-times, completions, balls lost, power-ups collected and generated, and playtime.
+times, completions, balls lost, power-ups collected and generated, and playtime. The
+statistics screen shows them in five tabbed sections: Overall, plus one per mode. What
+each section holds is decided by where the game writes the number, not by hand — see
+`StatsPage`, which turns a `TotalStats` into rows away from the screen that draws them.
+
+**Reference pages.** Power-Ups, Bricks and Achievements share one detail screen
+(`ItemsStatsViewController`): icon, name, description, then a table of facts. A power-up
+that only exists in Endless Mayhem is marked in the list and says so on its own page.
+
+**Pack Select** is a grid of square cells, three across, under the mode's name and logo —
+the same treatment the two endless menus wear, so the three mode menus read as a set.
 
 ---
 
