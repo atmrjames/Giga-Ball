@@ -20,15 +20,21 @@ final class PackGridCell: UICollectionViewCell {
 
     static let reuseIdentifier = "packGridCell"
 
-    /// Tapped to start the pack without going through its level list. The screen sets this;
-    /// the cell does not know what a pack is.
-    var onPlay: (() -> Void)?
+    /// Tapped to open the pack's list of levels. The screen sets this; the cell does not know
+    /// what a pack is.
+    ///
+    /// The button is the *list*, not the play, and that is the way round it should have been
+    /// from the start (play-test round 33): the common thing is to play the pack, so the whole
+    /// cell does that, and the less common thing - picking a level inside it - is what earns a
+    /// control of its own.
+    var onOpenList: (() -> Void)?
 
     private let card = UIView()
     private let icon = UIImageView()
     private let name = UILabel()
     private let tick = UIImageView()
     private let lock = UIImageView()
+    /// Opens the pack's level list. Named for where it sits rather than for what it was.
     private let play = UIButton(type: .system)
 
     private static let cardColour = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
@@ -81,12 +87,12 @@ final class PackGridCell: UICollectionViewCell {
         card.addSubview(lock)
 
         play.translatesAutoresizingMaskIntoConstraints = false
-        play.setImage(UIImage(systemName: "play.fill",
+        play.setImage(UIImage(systemName: "list.bullet",
                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 13,
-                                                                             weight: .heavy)),
+                                                                             weight: .bold)),
                       for: .normal)
         play.tintColor = PackGridCell.ink
-        play.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
+        play.addTarget(self, action: #selector(listTapped), for: .touchUpInside)
         card.addSubview(play)
 
         NSLayoutConstraint.activate([
@@ -139,8 +145,8 @@ final class PackGridCell: UICollectionViewCell {
         card.alpha = unlocked ? 1 : 0.55
     }
 
-    @objc private func playTapped() {
-        onPlay?()
+    @objc private func listTapped() {
+        onOpenList?()
     }
 
     /// The press state the rows had, kept: the whole card lights up rather than a highlight
@@ -154,7 +160,7 @@ final class PackGridCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        onPlay = nil
+        onOpenList = nil
         card.transform = .identity
         card.backgroundColor = PackGridCell.cardColour
     }

@@ -57,6 +57,14 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         packCollectionView.dataSource = self
         packCollectionView.register(PackGridCell.self,
                                     forCellWithReuseIdentifier: PackGridCell.reuseIdentifier)
+        if let grid = packCollectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            grid.minimumInteritemSpacing = PackSelectViewController.gridGap
+            grid.minimumLineSpacing = PackSelectViewController.gridGap
+            grid.estimatedItemSize = .zero
+        }
+        // The gap is set here as well as used in the size calculation, from one constant, so
+        // the two cannot disagree - if the layout's idea of the gap is wider than the one the
+        // widths were worked out against, three cells stop fitting and it quietly draws two
         // The packs are a grid of squares rather than a list of rows, so all eleven are on the
         // screen at once and the mode's title and logo have somewhere to be
         
@@ -149,7 +157,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                   completed: totalStatsArray[0].packBestTimes[indexPath.item] > 0)
         // Completed means the pack has a best time, which it only gets by being finished
 
-        cell.onPlay = { [weak self] in self?.play(pack: pack) }
+        cell.onOpenList = { [weak self] in self?.openLevelList(for: pack) }
         return cell
     }
 
@@ -176,6 +184,16 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         guard totalStatsArray[0].levelPackUnlockedArray[pack] else { return }
         // A locked pack is not a door that rattles
 
+        play(pack: pack)
+        // The cell plays the pack; the small list button on it opens the levels inside. That
+        // is the way round the play-test asked for (round 33), and the right way round: the
+        // common thing is to play, so it gets the whole cell, and picking a level inside is
+        // what earns a control of its own
+    }
+
+    /// Opens the pack's list of levels - what the whole cell used to do.
+    private func openLevelList(for pack: Int) {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
         hideAnimate()
         moveToLevelSelector(packNumber: pack,
                             numberOfLevels: LevelPackSetup().numberOfLevels[pack],
@@ -202,37 +220,41 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard collectionView == packCollectionView else { return CGSize(width: 50, height: 50) }
         let columns: CGFloat = 3
-        let gap: CGFloat = 10
+        let gap = PackSelectViewController.gridGap
         let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
-        let width = max(1, (available - gap*(columns - 1))/columns)
+        let width = max(1, ((available - gap*(columns - 1))/columns).rounded(.down))
+        // **Floored, and that is the whole bug fix.** An exact division leaves three cells
+        // whose total is a hair *over* the width available once the flow layout adds its
+        // spacing back, and a flow layout that cannot fit three across silently fits two and
+        // spreads them out. That is what the play-test screenshot showed: a two-column grid
+        // with a canyon down the middle, on a screen where the arithmetic said three fitted.
+        // A floor costs at most two points of width and can never overflow
 
-        // The eleven packs make four rows, and four rows have to fit the height on offer. A
-        // square is the shape wanted; a slightly short square is better than a grid that
-        // scrolls off the bottom of a small phone
+        // The cells fill the height they are given rather than staying square and leaving the
+        // rest of the screen empty, which is what the first grid did (play-test round 33: "the
+        // grid doesn't fill or fit the space very well"). A square is the *floor*, not the
+        // shape: a cell is never shorter than it is wide, so on a screen with too little room
+        // the grid grows past the bottom and scrolls instead of squashing.
         let rows = ceil(CGFloat(packCount)/columns)
         let heightOnOffer = collectionView.bounds.height - gap*(rows - 1)
-        return CGSize(width: width, height: min(width, max(1, heightOnOffer/rows)))
+        return CGSize(width: width, height: max(width, (heightOnOffer/rows).rounded(.down)))
+        // Floored for the same reason the width is: four rows that are each a fraction too
+        // tall overflow, and an overflowing grid scrolls when it should have fitted
     }
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
         guard collectionView == packCollectionView else { return .zero }
 
-        // The grid is square cells, so it is as tall as it is tall - and on a big phone that
-        // leaves it sitting against the logo with the floor a long way below. Centring what is
-        // left over puts the block between the logo and the buttons rather than letting it
-        // pile up at the top, which read as a screen that had been cut off
-        let cell = self.collectionView(collectionView, layout: layout,
-                                       sizeForItemAt: IndexPath(item: 0, section: 0))
-        let rows = ceil(CGFloat(packCount)/3)
-        let used = rows*cell.height + (rows - 1)*10
-        let spare = max(0, (collectionView.bounds.height - used)/2)
-
-        return UIEdgeInsets(top: spare, left: PackSelectViewController.gridInset,
-                            bottom: spare, right: PackSelectViewController.gridInset)
+        // No vertical inset any more: the cells stretch to fill the height, so there is
+        // nothing left over to centre, and on a screen too small for that the grid runs past
+        // the bottom and scrolls - with the same edge fade every other list on these menus has
+        return UIEdgeInsets(top: 0, left: PackSelectViewController.gridInset,
+                            bottom: 0, right: PackSelectViewController.gridInset)
     }
 
     private static let gridInset: CGFloat = 20
+    static let gridGap: CGFloat = 10
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         guard collectionView == packCollectionView else {
@@ -253,8 +275,12 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
 
     
     /// Where the bottom row's play button goes: the furthest pack the player has opened,
-    /// which is where their campaign actually is. The straight-in buttons on the rows
-    /// play any one pack; the big button continues the game.
+    /// which is where their campaign actually is.
+    ///
+    /// This sat here computing an answer nobody asked for from round 3 until round 33 -
+    /// written for a button that was removed before it was wired up, and left behind when it
+    /// went. The button is back now, as Play Next Pack, and this is what it plays: the cells
+    /// each play their own pack, and this one carries on from wherever you got to.
     var furthestUnlockedPack: Int {
         var furthest = 2
         for pack in 2..<LevelPackSetup().numberOfLevels.count
@@ -314,11 +340,12 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose.png")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonNull.png")
-            // No play button here. It was added on request and taken back on sight
-            // (play-test round 3): this screen lists eleven packs, so a single button at
-            // the bottom has no pack to play - the straight-in button on each row is the
-            // one that means something
+            cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+            // Play Next Pack (play-test round 33). A play button here was tried and taken
+            // back on sight in round 3, and the objection was right at the time: a screen
+            // listing eleven packs has no one pack for a single button to play. It has one
+            // now - the furthest you have unlocked, which is where your campaign actually
+            // is - and that is a different button wearing the same picture
         case 2:
             if gameCenterSetting {
                 cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
@@ -344,6 +371,9 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         let collectionView = backButtonCollectionView!
         if indexPath.row == 0 {
             menuNavigationGoBack()
+        }
+        if indexPath.row == 1 {
+            play(pack: furthestUnlockedPack)
         }
         if indexPath.row == 2, gameCenterSetting {
             showGameCenterLeaderboards()
