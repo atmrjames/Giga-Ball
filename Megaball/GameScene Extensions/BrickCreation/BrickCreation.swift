@@ -63,25 +63,11 @@ extension GameScene {
             // Remove null bricks & discount indestructible bricks
             
             if savedGame == nil {
-                if gameMode == .endlessII {
-                    prepareEndlessIIBuildIn(brickCurrent)
-                    // Held one row above where it belongs and invisible, waiting for
-                    // `runEndlessIIBuildIn` - which does not start until the splash screen is
-                    // out of the way
-                } else {
-                    let startingScale = SKAction.scale(to: 0.8, duration: 0)
-                    let startingFade = SKAction.fadeOut(withDuration: 0)
-                    let scaleUp = SKAction.scale(to: 1, duration: 0.25)
-                    let fadeIn = SKAction.fadeIn(withDuration: 0.25)
-                    let wait = SKAction.wait(forDuration: 0.25)
-                    let startingGroup = SKAction.group([startingScale, startingFade])
-                    let brickGroup = SKAction.group([scaleUp, fadeIn])
-                    let brickSequence = SKAction.sequence([wait, brickGroup])
-
-                    brick.run(startingGroup)
-                    brick.run(brickSequence)
-                    // Run animation for each brick
-                }
+                prepareBuildIn(brickCurrent)
+                // Held back and invisible until the field is asked for, whichever mode this
+                // is: the endless modes rain their rows in from above, Classic pops its own
+                // up in place. Neither starts until the splash screen is out of the way,
+                // which is what the whole field used to be animated behind (play-test round 9)
             }
             // Don't animate if resuming game
             

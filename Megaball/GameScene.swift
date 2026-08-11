@@ -2061,11 +2061,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// The old modes' tray rings read the bars' state the way Mayhem's row does -
 		// every frame, because the bars animate every frame
 
+		tickEndlessIIBuildIn(currentTime)
+		// Outside the Mayhem branch: every mode has an opening field now, and each waits
+		// here for the splash screen to get out of its way (play-test round 9)
+
 		if gameMode == .endlessII {
 			powerUpRings.update(with: activePowerUpEntries())
 			tickEndlessIIHeldBalls()
 			tickEndlessIIAim()
-			tickEndlessIIBuildIn(currentTime)
 
 			if endlessIIAimHold {
 				endlessIILastTick = currentTime

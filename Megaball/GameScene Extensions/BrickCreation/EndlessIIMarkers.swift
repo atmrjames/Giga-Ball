@@ -357,13 +357,41 @@ extension GameScene {
         endlessIIBuildInBricks.append(brick)
     }
 
+    /// Holds a Classic brick where it belongs, waiting to appear.
+    ///
+    /// Classic's field does not descend, so it does not rain in: the level is a picture, and
+    /// a picture that falls into place from above says the wrong thing about it. The bricks
+    /// arrive **where they are**, row by row, quickly (play-test round 9's second half).
+    ///
+    /// The destination is recorded even though it never moves, because that is what the skip
+    /// path reads - and a brick with no recorded destination falls back to the nearest
+    /// *endless* row centre, which is not a measurement that means anything here.
+    func prepareClassicBuildIn(_ brick: SKSpriteNode) {
+        brick.alpha = 0
+        brick.setScale(0.82)
+        endlessIIBuildInFinalY[ObjectIdentifier(brick)] = brick.position.y
+        endlessIIBuildInBricks.append(brick)
+    }
+
+    /// Which build-in this mode gets, asked once so the two paths cannot disagree about
+    /// which bricks belong to which.
+    func prepareBuildIn(_ brick: SKSpriteNode) {
+        if endlessMode {
+            prepareEndlessIIBuildIn(brick)
+        } else {
+            prepareClassicBuildIn(brick)
+        }
+    }
+
     /// Brings the opening field down, a row at a time.
     ///
     /// Waits for the splash screen. A run can be started or resumed while it is still up, and
     /// an animation played behind a full-screen cover is one the player sees the end of at
     /// best - which is exactly what was happening.
     func startEndlessIIBuildIn() {
-        guard gameMode == .endlessII, savedGame == nil else { return }
+        guard savedGame == nil else { return }
+        // Every mode now, not only Mayhem (play-test round 9). A resumed game has its field
+        // already and must never animate it in - the run is mid-flight
         guard endlessIIBuildInBricks.isEmpty == false else { return }
         endlessIIBuildInWaiting = true
         // Not started here. `tickEndlessIIBuildIn` starts it on the first frame where nothing
@@ -431,6 +459,7 @@ extension GameScene {
 
     func runEndlessIIBuildIn() {
         guard endlessIIBuildInBricks.isEmpty == false else { return }
+        guard endlessMode else { return runClassicBuildIn() }
         endlessIIBuildingIn = true
 
         let stagger = GameScene.endlessIIBuildInStagger
@@ -481,6 +510,60 @@ extension GameScene {
         // exists to know whether a tap should skip - and once everything has arrived there is
         // nothing left to skip
     }
+
+    /// Classic's own opening: the level appears in place, from the top down.
+    ///
+    /// Quick on purpose. This is the moment before a level somebody has chosen to play, and
+    /// the level is already drawn - all the animation has to do is hand it over. Each row
+    /// pops up to full size a beat after the one above it, with the same knock the endless
+    /// field gives a row as it lands.
+    ///
+    /// One-shot actions, never repeating ones: `countBricks()` gates row generation on
+    /// `hasActions()`, and although Classic generates no rows, a brick that answers yes for
+    /// ever is a trap this project has already fallen into once (§8.6).
+    func runClassicBuildIn() {
+        endlessIIBuildingIn = true
+
+        let bricks = endlessIIBuildInBricks.filter { $0.parent != nil }
+        endlessIIBuildInBricks.removeAll()
+        guard let top = bricks.map(\.position.y).max() else {
+            endlessIIBuildingIn = false
+            return
+        }
+
+        var landings: Set<Int> = []
+        for brick in bricks {
+            let row = Int(((top - brick.position.y)/brickHeight).rounded())
+            let delay = GameScene.classicBuildInStagger*Double(max(0, row))
+            landings.insert(max(0, row))
+
+            brick.run(.sequence([
+                .wait(forDuration: delay),
+                .group([.fadeIn(withDuration: GameScene.classicBuildInPop),
+                        .scale(to: 1, duration: GameScene.classicBuildInPop)]),
+            ]))
+        }
+
+        for row in landings.sorted() {
+            run(.sequence([
+                .wait(forDuration: GameScene.classicBuildInStagger*Double(row)),
+                .run { [weak self] in self?.endlessIIBuildInRowLanded() },
+            ]))
+        }
+
+        let total = GameScene.classicBuildInStagger*Double(landings.max() ?? 0)
+            + GameScene.classicBuildInPop
+        run(.sequence([.wait(forDuration: total),
+                       .run { [weak self] in
+                           self?.endlessIIBuildingIn = false
+                           self?.endlessIIBuildInFinalY.removeAll()
+                       }]))
+    }
+
+    /// A row every twentieth of a second, and each brick a fifth of a second to arrive.
+    /// The whole field is on screen inside a second on the tallest level.
+    static let classicBuildInStagger: TimeInterval = 0.05
+    static let classicBuildInPop: TimeInterval = 0.2
 
     /// How long one row of fall takes. The bottom row falls the whole field in about a
     /// quarter of a second - a drop, not a descent.
