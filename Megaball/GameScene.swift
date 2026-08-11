@@ -143,6 +143,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWreckingBallClock = EndlessIIClock()
 	var endlessIIAuraClock = EndlessIIClock()
 	/// Lock: while this runs, every other timed power-up stops counting down (§5.4).
+	/// How many bricks the Trajectory Line may bounce off before it stops.
+	///
+	/// Two, from play-testing (round 39): one bounce is barely an advantage and beyond two the
+	/// path stops being a prediction. The Landing Marker still stops at the first brick - it
+	/// answers a different question, and a landing worked out through two bounces would be a
+	/// confident claim about where to stand.
+	static let endlessIITrajectoryBrickBounces = 2
+
 	var endlessIILockClock = EndlessIIClock()
 
 	/// Paddle hits on the ball currently in play, reset when it is lost. Feeds

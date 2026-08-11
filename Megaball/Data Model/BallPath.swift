@@ -63,9 +63,13 @@ enum BallPath {
     ///     the ball's *surface* against the walls and bricks rather than of its centre.
     ///   - bricks: the field, as rectangles. A brick is what stops the path.
     ///   - maximumLength: how far to follow it. Zero or less means as far as it goes.
+    ///   - brickBounces: how many bricks the path may bounce off before stopping. Zero, the
+    ///     default, stops at the first - which is what the Landing Marker wants and what the
+    ///     Trajectory Line wanted before round 42.
     static func predict(from start: CGPoint, velocity: CGVector, radius: CGFloat,
                         bounds: Bounds, bricks: [CGRect],
-                        maximumLength: CGFloat = 0) -> Prediction {
+                        maximumLength: CGFloat = 0,
+                        brickBounces: Int = 0) -> Prediction {
         let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
         guard speed > 0 else {
             return Prediction(points: [start], landing: nil, stoppedAtBrick: false)
@@ -77,6 +81,7 @@ enum BallPath {
         var travelled: CGFloat = 0
         var landing: CGPoint?
         var stoppedAtBrick = false
+        var bricksLeft = brickBounces
 
         for _ in 0...maximumBounces {
             let toBrick = firstBrick(from: point, direction: direction,
@@ -88,7 +93,8 @@ enum BallPath {
             let toPaddle = paddleLine(from: point, direction: direction, radius: radius,
                                       bounds: bounds)
 
-            let nearest = [toBrick, toWall, toCeiling, toPaddle].compactMap { $0 }.min() ?? 0
+            let nearest = [toBrick?.distance, toWall, toCeiling, toPaddle]
+                .compactMap { $0 }.min() ?? 0
             guard nearest > 0 else { break }
 
             // Cut short rather than overshooting, and stop: a length limit is a limit on the
@@ -104,9 +110,21 @@ enum BallPath {
             points.append(point)
             travelled += nearest
 
-            if nearest == toBrick {
-                stoppedAtBrick = true
-                break
+            if let brick = toBrick, nearest == brick.distance {
+                guard bricksLeft > 0 else {
+                    stoppedAtBrick = true
+                    break
+                }
+                bricksLeft -= 1
+                if brick.vertical { direction.dx = -direction.dx } else { direction.dy = -direction.dy }
+                continue
+                // A bounce off the face the ball actually meets. Each one spends a bounce from
+                // the budget the caller set, because the scene applies its own corrections *at*
+                // a bounce - the angle nudges off horizontal and vertical, the two-brick seam
+                // resolved as one face - so every brick the prediction passes through is a
+                // place this and the real ball may part company. Two is where the line stops
+                // being useful and starts being a claim (play-test rounds 38 and 39); the
+                // drawing fades with distance to say so
             }
             if nearest == toPaddle {
                 landing = point
@@ -160,14 +178,19 @@ enum BallPath {
     /// standard way to ask this and the only one that gets the corners right. A brick the ball
     /// is already inside is ignored - that is the brick it just hit, and stopping the path on
     /// it would draw no path at all.
+    /// The nearest brick in the way, and which way its face points.
+    ///
+    /// The face matters once the path is allowed to bounce off bricks rather than stop at
+    /// them: the slab test below already works out which pair of faces was crossed last on
+    /// the way in, and that is the face struck. It simply was not asked for before.
     private static func firstBrick(from point: CGPoint, direction: CGVector, radius: CGFloat,
-                                   bricks: [CGRect]) -> CGFloat? {
-        var nearest: CGFloat?
+                                   bricks: [CGRect]) -> (distance: CGFloat, vertical: Bool)? {
+        var nearest: (distance: CGFloat, vertical: Bool)?
         for brick in bricks {
             let grown = brick.insetBy(dx: -radius, dy: -radius)
             guard grown.contains(point) == false else { continue }
             guard let hit = entry(into: grown, from: point, direction: direction) else { continue }
-            if nearest == nil || hit < nearest! { nearest = hit }
+            if nearest == nil || hit.distance < nearest!.distance { nearest = hit }
         }
         return nearest
     }
@@ -178,12 +201,14 @@ enum BallPath {
     /// rectangle between the largest near crossing and the smallest far one. If that range is
     /// empty the ray misses.
     private static func entry(into rect: CGRect, from point: CGPoint,
-                              direction: CGVector) -> CGFloat? {
+                              direction: CGVector) -> (distance: CGFloat, vertical: Bool)? {
         var enter = -CGFloat.greatestFiniteMagnitude
         var leave = CGFloat.greatestFiniteMagnitude
 
-        for (origin, heading, low, high) in [(point.x, direction.dx, rect.minX, rect.maxX),
-                                             (point.y, direction.dy, rect.minY, rect.maxY)] {
+        var enteredOnVerticalFace = false
+        for (axis, origin, heading, low, high) in
+                [(0, point.x, direction.dx, rect.minX, rect.maxX),
+                 (1, point.y, direction.dy, rect.minY, rect.maxY)] {
             if abs(heading) < 0.000001 {
                 guard origin >= low, origin <= high else { return nil }
                 continue
@@ -192,11 +217,18 @@ enum BallPath {
             }
             let first = (low - origin)/heading
             let second = (high - origin)/heading
-            enter = max(enter, min(first, second))
+            let near = min(first, second)
+            if near > enter {
+                enter = near
+                enteredOnVerticalFace = axis == 0
+                // The *last* near face crossed is the one entered through, which is the face
+                // the ball meets - so whichever axis raises `enter` last owns the bounce
+            }
             leave = min(leave, max(first, second))
         }
 
         guard leave >= enter, leave > 0 else { return nil }
-        return enter > 0.0001 ? enter : nil
+        guard enter > 0.0001 else { return nil }
+        return (enter, enteredOnVerticalFace)
     }
 }

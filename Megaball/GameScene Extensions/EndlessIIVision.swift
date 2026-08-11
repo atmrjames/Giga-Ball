@@ -101,7 +101,9 @@ extension GameScene {
             let path = BallPath.predict(from: subject.position, velocity: velocity,
                                         radius: subject.size.width/2, bounds: bounds,
                                         bricks: bricks,
-                                        maximumLength: endlessIITrajectoryRemaining > 0 ? reach : 0)
+                                        maximumLength: endlessIITrajectoryRemaining > 0 ? reach : 0,
+                                        brickBounces: endlessIITrajectoryRemaining > 0
+                                            ? GameScene.endlessIITrajectoryBrickBounces : 0)
 
             if endlessIITrajectoryRemaining > 0, path.points.count > 1 {
                 var points = path.points
@@ -121,8 +123,7 @@ extension GameScene {
                     // the same rule paddleHit applies - the line keeps going off the paddle
                     // so the player can aim the shot after the catch, not just the catch
                 }
-                endlessIIVisionLine(at: lineIndex).path = endlessIIVisionCGPath(points)
-                lineIndex += 1
+                lineIndex = endlessIIDrawFadingTrajectory(points, from: lineIndex)
             }
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
@@ -167,6 +168,8 @@ extension GameScene {
         while endlessIITrajectoryLines.count <= index {
             let line = SKShapeNode()
             line.strokeColor = UIColor(white: 1, alpha: 0.35)
+            // Overwritten per segment by endlessIIDrawFadingTrajectory - this is the colour a
+            // segment has before it knows how far down the path it sits
             line.lineWidth = 1.5
             line.lineCap = .round
             line.zPosition = 3
@@ -176,6 +179,65 @@ extension GameScene {
             endlessIITrajectoryLines.append(line)
         }
         return endlessIITrajectoryLines[index]
+    }
+
+    /// Draws a predicted path as a run of short segments that fade and blur with distance.
+    ///
+    /// **The fading is the honesty.** The predictor is arithmetic, and the scene applies its
+    /// own corrections at every bounce - angles nudged off horizontal and vertical, a
+    /// two-brick seam resolved as one face - so the far end of a long line is a guess wearing
+    /// a prediction's clothes. Drawn solid it claims a precision it does not have; drawn
+    /// fading it says where the ball is going and admits it is less sure the further it looks
+    /// (play-test round 39). That is what makes two brick bounces worth drawing at all.
+    ///
+    /// A second collection sharpens it: `endlessIITrajectoryLevel` holds the fade open longer,
+    /// so a deepened Trajectory Line really is a clearer one.
+    ///
+    /// Returns the next free index in the shared line pool.
+    private func endlessIIDrawFadingTrajectory(_ points: [CGPoint], from start: Int) -> Int {
+        guard points.count > 1 else { return start }
+
+        let step = max(ballSize*0.9, 1)
+        let sharpness = CGFloat(endlessIITrajectoryLevel)
+        let total = zip(points, points.dropFirst()).reduce(CGFloat(0)) {
+            $0 + hypot($1.1.x - $1.0.x, $1.1.y - $1.0.y)
+        }
+        guard total > 0 else { return start }
+
+        var index = start
+        var travelled: CGFloat = 0
+
+        for (from, to) in zip(points, points.dropFirst()) {
+            let length = hypot(to.x - from.x, to.y - from.y)
+            guard length > 0 else { continue }
+            let pieces = max(Int((length/step).rounded(.up)), 1)
+
+            for piece in 0..<pieces {
+                let a = CGFloat(piece)/CGFloat(pieces)
+                let b = CGFloat(piece + 1)/CGFloat(pieces)
+                let head = CGPoint(x: from.x + (to.x - from.x)*a, y: from.y + (to.y - from.y)*a)
+                let tail = CGPoint(x: from.x + (to.x - from.x)*b, y: from.y + (to.y - from.y)*b)
+
+                // How far along the whole path this piece sits, which is the only thing the
+                // fade depends on - so it carries across bounces rather than restarting at
+                // each one, and a line that has turned a corner keeps getting less certain
+                let along = (travelled + length*(a + b)/2)/total
+                let certainty = pow(1 - along, 1.8 - min(sharpness, 2)*0.45)
+
+                let segment = endlessIIVisionLine(at: index)
+                index += 1
+                let path = CGMutablePath()
+                path.move(to: head)
+                path.addLine(to: tail)
+                segment.path = path
+                segment.strokeColor = UIColor(white: 1, alpha: max(0.05, 0.45*certainty))
+                segment.glowWidth = (1 - certainty)*3
+                // The blur grows as the confidence falls, which is the same statement made
+                // twice - a line you can barely see and can barely locate
+            }
+            travelled += length
+        }
+        return index
     }
 
     /// The landing marker for the nth ball, made when first needed.

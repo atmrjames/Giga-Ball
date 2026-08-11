@@ -179,4 +179,45 @@ final class BallPathTests: XCTestCase {
             XCTAssertEqual(predict(from: start, velocity).points.first, start)
         }
     }
+
+    // MARK: - Bouncing off bricks
+
+    /// The Landing Marker's question is unchanged: it stops at the first brick, because a
+    /// landing worked out through two bounces would be a confident claim about where to stand.
+    func testTheDefaultStillStopsAtTheFirstBrick() {
+        let brick = CGRect(x: -10, y: 40, width: 20, height: 10)
+        let path = BallPath.predict(from: .zero, velocity: CGVector(dx: 0, dy: 1), radius: 1,
+                                    bounds: wideBounds(), bricks: [brick])
+        XCTAssertTrue(path.stoppedAtBrick)
+        XCTAssertEqual(path.points.count, 2, "start and the brick")
+    }
+
+    /// With a budget it turns instead, off the face it actually meets. Straight up into a
+    /// brick's underside comes straight back down.
+    func testABrickBounceReversesTheFaceItMeets() {
+        let brick = CGRect(x: -10, y: 40, width: 20, height: 10)
+        let path = BallPath.predict(from: .zero, velocity: CGVector(dx: 0, dy: 1), radius: 1,
+                                    bounds: wideBounds(), bricks: [brick], brickBounces: 2)
+        XCTAssertFalse(path.stoppedAtBrick, "it had a bounce left")
+        XCTAssertGreaterThan(path.points.count, 2)
+
+        let turn = path.points[1]
+        let after = path.points[2]
+        XCTAssertLessThan(after.y, turn.y, "a bounce off the underside sends it back down")
+    }
+
+    /// The budget is a budget. Given more bricks than bounces, it stops at the one it cannot
+    /// afford - which is what keeps a long line from becoming a guess (play-test round 39).
+    func testItStopsOnceTheBounceBudgetIsSpent() {
+        let low = CGRect(x: -10, y: 40, width: 20, height: 10)
+        let high = CGRect(x: -10, y: -40, width: 20, height: 10)
+        let path = BallPath.predict(from: .zero, velocity: CGVector(dx: 0, dy: 1), radius: 1,
+                                    bounds: wideBounds(), bricks: [low, high], brickBounces: 1)
+        XCTAssertTrue(path.stoppedAtBrick,
+                      "one bounce spent on the first brick, stopped at the second")
+    }
+
+    private func wideBounds() -> BallPath.Bounds {
+        BallPath.Bounds(left: -500, right: 500, ceiling: 500, paddleLine: -500)
+    }
 }
