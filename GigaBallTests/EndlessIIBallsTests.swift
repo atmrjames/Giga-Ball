@@ -221,4 +221,40 @@ final class EndlessIIBallsTests: XCTestCase {
         XCTAssertEqual(restored, balls)
         XCTAssertEqual(restored.count + 1, EndlessIIBalls.maximum)
     }
+
+    // MARK: - A loss reported twice
+
+    /// **Endless Mayhem has one life.** A run that carries on after its last ball is the
+    /// worst kind of bug in this mode: it invalidates the height, and the height is the score.
+    ///
+    /// The primary ball's handover is deferred to `didSimulatePhysics`, because a position
+    /// written inside a contact does not stick (§8.6). In the window between the contact and
+    /// the handover, the ball is still at the bottom and the survivor is still in the extras
+    /// list - so a second contact reported against the same ball found two balls in play and
+    /// read it as another carry-on. Two losses counted, one handover done, and the run
+    /// continued with a ball it should not have had (play-test round 39).
+    func testTheSameBallCannotBeLostTwiceWhileItsHandoverIsPending() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+
+        let survivor = SKSpriteNode()
+        scene.endlessIIExtraBalls = [survivor]
+        scene.endlessIIPendingHandover = survivor
+        // The state the deferred handover leaves behind for one step
+
+        XCTAssertTrue(scene.endlessIIBallWasLost(scene.ball),
+                      "a repeat report is not a second loss")
+        XCTAssertEqual(scene.totalStatsArray.first?.ballsLost ?? 0, 0,
+                       "and it costs no ball")
+    }
+
+    /// The guard is narrow on purpose: with no handover pending, losing the primary ball is a
+    /// real loss and must be handled.
+    func testAPrimaryBallLossWithNoHandoverPendingIsStillALoss() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        XCTAssertNil(scene.endlessIIPendingHandover)
+        XCTAssertFalse(scene.endlessIIBallWasLost(scene.ball),
+                       "the last ball ends the run")
+    }
 }

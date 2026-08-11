@@ -126,6 +126,19 @@ extension GameScene {
         // Sudden Death: any ball lost ends the run, Multi-Ball's carry-on rule overruled
         // for the day (daily spec §4)
 
+        if lost === ball, endlessIIPendingHandover != nil {
+            return true
+        }
+        // **The primary ball's loss, reported twice.** The extras' guard below spots a repeat
+        // by the ball having been retired already - but the primary ball is never retired, so
+        // it had no such guard, and its handover is deliberately deferred to
+        // `didSimulatePhysics` because a position written inside a contact does not stick
+        // (§8.6). Between the two, the ball is still sitting at the bottom with the survivor
+        // still in `endlessIIExtraBalls`: a second contact in that window found two balls in
+        // play, read it as another carry-on, and handed the ball a survivor for the second
+        // time. Two losses counted, one ball handed over, and a run that should have ended
+        // carrying on with a ball it should not have had (play-test round 39)
+
         if lost !== ball, lost.parent == nil || endlessIIExtraBalls.contains(where: { $0 === lost }) == false {
             return true
         }
