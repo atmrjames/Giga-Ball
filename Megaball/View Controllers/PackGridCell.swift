@@ -81,7 +81,7 @@ final class PackGridCell: UICollectionViewCell {
         tick.translatesAutoresizingMaskIntoConstraints = false
         tick.contentMode = .scaleAspectFit
         tick.image = UIImage(systemName: "checkmark.circle.fill",
-                             withConfiguration: UIImage.SymbolConfiguration(pointSize: 15,
+                             withConfiguration: UIImage.SymbolConfiguration(pointSize: 17,
                                                                             weight: .bold))
         tick.tintColor = PackGridCell.ink
         card.addSubview(tick)
@@ -96,7 +96,7 @@ final class PackGridCell: UICollectionViewCell {
 
         play.translatesAutoresizingMaskIntoConstraints = false
         play.setImage(UIImage(systemName: "list.bullet",
-                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 13,
+                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 15,
                                                                              weight: .bold)),
                       for: .normal)
         play.tintColor = PackGridCell.ink
@@ -126,13 +126,16 @@ final class PackGridCell: UICollectionViewCell {
             lock.centerXAnchor.constraint(equalTo: icon.centerXAnchor),
             lock.centerYAnchor.constraint(equalTo: icon.centerYAnchor),
 
-            tick.topAnchor.constraint(equalTo: card.topAnchor, constant: 5),
-            tick.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -5),
+            // The two corner marks mirror each other - list top-left, tick top-right, the
+            // same size - so the card reads as balanced rather than as a control and a
+            // sticker (play-test round 36; the list button sat against the name before)
+            tick.topAnchor.constraint(equalTo: card.topAnchor, constant: 7),
+            tick.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -7),
 
-            play.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -1),
-            play.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -1),
-            play.widthAnchor.constraint(equalToConstant: 30),
-            play.heightAnchor.constraint(equalToConstant: 30),
+            play.topAnchor.constraint(equalTo: card.topAnchor, constant: 1),
+            play.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 1),
+            play.widthAnchor.constraint(equalToConstant: 32),
+            play.heightAnchor.constraint(equalToConstant: 32),
         ])
     }
 

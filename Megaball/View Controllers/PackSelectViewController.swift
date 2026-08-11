@@ -116,15 +116,34 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         container.addSubview(logo)
 
         gridTop.isActive = false
+        let width = logo.widthAnchor.constraint(equalToConstant: PackSelectViewController.logoRestSize)
+        logoWidth = width
+        modeLogo = logo
         NSLayoutConstraint.activate([
             logo.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             logo.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            logo.widthAnchor.constraint(equalToConstant: 64),
-            logo.heightAnchor.constraint(equalToConstant: 64),
-            packCollectionView.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 12),
+            width,
+            logo.heightAnchor.constraint(equalTo: logo.widthAnchor),
+            packCollectionView.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 26),
         ])
-        // Smaller than the endless screens' logo on purpose: those screens have a list and a
-        // lot of air, this one has eleven squares to fit underneath
+        // More air under the logo than beside the title (play-test round 36), and the logo
+        // gives that air back when it is needed: see scrollViewDidScroll
+    }
+
+    private weak var modeLogo: UIImageView?
+    private var logoWidth: NSLayoutConstraint?
+    static let logoRestSize: CGFloat = 80
+    static let logoScrolledSize: CGFloat = 56
+
+    /// The logo trades its size for the grid's room as the packs scroll up (play-test round
+    /// 36): full size at rest, easing down to the small size over the first hundred points of
+    /// scroll. Driven by the offset rather than animated, so it tracks the finger exactly and
+    /// runs backwards for free.
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView == packCollectionView, let width = logoWidth else { return }
+        let progress = min(max(scrollView.contentOffset.y/100, 0), 1)
+        width.constant = PackSelectViewController.logoRestSize
+            - (PackSelectViewController.logoRestSize - PackSelectViewController.logoScrolledSize)*progress
     }
 
     // MARK: - The pack grid
@@ -270,22 +289,6 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
 
     
-    /// Where the bottom row's play button goes: the furthest pack the player has opened,
-    /// which is where their campaign actually is.
-    ///
-    /// This sat here computing an answer nobody asked for from round 3 until round 33 -
-    /// written for a button that was removed before it was wired up, and left behind when it
-    /// went. The button is back now, as Play Next Pack, and this is what it plays: the cells
-    /// each play their own pack, and this one carries on from wherever you got to.
-    var furthestUnlockedPack: Int {
-        var furthest = 2
-        for pack in 2..<LevelPackSetup().numberOfLevels.count
-        where totalStatsArray[0].levelPackUnlockedArray[pack] {
-            furthest = pack
-        }
-        return furthest
-    }
-
     private var buttonRowWidened = false
 
     func collectionViewLayout() {
@@ -336,12 +339,12 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose.png")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonPlay.png")
-            // Play Next Pack (play-test round 33). A play button here was tried and taken
-            // back on sight in round 3, and the objection was right at the time: a screen
-            // listing eleven packs has no one pack for a single button to play. It has one
-            // now - the furthest you have unlocked, which is where your campaign actually
-            // is - and that is a different button wearing the same picture
+            cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            // Empty on purpose, for the second time. A play button here was tried in round
+            // 3 and taken back on sight; round 33 brought it back as Play Next Pack with a
+            // real pack to play; round 36 took it back again - the cells themselves play
+            // now, so the bottom button was a second way of doing the most obvious thing.
+            // If it is ever proposed a third time, this comment is the history
         case 2:
             if gameCenterSetting {
                 cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
@@ -367,9 +370,6 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         let collectionView = backButtonCollectionView!
         if indexPath.row == 0 {
             menuNavigationGoBack()
-        }
-        if indexPath.row == 1 {
-            play(pack: furthestUnlockedPack)
         }
         if indexPath.row == 2, gameCenterSetting {
             showGameCenterLeaderboards()

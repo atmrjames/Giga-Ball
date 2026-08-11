@@ -30,6 +30,11 @@ extension UIViewController {
     /// Call from `viewDidLayoutSubviews`: the inset depends on the size the view has been
     /// given, which is not known before then, and it must be recomputed if that changes.
     func limitMenuContentSize() {
+        keepReturnToGameButtonFrontmost()
+        // Every menu screen calls this from viewDidLayoutSubviews, which makes it the one
+        // place that runs on every layout of every screen - so it carries the return-to-game
+        // button's re-fronting too. See keepReturnToGameButtonFrontmost for why it needs one
+
         guard traitCollection.horizontalSizeClass == .regular else {
             // Phones are already smaller than the limit in width, and capping their
             // height only pushes a row below the fold. The limit is for iPad.

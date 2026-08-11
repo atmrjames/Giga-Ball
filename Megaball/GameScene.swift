@@ -5331,10 +5331,19 @@ laserTimer?.invalidate()
 			bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
 			ballsLost: deathsPerLevel,
 			powerUpsSeen: InGameRecents.shared.sightings.count,
-			powerUpsCollected: powerUpsCollectedPerLevel)
+			powerUpsCollected: powerUpsCollectedPerLevel,
+			score: totalScore + levelScore,
+			levelsCleared: max(0, levelNumber - startLevelNumber),
+			isEndless: endlessMode)
 		// The snapshot the reference pages and the game-over stats read - taken as the
 		// menu goes up, because "currently active", "still falling", "in a brick" and
-		// the run's numbers are all questions about this moment
+		// the run's numbers are all questions about this moment.
+		//
+		// The last three were round 13's classic fields, and from round 13 to round 36 they
+		// were never actually passed - the struct's defaults said every run was endless, so
+		// a classic run's detail page led with "Height 0m" and carried "Bricks per metre",
+		// and the pause summary never showed its levels-cleared line. One play-test report
+		// ("remove bricks per metre in classic") unravelled all three
 		
 		readyCountdown.isHidden = true
 		goCountdown.isHidden = true

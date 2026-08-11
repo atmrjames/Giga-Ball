@@ -349,6 +349,8 @@ that only exists in Endless Mayhem is marked in the list and says so on its own 
 
 **Pack Select** is a grid of square cells, three across, under the mode's name and logo —
 the same treatment the two endless menus wear, so the three mode menus read as a set.
+Tapping a cell plays the pack; the list mark in its top-left corner opens the pack's level
+list instead. The logo shrinks as the grid scrolls, giving the room back to the cells.
 
 ---
 

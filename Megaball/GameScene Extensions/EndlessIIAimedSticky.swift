@@ -225,9 +225,12 @@ extension GameScene {
 
         let arrow = endlessIIAimArrow ?? {
             let node = SKShapeNode()
-            let length = ballSize*4.5
-            // Half again longer than it started (play-test round 10: "the arrow should
-            // be longer") - an aim read at a glance under a thumb
+            let length = max(ballSize*4.5,
+                             finalBrickRowHeight - brickHeight/2 - target.position.y - ballSize)
+            // From the held ball almost to the lowest brick row (play-test round 36 - the
+            // third lengthening, each one asking for more reach, so this one goes to the
+            // thing itself: where the bricks begin, less a ball's grace. The max keeps the
+            // round-10 length as the floor for the rare catch high up the field
             let path = CGMutablePath()
             path.move(to: .zero)
             path.addLine(to: CGPoint(x: length, y: 0))

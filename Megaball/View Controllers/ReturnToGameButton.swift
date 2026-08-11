@@ -68,6 +68,21 @@ extension UIViewController {
         return true
     }
 
+    /// Keeps the big play on top of whatever the screen has added since.
+    ///
+    /// Installed in `viewDidLoad`, the button starts frontmost - but these screens go on
+    /// adding views after that (blur layers, reloaded tables, the settings screen's own
+    /// furniture), and a transparent view over the button eats its taps without covering it
+    /// visually. That is a button that "doesn't always work" (play-test round 36): it looks
+    /// present and ignores some taps, depending on what happened to be laid over which part
+    /// of it. Called from `limitMenuContentSize`, which every one of these screens already
+    /// runs on every layout pass - so the button is re-fronted whenever anything moves.
+    func keepReturnToGameButtonFrontmost() {
+        if let play = view.viewWithTag(Self.returnToGameTag) {
+            view.bringSubviewToFront(play)
+        }
+    }
+
     /// Takes the big play off this screen.
     ///
     /// For the screens that are pictures of the playfield rather than menus over it: the
