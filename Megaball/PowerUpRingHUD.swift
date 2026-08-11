@@ -37,6 +37,13 @@ final class PowerUpRingHUD: SKNode {
     /// The Giga-Ball yellow-green, the colour the game uses for anything of its own.
     static let ringColour = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
 
+    /// How far the soft pass blooms past its own stroke.
+    ///
+    /// Small. `glowWidth` spreads in both directions from the line, so this is doubled on
+    /// screen before it is added to the halo's already-wide stroke - and a ring that glows
+    /// more than the bricks do stops being a timer and becomes decoration.
+    static let ringGlow: CGFloat = 3
+
     private struct Slot {
         let container: SKNode
         let icon: SKSpriteNode
@@ -155,6 +162,10 @@ final class PowerUpRingHUD: SKNode {
         halo.alpha = 0.16
         halo.zPosition = 2
         halo.blendMode = .add
+        halo.glowWidth = PowerUpRingHUD.ringGlow
+        // A real bloom on the soft pass, not just a wider stroke (play-test rounds 10 and
+        // 13 both asked for the glow twice). The thin bright ring on top stays crisp - it is
+        // the one carrying the reading, and a blurred timer is a timer you squint at
         holder.addChild(halo)
 
         let ring = SKShapeNode()
@@ -335,6 +346,8 @@ final class PowerUpTrayRings: SKNode {
             halo.fillColor = .clear
             halo.alpha = 0.16
             halo.blendMode = .add
+            halo.glowWidth = PowerUpRingHUD.ringGlow
+            // The same bloom the Mayhem row wears, so the two modes' timers are one thing
             holder.addChild(halo)
 
             let ring = SKShapeNode()

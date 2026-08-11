@@ -143,4 +143,38 @@ final class PowerUpArrayTests: XCTestCase {
         let cloud = Array(repeating: 1, count: count + 4)
         XCTAssertEqual(CloudKitHandler.padded(cloud, toMatch: local).count, count + 4)
     }
+
+    // MARK: - The falling halo
+
+    func testAHarmfulPowerUpGlowsInTheHarmfulColour() {
+        // Derived from the multiplier column rather than a second list of which drops are
+        // good: a list would be wrong the first time that judgement changed
+        let setup = LevelPackSetup()
+        guard let bad = setup.powerUpMultiplierArray.firstIndex(where: { $0.hasPrefix("-") })
+        else { return XCTFail("no harmful power-up to check") }
+
+        XCTAssertEqual(GameScene.powerUpGlowColour(forIndex: bad), PowerUpIcon.harmful)
+    }
+
+    func testAGoodPowerUpGlowsInTheBeneficialColour() {
+        let setup = LevelPackSetup()
+        guard let good = setup.powerUpMultiplierArray.firstIndex(where: { $0.hasPrefix("+") })
+        else { return XCTFail("no beneficial power-up to check") }
+
+        XCTAssertEqual(GameScene.powerUpGlowColour(forIndex: good), PowerUpIcon.beneficial)
+    }
+
+    func testAnIndexOffTheEndStillGetsAColour() {
+        // Asked at the moment a drop is built, and a crash there is worse than a green halo
+        XCTAssertEqual(GameScene.powerUpGlowColour(forIndex: count + 5),
+                       PowerUpIcon.beneficial)
+    }
+
+    func testEveryPowerUpHasAHalo() {
+        for index in 0..<count {
+            let colour = GameScene.powerUpGlowColour(forIndex: index)
+            XCTAssertTrue(colour == PowerUpIcon.harmful || colour == PowerUpIcon.beneficial,
+                          "power-up \(index) glows in neither colour")
+        }
+    }
 }

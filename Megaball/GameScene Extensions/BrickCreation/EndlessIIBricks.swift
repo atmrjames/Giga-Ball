@@ -142,6 +142,7 @@ extension GameScene {
         // back to being the one endless mode does not use
 
         multiplierLabel.isHidden = false
+        clearPlacedDigits(from: multiplierLabel)
         multiplierLabel.text = "BEST \(best)m"
         multiplierLabel.fontSize = fontSize*0.7
         multiplierLabel.horizontalAlignmentMode = .right
@@ -155,6 +156,7 @@ extension GameScene {
         guard endlessMode, multiplierLabel.isHidden == false else { return }
         guard let best = endlessBestHeight, endlessHeight > best else { return }
 
+        clearPlacedDigits(from: multiplierLabel)
         multiplierLabel.text = "NEW BEST"
         multiplierLabel.fontColor = brickGreenGigaball
         // Left showing rather than removed - the run is now writing the number that will be

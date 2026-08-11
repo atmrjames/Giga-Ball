@@ -1875,6 +1875,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// nothing itself now; a `FixedWidthNumberNode` hung off it places each character on a
     /// fixed pitch. The first attempt asked for the same thing with kerning inside an
     /// attributed string, which `SKLabelNode` ignores - hence placing rather than asking.
+    /// Takes the placed digits off a label that is about to draw its own text again.
+    ///
+    /// `write` hangs a strip of per-character nodes off a label and blanks the label's own
+    /// text. Anything that later sets `text` directly gets its words *and* the old strip, one
+    /// on top of the other - which is how the endless HUD ended up reading "BEST 16m" and
+    /// "x1.0" in the same place (play-test round 26). Setting text is the signal that the
+    /// strip is finished with.
+    func clearPlacedDigits(from label: SKLabelNode) {
+        label.childNode(withName: "digits")?.removeFromParent()
+    }
+
     private func write(_ text: String, into label: SKLabelNode) {
         guard let fontName = label.fontName else {
             label.text = text
@@ -3450,6 +3461,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Check if new power-up is already falling and remove if so
         
+		addPowerUpGlow(to: powerUp, index: powerUpSelection)
+
 		let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
 		powerUp.run(move, withKey: "PowerUpDrop")
 		powerUpsOnScreen+=1
