@@ -636,11 +636,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         if playedDaily {
             moveToDailyChallenge()
+            arriveWithoutAnimating(children.last)
             return
         }
         switch GameMode.current(in: defaults) {
         case .classic:
             moveToPackSelector()
+            arriveWithoutAnimating(children.last)
             let setup = LevelPackSetup()
             if packNumber >= 2, packNumber < setup.numberOfLevels.count,
                let packScreen = children.last as? PackSelectViewController {
@@ -649,6 +651,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                     packNumber: packNumber,
                     numberOfLevels: setup.numberOfLevels[packNumber],
                     startLevel: setup.startLevelNumber[packNumber])
+                arriveWithoutAnimating(packScreen.children.last)
             }
             // The level list of the pack just played, stacked over the pack list the
             // way navigating there stacks it - so back goes pack list, then main menu.
@@ -657,12 +660,33 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1],
                              levelNumber: LevelPackSetup().startLevelNumber[1],
                              packNumber: 1)
+            arriveWithoutAnimating(children.last)
         case .daily:
             moveToDailyChallenge()
+            arriveWithoutAnimating(children.last)
             // The scene never records .daily as current (see didSelectRowAt) - the flag
             // above is how a daily is known - but a switch with a hole in it is a bug
             // waiting for the day that changes
         }
+    }
+
+    /// Puts a just-presented screen on now, without the entry animation it started.
+    ///
+    /// Every menu screen fades and scales itself in over a quarter of a second, which is
+    /// right when you have chosen to open it and wrong on the way back from a game: the
+    /// main menu is what sits behind, so a quarter second of it showing through is the
+    /// flash the play test reported (round 21). Coming back from a run is a return to where
+    /// you were, not an arrival somewhere new.
+    ///
+    /// The animation is cancelled rather than prevented. `showAnimate` runs from the
+    /// screen's own `viewDidLoad`, which has already happened by the time a caller has a
+    /// reference to it - and UIKit sets the final values on the model layer as the animation
+    /// is created, so removing it leaves the screen exactly where the animation was going.
+    private func arriveWithoutAnimating(_ screen: UIViewController?) {
+        guard let arrived = screen?.viewIfLoaded else { return }
+        arrived.layer.removeAllAnimations()
+        arrived.alpha = 1
+        arrived.transform = .identity
     }
     
     @objc private func splashScreenEndedNotificationKeyReceived(_ notification: Notification) {
