@@ -42,6 +42,17 @@ extension UIViewController {
     @discardableResult
     func installReturnToGameButton() -> Bool {
         guard pausedGameBehind != nil else { return false }
+        removeReturnToGameButtonsBehind()
+        // **One button, on the frontmost screen.** Every screen in the stack installs its own,
+        // and a screen opened from a screen is a *subview* of it - so opening three deep left
+        // three of these alive at once, in the same place, each running its own screen's entry
+        // and exit animations. That is the play button "animating over the top of itself"
+        // between pause pages, reported in rounds 33, 37 and 39 (round 38 fixed the *other*
+        // button row, the round icons, which is why this survived that fix).
+        //
+        // It is also why the backgrounds view still showed one: that screen calls
+        // `hideReturnToGameButton`, which removed the button from its own view - and the
+        // button being seen belonged to the settings screen underneath it.
         guard view.viewWithTag(Self.returnToGameTag) == nil else { return true }
 
         let play = UIButton(type: .system)
@@ -78,10 +89,44 @@ extension UIViewController {
     /// of it. Called from `limitMenuContentSize`, which every one of these screens already
     /// runs on every layout pass - so the button is re-fronted whenever anything moves.
     func keepReturnToGameButtonFrontmost() {
+        guard pausedGameBehind != nil, wantsReturnToGameButton else { return }
+
+        if children.contains(where: { $0.view.superview != nil }) {
+            view.viewWithTag(Self.returnToGameTag)?.removeFromSuperview()
+            return
+        }
+        // A screen with something open on top of it is not the frontmost screen, so its button
+        // is one of the duplicates. Removing it here rather than only when the child is opened
+        // means the rule holds however the stack got into this shape
+
+        if view.viewWithTag(Self.returnToGameTag) == nil {
+            installReturnToGameButton()
+            return
+            // And it comes back when the screen on top goes away, without the child having to
+            // tell it. Going back would otherwise leave every screen behind the deepest one
+            // permanently without a play button
+        }
         if let play = view.viewWithTag(Self.returnToGameTag) {
             view.bringSubviewToFront(play)
         }
+        // Frontmost among its own subviews too: these screens go on adding views after
+        // `viewDidLoad` - blur layers, reloaded tables - and a transparent view over the
+        // button eats its taps without covering it visually, which is a button that "doesn't
+        // always work" (play-test round 36)
     }
+
+    /// Whether this screen wants the button at all.
+    ///
+    /// The background selector does not: it is a full-bleed picture of the playfield, and a
+    /// button floating over it reads as part of the picture (play-test round 21). It says so
+    /// by calling `hideReturnToGameButton`, and this remembers - otherwise the layout pass
+    /// above would put back what that call had just taken away, every frame.
+    var wantsReturnToGameButton: Bool {
+        get { (objc_getAssociatedObject(self, &Self.wantsButtonKey) as? Bool) ?? true }
+        set { objc_setAssociatedObject(self, &Self.wantsButtonKey, newValue,
+                                       .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    private static var wantsButtonKey: UInt8 = 0
 
     /// Takes the big play off this screen.
     ///
@@ -89,7 +134,25 @@ extension UIViewController {
     /// background selector shows the game at a scale model's size, and a button floating on
     /// top of that reads as part of the picture (play-test round 21).
     func hideReturnToGameButton() {
+        wantsReturnToGameButton = false
         view.viewWithTag(Self.returnToGameTag)?.removeFromSuperview()
+        removeReturnToGameButtonsBehind()
+        // The ancestors' too, or a screen that wants no play button gets the one belonging to
+        // whatever opened it, showing through from underneath
+    }
+
+    /// Takes the button off every screen this one was opened from.
+    ///
+    /// Walks the parent chain rather than the view hierarchy, because that is the chain
+    /// `pausedGameBehind` already trusts to find the paused game - and it stops at the pause
+    /// menu, whose own play button is its own affair and must not be removed.
+    func removeReturnToGameButtonsBehind() {
+        var above = parent
+        while let candidate = above {
+            if candidate is PauseMenuViewController { return }
+            candidate.view.viewWithTag(Self.returnToGameTag)?.removeFromSuperview()
+            above = candidate.parent
+        }
     }
 
     @objc private func returnToGameTapped() {
