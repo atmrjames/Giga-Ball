@@ -670,6 +670,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        record: totalStatsArray[0].dailyRecord(forKey: key),
                        rank: isToday ? todayRank : nil)
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
+        cell.card.postedScoreTapped = { [weak self] in self?.leaderboardTapped() }
+        // The posted score is the board's own figure, so the row showing it opens the board
         return cell
     }
 

@@ -68,6 +68,15 @@ extension UIViewController {
         return true
     }
 
+    /// Takes the big play off this screen.
+    ///
+    /// For the screens that are pictures of the playfield rather than menus over it: the
+    /// background selector shows the game at a scale model's size, and a button floating on
+    /// top of that reads as part of the picture (play-test round 21).
+    func hideReturnToGameButton() {
+        view.viewWithTag(Self.returnToGameTag)?.removeFromSuperview()
+    }
+
     @objc private func returnToGameTapped() {
         guard let pause = pausedGameBehind else { return }
         if UserDefaults.standard.bool(forKey: "hapticsSetting") {

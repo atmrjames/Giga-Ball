@@ -86,6 +86,9 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         }
         updateLabels()
         backButtonCollectionView.reloadData()
+        hideReturnToGameButton()
+        // No big play here (play-test round 21). This screen is a full-bleed preview of the
+        // playfield, and a button floating over a picture of the game reads as part of it
         showAnimate()
     }
 

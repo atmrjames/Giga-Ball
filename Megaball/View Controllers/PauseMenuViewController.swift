@@ -639,9 +639,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             break
         }
 
-        UIView.animate(withDuration: 0.1) {
-            cell.view.transform = .identity
-        }
+        cell.view.transform = .identity
+        // Set, not animated (play-test round 21: the buttons animate on every page). A
+        // dequeued cell can carry the 0.95 scale a highlight left on it, and animating back
+        // from that meant the play and close buttons bounced every time this screen was
+        // reloaded - which is every time a screen opened from it closes. Growing back after
+        // a press is the unhighlight's job, and it still does it
 
         return cell
     }

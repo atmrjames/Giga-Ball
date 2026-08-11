@@ -24,6 +24,8 @@ final class DailyCardView: UIView {
     private let levelLabel = UILabel()
     private let twistsStack = UIStackView()
     private let resultLabel = UILabel()
+    /// Opens the day's board. Set by the screen that owns the pager.
+    var postedScoreTapped: (() -> Void)?
     private let stack = UIStackView()
 
     override init(frame: CGRect) {
@@ -201,52 +203,71 @@ final class DailyCardView: UIView {
         resultCard.isHidden = false
 
         let unit = mode == .classic ? "" : "m"
-        let headline = record.posted
-            ? "Posted: \(record.firstAttemptScore)\(unit)   "
-            : "Your best: \(max(record.firstAttemptScore, record.bestPracticeScore))\(unit)   "
+        let score = record.posted
+            ? record.firstAttemptScore
+            : max(record.firstAttemptScore, record.bestPracticeScore)
         // Once a score is on the board, the board's number is the day's number - a free
         // play best beside it made no sense. Before then the best of whatever was played
         // is the honest summary
-        let line = NSMutableAttributedString(
-            string: headline,
-            attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
-                         .foregroundColor: UIColor.white])
 
+        // A posted score leads with the leaderboard's own mark and says what it is
+        // (play-test round 21). The tick and "on the board" were two ways of saying the
+        // same thing, and neither said the row could be pressed
         let symbol: String
-        let caption: String
+        let title: String
         let tint: UIColor
         if record.posted {
-            symbol = "checkmark.seal.fill"
-            if isToday, let rank {
-                caption = "  #\(rank) on the board"
-            } else {
-                caption = "  on the board"
-            }
-            // The placing is only asked for today: the daily board is recurring, so it
-            // resets at the deadline and a past day's rank no longer exists
+            symbol = "list.number"
+            title = "Posted Score"
             tint = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         } else if record.isPending && isToday {
             symbol = "hourglass"
-            caption = "  waiting to post"
+            title = "Waiting to post"
             tint = UIColor(white: 1, alpha: 0.6)
-            // Earned in the window, not yet landed (§12.5) - the retry loop is carrying
-            // it, and this badge flips to the green check the moment it does
+            // Earned in the window, not yet landed (§12.5) - the retry loop is carrying it,
+            // and this flips to the posted look the moment it does
         } else {
             symbol = "clock.badge.xmark"
-            caption = "  not posted"
+            title = "Not posted"
             tint = UIColor(white: 1, alpha: 0.45)
         }
 
+        let line = NSMutableAttributedString()
         let badge = NSTextAttachment()
         badge.image = UIImage(systemName: symbol)?
             .withTintColor(tint, renderingMode: .alwaysOriginal)
-        badge.bounds = CGRect(x: 0, y: -2, width: 17, height: 15)
+        badge.bounds = CGRect(x: 0, y: -3, width: 18, height: 16)
         line.append(NSAttributedString(attachment: badge))
         line.append(NSAttributedString(
-            string: caption,
-            attributes: [.font: UIFont.systemFont(ofSize: 13),
+            string: "  \(title)  ",
+            attributes: [.font: UIFont.systemFont(ofSize: 14),
                          .foregroundColor: tint]))
+        line.append(NSAttributedString(
+            string: "\(score)\(unit)",
+            attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
+                         .foregroundColor: UIColor.white]))
+
+        if record.posted, isToday, let rank {
+            line.append(NSAttributedString(
+                string: "   #\(rank)",
+                attributes: [.font: UIFont.boldSystemFont(ofSize: 14),
+                             .foregroundColor: tint]))
+            // The placing is only asked for today: the daily board is recurring, so it
+            // resets at the deadline and a past day's rank no longer exists
+        }
         resultLabel.attributedText = line
+
+        // The whole container opens the board, not a button on it - the score and the
+        // placing are the leaderboard's own figures, so the row that shows them is the door
+        resultCard.isUserInteractionEnabled = record.posted
+        if record.posted, resultCard.gestureRecognizers?.isEmpty ?? true {
+            resultCard.addGestureRecognizer(
+                UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
+        }
+    }
+
+    @objc private func resultWasTapped() {
+        postedScoreTapped?()
     }
 }
 
