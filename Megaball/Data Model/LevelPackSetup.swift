@@ -32,7 +32,48 @@ class LevelPackSetup {
         "Numbers Pack",
         "Challenge Pack"
     ]
-    
+
+    /// Each pack's icon, indexed exactly as `levelPackNameArray` is.
+    ///
+    /// The same eleven file names used to be written out as a switch on two different screens -
+    /// the mode menu, for whichever pack it was showing, and the pack screen, for all of them.
+    /// Two copies of a list is one copy too many: the pack whose art is redrawn gets changed in
+    /// one of them and quietly keeps its old picture in the other.
+    ///
+    /// The first two entries are empty because the first two entries of the name array are not
+    /// packs. Tutorial and Endless Mode share this list's indexing without sharing its meaning,
+    /// and `packIcon(_:)` below is the way to ask, so nothing has to remember that.
+    ///
+    /// The names are not derivable from the pack names - the City Pack's icon is called
+    /// `iconUrbanPack` - which is exactly why the list has to be written down once rather than
+    /// worked out twice.
+    let levelPackIconArray: [String] = [
+        "",
+        "",
+        "iconClassicPack.png",
+        "iconSpacePack.png",
+        "iconNaturePack.png",
+        "iconUrbanPack.png",
+        "iconFoodPack.png",
+        "iconComputerPack.png",
+        "iconBodyPack.png",
+        "iconWorldPack.png",
+        "iconEmojiPack.png",
+        "iconNumbersPack.png",
+        "iconChallengePack.png"
+    ]
+
+    /// The icon for a pack, by the pack number the rest of the app counts in.
+    ///
+    /// Returns nil for anything that is not a pack rather than an image of nothing, so a caller
+    /// asking about the tutorial finds out rather than drawing a blank square.
+    func packIcon(_ packNumber: Int) -> UIImage? {
+        guard levelPackIconArray.indices.contains(packNumber) else { return nil }
+        let name = levelPackIconArray[packNumber]
+        return name.isEmpty ? nil : UIImage(named: name)
+    }
+
+
     let unlockedDescriptionArray: [String] = [
         "",
         "Complete Classic Pack to unlock", // White

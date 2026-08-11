@@ -154,4 +154,35 @@ final class LevelPackSetupTests: XCTestCase {
         XCTAssertEqual(Set(setup.achievementsNameArray).count,
                        setup.achievementsNameArray.count)
     }
+
+    // MARK: - Pack icons
+
+    /// The icon list is indexed by pack number alongside the names, so the two have to be the
+    /// same length or every pack past the mistake wears the wrong picture.
+    func testEveryPackNameHasAnIconSlot() {
+        XCTAssertEqual(setup.levelPackIconArray.count, setup.levelPackNameArray.count)
+    }
+
+    /// Named assets fail at the point of use rather than at build time, and this list was
+    /// copied out of two view controllers - a typo would have shown as a pack with no icon on
+    /// a screen nobody had opened yet.
+    func testEveryPackIconLoads() {
+        for pack in 2..<setup.levelPackNameArray.count {
+            XCTAssertNotNil(setup.packIcon(pack), setup.levelPackNameArray[pack])
+        }
+    }
+
+    /// The first two entries are the tutorial and Endless Mode, which are not packs. Asking
+    /// about them gets nothing rather than a blank square.
+    func testTheEntriesThatAreNotPacksHaveNoIcon() {
+        XCTAssertNil(setup.packIcon(0))
+        XCTAssertNil(setup.packIcon(1))
+        XCTAssertNil(setup.packIcon(setup.levelPackNameArray.count))
+        XCTAssertNil(setup.packIcon(-1))
+    }
+
+    func testNoTwoPacksShareAnIcon() {
+        let icons = setup.levelPackIconArray.dropFirst(2)
+        XCTAssertEqual(Set(icons).count, icons.count)
+    }
 }

@@ -27,6 +27,7 @@
 		000000001AF18000000000D1 /* RunStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000D0 /* RunStatsViewController.swift */; };
 		000000001AF18000000000E3 /* GigaBallAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000E2 /* GigaBallAlert.swift */; };
 		000000001AF18000000000F7 /* ReturnToGameButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000F8 /* ReturnToGameButton.swift */; };
+		1AF1700000000411 /* PackGridCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000410 /* PackGridCell.swift */; };
 		000000001AF18000000000FC /* PowerUpGlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000FD /* PowerUpGlow.swift */; };
 		000000001AF18000000000E1 /* DailyCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000E0 /* DailyCardView.swift */; };
 		000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */; };
@@ -361,6 +362,7 @@
 		000000001AF18000000000D0 /* RunStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStatsViewController.swift; sourceTree = "<group>"; };
 		000000001AF18000000000E2 /* GigaBallAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GigaBallAlert.swift; sourceTree = "<group>"; };
 		000000001AF18000000000F8 /* ReturnToGameButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnToGameButton.swift; sourceTree = "<group>"; };
+		1AF1700000000410 /* PackGridCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackGridCell.swift; sourceTree = "<group>"; };
 		000000001AF18000000000FD /* PowerUpGlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpGlow.swift; sourceTree = "<group>"; };
 		000000001AF18000000000E0 /* DailyCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCardView.swift; sourceTree = "<group>"; };
 		000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIScrollingBackground.swift; sourceTree = "<group>"; };
@@ -1228,6 +1230,7 @@
 		000000001AF18000000000D0 /* RunStatsViewController.swift */,
 		000000001AF18000000000E2 /* GigaBallAlert.swift */,
 		000000001AF18000000000F8 /* ReturnToGameButton.swift */,
+		1AF1700000000410 /* PackGridCell.swift */,
 		000000001AF18000000000E0 /* DailyCardView.swift */,
 				1AF170000000009A /* MenuNavigation.swift */,
 				1AF170000000006C /* BrickTypesViewController.swift */,
@@ -1546,6 +1549,7 @@
 		000000001AF18000000000D1 /* RunStatsViewController.swift in Sources */,
 		000000001AF18000000000E3 /* GigaBallAlert.swift in Sources */,
 		000000001AF18000000000F7 /* ReturnToGameButton.swift in Sources */,
+		1AF1700000000411 /* PackGridCell.swift in Sources */,
 		000000001AF18000000000E1 /* DailyCardView.swift in Sources */,
 				000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */,
 				000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */,

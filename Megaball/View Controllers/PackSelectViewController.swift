@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class PackSelectViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
+class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, GKGameCenterControllerDelegate, MenuNavigable, MenuNavigationPresenter {
 
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
@@ -35,7 +35,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var packView: UIView!
     @IBOutlet var titleLabel: UILabel!
-    @IBOutlet var packTableView: UITableView!
+    @IBOutlet var packCollectionView: UICollectionView!
     @IBOutlet var backButtonCollectionView: UICollectionView!
     
     
@@ -53,11 +53,12 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         userSettings()
         loadData()
         
-        packTableView.delegate = self
-        packTableView.dataSource = self
-        packTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
-        packTableView.rowHeight = 70.0
-        // TableView setup
+        packCollectionView.delegate = self
+        packCollectionView.dataSource = self
+        packCollectionView.register(PackGridCell.self,
+                                    forCellWithReuseIdentifier: PackGridCell.reuseIdentifier)
+        // The packs are a grid of squares rather than a list of rows, so all eleven are on the
+        // screen at once and the mode's title and logo have somewhere to be
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
@@ -70,8 +71,9 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         if parallaxSetting {
             addParallax()
         }
+        installModeLogo()
         showAnimate()
-        packTableView.reloadData()
+        packCollectionView.reloadData()
         backButtonCollectionView.reloadData()
     }
 
@@ -86,144 +88,169 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
     
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 11
+    /// The mode's name and its logo above the grid, the way the two endless screens carry
+    /// theirs (play-test request).
+    ///
+    /// The three mode menus are a set, and this one was the odd member: it was headed "Level
+    /// Packs", which describes what is on the screen rather than which mode you are in, and it
+    /// wore no logo at all. The icon is asked of `GameMode` rather than named here, so the
+    /// screen shows whatever the main menu's Classic row shows - one icon, one decision.
+    private func installModeLogo() {
+        titleLabel.text = GameMode.classic.name.uppercased()
+
+        guard let container = packCollectionView.superview,
+              let gridTop = container.constraints.first(where: { $0.identifier == "packGridTop" }),
+              let image = GameMode.menuIcon(for: .classic) else { return }
+
+        let logo = UIImageView(image: image)
+        logo.contentMode = .scaleAspectFit
+        logo.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(logo)
+
+        gridTop.isActive = false
+        NSLayoutConstraint.activate([
+            logo.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            logo.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            logo.widthAnchor.constraint(equalToConstant: 64),
+            logo.heightAnchor.constraint(equalToConstant: 64),
+            packCollectionView.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 12),
+        ])
+        // Smaller than the endless screens' logo on purpose: those screens have a list and a
+        // lot of air, this one has eleven squares to fit underneath
     }
-    // Set number of cells in table views
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
-        
-        cell.blurView.isHidden = true
-        cell.lockedImageView.isHidden = true
-        
-        cell.centreLabel.text = ""
-        cell.settingState.text = ""
-        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-        cell.settingDescription.text = LevelPackSetup().levelPackNameArray[indexPath.row+2]
-        
-        cell.descriptionAndStateSharedWidthConstraint.isActive = false
-        cell.descriptionTickWidthConstraint.isActive = false
-        cell.decriptionFullWidthConstraint.isActive = true
-        cell.tickImage.isHidden = true
-        cell.hugDescriptionToText(false)
 
-        cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        cell.settingDescription.font = cell.settingDescription.font.withSize(18)
+    // MARK: - The pack grid
 
-        if totalStatsArray[0].packBestTimes[indexPath.row] > 0 {
-            cell.descriptionAndStateSharedWidthConstraint.isActive = false
-            cell.decriptionFullWidthConstraint.isActive = false
-            cell.descriptionTickWidthConstraint.isActive = true
-            cell.tickImage.isHidden = false
-            cell.tickTrailingEdgeConstraint?.isActive = false
-            cell.hugDescriptionToText(true)
-        }
-        // Show tick if pack has been completed at least once - right beside the pack's
-        // name (play-test round 3), which means letting go of the cell's trailing edge
-        // and holding the label to its own text. Set after the font, or the width is
-        // measured against the wrong one
-        
-        switch indexPath.row+2 {
-        case 2:
-            cell.iconImage.image = UIImage(named:"iconClassicPack.png")!
-        case 3:
-            cell.iconImage.image = UIImage(named:"iconSpacePack.png")!
-        case 4:
-            cell.iconImage.image = UIImage(named:"iconNaturePack.png")!
-        case 5:
-            cell.iconImage.image = UIImage(named:"iconUrbanPack.png")!
-        case 6:
-            cell.iconImage.image = UIImage(named:"iconFoodPack.png")!
-        case 7:
-            cell.iconImage.image = UIImage(named:"iconComputerPack.png")!
-        case 8:
-            cell.iconImage.image = UIImage(named:"iconBodyPack.png")!
-        case 9:
-            cell.iconImage.image = UIImage(named:"iconWorldPack.png")!
-        case 10:
-            cell.iconImage.image = UIImage(named:"iconEmojiPack.png")!
-        case 11:
-            cell.iconImage.image = UIImage(named:"iconNumbersPack.png")!
-        case 12:
-            cell.iconImage.image = UIImage(named:"iconChallengePack.png")!
-        default:
-            cell.iconImage.image = nil
-            break
-        }
-        
-        installPackPlayButton(on: cell,
-                              unlocked: totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2])
+    /// The eleven packs. The two entries before them in `levelPackNameArray` are the tutorial
+    /// and Endless Mode, which is where the +2 in every index below comes from - it is the
+    /// oldest arithmetic on this screen and it is not an off-by-one.
+    private var packCount: Int { LevelPackSetup().levelPackNameArray.count - 2 }
 
-        if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] == false {
-            cell.descriptionAndStateSharedWidthConstraint.isActive = false
-            cell.descriptionTickWidthConstraint.isActive = false
-            cell.decriptionFullWidthConstraint.isActive = true
-            cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
-            cell.settingDescription.font = cell.settingDescription.font.withSize(16)
-            if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2-1] {
-                cell.settingDescription.text = "Complete \(LevelPackSetup().levelPackNameArray[indexPath.row+1]) to unlock"
-            } else {
-                cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
-            }
-            if indexPath.row == 3 {
-                cell.settingDescription.text = "Complete first 3 packs to unlock"
-            }
-            // For level pack 4 show this message
-            cell.settingState.text = ""
-            cell.blurView.isHidden = false
-            cell.lockedImageView.isHidden = false
-        }
-        // Locked level packs until unlocked
+    func collectionView(_ collectionView: UICollectionView,
+                        numberOfItemsInSection section: Int) -> Int {
+        collectionView == packCollectionView ? packCount : 3
+    }
 
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard collectionView == packCollectionView else {
+            return backButtonCell(for: indexPath)
         }
-        
+
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: PackGridCell.reuseIdentifier, for: indexPath) as! PackGridCell
+        let pack = indexPath.item + 2
+        let setup = LevelPackSetup()
+        let unlocked = totalStatsArray[0].levelPackUnlockedArray[pack]
+
+        cell.show(name: unlocked ? setup.levelPackNameArray[pack] : unlockHint(for: pack),
+                  icon: setup.packIcon(pack),
+                  unlocked: unlocked,
+                  completed: totalStatsArray[0].packBestTimes[indexPath.item] > 0)
+        // Completed means the pack has a best time, which it only gets by being finished
+
+        cell.onPlay = { [weak self] in self?.play(pack: pack) }
         return cell
     }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-        if let cell = self.packTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-            }
+
+    /// What a locked pack says instead of its name.
+    ///
+    /// The name is withheld on purpose - a locked pack is a thing to be earned, and listing it
+    /// gives away what is coming - so the square carries the requirement instead.
+    private func unlockHint(for pack: Int) -> String {
+        if pack == 5 { return "Complete first 3 packs to unlock" }
+        // Pack 5 is the one that needs three rather than the one before it
+        if totalStatsArray[0].levelPackUnlockedArray[pack-1] {
+            return "Complete \(LevelPackSetup().levelPackNameArray[pack-1]) to unlock"
         }
-        
-        if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+2] {
-            hideAnimate()
-            moveToLevelSelector(packNumber: indexPath.row+2, numberOfLevels: LevelPackSetup().numberOfLevels[indexPath.row+2], startLevel: LevelPackSetup().startLevelNumber[indexPath.row+2])
-        }
-        // Don't allow selection if level pack is locked
-        
-        tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadData()
-        // Update table view
+        return "Complete Pack \(pack-2) to unlock"
     }
-    
-    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard collectionView == packCollectionView else {
+            backButtonSelected(indexPath)
+            return
         }
-        if let cell = self.packTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
-        }
+        let pack = indexPath.item + 2
+        (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(false)
+        guard totalStatsArray[0].levelPackUnlockedArray[pack] else { return }
+        // A locked pack is not a door that rattles
+
+        hideAnimate()
+        moveToLevelSelector(packNumber: pack,
+                            numberOfLevels: LevelPackSetup().numberOfLevels[pack],
+                            startLevel: LevelPackSetup().startLevelNumber[pack])
     }
-    
-    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if let cell = self.packTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
-        }
+
+    /// Starts a pack without going through its level list - the straight-in button the rows
+    /// used to carry, now a badge in the corner of the square.
+    private func play(pack: Int) {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        MenuViewController().clearSavedGame()
+        moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
+                   numberOfLevels: LevelPackSetup().numberOfLevels[pack],
+                   sender: "MainMenu", levelPack: pack)
     }
+
+    /// Three across, and as many rows as that takes, sized so the whole grid fits the space it
+    /// has been given rather than scrolling.
+    ///
+    /// Worked out from the collection view's own width and height every layout pass, because
+    /// this screen is the same on a small phone and an iPad, where `limitMenuContentSize` has
+    /// already narrowed the container by the time this runs.
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        guard collectionView == packCollectionView else { return CGSize(width: 50, height: 50) }
+        let columns: CGFloat = 3
+        let gap: CGFloat = 10
+        let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
+        let width = max(1, (available - gap*(columns - 1))/columns)
+
+        // The eleven packs make four rows, and four rows have to fit the height on offer. A
+        // square is the shape wanted; a slightly short square is better than a grid that
+        // scrolls off the bottom of a small phone
+        let rows = ceil(CGFloat(packCount)/columns)
+        let heightOnOffer = collectionView.bounds.height - gap*(rows - 1)
+        return CGSize(width: width, height: min(width, max(1, heightOnOffer/rows)))
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        insetForSectionAt section: Int) -> UIEdgeInsets {
+        guard collectionView == packCollectionView else { return .zero }
+
+        // The grid is square cells, so it is as tall as it is tall - and on a big phone that
+        // leaves it sitting against the logo with the floor a long way below. Centring what is
+        // left over puts the block between the logo and the buttons rather than letting it
+        // pile up at the top, which read as a screen that had been cut off
+        let cell = self.collectionView(collectionView, layout: layout,
+                                       sizeForItemAt: IndexPath(item: 0, section: 0))
+        let rows = ceil(CGFloat(packCount)/3)
+        let used = rows*cell.height + (rows - 1)*10
+        let spare = max(0, (collectionView.bounds.height - used)/2)
+
+        return UIEdgeInsets(top: spare, left: PackSelectViewController.gridInset,
+                            bottom: spare, right: PackSelectViewController.gridInset)
+    }
+
+    private static let gridInset: CGFloat = 20
+
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        guard collectionView == packCollectionView else {
+            backButtonHighlighted(indexPath)
+            return
+        }
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(true)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        guard collectionView == packCollectionView else {
+            backButtonUnhighlighted(indexPath)
+            return
+        }
+        (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(false)
+    }
+
     
     /// Where the bottom row's play button goes: the furthest pack the player has opened,
     /// which is where their campaign actually is. The straight-in buttons on the rows
@@ -273,11 +300,11 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
 
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        3
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    /// The row of round buttons along the bottom. Its data source lives here rather than in
+    /// the grid's methods above, which route to these by asking which collection view is
+    /// calling - two collection views on one screen share one delegate.
+    func backButtonCell(for indexPath: IndexPath) -> UICollectionViewCell {
+        let collectionView = backButtonCollectionView!
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
 
         cell.widthConstraint.constant = 40
@@ -313,7 +340,8 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         return cell
     }
 
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    func backButtonSelected(_ indexPath: IndexPath) {
+        let collectionView = backButtonCollectionView!
         if indexPath.row == 0 {
             menuNavigationGoBack()
         }
@@ -340,7 +368,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+    func backButtonHighlighted(_ indexPath: IndexPath) {
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
@@ -368,7 +396,7 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+    func backButtonUnhighlighted(_ indexPath: IndexPath) {
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
@@ -390,64 +418,6 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         }
     }
     
-    /// The straight-in button on every pack row: skip the level list, play the pack.
-    func installPackPlayButton(on cell: SettingsTableViewCell, unlocked: Bool) {
-        cell.contentView.isUserInteractionEnabled = true
-        // The settings cell's nib switches its contentView's interaction off - the settings
-        // screens never needed it - so a button added here was drawn but never tappable.
-        // This was the play-test's "play button not working when clicked"
-        cell.contentView.viewWithTag(9901)?.removeFromSuperview()
-        guard unlocked else {
-            cell.tickTrailingEdgeConstraint?.isActive = true
-            // A reused cell may have handed the trailing edge to a play button that has
-            // just been removed - the tick takes its edge back
-            return
-        }
-
-        let play = UIButton(type: .system)
-        play.tag = 9901
-        play.setImage(UIImage(systemName: "play.fill",
-                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 17,
-                                                                             weight: .heavy)),
-                      for: .normal)
-        play.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        play.translatesAutoresizingMaskIntoConstraints = false
-        play.addTarget(self, action: #selector(packPlayTapped(_:)), for: .touchUpInside)
-        cell.contentView.addSubview(play)
-
-        cell.tickTrailingEdgeConstraint?.isActive = false
-        NSLayoutConstraint.activate([
-            play.trailingAnchor.constraint(equalTo: cell.cellView2.trailingAnchor,
-                                           constant: -8),
-            play.centerYAnchor.constraint(equalTo: cell.cellView2.centerYAnchor),
-            play.widthAnchor.constraint(equalToConstant: 44),
-            play.heightAnchor.constraint(equalToConstant: 44),
-            cell.tickImage.trailingAnchor.constraint(equalTo: play.leadingAnchor,
-                                                     constant: -2),
-        ])
-        // Centred on the card rather than the contentView - the card leaves a 20pt gap
-        // below itself, so the contentView's centre is 10pt below the card's. And the
-        // completed-pack tick moves in beside the button rather than sharing its edge,
-        // which is the overlap the play-test screenshotted. The tick constraint is
-        // removed with the button on reuse, so the nib's own pin can come back
-    }
-
-    @objc func packPlayTapped(_ sender: UIButton) {
-        var view: UIView? = sender
-        while view != nil, (view as? UITableViewCell) == nil { view = view?.superview }
-        guard let cell = view as? UITableViewCell,
-              let indexPath = packTableView.indexPath(for: cell) else { return }
-        // The row is asked for at tap time rather than baked into the button, because
-        // cells are reused and a stale tag starts the wrong pack
-
-        if hapticsSetting { interfaceHaptic.impactOccurred() }
-        let pack = indexPath.row + 2
-        MenuViewController().clearSavedGame()
-        moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
-                   numberOfLevels: LevelPackSetup().numberOfLevels[pack],
-                   sender: "MainMenu", levelPack: pack)
-    }
-
     func moveToGame(selectedLevel: Int, numberOfLevels: Int, sender: String, levelPack: Int) {
         let gameView = self.storyboard?.instantiateViewController(withIdentifier: "gameView") as! GameViewController
         gameView.menuViewControllerDelegate = self as? MenuViewControllerDelegate
@@ -591,14 +561,14 @@ class PackSelectViewController: UIViewController, UITableViewDelegate, UITableVi
         userSettings()
         loadData()
         revealAnimate()
-        packTableView.reloadData()
+        packCollectionView.reloadData()
     }
     // Runs when returning from another menu view
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        packTableView.reloadData()
+        packCollectionView.reloadData()
         backButtonCollectionView.reloadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes

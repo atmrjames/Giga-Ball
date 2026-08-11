@@ -1264,11 +1264,17 @@
                                         <color key="textColor" red="0.82352941176470584" green="1" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <tableView delaysContentTouches="NO" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="KM1-Xx-f2H" customClass="ContentAwareTableView" customModule="Giga_Ball" customModuleProvider="target">
+                                    <collectionView delaysContentTouches="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" bounces="NO" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="KM1-Xx-f2H">
                                         <rect key="frame" x="0.0" y="77" width="414" height="453"/>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                        <color key="sectionIndexBackgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                    </tableView>
+                                        <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="PkG-fl-001">
+                                            <size key="itemSize" width="100" height="100"/>
+                                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                            <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                        </collectionViewFlowLayout>
+                                        <cells/>
+                                    </collectionView>
                                     <collectionView delaysContentTouches="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" bounces="NO" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="iCK-vh-uNC">
                                         <rect key="frame" x="20" y="634" width="50" height="50"/>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -1295,7 +1301,7 @@
                                     <constraint firstAttribute="trailing" secondItem="KM1-Xx-f2H" secondAttribute="trailing" id="lPL-ND-Iii"/>
                                     <constraint firstItem="whY-yX-gEP" firstAttribute="leading" secondItem="ksA-xB-moz" secondAttribute="leading" constant="20" id="pYO-FE-jQ1"/>
                                     <constraint firstAttribute="bottom" secondItem="iCK-vh-uNC" secondAttribute="bottom" constant="20" id="qJk-8h-Lvi"/>
-                                    <constraint firstItem="KM1-Xx-f2H" firstAttribute="top" secondItem="whY-yX-gEP" secondAttribute="bottom" constant="5" id="sSk-uG-ibm"/>
+                                    <constraint firstItem="KM1-Xx-f2H" firstAttribute="top" secondItem="whY-yX-gEP" secondAttribute="bottom" constant="5" id="sSk-uG-ibm" identifier="packGridTop"/>
                                 </constraints>
                                 <variation key="default">
                                     <mask key="constraints">
@@ -1323,7 +1329,7 @@
                     <connections>
                         <outlet property="backButtonCollectionView" destination="iCK-vh-uNC" id="PrA-Ft-c6t"/>
                         <outlet property="backgroundView" destination="7Pw-Ca-8Ns" id="ntV-KT-R1O"/>
-                        <outlet property="packTableView" destination="KM1-Xx-f2H" id="LbX-5C-yhc"/>
+                        <outlet property="packCollectionView" destination="KM1-Xx-f2H" id="LbX-5C-yhc"/>
                         <outlet property="packView" destination="ksA-xB-moz" id="L7p-LO-NYZ"/>
                         <outlet property="titleLabel" destination="whY-yX-gEP" id="Wyu-Vb-0Kc"/>
                     </connections>

@@ -82,33 +82,10 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             cell.iconImage.image = UIImage(named:"iconPlayLevel")
             cell.settingDescription.text = "Play single level only"
         } else {
-            switch levelPack!-2 {
-                case 0:
-                    cell.iconImage.image = UIImage(named:"iconClassicPack.png")!
-                case 1:
-                    cell.iconImage.image = UIImage(named:"iconSpacePack.png")!
-                case 2:
-                    cell.iconImage.image = UIImage(named:"iconNaturePack.png")!
-                case 3:
-                    cell.iconImage.image = UIImage(named:"iconUrbanPack.png")!
-                case 4:
-                    cell.iconImage.image = UIImage(named:"iconFoodPack.png")!
-                case 5:
-                    cell.iconImage.image = UIImage(named:"iconComputerPack.png")!
-                case 6:
-                    cell.iconImage.image = UIImage(named:"iconBodyPack.png")!
-                case 7:
-                    cell.iconImage.image = UIImage(named:"iconWorldPack.png")!
-                case 8:
-                    cell.iconImage.image = UIImage(named:"iconEmojiPack.png")!
-                case 9:
-                    cell.iconImage.image = UIImage(named:"iconNumbersPack.png")!
-                case 10:
-                    cell.iconImage.image = UIImage(named:"iconChallengePack.png")!
-                default:
-                    cell.iconImage.image = nil
-                    break
-            }
+            cell.iconImage.image = LevelPackSetup().packIcon(levelPack!)
+            // The list of pack icons lives with the pack names in LevelPackSetup - it used to
+            // be written out here as well, and in the pack screen, which is two more places to
+            // miss when a pack's art is redrawn
             cell.settingDescription.text = "Play \(LevelPackSetup().levelPackNameArray[levelPack!]) from start"
         }
                 
