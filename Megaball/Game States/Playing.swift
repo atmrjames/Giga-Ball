@@ -197,6 +197,21 @@ class Playing: GKState {
         }
         // Reset total score to reflect pre-save value
             
+        if scene.savedGame?.resumesBetweenLevels == true {
+            scene.savedGame = nil
+            scene.clearSavedGame()
+            scene.gameState.enter(InbetweenLevels.self)
+            return
+            // The player quit looking at the between-levels screen, so that is where the run
+            // comes back (play-test round 40). The level number in the save has already been
+            // advanced to the level this screen leads to, so the screen and the level that
+            // follows it are both the ones they left - and starting it is theirs to do again.
+            //
+            // The save is cleared here rather than kept, for the reason the anti-cheat work
+            // established: a run that has been resumed must not be resumable a second time
+            // from the same moment
+        }
+
         if (scene.savedGame?.brickXPositions.isEmpty == false) {
             scene.resumeBrickCreation()
             // Load saved level

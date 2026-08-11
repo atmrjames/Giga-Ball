@@ -506,4 +506,24 @@ final class SavedGameTests: XCTestCase {
         XCTAssertFalse(scene.runIsOver,
                        "the last level in play is not a finished run")
     }
+
+    // MARK: - Where a run comes back
+
+    /// A save written on the between-levels screen advances the level number, because the next
+    /// level really is the one to build. What it must also say is that the player had not
+    /// started it - a resume ran straight into the level, skipping the screen they were
+    /// looking at when they quit (play-test round 40).
+    func testASaveMadeBetweenLevelsSaysSo() {
+        var game = sampleGame()
+        game.pausedBetweenLevels = true
+        XCTAssertTrue(game.resumesBetweenLevels)
+    }
+
+    /// Absent reads as false, which is how every save written before this field existed
+    /// behaves - straight back into play, exactly as it always did.
+    func testAnOlderSaveResumesStraightIntoPlay() {
+        let game = sampleGame()
+        XCTAssertNil(game.pausedBetweenLevels)
+        XCTAssertFalse(game.resumesBetweenLevels)
+    }
 }

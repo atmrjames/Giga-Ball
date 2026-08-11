@@ -6002,9 +6002,15 @@ laserTimer?.invalidate()
 		let currentpaddleHitsPerLevel = paddleHitsPerLevel
 		
 
+		var savedBetweenLevels = false
 		if gameState.currentState is InbetweenLevels && gameoverStatus == false {
 			if numberOfLevels > 1 {
 				currentLevelNumber+=1
+				savedBetweenLevels = true
+				// The level number advancing is right - the next level is the one to build.
+				// What was missing is that the player had not started it: a resume ran
+				// straight into it, skipping the screen they were looking at when they quit
+				// (play-test round 40)
 			} else {
 				clearSavedGame()
 				return
@@ -6047,6 +6053,21 @@ laserTimer?.invalidate()
 		var powerUpActiveTimerArray: [Double]? = []
 		var powerUpActiveMagnitudeArray: [Int]? = []
 		
+		if endlessMode, (gameState.currentState is Playing
+						 || gameState.currentState is Paused) == false {
+			return
+		}
+		// **An endless run's save is all or nothing.** Only the two states below collect the
+		// field, and every array that is not collected falls back to `previous?...` further
+		// down - so a save written in any other state married this run's height and score to
+		// *another moment's bricks*, which is how a resumed Mayhem run came back with a field
+		// it had never played: different types, in different places (play-test round 39).
+		//
+		// The fallback exists for Classic, where a save between levels legitimately has no
+		// field to record and the next level builds its own. An endless run has no levels and
+		// no such moment: its field is the game. So rather than write a save that is part this
+		// run and part some other, the last good save is left exactly where it is
+
 		if gameState.currentState is Playing || gameState.currentState is Paused {
 			
 			if let ballSpeedPowerUp = self.ballSpeedIconBar.action(forKey: "ballSpeedTimer") {
@@ -6473,7 +6494,8 @@ laserTimer?.invalidate()
 			dailyWasScoringAttempt: isDailyChallenge
 				? DailyChallengeSession.shared.isScoringAttempt : nil,
 			brickHidden: brickXPositionArray != [] ? brickHiddenArray
-				: previous?.brickHidden
+				: previous?.brickHidden,
+			pausedBetweenLevels: savedBetweenLevels
 		)
 		savedGame?.save()
 		

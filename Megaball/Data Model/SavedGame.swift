@@ -180,6 +180,21 @@ struct SavedGame: Codable, Equatable {
     /// these newcomers last. Optional so older saves decode.
     var brickHidden: [Bool]?
 
+    /// Whether the run was sitting on the between-levels screen when it was saved.
+    ///
+    /// The save advances `levelNumber` at that moment, because the between-levels screen is
+    /// the doorway to the next level and the save records where the player is *going*. That is
+    /// right about the level and wrong about the moment: a resume started the next level
+    /// outright, skipping the screen the player was actually looking at (play-test round 40).
+    ///
+    /// So the level number still advances - the next level really is the one to build - and
+    /// this says the player had not started it yet. Optional so older saves decode, and absent
+    /// reads as false, which is the behaviour every save written before this had.
+    var pausedBetweenLevels: Bool?
+
+    /// Whether the run should come back on the between-levels screen rather than in play.
+    var resumesBetweenLevels: Bool { pausedBetweenLevels ?? false }
+
     // MARK: - Consistency
 
     /// The five values `ballProperties` carries when a ball is in play:
