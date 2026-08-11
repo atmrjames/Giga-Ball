@@ -400,6 +400,32 @@ enum PowerUpIcon {
         }
     }
 
+    /// Wipe: everything you had running, gone.
+    ///
+    /// Three rings of decreasing weight with a stroke through them - the ring is the shape the
+    /// power-up timers are drawn as everywhere else in this mode, so what is being crossed out
+    /// is recognisable as *your timers* rather than as a generic no-entry sign.
+    static let wipe: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        let radius = rect.width*0.11
+        for (index, x) in [rect.width*0.28, rect.width*0.5, rect.width*0.72].enumerated() {
+            context.setAlpha(1 - CGFloat(index)*0.3)
+            // Fading left to right: the ones already wiped, and the one going
+            let centre = CGPoint(x: rect.minX + x, y: rect.midY + rect.height*0.06)
+            context.strokeEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                             width: radius*2, height: radius*2))
+        }
+        context.setAlpha(1)
+
+        context.setLineWidth(rect.width*0.09)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.16,
+                                 y: rect.midY + rect.height*0.26))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.16,
+                                    y: rect.midY - rect.height*0.14))
+        context.strokePath()
+        // One stroke through all three, heavier than the rings it cancels
+    }
+
     /// The Daily Challenge's menu mark: a calendar with today burning in it.
     static let dailyChallenge: UIImage = badge { context, rect in
         stroke(context, width: rect.width*0.06)

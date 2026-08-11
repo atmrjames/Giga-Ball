@@ -321,9 +321,10 @@ final class InGameRecentsTests: XCTestCase {
     /// store counts in it, and the drop probabilities are set by index into it. This catalogue
     /// describes the same fifty separately, and the two have drifted.
     ///
-    /// **The catalogue names two power-ups the game does not have** - Randomised Bounce and
-    /// Wipe, neither of which appears anywhere in the scene - **and misses two it does** - Cull
-    /// and Auto-Aim, both of which are built and both of which are Mayhem's.
+    /// **The catalogue names a power-up the game does not have** - Randomised Bounce, which
+    /// appears nowhere in the scene - **and misses two it does**: Cull and Auto-Aim, both built
+    /// and both Mayhem's. Wipe was the fourth until it was built, which is why this test is
+    /// worth having: the gap narrows as the design lands, and the narrowing should be visible.
     ///
     /// This test pins that gap rather than hiding it, so it cannot quietly widen. Recorded in
     /// §12.0; when it is resolved this test should fail, and should then be deleted.
@@ -331,7 +332,7 @@ final class InGameRecentsTests: XCTestCase {
         let shipped = Set(LevelPackSetup().powerUpNameArray)
         let catalogued = Set(PowerUpCatalogue.all.map(\.name))
 
-        XCTAssertEqual(catalogued.subtracting(shipped), ["Randomised Bounce", "Wipe"],
+        XCTAssertEqual(catalogued.subtracting(shipped), ["Randomised Bounce"],
                        "the catalogue describes a power-up the game does not have")
         XCTAssertEqual(shipped.subtracting(catalogued), ["Cull", "Auto-Aim"],
                        "the game has a power-up the catalogue does not describe")
@@ -357,7 +358,7 @@ final class InGameRecentsTests: XCTestCase {
         XCTAssertEqual(boundary, 28)
         XCTAssertEqual(names[boundary-1], "Shrink Ball", "the last of the original set")
         XCTAssertEqual(names[boundary], "Multi-Ball", "the first of Mayhem's")
-        XCTAssertEqual(names.count - boundary, 22)
+        XCTAssertEqual(names.count - boundary, 23, "Mayhem's own, Wipe included")
         XCTAssertEqual(boundary, PowerUpCatalogue.existing.count)
     }
 

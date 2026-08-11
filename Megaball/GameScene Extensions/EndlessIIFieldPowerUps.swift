@@ -308,12 +308,111 @@ extension GameScene {
     /// left will have expired before the Lock could freeze it.
     static let endlessIILockLead: TimeInterval = 2.0
 
+    /// Every clock a Lock would freeze, as key paths.
+    ///
+    /// Key paths rather than values because three different things now need this list and one
+    /// of them writes: the drop rule asks what is running, the freeze stops them counting, and
+    /// a Wipe clears them. A list that could only be read would have needed a second list that
+    /// could be written, and two lists of the same eight clocks is how one of them ends up
+    /// missing the ninth.
+    static let endlessIITimedClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] = [
+        \.endlessIIWreckingBallClock, \.endlessIIAuraClock, \.endlessIIDescentClock,
+        \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
+        \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
+    ]
+
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
     /// disagree about what "a timed power-up" means.
     var endlessIITimedClocks: [EndlessIIClock] {
-        [endlessIIWreckingBallClock, endlessIIAuraClock, endlessIIDescentClock,
-         endlessIIWrapAroundClock, endlessIIBallSteeringClock, endlessIIMagnetismClock,
-         endlessIIPaddleHaloClock, endlessIIPortalPaddleClock]
+        GameScene.endlessIITimedClockPaths.map { self[keyPath: $0] }
+    }
+
+    /// Every clock a Wipe clears: the timed ones above, and the ones counted in paddle hits
+    /// rather than in seconds.
+    ///
+    /// The turn-based ones are not here because a Lock ignores them - a Lock stops time, and
+    /// they do not spend time - but a Wipe ends *power-ups*, and those are power-ups. Which is
+    /// why this is a longer list than the one above rather than the same one.
+    ///
+    /// The Lock is deliberately in neither. §5.4: a Wipe that removed a Lock would be strictly
+    /// better than a Key, and a Key that is never worth collecting is a power-up that may as
+    /// well not drop.
+    static let endlessIIWipeableClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] =
+        endlessIITimedClockPaths + [
+            \.endlessIIAimedStickyClock, \.endlessIIInertPaddleClock,
+            \.endlessIIFlippedAngleClock, \.endlessIIReversedControlsClock,
+            \.endlessIIAutoAimClock,
+        ]
+
+    // MARK: - Wipe
+
+    /// Ends every power-up the player has running, at once. Bad (§5.4).
+    ///
+    /// A Lock survives it, which is the one exception the design names: a Wipe that removed a
+    /// Lock would do everything a Key does and more, and a Key nobody needs is a power-up that
+    /// may as well not drop.
+    ///
+    /// The Mayhem clocks go through the shared list, so a power-up added later is wiped by
+    /// having been added to that list rather than by anyone remembering this function. The two
+    /// after it are the only power-ups from the original twenty-eight that fall in this mode
+    /// and last long enough to be worth ending - the other two that drop here (Reset Multi-Hit
+    /// and Remove Indestructible) happen once and are already over.
+    func endlessIIWipe() {
+        guard gameMode == .endlessII else { return }
+
+        for path in GameScene.endlessIIWipeableClockPaths {
+            self[keyPath: path] = EndlessIIClock()
+        }
+        endlessIIPortalPaddleOwedTurn = false
+        // The Portal Paddle owes the ball one more bounce after its clock runs out, so that a
+        // turn already under way is honoured. A Wipe is not the clock running out - it is the
+        // power-up being taken away, and the debt goes with it
+
+        wipeGravity()
+        wipeInertBall()
+    }
+
+    /// Whether a Wipe is worth dropping: only while there is something for it to end.
+    ///
+    /// The same shape as the Lock's rule and for a related reason, though not the same one. A
+    /// Lock with nothing to freeze is a dud; a *bad* power-up with nothing to take away is
+    /// worse than a dud, it is a gift - the player collects it and gets away with it.
+    var endlessIIWipeMayDrop: Bool {
+        guard gameMode == .endlessII else { return false }
+        if GameScene.endlessIIWipeableClockPaths.contains(where: { self[keyPath: $0].isRunning }) {
+            return true
+        }
+        return gravityActivated || inertBallRunning
+    }
+
+    /// Gravity, ended early.
+    ///
+    /// Its timer is an `SKAction` on the scene, so the action has to go as well as the effect -
+    /// left running it would fire its own ending later and hide an icon bar that a power-up
+    /// collected since might be using.
+    private func wipeGravity() {
+        guard gravityActivated || action(forKey: "powerUpGravityBall") != nil else { return }
+        removeAction(forKey: "powerUpGravityBall")
+        gravityIcon.removeAction(forKey: "powerUpGravityTimer")
+        gravityIconBar.removeAction(forKey: "gravityTimer")
+        deactivateGravity()
+        gravityIconBar.isHidden = true
+    }
+
+    /// Whether Undestructi-Ball is running. It has no flag of its own - its expiry is an
+    /// action on the scene, so the action's presence is the flag.
+    var inertBallRunning: Bool { action(forKey: "powerUpUndestructiBall") != nil }
+
+    /// Undestructi-Ball, ended early. Everything its own expiry block does, done now.
+    private func wipeInertBall() {
+        guard inertBallRunning else { return }
+        removeAction(forKey: "powerUpUndestructiBall")
+        gigaBallIcon.removeAction(forKey: "powerUpGigaBallTimer")
+        gigaBallIconBar.removeAction(forKey: "gigaBallTimer")
+        ball.texture = ballTexture
+        ballPhysicsBodySet()
+        gigaBallIcon.texture = iconGigaBallDisabledTexture
+        gigaBallIconBar.isHidden = true
     }
 
     // MARK: - Infill

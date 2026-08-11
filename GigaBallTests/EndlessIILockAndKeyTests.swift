@@ -189,4 +189,111 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         XCTAssertFalse(setup.powerUpDescriptionArray[48].isEmpty)
         XCTAssertFalse(setup.powerUpDescriptionArray[49].isEmpty)
     }
+
+    // MARK: - Wipe
+
+    /// §5.4: Wipe ends every power-up the player has running, at once.
+    func testAWipeEndsEveryRunningPowerUp() {
+        let scene = mayhem()
+        for path in GameScene.endlessIIWipeableClockPaths {
+            scene[keyPath: path].collect(10)
+        }
+        XCTAssertTrue(GameScene.endlessIIWipeableClockPaths
+            .allSatisfy { scene[keyPath: $0].isRunning }, "the test set itself up wrong")
+
+        scene.endlessIIWipe()
+
+        for path in GameScene.endlessIIWipeableClockPaths {
+            XCTAssertFalse(scene[keyPath: path].isRunning, "\(path)")
+        }
+    }
+
+    /// **The rule the whole power-up hangs on** (§5.4): a Wipe does not remove a Lock.
+    ///
+    /// Otherwise Wipe does everything a Key does and takes your power-ups too, which makes
+    /// Key worth nothing - and a power-up nobody wants to collect may as well not drop.
+    func testAWipeDoesNotRemoveALock() {
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+
+        scene.endlessIIWipe()
+
+        XCTAssertTrue(scene.endlessIILocked, "a Wipe is not a Key")
+        XCTAssertEqual(scene.endlessIILockClock.remaining, GameScene.endlessIILockDuration)
+    }
+
+    /// And the freeze survives with it: a player who wipes while locked is still locked, and
+    /// still needs the Key.
+    func testTheFreezeSurvivesAWipe() {
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+        scene.endlessIIPaddleFrameDelta = 1
+
+        scene.endlessIIWipe()
+
+        XCTAssertEqual(scene.endlessIIClockDelta, 0)
+    }
+
+    /// The turn-based power-ups are wiped even though a Lock leaves them alone. A Lock stops
+    /// time and they do not spend time; a Wipe ends power-ups and they are power-ups.
+    func testAWipeReachesTheTurnBasedPowerUpsThatALockDoesNot() {
+        let scene = mayhem()
+        scene.endlessIIReversedControlsClock.collect(5)
+        scene.endlessIIAutoAimClock.collect(5)
+
+        XCTAssertFalse(scene.endlessIITimedClocks.contains { $0.isRunning },
+                       "these two are deliberately not in the Lock's list")
+        scene.endlessIIWipe()
+
+        XCTAssertFalse(scene.endlessIIReversedControlsClock.isRunning)
+        XCTAssertFalse(scene.endlessIIAutoAimClock.isRunning)
+    }
+
+    /// Every clock a Lock freezes is a clock a Wipe clears. The two lists are one list plus
+    /// extras, and this is what says so - a timed power-up added to the Lock's list and left
+    /// out of Wipe's would be frozen by one and ignored by the other.
+    func testEveryClockALockFreezesIsOneAWipeClears() {
+        for path in GameScene.endlessIITimedClockPaths {
+            XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(path), "\(path)")
+        }
+        XCTAssertGreaterThan(GameScene.endlessIIWipeableClockPaths.count,
+                             GameScene.endlessIITimedClockPaths.count)
+    }
+
+    /// The Lock's own clock is in neither list. In the Lock's, because a Lock that froze
+    /// itself would never end; in Wipe's, because of the rule above.
+    func testTheLocksOwnClockIsInNeitherList() {
+        let lock: ReferenceWritableKeyPath<GameScene, EndlessIIClock> = \.endlessIILockClock
+        XCTAssertFalse(GameScene.endlessIITimedClockPaths.contains(lock))
+        XCTAssertFalse(GameScene.endlessIIWipeableClockPaths.contains(lock))
+    }
+
+    // MARK: - When a Wipe drops
+
+    func testAWipeDoesNotDropWithNothingToTakeAway() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIWipeMayDrop,
+                       "a bad power-up that takes nothing away is a gift, not a dud")
+
+        scene.endlessIIAuraClock.collect(10)
+        XCTAssertTrue(scene.endlessIIWipeMayDrop)
+    }
+
+    /// A turn-based power-up is worth wiping too, so it is worth dropping for.
+    func testAWipeDropsForATurnBasedPowerUpAlone() {
+        let scene = mayhem()
+        scene.endlessIIInertPaddleClock.collect(3)
+        XCTAssertTrue(scene.endlessIIWipeMayDrop)
+    }
+
+    func testAWipeNeverDropsOutsideMayhem() {
+        let scene = GameScene()
+        scene.gameMode = .endless
+        scene.endlessIIAuraClock.collect(10)
+        XCTAssertFalse(scene.endlessIIWipeMayDrop)
+
+        scene.endlessIIWipe()
+        XCTAssertTrue(scene.endlessIIAuraClock.isRunning,
+                      "the original Endless has years of leaderboards and no Wipe in it")
+    }
 }
