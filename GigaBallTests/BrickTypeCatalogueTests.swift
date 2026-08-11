@@ -191,4 +191,44 @@ final class BrickTypeCatalogueTests: XCTestCase {
             XCTAssertEqual(icon.size, BrickTypeIcons.canvas, entry.name)
         }
     }
+
+    // MARK: - How the detail page sets a description
+
+    /// The description label as the storyboard builds it: semibold 18, and 40pt narrower than
+    /// the screen. Read from the same numbers here rather than guessed, so a test that passes
+    /// is a test about the page a player actually sees.
+    private let descriptionFont = UIFont.systemFont(ofSize: 18, weight: .semibold)
+    private let descriptionWidth: CGFloat = 402 - 40
+
+    /// A one-line description is centred under the icon and the name; a paragraph is not.
+    ///
+    /// The brick types are where this matters, because they are the entries that write more
+    /// than a phrase - and centring every line of a six-line block was legible but wrong.
+    func testLongDescriptionsAreNotCentred() {
+        let long = BrickTypeCatalogue.allEntries.filter {
+            $0.description.count > 120
+        }
+        XCTAssertFalse(long.isEmpty, "no entry writes a paragraph any more - check the rule still earns its keep")
+        for entry in long {
+            XCTAssertFalse(ItemsStatsViewController.descriptionIsCentred(
+                entry.description, font: descriptionFont, width: descriptionWidth), entry.name)
+        }
+    }
+
+    func testShortDescriptionsAreCentred() {
+        XCTAssertTrue(ItemsStatsViewController.descriptionIsCentred(
+            "Gives you an extra ball", font: descriptionFont, width: descriptionWidth))
+        // Two lines still reads as the end of the heading; three is body text
+        XCTAssertTrue(ItemsStatsViewController.descriptionIsCentred(
+            "A brick that takes two hits before it breaks apart entirely",
+            font: descriptionFont, width: descriptionWidth))
+    }
+
+    /// Before the label has been laid out its width is zero, and a height measured against no
+    /// width is meaningless - so the page centres rather than flush-lefting everything for one
+    /// frame and then moving it.
+    func testAnUnlaidOutLabelCentres() {
+        XCTAssertTrue(ItemsStatsViewController.descriptionIsCentred(
+            BrickTypeCatalogue.allEntries[0].description, font: descriptionFont, width: 0))
+    }
 }

@@ -79,6 +79,33 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        alignDescription()
+    }
+
+    /// Whether a description belongs centred under the icon and the name.
+    ///
+    /// A short one reads as the last line of the heading, and centring it finishes the column
+    /// the icon and the title start. A long one does not: a paragraph centred on both edges is
+    /// harder to read than the same words set flush left, because every line starts somewhere
+    /// new. The brick types write paragraphs where the power-ups write a phrase, so the page
+    /// decides per item rather than choosing one alignment and being wrong on half of them.
+    ///
+    /// Two lines is the boundary because two ragged starts still scan as a heading; three is
+    /// where it starts reading as body text.
+    static func descriptionIsCentred(_ text: String, font: UIFont, width: CGFloat) -> Bool {
+        guard width > 0, font.lineHeight > 0 else { return true }
+        let height = (text as NSString).boundingRect(
+            with: CGSize(width: width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font],
+            context: nil).height
+        return Int((height/font.lineHeight).rounded()) <= 2
+    }
+
+    private func alignDescription() {
+        guard let text = descriptionLabel.text, let font = descriptionLabel.font else { return }
+        descriptionLabel.textAlignment = ItemsStatsViewController.descriptionIsCentred(
+            text, font: font, width: descriptionLabel.bounds.width) ? .center : .natural
     }
 
 
