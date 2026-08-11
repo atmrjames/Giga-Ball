@@ -84,14 +84,26 @@ extension GameScene {
         // not just in the band. Its catch is a different thing and it happens on contact
 
         ball.position.x = landingX
+        ballRelativePositionOnPaddle = landingX - paddleX
+        // **Where on the paddle it was caught**, which is what makes the held ball ride the
+        // paddle at the spot it landed. `paddleHit` sets this on the way past, and the whole
+        // point of this function is that `paddleHit` no longer runs - so without this line the
+        // value was whatever it was last time, and after a ball loss that is 0: dead centre.
+        // The play test saw it as the ball "snapping into the middle of the paddle even if it
+        // wasn't caught in the middle" (round 39)
+
         performStickyCatch()
         // Moved to where it was going before it is stopped, so it sticks where it would have
         // landed rather than where it happened to be when the frame began
 
+        if hapticsSetting {
+            lightHaptic.impactOccurred()
+        }
         if soundsSetting {
             self.run(stickyPaddleHitSound)
         }
-        // The contact never happens now, so the sound `paddleHit` would have played has to be
-        // played here or the catch lands in silence
+        // The contact never happens now, so the tap and the sound `paddleHit` would have made
+        // have to be made here, or the catch lands in silence and with no feel at all - which
+        // is the other half of what round 39 reported
     }
 }
