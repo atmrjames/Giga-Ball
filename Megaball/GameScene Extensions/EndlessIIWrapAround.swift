@@ -176,7 +176,7 @@ extension GameScene {
     func tickEndlessIIWrapAround() {
         guard gameMode == .endlessII else { return }
         if gameState.currentState is Playing && isPaused == false {
-            endlessIIWrapAroundClock.run(down: endlessIIPaddleFrameDelta)
+            endlessIIWrapAroundClock.run(down: endlessIIClockDelta)
         }
 
         tickEndlessIIWrapGhost()

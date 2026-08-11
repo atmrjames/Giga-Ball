@@ -63,6 +63,7 @@
 		1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000023 /* PowerUpCatalogueTests.swift */; };
 		1AF1700000000028 /* GameModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000027 /* GameModeTests.swift */; };
 		000000001AF18000000000F3 /* FixedWidthDigitsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000F4 /* FixedWidthDigitsTests.swift */; };
+		000000001AF18000000000FA /* EndlessIILockAndKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000FB /* EndlessIILockAndKeyTests.swift */; };
 		1AF1700000000030 /* EndlessIIBrickTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000031 /* EndlessIIBrickTests.swift */; };
 		1AF1700000000042 /* EndlessIISetRowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000043 /* EndlessIISetRowTests.swift */; };
 		1AF1700000000040 /* EndlessIIProgressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000041 /* EndlessIIProgressionTests.swift */; };
@@ -393,6 +394,7 @@
 		1AF1700000000023 /* PowerUpCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogueTests.swift; sourceTree = "<group>"; };
 		1AF1700000000027 /* GameModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModeTests.swift; sourceTree = "<group>"; };
 		000000001AF18000000000F4 /* FixedWidthDigitsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixedWidthDigitsTests.swift; sourceTree = "<group>"; };
+		000000001AF18000000000FB /* EndlessIILockAndKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIILockAndKeyTests.swift; sourceTree = "<group>"; };
 		1AF1700000000031 /* EndlessIIBrickTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBrickTests.swift; sourceTree = "<group>"; };
 		1AF1700000000043 /* EndlessIISetRowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISetRowTests.swift; sourceTree = "<group>"; };
 		1AF1700000000041 /* EndlessIIProgressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIProgressionTests.swift; sourceTree = "<group>"; };
@@ -718,6 +720,7 @@
 				1AF1700000000023 /* PowerUpCatalogueTests.swift */,
 				1AF1700000000027 /* GameModeTests.swift */,
 				000000001AF18000000000F4 /* FixedWidthDigitsTests.swift */,
+				000000001AF18000000000FB /* EndlessIILockAndKeyTests.swift */,
 				1AF1700000000031 /* EndlessIIBrickTests.swift */,
 				1AF1700000000043 /* EndlessIISetRowTests.swift */,
 				1AF1700000000041 /* EndlessIIProgressionTests.swift */,
@@ -1497,6 +1500,7 @@
 				1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */,
 				1AF1700000000028 /* GameModeTests.swift in Sources */,
 				000000001AF18000000000F3 /* FixedWidthDigitsTests.swift in Sources */,
+				000000001AF18000000000FA /* EndlessIILockAndKeyTests.swift in Sources */,
 				1AF1700000000030 /* EndlessIIBrickTests.swift in Sources */,
 				1AF1700000000042 /* EndlessIISetRowTests.swift in Sources */,
 				1AF1700000000040 /* EndlessIIProgressionTests.swift in Sources */,

@@ -142,6 +142,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// The field batch's clocks and drawing - see EndlessIIFieldPowerUps
 	var endlessIIWreckingBallClock = EndlessIIClock()
 	var endlessIIAuraClock = EndlessIIClock()
+	/// Lock: while this runs, every other timed power-up stops counting down (§5.4).
+	var endlessIILockClock = EndlessIIClock()
 	var endlessIIAuraNodes: [SKShapeNode] = []
 	/// Bricks the aura is currently sitting on, so each is hit once per pass rather than
 	/// once per frame. Cleared as the glow moves off them.
@@ -340,7 +342,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 48)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 50)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -874,6 +876,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpDescent = SKTexture(image: PowerUpIcon.descent)
 	let powerUpAutoAim = SKTexture(image: PowerUpIcon.autoAim)
 	let powerUpWrapAround = SKTexture(image: PowerUpIcon.wrapAround)
+	let powerUpLock = SKTexture(image: PowerUpIcon.lock)
+	let powerUpKey = SKTexture(image: PowerUpIcon.key)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1050,7 +1054,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey]
 		// Power up texture array
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
@@ -4479,6 +4483,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIICollectWrapAround()
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[47] += 1
+
+		case powerUpLock:
+		// 48 - Lock
+			endlessIICollectLock()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[48] += 1
+
+		case powerUpKey:
+		// 49 - Key
+			endlessIITurnKey()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[49] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball

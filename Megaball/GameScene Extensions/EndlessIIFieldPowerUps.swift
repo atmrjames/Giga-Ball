@@ -258,6 +258,64 @@ extension GameScene {
         return distance <= reach*reach && distance > ballRadius*ballRadius
     }
 
+    // MARK: - Lock and Key
+
+    /// A Lock lands. Extends, like every other timed power-up.
+    func endlessIICollectLock() {
+        endlessIILockClock.collect(GameScene.endlessIILockDuration)
+    }
+
+    /// A Key lands, and the Lock ends.
+    ///
+    /// The clock is cleared outright rather than run down: a Key is the answer to a Lock,
+    /// and an answer that only shortened it would leave the player still locked.
+    func endlessIITurnKey() {
+        endlessIILockClock = EndlessIIClock()
+    }
+
+    static let endlessIILockDuration: TimeInterval = 15
+
+    /// Whether the timed power-ups are frozen.
+    var endlessIILocked: Bool { endlessIILockClock.isRunning }
+
+    /// How much time the timed power-ups see this frame.
+    ///
+    /// Zero while a Lock runs, which is the whole of the freeze: every clock in the mode
+    /// counts down through this, so there is one place that decides and no clock that can be
+    /// forgotten. The Lock's own clock deliberately does not use it - it has to run down to
+    /// end by itself.
+    var endlessIIClockDelta: TimeInterval {
+        endlessIILocked ? 0 : endlessIIPaddleFrameDelta
+    }
+
+    /// Whether a Lock is worth dropping.
+    ///
+    /// Only while something is running for it to freeze, and only while that something has
+    /// enough left to still be running when the Lock reaches the paddle (§5.4). A Lock that
+    /// lands on an empty board freezes nothing and reads as a dud, which is worse than a
+    /// power-up that did not drop.
+    var endlessIILockMayDrop: Bool {
+        guard gameMode == .endlessII, endlessIILocked == false else { return false }
+        return endlessIITimedClocks.contains { $0.remaining > GameScene.endlessIILockLead }
+    }
+
+    /// Whether a Key is worth dropping: only while there is a Lock to undo.
+    var endlessIIKeyMayDrop: Bool {
+        gameMode == .endlessII && endlessIILocked
+    }
+
+    /// How long a dropped power-up takes to fall, near enough. A clock with less than this
+    /// left will have expired before the Lock could freeze it.
+    static let endlessIILockLead: TimeInterval = 2.0
+
+    /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
+    /// disagree about what "a timed power-up" means.
+    var endlessIITimedClocks: [EndlessIIClock] {
+        [endlessIIWreckingBallClock, endlessIIAuraClock, endlessIIDescentClock,
+         endlessIIWrapAroundClock, endlessIIBallSteeringClock, endlessIIMagnetismClock,
+         endlessIIPaddleHaloClock, endlessIIPortalPaddleClock]
+    }
+
     // MARK: - Infill
 
     /// Adds bricks in random empty cells. Bad (§5.4).
@@ -409,9 +467,13 @@ extension GameScene {
     func tickEndlessIIFieldPowerUps() {
         guard gameMode == .endlessII else { return }
         if gameState.currentState is Playing && isPaused == false {
-            endlessIIWreckingBallClock.run(down: endlessIIPaddleFrameDelta)
-            endlessIIAuraClock.run(down: endlessIIPaddleFrameDelta)
-            endlessIIDescentClock.run(down: endlessIIPaddleFrameDelta)
+            endlessIILockClock.run(down: endlessIIPaddleFrameDelta)
+            // The Lock's own clock is the one thing a Lock does not freeze - it has to be
+            // able to end by itself, or a run without a Key never gets its timers back
+
+            endlessIIWreckingBallClock.run(down: endlessIIClockDelta)
+            endlessIIAuraClock.run(down: endlessIIClockDelta)
+            endlessIIDescentClock.run(down: endlessIIClockDelta)
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()

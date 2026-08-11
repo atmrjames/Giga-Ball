@@ -537,14 +537,16 @@ class LevelPackSetup {
         PowerUpIcon.infill,
         PowerUpIcon.descent,
         PowerUpIcon.autoAim,
-        PowerUpIcon.wrapAround
+        PowerUpIcon.wrapAround,
+        PowerUpIcon.lock,
+        PowerUpIcon.key
     ]
     // Multi-Ball is drawn rather than an asset. §8.5 has the icons down as still to make, and
     // a placeholder that matches the set is worth more during design than a slot with the
     // wrong picture in it - see PowerUpIcon
     
-    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]
-    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49]
+    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     // Multi-Ball is last in the list and belongs to no pack. It is not unlocked by finishing
     // one - it exists only in Endless 2.0, which every player already has
     
@@ -596,7 +598,9 @@ class LevelPackSetup {
         "Infill",
         "Descent",
         "Auto-Aim",
-        "Wrap-Around"
+        "Wrap-Around",
+        "Lock",
+        "Key"
     ]
     
     let powerUpUnlockedDescriptionArray: [String] = [
@@ -632,7 +636,8 @@ class LevelPackSetup {
         "", // Trajectory Line - never locked
         "", // Landing Marker - never locked
         "", "", "", "", "", "", "", "", // The paddle batch - Endless 2.0's own, never locked
-        "", "", "", "", "", "", "", "", "" // The field batch and after - the same
+        "", "", "", "", "", "", "", "", "",
+        "", "" // The field batch and after - the same, Lock and Key included
     ]
     
     let powerUpHiddenUnlockedDescriptionArray: [String] = [
@@ -668,7 +673,8 @@ class LevelPackSetup {
         "", // Trajectory Line - never locked
         "", // Landing Marker - never locked
         "", "", "", "", "", "", "", "", // The paddle batch - Endless 2.0's own, never locked
-        "", "", "", "", "", "", "", "", "" // The field batch and after - the same
+        "", "", "", "", "", "", "", "", "",
+        "", "" // The field batch and after - the same, Lock and Key included
     ]
     
     let powerUpDescriptionArray: [String] = [
@@ -719,7 +725,9 @@ class LevelPackSetup {
         "Adds bricks in random empty cells",
         "The field descends continuously for a while, counting up your height",
         "Every bounce off the paddle is aimed at the lowest brick",
-        "The side walls stop being walls - balls, the paddle and moving bricks wrap around"
+        "The side walls stop being walls - balls, the paddle and moving bricks wrap around",
+        "Freezes every power-up timer you have running. It ends by itself, or a Key ends it",
+        "Ends a Lock and starts your timers again. Only falls while a Lock is running"
     ]
     
     let powerUpMultiplierArray: [String] = [
@@ -768,6 +776,8 @@ class LevelPackSetup {
         "+0.1",
         "+0.1",
         "-0.1",
+        "+0.1",
+        "+0.1",
         "+0.1",
         "+0.1",
         "+0.1"
@@ -825,7 +835,9 @@ class LevelPackSetup {
         "",
         "10s",
         "5 hits",
-        "10s"
+        "10s",
+        "15s",
+        "-"
     ]
     
     let achievementsNameArray: [String] = [

@@ -45,6 +45,12 @@ extension GameScene {
         powerUpProbArray[45] = gameMode == .endlessII ? 5 : 0 // Descent - uncommon
         powerUpProbArray[46] = gameMode == .endlessII ? 5 : 0 // Auto-Aim - uncommon
         powerUpProbArray[47] = gameMode == .endlessII ? 3 : 0 // Wrap-Around - rare (§5.4)
+        powerUpProbArray[48] = endlessIILockMayDrop ? 3 : 0 // Lock - rare, and conditional
+        powerUpProbArray[49] = endlessIIKeyMayDrop ? 30 : 0 // Key - weighted high inside its
+        // own window and zero outside it (§5.4): rare overall, but reliably there while it
+        // is possible at all. These two are the only drops whose eligibility is live game
+        // state rather than a table, which is why they are set here on every row rather than
+        // once at level load
 
         applyDailyEconomyTwists()
         // After the endless rows' own weights too, so the day's economy holds per row

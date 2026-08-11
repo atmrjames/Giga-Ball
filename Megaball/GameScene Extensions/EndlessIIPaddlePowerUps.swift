@@ -348,7 +348,7 @@ extension GameScene {
         }
         tickEndlessIIPaddleDressing()
         if gameState.currentState is Playing && isPaused == false {
-            endlessIIBallSteeringClock.run(down: delta)
+            endlessIIBallSteeringClock.run(down: endlessIIClockDelta)
         }
         // The rest of the batch counts paddle hits, spent in `endlessIISpendPaddleTurns`.
         // Ball Steering is the exception: it acts continuously rather than on contact, so

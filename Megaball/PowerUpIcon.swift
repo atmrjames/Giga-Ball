@@ -360,6 +360,46 @@ enum PowerUpIcon {
         // Leaving right, so the ball on the left is the same ball arriving
     }
 
+    /// Lock: a padlock, shut. Freezes every running clock (§5.4).
+    static let lock: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        let body = CGRect(x: rect.minX + rect.width*0.24, y: rect.midY - rect.height*0.04,
+                          width: rect.width*0.52, height: rect.height*0.36)
+        context.stroke(body)
+
+        // The shackle, closed: both feet land on the body
+        let span = rect.width*0.15
+        let top = rect.minY + rect.height*0.22
+        context.move(to: CGPoint(x: rect.midX - span, y: body.minY))
+        context.addLine(to: CGPoint(x: rect.midX - span, y: top + span))
+        context.addArc(center: CGPoint(x: rect.midX, y: top + span), radius: span,
+                       startAngle: .pi, endAngle: 0, clockwise: true)
+        context.addLine(to: CGPoint(x: rect.midX + span, y: body.minY))
+        context.strokePath()
+
+        dot(context, at: CGPoint(x: body.midX, y: body.midY), radius: rect.width*0.05)
+    }
+
+    /// Key: the way out of a Lock. Deliberately the same weight of line, because the two
+    /// are read together - one is only ever on screen because the other is.
+    static let key: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        let bow = rect.width*0.15
+        let centre = CGPoint(x: rect.minX + rect.width*0.31, y: rect.midY)
+        context.strokeEllipse(in: CGRect(x: centre.x - bow, y: centre.y - bow,
+                                         width: bow*2, height: bow*2))
+
+        context.move(to: CGPoint(x: centre.x + bow, y: centre.y))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: centre.y))
+        context.strokePath()
+        // The teeth, on the shaft's end
+        for x in [rect.maxX - rect.width*0.30, rect.maxX - rect.width*0.20] {
+            context.move(to: CGPoint(x: x, y: centre.y))
+            context.addLine(to: CGPoint(x: x, y: centre.y + rect.height*0.12))
+            context.strokePath()
+        }
+    }
+
     /// The Daily Challenge's menu mark: a calendar with today burning in it.
     static let dailyChallenge: UIImage = badge { context, rect in
         stroke(context, width: rect.width*0.06)
