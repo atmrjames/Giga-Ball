@@ -14,6 +14,14 @@
 //
 //  So this is the guard rail that goes in before the entry does.
 //
+//  One array is deliberately **not** guarded here: `powerUpTextureArray`. It is filled in
+//  `didMove(to:)`, which needs a presented `SKView`, so a bare scene has none of it and any
+//  assertion about its length would either fail for the wrong reason or be skipped and pass
+//  for the wrong reason. A test that silently returns is worse than no test - it is the
+//  "very rare or never offered" problem in test form. Checking it needs a scene actually on
+//  screen, which is a play-test job: a new power-up that falls wearing nothing is visible
+//  the first time it drops.
+//
 
 import XCTest
 @testable import Giga_Ball
@@ -72,5 +80,67 @@ final class PowerUpArrayTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(pack, 0, "power-up \(index)")
             XCTAssertLessThan(pack, setup.levelPackNameArray.count, "power-up \(index)")
         }
+    }
+
+    // MARK: - The two places a new power-up has to reach
+    //
+    // CLAUDE.md records this as a trap the project has already fallen into: "Adding a
+    // power-up lengthens arrays in two places. The stats file *and*
+    // `NSUbiquitousKeyValueStore`. Missing the second crashed the app on launch for a player
+    // with years of synced data."
+    //
+    // Both sides now pad a short array from a longer template rather than trusting the two
+    // to match, so the length is no longer the thing that has to be got right by hand. These
+    // pin that, because the padding is the whole defence and it is four lines that look
+    // deletable.
+
+    func testAShortStatsFileIsPaddedRatherThanTrusted() {
+        // A file written before a power-up existed, opened by the build that added it
+        let fresh = TotalStats()
+        let older = Array(fresh.powerupsCollected.dropLast(2))
+
+        let padded = TotalStats.padded(older, like: fresh.powerupsCollected)
+        XCTAssertEqual(padded.count, fresh.powerupsCollected.count)
+    }
+
+    func testAStatsFileFromANewerBuildKeepsItsExtras() {
+        // Only ever lengthens: throwing the extras away would lose that player's progress
+        // the moment they opened an older build
+        let fresh = TotalStats()
+        let newer = fresh.powerupsCollected + [7, 7, 7]
+
+        XCTAssertEqual(TotalStats.padded(newer, like: fresh.powerupsCollected), newer)
+    }
+
+    func testTheStatsFileIsMadeConsistentOnLoad() {
+        // The padding is applied where a decoded file arrives, not only where it is declared
+        var older = TotalStats()
+        older.powerupsCollected = Array(older.powerupsCollected.dropLast(3))
+        older.powerupsGenerated = Array(older.powerupsGenerated.dropLast(3))
+        older.powerUpUnlockedArray = Array(older.powerUpUnlockedArray.dropLast(3))
+
+        older.makeStoredArraysConsistent()
+
+        XCTAssertEqual(older.powerupsCollected.count, count)
+        XCTAssertEqual(older.powerupsGenerated.count, count)
+        XCTAssertEqual(older.powerUpUnlockedArray.count, count)
+    }
+
+    func testAShortCloudArrayIsPaddedFromTheLocalOne() {
+        // The half that crashed. A device that has not updated yet writes the shorter array,
+        // and the updated device reads it back and indexes past the end
+        let local = Array(repeating: 3, count: count)
+        let cloud = Array(repeating: 1, count: count - 2)
+
+        let padded = CloudKitHandler.padded(cloud, toMatch: local)
+        XCTAssertEqual(padded.count, count)
+        XCTAssertEqual(Array(padded.prefix(count - 2)), cloud, "what was there is kept")
+    }
+
+    func testALongerCloudArrayIsLeftAlone() {
+        // Written by a newer build than this one, and none of it is ours to discard
+        let local = Array(repeating: 3, count: count)
+        let cloud = Array(repeating: 1, count: count + 4)
+        XCTAssertEqual(CloudKitHandler.padded(cloud, toMatch: local).count, count + 4)
     }
 }
