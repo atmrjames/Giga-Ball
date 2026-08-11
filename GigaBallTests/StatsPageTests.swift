@@ -95,7 +95,8 @@ final class StatsPageTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.label == "Days posted" }?.value, "1")
         XCTAssertEqual(rows.first { $0.label == "Attempts" }?.value, "4")
         // The counting attempt is the first one, so the best day is the best first attempt
-        XCTAssertEqual(rows.first { $0.label == "Best day score" }?.value, "7500")
+        XCTAssertEqual(rows.first { $0.label == "Best day score" }?.value,
+                       StatsPage.grouped(7_500))
         XCTAssertEqual(rows.first { $0.label == "Total posted score" }?.value, "610")
     }
 
@@ -194,5 +195,56 @@ final class StatsPageTests: XCTestCase {
         // The picker is built from allCases, so a tab added without a section would show an
         // empty segment rather than fail to compile
         XCTAssertEqual(StatsPage.Tab.allCases.count, 5)
+    }
+
+    // MARK: - Thousands separators
+
+    /// The statistics page groups its numbers; a lifetime brick count runs to seven digits
+    /// and "1234567" has to be counted rather than read.
+    func testLargeCountsAreGrouped() {
+        XCTAssertEqual(StatsPage.grouped(1_234_567, locale: Locale(identifier: "en_GB")),
+                       "1,234,567")
+        XCTAssertEqual(StatsPage.grouped(999, locale: Locale(identifier: "en_GB")), "999")
+    }
+
+    /// The separator is the reader's own. A German player's thousands separator is a full
+    /// stop, and a hard-coded comma would print a decimal point in their brick count.
+    func testTheSeparatorIsTheReadersNotAComma() {
+        XCTAssertEqual(StatsPage.grouped(1_234_567, locale: Locale(identifier: "de_DE")),
+                       "1.234.567")
+    }
+
+    /// A fraction is two small numbers read as one thing. Grouping inside it would divide
+    /// something already divided.
+    func testFractionsAreNotGrouped() {
+        XCTAssertEqual(StatsPage.fraction(1_000, 2_000), "1000/2000")
+    }
+
+    /// Every count on the page goes through the grouping, so a big number cannot appear
+    /// ungrouped next to a grouped one.
+    func testEveryCountOnThePageIsGrouped() {
+        let stats = TotalStats()
+        stats.levelsPlayed = 1_234_567
+        stats.levelsCompleted = 1_234_567
+        stats.cumulativeScore = 1_234_567
+        stats.ballHits = 1_234_567
+        stats.ballsLost = 1_234_567
+        stats.bricksHit = [1_234_567]
+        stats.bricksDestroyed = [1_234_567]
+        stats.powerupsGenerated = [1_234_567]
+        stats.powerupsCollected = [1_234_567]
+        stats.packsPlayed = 1_234_567
+        stats.packsCompleted = 1_234_567
+        stats.lasersFired = 1_234_567
+        stats.lasersHit = 1_234_567
+        stats.endlessModeHeight = [1_234_567]
+        stats.endlessIIModeHeight = [1_234_567]
+
+        for tab in StatsPage.Tab.allCases {
+            for row in StatsPage.rows(for: tab, stats: stats) {
+                XCTAssertFalse(row.value.contains("1234567"),
+                               "\(tab) - \(row.label): \(row.value)")
+            }
+        }
     }
 }

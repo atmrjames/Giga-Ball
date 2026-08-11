@@ -319,23 +319,25 @@ final class InGameRecentsTests: XCTestCase {
 
     /// The list the game ships is `powerUpNameArray`: the save file counts in it, the cloud
     /// store counts in it, and the drop probabilities are set by index into it. This catalogue
-    /// describes the same fifty separately, and the two have drifted.
+    /// describes the same power-ups separately, and the two are allowed to differ in exactly
+    /// one direction.
     ///
-    /// **The catalogue names a power-up the game does not have** - Randomised Bounce, which
-    /// appears nowhere in the scene - **and misses two it does**: Cull and Auto-Aim, both built
-    /// and both Mayhem's. Wipe was the fourth until it was built, which is why this test is
-    /// worth having: the gap narrows as the design lands, and the narrowing should be visible.
+    /// **The catalogue may describe a power-up that is designed and not yet built.** Randomised
+    /// Bounce is the only one, and it is queued (§12.0). **The catalogue may never miss one the
+    /// game has** - that direction is a bug, and it was one: Cull and Auto-Aim were both built,
+    /// both Mayhem's, and absent from here, so the Mayhem badge would have skipped them if it
+    /// had been taken from `availability` rather than from the index.
     ///
-    /// This test pins that gap rather than hiding it, so it cannot quietly widen. Recorded in
-    /// §12.0; when it is resolved this test should fail, and should then be deleted.
-    func testTheKnownGapBetweenTheTwoLists() {
+    /// Wipe was in the first list until round 31 built it, which is the shape this is meant to
+    /// have: entries leave that list by being built, and nothing ever joins the second.
+    func testTheCatalogueMayRunAheadOfTheGameButNeverBehindIt() {
         let shipped = Set(LevelPackSetup().powerUpNameArray)
         let catalogued = Set(PowerUpCatalogue.all.map(\.name))
 
         XCTAssertEqual(catalogued.subtracting(shipped), ["Randomised Bounce"],
-                       "the catalogue describes a power-up the game does not have")
-        XCTAssertEqual(shipped.subtracting(catalogued), ["Cull", "Auto-Aim"],
-                       "the game has a power-up the catalogue does not describe")
+                       "designed and not yet built - anything else here needs a queue row")
+        XCTAssertTrue(shipped.subtracting(catalogued).isEmpty,
+                      "the game has a power-up this file has never heard of")
     }
 
     /// The part the two do agree on, which is the part anything is safe to read: the original

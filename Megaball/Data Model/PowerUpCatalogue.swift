@@ -277,6 +277,20 @@ enum PowerUpCatalogue {
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "clearAndRetreat", name: "Clear And Retreat", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: false, stacking: .repeats),
+        PowerUp(id: "cull", name: "Cull", availability: .endlessII,
+                rarity: .rare, valence: .beneficial, isTimed: false, stacking: .repeats),
+        // Destroys half the remaining bricks at random. Rare because it is the largest single
+        // thing a power-up does to the field, and instant because there is nothing left to run
+        PowerUp(id: "autoAim", name: "Auto-Aim", availability: .endlessII,
+                rarity: .uncommon, valence: .beneficial, isTimed: true,
+                stacking: .extendsDuration),
+        // Counted in paddle hits rather than seconds, like Aimed Sticky - `isTimed` is about
+        // whether it ends on its own rather than about the unit it counts in.
+        //
+        // No conflict with Aimed Sticky, though the two look like they should have one: Aimed
+        // Sticky owns the *launch* from a held ball and Auto-Aim redirects an ordinary
+        // *bounce*, and the scene lets both run. Declaring a conflict here that the game does
+        // not enforce is how this file drifted from the game in the first place
         PowerUp(id: "infill", name: "Infill", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: false, stacking: .repeats),
     ]

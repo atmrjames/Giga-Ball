@@ -336,7 +336,10 @@ remembers wanting back. See `MenuNavigation`.
 
 **Stats** are tracked extensively — per level, per pack and lifetime — covering scores,
 times, completions, balls lost, power-ups collected and generated, and playtime. The
-statistics screen shows them in five tabbed sections: Overall, plus one per mode. What
+statistics screen shows them in five tabbed sections: Overall, plus one per mode, with
+thousands separators in the reader's own locale. Nothing in the *scene* is grouped — a
+score that gains and loses a separator as it crosses a thousand is movement where the eye
+is already watching, and the HUD draws its digits on a fixed pitch for exactly that reason. What
 each section holds is decided by where the game writes the number, not by hand — see
 `StatsPage`, which turns a `TotalStats` into rows away from the screen that draws them.
 
