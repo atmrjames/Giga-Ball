@@ -20,6 +20,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         window.makeKeyAndVisible()
         // Build the window from the main storyboard, replacing the pre-iOS 13 UIMainStoryboardFile path
+
+        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 420, height: 640)
+        // iPad multitasking arrived uninvited: iPadOS 26 resizes every app and ignores
+        // UIRequiresFullScreen, so the app is resizable whether it opts in or not. The play
+        // zone keeps its fixed 1.8236 aspect whatever the window does - GameSceneLayout owns
+        // that - so a resize squeezes the *menus*, and below roughly a phone's width they
+        // have not been designed to answer. This floor keeps the window no smaller than a
+        // phone. There is no API to cap the ratio or the maximum, so tall-and-thin and
+        // short-and-wide extremes above this floor still need the UI audit in §12.0.
     }
 
     func sceneWillResignActive(_ scene: UIScene) {

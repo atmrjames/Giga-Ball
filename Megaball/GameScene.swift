@@ -2132,6 +2132,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Before the physics runs, because how a ball arrived is the only thing that says
 			// which face it hit - and by the time a contact is reported that is already gone
 
+			catchStickyBallBeforeStep()
+			// And the sticky paddle's catch for the same reason: caught here the ball never
+			// bounces, where caught on contact it had already bounced and had to be snapped
+			// back (play-test round 33)
+
 			breakHorizontalRuns()
 		
 			if gravityActivated {
@@ -3139,6 +3144,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// The paddle was hit by a ball. Which ball is not optional: everything below writes a
     /// velocity, and doing that to the first ball whichever one landed is how hitting the
     /// paddle with one ball made another turn.
+	/// The sticky paddle catches the ball: everything that happens at the moment it sticks.
+	///
+	/// Extracted from `paddleHit` so it can also be called from `update`, *before* the physics
+	/// step - which is where it is called from now, and the whole of the fix for the ball
+	/// visibly rebounding a fraction before snapping back on (play-test round 33). See
+	/// `catchStickyBallBeforeStep`.
+	func performStickyCatch() {
+		self.removeAction(forKey: "gameTimer")
+		// Stop the level timer
+
+		if paddleTexture == retroPaddle {
+			paddleRetroStickyTexture.isHidden = false
+		}
+		// show retro sticky paddle
+
+		ballIsOnPaddle = true
+		ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
+		paddleMoved = true
+		ball.position.y = ballStartingPositionY
+		endlessIIFirstBallWasCaught()
+		// Takes its place in the queue behind anything caught before it
+		invisibleBrickFlash()
+
+		if musicSetting {
+			MusicHandler.sharedHelper.menuVolume()
+		}
+	}
+
     func paddleHit(_ subject: SKSpriteNode) {
 		let ball = subject
 		let isExtra = subject !== self.ball
@@ -3249,28 +3282,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// would be a power-up that stopped working the moment Multi-Ball was collected
 
 		if isExtra == false && inTheStickyBand {
-		// Catch the ball
-		// Only apply if the ball hits the centre of the paddle.
-						
-			self.removeAction(forKey: "gameTimer")
-			// Stop the level timer
-			
-			if paddleTexture == retroPaddle {
-				paddleRetroStickyTexture.isHidden = false
-			}
-			// show retro sticky paddle
-			
-			ballIsOnPaddle = true
-			ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
-			paddleMoved = true
-			ball.position.y = ballStartingPositionY
-			endlessIIFirstBallWasCaught()
-			// Takes its place in the queue behind anything caught before it
-			invisibleBrickFlash()
-			
-			if musicSetting {
-				MusicHandler.sharedHelper.menuVolume()
-			}
+			performStickyCatch()
 			return
 			// Don't try to adjust the ball's angle if it is on the paddle
 		}
