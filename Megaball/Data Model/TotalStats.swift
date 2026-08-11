@@ -17,6 +17,18 @@ class TotalStats: Codable {
     var levelsCompleted: Int = 0
     var ballHits: Int = 0
     var ballsLost: Int = 0
+
+    /// The most paddle hits a single ball has ever survived.
+    ///
+    /// The *average* needs no storage - `ballHits/ballsLost` is it - but a maximum cannot be
+    /// derived from totals, so it has to be kept. Optional for the same decode-safety reason
+    /// the Endless 2.0 and daily fields are: this file is decoded with the synthesised
+    /// initialiser, and a stats file written before this existed would fail to decode
+    /// outright, which is every player's history gone.
+    var bestBallHits: Int?
+
+    /// The best run of hits on one ball, with the absent-means-none case handled.
+    var longestBallRun: Int { bestBallHits ?? 0 }
     var powerupsCollected: [Int] = Array(repeating: 0, count: 51)
     var powerupsGenerated: [Int] = Array(repeating: 0, count: 51)
     // One slot per power-up, in power-up order. Sized by count rather than written out,

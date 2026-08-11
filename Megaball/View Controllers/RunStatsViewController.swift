@@ -81,6 +81,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             ] + (summary.isEndless
                  ? [("ruler", "Bricks per metre", bricksPerMetre)] : []) + [
                 ("circle.slash", "Balls lost", "\(summary.ballsLost)"),
+                ("trophy", "Best single ball", "\(summary.bestBallHits) hits"),
                 ("arrow.down.circle.fill", "Power-ups seen", "\(summary.powerUpsSeen)"),
                 ("checkmark.circle.fill", "Power-ups collected",
                  "\(summary.powerUpsCollected) (\(caught)%)"),

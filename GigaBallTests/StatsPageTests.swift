@@ -247,4 +247,38 @@ final class StatsPageTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Hits per ball
+
+    /// The average is arithmetic on two totals; the best has to be stored, because a maximum
+    /// cannot be recovered from totals. Both wait until a ball has actually been lost.
+    func testHitsPerBallAppearOnlyOnceABallHasBeenLost() {
+        let stats = TotalStats()
+        stats.levelsPlayed = 1
+        stats.ballHits = 90
+        XCTAssertFalse(labels(.overall, stats).contains("Average hits per ball"),
+                       "nothing to divide by yet")
+
+        stats.ballsLost = 6
+        stats.bestBallHits = 41
+        let rows = StatsPage.rows(for: .overall, stats: stats)
+        XCTAssertEqual(rows.first { $0.label == "Average hits per ball" }?.value, "15")
+        XCTAssertEqual(rows.first { $0.label == "Best single ball" }?.value, "41 hits")
+    }
+
+    /// A stats file written before `bestBallHits` existed decodes with it absent, and the page
+    /// must read that as "no best yet" rather than crashing or printing nothing.
+    func testAnOlderSaveWithNoBestBallReadsAsNone() {
+        let stats = TotalStats()
+        XCTAssertNil(stats.bestBallHits)
+        XCTAssertEqual(stats.longestBallRun, 0)
+
+        stats.levelsPlayed = 1
+        stats.ballsLost = 2
+        stats.ballHits = 10
+        let labels = self.labels(.overall, stats)
+        XCTAssertTrue(labels.contains("Average hits per ball"))
+        XCTAssertFalse(labels.contains("Best single ball"),
+                       "an absent best is not a best of zero")
+    }
 }

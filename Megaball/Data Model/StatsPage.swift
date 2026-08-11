@@ -98,6 +98,17 @@ enum StatsPage {
 
         rows.append(Row(label: "Ball hits", value: grouped(stats.ballHits), icon: "circle.fill"))
         rows.append(Row(label: "Balls lost", value: grouped(stats.ballsLost), icon: "arrow.down.circle"))
+        if stats.ballsLost > 0 {
+            rows.append(Row(label: "Average hits per ball",
+                            value: String(stats.ballHits/stats.ballsLost), icon: "divide"))
+        }
+        if stats.longestBallRun > 0 {
+            rows.append(Row(label: "Best single ball",
+                            value: grouped(stats.longestBallRun) + " hits", icon: "trophy"))
+        }
+        // The average is arithmetic on two totals; the best is stored, because a maximum
+        // cannot be recovered from totals. Both wait until there is something to divide by -
+        // "Average hits per ball 0" before a ball has ever been lost is not a fact
         rows.append(Row(label: "Bricks hit", value: grouped(stats.bricksHit.reduce(0, +)), icon: "rectangle"))
         rows.append(Row(label: "Bricks destroyed", value: grouped(stats.bricksDestroyed.reduce(0, +)), icon: "rectangle.fill"))
 

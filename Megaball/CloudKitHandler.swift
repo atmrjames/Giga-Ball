@@ -228,6 +228,18 @@ final class CloudKitHandler: NSObject {
         if ballsLost! > ballsLostCloud {
             iCloudStore.set(ballsLost, forKey: "ballsLost")
         }
+
+        let bestBallCloud = Int(iCloudStore.longLong(forKey: "bestBallHits"))
+        if totalStatsArray[0].longestBallRun > bestBallCloud {
+            iCloudStore.set(totalStatsArray[0].longestBallRun, forKey: "bestBallHits")
+        } else if bestBallCloud > totalStatsArray[0].longestBallRun {
+            totalStatsArray[0].bestBallHits = bestBallCloud
+        }
+        // Highest wins in both directions, which is what a *best* means - unlike the running
+        // totals above, where the local number only ever climbs. CLAUDE.md's standing warning
+        // is that a new stat added to the file and not to here is the one the tests cannot
+        // catch, so it goes in with the field rather than after it
+
         
         powerupsCollected = totalStatsArray[0].powerupsCollected
         if let powerupsCollectedCloudCheck = iCloudStore.array(forKey: "powerupsCollected") as? [Int] {

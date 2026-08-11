@@ -78,6 +78,9 @@ final class InGameRecents {
         var score: Int = 0
         var levelsCleared: Int = 0
         var isEndless: Bool = true
+
+        /// The most paddle hits one ball survived in this run (play-test round 37).
+        var bestBallHits: Int = 0
     }
     var runSummary: RunSummary?
 

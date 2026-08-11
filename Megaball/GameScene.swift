@@ -144,6 +144,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAuraClock = EndlessIIClock()
 	/// Lock: while this runs, every other timed power-up stops counting down (§5.4).
 	var endlessIILockClock = EndlessIIClock()
+
+	/// Paddle hits on the ball currently in play, reset when it is lost. Feeds
+	/// `TotalStats.bestBallHits`, which is the one figure the totals cannot reconstruct.
+	var hitsOnThisBall: Int = 0
+
+	/// The best `hitsOnThisBall` this run has managed, for the end-of-game stats. Separate from
+	/// the lifetime best in `TotalStats`, which is the same question asked of every run there
+	/// has ever been.
+	var runBestBallHits: Int = 0
 	var endlessIIAuraNodes: [SKShapeNode] = []
 	/// Bricks the aura is currently sitting on, so each is hit once per pass rather than
 	/// once per frame. Cleared as the glow moves off them.
@@ -2174,6 +2183,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		totalStatsArray[0].ballsLost+=1
 		deathsPerLevel+=1
+		totalStatsArray[0].bestBallHits = max(totalStatsArray[0].longestBallRun, hitsOnThisBall)
+		runBestBallHits = max(runBestBallHits, hitsOnThisBall)
+		hitsOnThisBall = 0
+		// The ball's own tally closes here and starts again. Counted per ball rather than
+		// derived, because a maximum cannot be recovered from totals the way an average can
         self.ball.isHidden = true
 		ball.texture = ballTexture
 		ballRelativePositionOnPaddle = 0
@@ -3214,6 +3228,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleHitsPerLevel+=1
 
         totalStatsArray[0].ballHits+=1
+		hitsOnThisBall += 1
 		resetBrickBounce(for: ball)
 		let paddleWrapX = gameMode == .endlessII
 			? endlessIIPaddleXNearest(to: ball.position.x) : paddle.position.x
@@ -5339,7 +5354,10 @@ laserTimer?.invalidate()
 			powerUpsCollected: powerUpsCollectedPerLevel,
 			score: totalScore + levelScore,
 			levelsCleared: max(0, levelNumber - startLevelNumber),
-			isEndless: endlessMode)
+			isEndless: endlessMode,
+			bestBallHits: max(hitsOnThisBall, runBestBallHits))
+			// The ball still in play counts too - a run that ends with the best ball of it
+			// still alive should say so
 		// The snapshot the reference pages and the game-over stats read - taken as the
 		// menu goes up, because "currently active", "still falling", "in a brick" and
 		// the run's numbers are all questions about this moment.

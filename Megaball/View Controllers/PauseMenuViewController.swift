@@ -9,7 +9,7 @@
 import UIKit
 import GameKit
 
-class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource {
+class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigationPresenter {
     
     var levelNumber: Int = 0
     var numberOfLevels: Int = 0
@@ -956,6 +956,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
     }
     
+    /// The forward swipe's way of saying what opening a screen says directly.
+    ///
+    /// Without this the pause menu conformed to nothing, so `MenuNavigation.goForward` had no
+    /// one to tell - swiping forward back into Settings or the information pages put them on
+    /// top of a pause menu that was still fully drawn, which is the same two-button-rows
+    /// problem arriving by the other door.
+    func menuNavigationHideBehindChild() {
+        hideAnimate()
+    }
+
     func hideAnimate() {
         UIView.animate(withDuration: 0.25, animations: {
             self.containterView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
@@ -1064,6 +1074,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
 
     func moveToSettings() {
+        hideAnimate()
+        // **This line is the whole bug** (play-test rounds 33 and 37, reported twice). Every
+        // other screen the pause menu opens hides it first - moveToItems does, openRunStats
+        // does - and Settings did not. So the pause menu stayed fully drawn underneath with
+        // its own play and close buttons in the bottom row, while the settings screen's
+        // identical button row animated in on top of them. Two rows of buttons in the same
+        // place, each running its own entry animation, is precisely "the buttons animating
+        // over the top of one another". Round 21 fixed a different screen with the same
+        // symptom, which is why it was reported again
+
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
         settingsView.navigatedFrom = "PauseMenu"
         self.addChild(settingsView)
