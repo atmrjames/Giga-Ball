@@ -2678,6 +2678,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if endlessIIWreckingHit(struckBy: struckBy, laser: laserNode != nil) {
 			stopLaser()
+			if hapticsSetting { heavyHaptic.impactOccurred() }
+			// The heavy one, not the light tap every other brick gets. This branch returns
+			// before the type switch, so a Wrecking Ball hit was reaching *no* haptic at all
+			// (play-test round 37) - and of every hit in the game this is the one that should
+			// land hardest: it is going through an Indestructible without slowing down
 			totalStatsArray[0].bricksHit[0] += 1
 			totalStatsArray[0].bricksDestroyed[0] += 1
 			resetBrickBounce(for: struckBy)
@@ -6266,10 +6271,21 @@ laserTimer?.invalidate()
 				// Alongside the texture, because the texture index only encodes hidden
 				// for two of the types and a Fog of War day fogs them all (§12.5)
 				
+				let restingY = self.endlessIIBuildInFinalY[ObjectIdentifier(sprite)] ?? sprite.position.y
+				// **Where the brick belongs, not where it is.** A brick's position.y is its row
+				// (§8.6) - but only once it has arrived. During the opening build-in the bricks
+				// are in flight, and quitting the app mid-animation saved whatever height each
+				// one had reached, so the run came back with bricks off their rows entirely
+				// (play-test round 37, screenshotted at the very start of a Mayhem run with
+				// bricks below the bottom row). `endlessIIBuildInFinalY` is the destination the
+				// animation is carrying each brick to, and it is emptied the moment the build-in
+				// finishes - so this reads the destination while one is running and the brick's
+				// own position ever after, which is the same answer in both cases
+
 				var currentBrickXIndex = Double((self.gameWidth/2 - self.brickWidth/2 - sprite.position.x)/self.brickWidth)
-				var currentBrickYIndex = Double((self.yBrickOffset - sprite.position.y)/self.brickHeight)
+				var currentBrickYIndex = Double((self.yBrickOffset - restingY)/self.brickHeight)
 				if self.endlessMode {
-					currentBrickYIndex = Double((self.yBrickOffsetEndless - sprite.position.y)/self.brickHeight)
+					currentBrickYIndex = Double((self.yBrickOffsetEndless - restingY)/self.brickHeight)
 				}
 				
 				currentBrickXIndex = round(currentBrickXIndex)

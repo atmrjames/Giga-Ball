@@ -116,7 +116,9 @@ final class PackGridCell: UICollectionViewCell {
             // height. Sized as a fraction of the card rather than in points, because the grid
             // works its cell size out from the screen it finds itself on
             block.centerXAnchor.constraint(equalTo: card.centerXAnchor),
-            block.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            block.centerYAnchor.constraint(equalTo: card.centerYAnchor, constant: 5),
+            // Nudged down off dead centre (play-test round 37): the two corner marks now sit
+            // along the top edge, so true centre reads as slightly high against them
             block.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 4),
             block.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -4),
 
