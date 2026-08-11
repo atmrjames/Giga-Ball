@@ -163,10 +163,21 @@ extension GameScene {
     /// ball's radius to start (§5.4); a deepening collection grows it.
     static let endlessIIAuraReach: [CGFloat] = [2.0, 2.8]
 
-    /// Destroys what each ball's glow touches, and keeps the glow on the balls.
+    /// Hits what each ball's glow touches, and keeps the glow on the balls.
     ///
-    /// The ball bounces only off bricks it touches itself (§5.4) - which needs no code,
-    /// because a brick the aura reaches is destroyed before the ball arrives at it.
+    /// **A hit, not a kill** (play-test rounds 6, 9 and 11 all said the same thing: too
+    /// powerful). A brick the aura reaches takes exactly what it would have taken from the
+    /// ball itself, so a Multi-hit steps down one stage rather than vanishing, an
+    /// Indestructible shrugs, and a special fires its own on-hit rule. Destroying outright
+    /// made the aura a wider Giga-Ball, which is a different power-up that already exists.
+    ///
+    /// Aura and Giga-Ball together come to what the aura used to be on its own, and that is
+    /// the intended good combination rather than an oversight.
+    ///
+    /// Each brick is hit **once per pass**. The glow sits over a brick for many frames, and
+    /// a hit every frame would step a Multi-hit through all four stages in a fifth of a
+    /// second - which is destroying it outright with extra steps. A brick is remembered
+    /// until the glow leaves it.
     func tickEndlessIIAura() {
         guard endlessIIAuraClock.isRunning else {
             if endlessIIAuraNodes.isEmpty == false {
@@ -193,7 +204,9 @@ extension GameScene {
             endlessIIAuraNodes.removeLast().removeFromParent()
         }
 
-        var destroyed = false
+        var touchedNow: Set<ObjectIdentifier> = []
+        var struck: [SKSpriteNode] = []
+
         for (index, subject) in balls.enumerated() {
             let glow = endlessIIAuraNodes[index]
             glow.position = subject.position
@@ -201,28 +214,48 @@ extension GameScene {
 
             enumerateChildNodes(withName: BrickCategoryName) { node, _ in
                 guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }
-                guard brick.endlessIIRole != .portal else { return }
                 guard brick.endlessIIPowerUpIndex == nil else { return }
                 guard brick.isHidden == false else { return }
-                let nearestX = max(brick.frame.minX, min(subject.position.x, brick.frame.maxX))
-                let nearestY = max(brick.frame.minY, min(subject.position.y, brick.frame.maxY))
-                let dx = nearestX - subject.position.x
-                let dy = nearestY - subject.position.y
-                guard dx*dx + dy*dy <= reach*reach else { return }
-                let ballRadius = subject.size.width/2
-                guard dx*dx + dy*dy > ballRadius*ballRadius else { return }
-                // The glow, not the ball: a brick the ball itself is touching is the ball's
-                // own business, and it bounces off it as ever. Play-testing found the
-                // straight-ahead destroy made the aura a Giga-Ball - the sides are the gift
-                self.endlessIIBrickDestroyed(brick)
-                self.endlessIIDestroy(brick)
-                destroyed = true
+                guard self.endlessIIAuraReaches(brick, from: subject, reach: reach) else {
+                    return
+                }
+                touchedNow.insert(ObjectIdentifier(brick))
+                guard self.endlessIIAuraHitBricks.contains(ObjectIdentifier(brick)) == false
+                else { return }
+                struck.append(brick)
             }
         }
-        if destroyed {
+
+        endlessIIAuraHitBricks = touchedNow
+        // Only what the glow is on *now* is remembered, so a brick that leaves the glow and
+        // comes back - the field descends past a stationary ball - is fair game again
+
+        for brick in struck where brick.parent != nil {
+            hitBrick(node: brick, sprite: brick, struckBy: ball)
+        }
+        // Through the same door the ball uses, so every rule that belongs to a brick type
+        // fires: the multi-hit ladder, the scoring, the specials' own consequences
+
+        if struck.isEmpty == false {
             countBricks()
             if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
         }
+    }
+
+    /// Whether the glow, and not the ball itself, is over this brick.
+    ///
+    /// The inner test is the point: a brick the ball is actually touching is the ball's own
+    /// business and it bounces off it as ever. The aura's gift is the bricks beside the one
+    /// being struck, which is why the ball's own radius is excluded rather than included.
+    func endlessIIAuraReaches(_ brick: SKSpriteNode, from subject: SKSpriteNode,
+                              reach: CGFloat) -> Bool {
+        let nearestX = max(brick.frame.minX, min(subject.position.x, brick.frame.maxX))
+        let nearestY = max(brick.frame.minY, min(subject.position.y, brick.frame.maxY))
+        let dx = nearestX - subject.position.x
+        let dy = nearestY - subject.position.y
+        let distance = dx*dx + dy*dy
+        let ballRadius = subject.size.width/2
+        return distance <= reach*reach && distance > ballRadius*ballRadius
     }
 
     // MARK: - Infill

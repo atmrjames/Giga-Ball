@@ -175,7 +175,12 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
 
     // MARK: - Aura
 
-    func testTheAuraDestroysWhatItTouchesAndOnlyThat() {
+    func testTheAuraHitsWhatItTouchesAndOnlyThat() {
+        // Rewritten for the decided rework (play-test rounds 6, 9 and 11 all reported the
+        // aura as too powerful): a brick within the glow takes *a hit*, not a death. A plain
+        // brick dies from one hit either way, so what this asserts is the reach - and
+        // `testTheAuraStepsAMultiHitBrickDownRatherThanRemovingIt` is where the difference
+        // between a hit and a kill is actually pinned
         let scene = fieldScene()
         scene.endlessIICollectAura()
         scene.ball.position = .zero
@@ -184,8 +189,30 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         let far = brick(in: scene, x: 0, y: 200)
         scene.tickEndlessIIAura()
 
-        XCTAssertNil(near.parent, "within twice the ball's radius")
-        XCTAssertNotNil(far.parent)
+        XCTAssertTrue(scene.endlessIIAuraHitBricks.contains(ObjectIdentifier(near)),
+                      "within twice the ball's radius")
+        XCTAssertFalse(scene.endlessIIAuraHitBricks.contains(ObjectIdentifier(far)))
+        // Asserted on what the glow *reached* rather than on what is left standing. The aura
+        // now routes its hits through `hitBrick`, which decides what a hit means from the
+        // brick's texture - and a brick built in a bare test scene has none. The reach is the
+        // part this test was always guarding
+    }
+
+    func testTheAuraOnlyHitsABrickOnceWhileItSitsOverIt() {
+        // The glow is over a brick for many frames. A hit per frame would step a Multi-hit
+        // through all four stages in a fifth of a second, which is destroying it outright
+        // with extra steps
+        let scene = fieldScene()
+        scene.endlessIICollectAura()
+        scene.ball.position = .zero
+        _ = brick(in: scene, x: 0, y: 18)
+
+        scene.tickEndlessIIAura()
+        let remembered = scene.endlessIIAuraHitBricks.count
+        scene.tickEndlessIIAura()
+
+        XCTAssertLessThanOrEqual(scene.endlessIIAuraHitBricks.count, remembered,
+                                 "a brick already hit is not hit again while the glow stays on it")
     }
 
     func testTheAuraGrowsWhenCollectedAgain() {

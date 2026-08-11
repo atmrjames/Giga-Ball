@@ -518,3 +518,170 @@ final class EndlessRunDatePairingTests: XCTestCase {
         XCTAssertEqual(LevelStatsViewController.pair([10], with: dates).count, 1)
     }
 }
+
+/// "Auto-Aim should skip bricks that are pointless to hit - indestructibles, anything whose
+/// hit does nothing, and bad-power-up bricks - and aim at the next nearest worth hitting."
+final class EndlessIIAutoAimTargetTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        return scene
+    }
+
+    private func brick(in scene: GameScene, at point: CGPoint = .zero) -> SKSpriteNode {
+        let brick = SKSpriteNode()
+        brick.name = BrickCategoryName
+        brick.position = point
+        brick.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 10, height: 5))
+        brick.physicsBody?.categoryBitMask = CollisionTypes.brickCategory.rawValue
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testAnOrdinaryBrickIsWorthTheShot() {
+        let scene = scene()
+        XCTAssertTrue(scene.endlessIIWorthAimingAt(brick(in: scene)))
+    }
+
+    func testAPortalIsNot() {
+        let scene = scene()
+        let portal = brick(in: scene)
+        portal.endlessIIRole = .portal
+        XCTAssertFalse(scene.endlessIIWorthAimingAt(portal))
+    }
+
+    func testAnIndestructibleIsNot() {
+        let scene = scene()
+        let solid = brick(in: scene)
+        solid.texture = scene.brickIndestructible1Texture
+        XCTAssertFalse(scene.endlessIIWorthAimingAt(solid))
+    }
+
+    func testABrickHoldingABadPowerUpIsNot() {
+        // A free shot that sets off Lose A Ball is not a free shot
+        let scene = scene()
+        let trap = brick(in: scene)
+        trap.endlessIIPowerUpIndex = 1
+        XCTAssertFalse(scene.endlessIIWorthAimingAt(trap))
+    }
+
+    func testABrickThatIsPassableRightNowIsNot() {
+        // A Flashing brick in its faded phase has no collision category, so the shot would
+        // go straight through it - "anything whose hit does nothing"
+        let scene = scene()
+        let ghost = brick(in: scene)
+        ghost.physicsBody?.categoryBitMask = 0
+        XCTAssertFalse(scene.endlessIIWorthAimingAt(ghost))
+    }
+
+    func testADirectionalBrickThatCanOnlyBeHurtFromAboveIsNot() {
+        let scene = scene()
+        let armoured = brick(in: scene)
+        armoured.endlessIIRole = .directional
+        armoured.endlessIIVulnerableSide = .top
+        XCTAssertFalse(scene.endlessIIWorthAimingAt(armoured))
+    }
+
+    func testADirectionalBrickHurtFromBelowOrTheSideStillIs() {
+        // A shot arrives at the underside, and a brick up and to one side can be met on its
+        // flank - those shots are not wasted
+        for side in [EndlessIISide.bottom, .left, .right] {
+            let scene = scene()
+            let angled = brick(in: scene)
+            angled.endlessIIRole = .directional
+            angled.endlessIIVulnerableSide = side
+            XCTAssertTrue(scene.endlessIIWorthAimingAt(angled), "\(side)")
+        }
+    }
+
+    func testTheShotGoesToTheLowestBrickWorthHitting() {
+        let scene = scene()
+        let lowIndestructible = brick(in: scene, at: CGPoint(x: 0, y: 10))
+        lowIndestructible.texture = scene.brickIndestructible1Texture
+        let worthIt = brick(in: scene, at: CGPoint(x: 40, y: 60))
+
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0), worthIt.position,
+                       "the lowest brick was one the shot cannot change")
+    }
+
+    func testNearestWinsAmongBricksOnTheSameRow() {
+        let scene = scene()
+        _ = brick(in: scene, at: CGPoint(x: 90, y: 30))
+        let near = brick(in: scene, at: CGPoint(x: 12, y: 30))
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0), near.position)
+    }
+
+    func testAFieldWithNothingWorthHittingAimsAtNothing() {
+        // Rather than aiming at the one thing it was told not to
+        let scene = scene()
+        let portal = brick(in: scene)
+        portal.endlessIIRole = .portal
+        XCTAssertNil(scene.endlessIIAutoAimTarget(from: 0))
+    }
+}
+
+/// "Aura is still too powerful." The decided shape: the ball bounces off bricks normally,
+/// and bricks the glow reaches take the effect of a *single hit* rather than being destroyed.
+final class EndlessIIAuraTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSize = 10
+        return scene
+    }
+
+    private func ball(at point: CGPoint) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        node.position = point
+        return node
+    }
+
+    private func brick(at point: CGPoint) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .white, size: CGSize(width: 20, height: 10))
+        node.name = BrickCategoryName
+        node.position = point
+        return node
+    }
+
+    func testTheGlowReachesABrickBesideTheBall() {
+        let scene = scene()
+        let subject = ball(at: .zero)
+        XCTAssertTrue(scene.endlessIIAuraReaches(brick(at: CGPoint(x: 22, y: 0)),
+                                                 from: subject, reach: 40))
+    }
+
+    func testTheGlowDoesNotClaimTheBrickTheBallIsTouching() {
+        // That one is the ball's own business, and it bounces off it as ever. The aura's
+        // gift is the bricks beside the one being struck
+        let scene = scene()
+        let subject = ball(at: .zero)
+        XCTAssertFalse(scene.endlessIIAuraReaches(brick(at: CGPoint(x: 2, y: 0)),
+                                                  from: subject, reach: 40))
+    }
+
+    func testABrickOutOfReachIsUntouched() {
+        let scene = scene()
+        let subject = ball(at: .zero)
+        XCTAssertFalse(scene.endlessIIAuraReaches(brick(at: CGPoint(x: 400, y: 0)),
+                                                  from: subject, reach: 40))
+    }
+
+    func testReachGrowsWithASecondCollection() {
+        // Stacking deepens it (§5.4), and the deeper reach has to actually be further
+        XCTAssertGreaterThan(GameScene.endlessIIAuraReach[1], GameScene.endlessIIAuraReach[0])
+    }
+
+    func testTheAuraIsNoLongerAWiderGigaBall() {
+        // The whole point of the rework: reach is a boundary, not a kill radius. A brick
+        // inside it is hit once, and what a hit means is the brick type's own business
+        let scene = scene()
+        let subject = ball(at: .zero)
+        let beside = brick(at: CGPoint(x: 22, y: 0))
+        scene.addChild(beside)
+
+        XCTAssertTrue(scene.endlessIIAuraReaches(beside, from: subject, reach: 40))
+        XCTAssertNotNil(beside.parent, "reaching it is not the same as removing it")
+    }
+}

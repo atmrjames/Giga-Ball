@@ -143,6 +143,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIWreckingBallClock = EndlessIIClock()
 	var endlessIIAuraClock = EndlessIIClock()
 	var endlessIIAuraNodes: [SKShapeNode] = []
+	/// Bricks the aura is currently sitting on, so each is hit once per pass rather than
+	/// once per frame. Cleared as the glow moves off them.
+	var endlessIIAuraHitBricks: Set<ObjectIdentifier> = []
 	var endlessIIDescentClock = EndlessIIClock()
 	var endlessIIDescentAccumulated: TimeInterval = 0
     var brick = SKSpriteNode()

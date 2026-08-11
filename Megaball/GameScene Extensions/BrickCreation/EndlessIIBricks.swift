@@ -644,6 +644,8 @@ extension GameScene {
         tickEndlessIIRescue(delta)
         refreshEndlessIIRoundedFaces()
         refreshEndlessIIShapedFaces()
+        refreshEndlessIIAutoAimMarker()
+        // Driven from the frame, never from an action on a brick (§8.6)
     }
 
     /// Clears the tracked bricks. For starting a run, not for a brick being destroyed -

@@ -99,12 +99,7 @@ extension GameScene {
         var best: (position: CGPoint, distance: CGFloat)?
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
-            guard node.parent != nil, node.isHidden == false else { return }
-            guard node.endlessIIRole != .portal else { return }
-            guard brick.texture != self.brickIndestructible1Texture,
-                  brick.texture != self.brickIndestructible2Texture else { return }
-            if let held = node.endlessIIPowerUpIndex,
-               GameScene.endlessIIHarmfulPowerUps.contains(held) { return }
+            guard self.endlessIIWorthAimingAt(brick) else { return }
             let distance = abs(node.position.x - x)
             if let current = best {
                 if node.position.y < current.position.y - 1
@@ -118,6 +113,69 @@ extension GameScene {
         }
         return best?.position
     }
+
+    /// Whether a free shot at this brick is worth taking.
+    ///
+    /// Auto-Aim spends a bounce. Spending it on something the shot cannot change is worse
+    /// than not aiming at all, because the player gave up the bounce they would have had
+    /// (play-test round 11 asked for exactly this list, and round 22 finished it):
+    ///
+    /// - **Portals and Indestructibles.** The ball cannot destroy either.
+    /// - **A brick holding a bad power-up.** A free shot that sets off Lose A Ball is not a
+    ///   free shot.
+    /// - **A brick that is passable right now.** A Flashing brick in its faded phase has no
+    ///   collision category at all, so the shot would go straight through it.
+    /// - **A Directional brick that can only be hurt from the top.** A shot from the paddle
+    ///   arrives at the underside. Left and right are left in: a brick up and to one side
+    ///   can be met on its flank, so those shots are not wasted.
+    func endlessIIWorthAimingAt(_ brick: SKSpriteNode) -> Bool {
+        guard brick.parent != nil, brick.isHidden == false else { return false }
+        guard brick.endlessIIRole != .portal else { return false }
+        guard brick.texture != brickIndestructible1Texture,
+              brick.texture != brickIndestructible2Texture else { return false }
+        if let held = brick.endlessIIPowerUpIndex,
+           GameScene.endlessIIHarmfulPowerUps.contains(held) { return false }
+        if let body = brick.physicsBody, body.categoryBitMask == 0 { return false }
+        if brick.endlessIIRole == .directional,
+           brick.endlessIIVulnerableSide == .top { return false }
+        return true
+    }
+
+    /// A ring drawn on the brick Auto-Aim would send the next bounce at.
+    ///
+    /// The shot itself already draws a beam, but that is after the fact - by the time it is
+    /// visible the bounce has happened. This says where the free shot is *going* while there
+    /// is still a decision to make about where to stand (play-test round 11's "subtle graphic
+    /// showing the general direction").
+    ///
+    /// Driven from `update` rather than by an action on the brick, because a repeating action
+    /// on a brick stops the field descending for ever (§8.6).
+    func refreshEndlessIIAutoAimMarker() {
+        let aiming = gameMode == .endlessII
+            && (endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn)
+        let target = aiming ? endlessIIAutoAimTarget(from: paddle.position.x) : nil
+
+        guard let target else {
+            childNode(withName: GameScene.autoAimMarkerName)?.removeFromParent()
+            return
+        }
+
+        let marker: SKShapeNode
+        if let existing = childNode(withName: GameScene.autoAimMarkerName) as? SKShapeNode {
+            marker = existing
+        } else {
+            marker = SKShapeNode(circleOfRadius: brickHeight*0.55)
+            marker.name = GameScene.autoAimMarkerName
+            marker.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.55)
+            marker.lineWidth = 2
+            marker.fillColor = .clear
+            marker.zPosition = 4
+            addChild(marker)
+        }
+        marker.position = target
+    }
+
+    static let autoAimMarkerName = "endlessIIAutoAimMarker"
 
     /// Sends a ball leaving the paddle at the lowest brick instead of wherever it was going.
     /// Returns whether it did - asked at the end of the bounce, so it overrides the angle
