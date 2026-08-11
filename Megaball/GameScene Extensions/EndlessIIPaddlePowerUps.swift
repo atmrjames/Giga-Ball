@@ -421,8 +421,13 @@ extension GameScene {
 
     private func tickEndlessIIPaddleHalo() {
         guard endlessIIPaddleHaloClock.isRunning else { return }
-        let reach = paddle.size.width*EndlessIIPaddleEffects.haloReach[
+        let reach = paddleWidth*EndlessIIPaddleEffects.haloReach[
             min(endlessIIPaddleHaloClock.level, EndlessIIPaddleEffects.haloReach.count - 1)]
+        // **The paddle's nominal width, not its current one** (play-test round 39). Measured
+        // from the live paddle, a Shrink Paddle took the halo down with it and it stopped
+        // reaching the bricks - so the two bad power-ups compounded into one that switched a
+        // good one off. The halo is a field the paddle projects rather than part of the
+        // paddle, and how far it reaches is not the paddle's business
 
         let halo = endlessIIPaddleHaloNode ?? {
             let node = SKShapeNode()
