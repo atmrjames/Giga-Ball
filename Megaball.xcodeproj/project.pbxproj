@@ -44,6 +44,7 @@
 		1AF1700000000091 /* EndlessIIBalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000090 /* EndlessIIBalls.swift */; };
 		1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000080 /* EndlessIINeighbourTests.swift */; };
 		1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000072 /* BrickTypeCatalogueTests.swift */; };
+		1AF1700000000403 /* StatsPageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000402 /* StatsPageTests.swift */; };
 		1AF1700000000099 /* EndlessIIPlayTestFixesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */; };
 		000000001AF18000000000B1 /* DailyChallengeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000B0 /* DailyChallengeTests.swift */; };
 		000000001AF1800000000061 /* EndlessIIFieldPowerUpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000060 /* EndlessIIFieldPowerUpTests.swift */; };
@@ -59,6 +60,7 @@
 		1AF1700000000065 /* GameSceneMockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000064 /* GameSceneMockView.swift */; };
 		1AF1700000000063 /* GameSceneLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000062 /* GameSceneLayout.swift */; };
 		1AF1700000000061 /* GameBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000060 /* GameBackground.swift */; };
+		1AF1700000000401 /* StatsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000400 /* StatsPage.swift */; };
 		1AF1700000000004 /* SavedGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000003 /* SavedGameTests.swift */; };
 		1AF170000000001E /* BrickGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001D /* BrickGridTests.swift */; };
 		1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000023 /* PowerUpCatalogueTests.swift */; };
@@ -376,6 +378,7 @@
 		1AF1700000000090 /* EndlessIIBalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBalls.swift; sourceTree = "<group>"; };
 		1AF1700000000080 /* EndlessIINeighbourTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIINeighbourTests.swift; sourceTree = "<group>"; };
 		1AF1700000000072 /* BrickTypeCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypeCatalogueTests.swift; sourceTree = "<group>"; };
+		1AF1700000000402 /* StatsPageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsPageTests.swift; sourceTree = "<group>"; };
 		1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPlayTestFixesTests.swift; sourceTree = "<group>"; };
 		000000001AF18000000000B0 /* DailyChallengeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeTests.swift; sourceTree = "<group>"; };
 		000000001AF1800000000060 /* EndlessIIFieldPowerUpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFieldPowerUpTests.swift; sourceTree = "<group>"; };
@@ -391,6 +394,7 @@
 		1AF1700000000064 /* GameSceneMockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneMockView.swift; sourceTree = "<group>"; };
 		1AF1700000000062 /* GameSceneLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayout.swift; sourceTree = "<group>"; };
 		1AF1700000000060 /* GameBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackground.swift; sourceTree = "<group>"; };
+		1AF1700000000400 /* StatsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsPage.swift; sourceTree = "<group>"; };
 		1AF1700000000003 /* SavedGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGameTests.swift; sourceTree = "<group>"; };
 		1AF170000000001D /* BrickGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickGridTests.swift; sourceTree = "<group>"; };
 		1AF1700000000023 /* PowerUpCatalogueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpCatalogueTests.swift; sourceTree = "<group>"; };
@@ -705,6 +709,7 @@
 				1AF1700000000094 /* EndlessIIBallsTests.swift */,
 				1AF1700000000080 /* EndlessIINeighbourTests.swift */,
 				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
+				1AF1700000000402 /* StatsPageTests.swift */,
 				1AF1700000000098 /* EndlessIIPlayTestFixesTests.swift */,
 				000000001AF18000000000B0 /* DailyChallengeTests.swift */,
 				000000001AF1800000000060 /* EndlessIIFieldPowerUpTests.swift */,
@@ -1262,6 +1267,7 @@
 				1AF1700000000068 /* BrickTypeCatalogue.swift */,
 				1AF1700000000062 /* GameSceneLayout.swift */,
 				1AF1700000000060 /* GameBackground.swift */,
+				1AF1700000000400 /* StatsPage.swift */,
 				1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */,
 				1AF1300000000001 /* Scoring.swift */,
 				1AF1700000000001 /* SavedGame.swift */,
@@ -1486,6 +1492,7 @@
 				1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */,
 				1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */,
 				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
+				1AF1700000000403 /* StatsPageTests.swift in Sources */,
 				1AF1700000000099 /* EndlessIIPlayTestFixesTests.swift in Sources */,
 				000000001AF18000000000B1 /* DailyChallengeTests.swift in Sources */,
 				000000001AF1800000000061 /* EndlessIIFieldPowerUpTests.swift in Sources */,
@@ -1560,6 +1567,7 @@
 				1AF1700000000065 /* GameSceneMockView.swift in Sources */,
 				1AF1700000000063 /* GameSceneLayout.swift in Sources */,
 				1AF1700000000061 /* GameBackground.swift in Sources */,
+				1AF1700000000401 /* StatsPage.swift in Sources */,
 				1A28AF77244DB591007A1A3E /* Level073.swift in Sources */,
 				1AF335E0241133C4007DC048 /* Level004.swift in Sources */,
 				1A94366F245D60AF00388D6C /* Level100.swift in Sources */,
