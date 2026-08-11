@@ -10,6 +10,25 @@ import UIKit
 
 class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable, MenuNavigationPresenter {
     
+    /// The mark on a power-up that only exists in Endless Mayhem.
+    ///
+    /// The mode's own logo is a glowing infinity with a ball above it, which does not survive
+    /// being shrunk to the height of a line of text, so the badge is the plain infinity - the
+    /// half of that logo that still reads at eleven points. A placeholder until §8.5 draws a
+    /// small monochrome mark of its own, and deliberately a shape rather than a word: the state
+    /// column already carries words on this screen, and a second one competes with them.
+    ///
+    /// Built as an attachment rather than as an image view so it uses the label the cell
+    /// already has, and inherits its colour and its place in the row.
+    static let mayhemBadge: NSAttributedString = {
+        let mark = NSTextAttachment()
+        mark.image = UIImage(systemName: "infinity",
+                             withConfiguration: UIImage.SymbolConfiguration(pointSize: 13,
+                                                                            weight: .bold))?
+            .withTintColor(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1), renderingMode: .alwaysOriginal)
+        return NSAttributedString(attachment: mark)
+    }()
+
     let defaults = UserDefaults.standard
     var soundsSetting: Bool = true
     var musicSetting: Bool = true
@@ -311,11 +330,22 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.centreLabel.text = ""
             cell.settingState.text = ""
 
+            if LevelPackSetup().isEndlessIIPowerUp(powerUpIndexCorrection) {
+                cell.settingState.attributedText = ItemsDetailViewController.mayhemBadge
+                cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+            }
+            // §7.3, and the play-test's fourth-round request: say which power-ups only exist in
+            // Endless Mayhem, the way the bricks page says NEW - so nobody goes hunting for a
+            // Portal Paddle in a Classic pack
+
             if isRecentRow(indexPath) {
                 cell.settingState.text = InGameRecents.shared.statusNote(at: indexPath.row)
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
                 cell.settingState.font = .boldSystemFont(ofSize: 11)
                 cell.settingState.minimumScaleFactor = 0.5
+                // Set after the badge, and deliberately: on the in-game recents list what
+                // became of that appearance is the news, and the mode it belongs to is not -
+                // you are playing it
                 // What became of that appearance: caught, fell past, in a brick, or
                 // running right now. Sized so COLLECTED fits the state column - at the
                 // column's usual size it truncated (play-test round 8's screenshot)

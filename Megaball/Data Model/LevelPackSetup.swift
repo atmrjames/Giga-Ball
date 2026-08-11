@@ -33,6 +33,24 @@ class LevelPackSetup {
         "Challenge Pack"
     ]
 
+    /// Where Endless Mayhem's power-ups begin in `powerUpNameArray`.
+    ///
+    /// The array is the original twenty-eight followed by Mayhem's twenty-two, and that order
+    /// is not a convention anyone is free to change: the save file, `NSUbiquitousKeyValueStore`
+    /// and the drop probabilities all count in it, and the probabilities are only ever set for
+    /// the first twenty-eight - the rest do not fall from bricks at all, they come from
+    /// Mayhem's own power-up bricks.
+    ///
+    /// So the index *is* the answer to "which mode is this power-up from", and it is the
+    /// answer the game itself uses. `PowerUpCatalogue` describes the same fifty and would look
+    /// like a better place to ask, but it has drifted - see the tests, and §12.0.
+    static let firstEndlessIIPowerUp = 28
+
+    /// Whether a power-up, by its index in `powerUpNameArray`, only exists in Endless Mayhem.
+    func isEndlessIIPowerUp(_ index: Int) -> Bool {
+        index >= LevelPackSetup.firstEndlessIIPowerUp && index < powerUpNameArray.count
+    }
+
     /// Each pack's icon, indexed exactly as `levelPackNameArray` is.
     ///
     /// The same eleven file names used to be written out as a switch on two different screens -

@@ -170,6 +170,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let row = rows[indexPath.row]
         cell.statDescription.text = row.label
         cell.statValue.text = row.value
+        cell.showIcon(row.icon)
         return cell
     }
 

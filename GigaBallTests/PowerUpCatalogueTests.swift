@@ -314,4 +314,74 @@ final class InGameRecentsTests: XCTestCase {
         XCTAssertEqual(order, [2, 0, 1, 3],
                        "recently struck first; the rest stay as the catalogue gives them")
     }
+
+    // MARK: - The reference page's list and this catalogue's
+
+    /// The list the game ships is `powerUpNameArray`: the save file counts in it, the cloud
+    /// store counts in it, and the drop probabilities are set by index into it. This catalogue
+    /// describes the same fifty separately, and the two have drifted.
+    ///
+    /// **The catalogue names two power-ups the game does not have** - Randomised Bounce and
+    /// Wipe, neither of which appears anywhere in the scene - **and misses two it does** - Cull
+    /// and Auto-Aim, both of which are built and both of which are Mayhem's.
+    ///
+    /// This test pins that gap rather than hiding it, so it cannot quietly widen. Recorded in
+    /// §12.0; when it is resolved this test should fail, and should then be deleted.
+    func testTheKnownGapBetweenTheTwoLists() {
+        let shipped = Set(LevelPackSetup().powerUpNameArray)
+        let catalogued = Set(PowerUpCatalogue.all.map(\.name))
+
+        XCTAssertEqual(catalogued.subtracting(shipped), ["Randomised Bounce", "Wipe"],
+                       "the catalogue describes a power-up the game does not have")
+        XCTAssertEqual(shipped.subtracting(catalogued), ["Cull", "Auto-Aim"],
+                       "the game has a power-up the catalogue does not describe")
+    }
+
+    /// The part the two do agree on, which is the part anything is safe to read: the original
+    /// twenty-eight, in the same order, under the same names.
+    func testTheOriginalTwentyEightAgree() {
+        let shipped = Array(LevelPackSetup().powerUpNameArray.prefix(
+            LevelPackSetup.firstEndlessIIPowerUp))
+        XCTAssertEqual(shipped, PowerUpCatalogue.existing.map(\.name))
+    }
+
+    // MARK: - Which power-ups belong to Endless Mayhem
+
+    /// The boundary is load-bearing: everything from it on is Mayhem's, and the badge on the
+    /// power-ups page is drawn from exactly this. Pinned by the names either side of it, so
+    /// moving a power-up across the line has to be a decision rather than an accident.
+    func testTheMayhemPowerUpsStartWhereTheOriginalsEnd() {
+        let names = LevelPackSetup().powerUpNameArray
+        let boundary = LevelPackSetup.firstEndlessIIPowerUp
+
+        XCTAssertEqual(boundary, 28)
+        XCTAssertEqual(names[boundary-1], "Shrink Ball", "the last of the original set")
+        XCTAssertEqual(names[boundary], "Multi-Ball", "the first of Mayhem's")
+        XCTAssertEqual(names.count - boundary, 22)
+        XCTAssertEqual(boundary, PowerUpCatalogue.existing.count)
+    }
+
+    func testTheBadgeGoesOnMayhemsPowerUpsAndNoOthers() {
+        let setup = LevelPackSetup()
+
+        // The ones a player would otherwise go hunting for in a Classic pack
+        for name in ["Portal Paddle", "Wrecking Ball", "Cull", "Auto-Aim", "Lock", "Key"] {
+            let index = setup.powerUpNameArray.firstIndex(of: name)
+            XCTAssertNotNil(index, name)
+            XCTAssertTrue(setup.isEndlessIIPowerUp(index ?? 0), name)
+        }
+        for name in ["Extra Ball", "Lasers", "Mystery", "Shrink Ball"] {
+            let index = setup.powerUpNameArray.firstIndex(of: name)
+            XCTAssertNotNil(index, name)
+            XCTAssertFalse(setup.isEndlessIIPowerUp(index ?? 0), name)
+        }
+    }
+
+    /// An index off the end of the list is not Mayhem's - it is nothing, and a screen asking
+    /// about one should not get a badge for its trouble.
+    func testAnIndexOffTheEndIsNotAMayhemPowerUp() {
+        let setup = LevelPackSetup()
+        XCTAssertFalse(setup.isEndlessIIPowerUp(setup.powerUpNameArray.count))
+        XCTAssertFalse(setup.isEndlessIIPowerUp(-1))
+    }
 }

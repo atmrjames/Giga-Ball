@@ -51,6 +51,23 @@ enum StatsPage {
     struct Row: Equatable {
         let label: String
         let value: String
+
+        /// The SF Symbol drawn to the left of the row, or nothing.
+        ///
+        /// Named beside the label it belongs to rather than kept in a second list keyed by
+        /// label, which would be a list to keep in step every time a row is renamed.
+        ///
+        /// Every name here is from the first two SF Symbols releases. The app runs on iOS 15
+        /// and a symbol added later resolves to nothing at all on an older phone - it does not
+        /// fail, it simply draws an empty gutter, which is exactly the sort of thing that is
+        /// invisible on a modern simulator.
+        let icon: String?
+
+        init(label: String, value: String, icon: String? = nil) {
+            self.label = label
+            self.value = value
+            self.icon = icon
+        }
     }
 
     /// Shown in place of a section's rows when that mode has never been played.
@@ -77,26 +94,26 @@ enum StatsPage {
     private static func overallRows(_ stats: TotalStats) -> [Row] {
         guard hasPlayedAnything(stats) else { return [] }
 
-        var rows = [Row(label: "Total play time", value: playTime(stats.playTimeSecs))]
+        var rows = [Row(label: "Total play time", value: playTime(stats.playTimeSecs), icon: "clock")]
 
-        rows.append(Row(label: "Ball hits", value: String(stats.ballHits)))
-        rows.append(Row(label: "Balls lost", value: String(stats.ballsLost)))
-        rows.append(Row(label: "Bricks hit", value: String(stats.bricksHit.reduce(0, +))))
-        rows.append(Row(label: "Bricks destroyed", value: String(stats.bricksDestroyed.reduce(0, +))))
+        rows.append(Row(label: "Ball hits", value: String(stats.ballHits), icon: "circle.fill"))
+        rows.append(Row(label: "Balls lost", value: String(stats.ballsLost), icon: "arrow.down.circle"))
+        rows.append(Row(label: "Bricks hit", value: String(stats.bricksHit.reduce(0, +)), icon: "rectangle"))
+        rows.append(Row(label: "Bricks destroyed", value: String(stats.bricksDestroyed.reduce(0, +)), icon: "rectangle.fill"))
 
         let released = stats.powerupsGenerated.reduce(0, +)
         let collected = stats.powerupsCollected.reduce(0, +)
-        rows.append(Row(label: "Power-ups released", value: String(released)))
-        rows.append(Row(label: "Power-ups collected", value: String(collected)))
+        rows.append(Row(label: "Power-ups released", value: String(released), icon: "arrow.up.circle"))
+        rows.append(Row(label: "Power-ups collected", value: String(collected), icon: "checkmark.circle"))
         rows.append(Row(label: "Power-up collection rate",
-                        value: percentage(collected, of: released)))
+                        value: percentage(collected, of: released), icon: "percent"))
 
         // The lasers only appear once one has been fired. They are a power-up rather than a
         // part of the game everybody meets, and a permanent "Lasers fired 0" reads as a broken
         // counter rather than as something not yet found
         if stats.lasersFired > 0 {
-            rows.append(Row(label: "Lasers fired", value: String(stats.lasersFired)))
-            rows.append(Row(label: "Lasers hit", value: String(stats.lasersHit)))
+            rows.append(Row(label: "Lasers fired", value: String(stats.lasersFired), icon: "bolt.fill"))
+            rows.append(Row(label: "Lasers hit", value: String(stats.lasersHit), icon: "scope"))
         }
 
         let unlockedItems = stats.appIconUnlockedArray.filter { $0 }.count
@@ -105,10 +122,11 @@ enum StatsPage {
         let allItems = stats.appIconUnlockedArray.count
             + stats.powerUpUnlockedArray.count
             + stats.themeUnlockedArray.count
-        rows.append(Row(label: "Items unlocked", value: fraction(unlockedItems, allItems)))
+        rows.append(Row(label: "Items unlocked", value: fraction(unlockedItems, allItems), icon: "lock.open.fill"))
         rows.append(Row(label: "Achievements completed",
                         value: fraction(stats.achievementsUnlockedArray.filter { $0 }.count,
-                                        stats.achievementsUnlockedArray.count)))
+                                        stats.achievementsUnlockedArray.count),
+                        icon: "rosette"))
         return rows
     }
 
@@ -124,17 +142,17 @@ enum StatsPage {
         let allPacks = stats.levelPackUnlockedArray.count - 2
 
         return [
-            Row(label: "Total score", value: String(stats.cumulativeScore)),
-            Row(label: "Packs unlocked", value: fraction(unlockedPacks, allPacks)),
-            Row(label: "Packs played", value: String(stats.packsPlayed)),
-            Row(label: "Packs completed", value: String(stats.packsCompleted)),
+            Row(label: "Total score", value: String(stats.cumulativeScore), icon: "star.fill"),
+            Row(label: "Packs unlocked", value: fraction(unlockedPacks, allPacks), icon: "lock.open.fill"),
+            Row(label: "Packs played", value: String(stats.packsPlayed), icon: "square.stack.fill"),
+            Row(label: "Packs completed", value: String(stats.packsCompleted), icon: "checkmark.seal.fill"),
             Row(label: "Pack completion rate",
-                value: percentage(stats.packsCompleted, of: stats.packsPlayed)),
-            Row(label: "Levels unlocked", value: fraction(unlockedLevels, allLevels)),
-            Row(label: "Levels played", value: String(stats.levelsPlayed)),
-            Row(label: "Levels completed", value: String(stats.levelsCompleted)),
+                value: percentage(stats.packsCompleted, of: stats.packsPlayed), icon: "percent"),
+            Row(label: "Levels unlocked", value: fraction(unlockedLevels, allLevels), icon: "lock.open"),
+            Row(label: "Levels played", value: String(stats.levelsPlayed), icon: "square.stack"),
+            Row(label: "Levels completed", value: String(stats.levelsCompleted), icon: "checkmark.circle.fill"),
             Row(label: "Level completion rate",
-                value: percentage(stats.levelsCompleted, of: stats.levelsPlayed)),
+                value: percentage(stats.levelsCompleted, of: stats.levelsPlayed), icon: "percent"),
         ]
     }
 
@@ -146,10 +164,10 @@ enum StatsPage {
         guard heights.isEmpty == false else { return [] }
         let total = heights.reduce(0, +)
         return [
-            Row(label: "Runs played", value: String(heights.count)),
-            Row(label: "Best height", value: String(heights.max() ?? 0) + " m"),
-            Row(label: "Total height", value: String(total) + " m"),
-            Row(label: "Average height", value: String(total/heights.count) + " m"),
+            Row(label: "Runs played", value: String(heights.count), icon: "play.circle.fill"),
+            Row(label: "Best height", value: String(heights.max() ?? 0) + " m", icon: "arrow.up"),
+            Row(label: "Total height", value: String(total) + " m", icon: "sum"),
+            Row(label: "Average height", value: String(total/heights.count) + " m", icon: "chart.bar.fill"),
         ]
     }
 
@@ -158,17 +176,17 @@ enum StatsPage {
         guard records.isEmpty == false else { return [] }
 
         var rows = [
-            Row(label: "Days played", value: String(records.count)),
-            Row(label: "Days posted", value: String(records.filter { $0.posted }.count)),
-            Row(label: "Attempts", value: String(records.reduce(0) { $0 + $1.attemptCount })),
+            Row(label: "Days played", value: String(records.count), icon: "calendar"),
+            Row(label: "Days posted", value: String(records.filter { $0.posted }.count), icon: "arrow.up.circle.fill"),
+            Row(label: "Attempts", value: String(records.reduce(0) { $0 + $1.attemptCount }), icon: "arrow.clockwise"),
         ]
 
         // The counting attempt is the first one, so the best day is the best first attempt -
         // a practice score is higher more often than not and would flatter the number
         if let best = records.map({ $0.firstAttemptScore }).max(), best > 0 {
-            rows.append(Row(label: "Best day score", value: String(best)))
+            rows.append(Row(label: "Best day score", value: String(best), icon: "star.fill"))
         }
-        rows.append(Row(label: "Total posted score", value: String(stats.dailyTotalPostedScore)))
+        rows.append(Row(label: "Total posted score", value: String(stats.dailyTotalPostedScore), icon: "sum"))
         return rows
     }
 

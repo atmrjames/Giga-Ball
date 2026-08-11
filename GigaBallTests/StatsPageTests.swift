@@ -144,6 +144,48 @@ final class StatsPageTests: XCTestCase {
         XCTAssertEqual(StatsPage.playTime(7_200), "2 hours")
     }
 
+    // MARK: - Row icons
+
+    /// A symbol name that does not resolve draws nothing at all - it does not fail - so the
+    /// only way this is caught is by asking for the image.
+    ///
+    /// This walks a file with every mode played, because a row that is never built is a row
+    /// whose icon is never checked.
+    func testEveryRowIconResolves() {
+        let stats = TotalStats()
+        stats.levelsPlayed = 6
+        stats.levelsCompleted = 4
+        stats.lasersFired = 3
+        stats.endlessModeHeight = [20]
+        stats.endlessIIModeHeight = [30]
+        var day = DailyChallengeRecord(dateKey: "2026-08-10")
+        day.firstAttemptScore = 900
+        day.posted = true
+        stats.dailyChallengeRecords = [day]
+
+        var checked = 0
+        for tab in StatsPage.Tab.allCases {
+            for row in StatsPage.rows(for: tab, stats: stats) {
+                guard let icon = row.icon else { continue }
+                XCTAssertNotNil(UIImage(systemName: icon), "\(row.label): \(icon)")
+                checked += 1
+            }
+        }
+        XCTAssertGreaterThan(checked, 25, "most of the page should be carrying an icon")
+    }
+
+    func testEveryRowThatSaysSomethingCarriesAnIcon() {
+        // Except the empty state, which is a sentence rather than a statistic
+        let stats = TotalStats()
+        stats.levelsPlayed = 6
+        for tab in [StatsPage.Tab.overall, .classic] {
+            for row in StatsPage.rows(for: tab, stats: stats) {
+                XCTAssertNotNil(row.icon, row.label)
+            }
+        }
+        XCTAssertNil(StatsPage.nothingYet.icon)
+    }
+
     func testEveryTabHasATitleShortEnoughToSitFiveAcross() {
         for tab in StatsPage.Tab.allCases {
             XCTAssertFalse(tab.title.isEmpty, "\(tab)")

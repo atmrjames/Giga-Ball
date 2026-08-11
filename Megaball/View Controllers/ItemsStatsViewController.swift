@@ -130,10 +130,23 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             return entry.facts.count
         }
         if sender == "Power-Ups" {
-            return 5
+            return mayhemOnlyPowerUp ? 6 : 5
+            // The sixth row is the "Found in" line, and it only exists for the power-ups that
+            // are not found everywhere. Counted rather than added and hidden, because a hidden
+            // row on this screen works by zeroing the whole table's row height
         } else {
             return 1
         }
+    }
+
+    /// Whether the power-up being shown only exists in Endless Mayhem.
+    ///
+    /// The list page marks these with the mode's mark; this page has room to say it in words,
+    /// which is the division the brick types page already draws - a badge in the list, the
+    /// sentence on the page you open.
+    private var mayhemOnlyPowerUp: Bool {
+        guard sender == "Power-Ups", let index = passedIndex else { return false }
+        return LevelPackSetup().isEndlessIIPowerUp(index)
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -206,6 +219,12 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 let collectionRateString = String(format:"%.0f", collectionRate)
                 // Double to string conversion to 1 decimal place
                 cell.statValue.text = String(collectionRateString)+"%"
+                return cell
+            case 5:
+                cell.statDescription.text = "Found in"
+                cell.statValue.text = GameMode.endlessII.name
+                // The mode's name is asked of GameMode rather than written here, so this line
+                // was already correct on the day "Endless 2.0" became "Endless Mayhem"
                 return cell
             default:
                 return cell
