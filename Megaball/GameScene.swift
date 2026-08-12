@@ -1074,6 +1074,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe]
 		// Power up texture array
+
+		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
+		// **The spawn hitch** (play-test round 84: "I notice it when a power-up starts
+		// falling"). `SKTexture(imageNamed:)` does not read anything: it holds a name, and
+		// the file is loaded and decoded the first time the texture is *drawn* - which is
+		// the frame the power-up appears, on the main thread, in the middle of a bounce.
+		// Fifty-one of them, so it happens again for every type the run has not shown yet,
+		// which is exactly why it feels occasional rather than constant.
+		//
+		// Preloading moves that work off the render path. The completion is empty on
+		// purpose: nothing waits for it, and a drop landing before it finishes simply
+		// decodes the way it always did.
+
+		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
+		// **The spawn hitch** (play-test round 84: "I notice it when a power-up starts
+		// falling"). `SKTexture(imageNamed:)` does not read anything: it holds a name, and
+		// the file is loaded and decoded the first time the texture is *drawn* - which is
+		// the frame the power-up appears, on the main thread, in the middle of a bounce.
+		// Fifty-one of them, so it happens again for every type the run has not shown yet,
+		// which is exactly why it feels occasional rather than constant.
+		//
+		// Preloading moves that work off the render path. The completion is empty on
+		// purpose: nothing waits for it, and a drop landing before it finishes simply
+		// decodes the way it always did.
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
 		scoreBacker = self.childNode(withName: "scoreBacker") as! SKSpriteNode
