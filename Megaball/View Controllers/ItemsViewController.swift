@@ -346,7 +346,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
+                    cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
                      cell.iconImage.image = UIImage(named:"ButtonNull")
                 case 2:
@@ -366,7 +366,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             
                 switch indexPath.row {
                 case 0:
-                    cell.iconImage.image = UIImage(named:"ButtonClose")
+                    cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
                     cell.iconImage.image = UIImage(named:"ButtonNull")
                 case 2:

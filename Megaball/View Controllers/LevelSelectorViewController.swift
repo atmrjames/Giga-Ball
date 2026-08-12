@@ -304,6 +304,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         switch indexPath.row {
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
+            cell.applyGlass(symbol: "xmark")
         case 1:
             cell.iconImage.image = UIImage(named:"ButtonPlay")
             cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
@@ -355,7 +356,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted")
+                    cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
@@ -385,7 +386,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
                 switch indexPath.row {
                 case 0:
-                    cell.iconImage.image = UIImage(named:"ButtonClose")
+                    cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
                     cell.iconImage.image = UIImage(named:"ButtonPlay")
                 case 2:

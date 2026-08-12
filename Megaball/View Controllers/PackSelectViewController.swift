@@ -338,6 +338,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         switch indexPath.row {
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose.png")
+            cell.applyGlass(symbol: "xmark")
         case 1:
             cell.iconImage.image = UIImage(named:"ButtonNull.png")
             // Empty on purpose, for the second time. A play button here was tried in round
@@ -403,7 +404,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                    cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
                 case 1:
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 case 2:
@@ -428,7 +429,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                 cell.view.transform = .identity
                 switch indexPath.row {
                 case 0:
-                    cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                    cell.setPressedArtwork(UIImage(named:"ButtonClose.png"))
                 case 1:
                     cell.iconImage.image = UIImage(named:"ButtonNull.png")
                 case 2:

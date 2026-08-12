@@ -140,6 +140,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
         cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        cell.applyGlass(symbol: "xmark")
         
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
@@ -161,7 +162,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
             }
         }
     }
@@ -170,7 +171,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonClose.png"))
             }
         }
     }

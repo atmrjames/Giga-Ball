@@ -37,6 +37,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         modeSelectTableView.delegate = self
         modeSelectTableView.dataSource = self
         modeSelectTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
+        fitTableToItsTwoRows()
         
         backCollectionView.delegate = self
         backCollectionView.dataSource = self
@@ -58,6 +59,35 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
 
     
+    /// Grows the table to exactly the two rows it will ever hold.
+    ///
+    /// The storyboard sizes it at 140, which was two rows of 70. Glass rows are 78, so the
+    /// second one no longer fitted and a two-item chooser acquired a scroll bar. The height
+    /// is read off the row height rather than written as a number, so the next time the row
+    /// changes size this follows it instead of quietly needing a scroll again.
+    ///
+    /// The label above moves up by the same amount, so the block keeps the spacing it was
+    /// drawn with rather than closing the gap to the text.
+    private func fitTableToItsTwoRows() {
+        let wanted = SettingsTableViewCell.glassRowHeight*2
+        guard let height = modeSelectTableView.constraints.first(where: {
+            $0.firstAttribute == .height && $0.secondItem == nil
+        }) else { return }
+        let grew = wanted - height.constant
+        guard grew > 0 else { return }
+        height.constant = wanted
+        modeSelectTableView.isScrollEnabled = false
+        // Nothing left to scroll, and a table that can still be dragged over its own content
+        // bounces in a way that reads as a bug on a screen holding two choices
+
+        guard let parent = modeSelectTableView.superview else { return }
+        for constraint in parent.constraints
+        where constraint.firstItem === modeSelectTableView && constraint.firstAttribute == .top {
+            constraint.constant -= grew
+            break
+        }
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 2
     }
@@ -83,8 +113,13 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             cell.setIcon(UIImage(named:"iconPlayLevel"), recolour: true)
             cell.settingDescription.text = "Play single level only"
         } else {
-            cell.setIcon(LevelPackSetup().packIcon(levelPack!), recolour: false)
-            // Pack art, not a glyph
+            cell.setIcon(LevelPackSetup().packIcon(levelPack!), recolour: true)
+            // Recoloured after all (round 66). Round 64 called this pack art and left it
+            // alone, which was right about pack *thumbnails* and wrong about these: the pack
+            // icons are flat single-colour glyphs like the interface ones, so Space Pack's
+            // moon was a dark purple mark on a dark row. The screenshot is the only way this
+            // distinction is ever going to be got right - the two kinds of image are told
+            // apart by looking at them
             // The list of pack icons lives with the pack names in LevelPackSetup - it used to
             // be written out here as well, and in the pack screen, which is two more places to
             // miss when a pack's art is redrawn

@@ -75,6 +75,14 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
                                       pointSize: 20, weight: .bold))?
             .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
         iconImage.contentMode = .center
+        iconImage.layer.masksToBounds = true
+        // **The belt to `setPressedArtwork`'s braces** (round 66). `.center` draws whatever
+        // image it is given at that image's natural size, and the close artwork is a 210pt
+        // asset - so any screen that assigns `iconImage.image` directly, as one still was,
+        // paints a 210pt picture out of a 40pt button and across the screen. `awakeFromNib`
+        // turns masking off for the glyph shadow; a glass button has no glyph shadow to
+        // protect, so it can afford to clip, and clipping makes the spill impossible rather
+        // than merely absent from the call sites anybody remembered to change
         // **`.center`, not `.scaleAspectFit`** (round 61). Aspect-fit scales *up* as well as
         // down, so the symbol was being blown up to fill a 40pt image view whatever point size
         // it was made at - which is why round 59's drop from 17pt to 13pt changed nothing and
@@ -114,6 +122,7 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // and only some of them are glass - a leftover disc behind a PNG would be a halo
         // round a button that never asked for one
         iconImage.contentMode = .scaleAspectFit
+        iconImage.layer.masksToBounds = false
         // **The nib's mode, put back** (round 65). `applyGlass` switches this to `.center` so
         // the SF Symbol draws at its own point size - and `.center` draws *any* image at its
         // natural size. `ButtonNull` is a 210pt asset, `clipsToBounds` is off on this cell for
