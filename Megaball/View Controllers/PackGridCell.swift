@@ -160,11 +160,23 @@ final class PackGridCell: UICollectionViewCell {
 
     /// Fills the cell in. Everything it can show is set on every pass, including the things
     /// being switched off, because a reused cell arrives wearing the last pack's state.
+    /// - Parameters:
+    ///   - unlocked: a locked square shows the padlock and dims, and `name` is then the
+    ///     sentence saying how to unlock it rather than the thing's name.
+    ///   - completed: the tick in the corner. A pack that has been finished on the pack
+    ///     screen; the one you are wearing on the App Icons and theme grids - the same mark
+    ///     for the same idea, which is "this one is done with".
+    ///   - recolour: whether the icon is a flat glyph to be drawn in the square's own
+    ///     foreground colour. True for pack icons; **false for app icons and ball themes,
+    ///     which are pictures** - templating one throws away the very thing being chosen and
+    ///     leaves a white silhouette. The same distinction `setIcon(_:recolour:)` makes on
+    ///     the rows, and the same reason it has no default: it can only be got right by
+    ///     looking at the artwork.
     func show(name packName: String, icon packIcon: UIImage?,
-              unlocked: Bool, completed: Bool) {
+              unlocked: Bool, completed: Bool, recolour: Bool = true) {
         name.text = packName
         icon.image = unlocked
-            ? (isGlass ? packIcon?.withRenderingMode(.alwaysTemplate) : packIcon)
+            ? (isGlass && recolour ? packIcon?.withRenderingMode(.alwaysTemplate) : packIcon)
             : nil
         icon.tintColor = mark()
         // Template-rendered on glass. A pack icon is a flat mark in the app's dark purple,
@@ -173,7 +185,9 @@ final class PackGridCell: UICollectionViewCell {
         icon.isHidden = unlocked == false
         lock.isHidden = unlocked
         tick.isHidden = completed == false || unlocked == false
-        play.isHidden = unlocked == false
+        play.isHidden = unlocked == false || onOpenList == nil
+        // No handler, no button. The App Icons and theme grids reuse this square and have
+        // nothing behind a list - and a control that does nothing is worse than no control
 
         // A locked pack's name is the sentence saying how to unlock it, which is longer than a
         // pack name and needs the smaller type and the third line to fit the square

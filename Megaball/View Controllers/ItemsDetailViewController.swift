@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigable, MenuNavigationPresenter {
+class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, MenuNavigable, MenuNavigationPresenter {
     
     /// The mark on a power-up that only exists in Endless Mayhem.
     ///
@@ -143,6 +143,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Collection view setup
         
         
+        buildGridIfWanted()
+
         itemsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         (itemsTableView as? ContentAwareTableView)?.stickyHeaderBand =
             showsRecentsSection ? 30 : 0
@@ -154,6 +156,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             addParallax()
         }
         itemsTableView.reloadData()
+        grid?.reloadData()
         backButtonCollectionView.reloadData()
         showAnimate()
     }
@@ -161,6 +164,88 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        grid?.collectionViewLayout.invalidateLayout()
+        // The square's size is worked out from the collection view's own width, and
+        // `limitMenuContentSize` may have just changed it
+    }
+
+    // MARK: - The grid
+
+    /// Which of this screen's four lists are squares rather than rows.
+    ///
+    /// The two that are a *choice between pictures* - which app icon you wear, which ball
+    /// and paddle you play with. A grid shows eleven of them at once where a list showed
+    /// four, and the thing being chosen is the picture, so the picture should be the cell
+    /// (play-test round 77). The power-up and achievement lists stay rows for now: they are
+    /// read rather than chosen from, and their words do not fit in a square.
+    var usesGrid: Bool { senderID == 0 || senderID == 1 }
+
+    private var grid: UICollectionView?
+
+    /// Builds the grid over the table, and takes the table out of the way.
+    ///
+    /// In code rather than in the storyboard, because the scene serves four lists and only
+    /// two of them want this - a second collection view in the nib would be a view every
+    /// screen carries and two use. It borrows the table's own frame, so the screen's layout
+    /// stays the storyboard's business.
+    private func buildGridIfWanted() {
+        guard usesGrid else { return }
+
+        let layout = UICollectionViewFlowLayout()
+        layout.minimumInteritemSpacing = PackSelectViewController.gridGap
+        layout.minimumLineSpacing = PackSelectViewController.gridGap
+
+        let view = ContentAwareCollectionView(frame: .zero, collectionViewLayout: layout)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = .clear
+        view.delegate = self
+        view.dataSource = self
+        view.register(PackGridCell.self, forCellWithReuseIdentifier: PackGridCell.reuseIdentifier)
+        itemsView.addSubview(view)
+        grid = view
+
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: itemsTableView.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: itemsTableView.trailingAnchor),
+            view.topAnchor.constraint(equalTo: itemsTableView.topAnchor),
+            view.bottomAnchor.constraint(equalTo: itemsTableView.bottomAnchor),
+        ])
+        itemsTableView.isHidden = true
+    }
+
+    /// What one square holds, whichever of the two lists it belongs to.
+    ///
+    /// Both are the same shape - a picture, a name, whether it is unlocked and whether it is
+    /// the one in use - so they are answered together rather than in two branches that would
+    /// drift apart.
+    private func gridItem(at index: Int) -> (name: String, icon: UIImage?, unlocked: Bool, chosen: Bool) {
+        let setup = LevelPackSetup()
+        if senderID == 0 {
+            let unlocked = totalStatsArray[0].appIconUnlockedArray[index]
+            return (unlocked ? setup.appIconDisplayNameArray[index] : appIconUnlockHint(index),
+                    setup.appIconImageArray[index], unlocked, appIconSetting == index)
+        }
+        let unlocked = totalStatsArray[0].themeUnlockedArray[index]
+        return (unlocked ? setup.themeNameArray[index] : themeUnlockHint(index),
+                setup.themeIconArray[index], unlocked, ballSetting == index)
+    }
+
+    /// The sentence a locked square says instead of its name.
+    ///
+    /// The pack's name only appears once that pack is somewhere the player can actually go -
+    /// naming a pack they cannot reach is a spoiler and an instruction they cannot follow.
+    private func appIconUnlockHint(_ index: Int) -> String {
+        totalStatsArray[0].levelPackUnlockedArray.indices.contains(index+1)
+            && totalStatsArray[0].levelPackUnlockedArray[index+1]
+            ? LevelPackSetup().unlockedDescriptionArray[index]
+            : "Complete Pack \(index) to unlock"
+    }
+
+    private func themeUnlockHint(_ index: Int) -> String {
+        totalStatsArray[0].levelPackUnlockedArray.indices.contains(index+1)
+            && totalStatsArray[0].levelPackUnlockedArray[index+1]
+            ? LevelPackSetup().unlockedDescriptionArray[index]
+            : "Complete Pack \(index) to unlock"
     }
 
     
@@ -197,6 +282,41 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         showsRecentsSection ? 30 : 0
+    }
+
+    // MARK: - The grid's data
+
+    func collectionView(_ collectionView: UICollectionView,
+                        numberOfItemsInSection section: Int) -> Int {
+        guard collectionView == grid else { return 1 }
+        // One is the back button row's, which shares these delegate methods with the grid
+        return senderID == 0
+            ? totalStatsArray[0].appIconUnlockedArray.count
+            : totalStatsArray[0].themeUnlockedArray.count
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        guard collectionView == grid else { return CGSize(width: 50, height: 50) }
+        let columns: CGFloat = 3
+        let gap = PackSelectViewController.gridGap
+        let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
+        let width = max(1, ((available - gap*(columns - 1))/columns).rounded(.down))
+        return CGSize(width: width, height: width)
+        // Floored, and square, for the two reasons the pack screen's own comment gives -
+        // an exact division silently drops to two columns, and a stretched card is just
+        // more empty card
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        insetForSectionAt section: Int) -> UIEdgeInsets {
+        guard collectionView == grid else { return .zero }
+        return UIEdgeInsets(top: UIViewController.menuListBreathingRoom.top,
+                            left: PackSelectViewController.gridInset,
+                            bottom: UIViewController.menuListBreathingRoom.bottom,
+                            right: PackSelectViewController.gridInset)
+        // The same air round 74 gave every list, which a collection view takes as a section
+        // inset rather than as a content inset
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -518,11 +638,19 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         })
     }
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        1
-    }
-    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if collectionView == grid {
+            let square = collectionView.dequeueReusableCell(
+                withReuseIdentifier: PackGridCell.reuseIdentifier,
+                for: indexPath) as! PackGridCell
+            let item = gridItem(at: indexPath.item)
+            square.show(name: item.name, icon: item.icon,
+                        unlocked: item.unlocked, completed: item.chosen, recolour: false)
+            // Both of these lists are pictures - an app icon and a ball-and-paddle theme -
+            // and the picture is the thing being chosen
+            return square
+        }
+
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
         
         cell.frame.size.height = 50
@@ -538,13 +666,49 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if collectionView == grid {
+            chooseGridItem(at: indexPath.item)
+            collectionView.deselectItem(at: indexPath, animated: true)
+            collectionView.reloadData()
+            return
+        }
+
         menuNavigationGoBack()
         
         collectionView.deselectItem(at: indexPath, animated: true)
         collectionView.reloadData()
     }
+
+    /// Wears the chosen icon, or the chosen ball and paddle.
+    ///
+    /// Exactly what the rows did, moved rather than rewritten - including doing nothing at
+    /// all for a locked square, which is the difference between a grid you can look at and
+    /// one that lets you equip something you have not earned.
+    private func chooseGridItem(at index: Int) {
+        if senderID == 0 {
+            guard totalStatsArray[0].appIconUnlockedArray[index] else { return }
+            appIconSetting = index
+            defaults.set(appIconSetting, forKey: "appIconSetting")
+            changeIcon(to: LevelPackSetup().appIconNameArray[index])
+            return
+        }
+        guard totalStatsArray[0].themeUnlockedArray[index] else { return }
+        ballSetting = index
+        paddleSetting = index
+        brickSetting = index == 11 ? 1 : 0
+        // The eleventh theme brings its own bricks with it, which is the one exception the
+        // row version carried and the only reason this is not a straight assignment to zero
+        defaults.set(ballSetting, forKey: "ballSetting")
+        defaults.set(paddleSetting, forKey: "paddleSetting")
+        defaults.set(brickSetting, forKey: "brickSetting")
+    }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        guard collectionView == backButtonCollectionView else {
+            (collectionView.cellForItem(at: indexPath) as? PackGridCell)?
+                .setPressed(true)
+            return
+        }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
@@ -557,6 +721,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        guard collectionView == backButtonCollectionView else {
+            (collectionView.cellForItem(at: indexPath) as? PackGridCell)?
+                .setPressed(false)
+            return
+        }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity

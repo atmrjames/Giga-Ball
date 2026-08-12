@@ -268,7 +268,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                             bottom: 0, right: PackSelectViewController.gridInset)
     }
 
-    private static let gridInset: CGFloat = 20
+    static let gridInset: CGFloat = 20
     static let gridGap: CGFloat = 10
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
