@@ -5936,7 +5936,22 @@ laserTimer?.invalidate()
 		
 		clearSavedGame()
 		// If restarting after resuming, make sure the correct level is selected
-		
+
+		clearPlacedDigits(from: scoreLabel)
+		write(endlessMode ? "0m" : "0", into: scoreLabel)
+		lastScoreMilestone = 0
+		lastHeightMilestone = 0
+		// **The old run's number, taken off before the new one starts.** `write` hangs a strip
+		// of per-character nodes off the label and blanks the label's own text, and nothing on
+		// the restart path wrote to it again - so the previous run's height stayed on screen
+		// until the first brick of the new run happened to call `showHeightLabel` (play-test
+		// round 39: "the old game's score is still visible until the first brick is hit").
+		// Reset here rather than left to the first update, because a restart always begins at
+		// zero and the HUD should say so before the ball is launched, not after.
+		//
+		// The milestone watermarks go with it, or the first thousand of the new run passes
+		// unremarked because the old run had already passed it
+
         gameState.enter(PreGame.self)
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
