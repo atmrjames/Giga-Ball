@@ -191,23 +191,22 @@ extension UIViewController {
             button.setImage(UIImage(systemName: "play.fill",
                                     withConfiguration: UIImage.SymbolConfiguration(
                                         pointSize: 25, weight: .black)), for: .normal)
-            // Pure white and a heavier weight at a slightly smaller size. Off-white on a clear
-            // material picked up the material's own tint and went muddy; white has nothing to
-            // dilute. The extra weight is what makes a glyph read as *drawn* on glass rather
-            // than floating behind it
-            // **The glyph goes light on glass, and dark on the disc.** Glass over these dark
-            // menus settles dark and translucent, so the deep purple the button has always
-            // worn all but disappeared into it (play-test round 53). This is the off-white the
-            // *disc* used to be - the contrast simply moves from the circle to the mark on it,
-            // which is what a glass control is: the shape stops being the thing you read and
-            // the glyph starts being it
-            let effect = UIGlassEffect(style: .clear)
+            // **The glyph goes light on glass, and dark on the disc** (round 53). Glass over
+            // these dark menus settles dark and translucent, so the deep purple the button
+            // always wore all but disappeared into it. White at a heavier weight reads as
+            // *drawn on* the glass rather than floating behind it
+
+            let effect = UIGlassEffect(style: .regular)
             effect.isInteractive = true
-            // `.clear` rather than `.regular`: the regular material is frosted, and frosting a
-            // 75pt disc over a dark menu is most of what read as blur (play-test round 54).
-            // Clear keeps the refraction and the edge light and drops the diffusion, which is
-            // the crisp half of the look. Interactive because it *is* a control - it should
-            // respond to a press the way every other glass control on the system does
+            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.55)
+            // **Back to `.regular`, and tinted** (round 55). Round 54 blamed the frosting for
+            // the blur and went to `.clear`; the blur was really the clipping, fixed in the
+            // same round, and `.clear` over a dark menu then drew its specular rim at full
+            // contrast - a hard white ring. The frosted material carries a softer edge, and
+            // the app's own deep purple at just over half strength sits the whole disc nearer
+            // the background it floats on, so the rim reads as a highlight rather than a
+            // border. Two dials rather than one: the material decides how soft the edge is,
+            // the tint decides how far it stands off the background
 
             let glass = UIVisualEffectView(effect: effect)
             glass.isUserInteractionEnabled = false
