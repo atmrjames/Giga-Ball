@@ -191,7 +191,10 @@ class SettingsTableViewCell: UITableViewCell {
         // without this, switching a tab measured the panel against the *previous* tab's
         // rows and every tab wore the first one's height (round 72)
 
-        let slack = max(0, view.bounds.height - view.contentSize.height)
+        let padded = view.contentSize.height + view.contentInset.top + view.contentInset.bottom
+        let slack = max(0, view.bounds.height - padded)
+        // Counting the padding keeps the panel wrapped around the rows rather than cutting
+        // the last one off - and it gives the card a little air inside its own edges
         guard abs(bottom.constant + slack) > 0.5 else { return }
         // Only when it actually moves. This runs on every layout pass, and changing a
         // constant unconditionally would ask for another one straight back

@@ -29,7 +29,11 @@ extension UIScrollView {
         // list whose rows were all visible still had a few points of scroll in it - and
         // with alwaysBounceVertical set in the storyboard, that read as a list that
         // scrolls for no reason.
-        let overflows = contentSize.height > bounds.height + 0.5
+        let overflows = contentSize.height + contentInset.top + contentInset.bottom
+            > bounds.height + 0.5
+        // The padding at each end is content as far as fitting is concerned - without
+        // counting it, a list padded to just past the bottom of the screen would decide it
+        // fitted and refuse to scroll to its own last row (round 74)
 
         isScrollEnabled = overflows
         showsVerticalScrollIndicator = overflows
