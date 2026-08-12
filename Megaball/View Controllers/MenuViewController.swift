@@ -322,11 +322,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+            cell.setButton("ButtonInfo.png")
         case 1:
             cell.iconImage.image = nil
         case 2:
-            cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+            cell.setButton("ButtonSettings.png")
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -363,14 +363,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
+                    cell.setButton("ButtonInfoHighlighted.png")
                 case 1:
                     cell.iconImage.image = nil
                 case 2:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+                    cell.setButton("ButtonSettingsHighlighted.png")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -386,11 +386,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             
                 switch indexPath.row {
                 case 0:
-                    cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+                    cell.setButton("ButtonInfo.png")
                 case 1:
                     cell.iconImage.image = nil
                 case 2:
-                    cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                    cell.setButton("ButtonSettings.png")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break

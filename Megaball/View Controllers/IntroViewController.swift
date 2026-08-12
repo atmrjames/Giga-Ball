@@ -64,8 +64,7 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
         cell.frame.size.height = 50
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
-        cell.iconImage.image = UIImage(named:"ButtonClose.png")
-        cell.applyGlass(symbol: "xmark")
+        cell.setButton("ButtonClose.png")
         
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity

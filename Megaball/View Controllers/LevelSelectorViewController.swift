@@ -303,18 +303,17 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose")
-            cell.applyGlass(symbol: "xmark")
+            cell.setButton("ButtonClose")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonPlay")
+            cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
             cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
             // Big and centred, like every other screen (play-test round 4): the button
             // that starts the pack is the one worth the room
         case 2:
             if gameCenterSetting {
-                cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                cell.setButton("ButtonLeaderboard")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull")
+                cell.setButton("ButtonNull")
             }
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
@@ -361,15 +360,15 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
+                    cell.setButton("ButtonPlayHighlighted")
                 case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                        cell.setButton("ButtonLeaderboardHighlighted")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                        cell.setButton("ButtonNull")
                     }
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
@@ -388,12 +387,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
-                    cell.iconImage.image = UIImage(named:"ButtonPlay")
+                    cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
                 case 2:
                     if self.gameCenterSetting {
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                        cell.setButton("ButtonLeaderboard")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                        cell.setButton("ButtonNull")
                     }
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")

@@ -203,16 +203,15 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose")
-            cell.applyGlass(symbol: "xmark")
+            cell.setButton("ButtonClose")
         case 1:
             if gameCenterSetting {
-                cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                cell.setButton("ButtonLeaderboard")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull")
+                cell.setButton("ButtonNull")
             }
         case 2:
-            cell.iconImage.image = UIImage(named:"ButtonNull")
+            cell.setButton("ButtonNull")
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -254,12 +253,12 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                        cell.setButton("ButtonLeaderboardHighlighted")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                        cell.setButton("ButtonNull")
                     }
                 case 2:
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.setButton("ButtonNull")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -278,12 +277,12 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
                     if self.gameCenterSetting {
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                        cell.setButton("ButtonLeaderboard")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                        cell.setButton("ButtonNull")
                     }
                 case 2:
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.setButton("ButtonNull")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break

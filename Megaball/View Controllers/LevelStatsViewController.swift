@@ -165,22 +165,21 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose")
-            cell.applyGlass(symbol: "xmark")
+            cell.setButton("ButtonClose")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonPlay")
+            cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
             cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
             // The big play button belongs in the middle - X left, leaderboard right, the
             // same order the pause menu reads in
         case 2:
             if packNumber == 1 {
                 if gameCenterSetting {
-                    cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                    cell.setButton("ButtonLeaderboard")
                 } else {
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.setButton("ButtonNull")
                 }
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull")
+                cell.setButton("ButtonNull")
             }
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
@@ -234,15 +233,15 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = UIImage(named:"ButtonPlayHighlighted")
+                    cell.setButton("ButtonPlayHighlighted")
                 case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted")
+                        cell.setButton("ButtonLeaderboardHighlighted")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                        cell.setButton("ButtonNull")
                     }
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
@@ -261,12 +260,12 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
-                    cell.iconImage.image = UIImage(named:"ButtonPlay")
+                    cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
                 case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard")
+                        cell.setButton("ButtonLeaderboard")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull")
+                        cell.setButton("ButtonNull")
                     }
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")

@@ -306,14 +306,13 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose")
-            cell.applyGlass(symbol: "xmark")
+            cell.setButton("ButtonClose")
             // The first small glass button (round 58). Does nothing below iOS 26, where the
             // PNG set just above it stands
         case 1:
-             cell.iconImage.image = UIImage(named:"ButtonNull")
+             cell.setButton("ButtonNull")
         case 2:
-            cell.iconImage.image = UIImage(named:"ButtonNull")
+            cell.setButton("ButtonNull")
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -348,9 +347,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
-                     cell.iconImage.image = UIImage(named:"ButtonNull")
+                     cell.setButton("ButtonNull")
                 case 2:
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.setButton("ButtonNull")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -368,9 +367,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.setButton("ButtonNull")
                 case 2:
-                    cell.iconImage.image = UIImage(named:"ButtonNull")
+                    cell.setButton("ButtonNull")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break

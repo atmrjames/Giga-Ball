@@ -272,6 +272,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         // Default constraints setting
 
         homeButton.isHidden = sender != "Pause"
+        applyRoundGlass(to: homeButton, radius: 25, symbol: "house.fill",
+                        pointSize: 20, rimmed: false)
+        // The last PNG button on this screen. No rim at 50pt, and the helper is a no-op the
+        // second time round, so it does not matter that this runs on every appearance
         // Home is in the top-left corner *while paused*, where it is out of the way: it ends
         // the run, and it sat beside Play where it was the one press nobody wants to make by
         // accident. The row below is then Information, Play and Settings - two small buttons
@@ -611,29 +615,30 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         switch indexPath.row {
         case 0:
             if self.sender == "Pause" {
-                cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+                cell.setButton("ButtonInfo.png")
             } else if isDailyChallenge {
-                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                cell.setButton("ButtonNull.png")
             } else {
-                cell.iconImage.image = UIImage(named: endlessGameOver
-                                               ? "ButtonHome.png" : "ButtonRestart.png")
+                cell.setButton(endlessGameOver ? "ButtonHome" : "ButtonRestart")
             }
             cell.widthConstraint.constant = 40
         case 1:
             cell.widthConstraint.constant = 75
             if self.sender == "Pause" {
-                cell.iconImage.image = UIImage(named:"ButtonPlay.png")
+                cell.setButton("ButtonPlay.png", pointSize: 28, rimmed: true)
+                // 75pt here, so the same glyph size and the same rim as the return-to-game
+                // play on the menus - two buttons that do the same thing should not be two
+                // different materials
             } else {
-                cell.iconImage.image = UIImage(named: endlessGameOver
-                                               ? "ButtonRestart.png" : "ButtonHome.png")
+                cell.setButton(endlessGameOver ? "ButtonRestart" : "ButtonHome")
             }
         case 2:
             if self.sender == "Pause" {
-                cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                cell.setButton("ButtonSettings.png")
             } else if dailyGameOver {
-                cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+                cell.setButton("ButtonLeaderboard.png")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                cell.setButton("ButtonNull.png")
                 // The endless run's detail moved to the More Stats… button under the
                 // stats list (play-test round 11) - the rosette here said nothing
             }
@@ -710,35 +715,34 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonInfoHighlighted.png")
+                        cell.setButton("ButtonInfoHighlighted.png")
                     } else if self.isDailyChallenge {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                        cell.setButton("ButtonNull.png")
                     } else {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonRestartHighlighted.png")
+                        cell.setButton("ButtonRestartHighlighted.png")
                     }
                 case 1:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
                     }
-                    cell.iconImage.image = self.sender == "Pause"
-                        ? UIImage(named:"ButtonPlayHighlighted.png")
-                        : UIImage(named:"ButtonHomeHighlighted.png")
+                    cell.setButton(self.sender == "Pause"
+                                   ? "ButtonPlayHighlighted.png" : "ButtonHomeHighlighted.png")
                 case 2:
                     if self.sender == "Pause" {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonSettingsHighlighted.png")
+                        cell.setButton("ButtonSettingsHighlighted.png")
                     } else if self.dailyGameOver {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted.png")
+                        cell.setButton("ButtonLeaderboardHighlighted.png")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                        cell.setButton("ButtonNull.png")
                     }
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
@@ -758,23 +762,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 switch indexPath.row {
                 case 0:
                     if self.sender == "Pause" {
-                        cell.iconImage.image = UIImage(named:"ButtonInfo.png")
+                        cell.setButton("ButtonInfo.png")
                     } else if self.isDailyChallenge {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                        cell.setButton("ButtonNull.png")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonRestart.png")
+                        cell.setButton("ButtonRestart.png")
                     }
                 case 1:
-                    cell.iconImage.image = self.sender == "Pause"
-                        ? UIImage(named:"ButtonPlay.png")
-                        : UIImage(named:"ButtonHome.png")
+                    cell.setButton(self.sender == "Pause"
+                                   ? "ButtonPlay.png" : "ButtonHome.png")
                 case 2:
                     if self.sender == "Pause" {
-                        cell.iconImage.image = UIImage(named:"ButtonSettings.png")
+                        cell.setButton("ButtonSettings.png")
                     } else if self.dailyGameOver {
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+                        cell.setButton("ButtonLeaderboard.png")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                        cell.setButton("ButtonNull.png")
                     }
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")

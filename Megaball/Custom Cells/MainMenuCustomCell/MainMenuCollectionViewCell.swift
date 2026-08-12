@@ -45,7 +45,39 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     /// proportionally far more rim than material than a 75pt one, so the same tint reads as a
     /// bolder edge on the smaller button - the constant has to scale with the shape or the two
     /// look like different materials.
-    func applyGlass(symbol: String) {
+    /// Which system glyph stands in for each of the PNG buttons.
+    ///
+    /// A button can only be glass if its mark can be drawn separately from its disc, and the
+    /// artwork welds the two together - so this table is the whole roll-out. A name absent
+    /// from it keeps its PNG, which is how `ButtonNull` stays the invisible spacer it is
+    /// rather than acquiring a disc of its own.
+    static let systemGlyph: [String: String] = [
+        "ButtonClose": "xmark",
+        "ButtonInfo": "info",
+        "ButtonSettings": "gearshape.fill",
+        "ButtonPlay": "play.fill",
+        "ButtonRestart": "arrow.clockwise",
+        "ButtonHome": "house.fill",
+        "ButtonLeaderboard": "trophy.fill",
+    ]
+
+    /// Sets a button by its artwork name, glassing it where a system glyph will stand in.
+    ///
+    /// The PNG is assigned first and then replaced, so a device below iOS 26 keeps exactly
+    /// the button it has always had. A cell already wearing glass ignores the call entirely,
+    /// which is what makes the pressed-state artwork a no-op without every screen having to
+    /// remember that - and forgetting it is precisely what painted a 210pt image across the
+    /// screen for three rounds.
+    func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
+        guard isGlass == false else { return }
+        iconImage.image = UIImage(named: named)
+        let base = named.replacingOccurrences(of: ".png", with: "")
+                        .replacingOccurrences(of: "Highlighted", with: "")
+        guard let symbol = MainMenuCollectionViewCell.systemGlyph[base] else { return }
+        applyGlass(symbol: symbol, pointSize: pointSize, rimmed: rimmed)
+    }
+
+    func applyGlass(symbol: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
         guard #available(iOS 26.0, *) else { return }
         guard glassView == nil else { return }
 
@@ -60,6 +92,14 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         glass.isUserInteractionEnabled = false
         glass.translatesAutoresizingMaskIntoConstraints = false
         glass.cornerConfiguration = .capsule()
+        if rimmed {
+            glass.layer.cornerRadius = 37.5
+            glass.layer.borderWidth = 2.5
+            glass.layer.borderColor = UIColor(white: 1, alpha: 0.20).cgColor
+        }
+        // The explicit rim the big return-to-game play wears, and only at that size: a 75pt
+        // disc has proportionally little edge for the material's own highlight to show on,
+        // where a 40pt one has plenty (rounds 60-61 are the argument, this is the reuse)
         view.insertSubview(glass, at: 0)
         glassView = glass
 
@@ -72,7 +112,7 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
 
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 20, weight: .bold))?
+                                      pointSize: pointSize, weight: .bold))?
             .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
         iconImage.contentMode = .center
         iconImage.layer.masksToBounds = true

@@ -185,11 +185,25 @@ extension UIViewController {
     /// Below iOS 26 it is the pale disc it has always been, which is not a compromise: the
     /// app supports iOS 15, and a button that is invisible on an older phone would be a
     /// regression dressed as a feature.
-    func applyRoundGlass(to button: UIButton, radius: CGFloat) {
+    /// - Parameters:
+    ///   - symbol: the system glyph. Defaults to the play this was written for; the pause
+    ///     screen's home button is the second caller and wants a house.
+    ///   - rimmed: whether to draw the explicit edge. Only the 75pt play needs it - a small
+    ///     disc has proportionally plenty of edge for the material's own highlight to show on.
+    func applyRoundGlass(to button: UIButton, radius: CGFloat,
+                         symbol: String = "play.fill", pointSize: CGFloat = 28,
+                         rimmed: Bool = true) {
+        guard button.subviews.contains(where: { $0 is UIVisualEffectView }) == false else {
+            return
+        }
+        // Applied once per button. The pause screen calls this from a method that runs on
+        // every appearance, and without this each visit would stack another material on the
+        // last until the disc was opaque
+
         if #available(iOS 26.0, *) {
-            let glyph = UIImage(systemName: "play.fill",
+            let glyph = UIImage(systemName: symbol,
                                 withConfiguration: UIImage.SymbolConfiguration(
-                                    pointSize: 28, weight: .black))?
+                                    pointSize: pointSize, weight: .black))?
                 .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
                 // Off-white rather than pure white, matching the small buttons' glyphs: white
                 // was right while the glyph had to fight a tinted material for attention, and
@@ -243,9 +257,11 @@ extension UIViewController {
             glass.isUserInteractionEnabled = false
             glass.translatesAutoresizingMaskIntoConstraints = false
             glass.cornerConfiguration = .capsule()
-            glass.layer.cornerRadius = radius
-            glass.layer.borderWidth = 2.5
-            glass.layer.borderColor = UIColor(white: 1, alpha: 0.20).cgColor
+            if rimmed {
+                glass.layer.cornerRadius = radius
+                glass.layer.borderWidth = 2.5
+                glass.layer.borderColor = UIColor(white: 1, alpha: 0.20).cgColor
+            }
             // Wider and dimmer (round 61). The two are independent now, which is the point of
             // a real border rather than a tint: width for *bigger*, alpha for *bolder*, and
             // this asks for more of the first and less of the second

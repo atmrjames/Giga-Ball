@@ -53,11 +53,24 @@ final class PackGridCell: UICollectionViewCell {
         build()
     }
 
+    /// Whether this cell wears glass, which every colour decision below has to ask.
+    private var isGlass = false
+    /// What a glass cell draws its marks in - the off-white the rest of the app's glass uses.
+    private static let onGlass = UIColor(white: 0.92, alpha: 1)
+
+    /// The colour a mark should be, given what it is sitting on.
+    private func mark(_ alpha: CGFloat = 1) -> UIColor {
+        (isGlass ? PackGridCell.onGlass : PackGridCell.ink).withAlphaComponent(alpha)
+    }
+
     private func build() {
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = PackGridCell.cardColour
         card.layer.cornerRadius = 12
         contentView.addSubview(card)
+        applyGlass()
+        if isGlass == false {
+            card.backgroundColor = PackGridCell.cardColour
+        }
 
         icon.translatesAutoresizingMaskIntoConstraints = false
         icon.contentMode = .scaleAspectFit
@@ -75,7 +88,7 @@ final class PackGridCell: UICollectionViewCell {
         name.adjustsFontSizeToFitWidth = true
         name.minimumScaleFactor = 0.7
         name.font = .systemFont(ofSize: 13, weight: .semibold)
-        name.textColor = PackGridCell.ink
+        name.textColor = mark()
         block.addArrangedSubview(name)
 
         tick.translatesAutoresizingMaskIntoConstraints = false
@@ -83,7 +96,7 @@ final class PackGridCell: UICollectionViewCell {
         tick.image = UIImage(systemName: "checkmark.circle.fill",
                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 17,
                                                                             weight: .bold))
-        tick.tintColor = PackGridCell.ink
+        tick.tintColor = mark()
         card.addSubview(tick)
 
         lock.translatesAutoresizingMaskIntoConstraints = false
@@ -91,7 +104,7 @@ final class PackGridCell: UICollectionViewCell {
         lock.image = UIImage(systemName: "lock.fill",
                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 22,
                                                                             weight: .bold))
-        lock.tintColor = PackGridCell.ink.withAlphaComponent(0.4)
+        lock.tintColor = mark(0.4)
         card.addSubview(lock)
 
         play.translatesAutoresizingMaskIntoConstraints = false
@@ -99,7 +112,7 @@ final class PackGridCell: UICollectionViewCell {
                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 15,
                                                                              weight: .bold)),
                       for: .normal)
-        play.tintColor = PackGridCell.ink
+        play.tintColor = mark()
         play.addTarget(self, action: #selector(listTapped), for: .touchUpInside)
         card.addSubview(play)
 
@@ -146,7 +159,13 @@ final class PackGridCell: UICollectionViewCell {
     func show(name packName: String, icon packIcon: UIImage?,
               unlocked: Bool, completed: Bool) {
         name.text = packName
-        icon.image = unlocked ? packIcon : nil
+        icon.image = unlocked
+            ? (isGlass ? packIcon?.withRenderingMode(.alwaysTemplate) : packIcon)
+            : nil
+        icon.tintColor = mark()
+        // Template-rendered on glass. A pack icon is a flat mark in the app's dark purple,
+        // drawn to sit on a light card, so on a dark one it has to be recoloured or the
+        // square is a name with an empty space above it
         icon.isHidden = unlocked == false
         lock.isHidden = unlocked
         tick.isHidden = completed == false || unlocked == false
@@ -156,8 +175,35 @@ final class PackGridCell: UICollectionViewCell {
         // pack name and needs the smaller type and the third line to fit the square
         name.font = .systemFont(ofSize: unlocked ? 13 : 10, weight: .semibold)
         name.numberOfLines = unlocked ? 2 : 3
-        name.textColor = unlocked ? PackGridCell.ink : PackGridCell.ink.withAlphaComponent(0.4)
+        name.textColor = unlocked ? mark() : mark(0.4)
         card.alpha = unlocked ? 1 : 0.55
+    }
+
+    /// Dresses the card as Liquid Glass, iOS 26 and up.
+    ///
+    /// The grid's squares are the same kind of surface as the settings rows, so they get the
+    /// same material and the same tint - and, like the rows, the pack icon has to be
+    /// recoloured, because a pack icon is a flat single-colour glyph and not the picture its
+    /// name suggests. That is the distinction round 66 got wrong on the Mode Select screen.
+    private func applyGlass() {
+        guard #available(iOS 26.0, *) else { return }
+        let effect = UIGlassEffect(style: .regular)
+        effect.isInteractive = false
+        effect.tintColor = SettingsTableViewCell.glassTint
+
+        let glass = UIVisualEffectView(effect: effect)
+        glass.isUserInteractionEnabled = false
+        glass.translatesAutoresizingMaskIntoConstraints = false
+        glass.cornerConfiguration = .corners(radius: .fixed(12))
+        card.insertSubview(glass, at: 0)
+        isGlass = true
+
+        NSLayoutConstraint.activate([
+            glass.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            glass.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            glass.topAnchor.constraint(equalTo: card.topAnchor),
+            glass.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+        ])
     }
 
     @objc private func listTapped() {
@@ -169,7 +215,11 @@ final class PackGridCell: UICollectionViewCell {
     func setPressed(_ pressed: Bool) {
         UIView.animate(withDuration: 0.1) {
             self.card.transform = pressed ? .init(scaleX: 0.96, y: 0.96) : .identity
-            self.card.backgroundColor = pressed ? PackGridCell.pressed : PackGridCell.cardColour
+            if self.isGlass == false {
+                self.card.backgroundColor = pressed ? PackGridCell.pressed : PackGridCell.cardColour
+            }
+            // A glass card shrinks and nothing more. Painting the lime in would put an opaque
+            // card back over the material for as long as the finger was down
         }
     }
 
@@ -177,6 +227,8 @@ final class PackGridCell: UICollectionViewCell {
         super.prepareForReuse()
         onOpenList = nil
         card.transform = .identity
-        card.backgroundColor = PackGridCell.cardColour
+        if isGlass == false {
+            card.backgroundColor = PackGridCell.cardColour
+        }
     }
 }

@@ -337,10 +337,9 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
 
         switch indexPath.row {
         case 0:
-            cell.iconImage.image = UIImage(named:"ButtonClose.png")
-            cell.applyGlass(symbol: "xmark")
+            cell.setButton("ButtonClose.png")
         case 1:
-            cell.iconImage.image = UIImage(named:"ButtonNull.png")
+            cell.setButton("ButtonNull.png")
             // Empty on purpose, for the second time. A play button here was tried in round
             // 3 and taken back on sight; round 33 brought it back as Play Next Pack with a
             // real pack to play; round 36 took it back again - the cells themselves play
@@ -348,9 +347,9 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             // If it is ever proposed a third time, this comment is the history
         case 2:
             if gameCenterSetting {
-                cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+                cell.setButton("ButtonLeaderboard.png")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                cell.setButton("ButtonNull.png")
             }
             // The Game Center button on the right (play-test request), opening the full
             // leaderboards sheet - the packs each have a board, and this screen is all
@@ -406,18 +405,18 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
                 case 1:
-                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    cell.setButton("ButtonNull.png")
                 case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
                         }
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboardHighlighted.png")
+                        cell.setButton("ButtonLeaderboardHighlighted.png")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                        cell.setButton("ButtonNull.png")
                     }
                 default:
-                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    cell.setButton("ButtonNull.png")
                 }
             }
         }
@@ -431,15 +430,15 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose.png"))
                 case 1:
-                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    cell.setButton("ButtonNull.png")
                 case 2:
                     if self.gameCenterSetting {
-                        cell.iconImage.image = UIImage(named:"ButtonLeaderboard.png")
+                        cell.setButton("ButtonLeaderboard.png")
                     } else {
-                        cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                        cell.setButton("ButtonNull.png")
                     }
                 default:
-                    cell.iconImage.image = UIImage(named:"ButtonNull.png")
+                    cell.setButton("ButtonNull.png")
                 }
             }
         }
