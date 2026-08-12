@@ -113,6 +113,14 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // The glass goes with the reuse. These cells serve every round button on the screen
         // and only some of them are glass - a leftover disc behind a PNG would be a halo
         // round a button that never asked for one
+        iconImage.contentMode = .scaleAspectFit
+        // **The nib's mode, put back** (round 65). `applyGlass` switches this to `.center` so
+        // the SF Symbol draws at its own point size - and `.center` draws *any* image at its
+        // natural size. `ButtonNull` is a 210pt asset, `clipsToBounds` is off on this cell for
+        // the big play button's sake, and so the moment the close cell was reused for one of
+        // the blank buttons beside it the artwork was drawn five times too big and spilled
+        // across the screen. That is the white shape that kept appearing next to the close
+        // button on a press - not the material at all, which is where two rounds went looking
         // Highlighting scales the cell view and recolours it, and that state lives on the
         // cell rather than in the data - so without this a cell highlighted on one row
         // carries the scale and colour to whichever row it is reused for, and the wrong

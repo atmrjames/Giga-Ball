@@ -65,6 +65,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         // the main menu screen
 
         titleLabel.text = "BACKGROUND"
+        loosenNameSpacing(by: 12)
 
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
@@ -97,6 +98,25 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         limitMenuContentSize()
         backButtonCollectionView.collectionViewLayout = closeButtonLayout()
         refreshMockShape()
+    }
+
+    /// Opens the gap between the preview card and the background's name.
+    ///
+    /// The constraint is the storyboard's, so it is found rather than replaced - adding a
+    /// second one would only fight it. Which way the constant moves depends on which end of
+    /// the constraint the label is, which is why both are handled.
+    private func loosenNameSpacing(by extra: CGFloat) {
+        guard let parent = nameLabel.superview else { return }
+        for constraint in parent.constraints {
+            if constraint.firstItem === nameLabel && constraint.firstAttribute == .top {
+                constraint.constant += extra
+                return
+            }
+            if constraint.secondItem === nameLabel && constraint.secondAttribute == .top {
+                constraint.constant -= extra
+                return
+            }
+        }
     }
 
     // MARK: - The model

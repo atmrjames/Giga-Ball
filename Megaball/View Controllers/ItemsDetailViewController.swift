@@ -248,7 +248,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.centreLabel.text = ""
             cell.settingState.text = ""
             cell.tickImage.isHidden = true
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            if cell.isGlass == false {
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            }
+            // App Icons and Ball & Paddle were the two screens that repainted the card after
+            // it had been glassed, which is why their rows looked so much more opaque than
+            // everything else wearing the same material (round 65)
             if appIconSetting == indexPath.row {
                 cell.tickImage.isHidden = false
             }
@@ -291,7 +296,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.centreLabel.text = ""
             cell.settingState.text = ""
             cell.tickImage.isHidden = true
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            if cell.isGlass == false {
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705021739, green: 0.8706485629, blue: 0.870482862, alpha: 1)
+            }
+            // App Icons and Ball & Paddle were the two screens that repainted the card after
+            // it had been glassed, which is why their rows looked so much more opaque than
+            // everything else wearing the same material (round 65)
             if ballSetting == indexPath.row {
                 cell.tickImage.isHidden = false
             }

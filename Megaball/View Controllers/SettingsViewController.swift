@@ -102,6 +102,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         settingsTableView.delegate = self
         settingsTableView.dataSource = self
         settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
+        watchTouchesOnSettingsTable()
         settingsTableView.separatorStyle = .none
         settingsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         settingsTableView.isHidden = false
@@ -455,6 +456,43 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         Date().timeIntervalSince1970 - infoTappedAt < 0.4
     }
 
+    /// Where the last touch on the settings table landed, in the table's own coordinates.
+    ///
+    /// The timestamp guard above assumed the button gets the touch and the row's selection
+    /// arrives afterwards. It does not always: the play test reported the pop-up appearing
+    /// *and* the setting flipping, and reported the button doing nothing at all when the
+    /// setting was already on - which is the same fault seen from both sides, because the
+    /// row's own toggle shows the pop-up when it switches something on. So the guard no
+    /// longer depends on the button being touched. It asks where the finger was.
+    private var lastTouchInTable: CGPoint = .init(x: -1, y: -1)
+
+    /// Whether a selection came from a finger inside the row's information button.
+    func selectionCameFromInfoButton(_ tableView: UITableView, at indexPath: IndexPath) -> Bool {
+        guard let cell = tableView.cellForRow(at: indexPath) as? SettingsTableViewCell,
+              let info = cell.contentView.viewWithTag(Self.swipeInfoTag) else { return false }
+        return info.convert(info.bounds, to: tableView).contains(lastTouchInTable)
+    }
+
+    /// Records every touch on the table without taking any of them.
+    ///
+    /// A zero-duration long press fires on touch-down and, with these three flags, changes
+    /// nothing else about how the table behaves - the row still highlights and selects
+    /// exactly as it did.
+    func watchTouchesOnSettingsTable() {
+        let watcher = UILongPressGestureRecognizer(target: self,
+                                                   action: #selector(settingsTableTouched(_:)))
+        watcher.minimumPressDuration = 0
+        watcher.cancelsTouchesInView = false
+        watcher.delaysTouchesBegan = false
+        watcher.delaysTouchesEnded = false
+        settingsTableView.addGestureRecognizer(watcher)
+    }
+
+    @objc func settingsTableTouched(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        lastTouchInTable = gesture.location(in: settingsTableView)
+    }
+
     /// What the swipe-up gesture is for, said in the words the play test asked for.
     func explainSwipeUpToPause() {
         GigaBallAlert.show(
@@ -535,6 +573,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 8:
             // Swipe up pause
                 if infoWasJustTapped { break }
+                if selectionCameFromInfoButton(tableView, at: indexPath) {
+                    explainSwipeUpToPause()
+                    break
+                }
+                // The button's own action may or may not have run - what is certain is that
+                // the finger was inside it, and a finger inside the information button is
+                // asking what the setting does, never to change it
                 swipeUpPause = !swipeUpPause
                 defaults.set(swipeUpPause, forKey: "swipeUpPause")
                 if swipeUpPause { explainSwipeUpToPause() }

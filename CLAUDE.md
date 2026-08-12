@@ -32,7 +32,10 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   the build system's dependency state had stopped noticing edited files entirely, and only
   `xcodebuild clean` shifted it. Before believing a simulator screenshot, check the product:
   `nm -a .../Giga-Ball.app/Giga-Ball.debug.dylib | grep <a symbol you just added>`. Note the
-  app's code is in that dylib, not in the 40KB `Giga-Ball` executable beside it.
+  app's code is in that dylib, not in the 40KB `Giga-Ball` executable beside it. It has now
+  happened three rounds running, so treat it as the norm: **`clean` before any build you
+  intend to install and look at.** Two rounds of play-test feedback were answered against a
+  binary that did not contain the answer.
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.
