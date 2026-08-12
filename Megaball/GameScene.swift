@@ -2708,12 +2708,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].bricksHit[0] += 1
 			totalStatsArray[0].bricksDestroyed[0] += 1
 			resetBrickBounce(for: struckBy)
-			removeBrick(node: node, sprite: sprite)
+			removeBrick(node: node, sprite: sprite, force: true)
 			return
 		}
 		// A Wrecking Ball hit wins whatever it struck - Fixed, Directional, Multi-Hit,
 		// Indestructible - and still bounces, which the collision does on its own. Through
-		// the ordinary destroy path, so it scores, rolls and counts like any hit
+		// the ordinary destroy path, so it scores, rolls and counts like any hit.
+		//
+		// **`force` is what makes "whatever it struck" true** (play-test round 39). Without it
+		// the branch ran, scored and counted - and then `removeBrick` quietly declined to take
+		// an Indestructible off the field, because two guards in there exempt those textures
+		// from being removed at all. That exemption is right for every other caller: an
+		// Indestructible surviving is the whole of what it is. This is the one hit in the game
+		// that overrules it, so it says so
 
 		if endlessIIAnchorIfNeeded(sprite) {
 			stopLaser()
@@ -2831,7 +2838,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Brick hit sound
     }
     
-    func removeBrick(node: SKNode, sprite: SKSpriteNode) {
+    func removeBrick(node: SKNode, sprite: SKSpriteNode, force: Bool = false) {
 
 		if sprite.texture == brickNullTexture {
 			node.removeFromParent()
@@ -2870,7 +2877,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Generate power-up only if not too close to another power-up or if hitting an indestructible 2 brick
 
-		if sprite.texture != brickIndestructible1Texture && sprite.texture != brickIndestructible2Texture  {
+		if force || (sprite.texture != brickIndestructible1Texture && sprite.texture != brickIndestructible2Texture) {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 			node.name = BrickRemovalCategoryName
 			node.isHidden = true
@@ -2887,7 +2894,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		countBricks()
 		
-		if sprite.texture != brickIndestructible2Texture && sprite.texture != brickIndestructible1Texture {
+		if force || (sprite.texture != brickIndestructible2Texture && sprite.texture != brickIndestructible1Texture) {
 			
 			if brickRemovalCounter == Scoring.bricksPerMultiplierStep - 1 && endlessMode == false {
 				multiplier = Scoring.steppedForBrick(multiplier)
