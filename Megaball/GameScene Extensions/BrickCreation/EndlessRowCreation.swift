@@ -42,7 +42,9 @@ extension GameScene {
         powerUpProbArray[42] = gameMode == .endlessII ? 3 : 0 // Wrecking Ball - rare
         powerUpProbArray[43] = gameMode == .endlessII ? 5 : 0 // Aura - uncommon
         powerUpProbArray[44] = gameMode == .endlessII ? 5 : 0 // Infill - uncommon, bad
-        powerUpProbArray[45] = gameMode == .endlessII ? 5 : 0 // Descent - uncommon
+        powerUpProbArray[45] = gameMode == .endlessII ? 3 : 0 // Descent - rare (round 51):
+        // it is the largest single source of height in the mode, so it should be a find
+        // rather than a fixture
         powerUpProbArray[46] = gameMode == .endlessII ? 5 : 0 // Auto-Aim - uncommon
         powerUpProbArray[47] = gameMode == .endlessII ? 3 : 0 // Wrap-Around - rare (§5.4)
         powerUpProbArray[50] = endlessIIWipeMayDrop ? 5 : 0 // Wipe - uncommon (§5.4), and

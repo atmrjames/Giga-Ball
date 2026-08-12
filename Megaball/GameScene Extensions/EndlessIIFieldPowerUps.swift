@@ -461,8 +461,19 @@ extension GameScene {
 
     // MARK: - Descent
 
+    /// How long a Descent runs.
+    ///
+    /// Its own, rather than the ten seconds every other timed power-up gets. At a row every
+    /// `endlessIIDescentStep` that shared duration was around eighteen rows a collection,
+    /// which is a great deal of height from one pick-up - enough that it would dominate any
+    /// accounting of which power-up gains the most, and enough to feel like the run being
+    /// handed to you (play-test round 51). Six seconds is nearer eleven rows: still clearly
+    /// the biggest single source of height in the mode, which is the point of it, without
+    /// being the only one that matters.
+    static let endlessIIDescentDuration: TimeInterval = 6
+
     func endlessIICollectDescent() {
-        endlessIIDescentClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        endlessIIDescentClock.collect(GameScene.endlessIIDescentDuration)
     }
 
     /// How often the field steps down while Descent runs.
