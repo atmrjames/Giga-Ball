@@ -187,10 +187,27 @@ extension UIViewController {
     /// regression dressed as a feature.
     func applyRoundGlass(to button: UIButton, radius: CGFloat) {
         if #available(iOS 26.0, *) {
-            button.tintColor = .white
-            button.setImage(UIImage(systemName: "play.fill",
-                                    withConfiguration: UIImage.SymbolConfiguration(
-                                        pointSize: 25, weight: .black)), for: .normal)
+            let glyph = UIImage(systemName: "play.fill",
+                                withConfiguration: UIImage.SymbolConfiguration(
+                                    pointSize: 25, weight: .black))?
+                .withTintColor(.white, renderingMode: .alwaysOriginal)
+            button.setImage(glyph, for: .normal)
+            button.imageView?.layer.shadowColor = UIColor.black.cgColor
+            button.imageView?.layer.shadowOpacity = 0.45
+            button.imageView?.layer.shadowRadius = 4
+            button.imageView?.layer.shadowOffset = .zero
+            button.imageView?.layer.masksToBounds = false
+            // **Baked white, not tinted white** (round 56). A tint is a request the rendering
+            // stack can reinterpret, and once the material underneath carried a tint of its own
+            // the glyph came out muted rather than white - which is what the play test saw the
+            // moment the rim was fixed. `.alwaysOriginal` is not a request: the pixels are
+            // white and nothing downstream gets a say.
+            //
+            // The soft shadow is what buys the contrast back without brightening anything. The
+            // glyph sits on a translucent disc whose brightness is whatever happens to be
+            // behind it, so a dark halo under the mark holds it apart from a pale patch of
+            // background as well as a dark one - the same trick the round icons have always
+            // used, and the reason they read on any background
             // **The glyph goes light on glass, and dark on the disc** (round 53). Glass over
             // these dark menus settles dark and translucent, so the deep purple the button
             // always wore all but disappeared into it. White at a heavier weight reads as
