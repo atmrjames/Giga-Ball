@@ -193,6 +193,11 @@ class SettingsTableViewCell: UITableViewCell {
 
         let padded = view.contentSize.height + view.contentInset.top + view.contentInset.bottom
         let slack = max(0, view.bounds.height - padded)
+        // **No breathing room here, deliberately.** Moving the panel without moving the rows
+        // leaves the first row floating above the card, and moving both needs the table's
+        // frame to grow - which is a storyboard constraint per scene, the thing round 74 set
+        // out to avoid. These screens already read well: the card hugs its rows and the tab
+        // bar or the title sits just above it. The padding is for the plain lists (round 76)
         // Counting the padding keeps the panel wrapped around the rows rather than cutting
         // the last one off - and it gives the card a little air inside its own edges
         guard abs(bottom.constant + slack) > 0.5 else { return }

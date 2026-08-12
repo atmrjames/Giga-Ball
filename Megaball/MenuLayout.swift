@@ -40,7 +40,16 @@ extension UIViewController {
     /// More at the bottom than the top, because the bottom has the round buttons sitting
     /// under it and the top only has a title.
     func giveMenuListsBreathingRoom() {
-        for table in view.menuLists() where table.contentInset != UIViewController.menuListBreathingRoom {
+        for table in view.menuLists()
+        where table.wearsGlassPanel == false
+            && table.contentInset != UIViewController.menuListBreathingRoom {
+            // **Not the tables that wear a panel.** A content inset moves the rows *within*
+            // the table, which is the whole point on a list of separate cards - and exactly
+            // wrong where the table has one glass panel behind it, because the panel stays
+            // put and the rows slide down inside it. Worse on a table sized for a fixed
+            // number of rows, like the pack header's two, where the padding pushed the
+            // second row out of the frame altogether (round 76). Those screens get their
+            // air from the panel instead, which `fitGlassPanel` moves
             table.contentInset = UIViewController.menuListBreathingRoom
             if table.contentOffset.y <= 0 {
                 table.contentOffset.y = -UIViewController.menuListBreathingRoom.top
@@ -108,6 +117,13 @@ extension UIView {
     /// Tables only. The round buttons along the bottom are a collection view and want no
     /// padding at all - they are a row of three, not a list - and the daily's pager is a
     /// collection view whose whole point is that a page fills it.
+    /// Whether a `addGlass(under:)` panel is sitting behind this view.
+    var wearsGlassPanel: Bool {
+        superview?.subviews.contains {
+            $0 is UIVisualEffectView && $0.tag == SettingsTableViewCell.glassPanelTag
+        } ?? false
+    }
+
     func menuLists() -> [UITableView] {
         if let table = self as? UITableView { return [table] }
         return subviews.flatMap { $0.menuLists() }
