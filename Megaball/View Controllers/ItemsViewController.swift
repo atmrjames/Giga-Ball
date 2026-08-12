@@ -64,7 +64,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
                 
-        itemsTableView.rowHeight = 70.0
+        itemsTableView.rowHeight = ItemsViewController.glassRowHeight
         
         userSettings()
         loadData()
@@ -173,6 +173,16 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         return rows
     }
 
+    /// How tall an Information row is.
+    ///
+    /// 78 rather than the 70 every other screen on this nib uses. The card's bottom is
+    /// pinned 20pt above the row's, so the extra height all goes into the card - and a
+    /// glass card needs it, because the material's edge highlight draws an outline the
+    /// flat grey never had, and the same content inside a visible frame reads as crammed
+    /// against it (round 63).
+
+    static let glassRowHeight: CGFloat = 78
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return infoRows.count
     }
@@ -180,7 +190,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
-        itemsTableView.rowHeight = 70.0
+        itemsTableView.rowHeight = ItemsViewController.glassRowHeight
         
         cell.centreLabel.text = ""
         cell.settingState.text = ""
