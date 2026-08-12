@@ -172,12 +172,20 @@ extension GameScene {
         let line = SKSpriteNode(color: GameScene.endlessIILowerLimitColour,
                                 size: CGSize(width: gameWidth, height: 1))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
-        line.zPosition = 0.62
+        line.zPosition = 1.2
         line.alpha = 0.22
+        // **Above the bricks (1), below the ball and paddle (3)** - round 80. A Big brick
+        // keeps its node on a row centre and hangs its body a half-row below it (§8.6), so
+        // on the last row its lower half covered the line and the kill line stopped being
+        // legible exactly where it matters most (play-test screenshot). Drawing over the
+        // brick is the right way round: this is a one-point line at a fifth opacity, so it
+        // reads as the limit passing behind the field rather than as anything sitting on
+        // top of it, and nothing else has to know how tall a brick is.
+        //
         // Plain transparent white, like the ticks, brighter than them - feint but
-        // present. Above the scrolling backdrop (0.6) - at 0.5 the backdrop tiles sat
-        // over it, which is why it stayed invisible after the re-adoption fix and the
-        // alpha raises: the ticks at 0.6 rendered after the tiles and showed, the line
+        // present. It also has to clear the scrolling backdrop (0.6) - at 0.5 the backdrop
+        // tiles sat over it, which is why it stayed invisible after the re-adoption fix and
+        // the alpha raises: the ticks at 0.6 rendered after the tiles and showed, the line
         // never did. Still below the markers (0.65), so a height line drawn over it
         // stays the readable one
         addChild(line)

@@ -684,4 +684,21 @@ final class EndlessIIAuraTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIAuraReaches(beside, from: subject, reach: 40))
         XCTAssertNotNil(beside.parent, "reaching it is not the same as removing it")
     }
+
+    /// Play-test screenshot: "a Big brick's body extends past its row centre, so on the
+    /// bottom row its lower half crosses the limit line" - and covered it. The line is the
+    /// kill line and has to stay legible, so it draws over the field rather than under it.
+    func testTheKillLineDrawsAboveTheBricksAndBelowTheBall() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.showEndlessIILowerLimit()
+
+        guard let line = scene.endlessIILowerLimitLine else {
+            return XCTFail("the lower limit line was never made")
+        }
+        XCTAssertGreaterThan(line.zPosition, 1,
+                             "a Big brick sits at 1 and would cover the line it crosses")
+        XCTAssertLessThan(line.zPosition, 3,
+                          "the ball and paddle are at 3 and must stay in front of it")
+    }
 }
