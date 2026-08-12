@@ -178,7 +178,18 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// four, and the thing being chosen is the picture, so the picture should be the cell
     /// (play-test round 77). The power-up and achievement lists stay rows for now: they are
     /// read rather than chosen from, and their words do not fit in a square.
-    var usesGrid: Bool { senderID == 0 || senderID == 1 }
+    var usesGrid: Bool { senderID != nil }
+
+    /// How big the name on a square is, which is not the same question on all four lists.
+    ///
+    /// Pack and theme names are one or two short words. Power-up and achievement names are
+    /// phrases - "Clear And Retreat", "Endless Mode 1,000m Milestone" - and at the pack
+    /// grid's size they either truncate or push the icon off the square.
+    private var gridNameSize: CGFloat { senderID == 3 ? 10 : (senderID == 2 ? 11 : 13) }
+
+    /// How many across. Achievements have the longest names and the least to look at, so
+    /// they get more room per square by having fewer of them.
+    private var gridColumns: CGFloat { senderID == 3 ? 2 : 3 }
 
     private var grid: UICollectionView?
 
@@ -201,6 +212,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         view.delegate = self
         view.dataSource = self
         view.register(PackGridCell.self, forCellWithReuseIdentifier: PackGridCell.reuseIdentifier)
+        view.register(UICollectionReusableView.self,
+                      forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+                      withReuseIdentifier: "gridHeader")
+        layout.sectionHeadersPinToVisibleBounds = true
+        // Pinned, like the rows' were: on the in-game power-up page the heading is what
+        // tells you whether you are looking at this run's power-ups or all of them, and a
+        // heading that scrolls away stops answering that halfway down
         itemsView.addSubview(view)
         grid = view
 
@@ -218,8 +236,28 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// Both are the same shape - a picture, a name, whether it is unlocked and whether it is
     /// the one in use - so they are answered together rather than in two branches that would
     /// drift apart.
-    private func gridItem(at index: Int) -> (name: String, icon: UIImage?, unlocked: Bool, chosen: Bool) {
+    private func gridItem(at indexPath: IndexPath) -> (name: String, icon: UIImage?, unlocked: Bool, chosen: Bool) {
         let setup = LevelPackSetup()
+        if senderID == 2 {
+            let item = powerUpIndex(at: indexPath)
+            let unlocked = totalStatsArray[0].powerUpUnlockedArray[item]
+            return (unlocked ? setup.powerUpNameArray[item] : powerUpUnlockHint(item),
+                    setup.powerUpImageArray[item], unlocked, false)
+            // No tick: a power-up is not chosen, and the corner mark would be saying
+            // something about it that is not true
+        }
+        if senderID == 3 {
+            let done = totalStatsArray[0].achievementsUnlockedArray[indexPath.item]
+            return (setup.achievementsNameArray[indexPath.item],
+                    UIImage(named: done
+                            ? setup.achievementsImageArray[indexPath.item]
+                            : "AchivementBadgeIncomplete.png"),
+                    true, done)
+            // Always "unlocked": an achievement you have not earned is not hidden, it is
+            // simply not done - it keeps its name, and the tick is what says which is which
+        }
+
+        let index = indexPath.item
         if senderID == 0 {
             let unlocked = totalStatsArray[0].appIconUnlockedArray[index]
             return (unlocked ? setup.appIconDisplayNameArray[index] : appIconUnlockHint(index),
@@ -239,6 +277,19 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             && totalStatsArray[0].levelPackUnlockedArray[index+1]
             ? LevelPackSetup().unlockedDescriptionArray[index]
             : "Complete Pack \(index) to unlock"
+    }
+
+    /// What a locked power-up says instead of its name.
+    ///
+    /// The two sentences the rows used: the one naming the pack, and the one that does not,
+    /// chosen the same way - a pack the player cannot reach yet is not named at them.
+    private func powerUpUnlockHint(_ item: Int) -> String {
+        let setup = LevelPackSetup()
+        let pack = setup.powerUpPackOrderArray[item] + 1
+        return totalStatsArray[0].levelPackUnlockedArray.indices.contains(pack)
+            && totalStatsArray[0].levelPackUnlockedArray[pack]
+            ? setup.powerUpUnlockedDescriptionArray[item]
+            : setup.powerUpHiddenUnlockedDescriptionArray[item]
     }
 
     private func themeUnlockHint(_ index: Int) -> String {
@@ -286,19 +337,62 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     // MARK: - The grid's data
 
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        collectionView == grid && showsRecentsSection ? 2 : 1
+    }
+
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
         guard collectionView == grid else { return 1 }
         // One is the back button row's, which shares these delegate methods with the grid
-        return senderID == 0
-            ? totalStatsArray[0].appIconUnlockedArray.count
-            : totalStatsArray[0].themeUnlockedArray.count
+        switch senderID {
+        case 0: return totalStatsArray[0].appIconUnlockedArray.count
+        case 1: return totalStatsArray[0].themeUnlockedArray.count
+        case 2:
+            if showsRecentsSection, section == 0 {
+                return InGameRecents.shared.powerUpIndices.count
+            }
+            return standardPowerUpRows.count
+        default: return LevelPackSetup().achievementsNameArray.count
+        }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        referenceSizeForHeaderInSection section: Int) -> CGSize {
+        guard collectionView == grid, showsRecentsSection else { return .zero }
+        return CGSize(width: collectionView.bounds.width, height: 30)
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        viewForSupplementaryElementOfKind kind: String,
+                        at indexPath: IndexPath) -> UICollectionReusableView {
+        let header = collectionView.dequeueReusableSupplementaryView(
+            ofKind: kind, withReuseIdentifier: "gridHeader", for: indexPath)
+        header.subviews.forEach { $0.removeFromSuperview() }
+        // Reused like a cell, so last time's label has to go or they stack up
+
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        blur.frame = header.bounds
+        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        header.addSubview(blur)
+        // Its own backing, so squares sliding under a pinned heading disappear behind it
+        // rather than showing through the bare label - the same reason the rows' headers
+        // have one
+
+        let label = UILabel()
+        label.text = indexPath.section == 0 ? "  THIS RUN" : "  OTHER"
+        label.font = .boldSystemFont(ofSize: 13)
+        label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        label.frame = header.bounds
+        label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        header.addSubview(label)
+        return header
     }
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard collectionView == grid else { return CGSize(width: 50, height: 50) }
-        let columns: CGFloat = 3
+        let columns = gridColumns
         let gap = PackSelectViewController.gridGap
         let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
         let width = max(1, ((available - gap*(columns - 1))/columns).rounded(.down))
@@ -643,9 +737,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             let square = collectionView.dequeueReusableCell(
                 withReuseIdentifier: PackGridCell.reuseIdentifier,
                 for: indexPath) as! PackGridCell
-            let item = gridItem(at: indexPath.item)
+            let item = gridItem(at: indexPath)
             square.show(name: item.name, icon: item.icon,
-                        unlocked: item.unlocked, completed: item.chosen, recolour: false)
+                        unlocked: item.unlocked, completed: item.chosen, recolour: false,
+                        nameSize: gridNameSize)
             // Both of these lists are pictures - an app icon and a ball-and-paddle theme -
             // and the picture is the thing being chosen
             return square
@@ -667,7 +762,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView == grid {
-            chooseGridItem(at: indexPath.item)
+            chooseGridItem(at: indexPath)
             collectionView.deselectItem(at: indexPath, animated: true)
             collectionView.reloadData()
             return
@@ -684,7 +779,15 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// Exactly what the rows did, moved rather than rewritten - including doing nothing at
     /// all for a locked square, which is the difference between a grid you can look at and
     /// one that lets you equip something you have not earned.
-    private func chooseGridItem(at index: Int) {
+    private func chooseGridItem(at indexPath: IndexPath) {
+        if senderID == 2 {
+            moveToItemStats(passedIndex: powerUpIndex(at: indexPath), sender: "Power-Ups")
+            return
+        }
+        if senderID == 3 { return }
+        // Achievements open nothing - the square says everything the row did
+
+        let index = indexPath.item
         if senderID == 0 {
             guard totalStatsArray[0].appIconUnlockedArray[index] else { return }
             appIconSetting = index

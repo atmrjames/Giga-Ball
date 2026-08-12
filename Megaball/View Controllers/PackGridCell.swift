@@ -27,7 +27,12 @@ final class PackGridCell: UICollectionViewCell {
     /// from the start (play-test round 33): the common thing is to play the pack, so the whole
     /// cell does that, and the less common thing - picking a level inside it - is what earns a
     /// control of its own.
-    var onOpenList: (() -> Void)?
+    var onOpenList: (() -> Void)? {
+        didSet { updateListButton() }
+    }
+    // Re-checked whenever it changes, because the screen sets it *after* `show` - so
+    // deciding the button's fate inside `show` hid it on every pack (round 78). The two
+    // facts it depends on arrive in either order; this way neither has to be first
 
     private let card = UIView()
     /// The icon and the name, so the pair can be centred as one thing.
@@ -173,7 +178,8 @@ final class PackGridCell: UICollectionViewCell {
     ///     the rows, and the same reason it has no default: it can only be got right by
     ///     looking at the artwork.
     func show(name packName: String, icon packIcon: UIImage?,
-              unlocked: Bool, completed: Bool, recolour: Bool = true) {
+              unlocked: Bool, completed: Bool, recolour: Bool = true,
+              nameSize: CGFloat = 13) {
         name.text = packName
         icon.image = unlocked
             ? (isGlass && recolour ? packIcon?.withRenderingMode(.alwaysTemplate) : packIcon)
@@ -185,14 +191,17 @@ final class PackGridCell: UICollectionViewCell {
         icon.isHidden = unlocked == false
         lock.isHidden = unlocked
         tick.isHidden = completed == false || unlocked == false
-        play.isHidden = unlocked == false || onOpenList == nil
-        // No handler, no button. The App Icons and theme grids reuse this square and have
-        // nothing behind a list - and a control that does nothing is worse than no control
+        isUnlocked = unlocked
+        updateListButton()
 
         // A locked pack's name is the sentence saying how to unlock it, which is longer than a
         // pack name and needs the smaller type and the third line to fit the square
-        name.font = .systemFont(ofSize: unlocked ? 13 : 10, weight: .semibold)
-        name.numberOfLines = unlocked ? 2 : 3
+        name.font = .systemFont(ofSize: unlocked ? nameSize : nameSize - 3, weight: .semibold)
+        // Smaller when locked because the text is then a sentence rather than a name, and a
+        // sentence needs the room a name does not
+        name.numberOfLines = unlocked ? 3 : 3
+        // Three either way now: "Randomised Bounce" and "Clear And Retreat" want a second
+        // line at the power-up grid's smaller size, and a few want a third (round 78)
         name.textColor = unlocked ? mark() : mark(0.4)
         card.alpha = unlocked ? 1 : 0.55
     }
@@ -224,6 +233,17 @@ final class PackGridCell: UICollectionViewCell {
         ])
     }
 
+    /// Whether this square's thing is unlocked, remembered for the list button's sake.
+    private var isUnlocked = false
+
+    /// The list button exists only where there is a list and a pack to open.
+    ///
+    /// No handler, no button: the App Icons and theme grids reuse this square and have
+    /// nothing behind that corner, and a control that does nothing is worse than none.
+    private func updateListButton() {
+        play.isHidden = isUnlocked == false || onOpenList == nil
+    }
+
     @objc private func listTapped() {
         onOpenList?()
     }
@@ -244,6 +264,7 @@ final class PackGridCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         onOpenList = nil
+        isUnlocked = false
         card.transform = .identity
         if isGlass == false {
             card.backgroundColor = PackGridCell.cardColour

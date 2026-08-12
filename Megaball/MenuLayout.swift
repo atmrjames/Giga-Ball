@@ -40,9 +40,16 @@ extension UIViewController {
     /// More at the bottom than the top, because the bottom has the round buttons sitting
     /// under it and the top only has a title.
     func giveMenuListsBreathingRoom() {
-        for table in view.menuLists()
-        where table.wearsGlassPanel == false
-            && table.contentInset != UIViewController.menuListBreathingRoom {
+        for table in view.menuLists() {
+            defer { table.applyScrollAffordance() }
+            // **Every pass, for every list.** The affordance decides whether a table may
+            // scroll, and judging it once - at the moment the inset was set, before the rows
+            // existed - decided "it fits" and switched scrolling off for good on any table
+            // that is not a `ContentAwareTableView` recomputing it for itself. That is the
+            // Settings screen unable to reach Reset Ball (round 78)
+
+            guard table.wearsGlassPanel == false,
+                  table.contentInset != UIViewController.menuListBreathingRoom else { continue }
             // **Not the tables that wear a panel.** A content inset moves the rows *within*
             // the table, which is the whole point on a list of separate cards - and exactly
             // wrong where the table has one glass panel behind it, because the panel stays
@@ -59,9 +66,6 @@ extension UIViewController {
             // zero simply gains scrollable room above the content rather than moving it -
             // so the padding was there and invisible. Only when the list is at the top: a
             // list already scrolled must stay where the finger left it
-            table.applyScrollAffordance()
-            // The affordance is judged from the content against the frame, and the content
-            // just got taller by the padding - a list that fitted by a hair no longer does
         }
     }
 
