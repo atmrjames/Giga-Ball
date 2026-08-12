@@ -205,13 +205,17 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         case 0:
             cell.setButton("ButtonClose")
         case 1:
+            cell.setButton("ButtonNull")
+        case 2:
             if gameCenterSetting {
                 cell.setButton("ButtonLeaderboard")
             } else {
                 cell.setButton("ButtonNull")
             }
-        case 2:
-            cell.setButton("ButtonNull")
+            // Right-hand slot rather than the middle (round 68). The middle is where this
+            // screen's *own* button would go if it had one, and the pack screen already puts
+            // its leaderboard on the right - a control that means the same thing should not
+            // move about between screens
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break
@@ -229,7 +233,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         if indexPath.row == 0 {
             menuNavigationGoBack()
         }
-        if indexPath.row == 1 && gameCenterSetting {
+        if indexPath.row == 2 && gameCenterSetting {
             showGameCenterLeaderboards()
         }
         
@@ -249,6 +253,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
+                    cell.setButton("ButtonNull")
+                case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
@@ -257,8 +263,6 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     } else {
                         cell.setButton("ButtonNull")
                     }
-                case 2:
-                    cell.setButton("ButtonNull")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break
@@ -276,13 +280,13 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
+                    cell.setButton("ButtonNull")
+                case 2:
                     if self.gameCenterSetting {
                         cell.setButton("ButtonLeaderboard")
                     } else {
                         cell.setButton("ButtonNull")
                     }
-                case 2:
-                    cell.setButton("ButtonNull")
                 default:
                     Log.ui.error("Row index out of range in \(#function, privacy: .public)")
                     break

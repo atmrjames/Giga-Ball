@@ -104,11 +104,18 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         glassView = glass
 
         NSLayoutConstraint.activate([
-            glass.topAnchor.constraint(equalTo: view.topAnchor),
-            glass.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            glass.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            glass.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            glass.topAnchor.constraint(equalTo: iconImage.topAnchor),
+            glass.bottomAnchor.constraint(equalTo: iconImage.bottomAnchor),
+            glass.leadingAnchor.constraint(equalTo: iconImage.leadingAnchor),
+            glass.trailingAnchor.constraint(equalTo: iconImage.trailingAnchor),
         ])
+        // **The icon's footprint, not the cell's** (round 68). `view` fills the cell, and the
+        // pause screen hands every cell a 75pt square regardless of which button it holds -
+        // the artwork was what made the side buttons look small, because `widthConstraint`
+        // sizes `iconImage` to 40 and the PNG was drawn inside that. Pinning the material to
+        // the cell made all three the size of the play button. Bound to the icon it is
+        // exactly as big as the disc it replaces, on every screen, and it follows
+        // `widthConstraint` automatically whenever a caller sets it after this runs
 
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
