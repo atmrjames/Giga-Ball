@@ -186,6 +186,11 @@ class SettingsTableViewCell: UITableViewCell {
             $0.firstItem === glass && $0.firstAttribute == .bottom
         }) else { return }
 
+        view.layoutIfNeeded()
+        // Content size is stale until the table has laid out the rows it was just given -
+        // without this, switching a tab measured the panel against the *previous* tab's
+        // rows and every tab wore the first one's height (round 72)
+
         let slack = max(0, view.bounds.height - view.contentSize.height)
         guard abs(bottom.constant + slack) > 0.5 else { return }
         // Only when it actually moves. This runs on every layout pass, and changing a

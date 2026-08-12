@@ -117,6 +117,9 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     private func reloadRows() {
         rows = StatsPage.rows(for: selectedTab, stats: totalStatsArray[0])
         statsTableView.reloadData()
+        SettingsTableViewCell.fitGlassPanel(under: statsTableView)
+        // Each tab holds a different number of facts, so the panel is re-measured with them
+        // rather than waiting for a layout pass that a tab change does not always cause
     }
 
     /// Puts the section picker between the title and the table.
