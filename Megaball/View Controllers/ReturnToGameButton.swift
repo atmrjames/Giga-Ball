@@ -215,7 +215,7 @@ extension UIViewController {
 
             let effect = UIGlassEffect(style: .regular)
             effect.isInteractive = true
-            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.55)
+            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.38)
             // **Back to `.regular`, and tinted** (round 55). Round 54 blamed the frosting for
             // the blur and went to `.clear`; the blur was really the clipping, fixed in the
             // same round, and `.clear` over a dark menu then drew its specular rim at full
@@ -223,7 +223,12 @@ extension UIViewController {
             // the app's own deep purple at just over half strength sits the whole disc nearer
             // the background it floats on, so the rim reads as a highlight rather than a
             // border. Two dials rather than one: the material decides how soft the edge is,
-            // the tint decides how far it stands off the background
+            // the tint decides how far it stands off the background.
+            //
+            // 0.38 rather than 0.55 (round 57): the tint is what dims the specular rim, so
+            // less of it is a brighter edge. This is the dial for "the edge is a touch too
+            // dim" or "a touch too bold", and the only one - reaching for the material again
+            // would change the softness as well, which is not what is being asked for
 
             let glass = UIVisualEffectView(effect: effect)
             glass.isUserInteractionEnabled = false
