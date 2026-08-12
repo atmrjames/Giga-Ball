@@ -143,7 +143,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Collection view setup
         
         
-        itemsTableView.rowHeight = 70.0
+        itemsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         (itemsTableView as? ContentAwareTableView)?.stickyHeaderBand =
             showsRecentsSection ? 30 : 0
         // Keeps the pinned section headers out of the edge fade - see stickyHeaderBand
@@ -224,13 +224,14 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
+        cell.applyGlass()
         cell.blurView.isHidden = true
         cell.lockedImageView.isHidden = true
         
         cell.decriptionFullWidthConstraint.isActive = false
         cell.descriptionTickWidthConstraint.isActive = false
         cell.descriptionAndStateSharedWidthConstraint.isActive = true
-        cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
         cell.settingDescription.font = cell.settingDescription.font.withSize(18)
         
         if senderID == 0 {
@@ -239,7 +240,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.decriptionFullWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = true
             
-            cell.iconImage.image = LevelPackSetup().appIconImageArray[indexPath.row]
+            cell.setIcon(LevelPackSetup().appIconImageArray[indexPath.row], recolour: false)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.layer.cornerRadius = 10
             cell.settingDescription.text =
@@ -256,7 +257,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.descriptionTickWidthConstraint.isActive = false
                 cell.decriptionFullWidthConstraint.isActive = true
 
-                cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 
                 if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+1] {
@@ -283,7 +284,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.decriptionFullWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = true
             
-            cell.iconImage.image = LevelPackSetup().themeIconArray[indexPath.row]
+            cell.setIcon(LevelPackSetup().themeIconArray[indexPath.row], recolour: false)
             cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
             cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
             cell.settingDescription.text = LevelPackSetup().themeNameArray[indexPath.row]
@@ -299,7 +300,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.descriptionAndStateSharedWidthConstraint.isActive = false
                 cell.descriptionTickWidthConstraint.isActive = false
                 cell.decriptionFullWidthConstraint.isActive = true
-                cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 
                 if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+1] {
@@ -324,7 +325,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Power-ups
             let powerUpIndexCorrection = powerUpIndex(at: indexPath)
 
-            cell.iconImage.image = LevelPackSetup().powerUpImageArray[powerUpIndexCorrection]
+            cell.setIcon(LevelPackSetup().powerUpImageArray[powerUpIndexCorrection], recolour: false)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.settingDescription.text = LevelPackSetup().powerUpNameArray[powerUpIndexCorrection]
             cell.centreLabel.text = ""
@@ -362,7 +363,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.descriptionAndStateSharedWidthConstraint.isActive = false
                 cell.descriptionTickWidthConstraint.isActive = false
                 cell.decriptionFullWidthConstraint.isActive = true
-                cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 
                 if totalStatsArray[0].levelPackUnlockedArray[LevelPackSetup().powerUpPackOrderArray[powerUpIndexCorrection]+1] {
@@ -400,12 +401,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.decriptionFullWidthConstraint.isActive = false
                 cell.descriptionTickWidthConstraint.isActive = true
                 cell.tickImage.isHidden = false
-                cell.iconImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!
+                cell.setIcon(UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!, recolour: false)
             } else {
-                cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 cell.tickImage.isHidden = true
-                cell.iconImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
+                cell.setIcon(UIImage(named:"AchivementBadgeIncomplete.png")!, recolour: false)
             }
             if totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row] != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
                 cell.decriptionFullWidthConstraint.isActive = false
@@ -417,19 +418,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             // Show percentage complete if achievement has percentage complete and isn't complete
         }
         
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-        }
+        cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.2)
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1), duration: 0.2)
         }
         
         if senderID == 0 {
@@ -489,19 +484,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             interfaceHaptic.impactOccurred()
         }
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
         }
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+            cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.1)
         }
     }
     
@@ -530,6 +519,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
         cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        cell.applyGlass(symbol: "xmark")
         
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
@@ -552,7 +542,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
             }
         }
     }
@@ -561,7 +551,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonClose.png"))
             }
         }
     }

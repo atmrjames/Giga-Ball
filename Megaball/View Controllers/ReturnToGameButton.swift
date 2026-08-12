@@ -217,7 +217,10 @@ extension UIViewController {
             // *drawn on* the glass rather than floating behind it
 
             let effect = UIGlassEffect(style: .regular)
-            effect.isInteractive = true
+            effect.isInteractive = false
+            // Off for the reason `SettingsTableViewCell.applyGlass` gives: the glass sits
+            // behind a button that takes the touches, so the material never sees the press it
+            // is being asked to react to (round 64)
             effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.15)
             // **Back to `.regular`, and tinted** (round 55). Round 54 blamed the frosting for
             // the blur and went to `.clear`; the blur was really the clipping, fixed in the

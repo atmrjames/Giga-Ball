@@ -64,12 +64,13 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
-        modeSelectTableView.rowHeight = 70.0
+        modeSelectTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         cell.iconImage.isHidden = false
         cell.settingDescription.text = ""
         cell.settingState.text = ""
         cell.centreLabel.text = ""
+        cell.applyGlass()
         cell.tickImage.isHidden = true
         cell.lockedImageView.isHidden = true
         cell.blurView.isHidden = true
@@ -79,20 +80,18 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         cell.decriptionFullWidthConstraint.isActive = true
 
         if indexPath.row == 0 {
-            cell.iconImage.image = UIImage(named:"iconPlayLevel")
+            cell.setIcon(UIImage(named:"iconPlayLevel"), recolour: true)
             cell.settingDescription.text = "Play single level only"
         } else {
-            cell.iconImage.image = LevelPackSetup().packIcon(levelPack!)
+            cell.setIcon(LevelPackSetup().packIcon(levelPack!), recolour: false)
+            // Pack art, not a glyph
             // The list of pack icons lives with the pack names in LevelPackSetup - it used to
             // be written out here as well, and in the pack screen, which is two more places to
             // miss when a pack's art is redrawn
             cell.settingDescription.text = "Play \(LevelPackSetup().levelPackNameArray[levelPack!]) from start"
         }
                 
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-        }
+        cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.2)
         tableView.showsVerticalScrollIndicator = false
         return cell
     }
@@ -110,10 +109,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         }
 
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.9019607843, green: 1, blue: 0.7019607843, alpha: 1), duration: 0.2)
         }
         tableView.deselectRow(at: indexPath, animated: true)
         // Update table view
@@ -124,19 +120,13 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             interfaceHaptic.impactOccurred()
         }
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
         }
     }
     
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+            cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.1)
         }
     }
     
@@ -151,6 +141,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
         cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        cell.applyGlass(symbol: "xmark")
         
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
@@ -171,7 +162,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         if let cell = self.backCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
             }
         }
     }
@@ -180,7 +171,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         if let cell = self.backCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonClose.png"))
             }
         }
     }

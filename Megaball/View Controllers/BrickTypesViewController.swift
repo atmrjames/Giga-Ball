@@ -83,7 +83,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         itemsTableView.dataSource = self
         itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil),
                                 forCellReuseIdentifier: "customSettingCell")
-        itemsTableView.rowHeight = 70.0
+        itemsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         itemsTableView.sectionHeaderHeight = 34.0
         itemsTableView.sectionFooterHeight = 0.0
         itemsTableView.backgroundColor = .clear
@@ -171,6 +171,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
                                                  for: indexPath) as! SettingsTableViewCell
         let entry = sections[indexPath.section].entries[indexPath.row]
 
+        cell.applyGlass()
         cell.blurView.isHidden = true
         cell.lockedImageView.isHidden = true
         cell.tickImage.isHidden = true
@@ -180,11 +181,12 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         cell.descriptionTickWidthConstraint.isActive = false
         cell.descriptionAndStateSharedWidthConstraint.isActive = true
 
-        cell.settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
         cell.settingDescription.font = cell.settingDescription.font.withSize(18)
         cell.settingDescription.text = entry.name
 
-        cell.iconImage.image = BrickTypeIcons.image(for: entry.art)
+        cell.setIcon(BrickTypeIcons.image(for: entry.art), recolour: false)
+        // Brick art carries its own colours - that is the whole point of the page
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         cell.iconImage.layer.cornerRadius = 0
 
@@ -195,19 +197,13 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         // "on" and "x1.50", and the mode's full name truncated to "Endless..." in it - the
         // number is the part that identifies it, and the detail page says it in full
 
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-        }
+        cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.2)
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1), duration: 0.2)
         }
 
         hideAnimate()
@@ -235,19 +231,13 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
             interfaceHaptic.impactOccurred()
         }
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
         }
     }
 
     func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+            cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.1)
         }
     }
 
@@ -267,6 +257,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
         cell.iconImage.image = UIImage(named: "ButtonClose.png")
+        cell.applyGlass(symbol: "xmark")
 
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
@@ -288,7 +279,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.iconImage.image = UIImage(named: "ButtonCloseHighlighted.png")
+                cell.setPressedArtwork(UIImage(named: "ButtonCloseHighlighted.png"))
             }
         }
     }
@@ -297,7 +288,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
-                cell.iconImage.image = UIImage(named: "ButtonClose.png")
+                cell.setPressedArtwork(UIImage(named: "ButtonClose.png"))
             }
         }
     }

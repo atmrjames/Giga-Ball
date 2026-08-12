@@ -103,7 +103,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         settingsTableView.dataSource = self
         settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
         settingsTableView.separatorStyle = .none
-        settingsTableView.rowHeight = 70.0
+        settingsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         settingsTableView.isHidden = false
         // TableView setup
         
@@ -187,8 +187,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
                     
             let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+            cell.applyGlass()
         
-            settingsTableView.rowHeight = 70.0
+            settingsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
             cell.contentView.viewWithTag(Self.swipeInfoTag)?.removeFromSuperview()
             // Every row, not just the one that adds it. Removing it only where it is
             // added meant a recycled cell carried the info button into whatever row it
@@ -208,9 +209,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingDescription.text = "App Icon"
                     cell.centreLabel.text = ""
                     let icons = LevelPackSetup().appIconImageArray
-                    cell.iconImage.image = icons.indices.contains(appIconSetting)
+                    cell.setIcon(icons.indices.contains(appIconSetting)
                         ? icons[appIconSetting]
-                        : UIImage(named: "iconAppIcon.png")!
+                        : UIImage(named: "iconAppIcon.png")!, recolour: false)
+                    // Not recoloured: this one is the app icon itself, a picture rather than
+                    // a glyph, and a template render would flatten it to a white square
                     // The icon you are actually wearing, not a generic one (play-test
                     // round 13) - the row is about a choice, so it should show the choice
                     cell.settingState.text = ""
@@ -222,32 +225,32 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "Ball & Paddle Theme"
                     cell.centreLabel.text = ""
-                    cell.iconImage.image = UIImage(named:"iconTheme.png")!
+                    cell.setIcon(UIImage(named:"iconTheme.png")!, recolour: true)
                     cell.settingState.text = ""
 //                }
             case 2:
             // Sounds
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconSound.png")!
+                cell.setIcon(UIImage(named:"iconSound.png")!, recolour: true)
                 if soundsSetting {
                     cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                 } else {
                     cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 }
             case 3:
             // Music
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconMusic.png")!
+                cell.setIcon(UIImage(named:"iconMusic.png")!, recolour: true)
                 if musicSetting {
                     cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                 } else {
                     cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 }
             case 4:
             // Haptics
@@ -257,67 +260,67 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "Haptics"
                     cell.centreLabel.text = ""
-                    cell.iconImage.image = UIImage(named:"iconHaptics.png")!
+                    cell.setIcon(UIImage(named:"iconHaptics.png")!, recolour: true)
                     if hapticsSetting {
                         cell.settingState.text = "on"
-                        cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                        cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                     } else {
                         cell.settingState.text = "off"
-                        cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                        cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                     }
 //                }
             case 5:
             // Game background
                 cell.settingDescription.text = "Game Background"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconBackground.png")!
+                cell.setIcon(UIImage(named:"iconBackground.png")!, recolour: true)
                 cell.settingState.text = GameBackground.stored(backgroundSetting).name
-                cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
             case 6:
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconParallax.png")!
+                cell.setIcon(UIImage(named:"iconParallax.png")!, recolour: true)
                 if parallaxSetting {
                     cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                 } else {
                     cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 }
             case 7:
             // Paddle sensitivity
                 cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconPaddleSensitivity.png")!
+                cell.setIcon(UIImage(named:"iconPaddleSensitivity.png")!, recolour: true)
                 if paddleSensitivitySetting == 0 {
                     cell.settingState.text = "x1.00"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 } else if paddleSensitivitySetting == 1 {
                     cell.settingState.text = "x1.25"
-                    cell.settingState.textColor = #colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1))
                 } else if paddleSensitivitySetting == 2 {
                     cell.settingState.text = "x1.50"
-                    cell.settingState.textColor = #colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1))
                 } else if paddleSensitivitySetting == 3 {
                     cell.settingState.text = "x2.00"
-                    cell.settingState.textColor = #colorLiteral(red: 0.12, green: 0.13, blue: 0.14, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.12, green: 0.13, blue: 0.14, alpha: 1))
                 } else if paddleSensitivitySetting == 4 {
                     cell.settingState.text = "x3.00"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                 }
             case 8:
             // Swipe up to pause
                 cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
-                cell.iconImage.image = UIImage(named:"iconPause.png")!
+                cell.setIcon(UIImage(named:"iconPause.png")!, recolour: true)
                 addSwipeInfoButton(to: cell)
                 if swipeUpPause {
                     cell.settingState.text = "on"
-                    cell.settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                 } else {
                     cell.settingState.text = "off"
-                    cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 }
             case 9:
 //                if navigatedFrom! = "PauseMenu" {
@@ -347,10 +350,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // would come back invisible
 
         
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+            cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.2)
             return cell
 //        }
     }
@@ -389,7 +389,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         info.setImage(UIImage(systemName: "info.circle",
                               withConfiguration: UIImage.SymbolConfiguration(
                                   pointSize: 20, weight: .regular)), for: .normal)
-        info.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
+        info.tintColor = cell.isGlass
+            ? SettingsTableViewCell.glassForeground.withAlphaComponent(0.7)
+            : #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
+        // The row's own purple would be a dark mark on a dark row - the one thing on this
+        // screen that is drawn by the screen rather than by the cell, so it has to ask
         info.translatesAutoresizingMaskIntoConstraints = false
         info.addTarget(self, action: #selector(swipeInfoTapped), for: .touchUpInside)
         info.addTarget(self, action: #selector(swipeInfoTouchedDown), for: .touchDown)
@@ -563,10 +567,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Save any changes to NSUbiquitousKeyValueStore
             
             if let cell = self.settingsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-                UIView.animate(withDuration: 0.2) {
-                    cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                    cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-                }
+                cell.setPressed(true, colour: #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1), duration: 0.2)
             }
             tableView.deselectRow(at: indexPath, animated: true)
             tableView.reloadData()
@@ -655,10 +656,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // demonstrates the toggle lives in didSelect, after the setting has flipped
 
         if let cell = self.settingsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
+            cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
         }
     }
     
@@ -666,10 +664,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Releases are silent (play-test rounds 11 and 12) - the toggle's demonstration
         // tick lives in didSelect, where the flipped setting is already the truth
         if let cell = self.settingsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
+            cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.1)
         }
     }
     
@@ -683,6 +678,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         cell.frame.size.width = cell.frame.size.height
         cell.widthConstraint.constant = 40
         cell.iconImage.image = UIImage(named:"ButtonClose.png")
+        cell.applyGlass(symbol: "xmark")
         
         UIView.animate(withDuration: 0.1) {
             cell.view.transform = .identity
@@ -703,7 +699,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.iconImage.image = UIImage(named:"ButtonCloseHighlighted.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
             }
         }
     }
@@ -712,7 +708,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
-                cell.iconImage.image = UIImage(named:"ButtonClose.png")
+                cell.setPressedArtwork(UIImage(named:"ButtonClose.png"))
             }
         }
     }

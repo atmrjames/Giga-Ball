@@ -134,6 +134,14 @@ class SettingsTableViewCell: UITableViewCell {
     /// the whole reason this is a decision and not just a background swap.
     static let glassForeground = UIColor(white: 0.92, alpha: 1)
 
+    /// How tall a glass row is: 78 rather than the 70 the flat cards use.
+    ///
+    /// The card's bottom is pinned 20pt above the row's, so the extra height all goes into
+    /// the card. It is needed because the material draws an outline the flat grey never had,
+    /// and the same content inside a frame you can actually see reads as crammed against it
+    /// (round 63). Every screen that glasses its rows wants it, so it lives here.
+    static let glassRowHeight: CGFloat = 78
+
     private var glassView: UIVisualEffectView?
 
     /// Whether this cell is currently wearing glass, which its icon and its tap feedback
@@ -142,7 +150,7 @@ class SettingsTableViewCell: UITableViewCell {
 
     /// Turns the row's light card into a glass one. iOS 26 and later; a no-op before that,
     /// so a caller can ask unconditionally and older devices keep the card they have.
-    func applyGlass() {
+    func applyGlass(cornerRadius: CGFloat = 14) {
         guard #available(iOS 26.0, *) else { return }
         guard glassView == nil else { return }
 
@@ -151,19 +159,25 @@ class SettingsTableViewCell: UITableViewCell {
         // A clear layer casts no shadow anyway, and leaving the purple one set would only
         // wait to reappear the moment something gave the layer a path
 
-        cellView2.layer.cornerRadius = 14
+        cellView2.layer.cornerRadius = cornerRadius
         // Rounded only here. The nib's rows are square-cornered, which is right for an
         // opaque card butted against its neighbours and wrong for glass - the material's
         // own edge highlight needs a curve to run along or it reads as a grey rectangle
 
         let effect = UIGlassEffect(style: .regular)
-        effect.isInteractive = true
+        effect.isInteractive = false
+        // **Off, deliberately** (round 64). Interactive glass reacts to touches by stretching
+        // toward whatever it is being pulled at, and these effect views cannot receive touches
+        // at all - the row and the button both take their taps through the control underneath.
+        // Asking a material to respond to a press it never sees is how the close button ended
+        // up smearing a white blob across the screen on a long press. The app draws its own
+        // press feedback, so nothing is lost
         effect.tintColor = SettingsTableViewCell.glassTint
 
         let glass = UIVisualEffectView(effect: effect)
         glass.isUserInteractionEnabled = false
         glass.translatesAutoresizingMaskIntoConstraints = false
-        glass.cornerConfiguration = .corners(radius: .fixed(14))
+        glass.cornerConfiguration = .corners(radius: .fixed(cornerRadius))
         cellView2.insertSubview(glass, at: 0)
         glassView = glass
 
@@ -178,6 +192,12 @@ class SettingsTableViewCell: UITableViewCell {
         settingState.textColor = SettingsTableViewCell.glassForeground
         centreLabel.textColor = SettingsTableViewCell.glassForeground
         iconImage.tintColor = SettingsTableViewCell.glassForeground
+
+        tickImage.image = tickImage.image?.withRenderingMode(.alwaysTemplate)
+        tickImage.tintColor = SettingsTableViewCell.glassForeground
+        // The completion tick comes from the nib in the same dark purple as everything else,
+        // and it is the one mark on these pages that says "you have this" - the last thing
+        // that should be invisible
     }
 
     /// Sets the row's glyph, recoloured if the row is glass.
@@ -186,8 +206,66 @@ class SettingsTableViewCell: UITableViewCell {
     /// throws its colour away and keeps its silhouette, which is the only reason the same
     /// PNGs can be reused on a dark row at all - without it every icon would be a purple
     /// hole in the glass.
-    func setIcon(_ image: UIImage?) {
-        iconImage.image = isGlass ? image?.withRenderingMode(.alwaysTemplate) : image
+    /// - Parameter recolour: whether the artwork is a flat glyph that should be redrawn in
+    ///   the row's foreground colour. **True only for the interface glyphs.** Pack icons,
+    ///   theme swatches, app icons, brick art and power-up icons are pictures, and template
+    ///   rendering would flatten every one of them to a white silhouette. There is no safe
+    ///   default here, so every caller has to say which kind of image it is holding.
+    func setIcon(_ image: UIImage?, recolour: Bool) {
+        iconImage.image = (isGlass && recolour)
+            ? image?.withRenderingMode(.alwaysTemplate) : image
+    }
+
+    /// Colours the row's name, keeping the locked/unlocked distinction on a glass row.
+    ///
+    /// The unlock pages say "you cannot have this yet" by dropping the label to a quarter
+    /// alpha of the same purple. The purple has to go on glass, but the *fading* is the
+    /// message and it stays - floored at 0.4, because a quarter-opacity off-white on a dark
+    /// row is nearly gone where a quarter-opacity purple on white was merely faint.
+    func setLabelColour(_ colour: UIColor) {
+        guard isGlass else {
+            settingDescription.textColor = colour
+            return
+        }
+        var white: CGFloat = 0, alpha: CGFloat = 0
+        colour.getWhite(&white, alpha: &alpha)
+        settingDescription.textColor = SettingsTableViewCell.glassForeground
+            .withAlphaComponent(max(0.4, alpha))
+    }
+
+    /// Colours the state column, inverting the scheme on a glass row.
+    ///
+    /// The flat card encoded meaning in *darkness*: the app's near-black purple for "on", mid
+    /// grey for "off", and for paddle speed a four-step grey ramp where darker meant faster.
+    /// Every one of those is invisible on a dark row, and simply forcing them all to off-white
+    /// would throw the meaning away with the colour. So the scale is turned over - the darker
+    /// the row wanted it, the more opaque it becomes - and the ramp survives the move.
+    func setStateColour(_ colour: UIColor) {
+        guard isGlass else {
+            settingState.textColor = colour
+            return
+        }
+        var white: CGFloat = 0, alpha: CGFloat = 0
+        colour.getWhite(&white, alpha: &alpha)
+        settingState.textColor = SettingsTableViewCell.glassForeground
+            .withAlphaComponent(min(1, max(0.42, 1.05 - white)))
+    }
+
+    /// Presses or releases the row's card.
+    ///
+    /// Six screens each wrote this animation out twice, once to highlight and once to let go.
+    /// It is one method now because glass changed the rules: **the colour has to be skipped on
+    /// a glass row.** Painting into `cellView2` paints *over* the material, so a press that
+    /// flashed the app's lime put the flat card back for as long as the touch lasted - which
+    /// the Information screen was doing from the moment it went glass. A glass row shrinks and
+    /// nothing else.
+    func setPressed(_ pressed: Bool, colour: UIColor, duration: TimeInterval) {
+        UIView.animate(withDuration: duration) {
+            self.cellView2.transform = pressed ? .init(scaleX: 0.98, y: 0.98) : .identity
+            if self.isGlass == false {
+                self.cellView2.backgroundColor = colour
+            }
+        }
     }
 
     /// The press feedback, which cannot be a colour change on a glass row.
@@ -212,6 +290,7 @@ class SettingsTableViewCell: UITableViewCell {
         glassView = nil
         cellView2.layer.cornerRadius = 0
         cellView2.layer.shadowOpacity = 0.5
+        tickImage.image = tickImage.image?.withRenderingMode(.alwaysOriginal)
         settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         centreLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)

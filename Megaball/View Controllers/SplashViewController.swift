@@ -261,13 +261,17 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
         
-        cancelResumeButton.rowHeight = 70.0
+        cancelResumeButton.rowHeight = SettingsTableViewCell.glassRowHeight
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         
         cell.settingDescription.text = ""
         cell.centreLabel.text = "Cancel"
         cell.settingState.text = ""
         
+        cell.applyGlass(cornerRadius: 25)
+        // 25 rather than the 14 the list rows use: this is one lone button rather than a row
+        // in a stack, and it was already drawn as a capsule
+
         cell.cellView2.layer.cornerRadius = 25
         cell.cellView2.layer.masksToBounds = false
         cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 0)
@@ -277,8 +281,12 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         
         UIView.animate(withDuration: 0.2) {
             cell.cellView2.transform = .identity
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            if cell.isGlass == false {
+                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
+        // The reset back to grey has to skip a glass cell, or it paints the light card straight
+        // back over the material every time the row is built
         
         return cell
     }
@@ -291,10 +299,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         removeAnimate(duration: 0.25)
                 
         if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.2) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-            }
+            cell.showTapFeedback()
         }
         
         tableView.deselectRow(at: indexPath, animated: true)

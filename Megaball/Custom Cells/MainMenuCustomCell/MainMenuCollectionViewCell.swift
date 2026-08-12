@@ -50,7 +50,10 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         guard glassView == nil else { return }
 
         let effect = UIGlassEffect(style: .regular)
-        effect.isInteractive = true
+        effect.isInteractive = false
+        // See `SettingsTableViewCell.applyGlass` for why: this view cannot receive touches,
+        // and an interactive material that is pressed through something else stretches toward
+        // the touch and leaves a white smear behind (round 64)
         effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
 
         let glass = UIVisualEffectView(effect: effect)
@@ -88,6 +91,20 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     }
 
     private var glassView: UIVisualEffectView?
+
+    /// Whether this button is wearing glass, which the pressed-state artwork has to know.
+    var isGlass: Bool { glassView != nil }
+
+    /// Swaps in the pressed artwork, unless the button is glass.
+    ///
+    /// The PNG buttons show a darker disc while held. A glass button has no disc to swap -
+    /// its artwork is a system glyph over a material - so handing it `ButtonCloseHighlighted`
+    /// would put the old opaque disc straight back on top of the glass for the length of the
+    /// press. The 0.95 shrink every one of these already does is the feedback (round 64).
+    func setPressedArtwork(_ image: UIImage?) {
+        guard isGlass == false else { return }
+        iconImage.image = image
+    }
 
     override func prepareForReuse() {
         super.prepareForReuse()
