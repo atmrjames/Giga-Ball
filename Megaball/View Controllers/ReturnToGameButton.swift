@@ -237,6 +237,24 @@ extension UIViewController {
             glass.isUserInteractionEnabled = false
             glass.translatesAutoresizingMaskIntoConstraints = false
             glass.cornerConfiguration = .capsule()
+            glass.layer.cornerRadius = radius
+            glass.layer.borderWidth = 1.5
+            glass.layer.borderColor = UIColor(white: 1, alpha: 0.34).cgColor
+            // **A different lever, because the tint had run out** (round 60). The tint dims or
+            // brightens the material's *own* specular rim and nothing more - at 0.15 it is
+            // nearly as bright as that rim gets, and at zero it becomes `.clear`, whose
+            // full-contrast ring round 54 rejected. Asking for "bigger and bolder" past that
+            // point is asking for something the material does not have: a thicker edge.
+            //
+            // So this draws one. A pt and a half of white at a third strength, over the top of
+            // the material's own highlight rather than instead of it - the two together are
+            // thicker and brighter than the highlight alone, without the hard uniform ring
+            // that `.clear` produced, because the material's edge still varies with what is
+            // behind it and this only adds to it.
+            //
+            // The radius is set on the layer as well, purely so the border follows the circle.
+            // `clipsToBounds` stays off: that was round 54's mistake, and a border is drawn on
+            // the layer's path rather than by clipping, so it does not need it
             // **Shaped, not clipped.** A corner radius plus `clipsToBounds` cuts the material
             // off at the boundary - and the boundary is where glass does its specular edge, so
             // clipping it leaves the highlight sheared and smeared instead of tracing the rim.
