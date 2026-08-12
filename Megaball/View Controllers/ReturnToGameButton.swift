@@ -58,7 +58,6 @@ extension UIViewController {
         let play = UIButton(type: .system)
         play.tag = Self.returnToGameTag
         play.translatesAutoresizingMaskIntoConstraints = false
-        play.backgroundColor = UIColor(white: 0.92, alpha: 1)
         play.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
         play.layer.cornerRadius = 37.5
         play.setImage(UIImage(systemName: "play.fill",
@@ -66,6 +65,7 @@ extension UIViewController {
                                   pointSize: 27, weight: .heavy)), for: .normal)
         play.addTarget(self, action: #selector(returnToGameTapped), for: .touchUpInside)
         view.addSubview(play)
+        applyRoundGlass(to: play, radius: 37.5)
 
         NSLayoutConstraint.activate([
             play.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -171,6 +171,40 @@ extension UIViewController {
 
         pause.removeAnimate(nextAction: .unpause)
         // And then the pause menu leaves exactly as its own play button makes it leave
+    }
+
+    /// Gives a round button the Liquid Glass look, or the flat one it has always had.
+    ///
+    /// **The first of these in the app** (James's 1.3 scope call), and deliberately on the one
+    /// round button that already draws its own circle with a symbol on top. Every other round
+    /// button in the game is a PNG with the circle *and* the glyph baked into it, and glass
+    /// cannot go behind a glyph that is welded to an opaque disc - so rolling this out further
+    /// is an asset job (template glyphs) before it is a code one. That is what
+    /// FUTURE-RELEASES.md means by "in-app icons updated to Liquid Glass versions", and it is
+    /// worth knowing before the rest is quoted as a code change.
+    ///
+    /// Below iOS 26 it is the pale disc it has always been, which is not a compromise: the
+    /// app supports iOS 15, and a button that is invisible on an older phone would be a
+    /// regression dressed as a feature.
+    func applyRoundGlass(to button: UIButton, radius: CGFloat) {
+        if #available(iOS 26.0, *) {
+            let glass = UIVisualEffectView(effect: UIGlassEffect())
+            glass.isUserInteractionEnabled = false
+            glass.translatesAutoresizingMaskIntoConstraints = false
+            glass.layer.cornerRadius = radius
+            glass.clipsToBounds = true
+            button.insertSubview(glass, at: 0)
+            NSLayoutConstraint.activate([
+                glass.topAnchor.constraint(equalTo: button.topAnchor),
+                glass.bottomAnchor.constraint(equalTo: button.bottomAnchor),
+                glass.leadingAnchor.constraint(equalTo: button.leadingAnchor),
+                glass.trailingAnchor.constraint(equalTo: button.trailingAnchor),
+            ])
+            // Behind the glyph and not in the way of a touch: the button is still the control,
+            // and the glass is only how it looks
+        } else {
+            button.backgroundColor = UIColor(white: 0.92, alpha: 1)
+        }
     }
 
     private static var returnToGameTag: Int { 909_001 }
