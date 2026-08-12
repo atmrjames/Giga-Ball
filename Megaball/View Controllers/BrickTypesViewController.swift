@@ -19,6 +19,7 @@ import UIKit
 
 class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableViewDataSource,
                                 UICollectionViewDelegate, UICollectionViewDataSource,
+                                UICollectionViewDelegateFlowLayout,
                                 MenuNavigable, MenuNavigationPresenter {
 
     let defaults = UserDefaults.standard
@@ -83,6 +84,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         itemsTableView.dataSource = self
         itemsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil),
                                 forCellReuseIdentifier: "customSettingCell")
+        buildGrid()
         itemsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         itemsTableView.sectionHeaderHeight = 34.0
         itemsTableView.sectionFooterHeight = 0.0
@@ -121,6 +123,113 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     // MARK: - The list
+
+    // MARK: - The grid
+
+    private var grid: UICollectionView?
+
+    /// Squares rather than rows, like the other four reference and choice lists.
+    ///
+    /// Built in code over the table and borrowing its frame, the same way
+    /// `ItemsDetailViewController` builds its own - the storyboard scene stays the layout's
+    /// owner and nothing here has to be laid out twice.
+    private func buildGrid() {
+        let layout = UICollectionViewFlowLayout()
+        layout.minimumInteritemSpacing = PackSelectViewController.gridGap
+        layout.minimumLineSpacing = PackSelectViewController.gridGap
+        layout.sectionHeadersPinToVisibleBounds = true
+        // **Pinned, which is the whole of James's second request.** The old table was
+        // deliberately grouped rather than plain so its headings would *not* pin - a header
+        // floating through the table's edge fade read as a glitch. A collection view's
+        // header carries its own blurred backing, so the squares disappear behind the
+        // heading instead of through it, and pinning is now the better answer: on a page of
+        // eighteen bricks in three kinds, the heading is what says which kind you are
+        // looking at, and one that scrolls away stops saying it halfway down (round 79)
+
+        let view = ContentAwareCollectionView(frame: .zero, collectionViewLayout: layout)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = .clear
+        view.delegate = self
+        view.dataSource = self
+        view.register(PackGridCell.self, forCellWithReuseIdentifier: PackGridCell.reuseIdentifier)
+        view.register(UICollectionReusableView.self,
+                      forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+                      withReuseIdentifier: "gridHeader")
+        itemsView.addSubview(view)
+        grid = view
+
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: itemsTableView.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: itemsTableView.trailingAnchor),
+            view.topAnchor.constraint(equalTo: itemsTableView.topAnchor),
+            view.bottomAnchor.constraint(equalTo: itemsTableView.bottomAnchor),
+        ])
+        itemsTableView.isHidden = true
+    }
+
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        collectionView == grid ? sections.count : 1
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        numberOfItemsInSection section: Int) -> Int {
+        collectionView == grid ? sections[section].entries.count : 1
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        guard collectionView == grid else { return CGSize(width: 50, height: 50) }
+        let columns: CGFloat = 3
+        let gap = PackSelectViewController.gridGap
+        let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
+        let width = max(1, ((available - gap*(columns - 1))/columns).rounded(.down))
+        return CGSize(width: width, height: width)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        insetForSectionAt section: Int) -> UIEdgeInsets {
+        guard collectionView == grid else { return .zero }
+        return UIEdgeInsets(top: 8, left: PackSelectViewController.gridInset,
+                            bottom: UIViewController.menuListBreathingRoom.bottom,
+                            right: PackSelectViewController.gridInset)
+        // Eight above rather than the lists' thirty-two: the heading is the gap here, and a
+        // second one under it reads as a hole
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
+                        referenceSizeForHeaderInSection section: Int) -> CGSize {
+        guard collectionView == grid else { return .zero }
+        return CGSize(width: collectionView.bounds.width, height: 34)
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        viewForSupplementaryElementOfKind kind: String,
+                        at indexPath: IndexPath) -> UICollectionReusableView {
+        let header = collectionView.dequeueReusableSupplementaryView(
+            ofKind: kind, withReuseIdentifier: "gridHeader", for: indexPath)
+        header.subviews.forEach { $0.removeFromSuperview() }
+
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        blur.frame = header.bounds
+        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        header.addSubview(blur)
+
+        let label = UILabel()
+        label.text = sections[indexPath.section].title.uppercased()
+        label.font = .systemFont(ofSize: 15, weight: .black)
+        label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -24),
+            label.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+        ])
+        // The same size, weight, colour and inset the rows' headings had - this is the style
+        // James asked the power-up page's headings to be matched to, and it is the one the
+        // brick page already wore
+        return header
+    }
 
     func numberOfSections(in tableView: UITableView) -> Int {
         sections.count
@@ -244,12 +353,19 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     // MARK: - The close button
 
     func collectionView(_ collectionView: UICollectionView,
-                        numberOfItemsInSection section: Int) -> Int {
-        1
-    }
-
-    func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if collectionView == grid {
+            let square = collectionView.dequeueReusableCell(
+                withReuseIdentifier: PackGridCell.reuseIdentifier,
+                for: indexPath) as! PackGridCell
+            let entry = sections[indexPath.section].entries[indexPath.item]
+            square.show(name: entry.name, icon: BrickTypeIcons.image(for: entry.art),
+                        unlocked: true, completed: false, recolour: false, nameSize: 11)
+            // Always unlocked: brick types are not earned, they are met - the page's own
+            // opening comment. Never ticked: there is nothing here to choose
+            return square
+        }
+
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell",
                                                       for: indexPath) as! MainMenuCollectionViewCell
 
@@ -265,6 +381,13 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if collectionView == grid {
+            hideAnimate()
+            moveToItemStats(entry: flatIndex(of: indexPath))
+            collectionView.deselectItem(at: indexPath, animated: true)
+            return
+        }
+
         menuNavigationGoBack()
 
         collectionView.deselectItem(at: indexPath, animated: true)
@@ -272,6 +395,10 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        guard collectionView == backButtonCollectionView else {
+            (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(true)
+            return
+        }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
@@ -284,6 +411,10 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        guard collectionView == backButtonCollectionView else {
+            (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(false)
+            return
+        }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .identity
