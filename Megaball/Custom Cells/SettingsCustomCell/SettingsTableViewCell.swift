@@ -121,8 +121,104 @@ class SettingsTableViewCell: UITableViewCell {
     }
     
 
+    // MARK: - Liquid Glass
+
+    /// The tint every glass surface in the app is given: the app's purple, well under half
+    /// opacity, so the material still reads as glass rather than as tinted plastic.
+    static let glassTint = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
+
+    /// What a glass row's text and glyphs are drawn in.
+    ///
+    /// The same off-white the round buttons wear. A glass row is dark - it is the game
+    /// behind it, dimmed - so the nib's dark purple would be near-invisible on it, which is
+    /// the whole reason this is a decision and not just a background swap.
+    static let glassForeground = UIColor(white: 0.92, alpha: 1)
+
+    private var glassView: UIVisualEffectView?
+
+    /// Whether this cell is currently wearing glass, which its icon and its tap feedback
+    /// both need to know.
+    var isGlass: Bool { glassView != nil }
+
+    /// Turns the row's light card into a glass one. iOS 26 and later; a no-op before that,
+    /// so a caller can ask unconditionally and older devices keep the card they have.
+    func applyGlass() {
+        guard #available(iOS 26.0, *) else { return }
+        guard glassView == nil else { return }
+
+        cellView2.backgroundColor = .clear
+        cellView2.layer.shadowOpacity = 0
+        // A clear layer casts no shadow anyway, and leaving the purple one set would only
+        // wait to reappear the moment something gave the layer a path
+
+        cellView2.layer.cornerRadius = 14
+        // Rounded only here. The nib's rows are square-cornered, which is right for an
+        // opaque card butted against its neighbours and wrong for glass - the material's
+        // own edge highlight needs a curve to run along or it reads as a grey rectangle
+
+        let effect = UIGlassEffect(style: .regular)
+        effect.isInteractive = true
+        effect.tintColor = SettingsTableViewCell.glassTint
+
+        let glass = UIVisualEffectView(effect: effect)
+        glass.isUserInteractionEnabled = false
+        glass.translatesAutoresizingMaskIntoConstraints = false
+        glass.cornerConfiguration = .corners(radius: .fixed(14))
+        cellView2.insertSubview(glass, at: 0)
+        glassView = glass
+
+        NSLayoutConstraint.activate([
+            glass.leadingAnchor.constraint(equalTo: cellView2.leadingAnchor),
+            glass.trailingAnchor.constraint(equalTo: cellView2.trailingAnchor),
+            glass.topAnchor.constraint(equalTo: cellView2.topAnchor),
+            glass.bottomAnchor.constraint(equalTo: cellView2.bottomAnchor),
+        ])
+
+        settingDescription.textColor = SettingsTableViewCell.glassForeground
+        settingState.textColor = SettingsTableViewCell.glassForeground
+        centreLabel.textColor = SettingsTableViewCell.glassForeground
+        iconImage.tintColor = SettingsTableViewCell.glassForeground
+    }
+
+    /// Sets the row's glyph, recoloured if the row is glass.
+    ///
+    /// The artwork is a flat dark-purple shape, drawn for a light card. Template rendering
+    /// throws its colour away and keeps its silhouette, which is the only reason the same
+    /// PNGs can be reused on a dark row at all - without it every icon would be a purple
+    /// hole in the glass.
+    func setIcon(_ image: UIImage?) {
+        iconImage.image = isGlass ? image?.withRenderingMode(.alwaysTemplate) : image
+    }
+
+    /// The press feedback, which cannot be a colour change on a glass row.
+    ///
+    /// An opaque card goes a shade darker. Painting a colour into `cellView2` on a glass
+    /// row would paint *over* the material and put the light card back for as long as the
+    /// touch lasted, so a glass row shrinks and does nothing else - which is what the
+    /// material's own interactive response is there for.
+    func showTapFeedback() {
+        UIView.animate(withDuration: 0.2) {
+            self.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
+            if self.isGlass == false {
+                self.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
+            }
+        }
+    }
+
     override func prepareForReuse() {
         super.prepareForReuse()
+
+        glassView?.removeFromSuperview()
+        glassView = nil
+        cellView2.layer.cornerRadius = 0
+        cellView2.layer.shadowOpacity = 0.5
+        settingDescription.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        settingState.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        centreLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        // Every screen shares this nib, so a glass row reused by a screen that has not
+        // asked for glass has to come back as the card it was born as - all of it, not
+        // just the background, or a settings row inherits an off-white label it cannot
+        // be read against
         // Highlighting scales cellView2 and recolours it, and that state lives on the
         // cell rather than in the data - so without this a cell highlighted on one row
         // carries the scale and colour to whichever row it is reused for, and the wrong

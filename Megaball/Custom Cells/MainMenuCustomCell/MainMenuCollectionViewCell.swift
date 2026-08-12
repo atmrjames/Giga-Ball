@@ -69,14 +69,15 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
 
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 15, weight: .bold))?
+                                      pointSize: 20, weight: .bold))?
             .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
         iconImage.contentMode = .center
         // **`.center`, not `.scaleAspectFit`** (round 61). Aspect-fit scales *up* as well as
         // down, so the symbol was being blown up to fill a 40pt image view whatever point size
         // it was made at - which is why round 59's drop from 17pt to 13pt changed nothing and
         // the mark still filled its disc. `.center` draws the image at its natural size, so
-        // the point size above is finally the dial it looks like.
+        // the point size above is finally the dial it looks like - and 15pt, which is what
+        // the run before this asked for, turned out to be too *small* once it was honoured.
         //
         // Off-white rather than pure white, matching the discs the other round buttons wear:
         // white was right when the glyph had to fight a tinted material for attention, and

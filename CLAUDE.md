@@ -24,6 +24,11 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   26.6's `actool` **crashes** on the Icon Composer assets — see SPECIFICATION.md §13.
 - Anything destined for the App Store is built by **Xcode Cloud on `release-1.3`**, because
   Apple rejects beta-toolchain uploads and this Mac runs a beta macOS.
+- **`xcodebuild test` does not always relink the app.** Round 62 compiled a changed file,
+  passed 761 tests, installed, and showed the *old* UI on the simulator: the `.o` was ten
+  minutes newer than `Giga-Ball.debug.dylib`, which had never been rebuilt. A green suite is
+  not evidence that the app bundle you are about to install contains your change. Run a plain
+  `build` before `simctl install`, or check `nm -a` for a symbol you just added.
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.

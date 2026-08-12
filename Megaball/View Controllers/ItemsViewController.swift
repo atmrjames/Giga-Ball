@@ -191,8 +191,13 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         cell.decriptionFullWidthConstraint.isActive = true
         
         let row = infoRows[indexPath.row]
+        cell.applyGlass()
+        // The first screen to wear glass rows, deliberately on its own: an experiment to
+        // see whether a translucent row reads against the game backgrounds at all, before
+        // the other five screens on this nib follow it
+
         cell.settingDescription.text = row.title
-        cell.iconImage.image = row.icon
+        cell.setIcon(row.icon)
         cell.iconImage.contentMode = .scaleAspectFit
 
         return cell
@@ -201,10 +206,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-            cell.cellView2.backgroundColor = #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1)
-        }
+        cell.showTapFeedback()
         
         switch infoRows[indexPath.row] {
         case .powerUps:
