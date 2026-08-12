@@ -313,6 +313,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         switch indexPath.row {
         case 0:
             cell.iconImage.image = UIImage(named:"ButtonClose")
+            cell.applyGlass(symbol: "xmark")
+            // The first small glass button (round 58). Does nothing below iOS 26, where the
+            // PNG set just above it stands
         case 1:
              cell.iconImage.image = UIImage(named:"ButtonNull")
         case 2:

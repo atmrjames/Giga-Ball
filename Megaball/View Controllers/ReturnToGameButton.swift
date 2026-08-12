@@ -215,7 +215,7 @@ extension UIViewController {
 
             let effect = UIGlassEffect(style: .regular)
             effect.isInteractive = true
-            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.38)
+            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.28)
             // **Back to `.regular`, and tinted** (round 55). Round 54 blamed the frosting for
             // the blur and went to `.clear`; the blur was really the clipping, fixed in the
             // same round, and `.clear` over a dark menu then drew its specular rim at full
