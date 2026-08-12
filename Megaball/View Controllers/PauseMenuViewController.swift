@@ -455,6 +455,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             title: "Challenge Closed",
             message: "This challenge closed while you were away.\n\n"
                 + "You can carry on playing it, but the score will not be posted.",
+            symbol: "calendar.badge.exclamationmark",
             dismissTitle: "Main Menu",
             dismiss: { [weak self] in
                 MenuViewController().clearSavedGame()
@@ -504,7 +505,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         // (play-test round 17) - the briefing, the pause summary and the level intro all
         // read icon-then-name, and the explainer was the one place that did not
 
-        GigaBallAlert.show(on: self, title: "Today's Twists", attributed: body)
+        GigaBallAlert.show(on: self, title: "Today's Twists", attributed: body,
+                           symbol: "dice.fill")
     }
 
     /// The compact daily block: the day, then each twist by icon and name.
@@ -1137,7 +1139,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
         GigaBallAlert.show(on: self,
                            title: setup.powerUpNameArray[index],
-                           message: setup.powerUpDescriptionArray[index])
+                           message: setup.powerUpDescriptionArray[index],
+                           symbol: "arrow.up.circle.fill")
+        // The power-up mark, the same one the statistics page uses for "power-ups released" -
+        // a pop-up opened from the row of running power-ups should look like it came from
+        // there
         // Through the type's own presenter rather than by building one: it puts the pop-up on
         // as a child, sizes it, and keeps the parameter order that stops a trailing closure
         // binding to the wrong button (round 19)

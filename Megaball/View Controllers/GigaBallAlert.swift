@@ -27,12 +27,13 @@ enum GigaBallAlert {
     /// screen in this app is presented - which is what lets it sit inside the pause
     /// menu's own blur instead of sliding a white card over the top of it.
     static func show(on presenter: UIViewController, title: String, message: String,
+                     symbol: String? = nil,
                      dismissTitle: String = "Got it",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
                      confirm: (() -> Void)? = nil) {
         show(on: presenter, title: title,
-             attributed: NSAttributedString(string: message),
+             attributed: NSAttributedString(string: message), symbol: symbol,
              dismissTitle: dismissTitle, dismiss: dismiss,
              confirmTitle: confirmTitle, confirm: confirm)
     }
@@ -44,13 +45,19 @@ enum GigaBallAlert {
     /// The same pop-up, for a message that carries more than words - the twists explainer
     /// wants each twist's badge in front of its name, the way every other screen names a
     /// twist (play-test round 17).
+    /// - Parameter symbol: an SF Symbol drawn above the title, in the app's green with the
+    ///   same glow the title wears (play-test round 39). Optional, and absent means no icon
+    ///   rather than a placeholder - a pop-up with nothing to illustrate should not invent
+    ///   something.
     static func show(on presenter: UIViewController, title: String,
                      attributed message: NSAttributedString,
+                     symbol: String? = nil,
                      dismissTitle: String = "Got it",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
                      confirm: (() -> Void)? = nil) {
         let alert = GigaBallAlertViewController(title: title, message: message,
+                                                symbol: symbol,
                                                 dismissTitle: dismissTitle,
                                                 confirmTitle: confirmTitle,
                                                 confirm: confirm, dismiss: dismiss)
@@ -66,6 +73,7 @@ enum GigaBallAlert {
 final class GigaBallAlertViewController: UIViewController {
 
     private let heading: String
+    private let symbol: String?
     private let body: NSAttributedString
     private let dismissTitle: String
     private let confirmTitle: String?
@@ -76,10 +84,11 @@ final class GigaBallAlertViewController: UIViewController {
     private let hapticsSetting = UserDefaults.standard.bool(forKey: "hapticsSetting")
     private let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
-    init(title: String, message: NSAttributedString, dismissTitle: String,
-         confirmTitle: String? = nil, confirm: (() -> Void)? = nil,
-         dismiss: (() -> Void)? = nil) {
+    init(title: String, message: NSAttributedString, symbol: String? = nil,
+         dismissTitle: String, confirmTitle: String? = nil,
+         confirm: (() -> Void)? = nil, dismiss: (() -> Void)? = nil) {
         self.heading = title.uppercased()
+        self.symbol = symbol
         // Every pop-up wears the app's heading in capitals (play-test round 17), decided
         // here so no caller has to remember to shout
         self.body = message
@@ -192,7 +201,28 @@ final class GigaBallAlertViewController: UIViewController {
             // is the most this pop-up offers - a choice with three answers wants a screen
         }
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, bodyLabel, buttons])
+        var pieces: [UIView] = [titleLabel, bodyLabel, buttons]
+        if let symbol,
+           let image = UIImage(systemName: symbol,
+                               withConfiguration: UIImage.SymbolConfiguration(
+                                   pointSize: 30, weight: .bold)) {
+            let icon = UIImageView(image: image)
+            icon.contentMode = .center
+            icon.tintColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            icon.layer.shadowColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            icon.layer.shadowOpacity = 0.55
+            icon.layer.shadowRadius = 10
+            icon.layer.shadowOffset = .zero
+            icon.layer.masksToBounds = false
+            pieces.insert(icon, at: 0)
+            // The app's green and the same glow the title wears, so the pair read as one
+            // heading rather than as a picture with a caption. `.center` and no clipping,
+            // for the reason the round buttons learned the hard way: aspect-fit would blow a
+            // 30pt symbol up to fill whatever the stack gave it, and a masked layer cannot
+            // draw the glow outside its own bounds
+        }
+
+        let stack = UIStackView(arrangedSubviews: pieces)
         stack.axis = .vertical
         stack.spacing = 16
         stack.setCustomSpacing(22, after: bodyLabel)

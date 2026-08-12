@@ -527,6 +527,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             isToday: viewedOffset == 0,
             mode: challenge.mode) {
             GigaBallAlert.show(on: self, title: "Free play", message: notice,
+                               symbol: "gamecontroller.fill",
                                 dismissTitle: "Cancel", confirmTitle: "Play",
                                 confirm: { [weak self] in self?.startRun(challenge) })
             // The promise is still made before the run starts (§6) - but as a pop-up on
@@ -691,6 +692,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
     /// than remembered.
     func explain(_ twist: DailyTwist) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
-        GigaBallAlert.show(on: self, title: twist.displayName, message: twist.blurb)
+        GigaBallAlert.show(on: self, title: twist.displayName, message: twist.blurb,
+                           symbol: "dice.fill")
     }
 }

@@ -498,7 +498,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func explainSwipeUpToPause() {
         GigaBallAlert.show(
             on: self, title: "Swipe Up To Pause",
-            message: "Swipe up in game to pause for a breather, or to reach settings and the reference pages.")
+            message: "Swipe up in game to pause for a breather, or to reach settings and the reference pages.",
+            symbol: "hand.draw.fill")
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
