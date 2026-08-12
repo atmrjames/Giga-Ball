@@ -95,6 +95,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        SettingsTableViewCell.fitGlassPanel(under: statsTableView)
     }
 
     

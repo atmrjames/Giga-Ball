@@ -68,6 +68,17 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     /// which is what makes the pressed-state artwork a no-op without every screen having to
     /// remember that - and forgetting it is precisely what painted a 210pt image across the
     /// screen for three rounds.
+    /// The point size a big glass button's glyph is drawn at.
+    ///
+    /// **34, where `applyRoundGlass` gets the same apparent size out of 28.** Rounds 68-70
+    /// matched the point size, then the weight, then the shadow, and the play test measured
+    /// the cell's glyph smaller every time - on the pack, level, endless, mayhem and pause
+    /// screens, all of which come through here, while the four screens using
+    /// `applyRoundGlass` were right. Three reports with screenshots beat an explanation I
+    /// cannot find, so this is the size that matches by measurement. If the cause ever
+    /// surfaces, this constant is where to undo it.
+    static let bigGlyphPointSize: CGFloat = 34
+
     func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
         guard isGlass == false else { return }
         iconImage.image = UIImage(named: named)

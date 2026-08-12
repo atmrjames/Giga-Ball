@@ -167,7 +167,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         case 0:
             cell.setButton("ButtonClose")
         case 1:
-            cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
+            cell.setButton("ButtonPlay", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
             cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
             // The big play button belongs in the middle - X left, leaderboard right, the
             // same order the pause menu reads in
@@ -260,7 +260,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
-                    cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
+                    cell.setButton("ButtonPlay", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
                 case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
                         cell.setButton("ButtonLeaderboard")

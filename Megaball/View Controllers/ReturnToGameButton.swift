@@ -201,6 +201,11 @@ extension UIViewController {
         // last until the disc was opaque
 
         if #available(iOS 26.0, *) {
+            button.backgroundColor = .clear
+            // Some callers arrive with the pale disc already painted on - the Daily
+            // Challenge builds its buttons that way - and the material cannot be seen
+            // through an opaque background
+
             let glyph = UIImage(systemName: symbol,
                                 withConfiguration: UIImage.SymbolConfiguration(
                                     pointSize: pointSize, weight: .black))?

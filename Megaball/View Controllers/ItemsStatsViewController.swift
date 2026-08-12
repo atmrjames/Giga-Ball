@@ -84,6 +84,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
         alignDescription()
+        SettingsTableViewCell.fitGlassPanel(under: statsTableView)
     }
 
     /// Whether a description belongs centred under the icon and the name.

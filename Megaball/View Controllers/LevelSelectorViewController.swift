@@ -115,6 +115,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
         collectionViewLayout()
+        SettingsTableViewCell.fitGlassPanel(under: statsTableView)
     }
 
     
@@ -318,7 +319,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         case 0:
             cell.setButton("ButtonClose")
         case 1:
-            cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
+            cell.setButton("ButtonPlay", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
             cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
             // Big and centred, like every other screen (play-test round 4): the button
             // that starts the pack is the one worth the room
@@ -400,7 +401,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 case 0:
                     cell.setPressedArtwork(UIImage(named:"ButtonClose"))
                 case 1:
-                    cell.setButton("ButtonPlay", pointSize: 28, rimmed: true)
+                    cell.setButton("ButtonPlay", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
                 case 2:
                     if self.gameCenterSetting {
                         cell.setButton("ButtonLeaderboard")

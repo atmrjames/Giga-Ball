@@ -268,6 +268,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         view.addSubview(close)
         view.addSubview(play)
 
+        applyRoundGlass(to: close, radius: 25, symbol: "xmark",
+                        pointSize: 20, rimmed: false)
+        applyRoundGlass(to: play, radius: 37.5)
+        // The same helper the menus' return-to-game play uses, at its own defaults, so this
+        // screen's play is the one the rest of the app draws rather than a second attempt at
+        // it. Below iOS 26 both keep exactly the buttons they had
+
         leaderboardButton.setImage(UIImage(named: "ButtonLeaderboard"), for: .normal)
         leaderboardButton.setImage(UIImage(named: "ButtonLeaderboardHighlighted"),
                                    for: .highlighted)
@@ -275,6 +282,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         leaderboardButton.addTarget(self, action: #selector(leaderboardTapped),
                                     for: .touchUpInside)
         view.addSubview(leaderboardButton)
+        applyRoundGlass(to: leaderboardButton, radius: 25, symbol: "trophy.fill",
+                        pointSize: 20, rimmed: false)
         // The bottom row every other screen has (play-test round 2): close on the left,
         // the big play in the centre, Game Center on the right - the same artwork the
         // level screens' leaderboard button wears

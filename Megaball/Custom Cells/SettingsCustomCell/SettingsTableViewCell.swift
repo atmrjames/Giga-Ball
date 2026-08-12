@@ -152,6 +152,7 @@ class SettingsTableViewCell: UITableViewCell {
         glass.isUserInteractionEnabled = false
         glass.translatesAutoresizingMaskIntoConstraints = false
         glass.cornerConfiguration = .corners(radius: .fixed(cornerRadius))
+        glass.tag = SettingsTableViewCell.glassPanelTag
         parent.insertSubview(glass, belowSubview: view)
         view.backgroundColor = .clear
 
@@ -162,6 +163,34 @@ class SettingsTableViewCell: UITableViewCell {
             glass.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
         return glass
+    }
+
+    /// How a panel added by `addGlass(under:)` is found again.
+    static let glassPanelTag = 8802
+
+    /// Shrinks a table's panel to the height of the rows actually in it.
+    ///
+    /// A table laid out to fill the page leaves the panel filling the page too, so four
+    /// facts sat at the top of an empty card the height of the screen. The panel now stops
+    /// where the content does - and when the content is taller than the table it fills the
+    /// table exactly as before, because the slack is clamped at zero.
+    ///
+    /// Call it from `viewDidLayoutSubviews`: content size is not known until the table has
+    /// laid its rows out, and it changes whenever the data does.
+    static func fitGlassPanel(under view: UIScrollView) {
+        guard let parent = view.superview else { return }
+        guard let glass = parent.subviews.first(where: {
+            $0 is UIVisualEffectView && $0.tag == glassPanelTag
+        }) else { return }
+        guard let bottom = parent.constraints.first(where: {
+            $0.firstItem === glass && $0.firstAttribute == .bottom
+        }) else { return }
+
+        let slack = max(0, view.bounds.height - view.contentSize.height)
+        guard abs(bottom.constant + slack) > 0.5 else { return }
+        // Only when it actually moves. This runs on every layout pass, and changing a
+        // constant unconditionally would ask for another one straight back
+        bottom.constant = -slack
     }
 
     /// Whether this device draws the app's surfaces as glass.

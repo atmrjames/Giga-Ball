@@ -625,7 +625,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         case 1:
             cell.widthConstraint.constant = 75
             if self.sender == "Pause" {
-                cell.setButton("ButtonPlay.png", pointSize: 28, rimmed: true)
+                cell.setButton("ButtonPlay.png", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
                 // 75pt here, so the same glyph size and the same rim as the return-to-game
                 // play on the menus - two buttons that do the same thing should not be two
                 // different materials
