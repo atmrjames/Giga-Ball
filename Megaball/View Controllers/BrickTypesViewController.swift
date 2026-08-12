@@ -102,6 +102,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
 
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
+        backButtonCollectionView.clipsToBounds = false
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil),
                                           forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
@@ -155,6 +156,9 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         view.register(UICollectionReusableView.self,
                       forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
                       withReuseIdentifier: "gridHeader")
+        view.stickyHeaderBand = 34
+        // The height its headings are given below, kept solid so a pinned BEHAVIOURS does
+        // not fade with the squares travelling under it
         itemsView.addSubview(view)
         grid = view
 

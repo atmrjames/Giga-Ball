@@ -55,6 +55,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         
         packCollectionView.delegate = self
         packCollectionView.dataSource = self
+        packCollectionView.clipsToBounds = false
         packCollectionView.register(PackGridCell.self,
                                     forCellWithReuseIdentifier: PackGridCell.reuseIdentifier)
         if let grid = packCollectionView.collectionViewLayout as? UICollectionViewFlowLayout {
@@ -70,6 +71,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
+        backButtonCollectionView.clipsToBounds = false
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         

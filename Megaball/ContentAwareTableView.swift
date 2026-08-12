@@ -35,7 +35,12 @@ extension UIScrollView {
         // counting it, a list padded to just past the bottom of the screen would decide it
         // fitted and refuse to scroll to its own last row (round 74)
 
-        isScrollEnabled = overflows
+        isScrollEnabled = true
+        // **Always.** Deciding this from the content means one wrong measurement - taken
+        // before the rows exist, or against a frame that reaches past the visible area -
+        // locks a list that genuinely overflows, and the player simply cannot reach its last
+        // row (round 78 and again in 81). Nothing is lost by leaving it on: with bounce off
+        // and the content fitting, a scroll view that may scroll still does not move.
         showsVerticalScrollIndicator = overflows
         alwaysBounceVertical = overflows
         // Otherwise a list that fits still rubber-bands, which looks like it scrolls

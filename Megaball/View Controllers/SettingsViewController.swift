@@ -82,6 +82,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
+        backButtonCollectionView.clipsToBounds = false
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
         

@@ -20,6 +20,17 @@ final class ContentAwareCollectionView: UICollectionView {
 
     private let fade = EdgeFade()
 
+    /// The height of a pinned section header, kept out of the edge fade.
+    ///
+    /// The fade masks the whole layer, and a pinned header lives inside that layer - so
+    /// without this the heading fades along with the squares it is presiding over, which is
+    /// the play test's "sticky headers going under blur when scrolled" (round 81). The
+    /// tables have carried the same property since the power-up rows first pinned theirs.
+    var stickyHeaderBand: CGFloat {
+        get { fade.stickyHeaderBand }
+        set { fade.stickyHeaderBand = newValue }
+    }
+
     override init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
         super.init(frame: frame, collectionViewLayout: layout)
         configure()

@@ -72,6 +72,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
+        backButtonCollectionView.clipsToBounds = false
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         

@@ -139,6 +139,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         backButtonCollectionView.delegate = self
         backButtonCollectionView.dataSource = self
+        backButtonCollectionView.clipsToBounds = false
         backButtonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
         
@@ -219,6 +220,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Pinned, like the rows' were: on the in-game power-up page the heading is what
         // tells you whether you are looking at this run's power-ups or all of them, and a
         // heading that scrolls away stops answering that halfway down
+        view.stickyHeaderBand = showsRecentsSection ? 30 : 0
+        // Only the in-game power-up list has headings to keep clear of the fade
         itemsView.addSubview(view)
         grid = view
 
@@ -781,11 +784,20 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// one that lets you equip something you have not earned.
     private func chooseGridItem(at indexPath: IndexPath) {
         if senderID == 2 {
+            hideAnimate()
             moveToItemStats(passedIndex: powerUpIndex(at: indexPath), sender: "Power-Ups")
             return
         }
-        if senderID == 3 { return }
-        // Achievements open nothing - the square says everything the row did
+        if senderID == 3 {
+            hideAnimate()
+            moveToItemStats(passedIndex: indexPath.item, sender: "Achievements")
+            return
+        }
+        // **Both open their detail page, and both hide this one first.** The rows did the
+        // second part and I left it out of the squares, which is why a detail page appeared
+        // *over* a list still standing behind it (round 81) - these screens are children
+        // added over their parent, so a parent that does not step aside stays visible.
+        // Achievements opened a page from the rows too; the squares simply did nothing
 
         let index = indexPath.item
         if senderID == 0 {

@@ -264,6 +264,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
         buttonCollectionView.delegate = self
         buttonCollectionView.dataSource = self
+        buttonCollectionView.clipsToBounds = false
         buttonCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
         

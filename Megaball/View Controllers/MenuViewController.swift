@@ -87,6 +87,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         iconCollectionView.delegate = self
         iconCollectionView.dataSource = self
+        iconCollectionView.clipsToBounds = false
         iconCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
         // Levels tableView setup
         

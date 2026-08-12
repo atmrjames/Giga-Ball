@@ -41,6 +41,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         
         backCollectionView.delegate = self
         backCollectionView.dataSource = self
+        backCollectionView.clipsToBounds = false
         backCollectionView.register(UINib(nibName: "MainMenuCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "iconCell")
 
         userSettings()
