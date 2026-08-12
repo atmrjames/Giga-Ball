@@ -23,9 +23,23 @@ enum EndlessIIPaddleEffects {
     /// takes that influence away; Flipped Angle turns it round. Inert wins when both are
     /// running, because no influence is also no influence to invert - and a player suffering
     /// both at once has enough to think about without the tiebreak being interesting.
+    ///
+    /// **Why both of these read as weaker than they are** (play-test rounds 39 and 46, which
+    /// reported them separately as "does nothing" and "not doing much"). The whole term is
+    /// `angleAdjustmentK * collisionPercentage * influence`, and `collisionPercentage` is how
+    /// far off-centre the ball landed. Near the middle of the paddle it is close to zero, so
+    /// the term is close to zero *whatever this returns* - and most catches are near the
+    /// middle. Neither power-up is broken; both are invisible exactly when the player is
+    /// playing safe, which is most of the time.
+    ///
+    /// Flipped answers that by over-correcting rather than merely inverting: at 1.8 a
+    /// deliberate steer comes back close to twice as hard the other way, which is unmistakable
+    /// the first time it happens and still proportional to how much you asked for.
+    static let flippedInfluence: Double = -1.8
+
     static func angleInfluence(inert: Bool, flipped: Bool) -> Double {
         if inert { return 0 }
-        if flipped { return -1 }
+        if flipped { return flippedInfluence }
         return 1
     }
 

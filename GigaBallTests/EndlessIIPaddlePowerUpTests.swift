@@ -75,10 +75,20 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
 
     func testInertTakesTheInfluenceAwayAndBeatsFlipped() {
         XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: false, flipped: false), 1)
-        XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: false, flipped: true), -1)
         XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: true, flipped: false), 0)
         XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: true, flipped: true), 0,
                        "no influence is also no influence to invert")
+    }
+
+    /// Flipped over-corrects rather than merely inverting (play-test round 46: "not doing
+    /// much"). At a plain -1 a flipped bounce is the mirror of the one you asked for, which is
+    /// only noticeable if you were steering hard - and most catches are near the paddle's
+    /// centre, where the whole term is close to zero whatever this returns.
+    func testFlippedOverCorrectsRatherThanMerelyInverting() {
+        let flipped = EndlessIIPaddleEffects.angleInfluence(inert: false, flipped: true)
+        XCTAssertLessThan(flipped, -1, "inverted and then some")
+        XCTAssertGreaterThan(flipped, -3, "still proportional to how much steer was asked for")
+        XCTAssertEqual(flipped, EndlessIIPaddleEffects.flippedInfluence)
     }
 
     func testReversedControlsIsExactlyASignFlip() {
@@ -334,7 +344,11 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIControlDirection, 1)
 
         scene.endlessIICollectFlippedAngle()
-        XCTAssertEqual(scene.endlessIIPaddleAngleInfluence, -1)
+        XCTAssertEqual(scene.endlessIIPaddleAngleInfluence,
+                       EndlessIIPaddleEffects.flippedInfluence)
+        // Read off the constant rather than written out again: this test held its own copy of
+        // -1 and failed the moment the strength was tuned, which is the suite catching a
+        // second copy of a decision exactly as it should
         scene.endlessIICollectInertPaddle()
         XCTAssertEqual(scene.endlessIIPaddleAngleInfluence, 0)
         scene.endlessIICollectReversedControls()
