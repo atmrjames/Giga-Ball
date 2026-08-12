@@ -187,18 +187,37 @@ extension UIViewController {
     /// regression dressed as a feature.
     func applyRoundGlass(to button: UIButton, radius: CGFloat) {
         if #available(iOS 26.0, *) {
-            button.tintColor = UIColor(white: 0.94, alpha: 1)
+            button.tintColor = .white
+            button.setImage(UIImage(systemName: "play.fill",
+                                    withConfiguration: UIImage.SymbolConfiguration(
+                                        pointSize: 25, weight: .black)), for: .normal)
+            // Pure white and a heavier weight at a slightly smaller size. Off-white on a clear
+            // material picked up the material's own tint and went muddy; white has nothing to
+            // dilute. The extra weight is what makes a glyph read as *drawn* on glass rather
+            // than floating behind it
             // **The glyph goes light on glass, and dark on the disc.** Glass over these dark
             // menus settles dark and translucent, so the deep purple the button has always
             // worn all but disappeared into it (play-test round 53). This is the off-white the
             // *disc* used to be - the contrast simply moves from the circle to the mark on it,
             // which is what a glass control is: the shape stops being the thing you read and
             // the glyph starts being it
-            let glass = UIVisualEffectView(effect: UIGlassEffect())
+            let effect = UIGlassEffect(style: .clear)
+            effect.isInteractive = true
+            // `.clear` rather than `.regular`: the regular material is frosted, and frosting a
+            // 75pt disc over a dark menu is most of what read as blur (play-test round 54).
+            // Clear keeps the refraction and the edge light and drops the diffusion, which is
+            // the crisp half of the look. Interactive because it *is* a control - it should
+            // respond to a press the way every other glass control on the system does
+
+            let glass = UIVisualEffectView(effect: effect)
             glass.isUserInteractionEnabled = false
             glass.translatesAutoresizingMaskIntoConstraints = false
-            glass.layer.cornerRadius = radius
-            glass.clipsToBounds = true
+            glass.cornerConfiguration = .capsule()
+            // **Shaped, not clipped.** A corner radius plus `clipsToBounds` cuts the material
+            // off at the boundary - and the boundary is where glass does its specular edge, so
+            // clipping it leaves the highlight sheared and smeared instead of tracing the rim.
+            // `cornerConfiguration` tells the effect what shape it *is*, so it lights its own
+            // edge. On a square view a capsule is a circle, which is what this button is
             button.insertSubview(glass, at: 0)
             NSLayoutConstraint.activate([
                 glass.topAnchor.constraint(equalTo: button.topAnchor),
