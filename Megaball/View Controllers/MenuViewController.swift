@@ -133,6 +133,33 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         refreshView()
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        showWhatsNewIfDue()
+    }
+
+    /// Greets a player who has just updated, once.
+    ///
+    /// From `viewDidAppear` rather than `viewDidLoad`, because a pop-up presented before the
+    /// menu is on screen has nothing to sit on. The version is written whether or not the
+    /// note is shown, so a fresh install is quietly marked as having seen 1.3 and is never
+    /// told about an update it did not have.
+    private func showWhatsNewIfDue() {
+        let defaults = UserDefaults.standard
+        let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
+            as? String ?? ""
+        let seen = defaults.string(forKey: WhatsNew.seenKey)
+        let played = (totalStatsArray.first?.levelsPlayed ?? 0) > 0
+            || (totalStatsArray.first?.endlessModeHeight.isEmpty == false)
+
+        defaults.set(current, forKey: WhatsNew.seenKey)
+        guard WhatsNew.shouldShow(seen: seen, current: current, hasPlayedBefore: played) else {
+            return
+        }
+        GigaBallAlert.show(on: self, title: WhatsNew.title, message: WhatsNew.message,
+                           symbol: "sparkles")
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         let modeCount = CGFloat(GameMode.allCases.count)

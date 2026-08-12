@@ -9,6 +9,51 @@
 import Foundation
 import GameKit
 
+/// Whether to greet a player who has just updated, and what to say.
+///
+/// **Lives in this file rather than its own** for the reason the glass helpers do: a new file
+/// means four hand-edits to `project.pbxproj`, and this is thirty lines. Both moves are
+/// queued together.
+enum WhatsNew {
+
+    /// Where the last version the player was shown is kept.
+    static let seenKey = "lastSeenAppVersion"
+
+    /// The release this note is about. Compared as a string on purpose - the note is written
+    /// for one release, and the next one will want different words anyway.
+    static let version = "1.3"
+
+    /// Whether this launch should show the note.
+    ///
+    /// - Parameters:
+    ///   - seen: the version last shown, or nil.
+    ///   - current: the version running now.
+    ///   - hasPlayedBefore: whether there is any progress on this device.
+    ///
+    /// **The awkward case is the one that matters.** Version 1.2 never wrote this key, so a
+    /// player updating from it arrives with nothing stored - exactly like a fresh install.
+    /// The two are told apart by whether they have played: somebody with levels behind them
+    /// updated, somebody with none has just arrived and has nothing to be told is new.
+    static func shouldShow(seen: String?, current: String, hasPlayedBefore: Bool) -> Bool {
+        guard current == version else { return false }
+        // Only for the release it was written about. A 1.4 build must not show 1.3's note
+        // just because the key still says 1.2
+
+        guard let seen else { return hasPlayedBefore }
+        return seen != current
+    }
+
+    /// What it says.
+    static let title = "What's New in 1.3"
+    static let message = """
+        Endless Mayhem, a second endless mode with twenty-three power-ups of its own and         bricks that move, spin, explode and send the ball elsewhere.
+
+        A Daily Challenge that changes every day, with its own leaderboard.
+
+        Statistics worth reading, split by mode, and a new look throughout.
+        """
+}
+
 class TotalStats: Codable {
     
     var dateSaved: Date = Date(timeIntervalSinceReferenceDate: 0.0) // Seconds since 00:00:00 UTC on 01/01/2001

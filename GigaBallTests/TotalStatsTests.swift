@@ -131,4 +131,28 @@ final class TotalStatsTests: XCTestCase {
         XCTAssertEqual(stats.bricksHit.count, stats.bricksDestroyed.count)
         XCTAssertEqual(stats.bricksHit.count, 8)
     }
+
+    // MARK: - What's new
+
+    /// The awkward case, and the reason this is not a plain "is the stored version older":
+    /// 1.2 never wrote the key, so somebody updating from it looks exactly like a fresh
+    /// install. Progress is what tells them apart.
+    func testAPlayerUpdatingFromBeforeTheKeyExistedIsGreeted() {
+        XCTAssertTrue(WhatsNew.shouldShow(seen: nil, current: "1.3", hasPlayedBefore: true))
+        XCTAssertFalse(WhatsNew.shouldShow(seen: nil, current: "1.3", hasPlayedBefore: false),
+                       "a fresh install has nothing to be told is new")
+    }
+
+    /// Shown once. The version is written whether or not it was shown, so the second launch
+    /// arrives with it stored.
+    func testItIsShownOnceAndThenNotAgain() {
+        XCTAssertTrue(WhatsNew.shouldShow(seen: "1.2", current: "1.3", hasPlayedBefore: true))
+        XCTAssertFalse(WhatsNew.shouldShow(seen: "1.3", current: "1.3", hasPlayedBefore: true))
+    }
+
+    /// A later build must not show 1.3's note just because the stored key is older than it.
+    /// The note is written about one release and says so.
+    func testALaterReleaseDoesNotShowThisNote() {
+        XCTAssertFalse(WhatsNew.shouldShow(seen: "1.2", current: "1.4", hasPlayedBefore: true))
+    }
 }

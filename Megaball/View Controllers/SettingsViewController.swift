@@ -132,7 +132,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         limitMenuContentSize()
     }
 
-    
     override func viewWillAppear(_ animated: Bool) {
         
     }
