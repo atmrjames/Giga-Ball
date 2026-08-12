@@ -615,7 +615,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             } else if isDailyChallenge {
                 cell.iconImage.image = UIImage(named:"ButtonNull.png")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonRestart.png")
+                cell.iconImage.image = UIImage(named: endlessGameOver
+                                               ? "ButtonHome.png" : "ButtonRestart.png")
             }
             cell.widthConstraint.constant = 40
         case 1:
@@ -623,7 +624,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             if self.sender == "Pause" {
                 cell.iconImage.image = UIImage(named:"ButtonPlay.png")
             } else {
-                cell.iconImage.image = UIImage(named:"ButtonHome.png")
+                cell.iconImage.image = UIImage(named: endlessGameOver
+                                               ? "ButtonRestart.png" : "ButtonHome.png")
             }
         case 2:
             if self.sender == "Pause" {
@@ -651,10 +653,19 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         return cell
     }
     
+    /// Back to the main menu from a finished run. No warning: it is already over, so there is
+    /// nothing left to lose.
+    private func goHomeFromGameOver() {
+        MenuViewController().clearSavedGame()
+        moveToMainMenu()
+    }
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if indexPath.row == 0 {
             if sender == "Pause" {
                 openInformation()
+            } else if endlessGameOver {
+                goHomeFromGameOver()
             } else if isDailyChallenge == false {
                 removeAnimate(nextAction: .restartGameNotificiation)
             }
@@ -663,12 +674,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         if indexPath.row == 1 {
             if self.sender == "Pause" {
                 removeAnimate(nextAction: .unpause)
+            } else if endlessGameOver {
+                removeAnimate(nextAction: .restartGameNotificiation)
             } else {
-                MenuViewController().clearSavedGame()
-                moveToMainMenu()
-                // No warning: the run is already over, so there is nothing to lose
+                goHomeFromGameOver()
             }
         }
+        // The two swap places when an endless run ends (play-test round 39): replay takes the
+        // big centre slot and home the small one on the left, because after an endless run the
+        // thing almost everybody wants next is another go. A classic game over keeps the old
+        // arrangement - there, home is the likelier answer, since the pack is finished with.
+        // Both the pictures above and the actions here ask `endlessGameOver`, so the button
+        // and what it does cannot end up disagreeing
         if indexPath.row == 2 {
             if self.sender == "Pause" {
                 hideAnimate()

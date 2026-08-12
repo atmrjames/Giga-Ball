@@ -392,6 +392,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         info.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
         info.translatesAutoresizingMaskIntoConstraints = false
         info.addTarget(self, action: #selector(swipeInfoTapped), for: .touchUpInside)
+        info.addTarget(self, action: #selector(swipeInfoTouchedDown), for: .touchDown)
+        // **Stamped on the way down, not on the way up** (play-test round 39, the second
+        // report of this). The guard below ignores a row toggle arriving in the same instant
+        // as the button's own press - but it only worked when the button's `touchUpInside`
+        // was delivered *first*. That ordering is not guaranteed: when the row's selection
+        // won the race the stamp was still stale, the guard passed, and the setting flipped
+        // before the pop-up appeared, which is exactly what was reported. A touch-down
+        // always precedes both, so the stamp is fresh whichever order the ups arrive in
         cell.contentView.addSubview(info)
         cell.contentView.bringSubviewToFront(info)
         // In front of everything else in the cell, or a touch near its edge reaches the row
@@ -417,9 +425,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         ])
     }
 
+    @objc func swipeInfoTouchedDown() {
+        infoTappedAt = Date().timeIntervalSince1970
+    }
+
     @objc func swipeInfoTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         infoTappedAt = Date().timeIntervalSince1970
+        // Stamped again on the way up, so a slow press - finger down, held, lifted after the
+        // window - still shields the row toggle that follows it
         explainSwipeUpToPause()
     }
 
