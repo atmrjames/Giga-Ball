@@ -48,6 +48,9 @@ final class DailyCardView: UIView {
         for card in [detailsCard, resultCard] {
             card.backgroundColor = UIColor(white: 1, alpha: 0.07)
             card.layer.cornerRadius = 18
+            SettingsTableViewCell.addGlass(behind: card, cornerRadius: 18)
+            // These two were already translucent rather than light cards, so glass is a
+            // change of material and not of scheme - the labels on them are white already
         }
         // Two containers, not one (play-test round 16): the day's rules are one thing to
         // read and what you scored on it is another. They travel together because they

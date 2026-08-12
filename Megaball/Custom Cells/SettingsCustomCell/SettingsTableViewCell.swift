@@ -134,6 +134,49 @@ class SettingsTableViewCell: UITableViewCell {
     /// the whole reason this is a decision and not just a background swap.
     static let glassForeground = UIColor(white: 0.92, alpha: 1)
 
+    /// Whether this device draws the app's surfaces as glass.
+    ///
+    /// For the handful of marks that are neither a cell's own nor made by `addGlass` - the
+    /// play arrow the level list draws into its rows is the one - and so have to ask.
+    static var glassIsAvailable: Bool {
+        if #available(iOS 26.0, *) { return true }
+        return false
+    }
+
+    /// Puts a Liquid Glass backing behind a view's contents, iOS 26 and up.
+    ///
+    /// Returns the effect view when it made one and `nil` below iOS 26, so a caller can ask
+    /// unconditionally and use the answer as its "am I glass?" flag.
+    ///
+    /// **Why it lives on a table cell.** This is where the tint and the foreground colour
+    /// already are, and six unrelated types now want the same three lines. Its proper home is
+    /// a file of its own; adding one means four hand-edits to `project.pbxproj`, so that is
+    /// queued rather than done in the middle of a visual pass.
+    @discardableResult
+    static func addGlass(behind host: UIView, cornerRadius: CGFloat,
+                         tint: UIColor? = nil) -> UIVisualEffectView? {
+        guard #available(iOS 26.0, *) else { return nil }
+
+        let effect = UIGlassEffect(style: .regular)
+        effect.isInteractive = false
+        effect.tintColor = tint ?? SettingsTableViewCell.glassTint
+
+        let glass = UIVisualEffectView(effect: effect)
+        glass.isUserInteractionEnabled = false
+        glass.translatesAutoresizingMaskIntoConstraints = false
+        glass.cornerConfiguration = .corners(radius: .fixed(cornerRadius))
+        host.insertSubview(glass, at: 0)
+        host.backgroundColor = .clear
+
+        NSLayoutConstraint.activate([
+            glass.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            glass.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            glass.topAnchor.constraint(equalTo: host.topAnchor),
+            glass.bottomAnchor.constraint(equalTo: host.bottomAnchor),
+        ])
+        return glass
+    }
+
     /// How tall a glass row is: 78 rather than the 70 the flat cards use.
     ///
     /// The card's bottom is pinned 20pt above the row's, so the extra height all goes into

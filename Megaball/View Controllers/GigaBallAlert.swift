@@ -166,6 +166,12 @@ final class GigaBallAlertViewController: UIViewController {
         button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1), for: .normal)
         button.backgroundColor = UIColor(white: 0.92, alpha: 1)
         button.layer.cornerRadius = 22
+        if SettingsTableViewCell.addGlass(behind: button, cornerRadius: 22) != nil {
+            button.setTitleColor(SettingsTableViewCell.glassForeground, for: .normal)
+        }
+        // Only the pale one. The green button is the one that does the thing, and its colour
+        // is how the pop-up says so - putting both behind the same material would make a
+        // choice out of two identical shapes
         button.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
 
         let buttons = UIStackView(arrangedSubviews: [button])

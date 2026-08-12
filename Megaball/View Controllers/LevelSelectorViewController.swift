@@ -165,7 +165,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.lockedImageView.isHidden = true
             cell.cellView3.tag = indexPath.row+1
             cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
-            cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            cell.setNameColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
             // Setup cell buttons
 
             if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] {
@@ -189,7 +189,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             }
 
             if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] == false {
-                cell.levelNameLabel.textColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25)
+                cell.setNameColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row-1] {
                     cell.levelNameLabel.text = "Complete \(LevelPackSetup().levelNameArray[startLevel!+indexPath.row-1]) level to unlock"
                 } else {
@@ -204,7 +204,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             UIView.animate(withDuration: 0.1) {
                 cell.cellView3.transform = .identity
-                cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                if cell.isGlass == false {
+                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                }
             }
             return cell
         }
@@ -218,7 +220,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
                 UIView.animate(withDuration: 0.1) {
                     cell.cellView3.transform = .init(scaleX: 0.99, y: 0.99)
-                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+                    if cell.isGlass == false {
+                        cell.cellView3.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+                    }
                 }
             }
             
@@ -242,7 +246,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
                 UIView.animate(withDuration: 0.1) {
                     cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
-                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+                    if cell.isGlass == false {
+                        cell.cellView3.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+                    }
                 }
             }
         }
@@ -254,7 +260,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
                 UIView.animate(withDuration: 0.1) {
                     cell.cellView3.transform = .identity
-                    cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                    if cell.isGlass == false {
+                        cell.cellView3.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                    }
                 }
             }
         }
@@ -412,7 +420,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 17,
                                                                              weight: .heavy)),
                       for: .normal)
-        play.tintColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        play.tintColor = SettingsTableViewCell.glassIsAvailable
+            ? SettingsTableViewCell.glassForeground
+            : #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         play.translatesAutoresizingMaskIntoConstraints = false
         play.addTarget(self, action: #selector(levelPlayTapped(_:)), for: .touchUpInside)
         cell.contentView.addSubview(play)

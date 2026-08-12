@@ -228,7 +228,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         UIView.animate(withDuration: 0.1) {
             cell.cellView1.transform = .identity
-            cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            if cell.isGlass == false {
+                cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+            }
         }
         
         return cell
@@ -238,7 +240,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
             UIView.animate(withDuration: 0.1) {
-                cell.cellView1.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+                if cell.isGlass == false {
+                    cell.cellView1.backgroundColor = #colorLiteral(red: 0.5015605688, green: 0.4985827804, blue: 0.503851831, alpha: 1)
+                }
             }
         }
 
@@ -278,7 +282,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView1.transform = .init(scaleX: 0.95, y: 0.95)
-                cell.cellView1.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+                if cell.isGlass == false {
+                    cell.cellView1.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
+                }
             }
         }
     }
@@ -287,7 +293,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView1.transform = .identity
-                cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                if cell.isGlass == false {
+                    cell.cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+                }
             }
         }
     }

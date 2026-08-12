@@ -119,7 +119,8 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
 
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: pointSize, weight: .bold))?
+                                      pointSize: pointSize,
+                                      weight: rimmed ? .black : .bold))?
             .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
         iconImage.contentMode = .center
         iconImage.layer.masksToBounds = true
@@ -136,6 +137,11 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // the mark still filled its disc. `.center` draws the image at its natural size, so
         // the point size above is finally the dial it looks like - and 15pt, which is what
         // the run before this asked for, turned out to be too *small* once it was honoured.
+        //
+        // `.black` on the big buttons, `.bold` on the small ones. The point size matched the
+        // return-to-game play all along and the glyph still read smaller, because that one is
+        // drawn at `.black` - a heavier play.fill is visibly wider as well as thicker, and
+        // weight was the difference the point size could not explain (round 69)
         //
         // Off-white rather than pure white, matching the discs the other round buttons wear:
         // white was right when the glyph had to fight a tinted material for attention, and

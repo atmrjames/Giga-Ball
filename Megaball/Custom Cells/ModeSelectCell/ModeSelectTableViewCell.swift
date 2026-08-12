@@ -24,6 +24,28 @@ class ModeSelectTableViewCell: UITableViewCell {
         cellView1.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
         cellView1.layer.shadowOpacity = 0.25
         cellView1.layer.shadowRadius = 4
+
+        isGlass = SettingsTableViewCell.addGlass(behind: cellView1,
+                                                 cornerRadius: 37.5) != nil
+        if isGlass {
+            cellView1.layer.shadowOpacity = 0
+            modeTextLabel.textColor = SettingsTableViewCell.glassForeground
+        }
+        // The mode icons are pictures - a purple ball, a lime infinity, a calendar - so they
+        // are left exactly as they are. Only the name has to move off the app's dark purple
+    }
+
+    /// Whether this cell wears glass, which the menu's press feedback has to ask.
+    private(set) var isGlass = false
+
+    /// The press feedback, which cannot be a colour on a glass row.
+    func setPressed(_ pressed: Bool, colour: UIColor) {
+        UIView.animate(withDuration: 0.1) {
+            self.cellView1.transform = pressed ? .init(scaleX: 0.98, y: 0.98) : .identity
+            if self.isGlass == false {
+                self.cellView1.backgroundColor = colour
+            }
+        }
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {
@@ -40,7 +62,9 @@ class ModeSelectTableViewCell: UITableViewCell {
         // carries the scale and colour to whichever row it is reused for, and the wrong
         // row appears to animate.
         cellView1.transform = .identity
-        cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        if isGlass == false {
+            cellView1.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
+        }
     }
 
 }

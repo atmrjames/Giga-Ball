@@ -16,7 +16,13 @@ class StatsTableViewCell: UITableViewCell {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Initialization code
+
+        guard SettingsTableViewCell.addGlass(behind: viewBackground,
+                                             cornerRadius: 14) != nil else { return }
+        statDescription.textColor = SettingsTableViewCell.glassForeground
+        statValue.textColor = SettingsTableViewCell.glassForeground
+        // The gutter icon takes its tint from `statDescription` on every pass, so it follows
+        // this without being told - which is the reason it was written that way
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {
