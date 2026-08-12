@@ -14,15 +14,41 @@ class StatsTableViewCell: UITableViewCell {
     @IBOutlet var statDescription: UILabel!
     @IBOutlet var statValue: UILabel!
     
+    /// The hairline between one fact and the next.
+    private let divider = UIView()
+
     override func awakeFromNib() {
         super.awakeFromNib()
 
-        guard SettingsTableViewCell.addGlass(behind: viewBackground,
-                                             cornerRadius: 14) != nil else { return }
+        guard SettingsTableViewCell.glassIsAvailable else { return }
+
+        viewBackground.backgroundColor = .clear
+        // **No card of its own** (round 70). Giving every row a glass rectangle made a
+        // stack of fourteen framed boxes, and the play test read it as edges rather than as
+        // a table - "too many edges", which is exactly right. The panel is now behind the
+        // *table*, put there by whichever screen owns it, and a row is just a row on it.
+
         statDescription.textColor = SettingsTableViewCell.glassForeground
         statValue.textColor = SettingsTableViewCell.glassForeground
         // The gutter icon takes its tint from `statDescription` on every pass, so it follows
         // this without being told - which is the reason it was written that way
+
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        divider.backgroundColor = SettingsTableViewCell.glassForeground.withAlphaComponent(0.12)
+        contentView.addSubview(divider)
+        NSLayoutConstraint.activate([
+            divider.leadingAnchor.constraint(equalTo: statDescription.leadingAnchor),
+            divider.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            divider.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            divider.heightAnchor.constraint(equalToConstant: 1),
+        ])
+        // Inset to where the words start rather than run wall to wall, which is what makes a
+        // divider read as a separation between two rows instead of as another edge
+    }
+
+    /// Whether this row draws a line under itself. The last one in a table does not.
+    func showDivider(_ show: Bool) {
+        divider.isHidden = show == false
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {

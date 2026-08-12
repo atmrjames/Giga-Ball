@@ -123,14 +123,22 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
                                       weight: rimmed ? .black : .bold))?
             .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
         iconImage.contentMode = .center
-        iconImage.layer.masksToBounds = true
-        // **The belt to `setPressedArtwork`'s braces** (round 66). `.center` draws whatever
-        // image it is given at that image's natural size, and the close artwork is a 210pt
-        // asset - so any screen that assigns `iconImage.image` directly, as one still was,
-        // paints a 210pt picture out of a 40pt button and across the screen. `awakeFromNib`
-        // turns masking off for the glyph shadow; a glass button has no glyph shadow to
-        // protect, so it can afford to clip, and clipping makes the spill impossible rather
-        // than merely absent from the call sites anybody remembered to change
+        iconImage.layer.masksToBounds = false
+        iconImage.layer.shadowColor = UIColor.black.cgColor
+        iconImage.layer.shadowOpacity = 0.45
+        iconImage.layer.shadowRadius = 4
+        iconImage.layer.shadowOffset = .zero
+        // **The clip is gone again, and the shadow is why** (round 70). Round 66 turned
+        // `masksToBounds` on as insurance against a screen assigning `iconImage.image`
+        // directly and painting the 210pt close artwork across the screen. A masked layer
+        // cannot draw a shadow outside its own bounds, so the insurance silently took the
+        // glyph's soft dark halo away - and a glyph with no halo reads *smaller*, which is
+        // what the play test kept seeing and what two rounds of matching point sizes and
+        // weights could never have explained. The insurance is no longer needed: every call
+        // site goes through `setButton` now, and that returns early on a glass cell.
+        //
+        // The shadow is black at 0.45, the same as the big return-to-game play's, so the two
+        // are now identical in every respect rather than merely in point size
         // **`.center`, not `.scaleAspectFit`** (round 61). Aspect-fit scales *up* as well as
         // down, so the symbol was being blown up to fill a 40pt image view whatever point size
         // it was made at - which is why round 59's drop from 17pt to 13pt changed nothing and
@@ -175,7 +183,9 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // and only some of them are glass - a leftover disc behind a PNG would be a halo
         // round a button that never asked for one
         iconImage.contentMode = .scaleAspectFit
-        iconImage.layer.masksToBounds = false
+        iconImage.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+        iconImage.layer.shadowOpacity = 0.5
+        // Back to the nib's purple halo, since a reused cell may be a PNG button next
         // **The nib's mode, put back** (round 65). `applyGlass` switches this to `.center` so
         // the SF Symbol draws at its own point size - and `.center` draws *any* image at its
         // natural size. `ButtonNull` is a 210pt asset, `clipsToBounds` is off on this cell for

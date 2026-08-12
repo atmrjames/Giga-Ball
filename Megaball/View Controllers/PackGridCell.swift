@@ -147,10 +147,14 @@ final class PackGridCell: UICollectionViewCell {
             tick.topAnchor.constraint(equalTo: card.topAnchor, constant: 7),
             tick.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -7),
 
-            play.topAnchor.constraint(equalTo: card.topAnchor, constant: 1),
-            play.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 1),
-            play.widthAnchor.constraint(equalToConstant: 32),
-            play.heightAnchor.constraint(equalToConstant: 32),
+            play.topAnchor.constraint(equalTo: card.topAnchor, constant: -3),
+            play.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: -3),
+            play.widthAnchor.constraint(equalToConstant: 44),
+            play.heightAnchor.constraint(equalToConstant: 44),
+            // 44, Apple's minimum, rather than 32 (play-test round 70). The glyph inside is
+            // unchanged and still sits in the same corner - the button grows outwards from
+            // it, which is why the insets go negative. It catches more without looking
+            // heavier, the same trade the settings screen's information button made
         ])
     }
 

@@ -134,6 +134,36 @@ class SettingsTableViewCell: UITableViewCell {
     /// the whole reason this is a decision and not just a background swap.
     static let glassForeground = UIColor(white: 0.92, alpha: 1)
 
+    /// Puts a Liquid Glass panel *behind* a view rather than inside it.
+    ///
+    /// For a scrolling table, where a backing added as a subview would scroll away with the
+    /// content. This one goes into the table's superview, underneath it, pinned to its
+    /// frame - so the panel stays put and the rows travel over it.
+    @discardableResult
+    static func addGlass(under view: UIView, cornerRadius: CGFloat,
+                         inset: CGFloat = 0) -> UIVisualEffectView? {
+        guard #available(iOS 26.0, *), let parent = view.superview else { return nil }
+
+        let effect = UIGlassEffect(style: .regular)
+        effect.isInteractive = false
+        effect.tintColor = SettingsTableViewCell.glassTint
+
+        let glass = UIVisualEffectView(effect: effect)
+        glass.isUserInteractionEnabled = false
+        glass.translatesAutoresizingMaskIntoConstraints = false
+        glass.cornerConfiguration = .corners(radius: .fixed(cornerRadius))
+        parent.insertSubview(glass, belowSubview: view)
+        view.backgroundColor = .clear
+
+        NSLayoutConstraint.activate([
+            glass.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: inset),
+            glass.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -inset),
+            glass.topAnchor.constraint(equalTo: view.topAnchor),
+            glass.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+        return glass
+    }
+
     /// Whether this device draws the app's surfaces as glass.
     ///
     /// For the handful of marks that are neither a cell's own nor made by `addGlass` - the

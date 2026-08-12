@@ -54,6 +54,10 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         statsTableView.delegate = self
         statsTableView.dataSource = self
         statsTableView.register(UINib(nibName: "StatsTableViewCell", bundle: nil), forCellReuseIdentifier: "customStatCell")
+        SettingsTableViewCell.addGlass(under: statsTableView, cornerRadius: 14, inset: 20)
+        statsTableView.separatorStyle = .none
+        // One panel for the whole table rather than a card per row - see
+        // `StatsTableViewCell.awakeFromNib` for why
         // TableView setup
         
         backButtonCollectionView.delegate = self
@@ -151,6 +155,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
+        cell.showDivider(indexPath.row < tableView.numberOfRows(inSection: indexPath.section) - 1)
         
         statsTableView.rowHeight = 35.0
 
