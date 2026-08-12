@@ -110,12 +110,38 @@ final class GigaBallAlertViewController: UIViewController {
         // buttons *do* something, in which case there is no harmless answer to give on the
         // player's behalf and the choice has to be made on the card
 
-        card.backgroundColor = UIColor(white: 1, alpha: 0.08)
         card.layer.cornerRadius = 20
-        card.layer.borderWidth = 1
-        card.layer.borderColor = UIColor(white: 1, alpha: 0.12).cgColor
         card.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(card)
+
+        if #available(iOS 26.0, *) {
+            let effect = UIGlassEffect(style: .regular)
+            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.34)
+            let glass = UIVisualEffectView(effect: effect)
+            glass.isUserInteractionEnabled = false
+            glass.translatesAutoresizingMaskIntoConstraints = false
+            glass.cornerConfiguration = .corners(radius: .fixed(20))
+            card.insertSubview(glass, at: 0)
+            NSLayoutConstraint.activate([
+                glass.topAnchor.constraint(equalTo: card.topAnchor),
+                glass.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+                glass.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+                glass.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            ])
+            // The card is glass (play-test round 59). Same recipe as the round buttons -
+            // `.regular` tinted with the app's purple, shaped rather than clipped - with the
+            // tint a little heavier than a button's, because a card is a surface to read words
+            // off rather than a mark to spot. Not interactive: the *buttons* on the card are
+            // the controls, and a whole panel that responds to a press reads as a mistake.
+            //
+            // No border either. The hairline the flat card wore was standing in for an edge it
+            // could not otherwise have; glass lights its own, and drawing both gives a card
+            // two rims
+        } else {
+            card.backgroundColor = UIColor(white: 1, alpha: 0.08)
+            card.layer.borderWidth = 1
+            card.layer.borderColor = UIColor(white: 1, alpha: 0.12).cgColor
+        }
 
         let titleLabel = UILabel()
         titleLabel.text = heading

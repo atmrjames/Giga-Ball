@@ -215,7 +215,7 @@ extension UIViewController {
 
             let effect = UIGlassEffect(style: .regular)
             effect.isInteractive = true
-            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.28)
+            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.15)
             // **Back to `.regular`, and tinted** (round 55). Round 54 blamed the frosting for
             // the blur and went to `.clear`; the blur was really the clipping, fixed in the
             // same round, and `.clear` over a dark menu then drew its specular rim at full
@@ -225,8 +225,11 @@ extension UIViewController {
             // border. Two dials rather than one: the material decides how soft the edge is,
             // the tint decides how far it stands off the background.
             //
-            // 0.38 rather than 0.55 (round 57): the tint is what dims the specular rim, so
-            // less of it is a brighter edge. This is the dial for "the edge is a touch too
+            // Down again to 0.15 (round 59), asked for three times now: the tint is what dims
+            // the specular rim, so less of it is a brighter, bolder edge. This is close to the
+            // end of the dial - at zero it is `.clear`, which round 54 tried and which drew
+            // the hard white ring. If it still wants more, the next lever is a real one rather
+            // than this one. This is the dial for "the edge is a touch too
             // dim" or "a touch too bold", and the only one - reaching for the material again
             // would change the softness as well, which is not what is being asked for
 

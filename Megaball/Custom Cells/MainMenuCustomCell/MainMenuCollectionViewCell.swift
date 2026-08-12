@@ -69,9 +69,12 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
 
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 17, weight: .bold))?
+                                      pointSize: 13, weight: .bold))?
             .withTintColor(.white, renderingMode: .alwaysOriginal)
         iconImage.contentMode = .scaleAspectFit
+        // 13pt rather than 17 (round 59): the old PNG filled its disc because the disc was
+        // part of the artwork, and a symbol at that size on a *separate* disc looks cramped -
+        // glass wants room around the mark to be seen as glass at all
         // Baked white for the same reason the big one is: a tint is a request the material can
         // reinterpret, and this glyph sits on a surface whose brightness is whatever is behind
         // it. The shadow `awakeFromNib` already puts on every icon does the rest
