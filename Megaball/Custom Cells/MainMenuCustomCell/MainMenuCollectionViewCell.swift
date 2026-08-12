@@ -69,12 +69,18 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
 
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 13, weight: .bold))?
-            .withTintColor(.white, renderingMode: .alwaysOriginal)
-        iconImage.contentMode = .scaleAspectFit
-        // 13pt rather than 17 (round 59): the old PNG filled its disc because the disc was
-        // part of the artwork, and a symbol at that size on a *separate* disc looks cramped -
-        // glass wants room around the mark to be seen as glass at all
+                                      pointSize: 15, weight: .bold))?
+            .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
+        iconImage.contentMode = .center
+        // **`.center`, not `.scaleAspectFit`** (round 61). Aspect-fit scales *up* as well as
+        // down, so the symbol was being blown up to fill a 40pt image view whatever point size
+        // it was made at - which is why round 59's drop from 17pt to 13pt changed nothing and
+        // the mark still filled its disc. `.center` draws the image at its natural size, so
+        // the point size above is finally the dial it looks like.
+        //
+        // Off-white rather than pure white, matching the discs the other round buttons wear:
+        // white was right when the glyph had to fight a tinted material for attention, and
+        // reads as harsh now the rim carries the contrast
         // Baked white for the same reason the big one is: a tint is a request the material can
         // reinterpret, and this glyph sits on a surface whose brightness is whatever is behind
         // it. The shadow `awakeFromNib` already puts on every icon does the rest

@@ -189,8 +189,11 @@ extension UIViewController {
         if #available(iOS 26.0, *) {
             let glyph = UIImage(systemName: "play.fill",
                                 withConfiguration: UIImage.SymbolConfiguration(
-                                    pointSize: 25, weight: .black))?
-                .withTintColor(.white, renderingMode: .alwaysOriginal)
+                                    pointSize: 28, weight: .black))?
+                .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
+                // Off-white rather than pure white, matching the small buttons' glyphs: white
+                // was right while the glyph had to fight a tinted material for attention, and
+                // reads as harsh now the rim carries the contrast (round 61)
             button.setImage(glyph, for: .normal)
             button.imageView?.layer.shadowColor = UIColor.black.cgColor
             button.imageView?.layer.shadowOpacity = 0.45
@@ -238,8 +241,11 @@ extension UIViewController {
             glass.translatesAutoresizingMaskIntoConstraints = false
             glass.cornerConfiguration = .capsule()
             glass.layer.cornerRadius = radius
-            glass.layer.borderWidth = 1.5
-            glass.layer.borderColor = UIColor(white: 1, alpha: 0.34).cgColor
+            glass.layer.borderWidth = 2.5
+            glass.layer.borderColor = UIColor(white: 1, alpha: 0.20).cgColor
+            // Wider and dimmer (round 61). The two are independent now, which is the point of
+            // a real border rather than a tint: width for *bigger*, alpha for *bolder*, and
+            // this asks for more of the first and less of the second
             // **A different lever, because the tint had run out** (round 60). The tint dims or
             // brightens the material's *own* specular rim and nothing more - at 0.15 it is
             // nearly as bright as that rim gets, and at zero it becomes `.clear`, whose
