@@ -268,7 +268,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         view.addSubview(close)
         view.addSubview(play)
 
-        applyRoundGlass(to: close, radius: 25, symbol: "xmark",
+        applyRoundGlass(to: close, radius: MainMenuCollectionViewCell.smallButtonSize/2,
+                        symbol: "xmark",
                         pointSize: 20, rimmed: false)
         applyRoundGlass(to: play, radius: 37.5)
         // The same helper the menus' return-to-game play uses, at its own defaults, so this
@@ -282,7 +283,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         leaderboardButton.addTarget(self, action: #selector(leaderboardTapped),
                                     for: .touchUpInside)
         view.addSubview(leaderboardButton)
-        applyRoundGlass(to: leaderboardButton, radius: 25, symbol: "trophy.fill",
+        applyRoundGlass(to: leaderboardButton,
+                        radius: MainMenuCollectionViewCell.smallButtonSize/2,
+                        symbol: "trophy.fill",
                         pointSize: 20, rimmed: false)
         // The bottom row every other screen has (play-test round 2): close on the left,
         // the big play in the centre, Game Center on the right - the same artwork the
@@ -354,8 +357,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 55),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -25),
-            close.widthAnchor.constraint(equalToConstant: 40),
-            close.heightAnchor.constraint(equalToConstant: 40),
+            close.widthAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
+            close.heightAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
             // 55pt in from the edge, where the collection-view rows on the other mode
             // menus put their outer buttons (play-test round 11: these sat wider)
 
@@ -367,8 +370,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             leaderboardButton.trailingAnchor.constraint(equalTo: view.trailingAnchor,
                                                         constant: -55),
             leaderboardButton.centerYAnchor.constraint(equalTo: close.centerYAnchor),
-            leaderboardButton.widthAnchor.constraint(equalToConstant: 40),
-            leaderboardButton.heightAnchor.constraint(equalToConstant: 40),
+            leaderboardButton.widthAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
+            leaderboardButton.heightAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
             // 40pt like every other menu's small buttons - only the play is big
 
         ])

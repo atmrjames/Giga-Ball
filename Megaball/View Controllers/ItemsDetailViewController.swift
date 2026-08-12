@@ -820,6 +820,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         guard collectionView == backButtonCollectionView else {
+            if hapticsSetting { interfaceHaptic.impactOccurred() }
+            // The rows tapped the taptic engine when they lit up and the squares did not, so
+            // a grid felt dead where the same list had felt alive (play-test round 83)
             (collectionView.cellForItem(at: indexPath) as? PackGridCell)?
                 .setPressed(true)
             return

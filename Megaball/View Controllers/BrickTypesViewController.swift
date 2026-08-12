@@ -400,6 +400,8 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         guard collectionView == backButtonCollectionView else {
+            if hapticsSetting { interfaceHaptic.impactOccurred() }
+            // See ItemsDetailViewController: the squares were silent where the rows tapped
             (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(true)
             return
         }

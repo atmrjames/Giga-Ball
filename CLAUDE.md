@@ -121,6 +121,12 @@ over the one that opened it, and each has its own back button in a collection vi
 call. Adding a screen means conforming to `MenuNavigable`, routing its back button through
 that method, and calling `installMenuNavigationSwipes()` in `viewDidLoad`.
 
+That swipe is **horizontal only**, and it has to be: a plain pan recognises a drag in any
+direction, and with `cancelsTouchesInView` on it then cancels the touch a table underneath
+was scrolling with. That is why the menus would not scroll, and three rounds went into the
+scroll affordance before the gesture was suspected. `gestureRecognizerShouldBegin` compares
+the translation's x against its y - a pan reports its translation by the time it is asked.
+
 A `UIPanGestureRecognizer` only begins after the touch has travelled its slop, so
 `location(in:)` at `.began` is already well inside the screen - the start has to be worked
 back out from the translation, or a swipe from the very edge reads as starting outside the

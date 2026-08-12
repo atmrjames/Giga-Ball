@@ -92,6 +92,24 @@ final class MenuNavigation: NSObject, UIGestureRecognizerDelegate {
         true
     }
 
+    /// **The back swipe is horizontal, and only horizontal.**
+    ///
+    /// It is a plain `UIPanGestureRecognizer` on the screen's own view, and a plain pan
+    /// recognises *any* drag - so a finger moving straight down recognised it, and
+    /// `cancelsTouchesInView` then cancelled the touch the table underneath was scrolling
+    /// with. That is why the menus would not scroll: not the scroll affordance, which three
+    /// rounds were spent adjusting (78, 81, 82), but a gesture eating the drag before the
+    /// list ever saw it. A pan reports its translation by the time it is asked whether to
+    /// begin, so the direction is knowable exactly when the answer is needed.
+    ///
+    /// `cancelsTouchesInView` stays on. It is there because a swipe that starts on a cell
+    /// must not also open it, and that is still true of a horizontal one.
+    func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
+        guard let pan = gesture as? UIPanGestureRecognizer else { return true }
+        let travelled = pan.translation(in: pan.view)
+        return abs(travelled.x) > abs(travelled.y)
+    }
+
     /// Remembers a screen as it goes back, so a forward swipe can return to it.
     func record(_ screen: UIViewController) {
         self.screen = screen
