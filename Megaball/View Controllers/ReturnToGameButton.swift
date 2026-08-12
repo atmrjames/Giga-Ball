@@ -58,7 +58,6 @@ extension UIViewController {
         let play = UIButton(type: .system)
         play.tag = Self.returnToGameTag
         play.translatesAutoresizingMaskIntoConstraints = false
-        play.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
         play.layer.cornerRadius = 37.5
         play.setImage(UIImage(systemName: "play.fill",
                               withConfiguration: UIImage.SymbolConfiguration(
@@ -188,6 +187,13 @@ extension UIViewController {
     /// regression dressed as a feature.
     func applyRoundGlass(to button: UIButton, radius: CGFloat) {
         if #available(iOS 26.0, *) {
+            button.tintColor = UIColor(white: 0.94, alpha: 1)
+            // **The glyph goes light on glass, and dark on the disc.** Glass over these dark
+            // menus settles dark and translucent, so the deep purple the button has always
+            // worn all but disappeared into it (play-test round 53). This is the off-white the
+            // *disc* used to be - the contrast simply moves from the circle to the mark on it,
+            // which is what a glass control is: the shape stops being the thing you read and
+            // the glyph starts being it
             let glass = UIVisualEffectView(effect: UIGlassEffect())
             glass.isUserInteractionEnabled = false
             glass.translatesAutoresizingMaskIntoConstraints = false
@@ -204,6 +210,9 @@ extension UIViewController {
             // and the glass is only how it looks
         } else {
             button.backgroundColor = UIColor(white: 0.92, alpha: 1)
+            button.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+            // The old pair, unchanged: a pale disc needs a dark glyph, and inverting only the
+            // glass path means an iOS 15 phone is not handed white-on-white
         }
     }
 
