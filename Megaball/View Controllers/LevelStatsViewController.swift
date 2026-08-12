@@ -157,7 +157,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
         
-        cell.widthConstraint.constant = 40
+        cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         // No writing to cell.frame here: the flow layout owns the cell's size, and a
         // manual 50 fought the 75 the delegate gives the play cell - the frame snapped
         // to 50 on every reload and back to 75 on the next layout pass, which is the

@@ -621,7 +621,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             } else {
                 cell.setButton(endlessGameOver ? "ButtonHome" : "ButtonRestart")
             }
-            cell.widthConstraint.constant = 40
+            cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         case 1:
             cell.widthConstraint.constant = 75
             if self.sender == "Pause" {
@@ -642,7 +642,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 // The endless run's detail moved to the More Stats… button under the
                 // stats list (play-test round 11) - the rosette here said nothing
             }
-            cell.widthConstraint.constant = 40
+            cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
             break

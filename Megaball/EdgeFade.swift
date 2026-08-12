@@ -72,7 +72,12 @@ final class EdgeFade {
         // area for free
 
         let height = max(scrollView.bounds.height, 1)
-        let band = min(stickyHeaderBand, height/2)
+        let band = min(stickyHeaderBand + scrollView.contentInset.top, height/2)
+        // The padding above the first row counts. A pinned header pins below the content
+        // inset, not at the top of the frame, so a band measured from the frame left the
+        // header itself inside the fading region - which is the play test's "sticky headers
+        // go behind the blur effect when scrolled" (round 75). Everything above the header
+        // is empty padding, so keeping it solid costs nothing
         if band > 0 {
             mask.colors = [UIColor.black.cgColor, UIColor.black.cgColor,
                            UIColor.clear.cgColor, UIColor.black.cgColor,

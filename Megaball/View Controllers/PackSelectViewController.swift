@@ -332,7 +332,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         let collectionView = backButtonCollectionView!
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
 
-        cell.widthConstraint.constant = 40
+        cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         // The layout owns the cell's frame - see LevelStatsViewController's note
 
         switch indexPath.row {

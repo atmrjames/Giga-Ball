@@ -138,7 +138,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         
         cell.frame.size.height = 50
         cell.frame.size.width = cell.frame.size.height
-        cell.widthConstraint.constant = 40
+        cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         cell.setButton("ButtonClose.png")
         
         UIView.animate(withDuration: 0.1) {

@@ -33,7 +33,7 @@ extension UIViewController {
     /// twelve menu screens share a nib and a navigation pattern but not a layout - each is
     /// its own storyboard scene - so a constraint would be twelve edits that can drift,
     /// where an inset is one number applied from the one method they all already call.
-    static let menuListBreathingRoom = UIEdgeInsets(top: 16, left: 0, bottom: 24, right: 0)
+    static let menuListBreathingRoom = UIEdgeInsets(top: 32, left: 0, bottom: 24, right: 0)
 
     /// Opens that gap on every list in the screen.
     ///

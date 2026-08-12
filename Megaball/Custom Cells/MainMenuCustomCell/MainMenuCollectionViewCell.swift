@@ -79,6 +79,14 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     /// surfaces, this constant is where to undo it.
     static let bigGlyphPointSize: CGFloat = 34
 
+    /// How wide a small round button is.
+    ///
+    /// 50, which is what the main menu's information and settings buttons have always been -
+    /// every other screen used 40 and the play test read the difference as the rest of the
+    /// app being cramped (round 75). One constant rather than the number written out at
+    /// twenty call sites, so the next opinion about it is one edit.
+    static let smallButtonSize: CGFloat = 50
+
     func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
         guard isGlass == false else { return }
         iconImage.image = UIImage(named: named)
