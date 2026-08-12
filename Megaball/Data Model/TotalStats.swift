@@ -34,6 +34,42 @@ class TotalStats: Codable {
     // One slot per power-up, in power-up order. Sized by count rather than written out,
     // because the literal was miscounted once already - and every new power-up grows this,
     // the unlock array below, and the iCloud copies in CloudKitHandler together
+    /// Metres climbed while each power-up was running, one slot per power-up, per endless
+    /// mode. The stats page has a tab each, so they are counted apart.
+    ///
+    /// **Every power-up active at the moment a metre is scored gets the whole metre**, so
+    /// these sum to more than the height climbed. That is deliberate and James's call: the
+    /// page says *while active*, not *because of*, which is honest about it being
+    /// correlation - splitting a metre between three running power-ups would invent a
+    /// precision the measurement does not have.
+    ///
+    /// The instant power-ups - Cull, Clear And Retreat, Infill, Wipe - score nothing, and
+    /// need no rule to make that happen: they are never *running*, so they are never in the
+    /// active set this counts from.
+    ///
+    /// Optional for the same decode-safety reason `bestBallHits` is: a stats file written
+    /// before this existed must still decode, or it is every player's history gone.
+    var endlessPowerUpMetres: [Int]?
+    var endlessIIPowerUpMetres: [Int]?
+
+    /// The metres array for a mode, absent-means-none handled, always full length.
+    func powerUpMetres(inMayhem: Bool) -> [Int] {
+        let stored = inMayhem ? endlessIIPowerUpMetres : endlessPowerUpMetres
+        return TotalStats.padded(stored ?? [], like: TotalStats.freshPowerUpMetres)
+    }
+
+    /// Credits one metre to every power-up in `indices`, for one mode.
+    func creditMetre(to indices: some Sequence<Int>, inMayhem: Bool) {
+        var metres = powerUpMetres(inMayhem: inMayhem)
+        for index in indices where metres.indices.contains(index) {
+            metres[index] += 1
+        }
+        if inMayhem { endlessIIPowerUpMetres = metres } else { endlessPowerUpMetres = metres }
+    }
+
+    /// An empty set of slots, sized off the same count everything else here is.
+    static var freshPowerUpMetres: [Int] { Array(repeating: 0, count: TotalStats().powerupsCollected.count) }
+
     var bricksHit: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var lasersFired: Int = 0
@@ -567,6 +603,16 @@ extension TotalStats {
         achievementsPercentageCompleteArray =
             TotalStats.padded(achievementsPercentageCompleteArray,
                               like: fresh.achievementsPercentageCompleteArray)
+
+        if let stored = endlessPowerUpMetres {
+            endlessPowerUpMetres = TotalStats.padded(stored, like: TotalStats.freshPowerUpMetres)
+        }
+        if let stored = endlessIIPowerUpMetres {
+            endlessIIPowerUpMetres = TotalStats.padded(stored, like: TotalStats.freshPowerUpMetres)
+        }
+        // Only when there is something stored. Padding a `nil` into an array of zeroes would
+        // turn "never played an endless run" into "played and scored nothing", and the stats
+        // page tells those two apart
 
         powerupsCollected = TotalStats.padded(powerupsCollected, like: fresh.powerupsCollected)
         powerupsGenerated = TotalStats.padded(powerupsGenerated, like: fresh.powerupsGenerated)

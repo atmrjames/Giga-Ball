@@ -3068,6 +3068,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 
 		endlessHeight+=1
+		creditPowerUpsWithThisMetre()
 		refreshEndlessIIBest()
 		moveEndlessIIMarkersDown()
 		addEndlessIIMarkerIfDue()
@@ -6559,6 +6560,23 @@ laserTimer?.invalidate()
 	/// which is already how the save format works out the time remaining. Reading the same
 	/// thing here means no activation code has to be touched to add a second display -
 	/// which is what keeps Classic and Endless out of this entirely.
+	/// Credits every running power-up with the metre just climbed.
+	///
+	/// Called from the single place a metre is scored, which both endless modes go through.
+	/// `activeRecentPowerUpIndices()` is the same reckoning the pause screen's row is built
+	/// from, and its indices are power-up indices into `LevelPackSetup.powerUpNameArray` -
+	/// the numbering the stats arrays already use - so there is no second mapping to keep in
+	/// step with the first.
+	///
+	/// The daily is excluded. A daily run in an endless mode is a scoring attempt on a fixed
+	/// set of rules, and folding it into the same totals would mix two different games.
+	func creditPowerUpsWithThisMetre() {
+		guard isDailyChallenge == false else { return }
+		guard gameMode == .endless || gameMode == .endlessII else { return }
+		totalStatsArray[0].creditMetre(to: activeRecentPowerUpIndices(),
+									   inMayhem: gameMode == .endlessII)
+	}
+
 	func activePowerUpEntries() -> [PowerUpRingHUD.Entry] {
 		var entries: [PowerUpRingHUD.Entry] = []
 		for index in 0..<iconArray.count {

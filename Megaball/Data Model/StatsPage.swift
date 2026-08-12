@@ -82,8 +82,12 @@ enum StatsPage {
         switch tab {
         case .overall: rows = overallRows(stats)
         case .classic: rows = classicRows(stats)
-        case .endless: rows = heightRows(stats.endlessModeHeight)
-        case .mayhem: rows = heightRows(stats.endlessIIHeights)
+        case .endless:
+            rows = heightRows(stats.endlessModeHeight)
+                + mostEffectiveRows(stats.endlessPowerUpMetres)
+        case .mayhem:
+            rows = heightRows(stats.endlessIIHeights)
+                + mostEffectiveRows(stats.endlessIIPowerUpMetres)
         case .daily: rows = dailyRows(stats)
         }
         return rows.isEmpty ? [nothingYet] : rows
@@ -180,6 +184,37 @@ enum StatsPage {
             Row(label: "Total height", value: grouped(total) + " m", icon: "sum"),
             Row(label: "Average height", value: grouped(total/heights.count) + " m", icon: "chart.bar.fill"),
         ]
+    }
+
+    /// The power-up that has been running for more of the climb than any other.
+    ///
+    /// Returns nothing rather than a zero when there is nothing to say - a mode never
+    /// played, or played only with instant power-ups, has no answer and an invented one
+    /// ("Extra Ball, 0 m") would read as a finding.
+    ///
+    /// **Ties go to the earlier power-up**, which is the app's own display order. Any rule
+    /// is arbitrary at a tie; this one at least gives the same answer twice.
+    static func mostEffective(_ metres: [Int]?) -> (index: Int, metres: Int)? {
+        guard let metres else { return nil }
+        var best: (index: Int, metres: Int)?
+        for (index, value) in metres.enumerated() where value > 0 {
+            if best == nil || value > best!.metres {
+                best = (index, value)
+            }
+        }
+        return best
+    }
+
+    /// The row it makes, or none.
+    ///
+    /// The name is read off `LevelPackSetup` rather than written here, so a power-up
+    /// renamed once is renamed everywhere.
+    private static func mostEffectiveRows(_ metres: [Int]?) -> [Row] {
+        guard let best = mostEffective(metres) else { return [] }
+        let names = LevelPackSetup().powerUpNameArray
+        guard names.indices.contains(best.index) else { return [] }
+        return [Row(label: "Most effective power-up", value: names[best.index],
+                    icon: "sparkles")]
     }
 
     private static func dailyRows(_ stats: TotalStats) -> [Row] {

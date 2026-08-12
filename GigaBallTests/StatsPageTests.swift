@@ -281,4 +281,98 @@ final class StatsPageTests: XCTestCase {
         XCTAssertFalse(labels.contains("Best single ball"),
                        "an absent best is not a best of zero")
     }
+
+    // MARK: - Most effective power-up
+
+    /// "The power up which saw the biggest height gain whilst active" - the play test's own
+    /// words for what this row answers.
+    func testTheMostEffectivePowerUpIsTheOneWithTheMostMetres() {
+        var metres = TotalStats.freshPowerUpMetres
+        metres[4] = 120
+        metres[7] = 340
+        metres[9] = 91
+        XCTAssertEqual(StatsPage.mostEffective(metres)?.index, 7)
+        XCTAssertEqual(StatsPage.mostEffective(metres)?.metres, 340)
+    }
+
+    /// James's answer to design question one: instant power-ups score nothing. They earn no
+    /// exclusion list either - they are never *running*, so they are never counted, and an
+    /// all-zero array must therefore produce no row at all rather than a nought-metre winner.
+    func testAModeWithNoTimedPowerUpsHasNoAnswer() {
+        XCTAssertNil(StatsPage.mostEffective(TotalStats.freshPowerUpMetres),
+                     "nought metres for everything is no answer, not a winner on nought")
+        XCTAssertNil(StatsPage.mostEffective(nil),
+                     "a mode never played has no answer")
+    }
+
+    /// Ties go to the earlier power-up, which is the app's own display order. The rule is
+    /// arbitrary; being the *same* answer twice is not.
+    func testATieGoesToTheEarlierPowerUp() {
+        var metres = TotalStats.freshPowerUpMetres
+        metres[11] = 50
+        metres[3] = 50
+        XCTAssertEqual(StatsPage.mostEffective(metres)?.index, 3)
+    }
+
+    /// The row appears on the endless tabs and names the power-up, and the two endless modes
+    /// are counted apart - Mayhem's climb must not decide Endless's answer.
+    func testTheEndlessTabsCountApart() {
+        let stats = TotalStats()
+        stats.endlessModeHeight = [40]
+        stats.endlessIIModeHeight = [90]
+
+        var endless = TotalStats.freshPowerUpMetres
+        endless[2] = 10
+        stats.endlessPowerUpMetres = endless
+
+        var mayhem = TotalStats.freshPowerUpMetres
+        mayhem[5] = 10
+        stats.endlessIIPowerUpMetres = mayhem
+
+        let names = LevelPackSetup().powerUpNameArray
+        let endlessRows = StatsPage.rows(for: .endless, stats: stats)
+        let mayhemRows = StatsPage.rows(for: .mayhem, stats: stats)
+        XCTAssertEqual(endlessRows.first { $0.label == "Most effective power-up" }?.value,
+                       names[2])
+        XCTAssertEqual(mayhemRows.first { $0.label == "Most effective power-up" }?.value,
+                       names[5])
+    }
+
+    /// Every power-up running when a metre is scored gets the whole metre - James's answer to
+    /// design question two. The totals therefore sum to more than the height climbed, which
+    /// is the accepted cost of saying *while active* rather than *because of*.
+    func testOverlappingPowerUpsEachGetTheWholeMetre() {
+        let stats = TotalStats()
+        stats.creditMetre(to: [3, 8, 12], inMayhem: true)
+        stats.creditMetre(to: [3], inMayhem: true)
+
+        let metres = stats.powerUpMetres(inMayhem: true)
+        XCTAssertEqual(metres[3], 2)
+        XCTAssertEqual(metres[8], 1)
+        XCTAssertEqual(metres[12], 1)
+        XCTAssertEqual(metres.reduce(0, +), 4, "two metres climbed, four metres credited")
+        XCTAssertNil(stats.endlessPowerUpMetres, "a Mayhem metre is not an Endless one")
+    }
+
+    /// A stats file written before this existed decodes with both arrays absent, and the page
+    /// has to read that as "no answer" rather than as a mode played with nothing running.
+    func testAnOlderSaveHasNoMetresAndNoRow() {
+        let stats = TotalStats()
+        XCTAssertNil(stats.endlessPowerUpMetres)
+        XCTAssertNil(stats.endlessIIPowerUpMetres)
+
+        stats.endlessIIModeHeight = [30]
+        XCTAssertFalse(labels(.mayhem, stats).contains("Most effective power-up"))
+
+        stats.makeStoredArraysConsistent()
+        XCTAssertNil(stats.endlessIIPowerUpMetres,
+                     "padding must not turn never-played into played-and-scored-nothing")
+    }
+
+    /// The slots are sized off the power-up list rather than a literal, so the fifty-first
+    /// power-up grows them with everything else.
+    func testThereIsASlotForEveryPowerUp() {
+        XCTAssertEqual(TotalStats.freshPowerUpMetres.count,
+                       LevelPackSetup().powerUpNameArray.count)
+    }
 }

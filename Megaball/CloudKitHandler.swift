@@ -71,6 +71,52 @@ final class CloudKitHandler: NSObject {
     var ballsLost: Int?
     var powerupsCollected: [Int]?
     var powerupsGenerated: [Int]?
+    var endlessPowerUpMetres: [Int]?
+    var endlessIIPowerUpMetres: [Int]?
+
+    /// The two metres arrays, as (iCloud key, keyPath) pairs, so both directions of the sync
+    /// walk the same list and neither can quietly gain a mode the other has not.
+    static let metresKeys: [(key: String, path: ReferenceWritableKeyPath<TotalStats, [Int]?>)] = [
+        ("endlessPowerUpMetres", \TotalStats.endlessPowerUpMetres),
+        ("endlessIIPowerUpMetres", \TotalStats.endlessIIPowerUpMetres),
+    ]
+
+    /// Sends this device's metres up, highest wins per slot.
+    ///
+    /// A `nil` means this device has never played that mode. It has no opinion, and writing
+    /// its absence would clear another device's numbers - which is the shape of the bug
+    /// that once crashed the app on launch for a player with years of synced data, and the
+    /// reason `padded(_:toMatch:)` exists.
+    private func pushMetres() {
+        let iCloudStore = NSUbiquitousKeyValueStore.default
+        // Taken locally, the way every other method here takes it
+        for (key, path) in CloudKitHandler.metresKeys {
+            guard let local = totalStatsArray[0][keyPath: path] else { continue }
+            guard let stored = iCloudStore.array(forKey: key) as? [Int] else {
+                iCloudStore.set(local, forKey: key)
+                continue
+            }
+            var merged = CloudKitHandler.padded(stored, toMatch: local)
+            for slot in 0..<min(local.count, merged.count) where local[slot] > merged[slot] {
+                merged[slot] = local[slot]
+            }
+            iCloudStore.set(merged, forKey: key)
+        }
+    }
+
+    /// Brings another device's metres down, highest wins per slot.
+    private func pullMetres() {
+        let iCloudStore = NSUbiquitousKeyValueStore.default
+        for (key, path) in CloudKitHandler.metresKeys {
+            guard let stored = iCloudStore.array(forKey: key) as? [Int] else { continue }
+            var local = totalStatsArray[0][keyPath: path] ?? TotalStats.freshPowerUpMetres
+            local = CloudKitHandler.padded(local, toMatch: stored)
+            for slot in 0..<min(local.count, stored.count) where stored[slot] > local[slot] {
+                local[slot] = stored[slot]
+            }
+            totalStatsArray[0][keyPath: path] = local
+        }
+    }
     var bricksHit: [Int]?
     var bricksDestroyed: [Int]?
     var lasersFired: Int?
@@ -254,8 +300,9 @@ final class CloudKitHandler: NSObject {
         } else {
             iCloudStore.set(powerupsCollected, forKey: "powerupsCollected")
         }
-        
-        
+
+        pushMetres()
+
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
         if let powerupsGeneratedCloudCheck = iCloudStore.array(forKey: "powerupsGenerated") as? [Int] {
             var powerupsGeneratedCloud = powerupsGeneratedCloudCheck
@@ -725,7 +772,9 @@ final class CloudKitHandler: NSObject {
             }
         }
         totalStatsArray[0].powerupsCollected = powerupsCollected!
-        
+
+        pullMetres()
+
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
         if let powerupsGeneratedCloud = iCloudStore.array(forKey: "powerupsGenerated") as? [Int] {
             for i in 0..<min(powerupsGeneratedCloud.count, powerupsGenerated!.count) {
@@ -1080,6 +1129,8 @@ final class CloudKitHandler: NSObject {
         ballsLost = totalStatsArray[0].ballsLost
         powerupsCollected = totalStatsArray[0].powerupsCollected
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
+        endlessPowerUpMetres = totalStatsArray[0].endlessPowerUpMetres
+        endlessIIPowerUpMetres = totalStatsArray[0].endlessIIPowerUpMetres
         bricksHit = totalStatsArray[0].bricksHit
         bricksDestroyed = totalStatsArray[0].bricksDestroyed
         lasersFired = totalStatsArray[0].lasersFired

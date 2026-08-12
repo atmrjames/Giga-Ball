@@ -195,6 +195,17 @@ branch root**, so the pages must sit at the top level and not in a folder (the f
 deploy 404'd for exactly that reason, which is the fault App Review rejected 1.2 for);
 and the `CNAME` file at the root is what holds the custom domain.
 
+**Queued for the site (James's idea, round 73): the soundtrack on the front page.**
+Embed the game's music with a call-out that this is an epic game with a soundtrack to
+match, retro arcade adventure theme, alongside the SoundCloud link
+(`soundcloud.com/user-371123791/sets/giga-ball-original-sound-track`). The audio does
+not need downloading from SoundCloud: the four loops ship in the app bundle and are in
+this repo already - "Giga-Ball - Title Theme - Loop.mp3", "The Rebound", "The Escape"
+and "The Strategy". The Title Theme is the one the front page wants, being what a
+player hears first. Autoplay is blocked by every modern browser, so it has to be a
+control the visitor presses; keep it small and near the call-out rather than a banner.
+Work happens in the website repo, not here.
+
 **James's side, running in parallel:** tick Enforce HTTPS once GitHub finishes issuing
 the certificate, then set the two App Store Connect URLs, update the App Privacy
 questionnaire (AdMob's declarations are stale) and resubmit 1.2; the domain email;
