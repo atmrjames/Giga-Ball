@@ -209,7 +209,11 @@ extension UIViewController {
             let glyph = UIImage(systemName: symbol,
                                 withConfiguration: UIImage.SymbolConfiguration(
                                     pointSize: pointSize, weight: .black))?
-                .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
+                .withTintColor(rimmed ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+                                      : UIColor(white: 0.92, alpha: 1),
+                               renderingMode: .alwaysOriginal)
+                // Dark purple on the lime, off-white on the purple - the glyph reads against
+                // whichever colour it is standing on, the way the pop-up buttons do
                 // Off-white rather than pure white, matching the small buttons' glyphs: white
                 // was right while the glyph had to fight a tinted material for attention, and
                 // reads as harsh now the rim carries the contrast (round 61)
@@ -235,12 +239,17 @@ extension UIViewController {
             // always wore all but disappeared into it. White at a heavier weight reads as
             // *drawn on* the glass rather than floating behind it
 
-            let effect = UIGlassEffect(style: .regular)
+            let effect = UIGlassEffect(style: rimmed ? .clear : .regular)
             effect.isInteractive = false
             // Off for the reason `SettingsTableViewCell.applyGlass` gives: the glass sits
             // behind a button that takes the touches, so the material never sees the press it
             // is being asked to react to (round 64)
-            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.15)
+            effect.tintColor = rimmed
+                ? SettingsTableViewCell.prominentTint
+                : UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.15)
+            // The big play is the screen's positive action, so it takes the app's lime in
+            // clear glass like the pop-ups' confirm button - the small buttons beside it stay
+            // purple, which is what makes the play the one your eye goes to (round 90)
             // **Back to `.regular`, and tinted** (round 55). Round 54 blamed the frosting for
             // the blur and went to `.clear`; the blur was really the clipping, fixed in the
             // same round, and `.clear` over a dark menu then drew its specular rim at full

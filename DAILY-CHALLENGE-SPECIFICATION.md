@@ -458,6 +458,18 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   joins the total when its post lands, never before, and the whole total is resubmitted
   each time so a late-landing day self-heals into it.
 
+### Queued from play-test round 90
+
+- **No two similar challenges back to back.** Consecutive days can currently both be, say,
+  a single level with One Life, which reads as the generator repeating itself rather than as
+  a challenge that changes daily. The day's rules are derived from the date, so the fix
+  belongs where they are derived: when a day's shape matches yesterday's closely - same mode,
+  same single-level-or-pack choice, same twist family - step it to the next candidate. It has
+  to stay a pure function of the date, or two devices would disagree about the day.
+- **Say what the level is.** On a Classic single-level day, name the level and its pack, then
+  "High score on a single level" underneath, rather than the generic line it shows now.
+
+
 ## 13. Open questions
 
 - **Deterministic endless fields**: should an Endless daily's field itself be seeded, so

@@ -100,12 +100,16 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         guard #available(iOS 26.0, *) else { return }
         guard glassView == nil else { return }
 
-        let effect = UIGlassEffect(style: .regular)
+        let effect = UIGlassEffect(style: rimmed ? .clear : .regular)
         effect.isInteractive = false
         // See `SettingsTableViewCell.applyGlass` for why: this view cannot receive touches,
         // and an interactive material that is pressed through something else stretches toward
         // the touch and leaves a white smear behind (round 64)
-        effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
+        effect.tintColor = rimmed
+            ? SettingsTableViewCell.prominentTint
+            : UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
+        // `rimmed` is only ever the big play, so it is also the flag for "this is the
+        // positive action" - lime in clear glass, where the small buttons stay purple
 
         let glass = UIVisualEffectView(effect: effect)
         glass.isUserInteractionEnabled = false
@@ -140,7 +144,9 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
                                   withConfiguration: UIImage.SymbolConfiguration(
                                       pointSize: pointSize,
                                       weight: rimmed ? .black : .bold))?
-            .withTintColor(UIColor(white: 0.92, alpha: 1), renderingMode: .alwaysOriginal)
+            .withTintColor(rimmed ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+                                  : UIColor(white: 0.92, alpha: 1),
+                           renderingMode: .alwaysOriginal)
         iconImage.contentMode = .center
         iconImage.layer.masksToBounds = false
         iconImage.layer.shadowColor = UIColor.black.cgColor
