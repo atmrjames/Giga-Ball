@@ -67,7 +67,7 @@ extension UIViewController {
             // that is not a `ContentAwareTableView` recomputing it for itself. That is the
             // Settings screen unable to reach Reset Ball (round 78)
 
-            guard table.wearsGlassPanel == false,
+            guard table.wantsBreathingRoom, table.wearsGlassPanel == false,
                   table.contentInset != UIViewController.menuListBreathingRoom else { continue }
             // **Not the tables that wear a panel.** A content inset moves the rows *within*
             // the table, which is the whole point on a list of separate cards - and exactly
@@ -140,6 +140,18 @@ extension UIView {
     /// Tables only. The round buttons along the bottom are a collection view and want no
     /// padding at all - they are a row of three, not a list - and the daily's pager is a
     /// collection view whose whole point is that a page fills it.
+    /// Whether this list wants the menus' padding.
+    ///
+    /// Off for a table whose height is worked out from its rows: padding it makes it
+    /// overflow the height that was calculated to hold it exactly, which is how the two-item
+    /// Mode Select chooser grew a scroll bar, and then - once its height counted the padding
+    /// too - climbed 144 points up the screen into the sentence above it (round 95).
+    var wantsBreathingRoom: Bool {
+        get { (objc_getAssociatedObject(self, &UIView.breathingRoomKey) as? Bool) ?? true }
+        set { objc_setAssociatedObject(self, &UIView.breathingRoomKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    private static var breathingRoomKey = 0
+
     /// Whether a `addGlass(under:)` panel is sitting behind this view.
     var wearsGlassPanel: Bool {
         superview?.subviews.contains {

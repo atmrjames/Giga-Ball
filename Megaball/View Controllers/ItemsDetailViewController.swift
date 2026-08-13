@@ -186,7 +186,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// Pack and theme names are one or two short words. Power-up and achievement names are
     /// phrases - "Clear And Retreat", "Endless Mode 1,000m Milestone" - and at the pack
     /// grid's size they either truncate or push the icon off the square.
-    private var gridNameSize: CGFloat { senderID == 3 ? 10 : (senderID == 2 ? 11 : 13) }
+    private var gridNameSize: CGFloat { senderID == 3 ? 13 : (senderID == 2 ? 11 : 13) }
+    // Achievements go back up to 13. At 10 the names were small *and* still on one line -
+    // "Endless Mode 10,000m Total Height" simply fitted across the square at that size, so
+    // shrinking the type was working against the two lines it was meant to enable
 
     /// How many across. Achievements have the longest names and the least to look at, so
     /// they get more room per square by having fewer of them.

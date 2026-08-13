@@ -42,7 +42,12 @@ extension UIScrollView {
         // row (round 78 and again in 81). Nothing is lost by leaving it on: with bounce off
         // and the content fitting, a scroll view that may scroll still does not move.
         showsVerticalScrollIndicator = overflows
-        alwaysBounceVertical = overflows
+        alwaysBounceVertical = true
+        // **Always.** `overflows` is computed from a content size that is only right once the
+        // rows exist, and a scroll view that neither scrolls nor bounces is indistinguishable
+        // from a dead one - which is what six rounds of "settings will not scroll" have been
+        // about. Some give where none is needed is a far better failure than none where it
+        // is, which is James's call (round 95)
         // Otherwise a list that fits still rubber-bands, which looks like it scrolls
 
         indicatorStyle = .white
