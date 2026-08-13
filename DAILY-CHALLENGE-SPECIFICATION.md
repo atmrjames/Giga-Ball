@@ -458,6 +458,19 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   joins the total when its post lands, never before, and the whole total is resubmitted
   each time so a late-landing day self-heals into it.
 
+### Queued from play-test round 96
+
+- **Show the tally on a single-level day.** A best-score day's posted score is the level score
+  plus the time score, and the player currently sees only the total. Classic mode already
+  counts those up one after another at the end of a level, so this is that animation reused
+  rather than written: level score, then time score, then the total. It matters more here than
+  in Classic, because beating everyone on the level score alone is hard and **the time score is
+  where a day is actually won**, which a player cannot learn if they never see it.
+- **Reorder the daily pause and game-over screen.** Logo, title and level name move up
+  together, with the twist details and the competitive-or-free-play note directly beneath
+  them; everything else follows as it does now. That gives the tally somewhere to live and
+  puts the day's identity above its result rather than beside it.
+
 ### Queued from play-test round 90
 
 - **No two similar challenges back to back.** Consecutive days can currently both be, say,

@@ -71,13 +71,19 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     /// drawn with rather than closing the gap to the text.
     private func fitTableToItsTwoRows() {
         modeSelectTableView.wantsBreathingRoom = false
+        modeSelectTableView.wantsScrolling = false
+        modeSelectTableView.tableHeaderView =
+            UIView(frame: CGRect(x: 0, y: 0, width: 1, height: 12))
+        // Never scrolls, because it is sized to hold both of its rows and always will be -
+        // and a twelve-point header so the first row does not start hard against the
+        // sentence above it (play-test round 96)
         // **No padding on this one.** It is the only table in the app whose height is worked
         // out from its rows, so padding it can only make it overflow the height calculated to
         // hold it exactly - and counting the padding *into* that height sent it 144 points up
         // the screen, straight through the sentence above it. Two rows, nothing else
         // (round 95)
 
-        let wanted = SettingsTableViewCell.glassRowHeight*2
+        let wanted = SettingsTableViewCell.glassRowHeight*2 + 12
         guard let height = modeSelectTableView.constraints.first(where: {
             $0.firstAttribute == .height && $0.secondItem == nil
         }) else { return }

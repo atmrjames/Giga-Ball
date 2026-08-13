@@ -43,48 +43,44 @@ extension UIViewController {
 
     /// Opens that gap on every list in the screen.
     ///
-    /// More at the bottom than the top, because the bottom has the round buttons sitting
-    /// under it and the top only has a title.
+    /// **Spacer views, not a content inset** (round 96). The inset version pinned
+    /// `contentOffset` to minus the top inset so the padding would be visible, and that is
+    /// the only line in the app that *moves* a scroll view - the settings list stopped
+    /// scrolling the round it was added and no amount of work on the affordance, the
+    /// gesture, `delaysContentTouches` or the fade brought it back, because none of those
+    /// was ever the problem. A header and a footer are inert: they are content, so the list
+    /// scrolls exactly as it did before any of this, and the gap comes for free.
     func giveMenuListsBreathingRoom() {
         for table in view.menuLists() {
             defer { table.applyScrollAffordance() }
 
             table.delaysContentTouches = true
             table.canCancelContentTouches = true
-            // **The last thing between a finger and a scroll.** The storyboard sets
-            // `delaysContentTouches` to NO on these tables, which hands a touch straight to
-            // the row it landed on instead of holding it briefly to see whether it becomes a
-            // drag - so a drag that *starts on a cell*, which is every drag on a list of
-            // full-width cells, can be owned by the cell rather than by the scroll view.
-            // Set here rather than in the storyboard because twelve scenes would each need
-            // the same tick, and this is the one place they all pass through (round 89).
-            //
-            // The gesture was ruled out first, with a log: the back swipe is asked whether
-            // to begin on a vertical drag and correctly answers no.
-            // **Every pass, for every list.** The affordance decides whether a table may
-            // scroll, and judging it once - at the moment the inset was set, before the rows
-            // existed - decided "it fits" and switched scrolling off for good on any table
-            // that is not a `ContentAwareTableView` recomputing it for itself. That is the
-            // Settings screen unable to reach Reset Ball (round 78)
+            // The storyboard sets `delaysContentTouches` to NO on these tables, which hands a
+            // touch straight to the row it landed on instead of holding it briefly to see
+            // whether it becomes a drag. Set here because twelve scenes would each need the
+            // same tick, and this is the one place they all pass through
 
-            guard table.wantsBreathingRoom, table.wearsGlassPanel == false,
-                  table.contentInset != UIViewController.menuListBreathingRoom else { continue }
-            // **Not the tables that wear a panel.** A content inset moves the rows *within*
-            // the table, which is the whole point on a list of separate cards - and exactly
-            // wrong where the table has one glass panel behind it, because the panel stays
-            // put and the rows slide down inside it. Worse on a table sized for a fixed
-            // number of rows, like the pack header's two, where the padding pushed the
-            // second row out of the frame altogether (round 76). Those screens get their
-            // air from the panel instead, which `fitGlassPanel` moves
-            table.contentInset = UIViewController.menuListBreathingRoom
-            if table.contentOffset.y <= 0 {
-                table.contentOffset.y = -UIViewController.menuListBreathingRoom.top
+            if table.contentInset != .zero {
+                table.contentInset = .zero
+                table.contentOffset.y = 0
             }
-            // **The offset has to move with the inset.** These tables set
-            // `contentInsetAdjustmentBehavior = .never`, and a scroll view left at offset
-            // zero simply gains scrollable room above the content rather than moving it -
-            // so the padding was there and invisible. Only when the list is at the top: a
-            // list already scrolled must stay where the finger left it
+            // Undoing rounds 74 to 94 on any table that still carries them
+
+            guard table.wantsBreathingRoom, table.wearsGlassPanel == false else { continue }
+            // Not the tables that wear a panel: a panel stays put while its rows move, so
+            // padding inside one only slides the rows down inside the card
+
+            let top = UIViewController.menuListBreathingRoom.top
+            let bottom = UIViewController.menuListBreathingRoom.bottom
+            if table.tableHeaderView == nil {
+                table.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 1, height: top))
+            }
+            if table.tableFooterView == nil {
+                table.tableFooterView = UIView(frame: CGRect(x: 0, y: 0, width: 1, height: bottom))
+            }
+            // Sized by frame rather than by constraint, which is what a table header wants -
+            // an autolayout header needs a self-sizing pass this does not need to spend
         }
     }
 
@@ -140,6 +136,16 @@ extension UIView {
     /// Tables only. The round buttons along the bottom are a collection view and want no
     /// padding at all - they are a row of three, not a list - and the daily's pager is a
     /// collection view whose whole point is that a page fills it.
+    /// Whether this list may scroll at all.
+    ///
+    /// Off for a table sized to hold everything it will ever have - the two-item Mode Select
+    /// chooser - where any give at all is a list wobbling for no reason (round 96).
+    var wantsScrolling: Bool {
+        get { (objc_getAssociatedObject(self, &UIView.scrollingKey) as? Bool) ?? true }
+        set { objc_setAssociatedObject(self, &UIView.scrollingKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+    }
+    private static var scrollingKey = 0
+
     /// Whether this list wants the menus' padding.
     ///
     /// Off for a table whose height is worked out from its rows: padding it makes it
