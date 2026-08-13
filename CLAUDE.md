@@ -36,6 +36,11 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   happened three rounds running, so treat it as the norm: **`clean` before any build you
   intend to install and look at.** Two rounds of play-test feedback were answered against a
   binary that did not contain the answer.
+- **Target the simulator by UDID, not by name.** There are two devices called `iPhone 17 Pro`
+  on this Mac, and `-destination 'platform=iOS Simulator,name=iPhone 17 Pro'` is ambiguous
+  between them: a suite that normally runs in 9 seconds started relaunching the app once per
+  test, ~28s each, and never finished. `-destination 'id=EE6E3FF7-990D-482F-A92A-50CB2ADF6A81'`
+  is the booted one and behaves.
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.
