@@ -72,52 +72,26 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     private func fitTableToItsTwoRows() {
         modeSelectTableView.wantsBreathingRoom = false
         modeSelectTableView.wantsScrolling = false
-        modeSelectTableView.tableHeaderView =
-            UIView(frame: CGRect(x: 0, y: 0, width: 1, height: 24))
-        // Never scrolls, because it is sized to hold both of its rows and always will be -
-        // and a twelve-point header so the first row does not start hard against the
-        // sentence above it (play-test round 96)
-        // **No padding on this one.** It is the only table in the app whose height is worked
-        // out from its rows, so padding it can only make it overflow the height calculated to
-        // hold it exactly - and counting the padding *into* that height sent it 144 points up
-        // the screen, straight through the sentence above it. Two rows, nothing else
-        // (round 95)
+        modeSelectTableView.isScrollEnabled = false
+        // Sized to hold both of its rows and always will be, so it neither scrolls nor
+        // takes the menus' padding
 
-        let wanted = SettingsTableViewCell.glassRowHeight*2 + 24
         guard let height = modeSelectTableView.constraints.first(where: {
             $0.firstAttribute == .height && $0.secondItem == nil
         }) else { return }
-        let grew = wanted - height.constant
-        guard grew > 0 else { return }
-        height.constant = wanted
-        modeSelectTableView.isScrollEnabled = false
-        // Nothing left to scroll, and a table that can still be dragged over its own content
-        // bounces in a way that reads as a bug on a screen holding two choices
+        height.constant = SettingsTableViewCell.glassRowHeight*2
 
-        guard let parent = modeSelectTableView.superview else { return }
-        for constraint in parent.constraints
-        where constraint.firstItem === modeSelectTableView && constraint.firstAttribute == .top {
-            constraint.constant -= grew
-            break
-        }
-
-        guard let explainer = view.firstLabel(startingWith: "Playing single level") else { return }
-        for host in [explainer.superview, parent, view].compactMap({ $0 }) {
-            let moved = host.constraints.first {
-                ($0.firstItem === explainer && $0.firstAttribute == .top)
-                    || ($0.secondItem === explainer && $0.secondAttribute == .top)
-            }
-            guard let moved else { continue }
-            moved.constant += (moved.firstItem === explainer) ? -grew : grew
-            break
-        }
-        // Searched properly this time (round 94). The first attempt looked only in the
-        // table's own superview and only at constraints with the label as `firstItem`, and
-        // the sentence never moved - a constraint can be held by any ancestor and can name
-        // the label at either end, with the sign following which end it is
-        // The table grows upwards, so the sentence above it has to move up by the same
-        // amount or the two meet in the middle - which is what the play test saw once the
-        // table finally fitted its rows (round 92)
+        // **And that is all.** The storyboard hangs this stack upward from the bottom
+        // edge: the container pins the button row, the button row pins the table, and the
+        // table pins the sentence above it, which has no top constraint of its own. So a
+        // taller table already grows upward and carries the sentence up with it, and the
+        // gap between the two is exactly the storyboard's table-top-to-label-bottom
+        // constant, raised to 32 there. Rounds 94-97 fought that anchor from code: the
+        // "move the table up" subtraction was taken out of that very constant, which is
+        // what pulled the sentence twenty points *into* the table, and the code that tried
+        // to move the label matched on the label's `.top` when the constraint names its
+        // `.bottom`, so it silently did nothing. The gap never needed code at all
+        // (round 98)
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -331,16 +305,4 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     // Segue to GameViewController with selected level
 
-}
-
-extension UIView {
-
-    /// The first label anywhere in this view whose text starts with `prefix`.
-    func firstLabel(startingWith prefix: String) -> UILabel? {
-        if let label = self as? UILabel, label.text?.hasPrefix(prefix) == true { return label }
-        for child in subviews {
-            if let found = child.firstLabel(startingWith: prefix) { return found }
-        }
-        return nil
-    }
 }

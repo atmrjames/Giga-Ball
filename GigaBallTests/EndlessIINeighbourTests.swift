@@ -311,7 +311,8 @@ final class EndlessIINeighbourTests: XCTestCase {
         // Height is gained by clearing the bottom row, and an empty row is cleared the moment
         // it arrives - so a run of them is height for free, and the player is deep before the
         // mode has shown them anything
-        XCTAssertEqual(EndlessIIProgression.mostEmptyRowsInARow, 2)
+        XCTAssertEqual(EndlessIIProgression.mostEmptyRowsInARow, 1,
+                       "tightened in round 98 - two in a row read as a void at field speed")
 
         let scene = makeScene()
         scene.gameMode = .endlessII
@@ -335,11 +336,11 @@ final class EndlessIINeighbourTests: XCTestCase {
             XCTAssertTrue(filled.isEmpty, "row \(pass) is allowed to be empty")
         }
 
-        let third = empty()
-        scene.endlessIIFillEmptyRowIfOverdue(third)
-        let filled = third.compactMap { $0 as? SKSpriteNode }
+        let overdue = empty()
+        scene.endlessIIFillEmptyRowIfOverdue(overdue)
+        let filled = overdue.compactMap { $0 as? SKSpriteNode }
             .filter { $0.texture != scene.brickNullTexture }
-        XCTAssertEqual(filled.count, 1, "the third empty row gets one brick, and only one")
+        XCTAssertEqual(filled.count, 1, "the row past the cap gets one brick, and only one")
     }
 
     func testARowWithSomethingInItResetsTheRun() {

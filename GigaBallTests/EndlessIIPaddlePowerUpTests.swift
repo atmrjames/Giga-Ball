@@ -546,4 +546,49 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         scene.addChild(scene.ball)
         XCTAssertFalse(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
     }
+
+    // MARK: - Paddle Halo stacking (play-test round 98)
+
+    /// "Getting this power-up whilst it's already active should make it grow bigger."
+    /// Each collection that finds the clock running climbs one reach level, to the ladder's
+    /// deepest rung and no further.
+    func testRecollectingTheHaloClimbsTheReachLadder() {
+        var clock = EndlessIIClock()
+        let deepest = EndlessIIPaddleEffects.haloReach.count - 1
+
+        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
+        XCTAssertEqual(clock.level, 0, "the first collection is the base halo")
+
+        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
+        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
+        XCTAssertEqual(clock.level, deepest, "two re-collections reach the top")
+
+        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
+        XCTAssertEqual(clock.level, deepest, "and the ladder has a top")
+    }
+
+    /// The ladder must actually climb: each level reaches further than the one before,
+    /// or a re-collection buys nothing the player can see.
+    func testEveryHaloLevelReachesFurtherThanTheLast() {
+        let ladder = EndlessIIPaddleEffects.haloReach
+        XCTAssertGreaterThanOrEqual(ladder.count, 3,
+                                    "round 98 asked for a stack worth noticing")
+        for (shorter, longer) in zip(ladder, ladder.dropFirst()) {
+            XCTAssertGreaterThan(longer, shorter)
+        }
+    }
+
+    /// An expired halo starts again from the base. Levels are earned within one run of the
+    /// power-up, not banked across them.
+    func testAnExpiredHaloForgetsItsLevel() {
+        var clock = EndlessIIClock()
+        let deepest = EndlessIIPaddleEffects.haloReach.count - 1
+        clock.collect(2, deepestLevel: deepest)
+        clock.collect(2, deepestLevel: deepest)
+        XCTAssertEqual(clock.level, 1)
+
+        for _ in 0..<8 { clock.spendTurn() }
+        XCTAssertFalse(clock.isRunning)
+        XCTAssertEqual(clock.level, 0, "expiry resets the ladder with the clock")
+    }
 }

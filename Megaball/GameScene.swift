@@ -5579,12 +5579,16 @@ laserTimer?.invalidate()
 			}
 			// Make sure the ball angle doesn't stray from 180 to -180 bounds
 
-			let prob = Int.random(in: 1...10)
-			if prob == 1 {
-				let angleMag = Double.random(in: -5...5)
-				angleDeg = angleDeg+angleMag
-			}
-			// Apply a random angle factor
+			// **The random angle factor is gone** (play-test rounds 84, 88 and 98: the
+			// ball "changing direction slightly" with nothing to blame). This block gave
+			// one correction in ten a random kick of up to five degrees - on every path
+			// that corrects an angle: paddle, wall, brick, backstop, and the seam bounce,
+			// which resolves a frame *after* the visible contact, so its kick landed
+			// mid-flight to the eye. It predates the escape jitter below, which now does
+			// the anti-loop job properly by randomising only the shallow-angle rescue.
+			// A bounce must be a function of what it hit and where; ten percent of them
+			// being wrong by up to five degrees is indistinguishable from a physics bug,
+			// because it is one.
 					
 			// Pushed off horizontal by a little more than the minimum, and by a different
 			// little each time. Snapping to exactly the minimum is what let the ball settle

@@ -33,13 +33,10 @@ extension UIViewController {
     /// twelve menu screens share a nib and a navigation pattern but not a layout - each is
     /// its own storyboard scene - so a constraint would be twelve edits that can drift,
     /// where an inset is one number applied from the one method they all already call.
-    static let menuListBreathingRoom = UIEdgeInsets(top: 32, left: 0, bottom: 96, right: 0)
-    // **Ninety-six at the bottom** (round 94). A table's frame stops above the button row, so
-    // twenty-four points of padding left a last row that could only just be reached - and a
-    // list with less than a row's worth of travel reads as one that does not scroll at all.
-    // The bottom inset is the one lever that adds travel without needing a constraint in
-    // twelve storyboard scenes, and James's call was to err towards more scrolling: the last
-    // row now comes up well clear of the buttons instead of stopping under them
+    static let menuListBreathingRoom = UIEdgeInsets(top: 32, left: 0, bottom: 40, right: 0)
+    // Forty at the bottom (round 98). Ninety-six was round 94's answer to a list that
+    // would not scroll at all - the real cause was the settings touch watcher, fixed in
+    // round 97, so the margin comes back down to what the button row actually needs
 
     /// Opens that gap on every list in the screen.
     ///

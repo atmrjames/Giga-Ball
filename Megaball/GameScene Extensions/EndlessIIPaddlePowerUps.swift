@@ -357,6 +357,13 @@ extension GameScene {
         if endlessIIPaddleHaloClock.isRunning == false {
             endlessIIPaddleHaloNode?.removeFromParent()
             endlessIIPaddleHaloNode = nil
+            endlessIIPaddleHaloDrawnReach = 0
+            // **The drawn reach must die with the node** (play-test round 98: "I picked up
+            // the halo whilst I had it and the halo disappeared"). Left stale, the next
+            // collection at the same level computes the same reach, the rebuilt-only-when-
+            // it-changes check sees no change, and the fresh node is given no path at all -
+            // an invisible halo that still destroys bricks, because the destruction reads
+            // `reach` and never the path
         }
     }
 

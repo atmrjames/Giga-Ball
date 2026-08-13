@@ -365,8 +365,11 @@ extension EndlessIIProgression {
     /// them anything, and the density that was meant to arrive gradually arrives all at once
     /// because it is keyed to a height they reached in seconds.
     ///
-    /// Two is enough to keep the opening feeling open. Three starts to be a lift.
-    static let mostEmptyRowsInARow = 2
+    /// One. Two was the first answer, and the play test read two brickless rows at field
+    /// speed as a void rather than a breather (round 98: "big gaps actually make the game
+    /// harder") - one row of air keeps the opening feeling open, and the row after it always
+    /// has something to play.
+    static let mostEmptyRowsInARow = 1
 
     // MARK: - Which brick
 

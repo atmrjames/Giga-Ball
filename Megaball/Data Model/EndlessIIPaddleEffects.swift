@@ -153,7 +153,10 @@ enum EndlessIIPaddleEffects {
     /// How far the halo reaches from the paddle's centre, by stacking level, as a multiple
     /// of the paddle's width. Raised again in round 11: at [1.9, 2.6] it only touched the
     /// bottom row of a low field, and the request is the bottom *two*.
-    static let haloReach: [CGFloat] = [2.3, 3.0]
+    static let haloReach: [CGFloat] = [2.3, 3.0, 3.7]
+    // Three stacks rather than two (play-test round 98): collecting the halo while it is
+    // running should visibly buy more field, and one step was easy to miss entirely. The
+    // clock's deepest level follows this count, so the ladder is the only thing to edit
     // Raised twice by play-testing: from [0.9, 1.3] when the glow never reached a brick,
     // and from [1.5, 2.1] when it still fell short of the field ("it didn't reach the
     // bottom line of bricks - it should reach at least the bottom 2 rows"). The paddle
