@@ -633,7 +633,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 // play on the menus - two buttons that do the same thing should not be two
                 // different materials
             } else {
-                cell.setButton(endlessGameOver ? "ButtonRestart" : "ButtonHome")
+                cell.setButton(endlessGameOver ? "ButtonRestart" : "ButtonHome",
+                               pointSize: MainMenuCollectionViewCell.bigGlyphPointSize,
+                               rimmed: true)
+                // The game-over screen's centre button is 75pt like the pause screen's play,
+                // and was drawing a 20pt glyph on it - a small mark adrift in a big disc
+                // (play-test round 85). It is also that screen's positive action, replay or
+                // home, so the same `rimmed` flag gives it the lime the play buttons wear
             }
         case 2:
             if self.sender == "Pause" {

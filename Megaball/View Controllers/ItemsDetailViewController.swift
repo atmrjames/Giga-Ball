@@ -396,11 +396,16 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard collectionView == grid else { return CGSize(width: 50, height: 50) }
         let columns = gridColumns
+        let taller: CGFloat = senderID == 3 ? 22 : 0
+        // Achievement names are sentences - "Endless Mode 1,000m Milestone" - and want two
+        // lines where a power-up's one word wants none. The square grows rather than the
+        // type shrinking, because at ten points it was already as small as it should go
+        // (play-test round 85)
         let gap = PackSelectViewController.gridGap
         let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
         let width = max(1, ((available - gap*(columns - 1))/columns).rounded(.down))
-        return CGSize(width: width, height: width)
-        // Floored, and square, for the two reasons the pack screen's own comment gives -
+        return CGSize(width: width, height: width + taller)
+        // Floored for the reason the pack screen's own comment gives -
         // an exact division silently drops to two columns, and a stretched card is just
         // more empty card
     }
@@ -768,6 +773,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             chooseGridItem(at: indexPath)
             collectionView.deselectItem(at: indexPath, animated: true)
             collectionView.reloadData()
+            if closesOnChoice { menuNavigationGoBack() }
             return
         }
 
@@ -782,6 +788,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// Exactly what the rows did, moved rather than rewritten - including doing nothing at
     /// all for a locked square, which is the difference between a grid you can look at and
     /// one that lets you equip something you have not earned.
+    /// Whether choosing one of these closes the screen.
+    ///
+    /// The app icon and theme grids are a *choice*: you came to pick one, and once you have
+    /// there is nothing left to do here. The reference grids are a list to read, so they
+    /// stay put (play-test round 85).
+    private var closesOnChoice: Bool { senderID == 0 || senderID == 1 }
+
     private func chooseGridItem(at indexPath: IndexPath) {
         if senderID == 2 {
             hideAnimate()

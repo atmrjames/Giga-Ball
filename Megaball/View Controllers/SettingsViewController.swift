@@ -228,7 +228,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "Ball & Paddle Theme"
                     cell.centreLabel.text = ""
-                    cell.setIcon(UIImage(named:"iconTheme.png")!, recolour: true)
+                    let themes = LevelPackSetup().themeIconArray
+                    cell.setIcon(themes.indices.contains(ballSetting)
+                                 ? themes[ballSetting]
+                                 : UIImage(named: "iconTheme.png")!,
+                                 recolour: themes.indices.contains(ballSetting) == false)
+                    // The theme you are actually playing with, the way the App Icon row shows
+                    // the icon you are wearing (play-test round 85). Recoloured only when it
+                    // falls back to the generic glyph - a theme icon is a picture
                     cell.settingState.text = ""
 //                }
             case 2:

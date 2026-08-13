@@ -107,8 +107,10 @@ enum StatsPage {
                             value: String(stats.ballHits/stats.ballsLost), icon: "divide"))
         }
         if stats.longestBallRun > 0 {
-            rows.append(Row(label: "Best single ball",
-                            value: grouped(stats.longestBallRun) + " hits", icon: "trophy"))
+            rows.append(Row(label: "Most hits on a single ball",
+                            value: grouped(stats.longestBallRun), icon: "trophy"))
+        // The label carries the unit now, so the value is just the number - "hits" twice in
+        // one row was saying it once too often (play-test round 85)
         }
         // The average is arithmetic on two totals; the best is stored, because a maximum
         // cannot be recovered from totals. Both wait until there is something to divide by -

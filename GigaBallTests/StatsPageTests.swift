@@ -263,7 +263,7 @@ final class StatsPageTests: XCTestCase {
         stats.bestBallHits = 41
         let rows = StatsPage.rows(for: .overall, stats: stats)
         XCTAssertEqual(rows.first { $0.label == "Average hits per ball" }?.value, "15")
-        XCTAssertEqual(rows.first { $0.label == "Best single ball" }?.value, "41 hits")
+        XCTAssertEqual(rows.first { $0.label == "Most hits on a single ball" }?.value, "41")
     }
 
     /// A stats file written before `bestBallHits` existed decodes with it absent, and the page
@@ -278,7 +278,7 @@ final class StatsPageTests: XCTestCase {
         stats.ballHits = 10
         let labels = self.labels(.overall, stats)
         XCTAssertTrue(labels.contains("Average hits per ball"))
-        XCTAssertFalse(labels.contains("Best single ball"),
+        XCTAssertFalse(labels.contains("Most hits on a single ball"),
                        "an absent best is not a best of zero")
     }
 
