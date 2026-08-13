@@ -90,8 +90,10 @@ final class PackGridCell: UICollectionViewCell {
         name.translatesAutoresizingMaskIntoConstraints = false
         name.textAlignment = .center
         name.numberOfLines = 2
-        name.adjustsFontSizeToFitWidth = true
-        name.minimumScaleFactor = 0.7
+        name.adjustsFontSizeToFitWidth = false
+        // **Off, or the label never wraps** (round 94). Shrink-to-fit is tried *before*
+        // wrapping, so a long achievement name squeezed itself onto one line at seven tenths
+        // the size rather than taking the second line the square was made taller for
         name.font = .systemFont(ofSize: 13, weight: .semibold)
         name.textColor = mark()
         block.addArrangedSubview(name)

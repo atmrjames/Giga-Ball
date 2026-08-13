@@ -144,6 +144,12 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
                                    pointSize: 18, weight: .heavy)), for: .normal)
         close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         view.addSubview(close)
+        applyRoundGlass(to: close,
+                        radius: MainMenuCollectionViewCell.smallButtonSize/2,
+                        symbol: "xmark", pointSize: 20, rimmed: false)
+        // The one close button in the app that was still a pale disc - this screen builds its
+        // own rather than taking the shared button row, so the round-66 sweep never reached
+        // it (play-test round 94)
 
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,

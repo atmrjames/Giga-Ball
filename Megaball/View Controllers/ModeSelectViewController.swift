@@ -95,14 +95,20 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             break
         }
 
-        for label in parent.subviews.compactMap({ $0 as? UILabel })
-        where label.text?.hasPrefix("Playing single level") == true {
-            for constraint in parent.constraints
-            where constraint.firstItem === label && constraint.firstAttribute == .top {
-                constraint.constant -= grew
-                break
+        guard let explainer = view.firstLabel(startingWith: "Playing single level") else { return }
+        for host in [explainer.superview, parent, view].compactMap({ $0 }) {
+            let moved = host.constraints.first {
+                ($0.firstItem === explainer && $0.firstAttribute == .top)
+                    || ($0.secondItem === explainer && $0.secondAttribute == .top)
             }
+            guard let moved else { continue }
+            moved.constant += (moved.firstItem === explainer) ? -grew : grew
+            break
         }
+        // Searched properly this time (round 94). The first attempt looked only in the
+        // table's own superview and only at constraints with the label as `firstItem`, and
+        // the sentence never moved - a constraint can be held by any ancestor and can name
+        // the label at either end, with the sign following which end it is
         // The table grows upwards, so the sentence above it has to move up by the same
         // amount or the two meet in the middle - which is what the play test saw once the
         // table finally fitted its rows (round 92)
@@ -319,4 +325,16 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     // Segue to GameViewController with selected level
 
+}
+
+extension UIView {
+
+    /// The first label anywhere in this view whose text starts with `prefix`.
+    func firstLabel(startingWith prefix: String) -> UILabel? {
+        if let label = self as? UILabel, label.text?.hasPrefix(prefix) == true { return label }
+        for child in subviews {
+            if let found = child.firstLabel(startingWith: prefix) { return found }
+        }
+        return nil
+    }
 }
