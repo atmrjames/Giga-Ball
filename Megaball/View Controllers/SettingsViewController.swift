@@ -233,10 +233,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Sounds
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
-                cell.setIcon(SettingsTableViewCell.settingsIcon(
-                    "speaker.wave.2.fill", level: soundsSetting ? 1 : 0.15), recolour: true)
-                // The waves fade when sound is off, and the speaker stays - the setting is
-                // about what comes out of it, not about the thing itself
+                cell.setIcon(UIImage(named:"iconSound.png")!, recolour: true)
                 if soundsSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -248,8 +245,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Music
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
-                cell.setIcon(SettingsTableViewCell.settingsIcon(
-                    "music.note", struck: musicSetting == false), recolour: true)
+                cell.setIcon(UIImage(named:"iconMusic.png")!, recolour: true)
                 if musicSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -265,9 +261,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "Haptics"
                     cell.centreLabel.text = ""
-                    cell.setIcon(SettingsTableViewCell.settingsIcon(
-                        "iphone.radiowaves.left.and.right",
-                        level: hapticsSetting ? 1 : 0.15), recolour: true)
+                    cell.setIcon(UIImage(named:"iconHaptics.png")!, recolour: true)
                     if hapticsSetting {
                         cell.settingState.text = "on"
                         cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -287,9 +281,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
-                cell.setIcon(SettingsTableViewCell.settingsIcon(
-                    "arrow.up.left.and.arrow.down.right",
-                    struck: parallaxSetting == false), recolour: true)
+                cell.setIcon(UIImage(named:"iconParallax.png")!, recolour: true)
                 if parallaxSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -301,11 +293,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Paddle sensitivity
                 cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
-                cell.setIcon(SettingsTableViewCell.settingsIcon(
-                    "speedometer",
-                    level: 0.2 + 0.2*Double(paddleSensitivitySetting)), recolour: true)
-                // Five speeds, five strengths. The needle is the same mark throughout, so
-                // the row reads as one setting at different values rather than as five icons
+                cell.setIcon(UIImage(named:"iconPaddleSensitivity.png")!, recolour: true)
                 if paddleSensitivitySetting == 0 {
                     cell.settingState.text = "x1.00"
                     cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
@@ -326,8 +314,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Swipe up to pause
                 cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
-                cell.setIcon(SettingsTableViewCell.settingsIcon(
-                    "hand.draw.fill", struck: swipeUpPause == false), recolour: true)
+                cell.setIcon(UIImage(named:"iconPause.png")!, recolour: true)
                 addSwipeInfoButton(to: cell)
                 if swipeUpPause {
                     cell.settingState.text = "on"

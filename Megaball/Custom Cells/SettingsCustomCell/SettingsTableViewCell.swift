@@ -206,41 +206,39 @@ class SettingsTableViewCell: UITableViewCell {
         bottom.constant = -slack
     }
 
-    /// A settings row's icon, built from an SF Symbol so it can answer to its setting.
+    /// The lime a prominent control is tinted, at the strength that makes glass *coloured*
+    /// rather than merely tinted.
     ///
-    /// The drawn icons are one flat image each, so nothing inside one can be dimmed or
-    /// struck out - the parts are not separable. A symbol's are: Apple ships the waves as
-    /// their own layer, which is what makes "dim the sound waves when sound is off" a
-    /// rendering mode rather than a second drawing (play-test round 85).
-    ///
-    /// - Parameters:
-    ///   - level: how full the symbol should read, from nothing to everything. Drawn with
-    ///     the variable-value API where the system has it, and by dimming where it does not,
-    ///     so the paddle-speed icon grows with the speed on any phone the app supports.
-    ///   - struck: draws Apple's own diagonal through it. Used where a setting is simply off
-    ///     and there is no part to fade - music, the zoom, the swipe.
-    static func settingsIcon(_ symbol: String, level: Double = 1, struck: Bool = false) -> UIImage? {
-        let size = UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)
+    /// Far stronger than `glassTint`, and deliberately: that one is for surfaces that must
+    /// stay quiet under a page of content, where this is for the one control that does the
+    /// thing. `.clear` rather than `.regular` for the same reason - a clear material carries
+    /// a colour where a frosted one mutes it.
+    static let prominentTint = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 0.62)
 
-        var image: UIImage?
-        if #available(iOS 16.0, *) {
-            image = UIImage(systemName: symbol, variableValue: level, configuration: size)
-        }
-        if image == nil {
-            image = UIImage(systemName: symbol, withConfiguration: size)
-        }
-        // A symbol with no variable layers ignores the value and comes back whole, which is
-        // right for the ones that are simply on or off
+    /// Glass in the app's own colour, for a button that should be seen.
+    @discardableResult
+    static func addColouredGlass(behind host: UIView, cornerRadius: CGFloat,
+                                 tint: UIColor) -> UIVisualEffectView? {
+        guard #available(iOS 26.0, *) else { return nil }
 
-        guard var image else { return nil }
-        if level < 1 {
-            image = image.withAlphaComponent(0.45 + 0.55*level) ?? image
-        }
-        // Below iOS 16 the value cannot reach the layers, so the whole mark fades instead -
-        // less exact, still an icon that answers to its setting rather than one that lies
+        let effect = UIGlassEffect(style: .clear)
+        effect.isInteractive = false
+        effect.tintColor = tint
 
-        guard struck else { return image }
-        return image.struckThrough()
+        let glass = UIVisualEffectView(effect: effect)
+        glass.isUserInteractionEnabled = false
+        glass.translatesAutoresizingMaskIntoConstraints = false
+        glass.cornerConfiguration = .corners(radius: .fixed(cornerRadius))
+        host.insertSubview(glass, at: 0)
+        host.backgroundColor = .clear
+
+        NSLayoutConstraint.activate([
+            glass.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            glass.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            glass.topAnchor.constraint(equalTo: host.topAnchor),
+            glass.bottomAnchor.constraint(equalTo: host.bottomAnchor),
+        ])
+        return glass
     }
 
     /// Whether this device draws the app's surfaces as glass.
@@ -458,40 +456,4 @@ class SettingsTableViewCell: UITableViewCell {
         cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
     }
 
-}
-
-extension UIImage {
-
-    /// The same mark at a lower opacity, baked in.
-    ///
-    /// Baked rather than set on the image view, because the row's glyph shares that view
-    /// with the icons that must stay at full strength - fading the view would fade whichever
-    /// row it was reused for next.
-    func withAlphaComponent(_ alpha: CGFloat) -> UIImage? {
-        UIGraphicsImageRenderer(size: size).image { _ in
-            draw(at: .zero, blendMode: .normal, alpha: alpha)
-        }.withRenderingMode(renderingMode)
-    }
-
-    /// Apple's own diagonal, drawn across this mark.
-    ///
-    /// `line.diagonal` is the glyph the system's own `.slash` variants are built from, so a
-    /// struck icon looks like `speaker.slash.fill` rather than like something with a pen
-    /// through it. Composited rather than overlaid as a second view, so the row keeps one
-    /// image view and the template recolouring still applies to the pair.
-    func struckThrough() -> UIImage? {
-        guard let slash = UIImage(systemName: "line.diagonal",
-                                  withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 26, weight: .bold)) else { return self }
-        let box = CGSize(width: max(size.width, slash.size.width),
-                         height: max(size.height, slash.size.height))
-        return UIGraphicsImageRenderer(size: box).image { _ in
-            draw(in: CGRect(x: (box.width - size.width)/2,
-                            y: (box.height - size.height)/2,
-                            width: size.width, height: size.height))
-            slash.draw(in: CGRect(x: (box.width - slash.size.width)/2,
-                                  y: (box.height - slash.size.height)/2,
-                                  width: slash.size.width, height: slash.size.height))
-        }.withRenderingMode(.alwaysTemplate)
-    }
 }

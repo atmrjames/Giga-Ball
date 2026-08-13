@@ -195,6 +195,16 @@ final class GigaBallAlertViewController: UIViewController {
             go.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1), for: .normal)
             go.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
             go.layer.cornerRadius = 22
+            SettingsTableViewCell.addColouredGlass(
+                behind: go, cornerRadius: 22,
+                tint: SettingsTableViewCell.prominentTint)
+            // Coloured glass rather than flat lime (round 89, James's request after seeing
+            // the same idea in another app's picker). The green button is the one that does
+            // the thing, so it is the right first place to try a material that is meant to
+            // be noticed - and the pale one beside it stays plain glass, which is what keeps
+            // the pair a choice rather than two shouts. Below iOS 26 both keep the flat
+            // colours they have always had
+
             go.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
             buttons.addArrangedSubview(go)
             // The green one is the one that does the thing; the pale one steps back. Two

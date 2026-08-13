@@ -42,6 +42,19 @@ extension UIViewController {
     func giveMenuListsBreathingRoom() {
         for table in view.menuLists() {
             defer { table.applyScrollAffordance() }
+
+            table.delaysContentTouches = true
+            table.canCancelContentTouches = true
+            // **The last thing between a finger and a scroll.** The storyboard sets
+            // `delaysContentTouches` to NO on these tables, which hands a touch straight to
+            // the row it landed on instead of holding it briefly to see whether it becomes a
+            // drag - so a drag that *starts on a cell*, which is every drag on a list of
+            // full-width cells, can be owned by the cell rather than by the scroll view.
+            // Set here rather than in the storyboard because twelve scenes would each need
+            // the same tick, and this is the one place they all pass through (round 89).
+            //
+            // The gesture was ruled out first, with a log: the back swipe is asked whether
+            // to begin on a vertical drag and correctly answers no.
             // **Every pass, for every list.** The affordance decides whether a table may
             // scroll, and judging it once - at the moment the inset was set, before the rows
             // existed - decided "it fits" and switched scrolling off for good on any table
