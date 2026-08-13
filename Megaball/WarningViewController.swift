@@ -115,6 +115,19 @@ class WarningViewController: UIViewController {
         rightButton.setTitleColor(ink, for: .normal)
         rightButton.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         rightButton.titleLabel?.font = .boldSystemFont(ofSize: 17)
+        rightButton.layer.cornerRadius = 22
+        SettingsTableViewCell.addColouredGlass(
+            behind: rightButton, cornerRadius: 22,
+            tint: SettingsTableViewCell.prominentTint)
+        centerButton.layer.cornerRadius = 22
+        SettingsTableViewCell.addColouredGlass(
+            behind: centerButton, cornerRadius: 22,
+            tint: SettingsTableViewCell.prominentTint)
+        // The OK on this sheet and the confirm on `GigaBallAlert` are the same button as far
+        // as a player is concerned, so they wear the same material - and the centre button,
+        // which is the *only* button when this sheet shows one, is a positive action for the
+        // same reason. This is the other pop-up type (round 89's note); the two still want
+        // making one, and until they are, changes like this have to be made twice
         // Green does the thing, pale steps back - the same pairing the new alert uses, so
         // the OK on this sheet and the Play on that one read as the same button
     }

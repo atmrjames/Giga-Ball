@@ -28,7 +28,7 @@ enum GigaBallAlert {
     /// menu's own blur instead of sliding a white card over the top of it.
     static func show(on presenter: UIViewController, title: String, message: String,
                      symbol: String? = nil,
-                     dismissTitle: String = "Got it",
+                     dismissTitle: String = "OK",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
                      confirm: (() -> Void)? = nil) {
@@ -52,7 +52,7 @@ enum GigaBallAlert {
     static func show(on presenter: UIViewController, title: String,
                      attributed message: NSAttributedString,
                      symbol: String? = nil,
-                     dismissTitle: String = "Got it",
+                     dismissTitle: String = "OK",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
                      confirm: (() -> Void)? = nil) {
@@ -175,6 +175,17 @@ final class GigaBallAlertViewController: UIViewController {
         button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1), for: .normal)
         button.backgroundColor = UIColor(white: 0.92, alpha: 1)
         button.layer.cornerRadius = 22
+        if confirmTitle == nil {
+            SettingsTableViewCell.addColouredGlass(
+                behind: button, cornerRadius: 22,
+                tint: SettingsTableViewCell.prominentTint)
+            button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1),
+                                 for: .normal)
+        }
+        // **Lime when it is the only button.** A pop-up with one button has no choice in it -
+        // that button *is* the positive action, so it takes the colour the confirm button
+        // takes. Where there are two, this one is the step-back and stays pale, or the pair
+        // would be two shouts rather than a choice (round 91)
         if SettingsTableViewCell.addGlass(behind: button, cornerRadius: 22) != nil {
             button.setTitleColor(SettingsTableViewCell.glassForeground, for: .normal)
         }

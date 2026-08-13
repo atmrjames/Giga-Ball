@@ -213,7 +213,12 @@ class SettingsTableViewCell: UITableViewCell {
     /// stay quiet under a page of content, where this is for the one control that does the
     /// thing. `.clear` rather than `.regular` for the same reason - a clear material carries
     /// a colour where a frosted one mutes it.
-    static let prominentTint = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 0.82)
+    static let prominentTint = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+    // **Full strength** (round 91). At 0.82 the material still mixed the dark behind it into
+    // the colour and the lime read grey-green; a tint is a colour the glass is *asked* to
+    // take, not a wash laid over it, so asking for the whole colour is what gets the colour.
+    // The material still lights and refracts - it is glass with the app's green in it rather
+    // than a flat green button
 
     /// Glass in the app's own colour, for a button that should be seen.
     @discardableResult

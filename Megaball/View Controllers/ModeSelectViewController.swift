@@ -71,6 +71,13 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     /// drawn with rather than closing the gap to the text.
     private func fitTableToItsTwoRows() {
         let wanted = SettingsTableViewCell.glassRowHeight*2
+            + UIViewController.menuListBreathingRoom.top
+            + UIViewController.menuListBreathingRoom.bottom
+        // **The padding is content.** Round 74 gave every list air at each end, and this table
+        // is sized for exactly what it holds - so two rows plus that air no longer fitted the
+        // two rows' worth of height, and a chooser with two options grew a scroll bar again
+        // (play-test round 91). It has to be told about the padding, since it is the one
+        // table in the app whose height is worked out rather than given
         guard let height = modeSelectTableView.constraints.first(where: {
             $0.firstAttribute == .height && $0.secondItem == nil
         }) else { return }
