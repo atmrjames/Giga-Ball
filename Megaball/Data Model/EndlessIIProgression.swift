@@ -365,11 +365,12 @@ extension EndlessIIProgression {
     /// them anything, and the density that was meant to arrive gradually arrives all at once
     /// because it is keyed to a height they reached in seconds.
     ///
-    /// One. Two was the first answer, and the play test read two brickless rows at field
-    /// speed as a void rather than a breather (round 98: "big gaps actually make the game
-    /// harder") - one row of air keeps the opening feeling open, and the row after it always
-    /// has something to play.
-    static let mostEmptyRowsInARow = 1
+    /// Two is enough to keep the opening feeling open, and James confirmed the taste in
+    /// round 99: "2 rows with no bricks is fine, even 3 or 4 occasionally." Round 98
+    /// briefly tightened this to one, misreading his gap report - the voids he was seeing
+    /// were far larger than anything generation produces, which points at the *cleared*
+    /// field with Descent suspending the catch-up cadence, not at this rule at all.
+    static let mostEmptyRowsInARow = 2
 
     // MARK: - Which brick
 

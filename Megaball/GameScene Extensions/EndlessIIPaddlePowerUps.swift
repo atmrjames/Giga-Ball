@@ -37,6 +37,27 @@ extension GameScene {
 
     func endlessIICollectAimedSticky() {
         endlessIIAimedStickyClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIInertPaddleClock.reset()
+        endlessIIFlippedAngleClock.reset()
+        // **Aimed Sticky cancels the angle-benders, and they cancel it** (James's rule,
+        // round 99): an aimed launch and a paddle that ignores or flips where it was struck
+        // are answers to the same question, and running both is one lying about the other.
+        // Most recent wins. Portal Paddle stays compatible with all of them - its rules
+        // apply from the top of the screen, not from the paddle
+    }
+
+    /// Cancels Aimed Sticky because an angle-bender was collected over it.
+    ///
+    /// The clock stops, so no *future* catch is aimed - but a hold the player is in right
+    /// now keeps its launch, through the same owed-hold flag an expired clock uses. A ball
+    /// sitting on the paddle mid-aim with the aim machinery torn down would never leave.
+    func endlessIICancelAimedSticky() {
+        guard endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn else { return }
+        if endlessIIAimHold || endlessIINextHeldBall != nil {
+            endlessIIAimOwedHold = true
+        }
+        endlessIIAimedStickyClock.reset()
+        endlessIIAimedStickyOwedTurn = false
     }
 
     func endlessIICollectMagnetism() {
@@ -62,10 +83,17 @@ extension GameScene {
 
     func endlessIICollectInertPaddle() {
         endlessIIInertPaddleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIFlippedAngleClock.reset()
+        endlessIICancelAimedSticky()
+        // Most recent wins across the whole angle group: Inert replaces Flipped as well as
+        // Aimed Sticky, or a full flip would hide behind a dead paddle and reappear when it
+        // expired - two bad power-ups queueing up instead of one
     }
 
     func endlessIICollectFlippedAngle() {
         endlessIIFlippedAngleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIInertPaddleClock.reset()
+        endlessIICancelAimedSticky()
     }
 
     func endlessIICollectReversedControls() {

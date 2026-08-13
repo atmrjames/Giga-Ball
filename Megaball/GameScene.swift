@@ -3043,13 +3043,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Check achievement for clearing endless mode screen of active bricks
 							
 		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0
-			&& endlessIIDescentSuspendsCadence == false
 			&& endlessIIFieldIsHeld == false {
 			moveEndlessModeRowDown()
 		}
 		// If there's no other bricks in the bottom row and a move isn't currently in progress,
-		// move to the row with the next lowest bricks - unless Descent owns the field's
-		// movement right now, where both at once would double-step (§5.4)
+		// move to the row with the next lowest bricks - unless the player is holding an aim,
+		// which freezes the whole field (round 87). **Descent no longer suspends this**
+		// (play-test rounds 94 and 99): the suspension could only ever take effect right
+		// here, where the bottom row is empty - which is exactly the moment the field must
+		// close the gap the way it always does. Over a cleared field it held the catch-up to
+		// Descent's own leisurely step, and the player watched a void crawl past one row at
+		// a time - the "way more than three or four empty rows" of round 99. The §5.4
+		// double-step fear is already answered by `endlessMoveInProgress`: this path and
+		// Descent's timer both refuse to step while a step is animating
 	}
 	
 	/// Whether the field is frozen because the player is aiming.

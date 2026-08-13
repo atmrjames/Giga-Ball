@@ -591,4 +591,56 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertFalse(clock.isRunning)
         XCTAssertEqual(clock.level, 0, "expiry resets the ladder with the clock")
     }
+
+    // MARK: - The angle group cancels itself (play-test round 99)
+
+    /// Aimed Sticky, Inert Paddle and Flipped Angle are answers to the same question -
+    /// what happens to the ball's angle at the paddle - and the most recent one wins.
+    func testCollectingAimedStickyCancelsTheAngleBenders() {
+        let scene = GameScene()
+        scene.endlessIICollectInertPaddle()
+        scene.endlessIICollectFlippedAngle()
+
+        scene.endlessIICollectAimedSticky()
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.isRunning)
+        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning)
+        XCTAssertFalse(scene.endlessIIFlippedAngleClock.isRunning)
+    }
+
+    func testCollectingAnAngleBenderCancelsAimedSticky() {
+        let scene = GameScene()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIICollectInertPaddle()
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
+        XCTAssertTrue(scene.endlessIIInertPaddleClock.isRunning)
+
+        scene.endlessIICollectFlippedAngle()
+        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning,
+                       "the benders replace each other too - bad power-ups do not queue")
+        XCTAssertTrue(scene.endlessIIFlippedAngleClock.isRunning)
+    }
+
+    /// Portal Paddle is compatible with the whole group: its rules apply from the top of
+    /// the screen, not from the paddle, so nothing here may touch it.
+    func testPortalPaddleSurvivesTheAngleGroup() {
+        let scene = GameScene()
+        scene.endlessIICollectPortalPaddle()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIICollectInertPaddle()
+        scene.endlessIICollectFlippedAngle()
+        XCTAssertTrue(scene.endlessIIPortalPaddleClock.isRunning)
+    }
+
+    /// A cancellation that lands mid-aim must not strand the held ball: the launch it was
+    /// aiming is still owed, through the same flag an expired clock uses.
+    func testCancellingMidHoldStillOwesTheLaunch() {
+        let scene = GameScene()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIAimHold = true
+
+        scene.endlessIICancelAimedSticky()
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
+        XCTAssertTrue(scene.endlessIIAimOwedHold,
+                      "a ball on the paddle mid-aim with the machinery gone would never leave")
+    }
 }

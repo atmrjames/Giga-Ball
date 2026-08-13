@@ -461,6 +461,19 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   joins the total when its post lands, never before, and the whole total is resubmitted
   each time so a late-landing day self-heals into it.
 
+### Queued from play-test round 99: two twist ideas
+
+- **Choose your power-ups.** The briefing lets the player pick the power-ups they will
+  see that day - perhaps five from a list. An alternative form: pick *one* power-up to
+  have permanently applied for the run. Design questions before building: does the choice
+  live on the briefing screen or in-game; is the pool the full set or a curated subset;
+  and how the choice is encoded so the leaderboard stays one contest (everyone picking
+  from the same list on the same day keeps it fair - free choice per player does not).
+- **Choose your bricks** (endless modes only). The player picks a handful of brick types
+  from a list, and the day's field is built from only those. Same fairness question: the
+  *offered list* must be the day's, derived from the date, even if the pick is the
+  player's.
+
 ### Queued from play-test round 96
 
 - **Show the tally on a single-level day.** A best-score day's posted score is the level score

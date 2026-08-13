@@ -311,8 +311,8 @@ final class EndlessIINeighbourTests: XCTestCase {
         // Height is gained by clearing the bottom row, and an empty row is cleared the moment
         // it arrives - so a run of them is height for free, and the player is deep before the
         // mode has shown them anything
-        XCTAssertEqual(EndlessIIProgression.mostEmptyRowsInARow, 1,
-                       "tightened in round 98 - two in a row read as a void at field speed")
+        XCTAssertEqual(EndlessIIProgression.mostEmptyRowsInARow, 2,
+                       "James's taste, round 99: two empty rows is fine, occasional threes too")
 
         let scene = makeScene()
         scene.gameMode = .endlessII

@@ -256,13 +256,15 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
 
     // MARK: - Descent
 
-    func testDescentSuspendsTheNormalCadenceWhileItRuns() {
-        // §5.4: both at once would double-step the field
+    func testDescentAddsItsOwnStepsAndNoLongerHoldsTheCadenceBack() {
+        // Rounds 94 and 99: with Descent running, a cleared bottom row crawled shut one
+        // Descent-step at a time - "the bricks should descend as normal until the bottom
+        // row has a brick on it". Descent still owns its extra step; it owns nothing else.
         let scene = fieldScene()
-        XCTAssertFalse(scene.endlessIIDescentSuspendsCadence)
+        XCTAssertFalse(scene.endlessIIDescentOwnsExtraSteps)
 
         scene.endlessIICollectDescent()
-        XCTAssertTrue(scene.endlessIIDescentSuspendsCadence)
+        XCTAssertTrue(scene.endlessIIDescentOwnsExtraSteps)
     }
 
     func testDescentStepsOnItsTimerAndNotBeforeIt() {

@@ -513,12 +513,13 @@ extension GameScene {
         moveEndlessModeRowDown()
     }
 
-    /// Whether the normal descent cadence is suspended (§5.4).
+    /// Whether Descent owns extra steps of the field right now.
     ///
-    /// Asked by `countBricks` where the bottom row emptying would normally step the field
-    /// down. While Descent runs, the timer owns the field's movement - both at once would
-    /// double-step.
-    var endlessIIDescentSuspendsCadence: Bool {
+    /// It no longer suspends the empty-bottom-row cadence (rounds 94 and 99): that rule
+    /// only fires over a gap, and a gap must close at full speed whatever else is running.
+    /// What Descent owns is its own additional step, on its own timer, on top of the
+    /// normal rules - serialised against them by `endlessMoveInProgress` like every step.
+    var endlessIIDescentOwnsExtraSteps: Bool {
         endlessIIDescentClock.isRunning
     }
 
