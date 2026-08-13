@@ -53,14 +53,20 @@ final class EdgeFade {
         scrollView.layer.mask = mask
 
         let travelled = scrollView.contentOffset.y
-        let remaining = scrollView.contentSize.height - scrollView.bounds.height
-            - scrollView.contentOffset.y
+        let remaining = scrollView.contentSize.height + scrollView.contentInset.bottom
+            - scrollView.bounds.height - scrollView.contentOffset.y
 
         // Ease each fade in over its own length rather than switching it on, so nothing pops as
         // the list reaches an end. Bouncing gives negative values; clamping means an
         // overscrolled edge simply reads as fully arrived.
-        let top = min(max(travelled, 0), EdgeFade.length)
+        let top = min(max(travelled + scrollView.contentInset.top, 0), EdgeFade.length)
         let bottom = min(max(remaining, 0), EdgeFade.length)
+        // **Measured against the padding, not against zero** (round 92). Round 74 gave every
+        // list air at each end, and a list resting at the top now sits at an offset of minus
+        // the top inset - so the bottom "remaining" counted that padding as content still to
+        // come and drew a fade across a last row that was already fully visible. A row that
+        // looks cut off when it is not is what made a short list read as one that would not
+        // scroll at all
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)

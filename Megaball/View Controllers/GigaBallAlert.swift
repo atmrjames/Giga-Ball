@@ -187,7 +187,8 @@ final class GigaBallAlertViewController: UIViewController {
         // takes. Where there are two, this one is the step-back and stays pale, or the pair
         // would be two shouts rather than a choice (round 91)
         if SettingsTableViewCell.addGlass(behind: button, cornerRadius: 22) != nil {
-            button.setTitleColor(SettingsTableViewCell.glassForeground, for: .normal)
+            button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1),
+                                 for: .normal)
         }
         // Only the pale one. The green button is the one that does the thing, and its colour
         // is how the pop-up says so - putting both behind the same material would make a

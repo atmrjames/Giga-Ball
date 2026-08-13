@@ -94,6 +94,18 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             constraint.constant -= grew
             break
         }
+
+        for label in parent.subviews.compactMap({ $0 as? UILabel })
+        where label.text?.hasPrefix("Playing single level") == true {
+            for constraint in parent.constraints
+            where constraint.firstItem === label && constraint.firstAttribute == .top {
+                constraint.constant -= grew
+                break
+            }
+        }
+        // The table grows upwards, so the sentence above it has to move up by the same
+        // amount or the two meet in the middle - which is what the play test saw once the
+        // table finally fitted its rows (round 92)
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
