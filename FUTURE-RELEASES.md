@@ -71,6 +71,47 @@ held back for a release that would follow immediately after. The foundations sti
 first within it, for the reason argued above: the player-visible work lands on top of
 them.
 
+### The road to release (planned 13 August 2026, ~5-6 weeks out)
+
+Target: submit alongside iOS 27, late September. Phases in order, each with an exit
+condition, so slippage is visible early rather than discovered at the end.
+
+**Phase 1 - gameplay correct (now to ~22 Aug).** The Mayhem bugs, because a mechanic that
+lies is worse than a screen that is cramped: Descent over a cleared gap; Aimed Sticky
+cancelling Inert Paddle and Flipped Angle and vice versa, most recent wins, Portal Paddle
+compatible with all; Auto-Aim hitting what it marks, skipping useless bricks, with a more
+prominent target; Laser Beam doing anything; the Landing Marker's contact geometry;
+Magnetism's start height; and the crooked-ball investigation. Exit: several full Mayhem
+runs in which every power-up is seen doing what its page says.
+
+**Phase 2 - daily and stats (~week of 25 Aug).** The single-level score tally (Classic's
+animation reused) and the daily screen reorder that makes room for it; the similar-days
+rule and level naming; per-mode play time and endless duration stats (new storage, the
+array drill, the iCloud copies); the power-up reference's pinned CLASSIC GAME MODES /
+ENDLESS MAYHEM headings. Exit: a full daily played end to end showing the tally, and the
+stats page saying everything §12.0 promised.
+
+**Phase 3 - polish and James's side (~week of 1 Sep).** The spacing list (daily preview
+size, app icon cell size, stats and detail row heights, pause-row button insets,
+game-over stats position); James's custom settings icons and the Quick Start Guide's
+What's New page (art, §8.5); remaining §8.5 assets and sounds; the glass-helpers file
+tidy-up. Exit: a screenshot pass of every screen with nothing on the list.
+
+**Phase 4 - hardening (~week of 8 Sep).** Classic and original Endless soak, several
+levels each, because those leaderboards carry years of scores; iPad multitasking
+restriction; the App Store readiness pass (screenshots, metadata, privacy); confirm the
+three in-review boards are live; Xcode Cloud build from `release-1.3` to TestFlight
+internal. Exit: the build on James's and his wife's phones with no new reports for a few
+days.
+
+**Phase 5 - release (~week of 15 Sep).** Wider TestFlight if wanted, a fix window, then
+submit with buffer for App Review, timed to the iOS 27 window.
+
+**Already prepared for 1.4:** the What's New pop-up mechanism is release-agnostic -
+`WhatsNew.version` and its copy are the only two things a 1.4 build changes, and the
+version key is written on every launch, so 1.4 inherits a correct "seen" state from day
+one.
+
 ### The 1.3 line, decided (8 August 2026)
 
 Reviewed together against the full open-items lists; recorded here so it is written down

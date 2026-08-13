@@ -492,6 +492,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                                                    action: #selector(settingsTableTouched(_:)))
         watcher.minimumPressDuration = 0
         watcher.cancelsTouchesInView = false
+        watcher.delegate = self
+        // **This line is why the settings list would not scroll** (rounds 78-96). A
+        // zero-duration long press recognises the moment a finger lands, and a recognised
+        // gesture blocks every other recogniser on the same view by default - including the
+        // table's own pan, so a drag could never become a scroll. `cancelsTouchesInView`
+        // being false kept taps working, which is exactly what hid the cause: a tap never
+        // needs the pan. Settings is the only screen wearing this watcher, which is why it
+        // was the only list that would not scroll while Information, built identically,
+        // would. The delegate below allows the watcher to recognise *alongside* everything
+        // else, which is all it ever needed to do - it only records where the finger landed
         watcher.delaysTouchesBegan = false
         watcher.delaysTouchesEnded = false
         settingsTableView.addGestureRecognizer(watcher)
@@ -1014,3 +1024,11 @@ extension Notification.Name {
 }
 // Notification setup for sending information from the pause menu popup to unpause the game
 
+extension SettingsViewController: UIGestureRecognizerDelegate {
+
+    /// The touch watcher observes; it must never exclude.
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        true
+    }
+}

@@ -73,7 +73,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         modeSelectTableView.wantsBreathingRoom = false
         modeSelectTableView.wantsScrolling = false
         modeSelectTableView.tableHeaderView =
-            UIView(frame: CGRect(x: 0, y: 0, width: 1, height: 12))
+            UIView(frame: CGRect(x: 0, y: 0, width: 1, height: 24))
         // Never scrolls, because it is sized to hold both of its rows and always will be -
         // and a twelve-point header so the first row does not start hard against the
         // sentence above it (play-test round 96)
@@ -83,7 +83,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         // the screen, straight through the sentence above it. Two rows, nothing else
         // (round 95)
 
-        let wanted = SettingsTableViewCell.glassRowHeight*2 + 12
+        let wanted = SettingsTableViewCell.glassRowHeight*2 + 24
         guard let height = modeSelectTableView.constraints.first(where: {
             $0.firstAttribute == .height && $0.secondItem == nil
         }) else { return }

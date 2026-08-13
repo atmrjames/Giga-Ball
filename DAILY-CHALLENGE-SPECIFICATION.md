@@ -9,8 +9,11 @@ actually plays, so they kept being reported. The DAY stepper, the LIVE readout a
 ATTEMPTS were removed outright and the briefing card took the room back. The simulated day
 itself survives as `DailyChallengeSession.testDayOffset`, backed by a user default with no
 control on any screen - the tests set it directly, so a future day is still reachable
-without anything for a player to find. **Nothing further is needed here before release.** "Practice" is called free play everywhere the
-player reads it (round 12).**
+without anything for a player to find. "Practice" is called free play everywhere the
+player reads it (round 12). **Open before release:** the play-test queues below - the
+single-level score tally and screen reorder (round 96), the similar-days rule and level
+naming (round 90). **Boards (round 95):** the Daily Challenge leaderboard *set* is live;
+three individual boards are still in App Store Connect review.**
 
 *The paragraphs below record the build as it grew; §12 holds the phase plan and
 FUTURE-RELEASES.md holds the release map.*
