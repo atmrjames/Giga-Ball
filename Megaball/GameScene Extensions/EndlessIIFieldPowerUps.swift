@@ -505,6 +505,11 @@ extension GameScene {
         // A step already animating finishes first - two moves at once would stack their
         // distances and carry bricks off their row centres
 
+        guard endlessIIFieldIsHeld == false else { return }
+        // Descent is the field's other way down, and it must stop for an aim like the
+        // cadence does - otherwise the one power-up that exists to drop the field does it
+        // while the player is holding the ball still and cannot answer (round 87)
+
         moveEndlessModeRowDown()
     }
 

@@ -3043,7 +3043,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Check achievement for clearing endless mode screen of active bricks
 							
 		if endlessMode && endlessMoveInProgress == false && endlessModeBricks == 0
-			&& endlessIIDescentSuspendsCadence == false {
+			&& endlessIIDescentSuspendsCadence == false
+			&& endlessIIFieldIsHeld == false {
 			moveEndlessModeRowDown()
 		}
 		// If there's no other bricks in the bottom row and a move isn't currently in progress,
@@ -3051,6 +3052,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// movement right now, where both at once would double-step (§5.4)
 	}
 	
+	/// Whether the field is frozen because the player is aiming.
+	///
+	/// The aim hold stops the *ticking* world - the clocks, the movers, the lasers - and the
+	/// descent is not ticked: it is triggered by the bottom row emptying, and by Descent.
+	/// So it went on stepping while everything else stood still, which is the play test's
+	/// "new bricks continued to descend whilst the old bricks stay paused", and after a
+	/// pause and resume it carried bricks below the paddle (round 87).
+	///
+	/// The owed turn counts too. Aimed Sticky can be spent while the clock has already
+	/// stopped, and the aim that turn is still an aim.
+	var endlessIIFieldIsHeld: Bool {
+		endlessIIAimHold || endlessIIAimedStickyOwedTurn
+	}
+
 	func moveEndlessModeRowDown() {
 				
 		endlessMoveInProgress = true

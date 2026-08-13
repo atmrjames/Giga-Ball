@@ -701,4 +701,24 @@ final class EndlessIIAuraTests: XCTestCase {
         XCTAssertLessThan(line.zPosition, 3,
                           "the ball and paddle are at 3 and must stay in front of it")
     }
+
+    /// Play-test round 87, and the most expensive bug of that round: "with aimed sticky at
+    /// one point the new bricks continued to descend whilst the old bricks stay paused", and
+    /// after resuming "bricks continued to descend below the paddle". The aim hold stops the
+    /// ticking world, and the descent is not ticked - it is triggered by the bottom row
+    /// emptying - so it went on stepping while everything else stood still.
+    func testTheFieldDoesNotDescendWhileTheAimIsHeld() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+
+        XCTAssertFalse(scene.endlessIIFieldIsHeld, "nothing held, nothing frozen")
+
+        scene.endlessIIAimHold = true
+        XCTAssertTrue(scene.endlessIIFieldIsHeld)
+
+        scene.endlessIIAimHold = false
+        scene.endlessIIAimedStickyOwedTurn = true
+        XCTAssertTrue(scene.endlessIIFieldIsHeld,
+                      "the turn owed is still an aim, and the field must wait for it too")
+    }
 }
