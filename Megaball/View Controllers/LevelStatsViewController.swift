@@ -439,7 +439,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             highscoreTitleLabel.text = "Highscore"
             if packLevelHighScoresArray![packNumber!-2][levelNumber!-startLevel!] > 0 {
                 let highScore = packLevelHighScoresArray![packNumber!-2][levelNumber!-startLevel!]
-                highscoreLabel.text = String(highScore)
+                highscoreLabel.text = StatsPage.grouped(highScore)
             } else {
                 highscoreLabel.text = "0"
             }
@@ -588,7 +588,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         cell.backgroundColor = .clear
         let entry = sortedRunHistory[indexPath.row]
 
-        cell.textLabel?.text = "\(entry.height)m"
+        cell.textLabel?.text = StatsPage.grouped(entry.height) + "m"
         let isBest = entry.height == runHistory.map(\.height).max()
         cell.textLabel?.font = .boldSystemFont(ofSize: isBest ? 19 : 15)
         cell.textLabel?.textColor = isBest

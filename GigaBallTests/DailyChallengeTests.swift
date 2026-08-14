@@ -238,6 +238,20 @@ final class DailyChallengeTests: XCTestCase {
                        "a day joins the total when its post lands, not before (§12.5)")
     }
 
+    /// "Thousands separators everywhere except in the game itself" (play-test round 33).
+    /// The daily's score line is one of the places that was still printing a bare integer,
+    /// and it prints through the same door the statistics page uses, so the separator is
+    /// the reader's own rather than a comma baked into a string.
+    func testTheDailysScoreLineIsGrouped() {
+        XCTAssertEqual(DailyChallengePosting.scoreText(1_234_567, mode: .classic),
+                       StatsPage.grouped(1_234_567))
+        XCTAssertEqual(DailyChallengePosting.scoreText(1_234, mode: .endlessII),
+                       StatsPage.grouped(1_234) + "m",
+                       "a height keeps its metres, grouped in front of them")
+        XCTAssertFalse(DailyChallengePosting.scoreText(1_234_567, mode: .classic)
+                        .contains("1234567"))
+    }
+
     func testThePracticeNoticeInterruptsOnlyThePressesItAppliesTo() {
         // §6's promise, reshaped by play-test round 5: the standing banner became a
         // pop-up on the play press - "maybe show this as a pop-up after pressing play.

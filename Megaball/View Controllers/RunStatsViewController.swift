@@ -71,7 +71,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             // (play-test round 13)
             let headline: [(String, String, String)] = summary.isEndless
                 ? [("arrow.up", "Height", "\(summary.height)m")]
-                : [("star.fill", "Score", "\(summary.score)"),
+                : [("star.fill", "Score", StatsPage.grouped(summary.score)),
                    ("flag.fill", "Levels cleared", "\(summary.levelsCleared)")]
 
             let lines: [(String, String, String)] = headline + [

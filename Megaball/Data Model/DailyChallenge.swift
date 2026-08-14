@@ -436,7 +436,7 @@ enum DailyChallengePosting {
 
     /// A score in the mode's own terms: heights wear their metres.
     static func scoreText(_ score: Int, mode: GameMode) -> String {
-        mode == .classic ? String(score) : "\(score)m"
+        mode == .classic ? StatsPage.grouped(score) : StatsPage.grouped(score) + "m"
     }
 }
 
