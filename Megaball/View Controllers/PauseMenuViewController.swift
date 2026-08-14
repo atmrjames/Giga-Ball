@@ -119,16 +119,33 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         // The door to the run's detail, at the bottom of the stats list (play-test
         // round 11) - it replaces the rosette that sat unexplained in the button row
 
+        let statsClearOfTheScore = runStatsLabel.topAnchor.constraint(
+            greaterThanOrEqualTo: highscoreLabel.bottomAnchor, constant: 34)
+        let statsAboveTheButtons = moreStatsButton.bottomAnchor.constraint(
+            equalTo: buttonCollectionView.topAnchor, constant: -46)
+        statsAboveTheButtons.priority = .defaultHigh
+        // Anchored to the button row, which the storyboard has already put in the hierarchy.
+        // It cannot be anchored to `signedOutLabel` from here, however much that reads
+        // better: this method runs from viewDidLoad before that label is added, and
+        // activating a constraint between two views with no common ancestor yet throws -
+        // the game-over screen crashed on the first try. The 46 leaves the note its room
+        // High rather than required: on a short screen the clearance above wins and the
+        // block simply sits wherever it fits, rather than the layout breaking a constraint
+        // it cannot honour
+
         NSLayoutConstraint.activate([
             runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            runStatsLabel.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
-                                               constant: 34),
+            statsClearOfTheScore,
             moreStatsButton.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             moreStatsButton.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor,
                                                  constant: 8),
-            // Room between the blocks (play-test rounds 15 and 16 both asked for it): the
-            // score, the stats list and the daily summary each get air, rather than the
-            // stats being squeezed against the height above them
+            statsAboveTheButtons,
+            // The stats block sits just above the button row rather than tucked under the
+            // score (play-test round 97: "the stats sit too close to the scores"). Hung
+            // from the bottom, with the 34pt clearance above kept as a minimum, so the two
+            // blocks read as two things - the run's result up there, its detail down here -
+            // rather than one crowded column. Rounds 15 and 16 asked for that air; round 97
+            // said where it should go
         ])
     }
 
@@ -355,8 +372,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
         NSLayoutConstraint.activate([
             signedOutLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            signedOutLabel.topAnchor.constraint(equalTo: dailySummaryLabel.bottomAnchor,
+            signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
+                                                    dailySummaryLabel.bottomAnchor,
                                                 constant: 14),
+            signedOutLabel.bottomAnchor.constraint(equalTo: buttonCollectionView.topAnchor,
+                                                   constant: -12),
+            signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
+                                                    moreStatsButton.bottomAnchor,
+                                                constant: 6),
+            // Pinned to the button row rather than floating under whatever happens to be
+            // above it. Round 112 moved the stats block down to sit just above the buttons,
+            // and this note - which is two lines wide and often hidden - was still hanging
+            // off the summary above, so it landed *on* the buttons. Everything in this
+            // lower group now hangs upward from the button row: buttons, note, More Stats,
+            // stats list
             signedOutLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
                                                         containterView.leadingAnchor,
                                                     constant: 30),
