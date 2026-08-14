@@ -225,25 +225,61 @@ extension GameScene {
 
         let arrow = endlessIIAimArrow ?? {
             let node = SKShapeNode()
+            node.zPosition = 9
+            // The Giga-Ball green the mode uses for anything of its own, over everything -
+            // an aiming aid that can hide behind a brick is not aiming anything.
+            // A pathless parent now: the shaft hangs off it as segments, because one node
+            // wears one stroke and the fuzziness needs a different stroke every step
+
             let length = max(ballSize*4.5,
                              finalBrickRowHeight - brickHeight/2 - target.position.y - ballSize)
             // From the held ball almost to the lowest brick row (play-test round 36 - the
             // third lengthening, each one asking for more reach, so this one goes to the
             // thing itself: where the bricks begin, less a ball's grace. The max keeps the
             // round-10 length as the floor for the rare catch high up the field
-            let path = CGMutablePath()
-            path.move(to: .zero)
-            path.addLine(to: CGPoint(x: length, y: 0))
-            path.move(to: CGPoint(x: length - ballSize*0.7, y: ballSize*0.55))
-            path.addLine(to: CGPoint(x: length, y: 0))
-            path.addLine(to: CGPoint(x: length - ballSize*0.7, y: -ballSize*0.55))
-            node.path = path
-            node.strokeColor = GameScene.endlessIIHaloColour
-            node.lineWidth = 2
-            node.lineCap = .round
-            node.zPosition = 9
-            // The Giga-Ball green the mode uses for anything of its own, over everything -
-            // an aiming aid that can hide behind a brick is not aiming anything
+
+            // Fuzzy like the trajectory line, so the two aiming aids speak one visual
+            // language (play-test round 39): crisp at the ball, and the further it looks
+            // the wider, softer and fainter the stroke - the same swell-and-glow the
+            // trajectory wears, on the same curve. With one difference, because this is
+            // the control the player is actively steering: the alpha keeps a floor and
+            // the head stays legible. A blurred tip is honest; a vanished one is an
+            // aiming aid that stopped aiming
+            let step = max(ballSize*0.9, 1)
+            let pieces = max(Int((length/step).rounded(.up)), 1)
+            for piece in 0..<pieces {
+                let a = length*CGFloat(piece)/CGFloat(pieces)
+                let b = length*CGFloat(piece + 1)/CGFloat(pieces)
+                let along = (a + b)/2/length
+                let certainty = pow(1 - along, 1.8)
+
+                let segment = SKShapeNode()
+                let path = CGMutablePath()
+                path.move(to: CGPoint(x: a, y: 0))
+                path.addLine(to: CGPoint(x: b, y: 0))
+                segment.path = path
+                segment.strokeColor = GameScene.endlessIIHaloColour
+                    .withAlphaComponent(max(0.3, 0.95*certainty))
+                segment.lineWidth = 2 + (1 - certainty)*2
+                segment.glowWidth = (1 - certainty)*(1 - certainty)*6
+                segment.lineCap = .round
+                node.addChild(segment)
+            }
+
+            let head = SKShapeNode()
+            let headPath = CGMutablePath()
+            headPath.move(to: CGPoint(x: length - ballSize*0.7, y: ballSize*0.55))
+            headPath.addLine(to: CGPoint(x: length, y: 0))
+            headPath.addLine(to: CGPoint(x: length - ballSize*0.7, y: -ballSize*0.55))
+            head.path = headPath
+            head.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.55)
+            head.lineWidth = 2.5
+            head.glowWidth = 3
+            head.lineCap = .round
+            node.addChild(head)
+            // The head wears the far end's blur but not its fade - soft-edged and glowing
+            // like the trajectory's tail, and still unmistakably the pointer
+
             addChild(node)
             endlessIIAimArrow = node
             return node
