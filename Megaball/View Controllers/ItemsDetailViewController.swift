@@ -75,12 +75,39 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             powerUpIndex: { setup.powerUpCorrectOrderArray[$0] })
     }
 
+    /// Whether the power-up reference splits itself by mode.
+    ///
+    /// From the menus it does: fifty-one squares in one run is a wall, and half of them
+    /// cannot be met in the mode the reader may be playing (play-test round 85 asked for
+    /// CLASSIC GAME MODES and ENDLESS MAYHEM headings, in the bricks page's style). From
+    /// the pause menu it does not - there the split that matters is what this run has
+    /// already seen, which is what THIS RUN and OTHER say.
+    var showsModeSections: Bool { senderID == 2 && showsRecentsSection == false }
+
+    /// The power-up indices of each mode's section, in the page's display order.
+    ///
+    /// Split by `LevelPackSetup.isEndlessIIPowerUp`, the same question the drop tables ask,
+    /// rather than by a second list written out here - a list would be wrong the first time
+    /// a power-up moved, and from the outside "missing from the reference" looks exactly
+    /// like "does not exist".
+    var powerUpIndicesByMode: (everyMode: [Int], mayhem: [Int]) {
+        let setup = LevelPackSetup()
+        let indices = standardPowerUpRows.map { setup.powerUpCorrectOrderArray[$0] }
+        return (indices.filter { setup.isEndlessIIPowerUp($0) == false },
+                indices.filter { setup.isEndlessIIPowerUp($0) })
+    }
+
     /// The power-up a row means. Recent rows carry indices directly, in recency order;
     /// the standard section goes through the display-order array, minus the recents.
     func powerUpIndex(at indexPath: IndexPath) -> Int {
         if showsRecentsSection, indexPath.section == 0,
            InGameRecents.shared.powerUpIndices.indices.contains(indexPath.row) {
             return InGameRecents.shared.powerUpIndices[indexPath.row]
+        }
+        if showsModeSections {
+            let split = powerUpIndicesByMode
+            let list = indexPath.section == 0 ? split.everyMode : split.mayhem
+            return list.indices.contains(indexPath.row) ? list[indexPath.row] : 0
         }
         let rows = standardPowerUpRows
         let row = rows.indices.contains(indexPath.row) ? rows[indexPath.row] : indexPath.row
@@ -344,7 +371,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     // MARK: - The grid's data
 
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        collectionView == grid && showsRecentsSection ? 2 : 1
+        guard collectionView == grid else { return 1 }
+        return showsRecentsSection || showsModeSections ? 2 : 1
     }
 
     func collectionView(_ collectionView: UICollectionView,
@@ -358,6 +386,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if showsRecentsSection, section == 0 {
                 return InGameRecents.shared.powerUpIndices.count
             }
+            if showsModeSections {
+                let split = powerUpIndicesByMode
+                return section == 0 ? split.everyMode.count : split.mayhem.count
+            }
             return standardPowerUpRows.count
         default: return LevelPackSetup().achievementsNameArray.count
         }
@@ -365,7 +397,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         referenceSizeForHeaderInSection section: Int) -> CGSize {
-        guard collectionView == grid, showsRecentsSection else { return .zero }
+        guard collectionView == grid, showsRecentsSection || showsModeSections else {
+            return .zero
+        }
         return CGSize(width: collectionView.bounds.width, height: 30)
     }
 
@@ -386,7 +420,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // have one
 
         let label = UILabel()
-        label.text = indexPath.section == 0 ? "  THIS RUN" : "  OTHER"
+        label.text = showsModeSections
+            ? (indexPath.section == 0 ? "  CLASSIC GAME MODES" : "  ENDLESS MAYHEM")
+            : (indexPath.section == 0 ? "  THIS RUN" : "  OTHER")
+        // Which pair of headings applies is the same question as which sections exist
         label.font = .boldSystemFont(ofSize: 13)
         label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         label.frame = header.bounds
