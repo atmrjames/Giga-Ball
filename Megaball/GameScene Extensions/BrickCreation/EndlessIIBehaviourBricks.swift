@@ -712,6 +712,20 @@ extension GameScene {
             // it - an earlier version put the ball inside the top screen block and left the
             // physics to shove it back out
         }
+        if endlessIIPortalPaddleClock.isRunning == false, endlessIIPortalDriftDegrees != 0 {
+            leaving = rotated(leaving, byDegrees: endlessIIPortalDriftDegrees)
+        }
+        endlessIIPortalDriftDegrees = min(
+            endlessIIPortalDriftDegrees + GameScene.endlessIIPortalDriftStep,
+            GameScene.endlessIIPortalDriftLimit)
+        // **Portal drift** (round 101): each paddle-less transit turns the exit a little
+        // further off true, so a portal pair whose geometry feeds itself cannot keep doing
+        // so - the loop-breaker for the one cycle that never touches a wall or a brick and
+        // so never shows the bounce detector a bounce. First transit exits exactly as
+        // aimed; the drift only exists inside a run of consecutive transits, and a paddle
+        // touch resets it. The Portal Paddle network is exempt: its exit is the paddle
+        // itself, already the player's
+
         endlessIIPortalKeepsHeading = partner != nil || endlessIIPortalPaddleClock.isRunning
         endlessIIPortalExitVelocity = leaving
 

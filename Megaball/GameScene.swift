@@ -135,6 +135,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Whether the current hold is the owed last turn of an expired clock - the catch
 	/// that spent the final turn still gets its arrow and its launch.
 	var endlessIIAimOwedHold = false
+
+	/// Watches for a bounce repeating itself with no paddle contact between (round 101).
+	var ballLoopDetector = BallLoopDetector()
+
+	/// The cumulative exit-angle drift a run of paddle-less portal transits builds up.
+	///
+	/// A well-aligned Portal pair maps the field onto itself, and even the cooldown only
+	/// slows the cycle down. Each transit turns the exit a little further, so geometry
+	/// that feeds itself cannot keep doing so - deterministic, felt only inside the loop,
+	/// and gone the moment the player touches the ball.
+	var endlessIIPortalDriftDegrees: Double = 0
+
+	static let endlessIIPortalDriftStep: Double = 4
+	static let endlessIIPortalDriftLimit: Double = 24
 	var endlessIIAimArrow: SKShapeNode?
 	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
 	var endlessIIAimHold = false
@@ -3260,6 +3274,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// from bouncing because the first one is. Shadowing `ball` with the one that was
 		// actually in the contact is what lets the rest of this read unchanged
 
+		if isExtra == false {
+			ballLoopDetector.playerIntervened()
+			endlessIIPortalDriftDegrees = 0
+		}
+		// A loop is only a loop while the player cannot touch it. The paddle is the touch:
+		// whatever was repeating, the player can now change it, so the detector starts
+		// over and the portals go back to sending the ball exactly where they say
+
 		if isOnPaddle {
 			return
 		}
@@ -5545,7 +5567,21 @@ laserTimer?.invalidate()
 			var ySpeed = ball.physicsBody!.velocity.dy
 			let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
 			var angleDeg = angleDegInput
-			
+
+			if isExtra == false,
+			   ballLoopDetector.recordBounce(x: ball.position.x, y: ball.position.y,
+			                                 headingDegrees: angleDeg, cell: brickWidth/2) {
+				let nudge = 5 + Double.random(in: 0...3)
+				angleDeg += horizontalBallControlFlipper ? nudge : -nudge
+				horizontalBallControlFlipper = !horizontalBallControlFlipper
+				// **The loop-breaker** (round 101). Every corrected bounce passes through
+				// here - paddle, wall, brick, backstop, seam - so this is where a bounce
+				// that has repeated itself three times with no paddle contact between is
+				// finally bent. The nudge is random *only now*, once a loop is proven,
+				// which is the whole difference from the removed one-in-ten kick: the
+				// rallies that were never looping are never touched
+			}
+
 			if brickNode != nil {
 				if angleDeg == 0 || angleDeg == -0 {
 				// Ball travelling horizontally right

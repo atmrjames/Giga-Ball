@@ -232,3 +232,67 @@ enum BallPath {
         return (enter, enteredOnVerticalFace)
     }
 }
+
+/// Proves a flight loop before anything is allowed to break it.
+///
+/// The old answer was a random kick on one bounce in ten, which broke loops by making
+/// every rally slightly wrong (removed in round 98; James confirmed in round 100 that it
+/// was nevertheless load-bearing, because a well-aligned Portal pair can cycle the ball
+/// for ever). This is the targeted replacement: a loop is only called a loop when the
+/// same bounce - same place, same heading - has happened three times with no paddle
+/// contact between, and only then does the caller nudge anything. The bounces that were
+/// never looping are never touched, which is what the kick got wrong.
+///
+/// **Lives in this file rather than its own** for the pbxproj reason `WhatsNew` gives.
+struct BallLoopDetector {
+
+    private var signatures: [Int] = []
+
+    /// The same bounce seen this many times is a loop, not a coincidence.
+    static let repeatsThatProveALoop = 3
+
+    /// How much history is kept. A real loop repeats within a few bounces; anything that
+    /// takes longer than this to come round is a rally, not a loop.
+    static let capacity = 24
+
+    /// Records a bounce, and reports whether it has just proved a loop.
+    ///
+    /// Proving one clears the history, so the caller's single nudge gets a chance to work
+    /// before the same loop can be proved again.
+    mutating func recordBounce(x: CGFloat, y: CGFloat, headingDegrees: Double,
+                               cell: CGFloat) -> Bool {
+        let signature = BallLoopDetector.signature(x: x, y: y,
+                                                   headingDegrees: headingDegrees, cell: cell)
+        signatures.append(signature)
+        if signatures.count > BallLoopDetector.capacity { signatures.removeFirst() }
+        guard signatures.filter({ $0 == signature }).count
+                >= BallLoopDetector.repeatsThatProveALoop else { return false }
+        signatures.removeAll()
+        return true
+    }
+
+    /// The player touched the ball: whatever was repeating, they can change it now.
+    mutating func playerIntervened() { signatures.removeAll() }
+
+    /// A bounce, quantised to half-brick cells and five-degree headings - coarse enough
+    /// that a loop's tiny frame-to-frame drift still reads as the same bounce, fine enough
+    /// that two different rallies do not.
+    static func signature(x: CGFloat, y: CGFloat, headingDegrees: Double,
+                          cell: CGFloat) -> Int {
+        let step = max(cell, 1)
+        let xq = Int((x/step).rounded())
+        let yq = Int((y/step).rounded())
+        let hq = Int((headingDegrees/5).rounded())
+        return xq &* 73_856_093 ^ yq &* 19_349_663 ^ hq &* 83_492_791
+        // Deterministic mixing rather than Hasher, which reseeds per launch - a saved
+        // comparison must not depend on which run of the app produced it
+    }
+}
+
+/// A vector turned through an angle, for the portal drift.
+func rotated(_ vector: CGVector, byDegrees degrees: Double) -> CGVector {
+    let radians = degrees * .pi / 180
+    let dx = Double(vector.dx), dy = Double(vector.dy)
+    return CGVector(dx: dx*cos(radians) - dy*sin(radians),
+                    dy: dx*sin(radians) + dy*cos(radians))
+}

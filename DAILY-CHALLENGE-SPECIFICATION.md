@@ -16,7 +16,11 @@ naming (round 90). **Boards (round 95):** the Daily Challenge leaderboard *set* 
 three individual boards are still in App Store Connect review. **Round 100 pulls into
 1.3:** the remaining written twists (§4's unbuilt ten, with the round-99 choose-your
 ideas as candidates), per-day results on the card, §11.5's notifications and the share
-card. Streaks and themes stay beyond 1.3.**
+card. Round 101 pulls **streaks and themes** into 1.3 as well, so phases 4, 5 and 6 are all
+in scope. And three platform features are to be *attempted* for 1.3, dropped without
+ceremony if they resist: 120fps ProMotion, iCloud game saves, and a widget
+(mode-launch or resume) - the widget being the risky one, as the project's first
+second target in a hand-edited pbxproj.**
 
 *The paragraphs below record the build as it grew; §12 holds the phase plan and
 FUTURE-RELEASES.md holds the release map.*
