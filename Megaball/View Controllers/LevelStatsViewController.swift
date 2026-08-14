@@ -612,6 +612,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         format.dateStyle = .medium
         format.timeStyle = .short
         format.locale = .autoupdatingCurrent
+        format.doesRelativeDateFormatting = true
+        // A run from today reads "Today at 00:35" and yesterday's says so too (play-test
+        // round 100) - the system's own relative formatting, so the words are localised
+        // and the cutoffs follow the player's calendar rather than a hand-rolled midnight.
         // The phone's own settings decide how a date and time read - region and 12/24
         // hour clock both. Styles rather than a format string, for the same reason
         return format

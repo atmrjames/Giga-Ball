@@ -112,6 +112,12 @@ submit with buffer for App Review, timed to the iOS 27 window.
 version key is written on every launch, so 1.4 inherits a correct "seen" state from day
 one.
 
+**Scope additions (round 100, James's call).** Pulled forward into 1.3 from the later
+lists: the paddle surface shapes family, Double Paddle and the opposite-moving paddle,
+Drift, the remaining written twists, and the daily's per-day results, notifications and
+share card. Phase 1 also gains the loop-breaker that replaces the removed random kick.
+The phases are undated and absorb it; nothing leaves the release to compensate.
+
 ### The 1.3 line, decided (8 August 2026)
 
 Reviewed together against the full open-items lists; recorded here so it is written down

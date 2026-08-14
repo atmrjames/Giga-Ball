@@ -13,7 +13,10 @@ without anything for a player to find. "Practice" is called free play everywhere
 player reads it (round 12). **Open before release:** the play-test queues below - the
 single-level score tally and screen reorder (round 96), the similar-days rule and level
 naming (round 90). **Boards (round 95):** the Daily Challenge leaderboard *set* is live;
-three individual boards are still in App Store Connect review.**
+three individual boards are still in App Store Connect review. **Round 100 pulls into
+1.3:** the remaining written twists (§4's unbuilt ten, with the round-99 choose-your
+ideas as candidates), per-day results on the card, §11.5's notifications and the share
+card. Streaks and themes stay beyond 1.3.**
 
 *The paragraphs below record the build as it grew; §12 holds the phase plan and
 FUTURE-RELEASES.md holds the release map.*

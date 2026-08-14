@@ -721,4 +721,19 @@ final class EndlessIIAuraTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIFieldIsHeld,
                       "the turn owed is still an aim, and the field must wait for it too")
     }
+
+    /// Play-test round 100: "if it was today or yesterday, write that instead of the
+    /// date". A run from today must not name its date; an older run must.
+    func testRunDatesReadTodayAsAWordAndOlderRunsAsDates() {
+        let format = LevelStatsViewController.runDateFormat
+        XCTAssertTrue(format.doesRelativeDateFormatting)
+
+        let today = format.string(from: Date())
+        XCTAssertFalse(today.contains("202"),
+                       "a run from today should carry no year, only the word and a time")
+
+        let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        XCTAssertTrue(format.string(from: lastWeek).contains("202"),
+                      "anything older than yesterday keeps the full date")
+    }
 }
