@@ -410,8 +410,8 @@ final class PaddleSpeedTests: XCTestCase {
     func testTheChosenSpeedWinsOverTheOldIndex() {
         let defaults = emptyDefaults()
         defaults.set(0, forKey: PaddleSpeed.legacyKey)
-        PaddleSpeed.store(2.3, in: defaults)
-        XCTAssertEqual(PaddleSpeed.stored(defaults), 2.3, accuracy: 0.0001)
+        PaddleSpeed.store(2.25, in: defaults)
+        XCTAssertEqual(PaddleSpeed.stored(defaults), 2.25, accuracy: 0.0001)
     }
 
     func testSavingAlsoLeavesTheOldKeyPointingSomewhereSensible() {
@@ -423,11 +423,17 @@ final class PaddleSpeedTests: XCTestCase {
                        "x2.10 is nearest the old x2.00 step")
     }
 
-    func testTheSliderMovesInTenthsAndStaysInItsRange() {
-        XCTAssertEqual(PaddleSpeed.snapped(1.44), 1.4, accuracy: 0.0001)
-        XCTAssertEqual(PaddleSpeed.snapped(1.46), 1.5, accuracy: 0.0001)
+    func testTheSliderMovesInQuartersAndStaysInItsRange() {
+        // Quarters rather than tenths (James, round 121): nine steps a thumb can land on,
+        // and every one of the five old settings is still exactly reachable
+        XCTAssertEqual(PaddleSpeed.snapped(1.6), 1.5, accuracy: 0.0001)
+        XCTAssertEqual(PaddleSpeed.snapped(1.7), 1.75, accuracy: 0.0001)
         XCTAssertEqual(PaddleSpeed.snapped(0.2), 1.0, accuracy: 0.0001)
         XCTAssertEqual(PaddleSpeed.snapped(9), 3.0, accuracy: 0.0001)
+        for legacy in PaddleSpeed.legacyFactors {
+            XCTAssertEqual(PaddleSpeed.snapped(legacy), legacy, accuracy: 0.0001,
+                           "an old setting must land exactly on a step, not near one")
+        }
     }
 
     func testTheLabelReadsTheWayTheRowAlwaysHas() {

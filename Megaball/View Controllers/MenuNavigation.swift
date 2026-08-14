@@ -107,7 +107,20 @@ final class MenuNavigation: NSObject, UIGestureRecognizerDelegate {
     func gestureRecognizerShouldBegin(_ gesture: UIGestureRecognizer) -> Bool {
         guard let pan = gesture as? UIPanGestureRecognizer else { return true }
         let travelled = pan.translation(in: pan.view)
-        return abs(travelled.x) > abs(travelled.y)
+        guard abs(travelled.x) > abs(travelled.y) else { return false }
+
+        guard let view = pan.view else { return true }
+        let start = CGPoint(x: pan.location(in: view).x - travelled.x,
+                            y: pan.location(in: view).y - travelled.y)
+        return start.x <= MenuNavigation.edgeWidth
+            || start.x >= view.bounds.width - MenuNavigation.edgeWidth
+        // **And it has to have started at an edge**, which is the same test the handler
+        // applies before acting. Without it a horizontal drag anywhere on the screen began
+        // the pan, and `cancelsTouchesInView` then cancelled the touch underneath for a
+        // gesture that was never going to do anything: the paddle-speed screen's practice
+        // field moved once and then went dead under the finger (James, round 121). It is the
+        // same shape as the settings-scroll bug in round 97 - a gesture eating a drag before
+        // the thing underneath ever saw it - and the same lesson, one axis further in
     }
 
     /// Remembers a screen as it goes back, so a forward swipe can return to it.

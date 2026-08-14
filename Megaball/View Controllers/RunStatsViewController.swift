@@ -104,10 +104,16 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         facts.register(UINib(nibName: "StatsTableViewCell", bundle: nil),
                        forCellReuseIdentifier: "customStatCell")
         view.addSubview(facts)
-        SettingsTableViewCell.addGlass(under: facts, cornerRadius: 14, inset: 0)
+        SettingsTableViewCell.addGlass(under: facts, cornerRadius: 14, inset: 20)
         // One panel with hairlines inside it, which is what the statistics page settled on
         // in round 70 - a card per row read as "too many edges" there and would here too.
-        // Never scrolls: the list is a fixed dozen facts and the screen is sized for them
+        // Never scrolls: the list is a fixed dozen facts and the screen is sized for them.
+        //
+        // The numbers are the statistics page's own, not numbers that look similar: its table
+        // spans its container edge to edge with the panel inset 20 *inside* that, so the panel
+        // lands 20-odd points from the screen edge and every row's icon and label start where
+        // the other page's do. Round 117 built this table two points narrower on each side and
+        // its panel flush to it, and the two screens did not line up (James, round 121)
 
         let header = UILabel()
         header.text = "POWER-UP HIGHLIGHTS"
@@ -154,16 +160,16 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
             facts.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 24),
-            facts.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
-            facts.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
+            facts.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 2),
+            facts.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -2),
 
             header.topAnchor.constraint(equalTo: facts.bottomAnchor, constant: 28),
             header.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             table.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
             table.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -20),
-            table.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
-            table.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
+            table.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 22),
+            table.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -22),
 
             close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,

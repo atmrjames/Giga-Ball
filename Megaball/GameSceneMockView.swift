@@ -313,6 +313,19 @@ final class GameBackgroundView: UIView {
         setNeedsDisplay()
     }
 
+    /// The screen this view is a picture *of*, in that screen's own points.
+    ///
+    /// The drawing is letterboxed inside whatever bounds it is given, so anything that wants
+    /// the picture to fill its container - the background chooser's card, the paddle-speed
+    /// screen's practice field - has to make the container this shape. Stated once here
+    /// rather than recomputed by each of them, and `draw` reads it too.
+    var modelledSize: CGSize {
+        guard screen.width > 0, screen.height > 0 else { return CGSize(width: 1, height: 1) }
+        let layout = GameSceneLayout(screen: screen, bottomInset: bottomInset)
+        return CGSize(width: screen.width,
+                      height: max(1, screen.height - layout.topBarHeight))
+    }
+
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext(),
               bounds.width > 0, bounds.height > 0,

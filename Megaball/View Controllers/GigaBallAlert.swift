@@ -251,12 +251,22 @@ final class GigaBallAlertViewController: UIViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(stack)
 
+        let wideEnoughToRead = card.widthAnchor.constraint(equalTo: view.widthAnchor,
+                                                            constant: -68)
+        wideEnoughToRead.priority = .defaultHigh
+        // The card had only a maximum width and a minimum margin, so it hugged its own text:
+        // a two-line message came out barely half the screen wide and read as cramped (James,
+        // round 121, on the free-play pop-up). It now takes the width it is allowed, with the
+        // 420 cap still required so an iPad gets a card rather than a banner, and high rather
+        // than required priority so the cap wins when the two disagree
+
         NSLayoutConstraint.activate([
             card.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             card.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             card.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor,
                                           constant: 34),
             card.widthAnchor.constraint(lessThanOrEqualToConstant: 420),
+            wideEnoughToRead,
 
             stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 26),
             stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 24),
