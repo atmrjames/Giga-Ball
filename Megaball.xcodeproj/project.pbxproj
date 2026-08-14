@@ -24,6 +24,7 @@
 		000000001AF18000000000C1 /* InGameRecents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000C0 /* InGameRecents.swift */; };
 		000000001AF18000000000A3 /* DailyTwists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A2 /* DailyTwists.swift */; };
 		000000001AF18000000000A5 /* DailyChallengeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A4 /* DailyChallengeViewController.swift */; };
+		000000001AF1800000000201 /* PaddleSpeedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000200 /* PaddleSpeedViewController.swift */; };
 		000000001AF18000000000D1 /* RunStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000D0 /* RunStatsViewController.swift */; };
 		000000001AF18000000000E3 /* GigaBallAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000E2 /* GigaBallAlert.swift */; };
 		000000001AF18000000000F7 /* ReturnToGameButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000F8 /* ReturnToGameButton.swift */; };
@@ -363,6 +364,7 @@
 		000000001AF18000000000C0 /* InGameRecents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameRecents.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A2 /* DailyTwists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTwists.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A4 /* DailyChallengeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeViewController.swift; sourceTree = "<group>"; };
+		000000001AF1800000000200 /* PaddleSpeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddleSpeedViewController.swift; sourceTree = "<group>"; };
 		000000001AF18000000000D0 /* RunStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStatsViewController.swift; sourceTree = "<group>"; };
 		000000001AF18000000000E2 /* GigaBallAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GigaBallAlert.swift; sourceTree = "<group>"; };
 		000000001AF18000000000F8 /* ReturnToGameButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnToGameButton.swift; sourceTree = "<group>"; };
@@ -1238,6 +1240,7 @@
 			isa = PBXGroup;
 			children = (
 				000000001AF18000000000A4 /* DailyChallengeViewController.swift */,
+				000000001AF1800000000200 /* PaddleSpeedViewController.swift */,
 		000000001AF18000000000D0 /* RunStatsViewController.swift */,
 		000000001AF18000000000E2 /* GigaBallAlert.swift */,
 		000000001AF18000000000F8 /* ReturnToGameButton.swift */,
@@ -1558,6 +1561,7 @@
 		000000001AF18000000000C1 /* InGameRecents.swift in Sources */,
 				000000001AF18000000000A3 /* DailyTwists.swift in Sources */,
 				000000001AF18000000000A5 /* DailyChallengeViewController.swift in Sources */,
+				000000001AF1800000000201 /* PaddleSpeedViewController.swift in Sources */,
 		000000001AF18000000000D1 /* RunStatsViewController.swift in Sources */,
 		000000001AF18000000000E3 /* GigaBallAlert.swift in Sources */,
 		000000001AF18000000000F7 /* ReturnToGameButton.swift in Sources */,

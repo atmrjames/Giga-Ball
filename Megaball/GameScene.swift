@@ -5609,18 +5609,11 @@ laserTimer?.invalidate()
 		}
 		// Stop paddle and ball tilt
 		
-		if paddleSensitivitySetting == 0 {
-			paddleMovementFactor = 1.00
-		} else if paddleSensitivitySetting == 1 {
-			paddleMovementFactor = 1.25
-		} else if paddleSensitivitySetting == 2 {
-			paddleMovementFactor = 1.50
-		} else if paddleSensitivitySetting == 3 {
-			paddleMovementFactor = 2.00
-		} else if paddleSensitivitySetting == 4 {
-			paddleMovementFactor = 3.00
-		}
-		// Reset paddle sensitivity
+		paddleMovementFactor = PaddleSpeed.stored(defaults)
+		// The setting is a slider from x1.0 to x3.0 in tenths now rather than five fixed
+		// steps (play-test round 13), so the five-way if-chain that used to live here is a
+		// single read - and `PaddleSpeed` is the only thing that knows a player who never
+		// touched the new screen still has their old index waiting to be converted
 	}
 	// Set user settings
 	

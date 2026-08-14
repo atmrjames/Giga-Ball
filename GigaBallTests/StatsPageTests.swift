@@ -376,3 +376,62 @@ final class StatsPageTests: XCTestCase {
                        LevelPackSetup().powerUpNameArray.count)
     }
 }
+
+// MARK: - Paddle speed
+
+/// "Is the paddle speed try-out screen still in the backlog?" It was open rather than
+/// backlogged, and this is it (play-test round 13): a slider from 1.0 to 3.0 in tenths,
+/// which the old five-step index could not express. The conversion is what these pin -
+/// a player who has been on x1.25 for years must open the new screen already on x1.25.
+final class PaddleSpeedTests: XCTestCase {
+
+    private func emptyDefaults() -> UserDefaults {
+        let suite = UserDefaults(suiteName: "paddleSpeedTests")!
+        suite.removePersistentDomain(forName: "paddleSpeedTests")
+        return suite
+    }
+
+    func testAFreshInstallGetsTheShippedDefaultRatherThanTheSlowestPaddle() {
+        // `integer(forKey:)` answers 0 for a key that was never written, and 0 was a real
+        // index meaning x1.00 - so reading it that way would hand every new player the
+        // slowest paddle while the code claimed the default was x1.50
+        XCTAssertEqual(PaddleSpeed.stored(emptyDefaults()), PaddleSpeed.fallback)
+    }
+
+    func testAnOldIndexIsReadAsTheSpeedItAlwaysMeant() {
+        let defaults = emptyDefaults()
+        for (index, factor) in PaddleSpeed.legacyFactors.enumerated() {
+            defaults.set(index, forKey: PaddleSpeed.legacyKey)
+            XCTAssertEqual(PaddleSpeed.stored(defaults), factor,
+                           "index \(index) has meant \(factor) since 2020")
+        }
+    }
+
+    func testTheChosenSpeedWinsOverTheOldIndex() {
+        let defaults = emptyDefaults()
+        defaults.set(0, forKey: PaddleSpeed.legacyKey)
+        PaddleSpeed.store(2.3, in: defaults)
+        XCTAssertEqual(PaddleSpeed.stored(defaults), 2.3, accuracy: 0.0001)
+    }
+
+    func testSavingAlsoLeavesTheOldKeyPointingSomewhereSensible() {
+        // A settings file is a save format, and one that goes silently empty is what
+        // bites a downgrade or a restore
+        let defaults = emptyDefaults()
+        PaddleSpeed.store(2.1, in: defaults)
+        XCTAssertEqual(defaults.integer(forKey: PaddleSpeed.legacyKey), 3,
+                       "x2.10 is nearest the old x2.00 step")
+    }
+
+    func testTheSliderMovesInTenthsAndStaysInItsRange() {
+        XCTAssertEqual(PaddleSpeed.snapped(1.44), 1.4, accuracy: 0.0001)
+        XCTAssertEqual(PaddleSpeed.snapped(1.46), 1.5, accuracy: 0.0001)
+        XCTAssertEqual(PaddleSpeed.snapped(0.2), 1.0, accuracy: 0.0001)
+        XCTAssertEqual(PaddleSpeed.snapped(9), 3.0, accuracy: 0.0001)
+    }
+
+    func testTheLabelReadsTheWayTheRowAlwaysHas() {
+        XCTAssertEqual(PaddleSpeed.label(1.5), "x1.50")
+        XCTAssertEqual(PaddleSpeed.label(3), "x3.00")
+    }
+}

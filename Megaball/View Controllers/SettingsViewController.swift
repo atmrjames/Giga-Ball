@@ -303,22 +303,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
                 cell.setIcon(UIImage(named:"iconPaddleSensitivity.png")!, recolour: true)
-                if paddleSensitivitySetting == 0 {
-                    cell.settingState.text = "x1.00"
-                    cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
-                } else if paddleSensitivitySetting == 1 {
-                    cell.settingState.text = "x1.25"
-                    cell.setStateColour(#colorLiteral(red: 0.370555222, green: 0.3705646992, blue: 0.3705595732, alpha: 1))
-                } else if paddleSensitivitySetting == 2 {
-                    cell.settingState.text = "x1.50"
-                    cell.setStateColour(#colorLiteral(red: 0.2605174184, green: 0.2605243921, blue: 0.260520637, alpha: 1))
-                } else if paddleSensitivitySetting == 3 {
-                    cell.settingState.text = "x2.00"
-                    cell.setStateColour(#colorLiteral(red: 0.12, green: 0.13, blue: 0.14, alpha: 1))
-                } else if paddleSensitivitySetting == 4 {
-                    cell.settingState.text = "x3.00"
-                    cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
-                }
+                let speed = PaddleSpeed.stored(defaults)
+                cell.settingState.text = PaddleSpeed.label(speed)
+                cell.setStateColour(SettingsViewController.paddleSpeedColour(for: speed))
+                // The row shows the number and opens the screen that lets it be felt
+                // (play-test round 13). The five-step ramp of hard-coded greys is now a
+                // ramp derived from where the value sits in the range, because the value
+                // is a slider's now and no list of five colours can cover twenty-one
             case 8:
             // Swipe up to pause
                 cell.settingDescription.text = "Swipe Up To Pause"
@@ -584,12 +575,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     }
                 }
             case 7:
-            // Paddle sensitivity
-                paddleSensitivitySetting = paddleSensitivitySetting+1
-                if paddleSensitivitySetting > 4 {
-                    paddleSensitivitySetting = 0
-                }
-                defaults.set(paddleSensitivitySetting, forKey: "paddleSensitivitySetting")
+            // Paddle speed
+                moveToPaddleSpeed()
+                // Opens rather than cycles: a multiplier means nothing until it is felt,
+                // and cycling made trying one out a trip through a whole level
             case 8:
             // Swipe up pause
                 if infoWasJustTapped { break }
@@ -647,6 +636,32 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         itemsDetailView.view.frame = self.view.frame
         self.view.addSubview(itemsDetailView.view)
         itemsDetailView.didMove(toParent: self)
+    }
+
+    /// The ramp behind the paddle-speed row's number: pale at the slow end, the app's dark
+    /// purple at the fast one, interpolated rather than listed.
+    static func paddleSpeedColour(for value: CGFloat) -> UIColor {
+        let span = PaddleSpeed.range.upperBound - PaddleSpeed.range.lowerBound
+        let along = min(max((value - PaddleSpeed.range.lowerBound)/span, 0), 1)
+        return UIColor(red: 0.6 + (0.1607843137 - 0.6)*along,
+                       green: 0.6 + (0 - 0.6)*along,
+                       blue: 0.6 + (0.2352941176 - 0.6)*along,
+                       alpha: 1)
+    }
+
+    func moveToPaddleSpeed() {
+        let paddleSpeedView = PaddleSpeedViewController()
+        paddleSpeedView.onChange = { [weak self] _ in
+            self?.settingsTableView.reloadData()
+        }
+        addChild(paddleSpeedView)
+        paddleSpeedView.view.frame = view.frame
+        view.addSubview(paddleSpeedView.view)
+        paddleSpeedView.didMove(toParent: self)
+        paddleSpeedView.showAnimate()
+        hideAnimate()
+        // Opened the way every menu screen opens one: a child whose view is added over the
+        // one that opened it, with this screen fading behind it (see MenuNavigation)
     }
 
     func moveToBackgroundSelect() {
