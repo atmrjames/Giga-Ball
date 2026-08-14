@@ -23,6 +23,11 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
     /// round 9: the full in-order list did not justify the screen).
     private let highlights = InGameRecents.shared.superlatives
 
+    /// The run's facts, in the stats page's own row shape: a symbol, a label, a value.
+    private var factRows: [(icon: String, label: String, value: String)] = []
+    private let facts = UITableView(frame: .zero, style: .plain)
+    private var factsHeight: NSLayoutConstraint?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
@@ -48,10 +53,6 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         title.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(title)
 
-        let numbers = UILabel()
-        numbers.translatesAutoresizingMaskIntoConstraints = false
-        numbers.textAlignment = .center
-        numbers.numberOfLines = 0
         if let summary = InGameRecents.shared.runSummary {
             let minutes = summary.durationSeconds/60
             let seconds = summary.durationSeconds % 60
@@ -81,37 +82,32 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             ] + (summary.isEndless
                  ? [("ruler", "Bricks per metre", bricksPerMetre)] : []) + [
                 ("circle.slash", "Balls lost", "\(summary.ballsLost)"),
-                ("trophy", "Best single ball", "\(summary.bestBallHits) hits"),
+                ("trophy", "Most hits on a single ball", "\(summary.bestBallHits)"),
                 ("arrow.down.circle.fill", "Power-ups seen", "\(summary.powerUpsSeen)"),
                 ("checkmark.circle.fill", "Power-ups collected",
                  "\(summary.powerUpsCollected) (\(caught)%)"),
             ]
-            let text = NSMutableAttributedString()
-            for (index, line) in lines.enumerated() {
-                if index > 0 { text.append(NSAttributedString(string: "\n")) }
-                let badge = NSTextAttachment()
-                badge.image = UIImage(systemName: line.0)?
-                    .withTintColor(UIColor(white: 1, alpha: 0.45),
-                                   renderingMode: .alwaysOriginal)
-                badge.bounds = CGRect(x: 0, y: -2, width: 16, height: 14)
-                text.append(NSAttributedString(attachment: badge))
-                text.append(NSAttributedString(
-                    string: "  \(line.1)  ",
-                    attributes: [.font: UIFont.systemFont(ofSize: 16),
-                                 .foregroundColor: UIColor(white: 1, alpha: 0.7)]))
-                text.append(NSAttributedString(
-                    string: line.2,
-                    attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
-                                 .foregroundColor: UIColor.white]))
-            }
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.alignment = .center
-            paragraph.paragraphSpacing = 5
-            text.addAttribute(.paragraphStyle, value: paragraph,
-                              range: NSRange(location: 0, length: text.length))
-            numbers.attributedText = text
+            factRows = lines.map { (icon: $0.0, label: $0.1, value: $0.2) }
+            // The same facts, now as rows for the table below rather than as one centred
+            // block of text (play-test round 85: "the game-over More Stats view should use
+            // the stats page's table style")
         }
-        view.addSubview(numbers)
+
+        facts.translatesAutoresizingMaskIntoConstraints = false
+        facts.backgroundColor = .clear
+        facts.separatorStyle = .none
+        facts.rowHeight = 42
+        facts.isScrollEnabled = false
+        facts.dataSource = self
+        facts.delegate = self
+        facts.allowsSelection = false
+        facts.register(UINib(nibName: "StatsTableViewCell", bundle: nil),
+                       forCellReuseIdentifier: "customStatCell")
+        view.addSubview(facts)
+        SettingsTableViewCell.addGlass(under: facts, cornerRadius: 14, inset: 0)
+        // One panel with hairlines inside it, which is what the statistics page settled on
+        // in round 70 - a card per row read as "too many edges" there and would here too.
+        // Never scrolls: the list is a fixed dozen facts and the screen is sized for them
 
         let header = UILabel()
         header.text = "POWER-UP HIGHLIGHTS"
@@ -157,11 +153,11 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 
-            numbers.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 24),
-            numbers.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
-            numbers.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
+            facts.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 24),
+            facts.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
+            facts.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
 
-            header.topAnchor.constraint(equalTo: numbers.bottomAnchor, constant: 28),
+            header.topAnchor.constraint(equalTo: facts.bottomAnchor, constant: 28),
             header.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             table.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
@@ -177,11 +173,37 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         ])
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let wanted = facts.contentSize.height
+        if let factsHeight {
+            if abs(factsHeight.constant - wanted) > 0.5 { factsHeight.constant = wanted }
+        } else if wanted > 0 {
+            let height = facts.heightAnchor.constraint(equalToConstant: wanted)
+            height.isActive = true
+            factsHeight = height
+        }
+        SettingsTableViewCell.fitGlassPanel(under: facts)
+        // The table is exactly as tall as its rows - it is a fixed list, so it sizes to the
+        // content rather than the page (play-test round 85 asked for that on every detail
+        // table). The panel behind it is measured after, or it fits last layout's height
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        highlights.count
+        tableView == facts ? factRows.count : highlights.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        if tableView == facts {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell",
+                                                     for: indexPath) as! StatsTableViewCell
+            let row = factRows[indexPath.row]
+            cell.statDescription.text = row.label
+            cell.statValue.text = row.value
+            cell.showIcon(row.icon)
+            cell.showDivider(indexPath.row < factRows.count - 1)
+            return cell
+        }
         let cell = tableView.dequeueReusableCell(withIdentifier: "highlight")
             ?? UITableViewCell(style: .value1, reuseIdentifier: "highlight")
         cell.backgroundColor = .clear
