@@ -601,7 +601,7 @@ final class EndlessIIAutoAimTargetTests: XCTestCase {
         lowIndestructible.texture = scene.brickIndestructible1Texture
         let worthIt = brick(in: scene, at: CGPoint(x: 40, y: 60))
 
-        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0), worthIt.position,
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero), worthIt.position,
                        "the lowest brick was one the shot cannot change")
     }
 
@@ -609,7 +609,7 @@ final class EndlessIIAutoAimTargetTests: XCTestCase {
         let scene = scene()
         _ = brick(in: scene, at: CGPoint(x: 90, y: 30))
         let near = brick(in: scene, at: CGPoint(x: 12, y: 30))
-        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0), near.position)
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero), near.position)
     }
 
     func testAFieldWithNothingWorthHittingAimsAtNothing() {
@@ -617,7 +617,7 @@ final class EndlessIIAutoAimTargetTests: XCTestCase {
         let scene = scene()
         let portal = brick(in: scene)
         portal.endlessIIRole = .portal
-        XCTAssertNil(scene.endlessIIAutoAimTarget(from: 0))
+        XCTAssertNil(scene.endlessIIAutoAimTarget(from: .zero))
     }
 }
 

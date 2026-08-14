@@ -3425,7 +3425,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// the subject it was applied to the first ball whichever ball had landed: hitting
 			// the paddle with one made another one turn
 		}
-		
+
+		if isOnPaddle == false {
+			_ = endlessIIApplyAutoAim(to: ball)
+		}
+		// The aim is asked last, after the bounce has chosen its angle, so it overrides the
+		// angle and nothing else - every catch, swallow and portal above already returned.
+		// This line is the whole of the round-103 accuracy fix: the redirect was built in
+		// round 22 and its tests have called it ever since, but no bounce ever had. The
+		// marker drew, the turns were spent, and the ball left at the ordinary bounce angle,
+		// which is exactly "Auto-Aim never hits the brick it is aiming at"
+
 		invisibleBrickFlash()
     }
 	

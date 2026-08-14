@@ -122,13 +122,16 @@ extension GameScene {
     ///
     /// Only bricks worth the shot: never a Portal or an Indestructible, which the ball
     /// cannot destroy, and never a brick holding a bad power-up - a free shot that sets off
-    /// a Lose A Ball is not a free shot.
-    func endlessIIAutoAimTarget(from x: CGFloat) -> CGPoint? {
+    /// a Lose A Ball is not a free shot. And only bricks the shot can actually arrive at:
+    /// `endlessIIAimCanReach` keeps the marker's promise and the shot's delivery the same
+    /// thing, which is why the marker and the redirect both choose through here.
+    func endlessIIAutoAimTarget(from origin: CGPoint) -> CGPoint? {
         var best: (position: CGPoint, distance: CGFloat)?
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
             guard self.endlessIIWorthAimingAt(brick) else { return }
-            let distance = abs(node.position.x - x)
+            guard self.endlessIIAimCanReach(node.position, from: origin) else { return }
+            let distance = abs(node.position.x - origin.x)
             if let current = best {
                 if node.position.y < current.position.y - 1
                     || (abs(node.position.y - current.position.y) <= 1
@@ -140,6 +143,20 @@ extension GameScene {
             }
         }
         return best?.position
+    }
+
+    /// Whether a shot from here can actually arrive there.
+    ///
+    /// The target must be above the launch point, and the straight line to it must lie
+    /// inside the launchable arc. `autoAimAngle` clamps to that arc, so a brick outside it
+    /// would be *marked* and then missed - the shot, bent up to the minimum angle, sails
+    /// past underneath it. A brick the arc cannot reach is simply not a target; a higher
+    /// brick the shot can reach is a better use of the bounce than a promised miss.
+    func endlessIIAimCanReach(_ target: CGPoint, from origin: CGPoint) -> Bool {
+        let dy = Double(target.y - origin.y)
+        guard dy > 0 else { return false }
+        let angleDeg = atan2(dy, Double(target.x - origin.x))*180/Double.pi
+        return angleDeg >= minAngleDeg && angleDeg <= 180 - minAngleDeg
     }
 
     /// Whether a free shot at this brick is worth taking.
@@ -181,7 +198,11 @@ extension GameScene {
     func refreshEndlessIIAutoAimMarker() {
         let aiming = gameMode == .endlessII
             && (endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn)
-        let target = aiming ? endlessIIAutoAimTarget(from: paddle.position.x) : nil
+        let launch = CGPoint(x: paddle.position.x,
+                             y: paddle.position.y + paddleHeight/2 + ball.size.height/2)
+        // Where the next bounce will leave from - the reachability check needs a height as
+        // well as an x, so the marker judges the shot from the same spot the shot takes
+        let target = aiming ? endlessIIAutoAimTarget(from: launch) : nil
 
         guard let target else {
             childNode(withName: GameScene.autoAimMarkerName)?.removeFromParent()
@@ -194,9 +215,12 @@ extension GameScene {
         } else {
             marker = SKShapeNode(circleOfRadius: brickHeight*0.55)
             marker.name = GameScene.autoAimMarkerName
-            marker.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.55)
-            marker.lineWidth = 2
+            marker.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.9)
+            marker.lineWidth = 3
+            marker.glowWidth = 3
             marker.fillColor = .clear
+            // Prominent on purpose (§12.0): at 0.55 alpha and a hairline the ring read as
+            // field dressing, and the one thing a free shot needs is a legible target
             marker.zPosition = 4
             addChild(marker)
         }
@@ -214,7 +238,7 @@ extension GameScene {
         else { return false }
         endlessIIAutoAimOwedTurn = false
         // The last turn still aims - the turn that expired the clock is this bounce
-        guard let target = endlessIIAutoAimTarget(from: subject.position.x) else { return false }
+        guard let target = endlessIIAutoAimTarget(from: subject.position) else { return false }
         guard let angle = EndlessIIPaddleEffects.autoAimAngle(
             from: subject.position, to: target, minimumDeg: minAngleDeg) else { return false }
 
@@ -342,7 +366,7 @@ extension GameScene {
             }
 
             if endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn,
-               let target = endlessIIAutoAimTarget(from: subject.position.x) {
+               let target = endlessIIAutoAimTarget(from: subject.position) {
                 endlessIIAutoAimOwedTurn = false
                 let dx = Double(target.x - subject.position.x)
                 let dy = Double(target.y - subject.position.y)

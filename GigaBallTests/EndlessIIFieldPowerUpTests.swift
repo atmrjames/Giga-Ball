@@ -320,7 +320,7 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         let lowFar = brick(in: scene, x: -150, y: 60)
         let lowNear = brick(in: scene, x: 40, y: 60)
 
-        let target = scene.endlessIIAutoAimTarget(from: 30)
+        let target = scene.endlessIIAutoAimTarget(from: CGPoint(x: 30, y: 0))
         XCTAssertEqual(target?.y, 60)
         XCTAssertEqual(target?.x, lowNear.position.x, "nearest of the equally low")
         _ = lowFar
@@ -333,7 +333,56 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         brick(in: scene, x: 20, y: 60, role: .portal)
         let real = brick(in: scene, x: -60, y: 90)
 
-        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, real.position.x)
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, real.position.x)
+    }
+
+    func testAutoAimSkipsABrickTheLaunchArcCannotReach() {
+        // The shot is clamped to the launchable arc, so a brick shallower than the minimum
+        // angle would be marked and then missed - the clamp bends the shot up and it sails
+        // under the target. Such a brick is not a target at all, even when it is the lowest
+        let scene = fieldScene()
+        scene.minAngleDeg = 10
+        let shallow = brick(in: scene, x: 300, y: 10)
+        // 1.9 degrees from the launch point - the lowest brick, and unreachable
+        let steep = brick(in: scene, x: 40, y: 100)
+
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, steep.position.x,
+                       "the reachable brick wins over the lower unreachable one")
+
+        steep.removeFromParent()
+        XCTAssertNil(scene.endlessIIAutoAimTarget(from: .zero),
+                     "no reachable brick means no aim, not a promised miss")
+        _ = shallow
+    }
+
+    func testAPaddleBounceActuallyTakesTheAimedShot() {
+        // Play test: "Auto-Aim never hits the brick it is aiming at." The redirect and its
+        // tests existed from round 22, but the tests called it directly and no bounce in the
+        // scene ever did - the marker drew, the turns were spent, and the ball left at the
+        // ordinary bounce angle. This test goes through the real paddle bounce, so the wire
+        // can never silently drop out again
+        let scene = fieldScene()
+        scene.ballIsOnPaddle = false
+        scene.ballSpeedLimit = 100
+        scene.minAngleDeg = 10
+        scene.paddleHeight = 10
+        scene.paddle.size = CGSize(width: 80, height: 10)
+        scene.paddle.position = CGPoint(x: 0, y: -100)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.ball.position = CGPoint(x: 0, y: -92)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 60, dy: -80)
+        let target = brick(in: scene, x: 120, y: 60)
+
+        scene.endlessIICollectAutoAim()
+        scene.paddleHit(scene.ball)
+
+        let leave = scene.ball.physicsBody!.velocity
+        let heading = atan2(Double(leave.dy), Double(leave.dx))
+        let wanted = atan2(Double(target.position.y - scene.ball.position.y),
+                           Double(target.position.x - scene.ball.position.x))
+        XCTAssertEqual(heading, wanted, accuracy: 0.001,
+                       "the bounce leaves toward the marked brick")
     }
 
     func testAutoAimOnlyFiresWithTheClock() {
@@ -519,13 +568,13 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         // brick holding a Lose A Ball - a free shot at either is a wasted or hostile shot
         let worth = brick(in: scene, x: -60, y: 100)
 
-        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, worth.position.x)
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, worth.position.x)
     }
 
     func testAutoAimStillAimsAtGoodPowerUpBricks() {
         let scene = fieldScene()
         let gift = brick(in: scene, x: 20, y: 60, powerUp: 0)
-        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: 0)?.x, gift.position.x)
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, gift.position.x)
     }
 
     // MARK: - The scrolling backdrop
