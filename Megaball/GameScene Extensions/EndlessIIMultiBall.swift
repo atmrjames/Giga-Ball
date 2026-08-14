@@ -193,6 +193,7 @@ extension GameScene {
         endlessIIPendingHandover = nil
         guard survivor.parent != nil else { return }
 
+        crookedBallNote("handover")
         ball.position = survivor.position
         ball.physicsBody?.velocity = survivor.physicsBody?.velocity ?? .zero
         ball.isHidden = false

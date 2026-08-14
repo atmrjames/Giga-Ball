@@ -149,6 +149,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	static let endlessIIPortalDriftStep: Double = 4
 	static let endlessIIPortalDriftLimit: Double = 24
+
+	#if DEBUG
+	/// The crooked-ball tripwire (§12.0): the pure comparison lives in `BallPath.swift`,
+	/// and these are its scene half - the frame's list of legitimate velocity writers,
+	/// filled in by the writers themselves as they fire, and read by `crookedBallWatch()`
+	/// at the end of `didSimulatePhysics`, the last word any frame has on the ball.
+	var crookedBallTripwire = CrookedBallTripwire()
+	var crookedBallNotes: [String] = []
+	#endif
+
+	/// Records that something legitimate moved the main ball this frame. Free in Release
+	/// builds; every deliberate velocity or position writer outside the engine calls it,
+	/// so a tripwire log with no notes means a writer nobody knows about.
+	func crookedBallNote(_ reason: String) {
+		#if DEBUG
+		crookedBallNotes.append(reason)
+		#endif
+	}
+
 	var endlessIIAimArrow: SKShapeNode?
 	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
 	var endlessIIAimHold = false
@@ -2125,9 +2144,64 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         applyEndlessIIWraps()
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
+        crookedBallWatch()
     }
     // The one place a physics body can be moved from. Anything written to one during contact
     // resolution is undone by the rest of the step
+
+    /// The crooked-ball tripwire's scene half (§12.0, DEBUG only). Runs last in
+    /// `didSimulatePhysics`, after every writer has had its say, and compares the ball's
+    /// motion to the frame before. A bend of more than half a degree - or a position jump
+    /// no frame of flight could cover - on a frame where no contact fired, no writer left
+    /// a note and no continuous effect was running is the play test's crooked ball caught
+    /// in the act, and the loud line prints. A trip that *is* explained by something rarer
+    /// than an ordinary bounce prints quietly, so a sighting by eye can be matched to the
+    /// writer that moved the ball.
+    func crookedBallWatch() {
+        #if DEBUG
+        defer { crookedBallNotes.removeAll(keepingCapacity: true) }
+
+        guard gameState.currentState is Playing, isPaused == false,
+              ballIsOnPaddle == false, endlessIIAimHold == false,
+              let body = ball.physicsBody,
+              hypot(body.velocity.dx, body.velocity.dy) > 1
+        else {
+            crookedBallTripwire.reset()
+            return
+        }
+        // Not in free flight - on the paddle, held, aim-frozen, paused, dead - means
+        // nothing to compare: the first flying frame only records
+
+        guard let trip = crookedBallTripwire.recordFrame(position: ball.position,
+                                                         velocity: body.velocity)
+        else { return }
+
+        var excuses = crookedBallNotes
+        if endlessIIBallSteeringClock.isRunning { excuses.append("steering clock") }
+        if endlessIIMagnetismClock.isRunning { excuses.append("magnetism clock") }
+        if gravityActivated && body.affectedByGravity { excuses.append("gravity") }
+        // The continuous effects bend the flight a little every frame by design, so while
+        // one runs it stands as the explanation without needing to leave notes
+
+        let heading = atan2(Double(body.velocity.dy), Double(body.velocity.dx))*180/Double.pi
+        let what = [trip.bendDegrees.map { String(format: "bent %.2f deg", $0) },
+                    trip.jumpDistance.map { String(format: "jumped %.1f pt", $0) }]
+            .compactMap { $0 }.joined(separator: ", ")
+        let place = String(format: "at (%.0f, %.0f) heading %.1f deg",
+                           ball.position.x, ball.position.y, heading)
+
+        if excuses.isEmpty {
+            print("CROOKED BALL, unexplained: \(what) \(place), zoom \(parallaxSetting ? "on" : "off")")
+            // The sighting. No contact, no writer's note, no clock - whatever did this is
+            // the regression being hunted. The zoom flag is printed because Perspective
+            // Zoom bends the *apparent* path of a physically straight ball: a sighting by
+            // eye with zoom on and this line absent is the camera, not the physics
+        } else if excuses.allSatisfy({ $0 == "contact" }) == false {
+            print("crooked-ball: \(what) \(place), explained by \(excuses.joined(separator: " + "))")
+            // Ordinary bounces stay silent or the log would be nothing but them
+        }
+        #endif
+    }
 
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
@@ -2423,6 +2497,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// nothing below behaves differently; with more it is the only way to tell.
 			// `xSpeedLive` is sampled from the first ball once a frame, so an extra ball
 			// needs its own velocity rather than that one
+
+			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue
+				&& struckBall === ball {
+				crookedBallNote("contact")
+			}
+			// The tripwire's ordinary excuse: a frame with a genuine contact is allowed to
+			// bend the heading, and the ball's category is the lowest so it is always first
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 
@@ -5838,6 +5919,12 @@ laserTimer?.invalidate()
 				: body.velocity.dy > 0 ? wanted
 				: (Bool.random() ? wanted : -wanted)
 			let dx = (max(0, speed*speed - dy*dy)).squareRoot()
+
+			if subject === ball { crookedBallNote("horizontal-escape") }
+			// This fires mid-flight from `update`, with no contact anywhere near it, and it
+			// can bend the heading by up to minAngleDeg plus the jitter - which makes it
+			// the crooked-ball hunt's prime suspect (§12.0): it arrived with the
+			// ceiling-run fix a couple of days before the sightings were first reported
 
 			body.velocity = CGVector(dx: body.velocity.dx < 0 ? -dx : dx, dy: dy)
 		}

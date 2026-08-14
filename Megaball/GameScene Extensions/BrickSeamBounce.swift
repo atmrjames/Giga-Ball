@@ -79,6 +79,7 @@ extension GameScene {
             case .left, .right:
                 flat = CGVector(dx: -before.velocity.dx, dy: before.velocity.dy)
             }
+            if subject === ball { crookedBallNote("seam-bounce") }
             body.velocity = flat
 
             // The ordinary rules, run on the corrected bounce rather than instead of it. A

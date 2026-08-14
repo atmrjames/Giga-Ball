@@ -285,4 +285,63 @@ final class BallPathTests: XCTestCase {
         XCTAssertEqual(Double(unchanged.dx), 30, accuracy: 0.001)
         XCTAssertEqual(Double(unchanged.dy), 40, accuracy: 0.001)
     }
+
+    // MARK: - The crooked-ball tripwire
+
+    /// "The ball still changes direction mid-flight without contact - totally
+    /// unacceptable." The tripwire is the instrument that hunt rests on, so its
+    /// arithmetic is pinned here: a straight flight never trips it, and a bend
+    /// past half a degree does.
+    func testAStraightFlightNeverTripsAndABendDoes() {
+        var wire = CrookedBallTripwire()
+        let v = CGVector(dx: 60, dy: 80)
+        XCTAssertNil(wire.recordFrame(position: CGPoint(x: 0, y: 0), velocity: v),
+                     "the first frame only records")
+        XCTAssertNil(wire.recordFrame(position: CGPoint(x: 1, y: 1.33), velocity: v),
+                     "same heading, ordinary travel - nothing to explain")
+
+        let bent = rotated(v, byDegrees: 3)
+        let trip = wire.recordFrame(position: CGPoint(x: 2, y: 2.66), velocity: bent)
+        XCTAssertEqual(trip?.bendDegrees ?? 0, 3, accuracy: 0.01)
+        XCTAssertNil(trip?.jumpDistance, "the position moved like a flight, not a jump")
+    }
+
+    /// 179 degrees to -179 degrees is a 2 degree bend, not 358 - a ball flying almost
+    /// straight left crosses that seam constantly, and a tripwire that read it as a
+    /// full turn would cry wolf on every such flight.
+    func testTheBendReadsTheShortWayRoundTheCircle() {
+        XCTAssertEqual(CrookedBallTripwire.bendDegrees(from: 179, to: -179), 2,
+                       accuracy: 0.001)
+        XCTAssertEqual(CrookedBallTripwire.bendDegrees(from: -90, to: 90), 180,
+                       accuracy: 0.001)
+        var wire = CrookedBallTripwire()
+        _ = wire.recordFrame(position: .zero, velocity: rotated(CGVector(dx: 100, dy: 0),
+                                                                byDegrees: 179.8))
+        XCTAssertNil(wire.recordFrame(position: CGPoint(x: -1.7, y: 0),
+                                      velocity: rotated(CGVector(dx: 100, dy: 0),
+                                                        byDegrees: -179.8)),
+                     "0.4 degrees across the seam is a straight flight")
+    }
+
+    /// A teleport is a jump, not a bend: the wrap and the portals move the ball much
+    /// further in one frame than any speed could, with the heading unchanged.
+    func testATeleportTripsAsAJumpEvenWithTheHeadingUnchanged() {
+        var wire = CrookedBallTripwire()
+        let v = CGVector(dx: 300, dy: 0)
+        _ = wire.recordFrame(position: CGPoint(x: 150, y: 0), velocity: v)
+        let trip = wire.recordFrame(position: CGPoint(x: -150, y: 0), velocity: v)
+        XCTAssertNotNil(trip?.jumpDistance)
+        XCTAssertNil(trip?.bendDegrees)
+    }
+
+    /// The reset is what stops a catch, a launch or a death reading as a bend: the
+    /// first frame after one only records, whatever came before it.
+    func testAResetForgetsTheLastFrame() {
+        var wire = CrookedBallTripwire()
+        _ = wire.recordFrame(position: .zero, velocity: CGVector(dx: 100, dy: 0))
+        wire.reset()
+        XCTAssertNil(wire.recordFrame(position: CGPoint(x: 50, y: 80),
+                                      velocity: CGVector(dx: 0, dy: 100)),
+                     "a different heading somewhere else, but nothing is remembered")
+    }
 }

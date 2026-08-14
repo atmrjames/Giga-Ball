@@ -54,6 +54,7 @@ extension GameScene {
             let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
                 ?? body.velocity
 
+            if subject === ball { crookedBallNote("wrap") }
             let radius = subject.size.width/2
             let inside = gameWidth/2 - radius - 1
             subject.position.x = subject.position.x > 0 ? -inside : inside

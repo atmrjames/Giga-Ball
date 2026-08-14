@@ -859,6 +859,7 @@ extension GameScene {
         let velocity = endlessIIPortalExitVelocity
             ?? ball.physicsBody?.velocity ?? .zero
         endlessIIPortalExitVelocity = nil
+        if ball === self.ball { crookedBallNote("portal-exit") }
         ball.position = exit
         if endlessIIPortalKeepsHeading {
             ball.physicsBody?.velocity = velocity

@@ -296,3 +296,68 @@ func rotated(_ vector: CGVector, byDegrees degrees: Double) -> CGVector {
     return CGVector(dx: dx*cos(radians) - dy*sin(radians),
                     dy: dx*sin(radians) + dy*cos(radians))
 }
+
+/// The crooked-ball tripwire's pure half: does this frame's motion need explaining?
+///
+/// The play test keeps seeing the ball change direction mid-scene with no brick, no wall
+/// and no power-up anywhere near it, and it started only a few builds ago - a regression
+/// to trace, not a behaviour to tune (§12.0). Every legitimate velocity writer is known,
+/// so the instrument is a frame-to-frame comparison: the scene records each writer as it
+/// fires, and a heading that bends - or a position that jumps - on a frame with no writer
+/// recorded is the bug showing itself. This struct is only the comparison; the recording,
+/// the excuses and the logging live in `GameScene`, because they read scene state.
+///
+/// DEBUG builds only at the scene end - but the arithmetic lives here unconditionally,
+/// because pure logic gets tested and the wrap-around at ±180° is exactly the kind of
+/// thing a test catches and an eyeball does not.
+struct CrookedBallTripwire {
+
+    /// A frame that needs explaining: the heading bent, the position jumped, or both.
+    struct Trip {
+        var bendDegrees: Double?
+        var jumpDistance: CGFloat?
+    }
+
+    /// Half a degree, per the §12.0 design: small enough to catch the sightings, large
+    /// enough that floating-point drift in the speed renormalisation never fires it.
+    static let bendThresholdDegrees: Double = 0.5
+
+    private var last: (position: CGPoint, headingDegrees: Double, speed: CGFloat)?
+
+    /// Forget the last frame. Called whenever the ball is not in free flight - on the
+    /// paddle, held, aim-frozen, dead - so the first flying frame only records.
+    mutating func reset() {
+        last = nil
+    }
+
+    /// Records this frame and reports whether it needs explaining.
+    mutating func recordFrame(position: CGPoint, velocity: CGVector) -> Trip? {
+        let speed = hypot(velocity.dx, velocity.dy)
+        let heading = atan2(Double(velocity.dy), Double(velocity.dx))*180/Double.pi
+        defer { last = (position, heading, speed) }
+        guard let last else { return nil }
+
+        var trip = Trip()
+        let bend = CrookedBallTripwire.bendDegrees(from: last.headingDegrees, to: heading)
+        if bend > CrookedBallTripwire.bendThresholdDegrees {
+            trip.bendDegrees = bend
+        }
+
+        let travelled = hypot(position.x - last.position.x, position.y - last.position.y)
+        let expected = max(last.speed, speed)/60
+        if travelled > max(expected*3, 12) {
+            trip.jumpDistance = travelled
+        }
+        // The most a frame of flight can cover is a frame of speed - measured generously,
+        // because frame rates vary and a false alarm teaches the reader to ignore the
+        // real one. A teleport (wrap, portal, handover) is far past any of it
+
+        return trip.bendDegrees != nil || trip.jumpDistance != nil ? trip : nil
+    }
+
+    /// The smaller way round the circle: 179° to -179° is a 2° bend, not 358°.
+    static func bendDegrees(from a: Double, to b: Double) -> Double {
+        let raw = abs(b - a).truncatingRemainder(dividingBy: 360)
+        return min(raw, 360 - raw)
+    }
+}

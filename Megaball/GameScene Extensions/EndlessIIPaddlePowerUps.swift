@@ -346,6 +346,7 @@ extension GameScene {
             // paddleHit uses), so where the ball goes through decides where it comes
             // out - the play test found the pass-through gave no control at all
 
+            if subject === ball { crookedBallNote("paddle-portal") }
             if let portal = endlessIIPortals().randomElement() {
                 let from = subject.position
                 subject.position = CGPoint(x: portal.position.x,
