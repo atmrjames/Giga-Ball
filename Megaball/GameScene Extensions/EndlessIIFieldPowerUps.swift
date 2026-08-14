@@ -120,20 +120,37 @@ extension GameScene {
                 self.endlessIIDestroy(brick)
             }
 
-            let beam = SKSpriteNode(color: GameScene.endlessIIHaloColour,
+            let bloom = SKSpriteNode(color: GameScene.endlessIIHaloColour,
+                                     size: CGSize(width: subject.size.width*3,
+                                                  height: frame.height))
+            bloom.position = CGPoint(x: beamX, y: 0)
+            bloom.zPosition = 4
+            bloom.alpha = 0.35
+            bloom.blendMode = .add
+            addChild(bloom)
+            bloom.run(.sequence([.fadeOut(withDuration: 0.7), .removeFromParent()]))
+
+            let beam = SKSpriteNode(color: .white,
                                     size: CGSize(width: subject.size.width,
                                                  height: frame.height))
             beam.position = CGPoint(x: beamX, y: 0)
-            beam.zPosition = 4
-            beam.alpha = 0.7
+            beam.zPosition = 4.1
+            beam.alpha = 0.9
             addChild(beam)
-            beam.run(.sequence([.fadeOut(withDuration: 0.35), .removeFromParent()]))
-            // The beam itself, gone in a third of a second - the destruction is the instant,
-            // the light is just how the player reads which columns it was
+            beam.run(.sequence([.fadeOut(withDuration: 0.7), .removeFromParent()]))
+            // **Made unmissable** (play-test round 102: "doesn't appear to do anything").
+            // The mechanics were right all along - a beam through each ball's column, as
+            // the description says - but it fired the instant the paddle caught the icon,
+            // at the ball's column where the player's eyes are not, silently, for a third
+            // of a second. Now it is the ring HUD's two-pass construction at field size: a
+            // wide additive bloom underneath, a bright core on top, twice the linger, and
+            // the laser's own sound below - the destruction is still the instant, and the
+            // light finally insists on being seen
         }
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
+        if soundsSetting { run(laserFiredSound) }
     }
 
     // MARK: - Wrecking Ball
