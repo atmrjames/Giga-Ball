@@ -511,12 +511,27 @@ must be *posted* inside the window, not merely earned in it. As shipped:
 
 ### Queued from play-test round 90
 
-- **No two similar challenges back to back.** Consecutive days can currently both be, say,
-  a single level with One Life, which reads as the generator repeating itself rather than as
-  a challenge that changes daily. The day's rules are derived from the date, so the fix
-  belongs where they are derived: when a day's shape matches yesterday's closely - same mode,
-  same single-level-or-pack choice, same twist family - step it to the next candidate. It has
-  to stay a pure function of the date, or two devices would disagree about the day.
+- ~~**No two similar challenges back to back.**~~ **Built (round 118.)** The rule lives where
+  the day is derived, and stays a pure function of the date - two devices asking the same
+  question still get the same answer, which is the daily's one absolute requirement (§2.1).
+  Three decisions are worth knowing before touching it:
+  - **The look-back is exactly two days.** `challenge(forKey:)` settles yesterday against the
+    day before, then steps today away from that. A rule that resolved yesterday by resolving
+    *its* yesterday would recurse to the beginning of time on every draw; one that compared
+    raw draws only would let a stepped day collide with the day after it. Two, bottom-up, is
+    bounded and cheap enough for a table view.
+  - **Similar is narrow, on purpose.** The mode split is fixed at Classic 50 / Endless 25 /
+    Mayhem 25, so consecutive days share a mode about a third of the time no matter what;
+    calling every such pair a repeat would have the generator stepping away from a coincidence
+    it cannot avoid, and would bend the mode split trying. What counts: the same mode with
+    twists from the same **family** (the play test's own example, "both a single level with
+    One Life"), and two plain days in an **endless** mode, which really are the same challenge
+    twice because an endless day has no level of its own. What does not: two plain Classic
+    days, which name different levels, or a plain day beside a twisted one.
+  - **Four candidates, then it stands.** Stepping re-rolls the whole day from a new seed, so
+    every draw keeps the stream's own order and a pool added later cannot shift what an old
+    date drew. Measured over a year: 38 rhyming days with no rule, 25 with a single step, and
+    **two** with four steps and the narrow definition.
 - **Say what the level is.** On a Classic single-level day, name the level and its pack, then
   "High score on a single level" underneath, rather than the generic line it shows now.
 

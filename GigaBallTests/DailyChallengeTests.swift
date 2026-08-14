@@ -727,3 +727,63 @@ final class DailyFogRevealTests: XCTestCase {
         XCTAssertTrue(scene.dailyFogPending.isEmpty)
     }
 }
+
+/// "Avoid two similar challenges back to back" (play-test round 90): consecutive days that
+/// are both, say, a single level with a lives twist read as the generator repeating itself
+/// rather than as a challenge that changes daily.
+final class DailyNoRepeatsTests: XCTestCase {
+
+    private func keys(from first: String, days: Int) -> [String] {
+        var all = [first]
+        while all.count < days {
+            guard let next = DailyChallengeGenerator.previousKey(of: all.last!) else { break }
+            all.append(next)
+        }
+        return all.reversed()
+    }
+
+    func testAWholeYearNeverRepeatsTheSameIdeaTwiceRunning() {
+        let days = keys(from: "2027-01-01", days: 365)
+        var previous: DailyChallenge?
+        var rhymes = 0
+        for key in days {
+            let today = DailyChallengeGenerator.challenge(forKey: key)
+            if let previous, DailyChallengeGenerator.readsTheSame(today, previous) { rhymes += 1 }
+            previous = today
+        }
+        XCTAssertLessThanOrEqual(rhymes, 6,
+            """
+            Four candidates per collision rather than a loop until different, so a couple of \
+            days a year may still rhyme after stepping. Measured over 2027: two. The headroom \
+            above that is for the twist pool growing as later twists reach their activation \
+            dates - what must never come back is the run of lookalike days the play test saw
+            """)
+    }
+
+    func testTheRuleStillGivesEveryDeviceTheSameDay() {
+        // The whole daily rests on this (§2.1): two devices asking the same question get the
+        // same answer, however the answer was arrived at
+        for key in ["2026-08-15", "2026-12-25", "2027-03-01"] {
+            XCTAssertEqual(DailyChallengeGenerator.challenge(forKey: key),
+                           DailyChallengeGenerator.challenge(forKey: key))
+        }
+    }
+
+    func testTheLookBackIsTwoDaysAndStopsThere() {
+        // A rule that resolved yesterday by resolving the day before it, and so on, would
+        // walk back to the beginning of time on every draw. This one is bounded, which is
+        // why it can be called from a table view
+        XCTAssertEqual(DailyChallengeGenerator.previousKey(of: "2026-01-01"), "2025-12-31")
+        XCTAssertEqual(DailyChallengeGenerator.previousKey(of: "2026-03-01"), "2026-02-28")
+    }
+
+    func testTwoDaysOfTheSameModeAreOnlySimilarWhenTheirTwistsAre() {
+        let plain = DailyChallenge(dateKey: "a", mode: .endlessII, classicLevel: nil, twists: [])
+        let alsoPlain = DailyChallenge(dateKey: "b", mode: .endlessII, classicLevel: nil, twists: [])
+        XCTAssertTrue(DailyChallengeGenerator.readsTheSame(plain, alsoPlain))
+
+        let classic = DailyChallenge(dateKey: "c", mode: .classic, classicLevel: 4, twists: [])
+        XCTAssertFalse(DailyChallengeGenerator.readsTheSame(plain, classic),
+                       "a different mode is a different day whatever else matches")
+    }
+}

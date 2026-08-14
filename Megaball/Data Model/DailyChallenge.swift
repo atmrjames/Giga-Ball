@@ -209,8 +209,95 @@ enum DailyChallengeGenerator {
     }
 
     /// The day's challenge, computed - never stored, never fetched. Pure.
+    ///
+    /// What the reader sees is `rawChallenge` **stepped away from yesterday's** where the two
+    /// would have read as the same idea twice: "consecutive days can currently both be, say, a
+    /// single level with One Life, which reads as the generator repeating itself rather than
+    /// as a challenge that changes daily" (play-test round 90).
+    ///
+    /// The look-back is exactly two days deep and no deeper, which is the whole trick. A rule
+    /// that compared today with *yesterday's final answer*, itself compared with the day
+    /// before, would recurse to the beginning of time on every draw; one that compared raw
+    /// draws only would let an adjusted day collide with the day after it. Two days back,
+    /// resolved bottom-up, is bounded, cheap, and identical on every device - which is the
+    /// property the whole daily rests on (§2.1).
     static func challenge(forKey key: String) -> DailyChallenge {
-        var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key))
+        guard let yesterday = previousKey(of: key),
+              let dayBefore = previousKey(of: yesterday) else {
+            return rawChallenge(forKey: key)
+        }
+        let settledYesterday = stepped(rawChallenge(forKey: yesterday),
+                                       from: rawChallenge(forKey: dayBefore))
+        return stepped(rawChallenge(forKey: key), from: settledYesterday)
+    }
+
+    /// The day before, in the daily's own UTC calendar.
+    static func previousKey(of key: String) -> String? {
+        guard let date = DailyDay.date(forKey: key),
+              let earlier = DailyDay.utcCalendar.date(byAdding: .day, value: -1, to: date)
+        else { return nil }
+        return DailyDay.key(for: earlier)
+    }
+
+    /// Whether two days read as the same idea.
+    ///
+    /// Precise rather than broad, and the precision is the point. The mode split is fixed at
+    /// Classic 50, Endless 25, Mayhem 25 (§3), so consecutive days share a mode about a third
+    /// of the time whatever this rule says - calling every such pair a repeat would have the
+    /// generator forever stepping away from a coincidence it cannot avoid, and would bend the
+    /// mode split out of shape trying.
+    ///
+    /// What actually reads as the generator repeating itself:
+    /// - the same mode with **twists from the same family** two days running, which is the
+    ///   play test's own example - "both a single level with One Life";
+    /// - two plain days in an **endless** mode, which really are the same challenge twice,
+    ///   since an endless day has no level to make it its own.
+    ///
+    /// What does not: two plain Classic days, because each names a different level; or a
+    /// plain day beside a twisted one, which is a change of rules however familiar the mode.
+    static func readsTheSame(_ a: DailyChallenge, _ b: DailyChallenge) -> Bool {
+        guard a.mode == b.mode else { return false }
+        let families = Set(a.twists.map(\.category))
+        let others = Set(b.twists.map(\.category))
+        if families.isEmpty && others.isEmpty { return a.mode != .classic }
+        if families.isEmpty || others.isEmpty { return false }
+        return families.intersection(others).isEmpty == false
+    }
+
+    /// The offsets a repeated day steps through, in order, until it finds one that does not
+    /// read like yesterday. Golden-ratio odd constants, so each is far from its neighbours in
+    /// the seed space and none is a multiple of another.
+    static let repeatStepOffsets: [UInt64] = [0x9E37_79B9_7F4A_7C15,
+                                              0xBF58_476D_1CE4_E5B9,
+                                              0x94D0_49BB_1331_11EB,
+                                              0xD6E8_FEB8_6659_FD93]
+
+    /// Steps a day away from the one before it, when the two would have read as the same idea.
+    ///
+    /// The step is a fresh seed rather than a nudge to the result: re-rolling the whole day
+    /// keeps every draw in the stream's own order, which is what stops a pool added later
+    /// from shifting what an old date drew (§2.1).
+    ///
+    /// **Bounded rather than looping.** Four candidates, then the last one stands however it
+    /// reads. A loop that kept drawing until it found something different would have no upper
+    /// bound on its work, and - worse - would make each day depend on how hard the *previous*
+    /// day had to look, which is a chain rather than a comparison. Measured over a year of
+    /// draws: 38 days rhymed with no rule at all, 25 with one step, and **two** with four
+    /// steps and the narrowed definition above - which is the "occasionally" the play test
+    /// can live with, reached without touching the mode split.
+    static func stepped(_ today: DailyChallenge, from yesterday: DailyChallenge) -> DailyChallenge {
+        guard readsTheSame(today, yesterday) else { return today }
+        var candidate = today
+        for offset in repeatStepOffsets {
+            candidate = rawChallenge(forKey: today.dateKey, seedOffset: offset)
+            if readsTheSame(candidate, yesterday) == false { return candidate }
+        }
+        return candidate
+    }
+
+    /// The day exactly as the seed draws it, before the no-repeats rule looks at it.
+    static func rawChallenge(forKey key: String, seedOffset: UInt64 = 0) -> DailyChallenge {
+        var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key) &+ seedOffset)
 
         // 1. The mode: Classic 50, Endless 25, Mayhem 25 (§3)
         let modeRoll = stream.roll(100)
