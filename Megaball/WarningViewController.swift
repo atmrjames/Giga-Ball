@@ -201,27 +201,75 @@ class WarningViewController: UIViewController {
         leftButton.isHidden = false
         rightButton.isHidden = false
         if senderID == "killBall" {
-            warningTitleLabel.text = "RESET BALL"
+            setTitle("RESET BALL")
             warningTextLabel.text = "Only reset if the ball becomes stuck."
         }
         if senderID == "resetData" {
-            warningTitleLabel.text = "RESET DATA"
+            setTitle("RESET DATA")
             warningTextLabel.text = "Are you sure you want to reset the game data? You will irreversibly lose all game progress, statistics and settings.\nIn-app purchases will remain."
         }
         if senderID == "pauseMenu" {
-            warningTitleLabel.text = "MAIN MENU"
+            setTitle("MAIN MENU")
             warningTextLabel.text = "Are you sure?\nCurrent progress will be lost."
         }
         if senderID == "firstPause" {
             centerButton.isHidden = false
             leftButton.isHidden = true
             rightButton.isHidden = true
-            warningTitleLabel.text = "SWIPE UP"
+            setTitle("SWIPE UP")
             warningTextLabel.text = "Swipe up anywhere to pause.\nDisable in Settings."
         }
         
     }
-    
+
+    /// The SF Symbol above the title, the way `GigaBallAlert` draws one.
+    ///
+    /// "The main-menu pop-up needs a home icon" (play-test round 85), and this is the screen
+    /// it was actually asking about: the four confirms - MAIN MENU, RESET BALL, RESET DATA,
+    /// SWIPE UP - are this storyboard sheet rather than the newer alert type, and it had no
+    /// icon slot at all.
+    ///
+    /// Drawn *inside the title label* as a text attachment rather than as a view above it.
+    /// A view above the title has to be positioned against a card whose padding is set in
+    /// the storyboard, and the first attempt did exactly what that invites: the house sat
+    /// half in and half out of the card's top edge. An attachment reflows within the label
+    /// the storyboard already places, inherits its centring, and - because a shadow applies
+    /// to everything a label draws - wears the title's own green glow without asking.
+    private func headingSymbol(for id: String) -> String? {
+        switch id {
+        case "pauseMenu": return "house.fill"
+        case "killBall": return "arrow.clockwise"
+        case "resetData": return "trash.fill"
+        case "firstPause": return "hand.draw.fill"
+        default: return nil
+        }
+    }
+
+    private func setTitle(_ text: String) {
+        guard let name = headingSymbol(for: senderID),
+              let image = UIImage(systemName: name,
+                                  withConfiguration: UIImage.SymbolConfiguration(
+                                      pointSize: 26, weight: .bold))?
+                .withTintColor(#colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1), renderingMode: .alwaysOriginal)
+        else {
+            warningTitleLabel.text = text
+            return
+        }
+
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        let heading = NSMutableAttributedString(attachment: attachment)
+        heading.append(NSAttributedString(string: "\n" + text))
+
+        let centred = NSMutableParagraphStyle()
+        centred.alignment = .center
+        centred.lineSpacing = 2
+        heading.addAttribute(.paragraphStyle, value: centred,
+                             range: NSRange(location: 0, length: heading.length))
+        warningTitleLabel.numberOfLines = 0
+        warningTitleLabel.attributedText = heading
+    }
+
     func showAnimate() {
         self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
         self.view.alpha = 0.0;
