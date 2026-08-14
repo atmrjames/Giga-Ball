@@ -473,6 +473,16 @@ final class PerModeTimeTests: XCTestCase {
         XCTAssertEqual(row?.value, StatsPage.playTime(3_661))
     }
 
+    /// A run is not a lifetime: `playTime` floors everything under two minutes to "1 minute",
+    /// and most endless runs end inside two minutes - so every run would report the same
+    /// figure and the longest would equal the average for ever.
+    func testARunIsTimedAtARunsScaleRatherThanALifetimes() {
+        XCTAssertEqual(StatsPage.runTime(45), "45s")
+        XCTAssertEqual(StatsPage.runTime(60), "1m 00s")
+        XCTAssertEqual(StatsPage.runTime(125), "2m 05s")
+        XCTAssertEqual(StatsPage.playTime(45), "1 minute", "the lifetime total keeps its shape")
+    }
+
     func testRunDurationsRideBesideTheHeights() {
         let stats = TotalStats()
         stats.endlessModeHeight = [10, 40]
@@ -480,8 +490,8 @@ final class PerModeTimeTests: XCTestCase {
         stats.recordRunDuration(120, inMayhem: false)
 
         let rows = StatsPage.rows(for: .endless, stats: stats)
-        XCTAssertEqual(rows.first { $0.label == "Longest run" }?.value, StatsPage.playTime(120))
-        XCTAssertEqual(rows.first { $0.label == "Average run" }?.value, StatsPage.playTime(90))
+        XCTAssertEqual(rows.first { $0.label == "Longest run" }?.value, StatsPage.runTime(120))
+        XCTAssertEqual(rows.first { $0.label == "Average run" }?.value, StatsPage.runTime(90))
     }
 
     func testTheAverageRunCountsOnlyTheRunsThatHaveADuration() {
@@ -493,7 +503,7 @@ final class PerModeTimeTests: XCTestCase {
         stats.recordRunDuration(100, inMayhem: true)
 
         let rows = StatsPage.rows(for: .mayhem, stats: stats)
-        XCTAssertEqual(rows.first { $0.label == "Average run" }?.value, StatsPage.playTime(100))
+        XCTAssertEqual(rows.first { $0.label == "Average run" }?.value, StatsPage.runTime(100))
     }
 
     func testAnEndlessModeWithNoDurationsYetShowsNoneOfTheseRows() {

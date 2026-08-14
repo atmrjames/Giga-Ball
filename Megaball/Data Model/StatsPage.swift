@@ -200,9 +200,9 @@ enum StatsPage {
         // would report an average run far shorter than any run they have had
         if let durations, durations.isEmpty == false {
             let longest = durations.max() ?? 0
-            rows.append(Row(label: "Longest run", value: playTime(longest), icon: "hourglass"))
+            rows.append(Row(label: "Longest run", value: runTime(longest), icon: "hourglass"))
             rows.append(Row(label: "Average run",
-                            value: playTime(durations.reduce(0, +)/durations.count),
+                            value: runTime(durations.reduce(0, +)/durations.count),
                             icon: "clock.arrow.circlepath"))
         }
         return rows
@@ -286,6 +286,18 @@ enum StatsPage {
         if seconds <= 3600 { return String(seconds/60) + " minutes" }
         let hours = seconds/3600
         return String(hours) + (hours == 1 ? " hour" : " hours")
+    }
+
+    /// How long one run lasted, at a run's own scale.
+    ///
+    /// `playTime` is for lifetimes and rounds everything under two minutes to "1 minute",
+    /// which is the right shape for a total and useless for a run: most endless runs end
+    /// inside two minutes, so every one of them would report the same figure and the
+    /// longest run would equal the average run for ever. Seconds below a minute, minutes
+    /// and seconds above it - the same mm:ss the pack times already use.
+    static func runTime(_ seconds: Int) -> String {
+        if seconds < 60 { return String(seconds) + "s" }
+        return String(seconds/60) + "m " + String(format: "%02ds", seconds%60)
     }
 
     /// A whole-number percentage, with nothing-out-of-nothing reading as 0% rather than as the

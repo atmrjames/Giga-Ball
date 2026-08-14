@@ -153,10 +153,10 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
 
         tableTop.isActive = false
         NSLayoutConstraint.activate([
-            picker.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            picker.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 18),
             picker.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20),
             picker.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -20),
-            statsTableView.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 12),
+            statsTableView.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 22),
         ])
     }
 
@@ -176,7 +176,11 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         cell.showDivider(indexPath.row < tableView.numberOfRows(inSection: indexPath.section) - 1)
-        statsTableView.rowHeight = 35.0
+        statsTableView.rowHeight = 42.0
+        // Taller rows and more air above them (play-test round 85: "stats table cells
+        // taller and more padding between title, tab bar and table"). The page is a list
+        // of facts to read down rather than a list of controls to hit, and at 35 with 5pt
+        // and 12pt gaps the three parts of the screen ran into each other
         let row = rows[indexPath.row]
         cell.statDescription.text = row.label
         cell.statValue.text = row.value
