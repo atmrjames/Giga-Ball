@@ -142,7 +142,6 @@ final class PackGridCell: UICollectionViewCell {
             block.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 4),
             block.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -4),
 
-            icon.widthAnchor.constraint(equalTo: card.widthAnchor, multiplier: 0.42),
             icon.heightAnchor.constraint(equalTo: icon.widthAnchor),
 
             lock.centerXAnchor.constraint(equalTo: icon.centerXAnchor),
@@ -163,6 +162,8 @@ final class PackGridCell: UICollectionViewCell {
             // it, which is why the insets go negative. It catches more without looking
             // heavier, the same trade the settings screen's information button made
         ])
+        applyIconScale()
+        // The picture's share of the square, replaceable per screen - see `iconScale`
     }
 
     /// Fills the cell in. Everything it can show is set on every pass, including the things
@@ -179,6 +180,26 @@ final class PackGridCell: UICollectionViewCell {
     ///     leaves a white silhouette. The same distinction `setIcon(_:recolour:)` makes on
     ///     the rows, and the same reason it has no default: it can only be got right by
     ///     looking at the artwork.
+    /// How much of the square the picture fills.
+    ///
+    /// A pack icon is a flat glyph and reads at any size; an app icon is a *picture* of the
+    /// icon you would be wearing, and at 42% of a square it was a stamp in a field of glass
+    /// (play-test round 85: "app icon images larger in their squares"). A multiplier cannot
+    /// be edited once made, so the constraint is replaced rather than adjusted.
+    var iconScale: CGFloat = PackGridCell.defaultIconScale {
+        didSet { if iconScale != oldValue { applyIconScale() } }
+    }
+    static let defaultIconScale: CGFloat = 0.42
+    private var iconScaleConstraint: NSLayoutConstraint?
+
+    private func applyIconScale() {
+        iconScaleConstraint?.isActive = false
+        let fresh = icon.widthAnchor.constraint(equalTo: card.widthAnchor,
+                                                multiplier: iconScale)
+        fresh.isActive = true
+        iconScaleConstraint = fresh
+    }
+
     func show(name packName: String, icon packIcon: UIImage?,
               unlocked: Bool, completed: Bool, recolour: Bool = true,
               nameSize: CGFloat = 13) {

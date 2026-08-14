@@ -214,6 +214,16 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// phrases - "Clear And Retreat", "Endless Mode 1,000m Milestone" - and at the pack
     /// grid's size they either truncate or push the icon off the square.
     private var gridNameSize: CGFloat { senderID == 3 ? 13 : (senderID == 2 ? 11 : 13) }
+
+    /// How much of each square its picture fills.
+    ///
+    /// App icons and themes are pictures of the thing being chosen, and at the shared 42%
+    /// they read as stamps in a field of glass (play-test round 85: "app icon images larger
+    /// in their squares"). The reference grids keep the smaller mark, because their squares
+    /// carry a name underneath that has to be read as easily as the picture.
+    private var gridIconScale: CGFloat {
+        senderID == 0 || senderID == 1 ? 0.58 : PackGridCell.defaultIconScale
+    }
     // Achievements go back up to 13. At 10 the names were small *and* still on one line -
     // "Endless Mode 10,000m Total Height" simply fitted across the square at that size, so
     // shrinking the type was working against the two lines it was meant to enable
@@ -786,6 +796,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 withReuseIdentifier: PackGridCell.reuseIdentifier,
                 for: indexPath) as! PackGridCell
             let item = gridItem(at: indexPath)
+            square.iconScale = gridIconScale
             square.show(name: item.name, icon: item.icon,
                         unlocked: item.unlocked, completed: item.chosen, recolour: false,
                         nameSize: gridNameSize)
