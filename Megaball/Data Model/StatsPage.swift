@@ -81,14 +81,20 @@ enum StatsPage {
         let rows: [Row]
         switch tab {
         case .overall: rows = overallRows(stats)
-        case .classic: rows = classicRows(stats)
+        case .classic:
+            rows = classicRows(stats) + playTimeRows(stats.classicPlayTimeSecs)
         case .endless:
-            rows = heightRows(stats.endlessModeHeight)
+            rows = heightRows(stats.endlessModeHeight,
+                              durations: stats.endlessModeDurations)
+                + playTimeRows(stats.endlessPlayTimeSecs)
                 + mostEffectiveRows(stats.endlessPowerUpMetres)
         case .mayhem:
-            rows = heightRows(stats.endlessIIHeights)
+            rows = heightRows(stats.endlessIIHeights,
+                              durations: stats.endlessIIDurations)
+                + playTimeRows(stats.endlessIIPlayTimeSecs)
                 + mostEffectiveRows(stats.endlessIIPowerUpMetres)
-        case .daily: rows = dailyRows(stats)
+        case .daily:
+            rows = dailyRows(stats) + playTimeRows(stats.dailyPlayTimeSecs)
         }
         return rows.isEmpty ? [nothingYet] : rows
     }
@@ -177,15 +183,38 @@ enum StatsPage {
     ///
     /// One function rather than two sections written out twice: they are the same questions,
     /// and the moment they are two copies one of them gets a fifth row and the other does not.
-    private static func heightRows(_ heights: [Int]) -> [Row] {
+    private static func heightRows(_ heights: [Int], durations: [Int]? = nil) -> [Row] {
         guard heights.isEmpty == false else { return [] }
         let total = heights.reduce(0, +)
-        return [
+        var rows = [
             Row(label: "Runs played", value: grouped(heights.count), icon: "play.circle.fill"),
             Row(label: "Best height", value: grouped(heights.max() ?? 0) + " m", icon: "arrow.up"),
             Row(label: "Total height", value: grouped(total) + " m", icon: "sum"),
             Row(label: "Average height", value: grouped(total/heights.count) + " m", icon: "chart.bar.fill"),
         ]
+
+        // How long the climbing took, beside how high it got (play-test round 85). Only the
+        // runs that have a duration count towards the average: durations were added to the
+        // save long after heights, so a long-standing player has runs from before this
+        // existed, and dividing their recorded seconds by every run they have ever played
+        // would report an average run far shorter than any run they have had
+        if let durations, durations.isEmpty == false {
+            let longest = durations.max() ?? 0
+            rows.append(Row(label: "Longest run", value: playTime(longest), icon: "hourglass"))
+            rows.append(Row(label: "Average run",
+                            value: playTime(durations.reduce(0, +)/durations.count),
+                            icon: "clock.arrow.circlepath"))
+        }
+        return rows
+    }
+
+    /// The mode's own share of the clock, where the mode has been played at all.
+    ///
+    /// Absent rather than zero is the point: `nil` means never played, and a tab that has
+    /// never been played should not print "Play time 0s" as though it had.
+    private static func playTimeRows(_ seconds: Int?) -> [Row] {
+        guard let seconds, seconds > 0 else { return [] }
+        return [Row(label: "Play time", value: playTime(seconds), icon: "clock")]
     }
 
     /// The power-up that has been running for more of the climb than any other.

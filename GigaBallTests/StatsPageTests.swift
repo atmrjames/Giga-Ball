@@ -435,3 +435,81 @@ final class PaddleSpeedTests: XCTestCase {
         XCTAssertEqual(PaddleSpeed.label(3), "x3.00")
     }
 }
+
+/// "Total play time per mode" and "duration stats beside height for both endless modes"
+/// (play-test round 85's stats list).
+final class PerModeTimeTests: XCTestCase {
+
+    func testTheFourModesSplitTheSameSecondsTheTotalCounts() {
+        let stats = TotalStats()
+        stats.creditPlayTime(30, mode: .classic, isDailyChallenge: false)
+        stats.creditPlayTime(40, mode: .endless, isDailyChallenge: false)
+        stats.creditPlayTime(50, mode: .endlessII, isDailyChallenge: false)
+        stats.creditPlayTime(60, mode: .endlessII, isDailyChallenge: true)
+
+        XCTAssertEqual(stats.classicPlayTimeSecs, 30)
+        XCTAssertEqual(stats.endlessPlayTimeSecs, 40)
+        XCTAssertEqual(stats.endlessIIPlayTimeSecs, 50)
+        XCTAssertEqual(stats.dailyPlayTimeSecs, 60,
+                       "a daily is its own game whatever field it borrows")
+    }
+
+    func testAModeNeverPlayedStaysAbsentRatherThanZero() {
+        let stats = TotalStats()
+        XCTAssertNil(stats.classicPlayTimeSecs)
+        stats.creditPlayTime(0, mode: .classic, isDailyChallenge: false)
+        XCTAssertNil(stats.classicPlayTimeSecs, "a level that took no time is not a play time")
+
+        XCTAssertFalse(StatsPage.rows(for: .classic, stats: stats)
+                        .contains { $0.label == "Play time" },
+                       "a tab never played should not print a play time of none")
+    }
+
+    func testThePlayTimeRowAppearsOnceTheModeHasBeenPlayed() {
+        let stats = TotalStats()
+        stats.levelsPlayed = 1
+        stats.creditPlayTime(3_661, mode: .classic, isDailyChallenge: false)
+        let row = StatsPage.rows(for: .classic, stats: stats).first { $0.label == "Play time" }
+        XCTAssertEqual(row?.value, StatsPage.playTime(3_661))
+    }
+
+    func testRunDurationsRideBesideTheHeights() {
+        let stats = TotalStats()
+        stats.endlessModeHeight = [10, 40]
+        stats.recordRunDuration(60, inMayhem: false)
+        stats.recordRunDuration(120, inMayhem: false)
+
+        let rows = StatsPage.rows(for: .endless, stats: stats)
+        XCTAssertEqual(rows.first { $0.label == "Longest run" }?.value, StatsPage.playTime(120))
+        XCTAssertEqual(rows.first { $0.label == "Average run" }?.value, StatsPage.playTime(90))
+    }
+
+    func testTheAverageRunCountsOnlyTheRunsThatHaveADuration() {
+        // Durations went into the save long after heights did, so a long-standing player has
+        // runs from before they existed. Dividing the recorded seconds by every run ever
+        // played would report an average shorter than any run they have actually had
+        let stats = TotalStats()
+        stats.endlessIIModeHeight = [10, 20, 30, 40]
+        stats.recordRunDuration(100, inMayhem: true)
+
+        let rows = StatsPage.rows(for: .mayhem, stats: stats)
+        XCTAssertEqual(rows.first { $0.label == "Average run" }?.value, StatsPage.playTime(100))
+    }
+
+    func testAnEndlessModeWithNoDurationsYetShowsNoneOfTheseRows() {
+        let stats = TotalStats()
+        stats.endlessModeHeight = [10]
+        let rows = StatsPage.rows(for: .endless, stats: stats)
+        XCTAssertFalse(rows.contains { $0.label == "Longest run" })
+        XCTAssertTrue(rows.contains { $0.label == "Best height" }, "the heights still show")
+    }
+
+    /// Both sync tables must name every field, or a device quietly keeps a stat to itself -
+    /// the shape of trap ENDLESS-2-SPECIFICATION §8.6 keeps warning about.
+    func testEverySyncedModeTimeIsNamedInTheKeyTable() {
+        XCTAssertEqual(CloudKitHandler.modeTimeKeys.count, 4)
+        XCTAssertEqual(CloudKitHandler.runDurationKeys.count, 2)
+        XCTAssertEqual(Set(CloudKitHandler.modeTimeKeys.map(\.key)).count, 4,
+                       "no two modes may share an iCloud key")
+    }
+}

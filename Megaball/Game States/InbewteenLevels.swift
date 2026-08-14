@@ -190,9 +190,13 @@ class InbetweenLevels: GKState {
                     scene.totalStatsArray[0].endlessIIHeights + [scene.endlessHeight]
                 scene.totalStatsArray[0].endlessIIModeHeightDate =
                     (scene.totalStatsArray[0].endlessIIModeHeightDate ?? []) + [Date()]
+                scene.totalStatsArray[0].recordRunDuration(scene.levelTimerValue,
+                                                           inMayhem: true)
             } else {
                 scene.totalStatsArray[0].endlessModeHeight.append(scene.endlessHeight)
                 scene.totalStatsArray[0].endlessModeHeightDate.append(Date())
+                scene.totalStatsArray[0].recordRunDuration(scene.levelTimerValue,
+                                                           inMayhem: false)
             }
         } else {
             var packEndLivesBonus = 0
@@ -219,6 +223,11 @@ class InbetweenLevels: GKState {
             scene.totalStatsArray[0].levelsCompleted+=1
         }
         scene.totalStatsArray[0].playTimeSecs = scene.totalStatsArray[0].playTimeSecs + scene.levelTimerValue
+        scene.totalStatsArray[0].creditPlayTime(scene.levelTimerValue, mode: scene.gameMode,
+                                                isDailyChallenge: scene.isDailyChallenge)
+        // The same seconds, split by mode as well as totalled (play-test round 85). Here
+        // rather than anywhere else because this line already knew a level had ended and
+        // how long it took - a second source of that would drift from this one
         if scene.endlessMode == false && (scene.gameoverStatus == true || scene.levelNumber == self.scene.endLevelNumber) && scene.numberOfLevels != 1 {
             scene.totalStatsArray[0].packsPlayed+=1
         }

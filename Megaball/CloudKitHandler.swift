@@ -104,6 +104,63 @@ final class CloudKitHandler: NSObject {
         }
     }
 
+    /// The per-mode play times and the endless run durations, keyed the way the metres are -
+    /// one list walked by both directions, so neither can quietly gain a mode the other has
+    /// not. Added in round 111; a device that has never written them holds `nil`, which means
+    /// "no opinion" rather than "zero", exactly as the metres do.
+    static let modeTimeKeys: [(key: String, path: ReferenceWritableKeyPath<TotalStats, Int?>)] = [
+        ("classicPlayTimeSecs", \TotalStats.classicPlayTimeSecs),
+        ("endlessPlayTimeSecs", \TotalStats.endlessPlayTimeSecs),
+        ("endlessIIPlayTimeSecs", \TotalStats.endlessIIPlayTimeSecs),
+        ("dailyPlayTimeSecs", \TotalStats.dailyPlayTimeSecs),
+    ]
+
+    static let runDurationKeys: [(key: String, path: ReferenceWritableKeyPath<TotalStats, [Int]?>)] = [
+        ("endlessModeDurations", \TotalStats.endlessModeDurations),
+        ("endlessIIDurations", \TotalStats.endlessIIDurations),
+    ]
+
+    /// Sends this device's per-mode times and run durations up.
+    ///
+    /// The counters go highest-wins, like every other total here. The duration arrays go as
+    /// whole arrays, biggest total wins, which is exactly how the heights beside them travel -
+    /// and it has to be the same rule, or a device could end up with one device's heights and
+    /// another's durations, which would pair a run with a stranger's clock.
+    private func pushModeTimes() {
+        let iCloudStore = NSUbiquitousKeyValueStore.default
+        for (key, path) in CloudKitHandler.modeTimeKeys {
+            guard let local = totalStatsArray[0][keyPath: path] else { continue }
+            if local > Int(iCloudStore.longLong(forKey: key)) {
+                iCloudStore.set(local, forKey: key)
+            }
+        }
+        for (key, path) in CloudKitHandler.runDurationKeys {
+            guard let local = totalStatsArray[0][keyPath: path] else { continue }
+            let stored = iCloudStore.array(forKey: key) as? [Int]
+            if local.reduce(0, +) > (stored?.reduce(0, +) ?? -1) {
+                iCloudStore.set(local, forKey: key)
+            }
+        }
+    }
+
+    /// Brings another device's per-mode times and run durations down, by the same rules.
+    private func pullModeTimes() {
+        let iCloudStore = NSUbiquitousKeyValueStore.default
+        for (key, path) in CloudKitHandler.modeTimeKeys {
+            let stored = Int(iCloudStore.longLong(forKey: key))
+            if stored > (totalStatsArray[0][keyPath: path] ?? 0) {
+                totalStatsArray[0][keyPath: path] = stored
+            }
+        }
+        for (key, path) in CloudKitHandler.runDurationKeys {
+            guard let stored = iCloudStore.array(forKey: key) as? [Int] else { continue }
+            let local = totalStatsArray[0][keyPath: path] ?? []
+            if stored.reduce(0, +) > local.reduce(0, +) {
+                totalStatsArray[0][keyPath: path] = stored
+            }
+        }
+    }
+
     /// Brings another device's metres down, highest wins per slot.
     private func pullMetres() {
         let iCloudStore = NSUbiquitousKeyValueStore.default
@@ -302,6 +359,7 @@ final class CloudKitHandler: NSObject {
         }
 
         pushMetres()
+        pushModeTimes()
 
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
         if let powerupsGeneratedCloudCheck = iCloudStore.array(forKey: "powerupsGenerated") as? [Int] {
@@ -774,6 +832,7 @@ final class CloudKitHandler: NSObject {
         totalStatsArray[0].powerupsCollected = powerupsCollected!
 
         pullMetres()
+        pullModeTimes()
 
         powerupsGenerated = totalStatsArray[0].powerupsGenerated
         if let powerupsGeneratedCloud = iCloudStore.array(forKey: "powerupsGenerated") as? [Int] {

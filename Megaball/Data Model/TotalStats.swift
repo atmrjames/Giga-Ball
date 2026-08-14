@@ -115,6 +115,56 @@ class TotalStats: Codable {
     /// An empty set of slots, sized off the same count everything else here is.
     static var freshPowerUpMetres: [Int] { Array(repeating: 0, count: TotalStats().powerupsCollected.count) }
 
+    /// How long has been spent in each mode, in seconds.
+    ///
+    /// `playTimeSecs` has counted the whole game since 2020 and still does; these split the
+    /// same seconds four ways, so a player can see where their hours actually went (play-test
+    /// round 85). Credited from the one place that already knew a level had ended and how
+    /// long it took, so the four always sum to what the total would have counted.
+    ///
+    /// Optional for the decode-safety reason `endlessPowerUpMetres` gives above: a stats file
+    /// written before these existed must still decode. A mode that has never been played is
+    /// `nil` rather than zero, which is also what lets the page leave its row out rather than
+    /// print a play time of none.
+    var classicPlayTimeSecs: Int?
+    var endlessPlayTimeSecs: Int?
+    var endlessIIPlayTimeSecs: Int?
+    var dailyPlayTimeSecs: Int?
+
+    /// How long each endless run lasted, in seconds, in the order the runs were played.
+    ///
+    /// Beside the heights rather than inside them, and read the same way the dates are: paired
+    /// from the **end**, because a player from before this existed has more heights than
+    /// durations and the runs missing a duration are the old ones (the round-21 date bug, and
+    /// its fix, are the standing lesson here - see `LevelStatsViewController.pair`).
+    var endlessModeDurations: [Int]?
+    var endlessIIDurations: [Int]?
+
+    /// Adds a run's seconds to the mode that was being played.
+    func creditPlayTime(_ seconds: Int, mode: GameMode, isDailyChallenge: Bool) {
+        guard seconds > 0 else { return }
+        if isDailyChallenge {
+            dailyPlayTimeSecs = (dailyPlayTimeSecs ?? 0) + seconds
+            return
+            // A daily is its own game whatever field it borrows (daily spec §9), so its
+            // seconds are its own rather than the mode it was generated from
+        }
+        switch mode {
+        case .endless: endlessPlayTimeSecs = (endlessPlayTimeSecs ?? 0) + seconds
+        case .endlessII: endlessIIPlayTimeSecs = (endlessIIPlayTimeSecs ?? 0) + seconds
+        default: classicPlayTimeSecs = (classicPlayTimeSecs ?? 0) + seconds
+        }
+    }
+
+    /// Notes how long an endless run lasted, against the mode it was run in.
+    func recordRunDuration(_ seconds: Int, inMayhem: Bool) {
+        if inMayhem {
+            endlessIIDurations = (endlessIIDurations ?? []) + [seconds]
+        } else {
+            endlessModeDurations = (endlessModeDurations ?? []) + [seconds]
+        }
+    }
+
     var bricksHit: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var bricksDestroyed: [Int] = [0, 0, 0, 0, 0, 0, 0, 0]
     var lasersFired: Int = 0
