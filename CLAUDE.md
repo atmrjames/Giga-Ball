@@ -41,6 +41,18 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   between them: a suite that normally runs in 9 seconds started relaunching the app once per
   test, ~28s each, and never finished. `-destination 'id=EE6E3FF7-990D-482F-A92A-50CB2ADF6A81'`
   is the booted one and behaves.
+- **If the suite starts relaunching the app every few tests, check the audio server.**
+  Round 118 lost two hours to it: `Restarting after unexpected exit, crash, or test timeout`
+  after roughly every fourth test, no failing assertion, crashes spread across unrelated
+  classes. The crash report's triggered thread is the giveaway - `SKSoundContext init` ->
+  OpenAL -> `AURemoteIO::Initialize` -> `_ReportRPCTimeout` -> `abort`. SpriteKit opens an
+  audio context on launch and aborts when the host's audio server does not answer, so *every
+  launch* dies and the harness keeps relaunching. It is not the destination-ambiguity trap
+  below and not the code: a freshly booted device on a different runtime does it too, and
+  `simctl shutdown`/`boot` and restarting `CoreSimulatorService` do not clear it. The fix is
+  on the Mac - a reboot, or `sudo killall coreaudiod` - so it needs James. Until then,
+  `-only-testing:` a few classes still works, because fewer launches means fewer chances to
+  hit it.
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.
