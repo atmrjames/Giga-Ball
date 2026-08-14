@@ -522,6 +522,13 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         table.dataSource = self
         table.delegate = self
         table.allowsSelection = false
+        table.wantsBreathingRoom = false
+        // This list carries its own header row - the sort button and the run count sit
+        // just above it, outside the table - so the 32pt spacer every other menu list gets
+        // (round 96) lands *between* that header and the first run, which is the gap the
+        // play test reported: "the best score tables are too far from the headers". The
+        // clearance this table needs is already in its own constraints, 4pt under the
+        // header and 20pt over the buttons
         levelStatsView.addSubview(table)
         NSLayoutConstraint.activate([
             table.topAnchor.constraint(equalTo: sort.bottomAnchor, constant: 4),

@@ -468,14 +468,29 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   joins the total when its post lands, never before, and the whole total is resubmitted
   each time so a late-landing day self-heals into it.
 
-### Queued from play-test round 99: two twist ideas
+### Queued from play-test round 99, settled in round 109: two twist ideas
 
-- **Choose your power-ups.** The briefing lets the player pick the power-ups they will
-  see that day - perhaps five from a list. An alternative form: pick *one* power-up to
-  have permanently applied for the run. Design questions before building: does the choice
-  live on the briefing screen or in-game; is the pool the full set or a curated subset;
-  and how the choice is encoded so the leaderboard stays one contest (everyone picking
-  from the same list on the same day keeps it fair - free choice per player does not).
+- **Choose your power-ups.** James settled the shape in round 109: they are **two separate
+  twists**, not one with an alternative form, because they play differently and can even
+  land on the same day.
+  - **Pick five.** The player picks five power-ups from the day's offered list, and those
+    five are the *only* ones that drop all run. Everything else is off the table, so the
+    run is played with a deck the player chose.
+  - **One good, one bad.** The player picks one good and one bad power-up from the day's
+    list, and both are **permanently on** for the whole run rather than dropping - a
+    standing gift and a standing handicap, chosen together.
+  - Shared build notes. The **offered list is the day's**, derived from the date like every
+    other twist, so everyone chooses from the same shelf and the board stays one contest;
+    only the pick is the player's. The choice belongs on the **briefing screen**, before
+    the attempt is spent, and has to be recorded in the day's record so a resumed run keeps
+    the deck it started with (§10's save slot already carries per-day state). "Good" and
+    "bad" are already derivable rather than listed - `GameScene.endlessIIHarmfulPowerUps`
+    reads the multiplier column for exactly this - so the two halves of the second twist
+    can be offered without a hand-maintained list going stale. The permanent form needs a
+    power-up to be *applied without a drop*, which the collect functions already do; the
+    timed ones want their clocks pinned rather than run down, the way the aim hold pins its
+    tick clocks (§8.6). And the pick-five form is a filter on the allocation weights, which
+    is where the daily's existing power-up exclusions already act.
 - **Choose your bricks** (endless modes only). The player picks a handful of brick types
   from a list, and the day's field is built from only those. Same fairness question: the
   *offered list* must be the day's, derived from the date, even if the pick is the
