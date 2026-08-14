@@ -737,3 +737,44 @@ final class EndlessIIAuraTests: XCTestCase {
                       "anything older than yesterday keeps the full date")
     }
 }
+
+/// "The landing marker is slightly off, and it looks worse at shallow angles - as if it's
+/// expecting the ball to travel a little further before it contacts the paddle." It was:
+/// the bounds handed to the predictor named the paddle's centre line, so the prediction
+/// ran half a paddle deeper than the surface the ball actually meets.
+final class EndlessIILandingMarkerGeometryTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.gameWidth = 400
+        scene.paddleHeight = 12
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        return scene
+    }
+
+    func testTheBoundsNameThePaddlesTopNotItsCentre() {
+        let scene = scene()
+        XCTAssertEqual(scene.endlessIIVisionBounds().paddleLine,
+                       scene.paddle.position.y + scene.paddleHeight/2,
+                       "the same surface catchStickyBallBeforeStep judges against")
+    }
+
+    func testAShallowApproachLandsWhereTheBallActuallyArrives() {
+        let scene = scene()
+        let radius: CGFloat = 5
+
+        let landing = BallPath.predict(
+            from: CGPoint(x: -100, y: -200), velocity: CGVector(dx: 100, dy: -50),
+            radius: radius, bounds: scene.endlessIIVisionBounds(), bricks: []).landing
+
+        XCTAssertEqual(landing?.y ?? 0,
+                       scene.paddle.position.y + scene.paddleHeight/2 + radius,
+                       accuracy: 0.001,
+                       "the ball's centre stops a radius above the paddle's top")
+        XCTAssertEqual(landing?.x ?? 0, 78, accuracy: 0.001,
+                       "89 down at 2:1 is 178 across - and every extra point of depth "
+                       + "would push the mark 2 points sideways, which is the round-97 "
+                       + "report: worse at shallow angles")
+    }
+}

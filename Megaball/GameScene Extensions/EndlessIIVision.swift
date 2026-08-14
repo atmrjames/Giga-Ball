@@ -143,8 +143,15 @@ extension GameScene {
     func endlessIIVisionBounds() -> BallPath.Bounds {
         BallPath.Bounds(left: -gameWidth/2, right: gameWidth/2,
                         ceiling: frame.height/2 - topScreenBlock.size.height,
-                        paddleLine: paddle.position.y)
+                        paddleLine: paddle.position.y + paddleHeight/2)
     }
+    // The paddle's *top*, not its centre: contact is the ball's bottom against the top
+    // surface, which is how `catchStickyBallBeforeStep` already judges it (the predictor
+    // adds the ball's radius itself). Handed the centre, the prediction ran half a paddle
+    // too far before calling it a landing, and the extra vertical travel bought a sideways
+    // error that grew as the approach flattened - play-test round 97's "as if it's
+    // expecting the ball to travel a little further before it contacts the paddle",
+    // which was the diagnosis stated as a sighting
 
     /// Every brick the line should stop at, as rectangles.
     ///
