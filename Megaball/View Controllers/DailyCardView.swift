@@ -138,10 +138,13 @@ final class DailyCardView: UIView {
             let setup = LevelPackSetup()
             levelImageView.image = setup.levelImageArray[number]
             levelLabel.text = "\(setup.levelNameArray[number]) - \(setup.levelPackNameArray[pack])"
-                + "\nA single level - clear it for the score"
+                + "\n" + DailyChallengeGenerator.classicObjective
             // The level by its name, home and picture, not its number: a number says
             // nothing, and a glimpse of a level from a pack you have not opened is the
-            // tasting menu
+            // tasting menu. The line under it says what the day is *scored* on rather
+            // than what finishes it (play-test round 90): clearing the level is how the
+            // run ends, but the score is what the board ranks, and "clear it for the
+            // score" had players reading the day as pass-or-fail
         } else {
             levelImageView.image = UIImage(named: "EndlessIcon.png")
             levelLabel.text = "How high can you get?"

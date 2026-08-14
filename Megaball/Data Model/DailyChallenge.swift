@@ -337,6 +337,12 @@ enum DailyChallengeGenerator {
                               twists: twists)
     }
 
+    /// What a Classic day is asking for, in the player's terms.
+    ///
+    /// One string, read by every screen that says it, so the briefing and anything added
+    /// later cannot describe the same day two ways (play-test round 90).
+    static let classicObjective = "High score on a single level"
+
     /// Which pack a catalogue level number lives in, for launching it.
     static func pack(forClassicLevel level: Int) -> Int {
         let setup = LevelPackSetup()

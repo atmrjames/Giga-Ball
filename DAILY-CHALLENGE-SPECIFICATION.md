@@ -532,8 +532,11 @@ must be *posted* inside the window, not merely earned in it. As shipped:
     every draw keeps the stream's own order and a pool added later cannot shift what an old
     date drew. Measured over a year: 38 rhyming days with no rule, 25 with a single step, and
     **two** with four steps and the narrow definition.
-- **Say what the level is.** On a Classic single-level day, name the level and its pack, then
-  "High score on a single level" underneath, rather than the generic line it shows now.
+- ~~**Say what the level is.**~~ **Built (round 119.)** The card already named the level and
+  its pack; the line under it said "A single level - clear it for the score", which had the day
+  reading as pass-or-fail. It now says what the board actually ranks:
+  `DailyChallengeGenerator.classicObjective`, one string read by every screen that says it, so
+  the briefing and anything added later cannot describe the same day two ways.
 
 
 ## 13. Open questions

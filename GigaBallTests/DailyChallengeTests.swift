@@ -242,6 +242,15 @@ final class DailyChallengeTests: XCTestCase {
     /// The daily's score line is one of the places that was still printing a bare integer,
     /// and it prints through the same door the statistics page uses, so the separator is
     /// the reader's own rather than a comma baked into a string.
+    /// "On a Classic single-level day, name the level and its pack, then 'High score on a
+    /// single level' underneath, rather than the generic line it shows now" (round 90). The
+    /// wording matters: clearing the level ends the run, but the score is what the board
+    /// ranks, and "clear it for the score" had the day reading as pass-or-fail.
+    func testAClassicDaySaysWhatItIsScoredOn() {
+        XCTAssertEqual(DailyChallengeGenerator.classicObjective,
+                       "High score on a single level")
+    }
+
     func testTheDailysScoreLineIsGrouped() {
         XCTAssertEqual(DailyChallengePosting.scoreText(1_234_567, mode: .classic),
                        StatsPage.grouped(1_234_567))
