@@ -118,7 +118,11 @@ final class DailyCardView: UIView {
             resultLabel.trailingAnchor.constraint(equalTo: resultCard.trailingAnchor, constant: -16),
             resultLabel.bottomAnchor.constraint(equalTo: resultCard.bottomAnchor, constant: -14),
 
-            levelImageView.heightAnchor.constraint(equalToConstant: 72),
+            levelImageView.heightAnchor.constraint(equalToConstant: 92),
+            // Larger than the 72 it opened at (play-test round 85: "daily challenge level
+            // previews slightly larger"). The picture is the day's identity on a card that
+            // otherwise has room to spare, and a glimpse of a level from a pack the player
+            // has not opened is the whole tasting-menu idea
         ])
     }
 

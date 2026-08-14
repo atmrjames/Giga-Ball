@@ -159,7 +159,10 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         let cell = tableView.dequeueReusableCell(withIdentifier: "customStatCell", for: indexPath) as! StatsTableViewCell
         cell.showDivider(indexPath.row < tableView.numberOfRows(inSection: indexPath.section) - 1)
         
-        statsTableView.rowHeight = 35.0
+        statsTableView.rowHeight = 42.0
+        // The statistics page's own row height (play-test round 85 asked for taller cells on
+        // the detail views too) - the two pages print the same kind of fact and should not
+        // print it at two sizes
 
         if let entry = brickTypeEntry {
             let fact = entry.facts[indexPath.row]
