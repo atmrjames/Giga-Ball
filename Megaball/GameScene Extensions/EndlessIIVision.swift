@@ -175,9 +175,9 @@ extension GameScene {
         while endlessIITrajectoryLines.count <= index {
             let line = SKShapeNode()
             line.strokeColor = UIColor(white: 1, alpha: 0.35)
-            // Overwritten per segment by endlessIIDrawFadingTrajectory - this is the colour a
-            // segment has before it knows how far down the path it sits
             line.lineWidth = 1.5
+            // Both overwritten per segment by endlessIIDrawFadingTrajectory - this is what a
+            // segment wears before it knows how far down the path it sits
             line.lineCap = .round
             line.zPosition = 3
             // Under the balls and power-ups, over the background and bricks - and faint,
@@ -237,10 +237,18 @@ extension GameScene {
                 path.move(to: head)
                 path.addLine(to: tail)
                 segment.path = path
-                segment.strokeColor = UIColor(white: 1, alpha: max(0.05, 0.45*certainty))
-                segment.glowWidth = (1 - certainty)*3
+                segment.strokeColor = UIColor(white: 1, alpha: max(0.04, 0.5*certainty))
+                segment.lineWidth = 1.5 + (1 - certainty)*2
+                segment.glowWidth = (1 - certainty)*(1 - certainty)*6
                 // The blur grows as the confidence falls, which is the same statement made
-                // twice - a line you can barely see and can barely locate
+                // twice - a line you can barely see and can barely locate. Round 85 said
+                // the first cut of this was not fuzzy enough: the width stayed fixed, so
+                // the far end was a thin crisp core with a faint halo rather than a blur.
+                // Now the stroke itself swells as the certainty falls - a wide faint line
+                // is what the eye reads as fuzz - and the glow grows on a square, so it
+                // arrives mostly over the far half, where the guessing is. The glow stays
+                // modest per segment because SKShapeNode pays for it, and there can be
+                // four lines of these on screen at once
             }
             travelled += length
         }
