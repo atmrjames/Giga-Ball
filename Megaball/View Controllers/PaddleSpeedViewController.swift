@@ -104,9 +104,8 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
     private let slider = UISlider()
     private let sceneView = SKView()
     private let field = UIView()
-    private let backdrop = GameBackgroundView()
     private var practice: PaddleSpeedScene?
-    private var fieldAspect: NSLayoutConstraint?
+    private var fieldWidth: NSLayoutConstraint?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -133,8 +132,10 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         if practice == nil {
             let scene = PaddleSpeedScene(size: sceneView.bounds.size)
             scene.scaleMode = .resizeFill
+            scene.layout = playLayout
             scene.speedFactor = PaddleSpeed.snapped(CGFloat(slider.value))
             scene.themeIndex = defaults.integer(forKey: "ballSetting")
+            scene.backdrop = drawnBackdrop()
             sceneView.presentScene(scene)
             practice = scene
         } else if practice?.size != sceneView.bounds.size {
@@ -144,28 +145,56 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         // that on every layout pass is half of why the first cut looked jittery
     }
 
-    /// Makes the practice field the shape of the player's own play area.
-    ///
-    /// `GameBackgroundView` draws a *model of the whole screen*, letterboxed inside whatever
-    /// bounds it is given - so a field of some other shape gets the background painted down
-    /// its middle with dead space either side, and a ball that leaves the painted part while
-    /// still inside the field. The background chooser solved this already: ask the view what
-    /// it is modelling and make the container that shape (`refreshMockShape`). Same here, so
-    /// the field, the picture and the physics are one rectangle.
-    private func shapeFieldToThePlayArea() {
-        let screen = view.window?.bounds.size ?? view.bounds.size
-        let inset = view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
-        backdrop.screen = screen
-        backdrop.bottomInset = inset
+    /// The device's own play area, which every size on this screen is measured from.
+    private var playLayout: GameSceneLayout {
+        GameSceneLayout(screen: view.window?.bounds.size ?? view.bounds.size,
+                        bottomInset: view.window?.safeAreaInsets.bottom
+                            ?? view.safeAreaInsets.bottom)
+    }
 
-        let modelled = backdrop.modelledSize
-        let ratio = modelled.width/max(modelled.height, 1)
-        guard abs((fieldAspect?.multiplier ?? 0) - ratio) > 0.001 else { return }
-        fieldAspect?.isActive = false
-        let aspect = field.widthAnchor.constraint(equalTo: field.heightAnchor,
-                                                  multiplier: ratio)
-        aspect.isActive = true
-        fieldAspect = aspect
+    /// The chosen background, drawn once into an image the scene can hold.
+    ///
+    /// `GameBackgroundView` is a Core Graphics view; leaving it *behind* a transparent SKView
+    /// makes every frame a composite of a live scene over a redrawn picture over a blur, which
+    /// is what made the field stutter. Drawn once, it is a texture like any other and the SKView
+    /// can be opaque.
+    private func drawnBackdrop() -> UIImage? {
+        let screen = view.window?.bounds.size ?? view.bounds.size
+        guard screen.width > 0, screen.height > 0 else { return nil }
+
+        let source = GameBackgroundView(frame: CGRect(origin: .zero, size: screen))
+        source.background = GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))
+        source.screen = screen
+        source.bottomInset = view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
+        source.layoutIfNeeded()
+        let size = source.modelledSize
+        // Drawn at the size it is a model *of*, not at the field's size. Given the field's
+        // shape it letterboxes itself inside it - black bars either side - where what this
+        // screen wants is the picture at 1:1 with its bottom against the field's bottom, so
+        // the field is a window onto the part of the game the paddle lives in
+        return UIGraphicsImageRenderer(size: size).image { context in
+            source.layer.render(in: context.cgContext)
+        }
+        // `layer.render(in:)` rather than `drawHierarchy(in:afterScreenUpdates:)`: the latter
+        // captures what the *window server* has drawn, and this view has never been on screen,
+        // so it captured nothing and the field came out black
+    }
+
+    /// Sizes the practice field to the player's own play area: its full width, and as much
+    /// of its height as the screen has room for.
+    ///
+    /// Not the whole play area, and deliberately not scaled to fit one. Everything in the
+    /// field is drawn at the size the game draws it (James, round 122: "the game view should
+    /// be full width, but not full height and everything should be 1:1"), so the field is a
+    /// window onto the bottom of the play area rather than a picture of all of it - and the
+    /// paddle inside it keeps the same clearance above the floor that it has in play.
+    private func shapeFieldToThePlayArea() {
+        let wanted = min(playLayout.gameWidth, view.bounds.width)
+        guard abs((fieldWidth?.constant ?? 0) - wanted) > 0.5 else { return }
+        fieldWidth?.isActive = false
+        let width = field.widthAnchor.constraint(equalToConstant: wanted)
+        width.isActive = true
+        fieldWidth = width
     }
 
     private func buildLayout() {
@@ -208,17 +237,12 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         field.layer.masksToBounds = true
         view.addSubview(field)
 
-        backdrop.translatesAutoresizingMaskIntoConstraints = false
-        backdrop.background = GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))
-        field.addSubview(backdrop)
-        // The player's own background behind the practice field, the way the background
-        // chooser shows it (James, round 121: "should look how they look in the main game
-        // view, including adopting the background and theme selected")
-
         sceneView.translatesAutoresizingMaskIntoConstraints = false
-        sceneView.backgroundColor = .clear
-        sceneView.allowsTransparency = true
+        sceneView.backgroundColor = .black
+        sceneView.isOpaque = true
+        sceneView.allowsTransparency = false
         field.addSubview(sceneView)
+        // Opaque, with the background drawn *inside* the scene - see `drawnBackdrop`
 
         let close = UIButton(type: .system)
         close.translatesAutoresizingMaskIntoConstraints = false
@@ -250,8 +274,9 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 
             field.topAnchor.constraint(equalTo: hint.bottomAnchor, constant: 12),
             field.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            field.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor,
-                                           constant: 24),
+            // No side margin: the play area *is* nearly the whole screen, and a required
+            // 24pt inset here fought the required width and left autolayout to break one of
+            // them - which is why the first build came out two thirds as wide as the game
             field.bottomAnchor.constraint(lessThanOrEqualTo: valueLabel.topAnchor,
                                           constant: -20),
             fillsTheRoom,
@@ -260,11 +285,6 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             // `fillsTheRoom` is the one that makes it *grow*: with only a top, a maximum
             // width and a maximum bottom, autolayout satisfies everything by collapsing the
             // field to nothing, which is exactly what the first build did
-
-            backdrop.topAnchor.constraint(equalTo: field.topAnchor),
-            backdrop.bottomAnchor.constraint(equalTo: field.bottomAnchor),
-            backdrop.leadingAnchor.constraint(equalTo: field.leadingAnchor),
-            backdrop.trailingAnchor.constraint(equalTo: field.trailingAnchor),
 
             sceneView.topAnchor.constraint(equalTo: field.topAnchor),
             sceneView.bottomAnchor.constraint(equalTo: field.bottomAnchor),
@@ -374,14 +394,24 @@ final class PaddleSpeedScene: SKScene {
     /// The ball and paddle the player has chosen, by index into the theme arrays.
     var themeIndex: Int = 0
 
+    /// The device's own play area. **Everything here is measured from it** - the ball's size
+    /// and speed, the paddle's size, and how far the paddle sits above the floor - so the
+    /// number being chosen behaves exactly as it will in play (James, round 122: "everything
+    /// should be 1:1 with the actual game view"). Nothing on this screen invents a size.
+    var layout = GameSceneLayout(screen: CGSize(width: 390, height: 844))
+
+    /// The background, already drawn to an image. Inside the scene rather than behind a
+    /// transparent view: an SKView with `allowsTransparency` composites every frame against
+    /// whatever is behind it, and behind it here was a blur - which is what made the field
+    /// stutter (James, round 122). Opaque, it draws the sprite and nothing else.
+    var backdrop: UIImage?
+
     private let paddle = SKSpriteNode()
     private let ball = SKSpriteNode()
     private var built = false
 
-    /// How fast the practice ball travels. Slower than the game's own, because this field is
-    /// a fraction of the height and a ball at full speed would cross it faster than a thumb
-    /// can answer - which would make the screen a test of reflexes rather than of the number.
-    private let ballSpeed: CGFloat = 260
+    /// The game's own nominal speed for this ball size (`GameScene.ballSpeedNominal`).
+    private var ballSpeed: CGFloat { layout.ballSize*37.5 }
 
     override func didMove(to view: SKView) {
         backgroundColor = .clear
@@ -396,17 +426,36 @@ final class PaddleSpeedScene: SKScene {
         physicsBody = SKPhysicsBody(edgeLoopFrom: CGRect(origin: .zero, size: size))
         physicsBody?.friction = 0
         physicsBody?.restitution = 1
-        paddle.position.y = 40
+        paddle.position.y = paddleFloorGap
         paddle.position.x = min(max(paddle.position.x, paddle.size.width/2),
                                 size.width - paddle.size.width/2)
         // The walls move with the view. Rebuilt rather than scaled, because an edge loop is
         // built from a rectangle and cannot be resized in place
     }
 
+    /// How far the paddle's centre sits above the floor of the field.
+    ///
+    /// The game's own clearance between the paddle and the line a lost ball crosses
+    /// (`bottomScreenBlock`, GameScene line 1229) - so the room under the paddle here is the
+    /// room under the paddle there, which is also the room the thumb needs (James, round 122:
+    /// "the paddle needs to be higher... proportionally the same as the actual game view").
+    private var paddleFloorGap: CGFloat { layout.paddleHeight/2 + layout.brickWidth*0.85 }
+
     private func build() {
         guard built == false, size.width > 0 else { return }
         built = true
         let setup = LevelPackSetup()
+
+        if let backdrop {
+            let picture = SKSpriteNode(texture: SKTexture(image: backdrop))
+            picture.size = backdrop.size
+            picture.position = CGPoint(x: size.width/2, y: backdrop.size.height/2)
+            picture.zPosition = -1
+            addChild(picture)
+            // Its bottom on the field's bottom, at 1:1, with whatever is taller than the
+            // field clipped away above - the field is a window onto the game, not a
+            // shrunken picture of all of it
+        }
 
         physicsBody = SKPhysicsBody(edgeLoopFrom: CGRect(origin: .zero, size: size))
         physicsBody?.friction = 0
@@ -414,8 +463,8 @@ final class PaddleSpeedScene: SKScene {
 
         let index = setup.paddleImageArray.indices.contains(themeIndex) ? themeIndex : 0
         paddle.texture = SKTexture(image: setup.paddleImageArray[index])
-        paddle.size = CGSize(width: 78, height: 12)
-        paddle.position = CGPoint(x: size.width/2, y: 40)
+        paddle.size = CGSize(width: layout.paddleWidth, height: layout.paddleHeight)
+        paddle.position = CGPoint(x: size.width/2, y: paddleFloorGap)
         paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.size)
         paddle.physicsBody?.isDynamic = false
         paddle.physicsBody?.friction = 0
@@ -423,9 +472,9 @@ final class PaddleSpeedScene: SKScene {
         addChild(paddle)
 
         ball.texture = SKTexture(image: setup.ballImageArray[index])
-        ball.size = CGSize(width: 14, height: 14)
-        ball.position = CGPoint(x: size.width/2, y: size.height*0.55)
-        ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        ball.size = CGSize(width: layout.ballSize, height: layout.ballSize)
+        ball.position = CGPoint(x: size.width/2, y: size.height*0.7)
+        ball.physicsBody = SKPhysicsBody(circleOfRadius: layout.ballSize/2)
         ball.physicsBody?.friction = 0
         ball.physicsBody?.restitution = 1
         ball.physicsBody?.linearDamping = 0
@@ -452,7 +501,7 @@ final class PaddleSpeedScene: SKScene {
         }
 
         if ball.position.y < 0 {
-            ball.position = CGPoint(x: size.width/2, y: size.height*0.55)
+            ball.position = CGPoint(x: size.width/2, y: size.height*0.7)
             body.velocity = CGVector(dx: body.velocity.dx < 0 ? -ballSpeed*0.6 : ballSpeed*0.6,
                                      dy: -ballSpeed*0.8)
             // Served again rather than lost. Nothing here is a game, so nothing here can be

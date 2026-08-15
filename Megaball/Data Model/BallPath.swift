@@ -35,6 +35,13 @@ enum BallPath {
         var ceiling: CGFloat
         /// The height the paddle catches at.
         var paddleLine: CGFloat
+
+        /// Whether the sides are doorways rather than walls.
+        ///
+        /// Wrap-Around does not move the walls - it answers a contact with a teleport to the
+        /// far side instead of a bounce (§5.4) - so a prediction that reflects at the wall
+        /// draws a path the ball will not take while it runs (play-test round 122).
+        var sidesWrap: Bool = false
     }
 
     /// What a ball would do next.
@@ -132,6 +139,15 @@ enum BallPath {
             }
             if nearest == toCeiling {
                 direction.dy = -direction.dy
+                continue
+            }
+            if bounds.sidesWrap {
+                // Out one side, in at the other, still travelling the same way. The polyline
+                // gets a break rather than a corner: the two segments are drawn separately,
+                // which is what the wrapped ball actually does
+                let inset = radius + 1
+                point.x = point.x > 0 ? bounds.left + inset : bounds.right - inset
+                points.append(point)
                 continue
             }
             direction.dx = -direction.dx

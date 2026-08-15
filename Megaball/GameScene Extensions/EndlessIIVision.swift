@@ -98,9 +98,15 @@ extension GameScene {
             // A held or waiting ball has no path yet. Its line would be a dot
 
             let reach = GameScene.endlessIITrajectoryReach[endlessIITrajectoryLevel]*ballSize/2
+            let passesThrough = subject.texture == gigaBallTexture
+                || subject.texture == gigaBallNormal
+            // A Giga-Ball goes *through* bricks, so a line that stops at the first one is
+            // drawing a wall that is not there (play-test round 122). The prediction is only
+            // honest if it knows what the ball can do - and the ball itself is where that is
+            // written, since the texture is what the power-up changes
             let path = BallPath.predict(from: subject.position, velocity: velocity,
                                         radius: subject.size.width/2, bounds: bounds,
-                                        bricks: bricks,
+                                        bricks: passesThrough ? [] : bricks,
                                         maximumLength: endlessIITrajectoryRemaining > 0 ? reach : 0,
                                         brickBounces: endlessIITrajectoryRemaining > 0
                                             ? GameScene.endlessIITrajectoryBrickBounces : 0)
@@ -143,7 +149,8 @@ extension GameScene {
     func endlessIIVisionBounds() -> BallPath.Bounds {
         BallPath.Bounds(left: -gameWidth/2, right: gameWidth/2,
                         ceiling: frame.height/2 - topScreenBlock.size.height,
-                        paddleLine: paddle.position.y + paddleHeight/2)
+                        paddleLine: paddle.position.y + paddleHeight/2,
+                        sidesWrap: endlessIIWrapIsRunning)
     }
     // The paddle's *top*, not its centre: contact is the ball's bottom against the top
     // surface, which is how `catchStickyBallBeforeStep` already judges it (the predictor

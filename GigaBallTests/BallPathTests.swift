@@ -345,3 +345,58 @@ final class BallPathTests: XCTestCase {
                      "a different heading somewhere else, but nothing is remembered")
     }
 }
+
+/// "Ball trajectory should respect which power-ups are also running. For example with the
+/// Giga-Ball power up running it won't bounce off of bricks" (play-test round 122).
+final class TrajectoryRespectsPowerUpsTests: XCTestCase {
+
+    private let bounds = BallPath.Bounds(left: -100, right: 100, ceiling: 300, paddleLine: -200)
+
+    func testAGigaBallsLineRunsThroughTheBricksItWillPassThrough() {
+        let brick = CGRect(x: -20, y: 100, width: 40, height: 20)
+        let straightUp = CGVector(dx: 0, dy: 100)
+
+        let ordinary = BallPath.predict(from: .zero, velocity: straightUp, radius: 5,
+                                        bounds: bounds, bricks: [brick])
+        XCTAssertTrue(ordinary.stoppedAtBrick, "an ordinary ball is stopped by the brick")
+
+        // A Giga-Ball is given no bricks at all, because none of them are in its way
+        let giga = BallPath.predict(from: .zero, velocity: straightUp, radius: 5,
+                                    bounds: bounds, bricks: [])
+        XCTAssertFalse(giga.stoppedAtBrick)
+        XCTAssertEqual(giga.points[1].y, bounds.ceiling - 5, accuracy: 0.001,
+                       "it carries on through where the brick was, up to the ceiling")
+        XCTAssertNotNil(giga.landing,
+                        "and off the ceiling back down to the paddle, which is what the "
+                        + "ball will actually do - the brick never stopped it")
+    }
+
+    func testWithWrapAroundTheLineLeavesOneSideAndArrivesAtTheOther() {
+        var wrapping = bounds
+        wrapping.sidesWrap = true
+        let acrossAndUp = CGVector(dx: 100, dy: 10)
+
+        let bounced = BallPath.predict(from: .zero, velocity: acrossAndUp, radius: 5,
+                                       bounds: bounds, bricks: [])
+        let wrapped = BallPath.predict(from: .zero, velocity: acrossAndUp, radius: 5,
+                                       bounds: wrapping, bricks: [])
+
+        // Both meet the right wall; only one comes back from it
+        XCTAssertEqual(bounced.points[1].x, bounds.right - 5, accuracy: 0.001)
+        XCTAssertLessThan(bounced.points[2].x, bounced.points[1].x, "reflected")
+
+        XCTAssertEqual(wrapped.points[1].x, bounds.right - 5, accuracy: 0.001)
+        XCTAssertEqual(wrapped.points[2].x, bounds.left + 6, accuracy: 0.001,
+                       "the next point is on the far side, at the same height and heading")
+        XCTAssertGreaterThan(wrapped.points[3].x, wrapped.points[2].x,
+                             "still travelling the way it was")
+    }
+
+    func testWithoutWrapAroundTheSidesAreStillWalls() {
+        // The flag is the power-up's, and nothing else should change because it exists
+        let plain = BallPath.predict(from: .zero, velocity: CGVector(dx: 100, dy: 10),
+                                     radius: 5, bounds: bounds, bricks: [])
+        XCTAssertFalse(bounds.sidesWrap)
+        XCTAssertGreaterThan(plain.points.count, 2)
+    }
+}

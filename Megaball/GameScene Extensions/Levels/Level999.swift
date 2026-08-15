@@ -24,7 +24,10 @@ extension GameScene {
         scoreLabel.fontSize = fontSize*1.5
         scoreLabel.horizontalAlignmentMode = .right
         scoreLabel.position.y = pauseButton.position.y
-        scoreLabel.text = "\(endlessHeight)m"
+        showHeightLabel()
+        // Through the same door every other write uses. Setting `text` directly leaves the
+        // label drawing its own string *and* any `FixedWidthNumberNode` strip already hung
+        // off it - two numbers in one place, which is what round 122 is hunting
         // Setup score label for endless mode
 
         showEndlessIIBest()

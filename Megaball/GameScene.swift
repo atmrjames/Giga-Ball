@@ -1967,6 +1967,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
         label.text = ""
+        #if DEBUG
+        let strips = label.children.filter { $0.name == "digits" }
+        if strips.count > 1 {
+            print("HUD DOUBLE-DRAW: \(strips.count) digit strips on "
+                  + "\(label.name ?? "a label") while writing \(text)")
+        }
+        #endif
+        // Play-test round 122: a Classic pack showed two scores drawn over each other. Every
+        // write goes through here, so this is where a second strip would be seen - and the
+        // one path that could leave the label's own text drawn *as well* (the endless setup
+        // writing `text` directly) is now routed through this function too. If the line ever
+        // prints, the culprit is whatever added the extra strip, not this write
         let strip: FixedWidthNumberNode
         if let existing = label.childNode(withName: "digits") as? FixedWidthNumberNode {
             strip = existing
