@@ -38,23 +38,35 @@ extension UIViewController {
     // would not scroll at all - the real cause was the settings touch watcher, fixed in
     // round 97, so the margin comes back down to what the button row actually needs
 
-    /// **The one button-row arrangement.** Outer buttons this far in from the row's edges.
+    /// **How far in the outer buttons sit when the row has a large centre button.**
     ///
-    /// Every menu screen used to work its own spacing out, and they disagreed: some spread
-    /// three cells across the whole width, which put the close button hard against the edge,
-    /// and others sat them close in. Mixed together the wide ones read as a different app
-    /// (play-test round 128). The narrow arrangement is the one that stays.
+    /// There are two arrangements, and which one a row wears is decided by what is *in* it
+    /// (James, round 135): a row with a big play button in the middle pulls its small buttons
+    /// in, so the three read as one group around the thing that matters; a row that is only
+    /// small buttons pushes them out to the row's own ends, which is where they have always
+    /// been and where a close button is easiest to reach. Round 128 put every row in the
+    /// narrow arrangement, which was half the answer.
     static let menuButtonRowInset: CGFloat = 55
+
+    /// Where a lone small button sits when there is no large one to group around.
+    ///
+    /// The wide arrangement, in points, for the two screens that build a close button by hand
+    /// rather than taking the shared row - `layoutMenuButtonRow` gets the same answer from the
+    /// row's own edges, and these have no row to ask.
+    static let menuButtonWideInset: CGFloat = 24
 
     /// Lays a screen's button row out the shared way.
     ///
     /// - Parameter sizes: each button's width, in the order they appear. The row is always
     ///   three cells - some of them the invisible `ButtonNull` spacer - so what differs
-    ///   between screens is only which of the three is the large one.
+    ///   between screens is only whether one of the three is large.
     ///
-    /// The outer two land `menuButtonRowInset` from the row's own edges and the rest of the
-    /// width is shared evenly between them, so a screen with a large centre button and a
-    /// screen with three small ones still put their close buttons in the same place.
+    /// A large button anywhere in the row draws the small ones in to `menuButtonRowInset`;
+    /// without one they go to the row's ends. The rest of the width is shared evenly either
+    /// way, so the middle of three always lands on the row's centre.
+    ///
+    /// The main menu is deliberately not routed through here: its information and settings
+    /// buttons sit where James wants them and asked to be left alone.
     func layoutMenuButtonRow(_ row: UICollectionView, sizes: [CGFloat]) {
         guard sizes.isEmpty == false else { return }
         let layout = UICollectionViewFlowLayout()
@@ -63,8 +75,17 @@ extension UIViewController {
         // Self-sizing off: with an estimate set, a cell measures itself from its own
         // constraints and the delegate's large button never reaches the layout
 
+        let hasLargeButton = sizes.contains {
+            $0 > MainMenuCollectionViewCell.smallButtonSize
+        }
         let fromScreen = row.superview?.convert(row.frame.origin, to: nil).x ?? 0
-        let inset = max(0, UIViewController.menuButtonRowInset - fromScreen)
+        let inset = hasLargeButton
+            ? max(0, UIViewController.menuButtonRowInset - fromScreen)
+            : 0
+        // Nothing large in the row means the wide arrangement: the outer buttons go to the
+        // row's own ends. Measured from the screen only in the narrow case, because that is
+        // where 55pt is a promise about where the thumb lands - the wide case's promise is
+        // "as far out as this row goes", which the row already knows
         let available = row.frame.width - inset*2
         // Measured from the *screen's* edge, not the row's. Some of these rows are inset by
         // their own container and some are not, so insetting each row by the same amount put

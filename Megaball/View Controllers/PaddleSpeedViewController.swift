@@ -286,7 +286,9 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         view.addSubview(close)
         applyRoundGlass(to: close, radius: MainMenuCollectionViewCell.smallButtonSize/2,
                         symbol: "xmark", pointSize: 18, rimmed: false)
-        // 55pt in from the edge, where the daily's close sits
+        // The wide position: this screen has no large centre button for a close to group
+        // around, and a lone small button belongs at the edge where the thumb already is
+        // (James, round 135)
 
         let fillsTheRoom = field.bottomAnchor.constraint(equalTo: valueLabel.topAnchor,
                                                          constant: -20)
@@ -332,7 +334,8 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             // thumb already is - reaching over the thing being judged to change it put a
             // hand across the only part of the screen worth looking at
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 55),
+            close.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+                                          constant: UIViewController.menuButtonWideInset),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -25),
             close.widthAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),

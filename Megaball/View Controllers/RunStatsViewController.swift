@@ -177,7 +177,8 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             table.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 22),
             table.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -22),
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
+            close.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+                                          constant: UIViewController.menuButtonWideInset),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -20),
             close.widthAnchor.constraint(equalToConstant: 50),
