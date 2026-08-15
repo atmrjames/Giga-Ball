@@ -25,15 +25,26 @@ extension GameScene {
 
     /// How far ahead the catch looks: one frame at sixty.
     ///
-    /// A fixed step rather than the frame's measured delta, because the only measured delta in
-    /// the scene is `endlessIIPaddleFrameDelta`, which is set under a `gameMode == .endlessII`
-    /// guard and stays zero everywhere else - and the sticky paddle is one of the original
-    /// twenty-eight, so this has to work in Classic and the original Endless first of all.
+    /// How far ahead the catch looks: one frame, whatever a frame is worth here.
     ///
-    /// Being a frame or two eager costs nothing: the catch puts the ball on
-    /// `ballStartingPositionY` whatever it was doing, so an early catch sticks it in exactly
-    /// the same place a late one would, and a hair early is invisible where a bounce was not.
-    static let stickyLookahead: TimeInterval = 1.0/60.0
+    /// It used to be a fixed sixtieth, which was right for as long as every device drew at
+    /// 60Hz - on a 120Hz screen it looked two frames ahead instead of one (§12.0's iPhone 17
+    /// note). Now it is the frame the scene actually measured, so the question stays "will
+    /// this step land the ball on the paddle" at either refresh rate.
+    ///
+    /// Clamped and given a floor: the first frame of a run has no previous timestamp, and a
+    /// frame that took a quarter of a second - a resume, a hitch - must not have the catch
+    /// reaching a quarter of a second into the future.
+    ///
+    /// Being a hair eager costs nothing: the catch puts the ball on `ballStartingPositionY`
+    /// whatever it was doing, so an early catch sticks it exactly where a late one would.
+    static let stickyLookaheadFloor: TimeInterval = 1.0/120.0
+    static let stickyLookaheadCeiling: TimeInterval = 1.0/30.0
+
+    var stickyLookahead: TimeInterval {
+        min(max(frameDelta, GameScene.stickyLookaheadFloor),
+            GameScene.stickyLookaheadCeiling)
+    }
 
     /// Catches the ball on the sticky paddle if this step would land it there.
     ///
@@ -43,7 +54,7 @@ extension GameScene {
     /// `endlessIICatchExtraBall` on contact, and they are held in a queue rather than stopped
     /// dead - that path has its own ordering to preserve and is not what was reported.
     func catchStickyBallBeforeStep() {
-        let delta = GameScene.stickyLookahead
+        let delta = stickyLookahead
         guard stickyPaddleCatches != 0, ballIsOnPaddle == false else { return }
         guard let body = ball.physicsBody, body.velocity.dy < 0 else { return }
         // Descending only: a ball on its way up through the paddle's line is leaving, not

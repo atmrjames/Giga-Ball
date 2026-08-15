@@ -125,6 +125,12 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
             view.ignoresSiblingOrder = true
             view.showsFPS = false
             view.showsNodeCount = false
+            view.preferredFramesPerSecond = 120
+            // ProMotion screens draw the game at their own refresh rate rather than at 60
+            // (1.3 scope). A device without one is unaffected - the number is a ceiling, not
+            // a demand - and `Info.plist` carries the entitlement that lets iPhone honour it.
+            // Everything time-based in the scene already measures its own delta; the one
+            // place that assumed a sixtieth was the sticky catch's lookahead, now measured
         }
         
     }

@@ -778,3 +778,39 @@ final class EndlessIILandingMarkerGeometryTests: XCTestCase {
                        + "report: worse at shallow angles")
     }
 }
+
+/// 120fps on ProMotion (1.3 scope). The scene had one place that assumed a sixtieth of a
+/// second was a frame - the sticky paddle's lookahead - which on a 120Hz screen looked two
+/// frames into the future rather than one.
+final class FrameRateIndependenceTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        return scene
+    }
+
+    func testTheLookaheadIsTheFrameTheSceneMeasured() {
+        let scene = scene()
+        scene.frameDelta = 1.0/120.0
+        XCTAssertEqual(scene.stickyLookahead, 1.0/120.0, accuracy: 0.00001,
+                       "a 120Hz frame looks one 120Hz frame ahead")
+
+        scene.frameDelta = 1.0/60.0
+        XCTAssertEqual(scene.stickyLookahead, 1.0/60.0, accuracy: 0.00001,
+                       "and a 60Hz frame looks one 60Hz frame ahead, as it always did")
+    }
+
+    func testTheLookaheadNeverReachesTooFarOrNotAtAll() {
+        let scene = scene()
+
+        scene.frameDelta = 0
+        XCTAssertEqual(scene.stickyLookahead, GameScene.stickyLookaheadFloor, accuracy: 0.00001,
+                       "the first frame of a run has no previous timestamp to measure from")
+
+        scene.frameDelta = 0.25
+        XCTAssertEqual(scene.stickyLookahead, GameScene.stickyLookaheadCeiling, accuracy: 0.00001,
+                       "a resume or a hitch must not have the catch reaching a quarter of a "
+                       + "second into the future")
+    }
+}

@@ -150,6 +150,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	static let endlessIIPortalDriftStep: Double = 4
 	static let endlessIIPortalDriftLimit: Double = 24
 
+	/// How long the last frame took, in seconds - **in every mode**.
+	///
+	/// The Mayhem batch measures its own (`endlessIIPaddleFrameDelta`) behind a mode guard, so
+	/// anything shared with Classic and the original Endless needs a delta of its own. Zero
+	/// until the second frame, which is why every reader clamps it.
+	var frameDelta: TimeInterval = 0
+	private var lastFrameTime: TimeInterval = 0
+
 	#if DEBUG
 	/// The crooked-ball tripwire (§12.0): the pure comparison lives in `BallPath.swift`,
 	/// and these are its scene half - the frame's list of legitimate velocity writers,
@@ -2217,6 +2225,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+
+		frameDelta = lastFrameTime == 0 ? 0 : max(0, currentTime - lastFrameTime)
+		lastFrameTime = currentTime
+		// Measured once, for everything that needs to know what a frame is worth - the sticky
+		// catch's lookahead first of all, which was a fixed sixtieth and looked two frames
+		// ahead on a 120Hz screen
 
 		updateTrayRings()
 		// The old modes' tray rings read the bars' state the way Mayhem's row does -

@@ -120,7 +120,7 @@ The phases are undated and absorb it; nothing leaves the release to compensate.
 
 **Round 101 widens it again:** Ghost Ball, Safety Paddle, and the daily's streaks and
 themes come into 1.3. And three platform features are promoted from "beyond" to "attempt
-for 1.3, drop without ceremony if they resist": 120fps ProMotion (enable plus audit),
+for 1.3, drop without ceremony if they resist": 120fps ProMotion (**built, round 123** - `preferredFramesPerSecond = 120` plus `CADisableMinimumFrameDurationOnPhone`, and the audit found exactly one place assuming a sixtieth: the sticky catch's lookahead, now the frame the scene measured, floored and capped. Device-only to judge),
 iCloud game saves (the conflict story is the work), and a widget (the first second
 target in a hand-edited pbxproj, plus an app group and URL routing).
 
