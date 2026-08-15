@@ -363,16 +363,25 @@ final class GameBackgroundView: UIView {
         case .solid(let colour):
             colour.setFill()
             context.fill(area)
-        case .gradient, .glow:
+        case .gradient, .glow, .clouds:
             // Measured from the bottom of the background, which is where the scene measures
             // it from - the fade turns at the paddle rather than at the halfway mark
             let paddle = layout.topBarHeight + layout.topGap
                 + CGFloat(GameSceneLayout.brickRows)*layout.brickHeight
                 + layout.paddleGap + layout.paddleHeight/2
             let fraction = (area.maxY - paddle)/area.height
-            let drawn = background == .glow
-                ? GameBackground.glowImage(size: area.size, paddleFraction: fraction)
-                : GameBackground.gradientImage(size: area.size, paddleFraction: fraction)
+            let drawn: UIImage?
+            switch background {
+            case .glow: drawn = GameBackground.glowImage(size: area.size,
+                                                         paddleFraction: fraction)
+            case .clouds: drawn = GameBackground.cloudsImage(size: area.size,
+                                                             paddleFraction: fraction)
+            default: drawn = GameBackground.gradientImage(size: area.size,
+                                                          paddleFraction: fraction)
+            }
+            // The picker draws one frame of the drift: nothing on that screen moves, and a
+            // cloud background that showed as a plain gradient there would be a picker lying
+            // about what you are choosing
             drawn?.draw(in: area)
         }
         context.restoreGState()

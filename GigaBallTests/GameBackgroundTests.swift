@@ -57,7 +57,7 @@ final class GameBackgroundTests: XCTestCase {
                 XCTAssertNotEqual(background, .classic)
                 XCTAssertNotNil(UIImage(named: named),
                                 "\(background.name) names an asset that is not in the bundle")
-            case .solid, .gradient, .glow:
+            case .solid, .gradient, .glow, .clouds:
                 XCTAssertNotEqual(background, .classic)
             }
         }
@@ -105,8 +105,68 @@ final class GameBackgroundTests: XCTestCase {
     func testTheGlowSitsHighAndOffCentre() {
         // Play-test round 21 asked for it in the top half and not centred: a haze in the
         // middle of the field reads as a vignette and sits under every brick equally
-        XCTAssertLessThan(GameBackground.glowCentre.y, 0.5, "it belongs in the upper half")
-        XCTAssertNotEqual(GameBackground.glowCentre.x, 0.5, "and not down the middle")
+        let first = GameBackground.glowPools[0]
+        XCTAssertLessThan(first.centre.y, 0.5, "it belongs in the upper half")
+        XCTAssertNotEqual(first.centre.x, 0.5, "and not down the middle")
+    }
+
+    func testTheGlowIsTwoPoolsOnADiagonal() {
+        // Play-test round 126 asked for the Glow to be improved. One pool lit a corner and
+        // left the rest flat; two put a diagonal across the field, the way the Classic
+        // artwork does - so the second must be on the other side and lower, and quieter
+        XCTAssertEqual(GameBackground.glowPools.count, 2)
+        let (near, far) = (GameBackground.glowPools[0], GameBackground.glowPools[1])
+        XCTAssertGreaterThan(far.centre.x, near.centre.x)
+        XCTAssertGreaterThan(far.centre.y, near.centre.y)
+        XCTAssertLessThan(far.strength, near.strength)
+    }
+
+    func testTheHazeIsDrawnOnItsOwnSoItCanBreathe() {
+        // Split from the gradient in round 144: on a node of its own the scene can swell and
+        // settle it, which a baked picture cannot do
+        XCTAssertNotNil(GameBackground.hazeImage(size: CGSize(width: 60, height: 100)))
+        XCTAssertNil(GameBackground.hazeImage(size: .zero))
+        XCTAssertGreaterThan(GameBackground.glowBreath, 4,
+                             "slow enough to be felt rather than watched")
+        XCTAssertLessThan(GameBackground.glowBreathDepth, 0.35, "and shallow")
+    }
+
+    // MARK: - Clouds
+
+    // Play-test round 126: "Dynamic cloud game background".
+
+    func testCloudsAreTwoLayersAtTwoSpeeds() {
+        // Parallax is what makes a flat picture read as depth, and the nearer, faster layer
+        // is the fainter one or it becomes the thing you are looking at
+        XCTAssertEqual(GameBackground.cloudLayers.count, 2)
+        let (far, near) = (GameBackground.cloudLayers[0], GameBackground.cloudLayers[1])
+        XCTAssertLessThan(near.crossing, far.crossing)
+        XCTAssertLessThan(near.strength, far.strength)
+    }
+
+    func testACloudLayerIsTheSameStripEveryTime() {
+        // Seeded, like the haze: a background that reshuffled itself on a resize would
+        // change shape when the phone is rotated
+        let size = CGSize(width: 70, height: 120)
+        let layer = GameBackground.cloudLayers[0]
+        let first = GameBackground.cloudImage(size: size, seed: layer.seed,
+                                              blobs: layer.blobs, tint: layer.colour,
+                                              strength: layer.strength)
+        let again = GameBackground.cloudImage(size: size, seed: layer.seed,
+                                              blobs: layer.blobs, tint: layer.colour,
+                                              strength: layer.strength)
+        XCTAssertEqual(first?.pngData(), again?.pngData())
+        XCTAssertNil(GameBackground.cloudImage(size: .zero, seed: layer.seed,
+                                               blobs: layer.blobs, tint: layer.colour,
+                                               strength: layer.strength))
+    }
+
+    func testCloudsHaveAStillPictureForThePicker() {
+        // Nothing on the picker moves, so it draws one frame of the drift - a cloud
+        // background shown there as a plain gradient would be a picker lying about what you
+        // are choosing
+        XCTAssertNotNil(GameBackground.cloudsImage(size: CGSize(width: 50, height: 90),
+                                                   paddleFraction: 0.3))
     }
 
     func testTheGlowIsTheSamePictureEveryTimeItIsDrawn() {

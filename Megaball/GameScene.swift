@@ -6979,6 +6979,7 @@ laserTimer?.invalidate()
 
 		overlay.size = background.size
 		overlay.position = background.position
+		clearBackgroundMotion()
 
 		switch setting.paint {
 		case .artwork:
@@ -7005,26 +7006,99 @@ laserTimer?.invalidate()
 			overlay.isHidden = false
 			overlay.colorBlendFactor = 0
 			overlay.color = .clear
-			overlay.texture = gradientBackgroundTexture(size: overlay.size, glowing: true)
+			overlay.texture = gradientBackgroundTexture(size: overlay.size)
+			addBackgroundHaze(over: overlay)
+		case .clouds:
+			overlay.isHidden = false
+			overlay.colorBlendFactor = 0
+			overlay.color = .clear
+			overlay.texture = gradientBackgroundTexture(size: overlay.size)
+			addBackgroundClouds(over: overlay)
 		}
 		background.isHidden = setting != .classic
 	}
 
+	/// The moving parts of a background, which only two of them have.
+	///
+	/// Held as one list and torn down on every apply, because the setting can change at any
+	/// moment - from the settings screen, mid-run, with the scene live behind the pause menu -
+	/// and a layer left over from the last choice would drift across the new one for ever.
+	var backgroundMotionLayers: [SKSpriteNode] = []
+
+	private func clearBackgroundMotion() {
+		backgroundMotionLayers.forEach { $0.removeFromParent() }
+		backgroundMotionLayers.removeAll()
+	}
+
+	/// The Glow's haze, on a node of its own so it can breathe.
+	///
+	/// Separate from the gradient underneath it (round 144): as one baked picture the haze
+	/// could only sit there. On its own node it swells and settles over eight seconds, which
+	/// is slow enough to be felt at the edge of the eye rather than watched.
+	private func addBackgroundHaze(over overlay: SKSpriteNode) {
+		guard let image = GameBackground.hazeImage(size: overlay.size) else { return }
+		let haze = SKSpriteNode(texture: SKTexture(image: image), size: overlay.size)
+		haze.position = overlay.position
+		haze.zPosition = overlay.zPosition + 0.01
+		haze.alpha = 1
+		addChild(haze)
+		backgroundMotionLayers.append(haze)
+
+		let depth = GameBackground.glowBreathDepth
+		let half = GameBackground.glowBreath/2
+		haze.run(.repeatForever(.sequence([
+			.fadeAlpha(to: 1 - depth, duration: half),
+			.fadeAlpha(to: 1, duration: half),
+		])))
+		// A repeating action, which is fine here and forbidden on a brick: `countBricks()`
+		// gates row generation on bricks having no actions (§8.6), and this is scenery
+	}
+
+	/// The cloud layers, drifting at two speeds.
+	///
+	/// Each layer is drawn as a strip the width of the field and moved by exactly that width
+	/// before starting again - the strip is built so that its two edges match, so the restart
+	/// cannot be seen. Two of them, at different speeds, because parallax is what makes a flat
+	/// picture read as depth.
+	private func addBackgroundClouds(over overlay: SKSpriteNode) {
+		for layer in GameBackground.cloudLayers {
+			guard let image = GameBackground.cloudImage(size: overlay.size, seed: layer.seed,
+														blobs: layer.blobs, tint: layer.colour,
+														strength: layer.strength) else { continue }
+			let texture = SKTexture(image: image)
+			for copy in 0...1 {
+				let cloud = SKSpriteNode(texture: texture, size: overlay.size)
+				cloud.position = CGPoint(x: overlay.position.x + overlay.size.width*CGFloat(copy),
+										 y: overlay.position.y)
+				cloud.zPosition = overlay.zPosition + 0.01
+				addChild(cloud)
+				backgroundMotionLayers.append(cloud)
+
+				let travel = SKAction.moveBy(x: -overlay.size.width, y: 0,
+											 duration: layer.crossing)
+				let jump = SKAction.moveBy(x: overlay.size.width, y: 0, duration: 0)
+				cloud.run(.repeatForever(.sequence([travel, jump])))
+			}
+			// Two copies of the strip, side by side, both travelling left: as one leaves the
+			// field the other is arriving, so there is always cloud on screen
+		}
+	}
+
 	/// The borders' purple at the top, the Classic background's purple by the paddle, then
 	/// away to near black at the bottom of the playfield.
-	func gradientBackgroundTexture(size: CGSize, glowing: Bool = false) -> SKTexture? {
+	func gradientBackgroundTexture(size: CGSize) -> SKTexture? {
 		guard size.width > 0, size.height > 0 else { return nil }
 
 		// Where the paddle sits within the background, measured from its bottom.
 		let bottom = background.frame.minY
 		let paddleFraction = (paddlePositionY - bottom)/size.height
 
-		let drawn = glowing
-			? GameBackground.glowImage(size: size, paddleFraction: paddleFraction)
-			: GameBackground.gradientImage(size: size, paddleFraction: paddleFraction)
-		guard let image = drawn else {
+		guard let image = GameBackground.gradientImage(size: size,
+													  paddleFraction: paddleFraction) else {
 			return nil
 		}
+		// Just the fade now: the Glow's haze and the Clouds' drift are nodes of their own,
+		// because both of them move and a baked picture cannot
 		return SKTexture(image: image)
 	}
 
