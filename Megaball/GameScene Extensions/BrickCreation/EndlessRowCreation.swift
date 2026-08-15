@@ -48,6 +48,7 @@ extension GameScene {
         powerUpProbArray[46] = gameMode == .endlessII ? 5 : 0 // Auto-Aim - uncommon
         powerUpProbArray[47] = gameMode == .endlessII ? 3 : 0 // Wrap-Around - rare (§5.4)
         powerUpProbArray[52] = gameMode == .endlessII ? 5 : 0 // Ghost Ball - uncommon
+        powerUpProbArray[53] = gameMode == .endlessII ? 5 : 0 // Safety Paddle - uncommon
         // and bad. The weight is the tunable here: it is a strong handicap, and if it
         // reads as too punishing in play this is the number to move, not the effect
         powerUpProbArray[51] = gameMode == .endlessII ? 5 : 0 // Randomised Bounce -

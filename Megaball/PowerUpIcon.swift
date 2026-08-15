@@ -483,6 +483,31 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
+    /// A second paddle under the brick line, with the ball bouncing off its top.
+    ///
+    /// Drawn as a bar low in the badge with the line of the field above it, because where it
+    /// sits is the whole power-up: high enough to keep the ball in play, low enough that the
+    /// ball has to get past it to reach the bricks.
+    static let safetyPaddle: UIImage = badge { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18,
+                                 y: rect.minY + rect.height*0.26))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18,
+                                    y: rect.minY + rect.height*0.26))
+        context.strokePath()
+        // The lowest brick row, above it
+
+        let bar = CGRect(x: rect.minX + rect.width*0.22,
+                         y: rect.maxY - rect.height*0.38,
+                         width: rect.width*0.56, height: rect.height*0.11)
+        context.setLineWidth(0)
+        context.fill(CGRect(x: bar.minX, y: bar.minY, width: bar.width, height: bar.height))
+
+        dot(context, at: CGPoint(x: rect.midX, y: bar.minY - rect.height*0.16),
+            radius: rect.width*0.08)
+        // The ball resting on it, which is what a safety paddle is for
+    }
+
     /// The Daily Challenge's menu mark: a calendar with today burning in it.
     static let dailyChallenge: UIImage = badge { context, rect in
         stroke(context, width: rect.width*0.06)

@@ -259,6 +259,11 @@ enum PowerUpCatalogue {
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
         PowerUp(id: "randomisedBounce", name: "Randomised Bounce", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
+        PowerUp(id: "safetyPaddle", name: "Safety Paddle", availability: .endlessII,
+                rarity: .uncommon, valence: .beneficial, isTimed: true,
+                stacking: .extendsDuration),
+        // Deliberately double-edged, like Gravity: it keeps the ball up in the field, and it
+        // stops the ball reaching the bricks from below while it is there
         PowerUp(id: "ghostBall", name: "Ghost Ball", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "inertPaddle", name: "Inert Paddle", availability: .endlessII,

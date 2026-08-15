@@ -374,7 +374,7 @@ extension GameScene {
         \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
-        \.endlessIIClearAndRetreatClock,
+        \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
     ]
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
@@ -597,7 +597,9 @@ extension GameScene {
           PowerUpIcon.randomisedBounce),
          ("endlessIIGhostBall", endlessIIGhostBallClock, PowerUpIcon.ghostBall),
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
-          PowerUpIcon.clearAndRetreat)]
+          PowerUpIcon.clearAndRetreat),
+         ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
+          PowerUpIcon.safetyPaddle)]
     }
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
@@ -634,6 +636,11 @@ extension GameScene {
             endlessIIGhostBallClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIClearAndRetreat":
             endlessIIClearAndRetreatClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIISafetyPaddle":
+            endlessIISafetyPaddleClock.restore(remaining: remaining, total: total, level: 0)
+            showEndlessIISafetyPaddle()
+            // The surface comes back with its clock: a resumed run that had one standing
+            // must find it standing, or the save has quietly changed the field
         default:
             return false
         }
@@ -654,7 +661,9 @@ extension GameScene {
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
             endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)
+            endlessIISafetyPaddleClock.run(down: endlessIIClockDelta)
             tickEndlessIIGhostBall()
+            tickEndlessIISafetyPaddle()
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
@@ -746,6 +755,8 @@ extension GameScene {
         endlessIIDescentClock.reset()
         endlessIIDescentAccumulated = 0
         endlessIIClearAndRetreatClock.reset()
+        endlessIISafetyPaddleClock.reset()
+        childNode(withName: GameScene.endlessIISafetyPaddleName)?.removeFromParent()
         endlessIIAuraNodes.forEach { $0.removeFromParent() }
         endlessIIAuraNodes.removeAll()
     }

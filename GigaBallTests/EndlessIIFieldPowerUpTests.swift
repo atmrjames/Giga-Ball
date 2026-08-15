@@ -812,6 +812,95 @@ final class RandomisedBounceTests: XCTestCase {
     }
 
     /// The array checklist, in one place: a power-up that is in some lists and not others is
+    // MARK: - Safety Paddle
+
+    // §5.4, and the play-test idea from the tenth round: a second, fixed paddle just below
+    // the lowest brick row. Good because it keeps the ball up in the field; bad because it
+    // stops the ball reaching the bricks from below.
+
+    private func safetyScene() -> GameScene {
+        let scene = mayhem()
+        scene.brickHeight = 20
+        scene.brickWidth = 40
+        scene.gameWidth = 400
+        scene.totalStatsArray = [TotalStats()]
+        scene.finalBrickRowHeight = -100
+        return scene
+    }
+
+    func testCollectingItPutsASurfaceUnderTheLowestBricks() {
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+
+        XCTAssertTrue(scene.endlessIISafetyPaddleClock.isRunning)
+        let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+        XCTAssertNotNil(bar)
+        XCTAssertEqual(bar?.position.y ?? 0,
+                       scene.finalBrickRowHeight - scene.brickHeight, accuracy: 0.001,
+                       "below the field, so it never stands inside a brick")
+    }
+
+    func testItsSurfaceIsNotThePaddlesAndNotAScreenBlocks() {
+        // Its own category, because the paddle's would spend a paddle turn and count a
+        // landing, and a screen block's is read by *shape* - a wide, short one would have
+        // been taken for the ceiling
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+        let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+
+        XCTAssertEqual(bar?.physicsBody?.categoryBitMask,
+                       CollisionTypes.safetyPaddleCategory.rawValue)
+        XCTAssertEqual(bar?.physicsBody?.isDynamic, false, "the field moves; it does not")
+    }
+
+    func testASecondCollectionLengthensItRatherThanStackingTwo() {
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+        let first = scene.endlessIISafetyPaddleClock.remaining
+        scene.endlessIICollectSafetyPaddle()
+
+        XCTAssertGreaterThan(scene.endlessIISafetyPaddleClock.remaining, first)
+        var found = 0
+        scene.enumerateChildNodes(withName: GameScene.endlessIISafetyPaddleName) { _, _ in
+            found += 1
+        }
+        XCTAssertEqual(found, 1, "longer, not thicker")
+    }
+
+    func testItIsNeverStranded() {
+        // A surface left behind after its clock stops would change the rest of the run -
+        // the same rule Ghost Ball has about the ball's alpha
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+        scene.endlessIISafetyPaddleClock.run(down: GameScene.endlessIISafetyPaddleDuration)
+        scene.tickEndlessIISafetyPaddle()
+
+        XCTAssertNil(scene.childNode(withName: GameScene.endlessIISafetyPaddleName),
+                     "the tick that finds the clock stopped takes it away")
+    }
+
+    func testItLeavesTheFieldAloneOutsideMayhem() {
+        let scene = safetyScene()
+        scene.gameMode = .classic
+        scene.endlessIICollectSafetyPaddle()
+        XCTAssertNil(scene.childNode(withName: GameScene.endlessIISafetyPaddleName))
+    }
+
+    func testAResumedRunFindsItStanding() {
+        let saving = safetyScene()
+        saving.endlessIICollectSafetyPaddle()
+
+        let restored = safetyScene()
+        for entry in saving.endlessIIFieldClockSaveEntries() {
+            restored.endlessIIRestoreFieldClock(key: entry.key, remaining: entry.remaining,
+                                                total: entry.total,
+                                                magnitude: entry.magnitude)
+        }
+        XCTAssertTrue(restored.endlessIISafetyPaddleClock.isRunning)
+        XCTAssertNotNil(restored.childNode(withName: GameScene.endlessIISafetyPaddleName),
+                        "or the save has quietly changed the field")
+    }
+
     /// the trap this project keeps writing down (§8.6).
     func testTheFiftySecondPowerUpIsInEveryListThatDefinesOne() {
         let setup = LevelPackSetup()

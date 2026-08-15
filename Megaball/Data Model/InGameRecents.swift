@@ -265,6 +265,7 @@ extension GameScene {
             (endlessIIDescentClock, 45), (endlessIIAutoAimClock, 46),
             (endlessIIWrapAroundClock, 47), (endlessIIRandomisedBounceClock, 51),
             (endlessIIGhostBallClock, 52), (endlessIIClearAndRetreatClock, 40),
+            (endlessIISafetyPaddleClock, 53),
         ]
         for (clock, index) in clocks where clock.isRunning { active.insert(index) }
         InGameRecents.shared.activePowerUpRings = clocks

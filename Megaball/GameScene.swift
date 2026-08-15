@@ -31,6 +31,11 @@ enum CollisionTypes: UInt32 {
 	case boarderCategory = 64
 	case bottomScreenBlockCategory = 128
 	case backstopCategory = 256
+	/// The Safety Paddle's own surface (§5.4). Its own category rather than a screen block's:
+	/// the screen-block branch decides what it hit from the *shape* of the block, so a wide,
+	/// short one would have been read as the ceiling - and rather than the paddle's, because
+	/// this must not spend a paddle turn or count as a landing. It is furniture, not a paddle
+	case safetyPaddleCategory = 512
 }
 // Setup for collisionBitMask
 
@@ -221,6 +226,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAuraHitBricks: Set<ObjectIdentifier> = []
 	var endlessIIDescentClock = EndlessIIClock()
 	var endlessIIDescentAccumulated: TimeInterval = 0
+	/// Safety Paddle: while this runs a second paddle stands under the lowest bricks (§5.4).
+	var endlessIISafetyPaddleClock = EndlessIIClock()
 	/// Clear And Retreat: while this runs the field holds where the clear left it (§5.4).
 	var endlessIIClearAndRetreatClock = EndlessIIClock()
     var brick = SKSpriteNode()
@@ -415,7 +422,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 53)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 54)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -955,6 +962,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpWipe = SKTexture(image: PowerUpIcon.wipe)
 	let powerUpRandomisedBounce = SKTexture(image: PowerUpIcon.randomisedBounce)
 	let powerUpGhostBall = SKTexture(image: PowerUpIcon.ghostBall)
+	let powerUpSafetyPaddle = SKTexture(image: PowerUpIcon.safetyPaddle)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1131,7 +1139,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -2623,6 +2631,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Ball hits Frame
 			
+			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue
+				&& secondBody.categoryBitMask == CollisionTypes.safetyPaddleCategory.rawValue {
+				endlessIISafetyPaddleHit(struckBall)
+			}
+			// Ball hits the safety paddle. Nothing else follows from it - no paddle turn is
+			// spent, no landing is counted, no power-up that answers a paddle contact hears
+			// about it. It is furniture (§5.4)
+
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.backstopCategory.rawValue {
 
 				if gigaBallDeactivate {
@@ -4855,6 +4871,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[52] += 1
 
+		case powerUpSafetyPaddle:
+		// 53 - Safety Paddle
+			endlessIICollectSafetyPaddle()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[53] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -5183,13 +5205,13 @@ laserTimer?.invalidate()
 
 			if ball.texture == gigaBallTexture {
 			// Giga-Ball power-up
-				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
 				// Reset undestructi-ball power-up
-				body.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				body.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
 				// Set giga-ball power-up
 			} else {
-				body.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue
-				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue
+				body.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
+				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
 				// Set ball physics body
 			}
 		}
