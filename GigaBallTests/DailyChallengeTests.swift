@@ -711,10 +711,39 @@ final class DailyFogRevealTests: XCTestCase {
     }
 
     func testTheLookIsShortEnoughToNotHandTheFieldBack() {
-        // Long enough to read, too short to memorise: the twist is meant to make you
-        // remember a field rather than study one
-        XCTAssertLessThan(GameScene.dailyFogLook, 2.0)
-        XCTAssertGreaterThan(GameScene.dailyFogLook, 0.5)
+        // Play-test round 126: "I was able to start playing before the bricks disappeared",
+        // and the fog should be faster and foggier. A row's look plus its fade now has to
+        // fit inside the beat between one row landing and the next few, or the fog is again
+        // still closing when the ball is already in the field
+        XCTAssertLessThan(GameScene.dailyFogLook + GameScene.dailyFogClose, 1.0)
+        XCTAssertGreaterThan(GameScene.dailyFogLook, 0.2, "still a look, not a blindfold")
+    }
+
+    func testABrickFogsItselfOnLandingRatherThanWaitingForTheField() {
+        // The fog travels down with the build-in now: a scheduled brick leaves the pending
+        // list at once, so the sweeper at the end of the build-in has nothing left to take
+        let scene = fogScene()
+        guard scene.dailyFogIsOn else { return }
+
+        let opening = brick(in: scene)
+        scene.applyDailyFog(to: [opening])
+        XCTAssertEqual(scene.dailyFogPending.count, 1)
+
+        scene.scheduleDailyFog(for: opening, landingAt: 0)
+        XCTAssertTrue(scene.dailyFogPending.isEmpty,
+                      "the brick owns its own fade from the moment it lands")
+    }
+
+    func testTheWaitLivesOnTheSceneAndNotOnTheBrick() {
+        // §8.6: countBricks() gates row generation on a brick having no actions, so a wait
+        // of most of a second attached to a brick would hold the whole field's descent
+        let scene = fogScene()
+        guard scene.dailyFogIsOn else { return }
+
+        let opening = brick(in: scene)
+        scene.applyDailyFog(to: [opening])
+        scene.scheduleDailyFog(for: opening, landingAt: 0.5)
+        XCTAssertFalse(opening.hasActions(), "the scene is holding the timer, not the brick")
     }
 
     func testNothingHappensOnADayWithoutTheTwist() {

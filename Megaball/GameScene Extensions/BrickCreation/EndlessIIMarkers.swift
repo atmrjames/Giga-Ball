@@ -494,6 +494,8 @@ extension GameScene {
 
             let arrival = delay + fall
             if landings[row] == nil || arrival < landings[row]! { landings[row] = arrival }
+            scheduleDailyFog(for: brick, landingAt: arrival)
+            // The fog travels down with the build-in rather than waiting for it (round 140)
         }
         endlessIIBuildInBricks.removeAll()
         // The destinations are kept until the fall completes, because a tap can skip it at
@@ -551,6 +553,10 @@ extension GameScene {
                 .group([.fadeIn(withDuration: GameScene.classicBuildInPop),
                         .scale(to: 1, duration: GameScene.classicBuildInPop)]),
             ]))
+            scheduleDailyFog(for: brick,
+                             landingAt: delay + GameScene.classicBuildInPop)
+            // Classic builds from the top down, so the fog does too - the first row is
+            // going while the last is still arriving
         }
 
         for row in landings.sorted() {

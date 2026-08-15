@@ -237,6 +237,11 @@ extension GameScene {
     /// Called when the build-in finishes, however it finished: a skipped build-in still gets
     /// its look, just a shorter one. Idempotent, because all three of those paths can be
     /// reached in one run.
+    ///
+    /// Since round 140 this is the *sweeper* rather than the whole of it: a build-in fogs
+    /// each brick as it lands, and what reaches here is whatever the build-in never owned -
+    /// a field built with no animation at all, or the bricks left over when a tap skipped
+    /// the build-in halfway down.
     func closeDailyFog(animated: Bool = true) {
         guard dailyFogIsOn, dailyFogHasClosed == false else { return }
         dailyFogHasClosed = true
@@ -264,13 +269,48 @@ extension GameScene {
         }
     }
 
-    /// How long the field is readable before the fog takes it, and how long the fog takes.
+    /// How long a row is readable before the fog takes it, and how long the fog takes.
     ///
     /// Long enough to look at and too short to memorise. The twist is meant to make you
     /// remember a field rather than read one, and a fade that lingered would hand back most
     /// of what the twist takes away.
-    static let dailyFogLook: TimeInterval = 1.1
-    static let dailyFogClose: TimeInterval = 0.55
+    ///
+    /// **Much shorter than they were** (play-test round 126: "I was able to start playing
+    /// before the bricks disappeared", and the fog should be "faster and foggier"). A look
+    /// of 1.1 seconds and a fade of 0.55 measured from the *end* of the build-in meant the
+    /// field was still going when the first ball was already in it.
+    static let dailyFogLook: TimeInterval = 0.45
+    static let dailyFogClose: TimeInterval = 0.3
+
+    /// Fogs one brick a beat after it has landed, rather than waiting for the whole field.
+    ///
+    /// This is the answer to playing before the fog closed: the fog no longer starts when
+    /// the build-in ends, it travels down the field with it. A row is taken while the rows
+    /// below it are still arriving, so the last brick to land is the last to fade and the
+    /// field is gone by the time it is whole (play-test round 126: "fading row by row as the
+    /// rows below build in"). You still get your look - one row at a time, which is what
+    /// makes a fogged field something you remember rather than something you read.
+    ///
+    /// Scheduled from the scene and only the fade itself run on the brick, because
+    /// `countBricks()` gates row generation on a brick having no actions (§8.6) - a wait of
+    /// most of a second attached to a brick would hold the field's descent for that long.
+    func scheduleDailyFog(for brick: SKSpriteNode, landingAt arrival: TimeInterval) {
+        guard dailyFogIsOn, dailyFogHasClosed == false else { return }
+        guard let index = dailyFogPending.firstIndex(where: { $0 === brick }) else { return }
+        dailyFogPending.remove(at: index)
+
+        run(.sequence([
+            .wait(forDuration: arrival + GameScene.dailyFogLook),
+            .run { [weak self] in
+                guard let self, brick.parent != nil, brick.isHidden == false else { return }
+                guard self.dailyFogIsOn else { return }
+                brick.run(.sequence([
+                    .fadeOut(withDuration: GameScene.dailyFogClose),
+                    .run { brick.isHidden = true; brick.alpha = 1 },
+                ]))
+            },
+        ]))
+    }
 
     /// Brings one brick out of the fog, spending the strike on the reveal. Returns
     /// whether it did, so the caller stops there.
