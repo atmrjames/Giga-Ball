@@ -156,12 +156,15 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // styles that do the same - and naming those three is shorter than naming the nine
         // it takes
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .rounded),
-                       "Any but Convex, Concave, Wedge")
+                       "Any but Convex, Concave, Wedge, Breathing")
+        // Breathing since round 142: a face drawn once at the brick's size does not follow a
+        // brick that then changes size
 
-        // Spinning refuses the shapes and two others. Naming what it takes is a list to
-        // work through; naming what it does not is a fact
+        // Spinning refuses the shapes and three others now, which is enough of the list that
+        // naming what it *takes* became the shorter sentence - which is the whole point of
+        // the rule this test is about
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .spinning),
-                       "Any but Convex, Concave, Wedge, Moving, Directional")
+                       "Rounded, Flashing, Fixed, Gravity, Exploding, Spawner, Portal")
 
         // A Portal is never damaged and never destroyed, so anything about being destroyed or
         // about being solid has nothing to attach to - and there its exclusions are no shorter

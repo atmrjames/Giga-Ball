@@ -119,6 +119,7 @@ enum BrickTypeCatalogue {
         case .exploding: return "Exploding"
         case .spawner: return "Spawner"
         case .portal: return "Portal"
+        case .breathing: return "Breathing"
         case .fixed: return "Fixed"
         case .convex: return "Convex"
         case .concave: return "Concave"
@@ -132,7 +133,7 @@ enum BrickTypeCatalogue {
     /// what the field does. A player reading down the page meets the small ideas before the
     /// large ones, which is also the order a run introduces them in.
     static let styleOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge,
-                                               .spinning, .flashing, .fixed,
+                                               .spinning, .flashing, .breathing, .fixed,
                                                .gravity, .moving, .directional,
                                                .exploding, .spawner, .portal]
     // The three shapes sit with Rounded, because they are the same idea carried further:
@@ -146,6 +147,8 @@ enum BrickTypeCatalogue {
             return "Turns on the spot, and the bounce turns with it. The generator leaves the cells around it clear, because a brick twice as wide as it is tall needs the room to get round."
         case .flashing:
             return "Comes and goes. Solid and visible for a few seconds, then faded and passable for a few more. It will not turn solid while the ball is inside it, so it can never trap one."
+        case .breathing:
+            return "Shrinks to half a cell and swells back to fill it, over and over. The gap around it opens and closes with it, so a shot that was blocked a moment ago goes through now - it is a brick you time rather than one you aim at."
         case .fixed:
             return "An ordinary brick until it is struck once. From then on it stops descending, holds its position, and hardens - a plain brick becomes a fresh multi-hit, so digging out an anchor costs the full ladder. Anything descending onto it is destroyed by it, so leaving one alive carves a channel up through everything arriving above."
         case .gravity:
@@ -218,6 +221,11 @@ enum BrickTypeCatalogue {
         case .fixed, .gravity:
             // Only some quarters of a Tiny set would ever draw the style, and a Big one would
             // wall off two columns at once
+            return "Normal"
+        case .breathing:
+            // It changes its size about its own middle, which a Big brick's off-centre
+            // sprite would do around a corner - and a Tiny one shrinking to half of a
+            // quarter-cell is a brick nobody can hit
             return "Normal"
         case .moving:
             // Both the room it looks for and the position it measures from assume a brick

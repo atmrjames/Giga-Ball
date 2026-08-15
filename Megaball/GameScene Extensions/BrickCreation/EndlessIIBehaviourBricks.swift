@@ -72,6 +72,9 @@ extension GameScene {
         guard endlessIIFlashers.contains(where: { $0.brick === brick }) == false else {
             return false
         }
+        guard endlessIIBreathers.contains(where: { $0.brick === brick }) == false else {
+            return false
+        }
         return brick.childNode(withName: GameScene.roundedBrickOutlineName) == nil
     }
 

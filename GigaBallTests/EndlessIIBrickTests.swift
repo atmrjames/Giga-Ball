@@ -20,6 +20,78 @@ final class EndlessIIBrickTests: XCTestCase {
                          passableFor: passableFor, phase: 0)
     }
 
+    // MARK: - Breathing
+
+    // Play-test round 126: "New brick type: it continually shrinks and expands."
+
+    private func breather(period: TimeInterval = 3) -> EndlessIIBreather {
+        EndlessIIBreather(brick: SKSpriteNode(),
+                          full: CGSize(width: 40, height: 20),
+                          period: period, phase: 0, bodyScale: 1)
+    }
+
+    func testItBreathesBetweenHalfACellAndTheWholeOfIt() {
+        let brick = breather()
+        var smallest = CGFloat.greatestFiniteMagnitude
+        var largest = -CGFloat.greatestFiniteMagnitude
+
+        var moment: TimeInterval = 0
+        while moment <= brick.period {
+            let scale = brick.scale(at: moment)
+            smallest = min(smallest, scale)
+            largest = max(largest, scale)
+            moment += brick.period/200
+        }
+
+        XCTAssertEqual(smallest, EndlessIIBreather.smallest, accuracy: 0.01)
+        XCTAssertEqual(largest, 1, accuracy: 0.01,
+                       "it never swells past the cell it owns - the room beyond belongs to "
+                       + "its neighbours, and nothing reserves it")
+    }
+
+    func testTheCycleReturnsToWhereItStarted() {
+        // Or a brick left to breathe for an hour would have drifted somewhere of its own
+        let brick = breather()
+        XCTAssertEqual(brick.scale(at: 0), brick.scale(at: brick.period), accuracy: 0.001)
+    }
+
+    func testItPausesAtEachEndRatherThanPumping() {
+        // A cosine, not a triangle: the change is slowest where the brick is biggest and
+        // smallest, which is what makes it read as breathing
+        let brick = breather()
+        let atEnd = abs(brick.scale(at: brick.period/2)
+                        - brick.scale(at: brick.period/2 + brick.period/40))
+        let atMiddle = abs(brick.scale(at: brick.period/4)
+                           - brick.scale(at: brick.period/4 + brick.period/40))
+        XCTAssertLessThan(atEnd, atMiddle)
+    }
+
+    func testTheStyleIsInAPoolAndSoCanHappenAtAll() {
+        // §8.6: being in the enum, the grid, the reference page and the progression is not
+        // enough - a style that is in no pool is never offered, and from the outside that
+        // looks exactly like being very rare
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = CGSize(width: 40, height: 20)
+        scene.addChild(brick)
+
+        scene.applyEndlessIIStyle(.breathing, to: brick)
+        XCTAssertTrue(scene.endlessIIStyles(on: brick).contains(.breathing),
+                      "the scene can build one, and knows it has")
+    }
+
+    func testABreathingBrickIsNotPlainAndSoTakesNoSecondRole() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = CGSize(width: 40, height: 20)
+        scene.addChild(brick)
+        scene.applyEndlessIIStyle(.breathing, to: brick)
+
+        XCTAssertFalse(scene.endlessIIIsPlain(brick))
+    }
+
     func testSolidExactlyWhileFullyOpaque() {
         // Both directions, so neither kind of lie is possible: a brick is never solid while
         // it is fading, and never fading while it is solid. It starts fading the instant it

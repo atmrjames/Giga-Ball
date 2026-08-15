@@ -134,6 +134,7 @@ enum BrickTypeIcons {
         case .portal: return GameScene.portalBrickColour
         case .fixed: return GameScene.fixedBrickColour
         case .flashing: return #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        case .breathing: return GameScene.breathingBrickColour
         case .rounded, .spinning, .convex, .concave, .wedge: return standardColour
         }
     }
@@ -199,6 +200,15 @@ enum BrickTypeIcons {
             // Half-way through fading out, which is the state that says what it does
             artwork("BrickNormal")?.tinted(tint).draw(in: frame, blendMode: .normal, alpha: 0.55)
             outline(frame, in: context)
+            return
+
+        case .breathing:
+            // Caught mid-breath, with the cell it came from drawn round it: a brick smaller
+            // than the space it owns is the whole idea, and a shrunken brick alone in a
+            // frame would just read as a Tiny one
+            outline(frame, in: context)
+            let breath = frame.insetBy(dx: frame.width*0.22, dy: frame.height*0.22)
+            artwork("BrickNormal")?.tinted(tint).draw(in: breath)
             return
 
         case .portal:

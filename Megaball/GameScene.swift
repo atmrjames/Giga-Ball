@@ -829,6 +829,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessMoveInProgress: Bool = false
 	var endlessIISpinners: [EndlessIISpinner] = []
 	var endlessIIFlashers: [EndlessIIFlasher] = []
+	var endlessIIBreathers: [EndlessIIBreather] = []
 	var endlessIILastTick: TimeInterval = 0
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessIIWanderers: [EndlessIIWander] = []

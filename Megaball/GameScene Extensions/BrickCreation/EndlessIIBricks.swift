@@ -24,6 +24,48 @@
 import SpriteKit
 
 /// A brick that comes and goes, and is only solid while it is there.
+/// A brick that shrinks and swells where it stands.
+///
+/// It keeps its node exactly where it is and changes only its own size, which is what makes
+/// it safe: `position.y` is how the rest of the game knows a brick's row (§8.6), and a brick
+/// that breathed by moving would be in a different row twice a second.
+///
+/// The swell stops at the cell it was given. Growing past that would need the cells around it
+/// kept clear the way a Spinning brick's are, and a brick that grew into an occupied cell
+/// would be sitting inside its neighbour - so the room it breathes in is the room it owns.
+struct EndlessIIBreather {
+    let brick: SKSpriteNode
+    /// The size it was created at, which is the largest it ever gets.
+    let full: CGSize
+    /// Seconds for one full shrink and swell.
+    let period: TimeInterval
+    /// Seconds into that cycle. Staggered at birth, or a whole row would breathe in unison.
+    var phase: TimeInterval
+    /// The size the body was last built at, so it is only rebuilt when it is worth it.
+    var bodyScale: CGFloat
+
+    /// How small it gets: half a cell, which is a Tiny brick's size and so a size the field
+    /// already reads as a brick.
+    static let smallest: CGFloat = 0.5
+
+    /// How far the scale must travel before the body is rebuilt.
+    ///
+    /// The sprite changes every frame and the body follows in steps, because a body is
+    /// rebuilt rather than resized and doing it sixty times a second for every breathing
+    /// brick on the field is a lot of work to be a tenth of a brick more accurate.
+    static let bodyStep: CGFloat = 0.08
+
+    /// The scale at a moment in the cycle: smallest, up to full, and back.
+    func scale(at moment: TimeInterval) -> CGFloat {
+        let turn = moment/period*2*Double.pi
+        let eased = (1 - cos(turn))/2
+        // A cosine rather than a triangle: it pauses at each end, which is what makes it
+        // read as breathing rather than as pumping
+        return EndlessIIBreather.smallest
+            + (1 - EndlessIIBreather.smallest)*CGFloat(eased)
+    }
+}
+
 struct EndlessIIFlasher {
     let brick: SKSpriteNode
     let solidFor: TimeInterval
@@ -358,6 +400,7 @@ extension GameScene {
         if let face = brick.endlessIIFace { found.append(face.style) }
         if endlessIISpinners.contains(where: { $0.brick === brick }) { found.append(.spinning) }
         if endlessIIFlashers.contains(where: { $0.brick === brick }) { found.append(.flashing) }
+        if endlessIIBreathers.contains(where: { $0.brick === brick }) { found.append(.breathing) }
         switch brick.endlessIIRole {
         case .gravity: found.append(.gravity)
         case .moving: found.append(.moving)
@@ -407,6 +450,11 @@ extension GameScene {
             // other than where the brick appears to be
             return centred && isOrdinaryCellSized(brick)
         case .spinning: return centred && isOrdinaryCellSized(brick)
+        case .breathing:
+            // Centred and one ordinary cell: it changes its own size about its own middle,
+            // which a Big brick's off-centre sprite would do around a corner, and a Tiny one
+            // shrinking to a quarter of a quarter is a brick nobody can hit
+            return centred && isOrdinaryCellSized(brick)
         case .fixed:
             // Ordinary size only, for the same reason as Gravity: only some quarters of a
             // Tiny set would ever draw it, and a Big one would wall off two columns at once
@@ -447,7 +495,8 @@ extension GameScene {
     /// Called after the row's arrival animation has been set up, because that animation
     /// resets the colour blend on every normal brick and would undo the tinting here.
     func applyEndlessIIBehaviours(to bricks: [SKNode]) {
-        applyEndlessIIStyles([.rounded, .flashing, .convex, .concave, .wedge], to: bricks)
+        applyEndlessIIStyles([.rounded, .flashing, .breathing, .convex, .concave, .wedge],
+                             to: bricks)
         // The shapes go in the appearance pool beside Rounded, which is the pool for
         // "changes how the brick answers a hit" - and a style has to be in a pool to
         // exist at all (§8.6), which is the trap this line exists to avoid
@@ -497,6 +546,7 @@ extension GameScene {
         case .rounded: makeRounded(brick)
         case .spinning: makeSpinning(brick)
         case .flashing: makeFlashing(brick)
+        case .breathing: makeBreathing(brick)
         case .gravity: makeGravity(brick)
         case .moving: makeMoving(brick)
         case .directional: makeDirectional(brick)
@@ -544,6 +594,25 @@ extension GameScene {
                                                   passableFor: .random(in: 1.5...2.5),
                                                   phase: .random(in: 0...2)))
         // Staggered starts, or a whole row would breathe in unison
+    }
+
+    static let breathingBrickColour = UIColor(red: 0.95, green: 0.45, blue: 0.85, alpha: 1)
+
+    /// Sets a brick breathing: shrinking to half a cell and swelling back, for ever.
+    ///
+    /// The interest is in the gap it opens and closes. A shot that was blocked a second ago
+    /// goes through now, and a ball that would have missed is caught on the way back out -
+    /// so it is a brick you time rather than one you aim at.
+    func makeBreathing(_ brick: SKSpriteNode) {
+        brick.color = GameScene.breathingBrickColour
+        brick.colorBlendFactor = 1.0
+        endlessIIBreathers.append(
+            EndlessIIBreather(brick: brick, full: brick.size,
+                              period: .random(in: 2.2...3.2),
+                              phase: .random(in: 0...3.2),
+                              bodyScale: 1))
+        // Staggered starts and slightly different periods, so a row of them ripples rather
+        // than pulsing as one animal
     }
 
     /// Rounds a brick's corners - the same oblong shape, not a circle.
@@ -642,6 +711,11 @@ extension GameScene {
             advanceFlasher(at: index, by: delta)
         }
 
+        endlessIIBreathers.removeAll { $0.brick.parent == nil }
+        for index in endlessIIBreathers.indices {
+            advanceBreather(at: index, by: delta)
+        }
+
         tickEndlessIIRoles(delta)
         tickEndlessIIRescue(delta)
         refreshEndlessIIRoundedFaces()
@@ -655,6 +729,7 @@ extension GameScene {
     func resetEndlessIIBricks() {
         endlessIISpinners.removeAll()
         endlessIIFlashers.removeAll()
+        endlessIIBreathers.removeAll()
         endlessIIPendingBigColumn = nil
         endlessIIPendingSpinColumn = nil
         endlessIIPendingClearColumn = nil
@@ -669,6 +744,38 @@ extension GameScene {
         resetEndlessIIRoles()
         endlessIIClearExtraBalls()
         // A run starts on one ball, whatever the last one ended on
+    }
+
+    private func advanceBreather(at index: Int, by delta: TimeInterval) {
+        var breather = endlessIIBreathers[index]
+        let brick = breather.brick
+
+        let wasScale = breather.scale(at: breather.phase)
+        var phase = breather.phase + delta
+        if phase >= breather.period { phase -= breather.period }
+        let scale = breather.scale(at: phase)
+
+        if scale > wasScale, ballOverlaps(brick) {
+            // Never grow into a ball. The flashing brick has the same rule for the same
+            // reason: a body that arrives around a ball leaves the ball inside a brick, and
+            // the physics answers that by flinging it somewhere arbitrary. Shrinking is
+            // always allowed - a brick getting out of the ball's way harms nobody
+            endlessIIBreathers[index] = breather
+            return
+        }
+
+        breather.phase = phase
+        brick.size = CGSize(width: breather.full.width*scale,
+                            height: breather.full.height*scale)
+
+        if abs(scale - breather.bodyScale) >= EndlessIIBreather.bodyStep {
+            breather.bodyScale = scale
+            brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: brick.size))
+            // Rebuilt in steps rather than every frame: a body cannot be resized, only
+            // replaced, and the sprite is the thing the player is reading
+        }
+        endlessIIBreathers[index] = breather
+
     }
 
     private func advanceFlasher(at index: Int, by delta: TimeInterval) {

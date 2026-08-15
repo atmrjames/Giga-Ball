@@ -35,6 +35,8 @@ enum EndlessIIBehaviour {
 /// it. See §4.0 of the specification for the full grid.
 enum EndlessIIStyle: String, CaseIterable {
     case rounded, spinning, flashing
+    /// Shrinks and swells where it stands, between half a cell and the whole of it (§4.12).
+    case breathing
     case gravity, moving, directional, exploding, spawner, portal
     /// Anchors itself where it is when first struck (§4.11a).
     case fixed
@@ -77,6 +79,11 @@ enum EndlessIIStyle: String, CaseIterable {
             return behaviour == .indestructibleAlways
         case .rounded, .spinning, .gravity:
             return true
+        case .breathing:
+            // Any behaviour but Invisible, for the reason the shaped faces give: a brick
+            // that is not drawn until it is struck has nothing to show, and the whole of
+            // this one is watching it change
+            return behaviour != .invisible
         case .moving:
             return true
         case .fixed:
@@ -130,8 +137,10 @@ enum EndlessIIStyle: String, CaseIterable {
     /// entirely (Portal). What is left - Flashing, Exploding, Spawner - touches colour,
     /// alpha and neighbours, none of which the shape cares about.
     static let refusedByAFace: Set<EndlessIIStyle> = [
-        .rounded, .spinning, .gravity, .moving, .fixed, .directional, .portal,
+        .rounded, .spinning, .gravity, .moving, .fixed, .directional, .portal, .breathing,
     ]
+    // Breathing joins them because it rebuilds the body as a rectangle every time it
+    // crosses a size, which is precisely the thing a shaped face owns
 
     static let incompatiblePairs: [Set<EndlessIIStyle>] = [
         [.spinning, .moving],       // both want to say where the brick is
@@ -147,6 +156,10 @@ enum EndlessIIStyle: String, CaseIterable {
         [.fixed, .moving],       // one says stay put, the other says do not
         [.fixed, .gravity],      // the same argument
         [.fixed, .portal],       // a Portal is never damaged, so it never anchors
+        [.breathing, .spinning], // both redraw the brick's own geometry every frame
+        [.breathing, .rounded],  // Rounded's drawn face is built once, at one size
+        [.breathing, .moving],   // the room a mover looks for is measured in whole cells
+        [.breathing, .portal],   // a Portal's mouth is a fixed target or it cannot be aimed at
     ]
 }
 
