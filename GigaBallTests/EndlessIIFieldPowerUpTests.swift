@@ -681,3 +681,90 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         }
     }
 }
+
+/// Randomised Bounce, the fifty-second power-up and the last catalogue entry that had no
+/// game behind it (§5.4: uncommon, harmful, timed, extends its own duration).
+final class RandomisedBounceTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.minAngleDeg = 10
+        return scene
+    }
+
+    func testItThrowsTheAngleOffTheOneTheBallArrivedAt() {
+        XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, offset: 20),
+                       110, accuracy: 0.001)
+        XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, offset: -20),
+                       70, accuracy: 0.001)
+    }
+
+    /// A bad power-up may be unfair. It may not hand the player a ball that never comes down,
+    /// which is the one heading the game refuses in every other place it touches an angle.
+    func testItNeverThrowsTheBallPastTheAngleTheGameRefuses() {
+        for offset in stride(from: -60.0, through: 60.0, by: 5) {
+            for arriving in [12.0, 45.0, 90.0, 135.0, 168.0] {
+                let bounced = GameScene.randomisedBounceAngle(from: arriving, minimumDeg: 10,
+                                                              offset: offset)
+                XCTAssertGreaterThanOrEqual(bounced, 10)
+                XCTAssertLessThanOrEqual(bounced, 170)
+            }
+        }
+    }
+
+    func testItOnlyActsWhileItsClockRuns() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIRandomisesBounces(for: scene.ball))
+
+        scene.endlessIICollectRandomisedBounce()
+        XCTAssertTrue(scene.endlessIIRandomisesBounces(for: scene.ball))
+        XCTAssertEqual(scene.endlessIIRandomisedBounceClock.remaining,
+                       GameScene.endlessIIRandomisedBounceDuration, accuracy: 0.001)
+    }
+
+    func testItNeverActsInTheOlderModes() {
+        // Existing modes must not gain new power-ups - the rule the whole availability split
+        // exists for, and the reason Classic and Endless leaderboards stay comparable
+        let scene = mayhem()
+        scene.endlessIICollectRandomisedBounce()
+        scene.gameMode = .endless
+        XCTAssertFalse(scene.endlessIIRandomisesBounces(for: scene.ball))
+        scene.gameMode = .classic
+        XCTAssertFalse(scene.endlessIIRandomisesBounces(for: scene.ball))
+    }
+
+    /// A second collection extends rather than stacking (§5.4).
+    func testASecondCollectionExtendsIt() {
+        let scene = mayhem()
+        scene.endlessIICollectRandomisedBounce()
+        scene.endlessIIRandomisedBounceClock.run(down: 5)
+        scene.endlessIICollectRandomisedBounce()
+        XCTAssertGreaterThan(scene.endlessIIRandomisedBounceClock.remaining,
+                             GameScene.endlessIIRandomisedBounceDuration - 5)
+    }
+
+    /// The array checklist, in one place: a power-up that is in some lists and not others is
+    /// the trap this project keeps writing down (§8.6).
+    func testTheFiftySecondPowerUpIsInEveryListThatDefinesOne() {
+        let setup = LevelPackSetup()
+        let index = setup.powerUpNameArray.firstIndex(of: "Randomised Bounce")
+        XCTAssertNotNil(index)
+        guard let index else { return }
+
+        XCTAssertEqual(setup.powerUpImageArray.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(setup.powerUpMultiplierArray.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(setup.powerUpTimerArray.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(setup.powerUpCorrectOrderArray.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(setup.powerUpPackOrderArray.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(TotalStats().powerupsCollected.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(TotalStats().powerupsGenerated.count, setup.powerUpNameArray.count)
+        XCTAssertEqual(TotalStats().powerUpUnlockedArray.count, setup.powerUpNameArray.count)
+
+        XCTAssertEqual(setup.powerUpMultiplierArray[index], "-0.1", "harmful")
+        XCTAssertTrue(setup.powerUpTimerArray[index].hasSuffix("s"), "timed")
+        XCTAssertTrue(GameScene.endlessIIHarmfulPowerUps.contains(index),
+                      "derived from the multiplier column, so Auto-Aim will not spend a free "
+                      + "shot on a brick holding one")
+    }
+}

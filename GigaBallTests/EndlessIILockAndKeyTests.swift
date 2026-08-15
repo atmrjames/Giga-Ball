@@ -161,7 +161,9 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         // timed power-up is added and left out of it, a Lock will neither drop for it nor
         // freeze it - which from the outside looks like the Lock being broken
         let scene = mayhem()
-        XCTAssertEqual(scene.endlessIITimedClocks.count, 8)
+        XCTAssertEqual(scene.endlessIITimedClocks.count, 9)
+        // Nine since round 124 added Randomised Bounce, which is timed and so is frozen
+        // by a Lock and cleared by a Wipe without either of them being edited
 
         for index in scene.endlessIITimedClocks.indices {
             let fresh = mayhem()

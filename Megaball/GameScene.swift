@@ -93,6 +93,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalPaddleClock = EndlessIIClock()
 	var endlessIIPaddleHaloClock = EndlessIIClock()
 	var endlessIIBallSteeringClock = EndlessIIClock()
+
+	/// Randomised Bounce (§5.4): while it runs, the ball leaves every surface at an angle of
+	/// its own choosing rather than the one it arrived at. Timed, harmful, and its own kind
+	/// of unfair - which is the point of it being uncommon rather than common.
+	var endlessIIRandomisedBounceClock = EndlessIIClock()
 	var endlessIIInertPaddleClock = EndlessIIClock()
 	var endlessIIFlippedAngleClock = EndlessIIClock()
 	var endlessIIReversedControlsClock = EndlessIIClock()
@@ -400,7 +405,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 51)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 52)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -937,6 +942,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpLock = SKTexture(image: PowerUpIcon.lock)
 	let powerUpKey = SKTexture(image: PowerUpIcon.key)
 	let powerUpWipe = SKTexture(image: PowerUpIcon.wipe)
+	let powerUpRandomisedBounce = SKTexture(image: PowerUpIcon.randomisedBounce)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1113,7 +1119,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -4748,6 +4754,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[50] += 1
 
+		case powerUpRandomisedBounce:
+		// 51 - Randomised Bounce
+			endlessIICollectRandomisedBounce()
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[51] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -5677,6 +5689,17 @@ laserTimer?.invalidate()
 			var ySpeed = ball.physicsBody!.velocity.dy
 			let currentSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed)
 			var angleDeg = angleDegInput
+
+			if endlessIIRandomisesBounces(for: ball) {
+				angleDeg = GameScene.randomisedBounceAngle(from: angleDeg,
+														  minimumDeg: minAngleDeg)
+			}
+			// **Randomised Bounce** (§5.4). Every corrected bounce comes through here -
+			// paddle, wall, brick, backstop, seam - and `angleDegInput` is already taken from
+			// the *approach* rather than from the engine's reported velocity, which is the
+			// trap §8.6 warns about: randomising a velocity that has already been turned
+			// round would be two bounces' arithmetic on one bounce. Applied before the
+			// loop-breaker below, so a ball thrown into a repeat still gets broken out of it
 
 			if isExtra == false,
 			   ballLoopDetector.recordBounce(x: ball.position.x, y: ball.position.y,

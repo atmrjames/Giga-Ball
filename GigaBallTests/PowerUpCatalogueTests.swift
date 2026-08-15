@@ -334,8 +334,12 @@ final class InGameRecentsTests: XCTestCase {
         let shipped = Set(LevelPackSetup().powerUpNameArray)
         let catalogued = Set(PowerUpCatalogue.all.map(\.name))
 
-        XCTAssertEqual(catalogued.subtracting(shipped), ["Randomised Bounce"],
-                       "designed and not yet built - anything else here needs a queue row")
+        XCTAssertTrue(catalogued.subtracting(shipped).isEmpty,
+                      """
+                      Designed and not yet built. Round 124 built Randomised Bounce, the last \
+                      one, so this list is empty for the first time - anything that appears \
+                      here again needs a queue row saying when it will exist
+                      """)
         XCTAssertTrue(shipped.subtracting(catalogued).isEmpty,
                       "the game has a power-up this file has never heard of")
     }
@@ -360,7 +364,8 @@ final class InGameRecentsTests: XCTestCase {
         XCTAssertEqual(boundary, 28)
         XCTAssertEqual(names[boundary-1], "Shrink Ball", "the last of the original set")
         XCTAssertEqual(names[boundary], "Multi-Ball", "the first of Mayhem's")
-        XCTAssertEqual(names.count - boundary, 23, "Mayhem's own, Wipe included")
+        XCTAssertEqual(names.count - boundary, 24,
+                       "Mayhem's own, Wipe and Randomised Bounce included")
         XCTAssertEqual(boundary, PowerUpCatalogue.existing.count)
     }
 

@@ -47,6 +47,9 @@ extension GameScene {
         // rather than a fixture
         powerUpProbArray[46] = gameMode == .endlessII ? 5 : 0 // Auto-Aim - uncommon
         powerUpProbArray[47] = gameMode == .endlessII ? 3 : 0 // Wrap-Around - rare (§5.4)
+        powerUpProbArray[51] = gameMode == .endlessII ? 5 : 0 // Randomised Bounce -
+        // uncommon and bad (§5.4). Unconditional, unlike the Lock and the Wipe below:
+        // it takes something away whatever else is running, so it is never a dud
         powerUpProbArray[50] = endlessIIWipeMayDrop ? 5 : 0 // Wipe - uncommon (§5.4), and
         // conditional for the same reason a Lock is: with nothing running it takes nothing
         // away, and a bad power-up that does nothing is a gift rather than a dud

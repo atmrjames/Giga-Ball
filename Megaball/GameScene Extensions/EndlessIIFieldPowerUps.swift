@@ -336,6 +336,7 @@ extension GameScene {
         \.endlessIIWreckingBallClock, \.endlessIIAuraClock, \.endlessIIDescentClock,
         \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
+        \.endlessIIRandomisedBounceClock,
     ]
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
@@ -607,12 +608,51 @@ extension GameScene {
             endlessIIWreckingBallClock.run(down: endlessIIClockDelta)
             endlessIIAuraClock.run(down: endlessIIClockDelta)
             endlessIIDescentClock.run(down: endlessIIClockDelta)
+            endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
     }
 
+    // MARK: - Randomised Bounce
+
+    /// How long one collection lasts, and how much of the angle it throws away.
+    static let endlessIIRandomisedBounceDuration: TimeInterval = 15
+    static let endlessIIRandomisedBounceSpread: Double = 35
+
+    /// Starts or extends Randomised Bounce (§5.4: timed, extends its own duration).
+    func endlessIICollectRandomisedBounce() {
+        endlessIIRandomisedBounceClock.collect(GameScene.endlessIIRandomisedBounceDuration)
+    }
+
+    /// The angle a bounce leaves at while this runs: the honest one, thrown off by up to
+    /// `spread` degrees either way.
+    ///
+    /// Pure, so the rule can be tested without a running game, and separate from the scene
+    /// so the one place that applies it cannot disagree with the one place that describes it.
+    ///
+    /// **Never past the minimum.** The game's whole angle discipline is that a bounce is
+    /// never so near horizontal that the ball stops coming down (`ballHorizontalControl`,
+    /// `breakHorizontalRuns`), and a bad power-up is allowed to be unfair but not to hand the
+    /// player a ball that can never be lost or played. So the offset is clamped back inside
+    /// the launchable arc rather than allowed out of it.
+    static func randomisedBounceAngle(from angleDeg: Double, minimumDeg: Double,
+                                      spread: Double = endlessIIRandomisedBounceSpread,
+                                      offset: Double? = nil) -> Double {
+        let thrown = offset ?? Double.random(in: -spread...spread)
+        return min(max(angleDeg + thrown, minimumDeg), 180 - minimumDeg)
+    }
+
+    /// Whether this bounce should be randomised at all.
+    ///
+    /// Only the main ball and only while the clock runs. An extra ball keeping its honest
+    /// bounce while the first one lies would be stranger than either.
+    func endlessIIRandomisesBounces(for subject: SKSpriteNode) -> Bool {
+        gameMode == .endlessII && endlessIIRandomisedBounceClock.isRunning
+    }
+
     func endlessIIResetFieldPowerUps() {
+        endlessIIRandomisedBounceClock.reset()
         endlessIIWreckingBallClock.reset()
         endlessIIAuraClock.reset()
         endlessIIDescentClock.reset()

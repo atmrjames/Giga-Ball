@@ -426,6 +426,39 @@ enum PowerUpIcon {
         // One stroke through all three, heavier than the rings it cancels
     }
 
+    /// A ball meeting a surface and leaving it three ways at once.
+    ///
+    /// The arriving line is solid and the three departing ones fade, because what the
+    /// power-up takes away is knowing which of them you will get - drawn as a fan rather
+    /// than as dice or a question mark, so the picture is of the *bounce* going wrong
+    /// rather than of randomness in the abstract.
+    static let randomisedBounce: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.08)
+
+        let hit = CGPoint(x: rect.midX, y: rect.midY + rect.height*0.2)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.16,
+                                 y: rect.minY + rect.height*0.18))
+        context.addLine(to: hit)
+        context.strokePath()
+        // The approach, solid: the only part of the bounce still known
+
+        for (index, angle) in [-0.95, -0.45, 0.1].enumerated() {
+            context.setAlpha(0.85 - CGFloat(index)*0.2)
+            let length = rect.width*0.34
+            context.move(to: hit)
+            context.addLine(to: CGPoint(x: hit.x + cos(angle)*length,
+                                        y: hit.y - sin(angle)*length))
+            context.strokePath()
+        }
+        context.setAlpha(1)
+
+        context.setLineWidth(rect.width*0.09)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: hit.y + rect.height*0.02))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: hit.y + rect.height*0.02))
+        context.strokePath()
+        // The surface itself, heavier than the paths leaving it
+    }
+
     /// The Daily Challenge's menu mark: a calendar with today burning in it.
     static let dailyChallenge: UIImage = badge { context, rect in
         stroke(context, width: rect.width*0.06)
