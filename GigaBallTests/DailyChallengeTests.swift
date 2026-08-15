@@ -238,27 +238,18 @@ final class DailyChallengeTests: XCTestCase {
                        "a day joins the total when its post lands, not before (§12.5)")
     }
 
-    /// "Thousands separators everywhere except in the game itself" (play-test round 33).
-    /// The daily's score line is one of the places that was still printing a bare integer,
-    /// and it prints through the same door the statistics page uses, so the separator is
-    /// the reader's own rather than a comma baked into a string.
-    /// "On a Classic single-level day, name the level and its pack, then 'High score on a
-    /// single level' underneath, rather than the generic line it shows now" (round 90). The
-    /// wording matters: clearing the level ends the run, but the score is what the board
-    /// ranks, and "clear it for the score" had the day reading as pass-or-fail.
-    func testAClassicDaySaysWhatItIsScoredOn() {
-        XCTAssertEqual(DailyChallengeGenerator.classicObjective,
-                       "High score on a single level")
-    }
-
-    func testTheDailysScoreLineIsGrouped() {
-        XCTAssertEqual(DailyChallengePosting.scoreText(1_234_567, mode: .classic),
-                       StatsPage.grouped(1_234_567))
-        XCTAssertEqual(DailyChallengePosting.scoreText(1_234, mode: .endlessII),
-                       StatsPage.grouped(1_234) + "m",
-                       "a height keeps its metres, grouped in front of them")
-        XCTAssertFalse(DailyChallengePosting.scoreText(1_234_567, mode: .classic)
-                        .contains("1234567"))
+    /// "The game scores shouldn't have thousand separators anywhere. Other values can, just
+    /// not game scores" (play-test round 126, narrowing round 33). A score is read as a score
+    /// wherever it is printed, and the same shape on a results screen as on the field is the
+    /// point - separators belong to counts and totals, which is where the statistics page
+    /// still uses them.
+    func testTheDailysScoreLineIsNotGrouped() {
+        XCTAssertEqual(DailyChallengePosting.scoreText(1_234_567, mode: .classic), "1234567")
+        XCTAssertEqual(DailyChallengePosting.scoreText(1_234, mode: .endlessII), "1234m",
+                       "a height keeps its metres and loses nothing else")
+        XCTAssertEqual(StatsPage.grouped(1_234_567, locale: Locale(identifier: "en_GB")),
+                       "1,234,567",
+                       "the counts on the statistics page keep their separators")
     }
 
     func testThePracticeNoticeInterruptsOnlyThePressesItAppliesTo() {

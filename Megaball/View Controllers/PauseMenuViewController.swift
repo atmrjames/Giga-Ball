@@ -900,13 +900,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             levelNameLabel.text = ""
             
             scoreLabelTitle.text = "Height"
-            scoreLabel.text = StatsPage.grouped(height) + "m"
-            // Grouped, like every number the app prints outside the scene itself (play-test
-            // round 33). `StatsPage.grouped` is the one door, so the separator is the
-            // reader's own - a full stop for a German player, not a hard-coded comma. The
-            // rule stops at `GameScene`, which draws through `FixedWidthNumberNode` and
-            // must not group: a separator appearing as a live score crosses a thousand is
-            // movement in the one place the eye is already watching
+            scoreLabel.text = String(height) + "m"
+            // **A score is never grouped, wherever it is printed** (play-test round 126,
+            // narrowing round 33): separators belong to counts and totals - bricks
+            // destroyed, lasers fired, play time - and a score or a height is read as a
+            // score, the same shape here as on the field. Round 108 grouped these too and
+            // that was a step past what was asked for
             if sender != "Pause" { startTally(to: height, suffix: "m") }
             // Only at the end of a run. Pausing mid-run to watch your own height counted back
             // to you would be telling you something you already know
@@ -925,10 +924,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
                 }
-                highscoreLabel.text = StatsPage.grouped(heightBest) + "m"
+                highscoreLabel.text = String(heightBest) + "m"
             } else {
                 let heightBest = runs.max() ?? 0
-                highscoreLabel.text = StatsPage.grouped(heightBest) + "m"
+                highscoreLabel.text = String(heightBest) + "m"
                 if runs.count <= 1 {
                     scoreLabelTitle.text = "New Best Height"
                     highscoreLabelTitle.text = "Previous Best"
@@ -940,7 +939,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                     if height > previousBestHeight {
                         scoreLabelTitle.text = "New Best Height"
                         highscoreLabelTitle.text = "Previous Best"
-                        highscoreLabel.text = StatsPage.grouped(previousBestHeight) + "m"
+                        highscoreLabel.text = String(previousBestHeight) + "m"
                     }
                 }
             }
@@ -970,7 +969,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             }
 
             scoreLabelTitle.text = "Score"
-            scoreLabel.text = StatsPage.grouped(score)
+            scoreLabel.text = String(score)
             if sender != "Pause" {
                 startTally(to: score, suffix: "")
             }
@@ -990,7 +989,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 highscoreLabelTitle.text = "Highscore"
                 // Get current highscore from level or pack
 
-                highscoreLabel.text = StatsPage.grouped(previousHighscore)
+                highscoreLabel.text = String(previousHighscore)
                 if score > previousHighscore {
                     scoreLabelTitle.text = "New Highscore"
                     highscoreLabelTitle.text = "Previous Highscore"
@@ -1293,7 +1292,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         // Eased, so it decelerates into the figure rather than stopping dead
         let progress = elapsed/PauseMenuViewController.heightTallyDuration
         let eased = 1 - pow(1 - progress, 3)
-        scoreLabel.text = StatsPage.grouped(Int((Double(heightTallyTarget)*eased).rounded())) + heightTallySuffix
+        scoreLabel.text = String(Int((Double(heightTallyTarget)*eased).rounded())) + heightTallySuffix
 
         // The same ticking the level summary gives a score, for the same reason: a number
         // climbing in silence is a number, and a number you can feel climbing is a result
@@ -1312,7 +1311,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         guard heightTallyLink != nil else { return }
         heightTallyLink?.invalidate()
         heightTallyLink = nil
-        scoreLabel.text = StatsPage.grouped(heightTallyTarget) + heightTallySuffix
+        scoreLabel.text = String(heightTallyTarget) + heightTallySuffix
     }
 }
 

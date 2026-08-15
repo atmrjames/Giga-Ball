@@ -85,6 +85,21 @@ enum PaddleSpeed {
         // a fresh install would silently get the slowest paddle instead of the default
     }
 
+    /// The next step up, wrapping back to the slowest after the fastest.
+    ///
+    /// The settings row cycles rather than opening (James, round 126) - it always did, and
+    /// the try-out screen is a place to *check* a speed rather than the only way to change
+    /// one. Quarter steps make nine stops, which is a few more taps than the old five and
+    /// still a reasonable walk from one end to the other.
+    @discardableResult
+    static func cycle(in defaults: UserDefaults = .standard) -> CGFloat {
+        let next = snapped(stored(defaults) + step)
+        let wrapped = next > range.upperBound || next == stored(defaults)
+            ? range.lowerBound : next
+        store(wrapped, in: defaults)
+        return wrapped
+    }
+
     static func store(_ value: CGFloat, in defaults: UserDefaults = .standard) {
         defaults.set(Double(snapped(value)), forKey: key)
         defaults.set(legacyIndex(for: value), forKey: legacyKey)

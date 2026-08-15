@@ -253,7 +253,7 @@ final class DailyCardView: UIView {
             attributes: [.font: UIFont.systemFont(ofSize: 14),
                          .foregroundColor: tint]))
         line.append(NSAttributedString(
-            string: StatsPage.grouped(score) + unit,
+            string: String(score) + unit,
             attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
 

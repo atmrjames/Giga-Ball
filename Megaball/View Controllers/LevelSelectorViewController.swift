@@ -144,7 +144,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.statDescription.text = "Pack Highscore"
                 let highScore = totalStatsArray[0].packHighScores[packNumber!-2]
                 if highScore > 0 {
-                    cell.statValue.text = StatsPage.grouped(highScore)
+                    cell.statValue.text = String(highScore)
                 } else {
                     cell.statValue.text = "Not set"
                 }

@@ -10,6 +10,16 @@ import SpriteKit
 import GameplayKit
 
 extension GameScene {
+
+    /// The height of row zero for the mode being resumed.
+    ///
+    /// Stated once and named, because it is the same question the *save* asks when it turns
+    /// a brick's height into a row index - and the two disagreeing is exactly what round
+    /// 126 was.
+    var resumedBrickTopRow: CGFloat {
+        endlessMode ? yBrickOffsetEndless : yBrickOffset
+    }
+
     func resumeBrickCreation() {
         guard let savedGame else { return }
         // Same as resumeGame: bound once instead of unwrapped at every use
@@ -131,8 +141,20 @@ extension GameScene {
             
             let brickPositionX = savedGame.brickXPositions[i]
             let brickPositionY = savedGame.brickYPositions[i]
-            brick.position = CGPoint(x: gameWidth/2 - brickWidth/2 - brickWidth*CGFloat(brickPositionX), y: yBrickOffset - brickHeight*CGFloat(brickPositionY))
-            // Assign brick position
+            let topRow = resumedBrickTopRow
+            brick.position = CGPoint(x: gameWidth/2 - brickWidth/2 - brickWidth*CGFloat(brickPositionX),
+                                     y: topRow - brickHeight*CGFloat(brickPositionY))
+            // Assign brick position.
+            //
+            // **The row index is measured from the mode's own top row, and must be restored
+            // against the same one** (play-test round 126). The save writes it against
+            // `yBrickOffsetEndless` in the endless modes, whose field starts at the top of
+            // the play area, and against `yBrickOffset` in Classic, which leaves a two-row
+            // gap under the bar - and this line restored *both* against the Classic offset.
+            // Every resume therefore put the whole field two brick rows lower than it was,
+            // and because the shifted field is what gets saved next time it happened again
+            // on every quit: "each time I quit the app and restarted, the bricks were lower",
+            // eventually below the line the run is lost at
             
             brickArray.append(brick)
         }

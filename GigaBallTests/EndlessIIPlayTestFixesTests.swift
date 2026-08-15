@@ -814,3 +814,44 @@ final class FrameRateIndependenceTests: XCTestCase {
                        + "second into the future")
     }
 }
+
+/// "After pausing, quitting and resuming in Endless Mayhem the bricks were lower - and each
+/// time I quit and restarted they were lower again" (play-test round 126). A saved row index
+/// is measured from the mode's own top row, and was being restored against Classic's.
+final class ResumedFieldKeepsItsHeightTests: XCTestCase {
+
+    private func scene(_ mode: GameMode) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.endlessMode = mode != .classic
+        scene.brickHeight = 20
+        scene.yBrickOffset = 500
+        scene.yBrickOffsetEndless = 540
+        // Forty apart, which is the two-row gap Classic leaves under the top bar and the
+        // endless modes do not
+        return scene
+    }
+
+    func testTheTopRowARowIndexIsMeasuredFromIsTheModesOwn() {
+        let mayhem = scene(.endlessII)
+        XCTAssertEqual(mayhem.resumedBrickTopRow, mayhem.yBrickOffsetEndless)
+
+        let classic = scene(.classic)
+        XCTAssertEqual(classic.resumedBrickTopRow, classic.yBrickOffset)
+    }
+
+    /// The compounding is what made this urgent rather than cosmetic: the shifted field is
+    /// what gets saved next time, so every quit moved it another two rows down until the
+    /// bricks were below the line the run ends at.
+    func testResumingRepeatedlyDoesNotWalkTheFieldDownwards() {
+        let mayhem = scene(.endlessII)
+        var height = mayhem.resumedBrickTopRow - mayhem.brickHeight*3
+
+        for _ in 0..<5 {
+            let row = ((mayhem.resumedBrickTopRow - height)/mayhem.brickHeight).rounded()
+            height = mayhem.resumedBrickTopRow - mayhem.brickHeight*row
+        }
+        XCTAssertEqual(height, mayhem.yBrickOffsetEndless - mayhem.brickHeight*3,
+                       "five saves and resumes leave the row exactly where it started")
+    }
+}

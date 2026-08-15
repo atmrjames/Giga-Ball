@@ -168,12 +168,12 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                     ? GameMode.endlessII.name : GameMode.endless.name
                 // The save has no mode field; the remembered mode does, and a level-0
                 // save can only be the mode that was being played when it was written
-                scoreLabel.attributedText = resumeDetail(title: "Height", value: StatsPage.grouped(height) + "m", footnote: nil)
+                scoreLabel.attributedText = resumeDetail(title: "Height", value: String(height) + "m", footnote: nil)
                 // Endless has a single life and no counter anywhere else
             } else {
                 scoreLabel.attributedText = resumeDetail(
                     title: "Score",
-                    value: StatsPage.grouped(score),
+                    value: String(score),
                     footnote: lives == 1 ? "1 life left" : "\(lives) lives left")
             }
             
@@ -199,8 +199,8 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
                 scoreLabel.attributedText = resumeDetail(
                     title: challenge.mode == .classic ? "Score" : "Height",
                     value: challenge.mode == .classic
-                        ? StatsPage.grouped(savedGame.totalScore)
-                        : StatsPage.grouped(savedGame.endlessHeight) + "m",
+                        ? String(savedGame.totalScore)
+                        : String(savedGame.endlessHeight) + "m",
                     footnote: footnote)
                 // Said before the resume, never discovered after it (§12.5) - the same
                 // rule the briefing screen follows for whether an attempt posts

@@ -306,6 +306,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 let speed = PaddleSpeed.stored(defaults)
                 cell.settingState.text = PaddleSpeed.label(speed)
                 cell.setStateColour(SettingsViewController.paddleSpeedColour(for: speed))
+                addPaddleSpeedTryButton(to: cell)
+                // The row cycles the setting as it always did (James, round 126); the
+                // chevron beside the name is what opens the screen to feel it on
                 // The row shows the number and opens the screen that lets it be felt
                 // (play-test round 13). The five-step ramp of hard-coded greys is now a
                 // ramp derived from where the value sits in the range, because the value
@@ -428,6 +431,46 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Wider than Apple's 44 (play-test round 21: still too easy to miss). The glyph
             // inside is unchanged, so it looks the same and simply catches more
         ])
+    }
+
+    /// The chevron on the Paddle Speed row: the door to the try-out screen.
+    ///
+    /// Shares the information button's tag and guards deliberately - one row can carry one
+    /// of these, and everything that makes the button survivable inside a cell (the 56pt
+    /// target, the touch-down stamp, `selectionCameFromInfoButton`) is machinery that only
+    /// works if there is exactly one of them to find.
+    func addPaddleSpeedTryButton(to cell: SettingsTableViewCell) {
+        let chevron = UIButton(type: .system)
+        chevron.tag = Self.swipeInfoTag
+        chevron.setImage(UIImage(systemName: "chevron.forward.circle",
+                                 withConfiguration: UIImage.SymbolConfiguration(
+                                     pointSize: 20, weight: .regular)), for: .normal)
+        chevron.tintColor = cell.isGlass
+            ? SettingsTableViewCell.glassForeground.withAlphaComponent(0.7)
+            : #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.addTarget(self, action: #selector(paddleSpeedTryTapped), for: .touchUpInside)
+        chevron.addTarget(self, action: #selector(swipeInfoTouchedDown), for: .touchDown)
+        cell.contentView.addSubview(chevron)
+        cell.contentView.bringSubviewToFront(chevron)
+
+        let title = cell.settingDescription.text ?? ""
+        let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
+        let written = (title as NSString).size(withAttributes: [.font: font]).width
+
+        NSLayoutConstraint.activate([
+            chevron.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
+                                             constant: written + 2),
+            chevron.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
+            chevron.widthAnchor.constraint(equalToConstant: 56),
+            chevron.heightAnchor.constraint(equalToConstant: 56),
+        ])
+    }
+
+    @objc func paddleSpeedTryTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        infoTappedAt = Date().timeIntervalSince1970
+        moveToPaddleSpeed()
     }
 
     @objc func swipeInfoTouchedDown() {
@@ -576,9 +619,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 }
             case 7:
             // Paddle speed
-                moveToPaddleSpeed()
-                // Opens rather than cycles: a multiplier means nothing until it is felt,
-                // and cycling made trying one out a trip through a whole level
+                if infoWasJustTapped { break }
+                if selectionCameFromInfoButton(tableView, at: indexPath) {
+                    moveToPaddleSpeed()
+                    break
+                }
+                // A press inside the chevron opens the try-out screen; a press anywhere else
+                // on the row cycles, which is what this row has always done and what round
+                // 126 asked for back. The same pair of guards the swipe-up row uses, and for
+                // the same reason: a touch just off the glyph reaches the row underneath
+                PaddleSpeed.cycle(in: defaults)
             case 8:
             // Swipe up pause
                 if infoWasJustTapped { break }
