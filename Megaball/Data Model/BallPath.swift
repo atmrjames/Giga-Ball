@@ -73,10 +73,16 @@ enum BallPath {
     ///   - brickBounces: how many bricks the path may bounce off before stopping. Zero, the
     ///     default, stops at the first - which is what the Landing Marker wants and what the
     ///     Trajectory Line wanted before round 42.
+    ///   - absorbers: bricks the path **ends at** rather than bounces off, whatever the bounce
+    ///     budget says. Portals (play-test round 128): the ball does not come back off one, it
+    ///     goes in - and where it comes out is chosen at the moment of entry, so a line that
+    ///     bounced off a portal would draw a wall and a line that carried on through would
+    ///     draw a hole. Ending at the mouth is the only honest one of the three.
     static func predict(from start: CGPoint, velocity: CGVector, radius: CGFloat,
                         bounds: Bounds, bricks: [CGRect],
                         maximumLength: CGFloat = 0,
-                        brickBounces: Int = 0) -> Prediction {
+                        brickBounces: Int = 0,
+                        absorbers: [CGRect] = []) -> Prediction {
         let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
         guard speed > 0 else {
             return Prediction(points: [start], landing: nil, stoppedAtBrick: false)
@@ -118,6 +124,11 @@ enum BallPath {
             travelled += nearest
 
             if let brick = toBrick, nearest == brick.distance {
+                if absorbers.contains(where: { $0 == brick.rect }) {
+                    stoppedAtBrick = true
+                    break
+                }
+                // Swallowed rather than reflected - see `absorbers`
                 guard bricksLeft > 0 else {
                     stoppedAtBrick = true
                     break
@@ -200,15 +211,20 @@ enum BallPath {
     /// them: the slab test below already works out which pair of faces was crossed last on
     /// the way in, and that is the face struck. It simply was not asked for before.
     private static func firstBrick(from point: CGPoint, direction: CGVector, radius: CGFloat,
-                                   bricks: [CGRect]) -> (distance: CGFloat, vertical: Bool)? {
-        var nearest: (distance: CGFloat, vertical: Bool)?
+                                   bricks: [CGRect])
+    -> (distance: CGFloat, vertical: Bool, rect: CGRect)? {
+        var nearest: (distance: CGFloat, vertical: Bool, rect: CGRect)?
         for brick in bricks {
             let grown = brick.insetBy(dx: -radius, dy: -radius)
             guard grown.contains(point) == false else { continue }
             guard let hit = entry(into: grown, from: point, direction: direction) else { continue }
-            if nearest == nil || hit.distance < nearest!.distance { nearest = hit }
+            if nearest == nil || hit.distance < nearest!.distance {
+                nearest = (hit.distance, hit.vertical, brick)
+            }
         }
         return nearest
+        // The rectangle comes back with the hit so the caller can ask whether *that* brick is
+        // one the path ends at rather than bounces off - see `absorbers`
     }
 
     /// Where a ray enters a rectangle, by the slab method.

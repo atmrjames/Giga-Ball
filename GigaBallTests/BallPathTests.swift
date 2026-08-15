@@ -400,3 +400,47 @@ final class TrajectoryRespectsPowerUpsTests: XCTestCase {
         XCTAssertGreaterThan(plain.points.count, 2)
     }
 }
+
+/// "Ball trajectory power up should also respect portals" (play-test round 128). A Portal is
+/// neither a wall nor a hole: the ball goes in and comes out somewhere chosen at the moment
+/// of entry, so the only honest line ends at the mouth.
+final class TrajectoryRespectsPortalsTests: XCTestCase {
+
+    private let bounds = BallPath.Bounds(left: -100, right: 100, ceiling: 300, paddleLine: -200)
+    private let portal = CGRect(x: -20, y: 100, width: 40, height: 20)
+
+    func testTheLineEndsAtAPortalRatherThanBouncingOffIt() {
+        let up = CGVector(dx: 0, dy: 100)
+
+        let asAWall = BallPath.predict(from: .zero, velocity: up, radius: 5, bounds: bounds,
+                                       bricks: [portal], brickBounces: 2)
+        XCTAssertFalse(asAWall.stoppedAtBrick,
+                       "with a bounce budget an ordinary brick is bounced off, not stopped at")
+
+        let asAPortal = BallPath.predict(from: .zero, velocity: up, radius: 5, bounds: bounds,
+                                         bricks: [portal], brickBounces: 2,
+                                         absorbers: [portal])
+        XCTAssertTrue(asAPortal.stoppedAtBrick, "the line ends where the ball goes in")
+        XCTAssertEqual(asAPortal.points.last?.y ?? 0, portal.minY - 5, accuracy: 0.001)
+    }
+
+    /// The budget is not the mechanism: a portal ends the line even when bounces remain, and
+    /// an ordinary brick beyond it is never reached
+    func testAPortalEndsTheLineWhateverTheBounceBudgetSays() {
+        let beyond = CGRect(x: -20, y: 200, width: 40, height: 20)
+        let path = BallPath.predict(from: .zero, velocity: CGVector(dx: 0, dy: 100), radius: 5,
+                                    bounds: bounds, bricks: [portal, beyond],
+                                    brickBounces: 5, absorbers: [portal])
+        XCTAssertTrue(path.stoppedAtBrick)
+        XCTAssertLessThan(path.points.last?.y ?? 0, beyond.minY,
+                          "nothing past the portal is drawn, because nothing past it is known")
+    }
+
+    func testAnOrdinaryBrickIsUnaffectedByThePortalRule() {
+        let brick = CGRect(x: -20, y: 100, width: 40, height: 20)
+        let path = BallPath.predict(from: .zero, velocity: CGVector(dx: 0, dy: 100), radius: 5,
+                                    bounds: bounds, bricks: [brick], brickBounces: 1,
+                                    absorbers: [])
+        XCTAssertFalse(path.stoppedAtBrick, "it bounces, as it always has")
+    }
+}

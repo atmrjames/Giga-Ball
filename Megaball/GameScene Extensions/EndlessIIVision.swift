@@ -87,6 +87,7 @@ extension GameScene {
         }
 
         let bricks = endlessIIVisionBricks()
+        let portals = endlessIIVisionPortals()
         let bounds = endlessIIVisionBounds()
         var lineIndex = 0
         var markerIndex = 0
@@ -109,7 +110,8 @@ extension GameScene {
                                         bricks: passesThrough ? [] : bricks,
                                         maximumLength: endlessIITrajectoryRemaining > 0 ? reach : 0,
                                         brickBounces: endlessIITrajectoryRemaining > 0
-                                            ? GameScene.endlessIITrajectoryBrickBounces : 0)
+                                            ? GameScene.endlessIITrajectoryBrickBounces : 0,
+                                        absorbers: passesThrough ? [] : portals)
 
             if endlessIITrajectoryRemaining > 0, path.points.count > 1 {
                 var points = path.points
@@ -166,6 +168,23 @@ extension GameScene {
     /// at its sprite's centre - the frame is what the ball actually meets. Flashing bricks
     /// that are currently passable are left in: the ball may pass, but so may it not by the
     /// time it arrives, and a line through a brick that turns solid is the worse lie.
+    /// The portals, which a predicted line **ends at** rather than bounces off.
+    ///
+    /// A Portal is not a wall (play-test round 128): the ball does not come back off one, it
+    /// goes in. Nor is it a hole - a line drawn straight through would promise a flight the
+    /// ball will not take. And where it comes *out* cannot be predicted honestly either: a
+    /// pair chooses its exit at the moment of entry. So the line ends at the mouth, which is
+    /// the only one of the three that is true.
+    func endlessIIVisionPortals() -> [CGRect] {
+        var portals: [CGRect] = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard node.isHidden == false,
+                  (node as? SKSpriteNode)?.endlessIIRole == .portal else { return }
+            portals.append(node.frame)
+        }
+        return portals
+    }
+
     func endlessIIVisionBricks() -> [CGRect] {
         var bricks: [CGRect] = []
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
