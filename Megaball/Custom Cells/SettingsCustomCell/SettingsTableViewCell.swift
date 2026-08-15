@@ -305,7 +305,7 @@ class SettingsTableViewCell: UITableViewCell {
 
     /// Turns the row's light card into a glass one. iOS 26 and later; a no-op before that,
     /// so a caller can ask unconditionally and older devices keep the card they have.
-    func applyGlass(cornerRadius: CGFloat = 14) {
+    func applyGlass(cornerRadius: CGFloat = SettingsTableViewCell.cardCornerRadius) {
         guard #available(iOS 26.0, *) else { return }
         guard glassView == nil else { return }
 
@@ -366,9 +366,36 @@ class SettingsTableViewCell: UITableViewCell {
     ///   theme swatches, app icons, brick art and power-up icons are pictures, and template
     ///   rendering would flatten every one of them to a white silhouette. There is no safe
     ///   default here, so every caller has to say which kind of image it is holding.
-    func setIcon(_ image: UIImage?, recolour: Bool) {
+    func setIcon(_ image: UIImage?, recolour: Bool, roundedLikeTheCard: Bool = false) {
         iconImage.image = (isGlass && recolour)
             ? image?.withRenderingMode(.alwaysTemplate) : image
+        applyIconCorners(concentric: roundedLikeTheCard)
+    }
+
+    /// The row card's own corner radius, which anything cut to match has to know.
+    static let cardCornerRadius: CGFloat = 14
+
+    /// Rounds a picture icon to sit *concentric* with the card it is inside.
+    ///
+    /// Concentric means the inner curve and the outer curve share a centre, which is what
+    /// makes the gap between them look even all the way round - so the inner radius is the
+    /// card's minus how far the icon is inset from it, not an arbitrary softening. Apple's
+    /// own containers do this and the eye notices when it is missed: a square-ish icon inside
+    /// a rounded row reads as a sticker rather than as part of the card (James, round 134).
+    ///
+    /// Only for pictures. A recoloured glyph has no edges for a corner to cut.
+    private func applyIconCorners(concentric: Bool) {
+        guard concentric else {
+            iconImage.layer.cornerRadius = 0
+            iconImage.layer.masksToBounds = false
+            return
+        }
+        let inset = max(0, iconImage.frame.minX - cellView2.frame.minX)
+        iconImage.layer.cornerRadius = max(0, SettingsTableViewCell.cardCornerRadius - inset)
+        iconImage.layer.cornerCurve = .continuous
+        iconImage.layer.masksToBounds = true
+        // `.continuous` for the same reason the card uses a shaped corner rather than a
+        // clipped one - a circular-arc corner beside a squircle is visibly a different curve
     }
 
     /// Colours the row's name, keeping the locked/unlocked distinction on a glass row.

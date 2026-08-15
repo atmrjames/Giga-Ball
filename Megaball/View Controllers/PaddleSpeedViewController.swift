@@ -53,6 +53,21 @@ enum PaddleSpeed {
         return (clamped/step).rounded()*step
     }
 
+    /// The settings row's icon for a speed: one per quarter step, `iconPaddleSensitivity1`
+    /// through `iconPaddleSensitivity3`.
+    ///
+    /// The name is built from the value rather than listed against it, so the nine icons and
+    /// the nine steps cannot fall out of step with each other - the suffix is the number with
+    /// its decimal point and any trailing zero removed, which is what James named the files:
+    /// 1.00 is `1`, 1.25 is `125`, 1.50 is `15`, 2.75 is `275`.
+    static func iconName(for value: CGFloat) -> String {
+        let snapped = snapped(value)
+        var digits = String(format: "%.2f", Double(snapped))
+            .replacingOccurrences(of: ".", with: "")
+        while digits.count > 1, digits.hasSuffix("0") { digits.removeLast() }
+        return "iconPaddleSensitivity" + digits
+    }
+
     /// How the speed reads on the settings row: the same "x1.50" the row has always shown.
     static func label(_ value: CGFloat) -> String {
         String(format: "x%.2f", Double(snapped(value)))

@@ -229,10 +229,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingDescription.text = "Ball & Paddle Theme"
                     cell.centreLabel.text = ""
                     let themes = LevelPackSetup().themeIconArray
-                    cell.setIcon(themes.indices.contains(ballSetting)
-                                 ? themes[ballSetting]
-                                 : UIImage(named: "iconTheme.png")!,
-                                 recolour: themes.indices.contains(ballSetting) == false)
+                    let hasArtwork = themes.indices.contains(ballSetting)
+                    cell.setIcon(hasArtwork ? themes[ballSetting]
+                                            : UIImage(named: "iconTheme.png")!,
+                                 recolour: hasArtwork == false,
+                                 roundedLikeTheCard: hasArtwork)
+                    // The theme art is a picture with its own square edges, so it is cut to
+                    // sit concentric with the row's rounded card (James, round 134). The
+                    // fallback glyph is not - a template has no edges to cut
                     // The theme you are actually playing with, the way the App Icon row shows
                     // the icon you are wearing (play-test round 85). Recoloured only when it
                     // falls back to the generic glyph - a theme icon is a picture
@@ -242,7 +246,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Sounds
                 cell.settingDescription.text = "Sounds"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named:"iconSound.png")!, recolour: true)
+                cell.setIcon(UIImage(named: soundsSetting ? "iconSound" : "iconSoundOff")!, recolour: true)
                 if soundsSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -254,7 +258,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Music
                 cell.settingDescription.text = "Music"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named:"iconMusic.png")!, recolour: true)
+                cell.setIcon(UIImage(named: musicSetting ? "iconMusic" : "iconMusicOff")!, recolour: true)
                 if musicSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -270,7 +274,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "Haptics"
                     cell.centreLabel.text = ""
-                    cell.setIcon(UIImage(named:"iconHaptics.png")!, recolour: true)
+                    cell.setIcon(UIImage(named: hapticsSetting ? "iconHaptics" : "iconHapticsOff")!, recolour: true)
                     if hapticsSetting {
                         cell.settingState.text = "on"
                         cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -290,7 +294,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named:"iconParallax.png")!, recolour: true)
+                cell.setIcon(UIImage(named: parallaxSetting ? "iconParallax" : "iconParallaxOff")!, recolour: true)
                 if parallaxSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
@@ -302,8 +306,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Paddle sensitivity
                 cell.settingDescription.text = "Paddle Speed"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named:"iconPaddleSensitivity.png")!, recolour: true)
                 let speed = PaddleSpeed.stored(defaults)
+                cell.setIcon(UIImage(named: PaddleSpeed.iconName(for: speed))!, recolour: true)
                 cell.settingState.text = PaddleSpeed.label(speed)
                 cell.setStateColour(SettingsViewController.paddleSpeedColour(for: speed))
                 addPaddleSpeedTryButton(to: cell)
@@ -317,7 +321,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Swipe up to pause
                 cell.settingDescription.text = "Swipe Up To Pause"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named:"iconPause.png")!, recolour: true)
+                cell.setIcon(UIImage(named: swipeUpPause ? "iconPause" : "iconPauseOff")!, recolour: true)
                 addSwipeInfoButton(to: cell)
                 if swipeUpPause {
                     cell.settingState.text = "on"

@@ -189,8 +189,12 @@ extension GameScene {
         // restore - and everything else resumes in the same frame the shot leaves
 
         let angle = endlessIIAimAngle(for: target)
-        target.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
-                                                dy: sin(angle)*Double(ballSpeedLimit))
+        if endlessIIAimLaunchesThroughThePaddle {
+            endlessIIPortalTheAimedLaunch(target, angle: angle)
+        } else {
+            target.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
+                                                    dy: sin(angle)*Double(ballSpeedLimit))
+        }
         endlessIIAimDefaultAngles[ObjectIdentifier(target)] = nil
         endlessIIAimTouched = false
         endlessIIAimOwedHold = false
@@ -208,6 +212,47 @@ extension GameScene {
         if soundsSetting { run(ballReleaseSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
         return true
+    }
+
+    /// Whether an aimed shot leaves *through* the paddle rather than off it.
+    ///
+    /// Aimed Sticky catches the ball before Portal Paddle can swallow it, so with both running
+    /// the aim won the contact and the portal did nothing with the turn it had just spent
+    /// (play-test round 128). The two speak in sequence instead, as they do with Auto-Aim: the
+    /// aim still chooses the heading, and the paddle still swallows the ball - so the shot
+    /// arrives at the *top* of the field travelling down, which is the whole gift of a portal
+    /// paddle and the reason to be holding one.
+    var endlessIIAimLaunchesThroughThePaddle: Bool {
+        endlessIIPortalPaddleClock.isRunning || endlessIIPortalPaddleOwedTurn
+    }
+
+    /// Sends an aimed shot out through the paddle and back in at the top.
+    ///
+    /// The same exit `applyEndlessIIPaddlePortals` uses, with the aim's angle instead of the
+    /// bounce's: a Portal brick if the field has one, and the top of the play area otherwise,
+    /// where the heading is mirrored downward because a ball re-entering upward would only buy
+    /// an immediate bounce off the ceiling.
+    func endlessIIPortalTheAimedLaunch(_ target: SKSpriteNode, angle: Double) {
+        endlessIIPortalPaddleOwedTurn = false
+        let speed = Double(ballSpeedLimit)
+        let from = target.position
+
+        if let portal = endlessIIPortals().randomElement() {
+            target.position = CGPoint(x: portal.position.x,
+                                      y: portal.frame.maxY + target.size.height)
+            target.physicsBody?.velocity = CGVector(dx: cos(angle)*speed,
+                                                    dy: sin(angle)*speed)
+            portal.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
+                                  .fadeAlpha(to: 1, duration: 0.12)]))
+        } else {
+            target.position = CGPoint(x: target.position.x,
+                                      y: frame.height/2 - topScreenBlock.size.height
+                                         - target.size.height)
+            target.physicsBody?.velocity = CGVector(dx: cos(angle)*speed,
+                                                    dy: -abs(sin(angle)*speed))
+        }
+        endlessIIShowPortalJump(from: from, to: target.position)
+        if hapticsSetting { mediumHaptic.impactOccurred() }
     }
 
     // MARK: - The arrow
@@ -285,8 +330,21 @@ extension GameScene {
             return node
         }()
 
-        arrow.position = target.position
-        arrow.zRotation = CGFloat(endlessIIAimAngle(for: target))
+        let angle = endlessIIAimAngle(for: target)
+        if endlessIIAimLaunchesThroughThePaddle {
+            arrow.position = CGPoint(x: target.position.x,
+                                     y: frame.height/2 - topScreenBlock.size.height
+                                        - target.size.height)
+            arrow.zRotation = CGFloat(-angle)
+            // **Pointing down from the top** (play-test round 128). With Portal Paddle the
+            // shot leaves through the paddle and arrives at the top of the field, so an arrow
+            // rising from the ball would be showing a flight that does not happen. Drawn where
+            // the ball will *appear*, at the heading it will appear with - the launch mirrors
+            // the angle downward and so does this, from the same number
+        } else {
+            arrow.position = target.position
+            arrow.zRotation = CGFloat(angle)
+        }
     }
 
     /// Removes the aim state entirely. For resets and the batch ending.

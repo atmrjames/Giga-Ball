@@ -644,3 +644,58 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
                       "a ball on the paddle mid-aim with the machinery gone would never leave")
     }
 }
+
+/// "With portal paddle and aimed sticky together, the aiming arrow should come from the top
+/// of the screen down, as the ball should be going through the paddle and wrapping around to
+/// the top" (play-test round 128).
+final class AimedStickyThroughThePortalPaddleTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSpeedLimit = 100
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        return scene
+    }
+
+    func testAnAimedShotOnlyPortalsWhileThePortalPaddleRuns() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIAimLaunchesThroughThePaddle)
+
+        scene.endlessIICollectPortalPaddle()
+        XCTAssertTrue(scene.endlessIIAimLaunchesThroughThePaddle)
+    }
+
+    /// The last turn still counts, the way every other paddle power-up's does: the turn that
+    /// expired the clock is the one being spent on this contact.
+    func testTheOwedTurnStillSendsTheShotThrough() {
+        let scene = mayhem()
+        scene.endlessIIPortalPaddleOwedTurn = true
+        XCTAssertTrue(scene.endlessIIAimLaunchesThroughThePaddle)
+    }
+
+    func testThePortalledLaunchArrivesAtTheTopTravellingDown() {
+        let scene = mayhem()
+        scene.ball.position = CGPoint(x: 20, y: -300)
+        scene.endlessIICollectPortalPaddle()
+
+        let up = Double.pi/3
+        // Sixty degrees - aimed up and to the right, as the arrow would show it
+        scene.endlessIIPortalTheAimedLaunch(scene.ball, angle: up)
+
+        XCTAssertGreaterThan(scene.ball.position.y, 0, "it re-enters at the top of the field")
+        XCTAssertLessThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
+                          "travelling down - a ball re-entering upward would only buy an "
+                          + "immediate bounce off the ceiling")
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dx ?? 0, 0,
+                             "and still to the right, which is the half of the aim that survives")
+    }
+
+    func testTheSpentTurnIsNotSpentTwice() {
+        let scene = mayhem()
+        scene.endlessIIPortalPaddleOwedTurn = true
+        scene.endlessIIPortalTheAimedLaunch(scene.ball, angle: Double.pi/2)
+        XCTAssertFalse(scene.endlessIIPortalPaddleOwedTurn)
+    }
+}
