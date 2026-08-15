@@ -785,7 +785,7 @@ class LevelPackSetup {
         "The paddle's angle influence is inverted",
         "The paddle moves opposite to your touch",
         "Destroys half the remaining bricks, chosen at random, of any type",
-        "Destroys the lowest row of bricks and pushes the field back up",
+        "Destroys the lowest two rows of bricks and holds the field there for a while",
         "Fires a beam from every ball, destroying its whole column",
         "Every hit destroys its brick, whatever the brick is, and still bounces",
         "A glow around every ball that destroys the bricks it touches",

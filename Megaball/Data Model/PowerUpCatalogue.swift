@@ -278,7 +278,11 @@ enum PowerUpCatalogue {
         PowerUp(id: "ballSteering", name: "Ball Steering", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "clearAndRetreat", name: "Clear And Retreat", availability: .endlessII,
-                rarity: .uncommon, valence: .beneficial, isTimed: false, stacking: .repeats),
+                rarity: .uncommon, valence: .beneficial, isTimed: true,
+                stacking: .extendsDuration),
+        // Timed since round 136. Instant, the retreat it clears was taken straight back by
+        // the cadence, which exists to close exactly that gap - so the power-up's own effect
+        // undid itself in under a second
         PowerUp(id: "cull", name: "Cull", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: false, stacking: .repeats),
         // Destroys half the remaining bricks at random. Rare because it is the largest single

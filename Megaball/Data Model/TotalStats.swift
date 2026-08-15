@@ -88,9 +88,11 @@ class TotalStats: Codable {
     /// correlation - splitting a metre between three running power-ups would invent a
     /// precision the measurement does not have.
     ///
-    /// The instant power-ups - Cull, Clear And Retreat, Infill, Wipe - score nothing, and
-    /// need no rule to make that happen: they are never *running*, so they are never in the
-    /// active set this counts from.
+    /// The instant power-ups - Cull, Infill, Wipe - score nothing, and need no rule to make
+    /// that happen: they are never *running*, so they are never in the active set this counts
+    /// from. Clear And Retreat runs now (round 136) and still scores nothing, for a reason of
+    /// its own: it holds the field, and a field that is not descending is not climbing either,
+    /// so there are no metres to attribute while it lasts.
     ///
     /// Optional for the same decode-safety reason `bestBallHits` is: a stats file written
     /// before this existed must still decode, or it is every player's history gone.

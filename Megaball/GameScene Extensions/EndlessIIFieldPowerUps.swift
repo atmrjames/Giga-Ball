@@ -4,12 +4,12 @@
 //
 //  Phase 8c: the power-ups that act on the field rather than on the ball.
 //
-//  Seven of the batch's eight. Four are instants - Cull takes half the field at random,
-//  Clear And Retreat takes the lowest row and pushes everything back up, Laser Beam burns
-//  one column per ball, and Infill (the bad one) fills empty cells with new bricks. Three
-//  run on clocks: Wrecking Ball makes every hit lethal while still bouncing, Aura destroys
-//  what the glow around each ball touches, and Descent drives the field's own one-row step
-//  on a timer, suspending the normal cadence while it runs.
+//  Seven of the batch's eight. Three are instants - Cull takes half the field at random,
+//  Laser Beam burns one column per ball, and Infill (the bad one) fills empty cells with new
+//  bricks. Four run on clocks: Wrecking Ball makes every hit lethal while still bouncing,
+//  Aura destroys what the glow around each ball touches, Descent drives the field's own
+//  one-row step on a timer, and Clear And Retreat takes the lowest two rows and then holds
+//  the field where it left it - which is the half of it that used to be missing.
 //
 //  Wrap-Around is the eighth, and it is deliberately not here yet: it asks the side walls
 //  to stop being walls - for the paddle and Moving bricks and explosions too - and that is
@@ -57,46 +57,83 @@ extension GameScene {
 
     // MARK: - Clear And Retreat
 
-    /// Destroys the lowest occupied row and pushes the whole field up one row (§5.4).
-    func endlessIIClearAndRetreat() {
+    /// How many rows the lowest brick level rises by. Two, James's number (round 136).
+    static let endlessIIRetreatRows = 2
+
+    /// How long the field is held where the clear left it.
+    ///
+    /// Longer than Descent's six, because this is the answer to that; shorter than the
+    /// paddle batch's ten, because a held field is a field that is not descending, and in
+    /// this mode the descent is where height - the score - comes from. The player is
+    /// trading tempo for room, and eight seconds is enough room to be worth the trade
+    /// without the run standing still long enough to notice.
+    static let endlessIIClearAndRetreatDuration: TimeInterval = 8
+
+    /// Raises the lowest brick level by two rows and holds the field there (§5.4).
+    ///
+    /// **It used to be instant, and instant was the bug** (play-test round 126: "should be
+    /// timed"). It cleared the lowest row, lifted everything a row, and then the cadence -
+    /// which exists to close exactly the gap it had just made - took both back inside a
+    /// second. The retreat the name promises never lasted long enough to be seen, let alone
+    /// played around.
+    ///
+    /// So the clear is now two rows deep rather than one, and it comes with a clock. While
+    /// that clock runs the field is held: no cadence, no Descent, no new rows. When it ends
+    /// the field comes back down into the room that was made, so the height those two rows
+    /// are worth is deferred rather than lost.
+    ///
+    /// Nothing is lifted any more. The old version pushed every brick up a row to make the
+    /// retreat visible, which meant deciding what happens to a brick pushed off the top; the
+    /// lowest level rises here by the two lowest rows being destroyed, which is what the
+    /// power-up says it does and needs no such rule.
+    func endlessIICollectClearAndRetreat() {
         guard gameMode == .endlessII else { return }
 
-        var lowestY: CGFloat = .greatestFiniteMagnitude
-        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard node.parent != nil else { return }
-            lowestY = min(lowestY, node.position.y)
-        }
-        guard lowestY < .greatestFiniteMagnitude else { return }
-
-        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }
-            if abs(brick.position.y - lowestY) < self.brickHeight/2 {
-                guard brick.endlessIIRole != .portal,
-                      brick.endlessIIPowerUpIndex == nil else { return }
-                self.endlessIIBrickDestroyed(brick)
-                self.endlessIIDestroy(brick)
-            }
-        }
-        // The lowest row is anything on that row's centre - a brick's position.y is its row,
-        // which is the one fact all of Endless 2.0 bends around
-
-        let retreat = SKAction.moveBy(x: 0, y: brickHeight, duration: 0.1)
-        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard self.endlessIIStaysPut(node) == false else { return }
-            if node.position.y + self.brickHeight > self.yBrickOffsetEndless + self.brickHeight/2 {
-                node.run(.sequence([.fadeOut(withDuration: 0.1), .removeFromParent()]))
-                return
-            }
-            // A brick the retreat would push past the top row leaves the field instead -
-            // play-testing found it sitting over the HUD, which is nobody's row
-            node.run(retreat)
-        }
-        // Up by exactly a row, so every brick lands on a row centre again. Anchored bricks
-        // hold their ground the same way they do against the descent
+        endlessIIClearAndRetreatClock.collect(GameScene.endlessIIClearAndRetreatDuration)
+        endlessIIRaiseTheLowestBrickLevel(by: GameScene.endlessIIRetreatRows)
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
         if soundsSetting { run(endlessRowDownSound) }
+    }
+
+    /// Destroys the lowest occupied rows, one row at a time from the bottom.
+    ///
+    /// A row at a time rather than "everything within two row heights of the lowest brick",
+    /// because the two are not the same field: the lowest bricks can be a single brick with
+    /// a gap above them, and the player asked for the lowest *level* to rise by two, not for
+    /// two row heights of whatever happens to be down there. So the lowest occupied row goes,
+    /// then whatever the lowest occupied row is after that.
+    ///
+    /// Portals and power-up bricks are spared, as they are by a Cull: one is indestructible
+    /// to everything and the other is spent by being hit rather than eaten silently. A row
+    /// holding nothing else is still counted as cleared - it has had everything taken from it
+    /// that this may take.
+    func endlessIIRaiseTheLowestBrickLevel(by rows: Int) {
+        for _ in 0..<rows {
+            var lowestY: CGFloat = .greatestFiniteMagnitude
+            enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                guard node.parent != nil else { return }
+                lowestY = min(lowestY, node.position.y)
+            }
+            guard lowestY < .greatestFiniteMagnitude else { return }
+            // The lowest row is anything on that row's centre - a brick's position.y is its
+            // row, which is the one fact all of Endless 2.0 bends around
+
+            var cleared = false
+            enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }
+                guard abs(brick.position.y - lowestY) < self.brickHeight/2 else { return }
+                guard brick.endlessIIRole != .portal,
+                      brick.endlessIIPowerUpIndex == nil else { return }
+                self.endlessIIBrickDestroyed(brick)
+                self.endlessIIDestroy(brick)
+                cleared = true
+            }
+            guard cleared else { return }
+            // A row of nothing but portals cannot be taken, and going round again would
+            // find the same row and take nothing again
+        }
     }
 
     // MARK: - Laser Beam
@@ -337,6 +374,7 @@ extension GameScene {
         \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
+        \.endlessIIClearAndRetreatClock,
     ]
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
@@ -543,39 +581,38 @@ extension GameScene {
 
     // MARK: - The ring and the save
 
+    /// The batch's clocks, with the name they save under and the icon the ring shows.
+    ///
+    /// One table, because the ring and the save were two hand-written lists of the same
+    /// clocks and they had already disagreed: Randomised Bounce and Ghost Ball were added to
+    /// the freeze list, the wipe list and the tick, and to neither of these - so both ran
+    /// with nothing in the ring to say so, and both were quietly lost by a save and resume.
+    /// Now a clock that is in the table is in all three, and a clock that is not is in none.
+    var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: UIImage)] {
+        [("endlessIIWreckingBall", endlessIIWreckingBallClock, PowerUpIcon.wreckingBall),
+         ("endlessIIAura", endlessIIAuraClock, PowerUpIcon.aura),
+         ("endlessIIDescent", endlessIIDescentClock, PowerUpIcon.descent),
+         ("endlessIIWrapAround", endlessIIWrapAroundClock, PowerUpIcon.wrapAround),
+         ("endlessIIRandomisedBounce", endlessIIRandomisedBounceClock,
+          PowerUpIcon.randomisedBounce),
+         ("endlessIIGhostBall", endlessIIGhostBallClock, PowerUpIcon.ghostBall),
+         ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
+          PowerUpIcon.clearAndRetreat)]
+    }
+
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
-        var entries: [PowerUpRingHUD.Entry] = []
-        if endlessIIWreckingBallClock.isRunning {
-            entries.append(PowerUpRingHUD.Entry(
-                id: "endlessIIWreckingBall", texture: SKTexture(image: PowerUpIcon.wreckingBall),
-                remaining: endlessIIWreckingBallClock.fraction, segments: nil))
+        endlessIIFieldClocks.compactMap { id, clock, icon in
+            guard clock.isRunning else { return nil }
+            return PowerUpRingHUD.Entry(id: id, texture: SKTexture(image: icon),
+                                        remaining: clock.fraction, segments: nil)
         }
-        if endlessIIAuraClock.isRunning {
-            entries.append(PowerUpRingHUD.Entry(
-                id: "endlessIIAura", texture: SKTexture(image: PowerUpIcon.aura),
-                remaining: endlessIIAuraClock.fraction, segments: nil))
-        }
-        if endlessIIDescentClock.isRunning {
-            entries.append(PowerUpRingHUD.Entry(
-                id: "endlessIIDescent", texture: SKTexture(image: PowerUpIcon.descent),
-                remaining: endlessIIDescentClock.fraction, segments: nil))
-        }
-        if endlessIIWrapAroundClock.isRunning {
-            entries.append(PowerUpRingHUD.Entry(
-                id: "endlessIIWrapAround", texture: SKTexture(image: PowerUpIcon.wrapAround),
-                remaining: endlessIIWrapAroundClock.fraction, segments: nil))
-        }
-        return entries
     }
 
     func endlessIIFieldClockSaveEntries() -> [(key: String, remaining: Double, total: Double,
                                                magnitude: Int)] {
-        [("endlessIIWreckingBall", endlessIIWreckingBallClock),
-         ("endlessIIAura", endlessIIAuraClock),
-         ("endlessIIDescent", endlessIIDescentClock),
-         ("endlessIIWrapAround", endlessIIWrapAroundClock)]
-            .filter { $0.1.isRunning }
-            .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
+        endlessIIFieldClocks
+            .filter { $0.clock.isRunning }
+            .map { ($0.id, $0.clock.remaining, $0.clock.total, $0.clock.level) }
     }
 
     @discardableResult
@@ -591,6 +628,12 @@ extension GameScene {
             endlessIIDescentClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIWrapAround":
             endlessIIWrapAroundClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIRandomisedBounce":
+            endlessIIRandomisedBounceClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIGhostBall":
+            endlessIIGhostBallClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIClearAndRetreat":
+            endlessIIClearAndRetreatClock.restore(remaining: remaining, total: total, level: 0)
         default:
             return false
         }
@@ -610,6 +653,7 @@ extension GameScene {
             endlessIIDescentClock.run(down: endlessIIClockDelta)
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
+            endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)
             tickEndlessIIGhostBall()
             tickEndlessIIDescent()
         }
@@ -701,6 +745,7 @@ extension GameScene {
         endlessIIAuraClock.reset()
         endlessIIDescentClock.reset()
         endlessIIDescentAccumulated = 0
+        endlessIIClearAndRetreatClock.reset()
         endlessIIAuraNodes.forEach { $0.removeFromParent() }
         endlessIIAuraNodes.removeAll()
     }

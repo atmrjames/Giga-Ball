@@ -221,6 +221,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAuraHitBricks: Set<ObjectIdentifier> = []
 	var endlessIIDescentClock = EndlessIIClock()
 	var endlessIIDescentAccumulated: TimeInterval = 0
+	/// Clear And Retreat: while this runs the field holds where the clear left it (§5.4).
+	var endlessIIClearAndRetreatClock = EndlessIIClock()
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
 	var lifeIcons: [SKSpriteNode] = []
@@ -3276,8 +3278,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	///
 	/// The owed turn counts too. Aimed Sticky can be spent while the clock has already
 	/// stopped, and the aim that turn is still an aim.
+	/// Clear And Retreat holds it too, and for its own reason: the room it just made is the
+	/// whole power-up, and the cadence's job is to close exactly that kind of gap. Left to
+	/// run, the descent took the two rows straight back and the retreat lasted under a
+	/// second, which is what "it should be timed" was asking for.
 	var endlessIIFieldIsHeld: Bool {
 		endlessIIAimHold || endlessIIAimedStickyOwedTurn
+			|| endlessIIClearAndRetreatClock.isRunning
 	}
 
 	func moveEndlessModeRowDown() {
@@ -4771,7 +4778,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		case powerUpClearAndRetreat:
 		// 40 - Clear And Retreat
-			endlessIIClearAndRetreat()
+			endlessIICollectClearAndRetreat()
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[40] += 1
 

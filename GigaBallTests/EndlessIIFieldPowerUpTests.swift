@@ -92,17 +92,36 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
 
     // MARK: - Clear And Retreat
 
-    func testTheLowestRowGoesAndTheFieldStepsUp() {
+    // Play-test round 126, in James's words: "Clear and retreat power up should work
+    // differently. It should be timed and it should raise the lowest brick level by 2
+    // bricks." So these ask for both halves - two rows gone, and a clock holding the field
+    // where they left it.
+
+    func testTheLowestTwoRowsGo() {
         let scene = fieldScene()
         let low = brick(in: scene, x: 0, y: 40)
-        let high = brick(in: scene, x: 0, y: 100)
+        let next = brick(in: scene, x: 0, y: 40 + scene.brickHeight)
+        let high = brick(in: scene, x: 0, y: 40 + scene.brickHeight*4)
 
-        scene.endlessIIClearAndRetreat()
+        scene.endlessIICollectClearAndRetreat()
         XCTAssertNil(low.parent, "the lowest occupied row is destroyed")
+        XCTAssertNil(next.parent, "and the one that was lowest after it")
+        XCTAssertNotNil(high.parent, "the rest of the field is untouched")
+    }
+
+    func testTheLowestLevelRisesByTwoRowsHoweverFarApartTheyAre() {
+        let scene = fieldScene()
+        let low = brick(in: scene, x: 0, y: 40)
+        let next = brick(in: scene, x: 0, y: 40 + scene.brickHeight*5)
+        let high = brick(in: scene, x: 0, y: 40 + scene.brickHeight*9)
+        // Two occupied rows with a gap between them. "Raise the lowest brick level by 2
+        // bricks" is about the lowest *levels*, not about two row heights of field - a
+        // measurement from the bottom brick would have taken the first and missed the second
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertNil(low.parent)
+        XCTAssertNil(next.parent)
         XCTAssertNotNil(high.parent)
-        XCTAssertTrue(high.hasActions(), "the survivor is on its way up a row")
-        // The step up is an animation; what matters here is that it was given one and the
-        // destroyed row was not
     }
 
     func testTheLowestRowMeansTheWholeRowNotOneBrick() {
@@ -111,14 +130,53 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         let right = brick(in: scene, x: 50, y: 44)
         // Within half a brick of the same centre - the same row, as the descent reads it
 
-        scene.endlessIIClearAndRetreat()
+        scene.endlessIICollectClearAndRetreat()
         XCTAssertNil(left.parent)
         XCTAssertNil(right.parent)
     }
 
+    func testTheRetreatIsTimedAndHoldsTheField() {
+        let scene = fieldScene()
+        brick(in: scene, x: 0, y: 40)
+        XCTAssertFalse(scene.endlessIIFieldIsHeld)
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertTrue(scene.endlessIIClearAndRetreatClock.isRunning, "timed, not instant")
+        XCTAssertTrue(scene.endlessIIFieldIsHeld,
+                      "and the field stays where the clear left it - the descent closing "
+                      + "that gap is what made the old instant version invisible")
+
+        scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
+        XCTAssertFalse(scene.endlessIIClearAndRetreatClock.isRunning)
+        XCTAssertFalse(scene.endlessIIFieldIsHeld, "and the field comes back down after")
+    }
+
+    func testNothingIsLiftedAnyMore() {
+        let scene = fieldScene()
+        let high = brick(in: scene, x: 0, y: 100)
+        brick(in: scene, x: 0, y: 40)
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertFalse(high.hasActions(),
+                       "a repeating action on a brick stops the field for ever (§8.6), and "
+                       + "the lift this used to run was the only reason to risk one here")
+    }
+
+    func testAPortalRowDoesNotTrapTheClear() {
+        let scene = fieldScene()
+        let portal = brick(in: scene, x: 0, y: 40)
+        portal.endlessIIRole = .portal
+        let above = brick(in: scene, x: 0, y: 40 + scene.brickHeight)
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertNotNil(portal.parent, "spared, as a Cull spares it")
+        XCTAssertNotNil(above.parent,
+                        "and the pass stops rather than looking at the same row twice")
+    }
+
     func testAnEmptyFieldRetreatsNothing() {
         let scene = fieldScene()
-        scene.endlessIIClearAndRetreat()
+        scene.endlessIICollectClearAndRetreat()
         XCTAssertEqual(bricksLeft(scene), 0, "and does not trap")
     }
 
@@ -631,7 +689,12 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         saving.endlessIICollectWreckingBall()
         saving.endlessIICollectAura()
         saving.endlessIICollectAura()
-        XCTAssertEqual(saving.endlessIIFieldRingEntries().count, 2)
+        saving.endlessIICollectRandomisedBounce()
+        saving.endlessIICollectGhostBall()
+        saving.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(saving.endlessIIFieldRingEntries().count, 5,
+                       "every running clock in the batch has a ring entry - Randomised "
+                       + "Bounce and Ghost Ball ran with nothing shown for either")
 
         let restored = fieldScene()
         for entry in saving.endlessIIFieldClockSaveEntries() {
@@ -641,6 +704,10 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         }
         XCTAssertTrue(restored.endlessIIWreckingBallClock.isRunning)
         XCTAssertEqual(restored.endlessIIAuraClock.level, 1)
+        XCTAssertTrue(restored.endlessIIRandomisedBounceClock.isRunning,
+                      "and survives a save and resume, which it did not")
+        XCTAssertTrue(restored.endlessIIGhostBallClock.isRunning)
+        XCTAssertTrue(restored.endlessIIClearAndRetreatClock.isRunning)
     }
 
     func testABigBrickReachesTheBottomZoneARowEarly() {

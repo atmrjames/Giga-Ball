@@ -161,24 +161,18 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         // timed power-up is added and left out of it, a Lock will neither drop for it nor
         // freeze it - which from the outside looks like the Lock being broken
         let scene = mayhem()
-        XCTAssertEqual(scene.endlessIITimedClocks.count, 10)
+        XCTAssertEqual(scene.endlessIITimedClocks.count, 11)
         // Ten since round 125: Randomised Bounce and Ghost Ball are both timed, so a Lock
-        // freezes them and a Wipe clears them without either of those being edited
+        // freezes them and a Wipe clears them without either of those being edited. Eleven
+        // since round 136, when Clear And Retreat stopped being instant
 
-        for index in scene.endlessIITimedClocks.indices {
+        for path in GameScene.endlessIITimedClockPaths {
             let fresh = mayhem()
-            switch index {
-            case 0: fresh.endlessIIWreckingBallClock.collect(10)
-            case 1: fresh.endlessIIAuraClock.collect(10)
-            case 2: fresh.endlessIIDescentClock.collect(10)
-            case 3: fresh.endlessIIWrapAroundClock.collect(10)
-            case 4: fresh.endlessIIBallSteeringClock.collect(10)
-            case 5: fresh.endlessIIMagnetismClock.collect(10)
-            case 6: fresh.endlessIIPaddleHaloClock.collect(10)
-            default: fresh.endlessIIPortalPaddleClock.collect(10)
-            }
+            fresh[keyPath: path].collect(10)
+            // Through the key path rather than a switch over the indices: the list is the
+            // thing under test, so the test should not carry its own second copy of it
             XCTAssertTrue(fresh.endlessIILockMayDrop,
-                          "clock \(index) should make a Lock worth dropping")
+                          "a running clock should make a Lock worth dropping")
         }
     }
 
