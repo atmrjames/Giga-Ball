@@ -134,8 +134,11 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
 
     private weak var modeLogo: UIImageView?
     private var logoWidth: NSLayoutConstraint?
-    static let logoRestSize: CGFloat = 80
-    static let logoScrolledSize: CGFloat = 56
+    static let logoRestSize = UIViewController.menuModeLogoSize
+    static let logoScrolledSize = UIViewController.menuModeLogoScrolledSize
+    // The endless menus' own size, read from the one place that holds it (round 141): the
+    // three mode menus are a set, and this one was wearing a logo less than half the size
+    // of its siblings'
 
     /// The logo trades its size for the grid's room as the packs scroll up (play-test round
     /// 36): full size at rest, easing down to the small size over the first hundred points of
@@ -143,7 +146,9 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     /// runs backwards for free.
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView == packCollectionView, let width = logoWidth else { return }
-        let progress = min(max(scrollView.contentOffset.y/100, 0), 1)
+        let progress = min(max(scrollView.contentOffset.y/140, 0), 1)
+        // Over a longer travel than the 100 it took when the logo was small: the same
+        // hundred points now has three times the height to give back, and the grid jumped
         width.constant = PackSelectViewController.logoRestSize
             - (PackSelectViewController.logoRestSize - PackSelectViewController.logoScrolledSize)*progress
     }

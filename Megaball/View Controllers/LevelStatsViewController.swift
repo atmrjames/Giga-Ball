@@ -447,7 +447,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         }
         NSLayoutConstraint.activate([
             levelImageView.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
-            levelImageView.widthAnchor.constraint(equalToConstant: 190),
+            levelImageView.widthAnchor.constraint(
+                equalToConstant: UIViewController.menuModeLogoSize),
         ])
         // The logo was pinned wall to wall and sized by its 1:1 aspect. Cutting it loose
         // horizontally and giving it a width leaves the aspect doing the height, and the

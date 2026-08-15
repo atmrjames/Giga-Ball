@@ -25,6 +25,21 @@ extension UIViewController {
     /// as a table of contents with the labels and values at opposite ends of the screen.
     static let menuMaximumSize = CGSize(width: 500, height: 820)
 
+    /// How large a mode's own logo is at the head of its menu.
+    ///
+    /// The three mode menus are a set and their logos should be the same size (play-test
+    /// round 126: the classic pack screen's "should match the size on the endless mode menu
+    /// views"). The endless screens set it at 190 when a run list is under it, and this is
+    /// that number, in one place, so the set stays a set.
+    static let menuModeLogoSize: CGFloat = 190
+
+    /// What that logo shrinks to when a list scrolls up under it.
+    ///
+    /// The pack grid is what the screen is for, and at rest the logo takes a third of it.
+    /// Trading its size for the grid's room as the packs travel is the same bargain the
+    /// large title in a navigation bar makes.
+    static let menuModeLogoScrolledSize: CGFloat = 84
+
     /// How much air a menu's list gets above its first row and below its last.
     ///
     /// The screens were built with the table pinned close to the title above it and the
