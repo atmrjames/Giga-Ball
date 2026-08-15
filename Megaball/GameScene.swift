@@ -176,6 +176,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// at the end of `didSimulatePhysics`, the last word any frame has on the ball.
 	var crookedBallTripwire = CrookedBallTripwire()
 	var crookedBallNotes: [String] = []
+	/// Seconds until the next phantom-brick audit - see `phantomBrickWatch`.
+	var phantomAuditDue: TimeInterval = 1
 	#endif
 
 	/// Records that something legitimate moved the main ball this frame. Free in Release
@@ -2171,12 +2173,39 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
     
+    /// Removes any brick that was destroyed but never finished leaving.
+    ///
+    /// `removeBrick` hides a brick, leaves its body solid for two frames so the bounce it is
+    /// in the middle of resolves, and takes it away with an action. An action is a fragile
+    /// thing to hang that on: a node that gets paused and never unpaused, or whose action is
+    /// cleared by something sweeping the field, keeps a solid body under an invisible brick
+    /// for the rest of the run. That is a **phantom brick**, and it explains both halves of
+    /// play-test round 128 - a ball changing direction with nothing there, and a ball
+    /// rattling as if inside a cluster of bricks that are not there.
+    ///
+    /// Rather than find every path that could strand one, the removal is made unconditional:
+    /// anything still wearing the dying name half a second later goes, action or no action.
+    func sweepDyingBricks() {
+        let now = CACurrentMediaTime()
+        enumerateChildNodes(withName: BrickRemovalCategoryName) { node, _ in
+            let since = node.userData?["dyingSince"] as? CFTimeInterval ?? 0
+            guard since > 0, now - since > 0.5 else { return }
+            #if DEBUG
+            print("PHANTOM BRICK swept at \(node.position), "
+                  + "dying for \(String(format: "%.1f", now - since))s")
+            #endif
+            node.removeFromParent()
+        }
+    }
+
     override func didSimulatePhysics() {
         applyEndlessIIBallHandover()
         applyEndlessIIPaddlePhysics()
         applyEndlessIIWraps()
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
+        sweepDyingBricks()
+        phantomBrickWatch()
         crookedBallWatch()
     }
     // The one place a physics body can be moved from. Anything written to one during contact
@@ -2190,6 +2219,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// in the act, and the loud line prints. A trip that *is* explained by something rarer
     /// than an ordinary bounce prints quietly, so a sighting by eye can be matched to the
     /// writer that moved the ball.
+    /// Reports any brick the ball can hit but the player cannot see.
+    ///
+    /// The complement of `sweepDyingBricks`: that closes the one hole this file knows about,
+    /// and this finds any other. A brick-category body on a node that is hidden, transparent
+    /// or scaled away is a phantom whatever put it there - and the print says where it is, so
+    /// a sighting can be matched to the part of the field it came from.
+    ///
+    /// Flashing bricks are the deliberate exception. They spend half their life passable, and
+    /// `setBrickSolid` takes their category away when they do, so a *solid* flashing brick is
+    /// always a visible one - the check reads the body rather than the role and needs no list.
+    func phantomBrickWatch() {
+        #if DEBUG
+        guard gameState.currentState is Playing, isPaused == false else { return }
+        phantomAuditDue -= frameDelta
+        guard phantomAuditDue <= 0 else { return }
+        phantomAuditDue = 1
+        // Once a second: this walks every brick, and the answer cannot change faster than a
+        // brick can be destroyed
+
+        var found: [CGPoint] = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let sprite = node as? SKSpriteNode,
+                  let body = sprite.physicsBody,
+                  body.categoryBitMask == CollisionTypes.brickCategory.rawValue
+            else { return }
+            let invisible = sprite.isHidden || sprite.alpha < 0.05
+                || sprite.xScale < 0.05 || sprite.yScale < 0.05
+            if invisible { found.append(sprite.position) }
+        }
+        guard found.isEmpty == false else { return }
+        print("PHANTOM BRICKS: \(found.count) solid but unseeable, at \(found.prefix(4))")
+        // Invisible bricks are a real power-up in the older modes, so this will speak up
+        // during Hide Bricks - in Mayhem, which has no such power-up, it should never
+        #endif
+    }
+
     func crookedBallWatch() {
         #if DEBUG
         defer { crookedBallNotes.removeAll(keepingCapacity: true) }
@@ -3039,10 +3104,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let waitBrickRemove = SKAction.wait(forDuration: 0.0167*2)
 			node.name = BrickRemovalCategoryName
 			node.isHidden = true
+			node.userData = (node.userData ?? NSMutableDictionary())
+			node.userData?["dyingSince"] = CACurrentMediaTime()
 			node.run(waitBrickRemove, completion: {
 				node.removeFromParent()
 			})
 			// Wait before removing brick to allow ball to bounce off brick correctly - 0.0167 = ~1 frame at 60 fps
+			//
+			// **For those two frames the brick is invisible and still solid**, which is the
+			// point - the bounce the ball is in the middle of has to resolve against
+			// something. It is also the one window in which this game can grow a *phantom
+			// brick*: if the removal never completes, what is left is a brick you cannot see
+			// that the ball still bounces off. `sweepDyingBricks` is the guarantee that the
+			// window closes, and the timestamp above is what it measures
 		}
 
 		endlessIIBrickDestroyed(sprite)

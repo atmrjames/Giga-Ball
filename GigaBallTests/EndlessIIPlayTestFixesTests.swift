@@ -855,3 +855,69 @@ final class ResumedFieldKeepsItsHeightTests: XCTestCase {
                        "five saves and resumes leave the row exactly where it started")
     }
 }
+
+/// "The ball started bouncing around between bricks that didn't exist" and "the ball still
+/// changes angle near the low brick line" (play-test round 128) - one bug, not two: a brick
+/// that is gone but whose physics body is not.
+final class PhantomBrickTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    private func dyingBrick(in scene: GameScene, age: CFTimeInterval) -> SKSpriteNode {
+        let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        brick.name = BrickRemovalCategoryName
+        brick.isHidden = true
+        brick.physicsBody = SKPhysicsBody(rectangleOf: brick.size)
+        brick.physicsBody?.categoryBitMask = CollisionTypes.brickCategory.rawValue
+        brick.userData = NSMutableDictionary()
+        brick.userData?["dyingSince"] = CACurrentMediaTime() - age
+        scene.addChild(brick)
+        return brick
+    }
+
+    /// The window is deliberate: a brick stays solid for two frames after it is hidden so the
+    /// bounce the ball is in the middle of resolves against something.
+    func testABrickThatHasJustStartedDyingIsLeftAlone() {
+        let scene = mayhem()
+        let brick = dyingBrick(in: scene, age: 0.01)
+        scene.sweepDyingBricks()
+        XCTAssertNotNil(brick.parent)
+    }
+
+    /// And it is only a window. Anything still here half a second later never finished
+    /// leaving - its action was cancelled, or its node was paused and never woken - and what
+    /// is left is a brick nobody can see that the ball still bounces off.
+    func testABrickThatNeverFinishedLeavingIsSweptAway() {
+        let scene = mayhem()
+        let brick = dyingBrick(in: scene, age: 5)
+        scene.sweepDyingBricks()
+        XCTAssertNil(brick.parent, "gone, action or no action")
+    }
+
+    func testTheSweepIsUnconditionalRatherThanPerCause() {
+        // The point of the sweep: it does not need to know *why* the removal never ran, so a
+        // path nobody has thought of yet cannot strand one either
+        let scene = mayhem()
+        let stuck = dyingBrick(in: scene, age: 2)
+        stuck.isPaused = true
+        stuck.removeAllActions()
+        scene.sweepDyingBricks()
+        XCTAssertNil(stuck.parent)
+    }
+
+    func testALivingBrickIsNeverTouched() {
+        let scene = mayhem()
+        let alive = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        alive.name = BrickCategoryName
+        scene.addChild(alive)
+        scene.sweepDyingBricks()
+        XCTAssertNotNil(alive.parent)
+    }
+}
