@@ -768,3 +768,63 @@ final class RandomisedBounceTests: XCTestCase {
                       + "shot on a brick holding one")
     }
 }
+
+/// Ghost Ball (play-test round 11, pulled into 1.3): "the ball is invisible until it drops
+/// below the lowest brick line - you see where it lands, not where it flies."
+final class GhostBallTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.finalBrickRowHeight = 100
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    func testTheBallIsHiddenAmongTheBricksAndSeenBelowThem() {
+        XCTAssertFalse(GameScene.ghostBallIsVisible(ballY: 150, lowestBrickRow: 100))
+        XCTAssertTrue(GameScene.ghostBallIsVisible(ballY: 50, lowestBrickRow: 100),
+                      "below the lowest row, which is the part of the flight you can still "
+                      + "do something about")
+    }
+
+    func testTheLineIsTheFieldsOwnSoItMovesWithTheDescent() {
+        // Stated against `finalBrickRowHeight` rather than a remembered height, so a field
+        // that has descended hides the ball lower down without the rule being told
+        XCTAssertTrue(GameScene.ghostBallIsVisible(ballY: 150, lowestBrickRow: 200))
+        XCTAssertFalse(GameScene.ghostBallIsVisible(ballY: 150, lowestBrickRow: 100))
+    }
+
+    func testItHidesAndRestoresTheBallItself() {
+        let scene = mayhem()
+        scene.ball.position.y = 150
+
+        scene.endlessIICollectGhostBall()
+        scene.tickEndlessIIGhostBall()
+        XCTAssertEqual(scene.ball.alpha, 0, "up among the bricks")
+
+        scene.ball.position.y = 50
+        scene.tickEndlessIIGhostBall()
+        XCTAssertEqual(scene.ball.alpha, 1, "and back on the way down")
+    }
+
+    /// The failure that would cost a run: a ball left invisible by an expired power-up.
+    func testTheBallComesBackWhenTheClockEnds() {
+        let scene = mayhem()
+        scene.ball.position.y = 150
+        scene.endlessIICollectGhostBall()
+        scene.tickEndlessIIGhostBall()
+        XCTAssertEqual(scene.ball.alpha, 0)
+
+        scene.endlessIIGhostBallClock.run(down: GameScene.endlessIIGhostBallDuration + 1)
+        scene.tickEndlessIIGhostBall()
+        XCTAssertEqual(scene.ball.alpha, 1, "put back on the frame the clock ends")
+    }
+
+    func testAResetPutsEveryBallBack() {
+        let scene = mayhem()
+        scene.ball.alpha = 0
+        scene.endlessIIResetFieldPowerUps()
+        XCTAssertEqual(scene.ball.alpha, 1)
+    }
+}

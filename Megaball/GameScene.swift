@@ -98,6 +98,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// its own choosing rather than the one it arrived at. Timed, harmful, and its own kind
 	/// of unfair - which is the point of it being uncommon rather than common.
 	var endlessIIRandomisedBounceClock = EndlessIIClock()
+
+	/// Ghost Ball (play-test round 11, pulled into 1.3): the ball is invisible above the
+	/// lowest brick line and reappears below it - you see where it lands, not where it flies.
+	var endlessIIGhostBallClock = EndlessIIClock()
+	/// Whether it was running last frame, so the balls are put back exactly once.
+	var endlessIIGhostBallWasRunning = false
 	var endlessIIInertPaddleClock = EndlessIIClock()
 	var endlessIIFlippedAngleClock = EndlessIIClock()
 	var endlessIIReversedControlsClock = EndlessIIClock()
@@ -405,7 +411,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 52)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 53)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -943,6 +949,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpKey = SKTexture(image: PowerUpIcon.key)
 	let powerUpWipe = SKTexture(image: PowerUpIcon.wipe)
 	let powerUpRandomisedBounce = SKTexture(image: PowerUpIcon.randomisedBounce)
+	let powerUpGhostBall = SKTexture(image: PowerUpIcon.ghostBall)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1119,7 +1126,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -4759,6 +4766,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIICollectRandomisedBounce()
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[51] += 1
+
+		case powerUpGhostBall:
+		// 52 - Ghost Ball
+			endlessIICollectGhostBall()
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[52] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball

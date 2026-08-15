@@ -259,6 +259,8 @@ enum PowerUpCatalogue {
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
         PowerUp(id: "randomisedBounce", name: "Randomised Bounce", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
+        PowerUp(id: "ghostBall", name: "Ghost Ball", availability: .endlessII,
+                rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "inertPaddle", name: "Inert Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "flippedAngle", name: "Flipped Angle", availability: .endlessII,

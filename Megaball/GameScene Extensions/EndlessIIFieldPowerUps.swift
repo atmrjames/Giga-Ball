@@ -336,7 +336,7 @@ extension GameScene {
         \.endlessIIWreckingBallClock, \.endlessIIAuraClock, \.endlessIIDescentClock,
         \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
-        \.endlessIIRandomisedBounceClock,
+        \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
     ]
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
@@ -609,6 +609,8 @@ extension GameScene {
             endlessIIAuraClock.run(down: endlessIIClockDelta)
             endlessIIDescentClock.run(down: endlessIIClockDelta)
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
+            endlessIIGhostBallClock.run(down: endlessIIClockDelta)
+            tickEndlessIIGhostBall()
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
@@ -651,7 +653,49 @@ extension GameScene {
         gameMode == .endlessII && endlessIIRandomisedBounceClock.isRunning
     }
 
+    // MARK: - Ghost Ball
+
+    static let endlessIIGhostBallDuration: TimeInterval = 12
+
+    func endlessIICollectGhostBall() {
+        endlessIIGhostBallClock.collect(GameScene.endlessIIGhostBallDuration)
+    }
+
+    /// Whether a ball at this height can be seen while Ghost Ball runs.
+    ///
+    /// Pure and stated once: the ball is invisible while it is up among the bricks and comes
+    /// back the moment it drops below the lowest row - "you see where it lands, not where it
+    /// flies" (play-test round 11). The line is the field's own bottom, so it moves as the
+    /// field descends and the rule needs no separate upkeep.
+    static func ghostBallIsVisible(ballY: CGFloat, lowestBrickRow: CGFloat) -> Bool {
+        ballY < lowestBrickRow
+    }
+
+    /// Hides and shows the balls each frame. Dressing only - nothing here touches physics,
+    /// which is the whole reason a bad power-up this strong is survivable: the ball you
+    /// cannot see is exactly the ball that was always there.
+    func tickEndlessIIGhostBall() {
+        guard endlessIIGhostBallWasRunning || endlessIIGhostBallClock.isRunning else { return }
+        let running = endlessIIGhostBallClock.isRunning
+        endlessIIGhostBallWasRunning = running
+
+        for subject in endlessIIBallsInPlay where subject.parent != nil {
+            guard running else {
+                subject.alpha = 1
+                continue
+                // Put back on the frame the clock ends, whatever the ball was doing - an
+                // invisible ball left behind by an expired power-up is a lost run
+            }
+            subject.alpha = GameScene.ghostBallIsVisible(ballY: subject.position.y,
+                                                          lowestBrickRow: finalBrickRowHeight)
+                ? 1 : 0
+        }
+    }
+
     func endlessIIResetFieldPowerUps() {
+        endlessIIGhostBallClock.reset()
+        endlessIIGhostBallWasRunning = false
+        for subject in endlessIIBallsInPlay { subject.alpha = 1 }
         endlessIIRandomisedBounceClock.reset()
         endlessIIWreckingBallClock.reset()
         endlessIIAuraClock.reset()

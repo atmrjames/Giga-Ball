@@ -459,6 +459,30 @@ enum PowerUpIcon {
         // The surface itself, heavier than the paths leaving it
     }
 
+    /// A ball drawn as a dashed outline, with the brick line it reappears under.
+    ///
+    /// Dashes rather than a faint circle: a power-up icon is drawn small and at low alpha it
+    /// would read as a rendering fault rather than as the ball being *absent*. The line under
+    /// it is the lowest brick row - what the player gets back is the last part of the flight,
+    /// which is the part they can still do something about.
+    static let ghostBall: UIImage = badge(harmful) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        let radius = rect.width*0.2
+        let centre = CGPoint(x: rect.midX, y: rect.midY - rect.height*0.06)
+        context.saveGState()
+        context.setLineDash(phase: 0, lengths: [rect.width*0.1, rect.width*0.07])
+        context.strokeEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                         width: radius*2, height: radius*2))
+        context.restoreGState()
+
+        context.setLineWidth(rect.width*0.09)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18,
+                                 y: rect.maxY - rect.height*0.22))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18,
+                                    y: rect.maxY - rect.height*0.22))
+        context.strokePath()
+    }
+
     /// The Daily Challenge's menu mark: a calendar with today burning in it.
     static let dailyChallenge: UIImage = badge { context, rect in
         stroke(context, width: rect.width*0.06)
