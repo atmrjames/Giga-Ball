@@ -89,6 +89,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             link.isUserInteractionEnabled = true
             link.addGestureRecognizer(UITapGestureRecognizer(target: self, action: action))
             links.addArrangedSubview(link)
+            contactLines.append(link)
         }
         // Labels rather than buttons (play-test round 20): a button carries its own padding,
         // which put more air between the two lines than any other pair on this screen has.
@@ -96,9 +97,11 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
 
         NSLayoutConstraint.activate([
             links.centerXAnchor.constraint(equalTo: aboutView.centerXAnchor),
-            links.bottomAnchor.constraint(equalTo: buildLabel.topAnchor, constant: -18),
+            links.bottomAnchor.constraint(equalTo: buildLabel.topAnchor, constant: -34),
             // Above the build number, not below it (play-test round 19): the build is the
-            // last line of the small print, and a way of getting in touch is not small print
+            // last line of the small print, and a way of getting in touch is not small
+            // print. A little higher again in round 138, so the pair belongs to the credits
+            // above rather than reading as the first line of the small print below
             links.leadingAnchor.constraint(greaterThanOrEqualTo: aboutView.leadingAnchor,
                                            constant: 20),
         ])
@@ -106,6 +109,8 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
 
     /// Kept so the fade-in can include it, in its place in the order.
     private var contactLinks: UIStackView?
+    /// The two lines inside it, which arrive one after the other rather than together.
+    private var contactLines: [UILabel] = []
 
     @objc private func openWebsite() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
@@ -280,9 +285,11 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
         composerLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
         composerLabel.center.y += distance
         
-        contactLinks?.alpha = 0.0
-        contactLinks?.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
-        contactLinks?.center.y += distance
+        for line in contactLines {
+            line.alpha = 0.0
+            line.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
+            line.center.y += distance
+        }
 
         buildLabel.alpha = 0.0
         buildLabel.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
@@ -300,58 +307,72 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             self.logoIcon.alpha = 1.0
             self.logoIcon.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.logoIcon.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
 
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.logoTitle.alpha = 1.0
             self.logoTitle.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.logoTitle.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
 
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.creatorLabel.alpha = 1.0
             self.creatorLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.creatorLabel.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
 
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.composerLabel.alpha = 1.0
             self.composerLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.composerLabel.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
         
-        UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
-            self.contactLinks?.alpha = 1.0
-            self.contactLinks?.transform = CGAffineTransform(scaleX: 1, y: 1)
-            self.contactLinks?.center.y -= distance
-            delayFactor+=1
-        })
+        for line in contactLines {
+            UIView.animate(withDuration: 0.5, delay: delay*delayFactor,
+                           options: .curveEaseInOut, animations: {
+                line.alpha = 1.0
+                line.transform = CGAffineTransform(scaleX: 1, y: 1)
+                line.center.y -= distance
+            })
+            delayFactor += 1
+        }
         // In its place in the cascade rather than simply present (play-test round 20) - it
-        // sits between the credits and the build number on screen, so it arrives there too
+        // sits between the credits and the build number on screen, so it arrives there too.
+        // **A line at a time** since round 138 (play-test round 126: "make the website and
+        // email build in slightly in sequence"). Every other line on this screen arrives on
+        // its own; the pair arrived as a block because they share a stack view, which is a
+        // fact about how they are laid out and not about how they should read.
+        //
+        // **And the cascade was not a cascade at all.** Every step's `delayFactor += 1` sat
+        // *inside* its animation block, which UIKit runs when the animation begins - after
+        // the delay - not when it is scheduled. All eight calls therefore read the same
+        // delayFactor of 1 and every line arrived at once. It has been that way since the
+        // screen was written; "build in slightly in sequence" is what noticing it looks
+        // like from the outside. The step now happens where it is written
 
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.buildLabel.alpha = 1.0
             self.buildLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.buildLabel.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.copyrightLabel.alpha = 1.0
             self.copyrightLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.copyrightLabel.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
         
         UIView.animate(withDuration: 0.5, delay: delay*delayFactor, options: .curveEaseInOut, animations: {
             self.rightsLabel.alpha = 1.0
             self.rightsLabel.transform = CGAffineTransform(scaleX: 1, y: 1)
             self.rightsLabel.center.y -= distance
-            delayFactor+=1
         })
+        delayFactor += 1
     }
 }

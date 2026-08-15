@@ -175,7 +175,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
         itemsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         (itemsTableView as? ContentAwareTableView)?.stickyHeaderBand =
-            showsRecentsSection ? 30 : 0
+            showsRecentsSection ? ItemsDetailViewController.gridHeadingHeight : 0
         // Keeps the pinned section headers out of the edge fade - see stickyHeaderBand
 
         userSettings()
@@ -260,8 +260,15 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Pinned, like the rows' were: on the in-game power-up page the heading is what
         // tells you whether you are looking at this run's power-ups or all of them, and a
         // heading that scrolls away stops answering that halfway down
-        view.stickyHeaderBand = showsRecentsSection ? 30 : 0
-        // Only the in-game power-up list has headings to keep clear of the fade
+        view.stickyHeaderBand = hasGridHeadings
+            ? ItemsDetailViewController.gridHeadingHeight : 0
+        // **Whenever there are headings**, which is not only in game (play-test round 126:
+        // the reference page's headings "still getting obscured by the scroll blur"). The
+        // out-of-game page grew its own pair - CLASSIC GAME MODES and ENDLESS MAYHEM - when
+        // the reference was split by mode, and this line still only knew about the in-game
+        // one, so a pinned heading out of game sat in the fade and dimmed as the squares
+        // travelled under it. The band is the heading's own height, read from the same
+        // constant the layout is given, so the two cannot drift
         itemsView.addSubview(view)
         grid = view
 
@@ -405,12 +412,17 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
     }
 
+    /// How tall a grid heading is, and so how much of the top the fade must leave alone.
+    static let gridHeadingHeight: CGFloat = 30
+
+    /// Whether the grid draws headings at all - the in-game split, or the mode split.
+    var hasGridHeadings: Bool { showsRecentsSection || showsModeSections }
+
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         referenceSizeForHeaderInSection section: Int) -> CGSize {
-        guard collectionView == grid, showsRecentsSection || showsModeSections else {
-            return .zero
-        }
-        return CGSize(width: collectionView.bounds.width, height: 30)
+        guard collectionView == grid, hasGridHeadings else { return .zero }
+        return CGSize(width: collectionView.bounds.width,
+                      height: ItemsDetailViewController.gridHeadingHeight)
     }
 
     func collectionView(_ collectionView: UICollectionView,
