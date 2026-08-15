@@ -141,8 +141,11 @@ enum GameMode: Int, CaseIterable {
         case .classic: return classicIcon
         // Round rather than the app icon's rounded square (play-test round 15): the mode
         // rows are a set, and one of them wearing a different silhouette breaks the set
-        case .endless, .endlessII: return UIImage(named: "EndlessIcon.png")
-        // Endless 2.0 shares the endless icon until §8.5 draws it one of its own
+        case .endless: return UIImage(named: "EndlessIcon.png")
+        case .endlessII: return UIImage(named: "Endless2Icon.png")
+        // Mayhem has one of its own now (§8.5, drawn by James in round 130) - the two modes
+        // shared the endless icon until it existed, which is why the daily card and the
+        // menus all ask this one function rather than naming an asset each
         case .daily: return dailyIcon
         // Round like the rest of the set, not the power-up badge it used to borrow
         }

@@ -150,8 +150,11 @@ final class DailyCardView: UIView {
             // run ends, but the score is what the board ranks, and "clear it for the
             // score" had players reading the day as pass-or-fail
         } else {
-            levelImageView.image = UIImage(named: "EndlessIcon.png")
+            levelImageView.image = GameMode.menuIcon(for: challenge.mode)
             levelLabel.text = "How high can you get?"
+            // Through the one door rather than naming an asset (round 130): a Mayhem day now
+            // wears Mayhem's own icon, and it did so the moment that icon existed, without
+            // this screen being told about it
         }
 
         showTwists(challenge)
