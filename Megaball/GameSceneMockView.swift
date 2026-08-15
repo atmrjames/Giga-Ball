@@ -358,6 +358,8 @@ final class GameBackgroundView: UIView {
         switch background.paint {
         case .artwork:
             UIImage(named: "gameBackground")?.draw(in: area)
+        case .picture(let named):
+            UIImage(named: named)?.draw(in: area)
         case .solid(let colour):
             colour.setFill()
             context.fill(area)

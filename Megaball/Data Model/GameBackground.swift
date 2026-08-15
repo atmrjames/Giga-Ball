@@ -28,6 +28,8 @@ enum GameBackground: Int, CaseIterable {
     case gradient = 2
     case black = 3
     case glow = 4
+    case deepBlue = 5
+    case starrySky = 6
 
     /// The setting as it is stored, falling back to Classic for a value that no longer names
     /// anything - which is what an older build's setting looks like after a background is
@@ -43,6 +45,8 @@ enum GameBackground: Int, CaseIterable {
         case .gradient: return "Gradient"
         case .black: return "Black"
         case .glow: return "Glow"
+        case .deepBlue: return "Deep Blue"
+        case .starrySky: return "Starry Sky"
         }
     }
 
@@ -54,6 +58,8 @@ enum GameBackground: Int, CaseIterable {
         case .gradient: return "Light at the top, falling away below the paddle"
         case .black: return "Black, for the most contrast the screen can give"
         case .glow: return "The gradient, with a haze of Giga-Ball green above the field"
+        case .deepBlue: return "A deep blue night, darkening towards the paddle"
+        case .starrySky: return "A black sky scattered with stars"
         }
     }
 
@@ -65,6 +71,12 @@ enum GameBackground: Int, CaseIterable {
     enum Paint {
         /// The artwork on the scene's own background node.
         case artwork
+        /// A full-height picture of its own, by asset name.
+        ///
+        /// Separate from `artwork` because that one *is* the background node's own texture -
+        /// the scene paints Classic simply by leaving the node alone. Anything else needs
+        /// drawing over it, and needs to say which picture (round 131's two).
+        case picture(String)
         /// One flat colour.
         case solid(UIColor)
         /// A vertical fade, top to bottom.
@@ -80,6 +92,8 @@ enum GameBackground: Int, CaseIterable {
         case .gradient: return .gradient
         case .black: return .solid(.black)
         case .glow: return .glow
+        case .deepBlue: return .picture("BackgroundBlue")
+        case .starrySky: return .picture("BackgroundSpacePack")
         }
     }
 

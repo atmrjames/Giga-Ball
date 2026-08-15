@@ -44,17 +44,32 @@ final class GameBackgroundTests: XCTestCase {
                        GameBackground.allCases.map(\.name))
     }
 
-    func testOnlyClassicUsesArtwork() {
-        // The rest are drawn at runtime, which is what lets them sit at whatever size the
-        // playfield turns out to be rather than needing an asset per device
+    func testOnlyClassicWearsTheScenesOwnArtwork() {
+        // Classic *is* the background node's texture, so the scene paints it by leaving the
+        // node alone. The drawn ones sit at whatever size the playfield turns out to be, and
+        // round 131's two are pictures of their own drawn over the top - which is why
+        // `picture` carries a name and `artwork` does not
         for background in GameBackground.allCases {
             switch background.paint {
             case .artwork:
                 XCTAssertEqual(background, .classic)
+            case .picture(let named):
+                XCTAssertNotEqual(background, .classic)
+                XCTAssertNotNil(UIImage(named: named),
+                                "\(background.name) names an asset that is not in the bundle")
             case .solid, .gradient, .glow:
                 XCTAssertNotEqual(background, .classic)
             }
         }
+    }
+
+    /// Every background the picker offers has to be one the game can actually paint - a name
+    /// in the list with no picture behind it is a black screen with a title.
+    func testEveryBackgroundNamesSomethingAndIsListedOnce() {
+        let names = GameBackground.allCases.map(\.name)
+        XCTAssertEqual(Set(names).count, names.count, "two backgrounds share a name")
+        XCTAssertTrue(names.contains("Deep Blue"))
+        XCTAssertTrue(names.contains("Starry Sky"))
     }
 
     func testTheGradientTurnsAtThePaddle() {

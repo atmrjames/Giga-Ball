@@ -6953,6 +6953,14 @@ laserTimer?.invalidate()
 		switch setting.paint {
 		case .artwork:
 			overlay.isHidden = true
+		case .picture(let named):
+			overlay.isHidden = false
+			overlay.colorBlendFactor = 0
+			overlay.color = .clear
+			overlay.texture = SKTexture(imageNamed: named)
+			// Drawn over the Classic artwork rather than replacing the node's own texture,
+			// which is what every other background here does - the node keeps its size and
+			// position and the overlay is the only thing that changes with the setting
 		case .solid(let colour):
 			overlay.isHidden = false
 			overlay.texture = nil
