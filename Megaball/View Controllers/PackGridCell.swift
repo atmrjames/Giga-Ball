@@ -123,6 +123,13 @@ final class PackGridCell: UICollectionViewCell {
         play.addTarget(self, action: #selector(listTapped), for: .touchUpInside)
         card.addSubview(play)
 
+        let blockLeading = block.leadingAnchor.constraint(equalTo: card.leadingAnchor,
+                                                          constant: namePadding)
+        let blockTrailing = block.trailingAnchor.constraint(equalTo: card.trailingAnchor,
+                                                            constant: -namePadding)
+        self.blockLeading = blockLeading
+        self.blockTrailing = blockTrailing
+
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor),
             card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
@@ -139,8 +146,7 @@ final class PackGridCell: UICollectionViewCell {
             block.centerYAnchor.constraint(equalTo: card.centerYAnchor, constant: 5),
             // Nudged down off dead centre (play-test round 37): the two corner marks now sit
             // along the top edge, so true centre reads as slightly high against them
-            block.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 4),
-            block.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -4),
+            blockLeading, blockTrailing,
 
             icon.heightAnchor.constraint(equalTo: icon.widthAnchor),
 
@@ -186,6 +192,23 @@ final class PackGridCell: UICollectionViewCell {
     /// icon you would be wearing, and at 42% of a square it was a stamp in a field of glass
     /// (play-test round 85: "app icon images larger in their squares"). A multiplier cannot
     /// be edited once made, so the constraint is replaced rather than adjusted.
+    /// How far the name and picture stand in from the square's edges.
+    ///
+    /// Four points is right for a pack's one word. An achievement's name is a sentence -
+    /// "Endless Mode 1,000m Milestone" - and at four points it ran to the very edge of the
+    /// glass, which is what the play test saw as the squares being tight (round 126).
+    /// Settable per screen for the same reason `iconScale` is: one grid, several lists,
+    /// different things written on them.
+    var namePadding: CGFloat = 4 {
+        didSet {
+            guard namePadding != oldValue else { return }
+            blockLeading?.constant = namePadding
+            blockTrailing?.constant = -namePadding
+        }
+    }
+    private var blockLeading: NSLayoutConstraint?
+    private var blockTrailing: NSLayoutConstraint?
+
     var iconScale: CGFloat = PackGridCell.defaultIconScale {
         didSet { if iconScale != oldValue { applyIconScale() } }
     }

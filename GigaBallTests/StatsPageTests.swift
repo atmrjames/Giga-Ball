@@ -520,6 +520,63 @@ final class PerModeTimeTests: XCTestCase {
         XCTAssertTrue(rows.contains { $0.label == "Best height" }, "the heights still show")
     }
 
+    // MARK: - The achievements page's tabs
+
+    // Play-test round 126: "Use tab bar in achievements view". The tabs are the statistics
+    // page's, so what is filed under each has to match where the achievement can be earned.
+
+    func testTheTabsAreTheStatisticsPagesTabs() {
+        XCTAssertEqual(AchievementCatalogue.tabs.map(\.title),
+                       ["All"] + StatsPage.Tab.allCases.dropFirst().map(\.title),
+                       "one screen's sections, read off the other's, so they cannot drift")
+    }
+
+    func testEveryAchievementIsFiledUnderAtLeastOneMode() {
+        let count = LevelPackSetup().achievementsNameArray.count
+        for index in 0..<count {
+            XCTAssertFalse(AchievementCatalogue.modes(for: index).isEmpty,
+                           "achievement \(index) belongs nowhere")
+        }
+    }
+
+    func testAnAchievementIsNeverBothEndlessOnlyAndClassicOnly() {
+        XCTAssertTrue(AchievementCatalogue.endlessOnly
+            .isDisjoint(with: AchievementCatalogue.classicOnly))
+    }
+
+    func testAnEndlessMilestoneCountsInBothEndlessModes() {
+        // `endlessMode` is true in Endless and in Mayhem, and none of these checks asks
+        // which - so a height milestone is earnable in either, and the page must say so
+        XCTAssertTrue(AchievementCatalogue.belongs(0, to: .endless))
+        XCTAssertTrue(AchievementCatalogue.belongs(0, to: .endlessII))
+        XCTAssertFalse(AchievementCatalogue.belongs(0, to: .classic))
+    }
+
+    func testAPackAchievementIsClassicOnly() {
+        XCTAssertTrue(AchievementCatalogue.belongs(6, to: .classic))
+        XCTAssertFalse(AchievementCatalogue.belongs(6, to: .endless))
+        XCTAssertFalse(AchievementCatalogue.belongs(6, to: .endlessII))
+    }
+
+    func testAPowerUpAchievementCountsEverywhere() {
+        // "Now We're Talking" - a first power-up, wherever the paddle was
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            XCTAssertTrue(AchievementCatalogue.belongs(24, to: mode), "\(mode)")
+        }
+    }
+
+    func testTheDailyHasNoneAndSaysWhy() {
+        let count = LevelPackSetup().achievementsNameArray.count
+        XCTAssertTrue(AchievementCatalogue.indices(for: .daily, count: count).isEmpty,
+                      "achievementsCheck() returns early for a daily - daily spec §9")
+        XCTAssertTrue(AchievementCatalogue.emptyNote(for: .daily).isEmpty == false)
+    }
+
+    func testTheAllTabHoldsEveryAchievement() {
+        let count = LevelPackSetup().achievementsNameArray.count
+        XCTAssertEqual(AchievementCatalogue.indices(for: nil, count: count).count, count)
+    }
+
     /// Both sync tables must name every field, or a device quietly keeps a stat to itself -
     /// the shape of trap ENDLESS-2-SPECIFICATION §8.6 keeps warning about.
     func testEverySyncedModeTimeIsNamedInTheKeyTable() {

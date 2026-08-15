@@ -172,6 +172,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         
         
         buildGridIfWanted()
+        installAchievementTabs()
 
         itemsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
         (itemsTableView as? ContentAwareTableView)?.stickyHeaderBand =
@@ -233,6 +234,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     private var gridColumns: CGFloat { senderID == 3 ? 2 : 3 }
 
     private var grid: UICollectionView?
+    private weak var achievementPicker: UISegmentedControl?
+    private let emptyNote = UILabel()
 
     /// Builds the grid over the table, and takes the table out of the way.
     ///
@@ -297,10 +300,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             // something about it that is not true
         }
         if senderID == 3 {
-            let done = totalStatsArray[0].achievementsUnlockedArray[indexPath.item]
-            return (setup.achievementsNameArray[indexPath.item],
+            let item = shownAchievements[indexPath.item]
+            // Through the tab's list, so the square shows the achievement the row stands for
+            // rather than the one that happens to sit at that position in the full array
+            let done = totalStatsArray[0].achievementsUnlockedArray[item]
+            return (setup.achievementsNameArray[item],
                     UIImage(named: done
-                            ? setup.achievementsImageArray[indexPath.item]
+                            ? setup.achievementsImageArray[item]
                             : "AchivementBadgeIncomplete.png"),
                     true, done)
             // Always "unlocked": an achievement you have not earned is not hidden, it is
@@ -408,7 +414,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 return section == 0 ? split.everyMode.count : split.mayhem.count
             }
             return standardPowerUpRows.count
-        default: return LevelPackSetup().achievementsNameArray.count
+        default: return shownAchievements.count
         }
     }
 
@@ -417,6 +423,87 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     /// Whether the grid draws headings at all - the in-game split, or the mode split.
     var hasGridHeadings: Bool { showsRecentsSection || showsModeSections }
+
+    // MARK: - The achievements page's tabs
+
+    /// Which mode's achievements are being shown, nil for all of them.
+    ///
+    /// Not remembered between visits, for the same reason the statistics page does not
+    /// remember its tab: someone opening the page is asking "how am I doing", and the answer
+    /// to that starts at All.
+    var achievementTab = 0
+
+    /// The achievements the current tab shows, as indices into the arrays that hold them.
+    ///
+    /// Indices rather than a filtered copy of the names, because everything the square draws
+    /// - the name, the badge, whether it is earned - is read from a different array by the
+    /// same index, and a filtered list would have to carry all of them.
+    var shownAchievements: [Int] {
+        AchievementCatalogue.indices(
+            for: AchievementCatalogue.tabs[achievementTab].mode,
+            count: LevelPackSetup().achievementsNameArray.count)
+    }
+
+    /// Puts the mode picker between the title and the grid, in the statistics page's dress.
+    ///
+    /// The same control, coloured the same way, because it is the same idea: this screen and
+    /// that one are both "everything you have done, by mode" (play-test round 126). The
+    /// colours are repeated rather than shared only because the statistics page builds its
+    /// own inside a method that also moves a storyboard constraint this screen does not have.
+    private func installAchievementTabs() {
+        guard senderID == 3, let grid else { return }
+
+        let picker = UISegmentedControl(items: AchievementCatalogue.tabs.map { $0.title })
+        picker.selectedSegmentIndex = achievementTab
+        picker.translatesAutoresizingMaskIntoConstraints = false
+        picker.selectedSegmentTintColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        picker.backgroundColor = UIColor(white: 1, alpha: 0.12)
+        picker.setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 13, weight: .semibold)], for: .normal)
+        picker.setTitleTextAttributes([
+            .foregroundColor: #colorLiteral(red: 0.2159586251, green: 0.04048030823, blue: 0.3017641902, alpha: 1),
+            .font: UIFont.systemFont(ofSize: 13, weight: .bold)], for: .selected)
+        picker.addTarget(self, action: #selector(achievementTabChanged),
+                         for: .valueChanged)
+        itemsView.addSubview(picker)
+        achievementPicker = picker
+
+        emptyNote.translatesAutoresizingMaskIntoConstraints = false
+        emptyNote.numberOfLines = 0
+        emptyNote.textAlignment = .center
+        emptyNote.font = .systemFont(ofSize: 14)
+        emptyNote.textColor = UIColor(white: 1, alpha: 0.5)
+        emptyNote.isHidden = true
+        itemsView.addSubview(emptyNote)
+
+        NSLayoutConstraint.activate([
+            picker.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 20),
+            picker.trailingAnchor.constraint(equalTo: grid.trailingAnchor, constant: -20),
+            picker.topAnchor.constraint(equalTo: grid.topAnchor),
+            emptyNote.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 40),
+            emptyNote.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 30),
+            emptyNote.trailingAnchor.constraint(equalTo: grid.trailingAnchor, constant: -30),
+        ])
+        grid.contentInset.top = 52
+        grid.verticalScrollIndicatorInsets.top = 52
+        // The picker sits *over* the grid's top rather than above it, with the grid inset to
+        // match: the screen's layout is the storyboard's, and pushing the grid down would
+        // have meant moving a constraint that four other lists share
+    }
+
+    @objc private func achievementTabChanged(_ picker: UISegmentedControl) {
+        achievementTab = picker.selectedSegmentIndex
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        grid?.reloadData()
+        emptyNote.text = AchievementCatalogue.emptyNote(
+            for: AchievementCatalogue.tabs[achievementTab].mode)
+        emptyNote.isHidden = shownAchievements.isEmpty == false
+        grid?.setContentOffset(CGPoint(x: 0, y: -(grid?.contentInset.top ?? 0)),
+                               animated: false)
+        // Back to the top on a change of tab: the tabs hold very different numbers of
+        // squares, and staying at row twelve of a list that now has four is a blank screen
+    }
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         referenceSizeForHeaderInSection section: Int) -> CGSize {
@@ -809,6 +896,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 for: indexPath) as! PackGridCell
             let item = gridItem(at: indexPath)
             square.iconScale = gridIconScale
+            square.namePadding = senderID == 3 ? 12 : 4
+            // Achievement names are sentences and want room round them (play-test round 126)
             square.show(name: item.name, icon: item.icon,
                         unlocked: item.unlocked, completed: item.chosen, recolour: false,
                         nameSize: gridNameSize)
@@ -866,7 +955,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         if senderID == 3 {
             hideAnimate()
-            moveToItemStats(passedIndex: indexPath.item, sender: "Achievements")
+            moveToItemStats(passedIndex: shownAchievements[indexPath.item],
+                            sender: "Achievements")
+            // The tab's list again: the detail page is opened on the achievement the square
+            // is showing, which under any tab but All is not the one at that position
             return
         }
         // **Both open their detail page, and both hide this one first.** The rows did the
