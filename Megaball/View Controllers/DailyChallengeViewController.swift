@@ -50,7 +50,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// Whether the pager has been put on today yet - see viewDidLayoutSubviews.
     private var landedOnOpening = false
 
-    var todayRank: Int?
+    var todayStanding: DailyStanding?
     var todayRankRequested = false
     // Where today's posted score stands, once Game Center has answered - asked for at
     // most once per visit to the screen, because the answer barely moves and the ask
@@ -458,13 +458,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     /// The rank of today's posted score, asked of Game Center at most once per visit.
     private func askForTodaysRank() {
-        guard viewedOffset == 0, todayRank == nil, todayRankRequested == false,
+        guard viewedOffset == 0, todayStanding == nil, todayRankRequested == false,
               totalStatsArray[0].dailyRecord(forKey: viewedKey)?.posted == true
         else { return }
         todayRankRequested = true
-        GameCenterHandler().loadDailyRank { [weak self] rank in
-            guard let self, let rank else { return }
-            self.todayRank = rank
+        GameCenterHandler().loadDailyStanding { [weak self] standing in
+            guard let self, let standing else { return }
+            self.todayStanding = DailyStanding(rank: standing.rank, players: standing.players)
             self.days.reloadData()
             // The placing joins the card when Game Center answers; the recurring board
             // resets at the deadline, so only today has one to ask for
@@ -654,7 +654,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         let isToday = key == DailyChallengeSession.shared.todayKey
         cell.card.show(key: key, isToday: isToday,
                        record: totalStatsArray[0].dailyRecord(forKey: key),
-                       rank: isToday ? todayRank : nil)
+                       standing: isToday ? todayStanding : nil)
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
         cell.card.postedScoreTapped = { [weak self] in self?.leaderboardTapped() }
         // The posted score is the board's own figure, so the row showing it opens the board

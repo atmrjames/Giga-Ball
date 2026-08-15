@@ -64,7 +64,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     let signedOutLabel = UILabel()
     private var livesUnderHighscore: NSLayoutConstraint!
     private var livesUnderScore: NSLayoutConstraint!
-    private var summaryUnderStats: NSLayoutConstraint!
+    private var statsUnderTheResult: NSLayoutConstraint!
     private weak var activePowerUpHUD: PausedPowerUpHUD?
     // Added in code rather than the storyboard: the pause screen's labels are all wired
     // through outlets and constraints there, and adding one more by hand risks the
@@ -75,6 +75,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // "the pause menu shows a compact twist summary"): the day, then each twist by icon
     // and name - names only, because mid-run is when someone forgets what Flipped Angle
     // means, not when they want to read about it
+
+    let dailyResultLabel = UILabel()
+    /// The rules sit with the level they are the rules of; the title makes room for them.
+    private var rulesUnderTheLevel: NSLayoutConstraint!
+    private var titleUnderTheRules: NSLayoutConstraint!
+    // **The day's rules belong with the day's level** (play-test round 126: "twist info
+    // should go near level info"). They used to float a third of the way down the screen,
+    // under the score, with the result line stuck to the bottom of the same label - so the
+    // twists were nowhere near the level they applied to, and what the run *scored* was
+    // buried in the middle of them. Split in two: the rules go up beside the level, and
+    // the result goes down with the run's numbers where a result belongs
 
     var isDailyChallenge: Bool { DailyChallengeSession.shared.isActive }
 
@@ -204,12 +215,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
               let summary = InGameRecents.shared.runSummary else {
             runStatsLabel.isHidden = true
             moreStatsButton.isHidden = true
-            summaryUnderStats.isActive = false
+            statsUnderTheResult.isActive = false
             return
         }
         runStatsLabel.isHidden = false
         moreStatsButton.isHidden = false
-        summaryUnderStats.isActive = true
+        statsUnderTheResult.isActive = true
         showActivePowerUps()
         let text = NSMutableAttributedString()
         var items: [(String, String, Int)] = [
@@ -248,7 +259,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     // Asked of the session, which outlives the scene until the menus return
 
-    var dailyRank: Int?
+    var dailyStanding: DailyStanding?
     // Where the posted run stands on today's board, once Game Center has answered
 
     @IBOutlet var levelTitleLowerConstraint: NSLayoutConstraint!
@@ -325,9 +336,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         announceClosedDayIfNeeded()
 
         if isDailyChallenge, sender != "Pause", DailyChallengeSession.shared.lastRunPosted {
-            GameCenterHandler().loadDailyRank { [weak self] rank in
-                guard let self, let rank else { return }
-                self.dailyRank = rank
+            GameCenterHandler().loadDailyStanding { [weak self] standing in
+                guard let self, let standing else { return }
+                self.dailyStanding = DailyStanding(rank: standing.rank,
+                                                   players: standing.players)
                 self.updateDailySummary()
             }
             // The placing joins the summary when Game Center answers; a screen already
@@ -349,6 +361,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         dailySummaryLabel.isHidden = true
         containterView.addSubview(dailySummaryLabel)
 
+        dailyResultLabel.translatesAutoresizingMaskIntoConstraints = false
+        dailyResultLabel.textAlignment = .center
+        dailyResultLabel.numberOfLines = 0
+        dailyResultLabel.font = .systemFont(ofSize: 12)
+        dailyResultLabel.textColor = UIColor(white: 1, alpha: 0.55)
+        dailyResultLabel.isHidden = true
+        containterView.addSubview(dailyResultLabel)
+
         signedOutLabel.translatesAutoresizingMaskIntoConstraints = false
         signedOutLabel.textAlignment = .center
         signedOutLabel.numberOfLines = 0
@@ -358,8 +378,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         signedOutLabel.isHidden = true
         containterView.addSubview(signedOutLabel)
 
-        summaryUnderStats = dailySummaryLabel.topAnchor.constraint(
-            greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 20)
+        statsUnderTheResult = runStatsLabel.topAnchor.constraint(
+            greaterThanOrEqualTo: dailyResultLabel.bottomAnchor, constant: 20)
+        // Switched on with the stats themselves: the result line and the stats block are
+        // both in the lower half now, and only a screen showing both needs them kept apart
 
         livesUnderHighscore = livesLabel.topAnchor.constraint(
             equalTo: highscoreLabel.bottomAnchor, constant: 6)
@@ -373,7 +395,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NSLayoutConstraint.activate([
             signedOutLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
-                                                    dailySummaryLabel.bottomAnchor,
+                                                    dailyResultLabel.bottomAnchor,
                                                 constant: 14),
             signedOutLabel.bottomAnchor.constraint(equalTo: buttonCollectionView.topAnchor,
                                                    constant: -12),
@@ -400,28 +422,40 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             // Tight to the score it belongs with (play-test round 16) - the air goes
             // below it, between the run's numbers and the day's rules
             dailySummaryLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            dailySummaryLabel.topAnchor.constraint(
-                greaterThanOrEqualTo: livesLabel.bottomAnchor, constant: 34),
-            {
-                let preferred = dailySummaryLabel.topAnchor.constraint(
-                    equalTo: livesLabel.bottomAnchor, constant: 34)
-                preferred.priority = .defaultHigh
-                return preferred
-            }(),
-            // A gap under the lives line, then the day's rules (play-test round 16). Where
-            // there are run stats they sit in between and push this down - but only where
-            // there are: the constraint that makes room for them is switched on with them,
-            // because hidden labels still hold their place and this screen was leaving a
-            // third of itself blank for a stats list the daily never shows
             dailySummaryLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
                                                         containterView.leadingAnchor,
                                                        constant: 30),
             dailySummaryLabel.trailingAnchor.constraint(lessThanOrEqualTo:
                                                         containterView.trailingAnchor,
                                                         constant: -30),
+
+            dailyResultLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            dailyResultLabel.topAnchor.constraint(greaterThanOrEqualTo:
+                                                    livesLabel.bottomAnchor, constant: 22),
+            {
+                let preferred = dailyResultLabel.topAnchor.constraint(
+                    equalTo: livesLabel.bottomAnchor, constant: 22)
+                preferred.priority = .defaultHigh
+                return preferred
+            }(),
+            // Under the run's numbers, which is what it is one of: the score, the balls,
+            // and then whether the score reached the board
+            dailyResultLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
+                                                        containterView.leadingAnchor,
+                                                      constant: 30),
+            dailyResultLabel.trailingAnchor.constraint(lessThanOrEqualTo:
+                                                        containterView.trailingAnchor,
+                                                       constant: -30),
         ])
-        // The daily summary hangs under the lives line - a hidden label still holds its
-        // position, so the summary sits in the same place whether lives are shown or not
+
+        rulesUnderTheLevel = dailySummaryLabel.topAnchor.constraint(
+            equalTo: levelNameLabel.bottomAnchor, constant: 10)
+        titleUnderTheRules = titleLabel.topAnchor.constraint(
+            equalTo: dailySummaryLabel.bottomAnchor, constant: 16)
+        // Switched on with the summary itself, in `updateDailySummary`, because they
+        // replace the storyboard's own "title under the level name" - and outside the daily
+        // that is still the right answer. One below required, like the storyboard's own
+        // lowered constraint, so a screen too short to honour everything bends here
     }
     // Matches the "Previous Highscore" title's font and colour, so it reads as another
     // line of the same block rather than something bolted on
@@ -538,53 +572,70 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                            symbol: "dice.fill")
     }
 
-    /// The compact daily block: the day, then each twist by icon and name.
+    /// The compact daily block: what kind of run this is, then each twist by icon and name.
+    ///
+    /// Two labels, not one (play-test round 126). The rules sit with the level info at the
+    /// top of the screen, because that is what they are the rules of; the result - posted,
+    /// or free play - sits with the run's numbers lower down, because that is what it is.
     func updateDailySummary() {
         guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
             dailySummaryLabel.isHidden = true
+            dailyResultLabel.isHidden = true
+            rulesUnderTheLevel?.isActive = false
+            titleUnderTheRules?.isActive = false
             return
         }
         dailySummaryLabel.isHidden = false
+
+        levelNameLabelNormalConstraint.isActive = false
+        levelTitleLowerConstraint.isActive = false
+        rulesUnderTheLevel.isActive = true
+        titleUnderTheRules.isActive = true
+        // The rules stand between the level's name and PAUSED, so the storyboard's own
+        // "title under the level" steps aside for them. Both of its versions are switched
+        // off rather than only the active one: which of the two is running depends on
+        // whether the level line is filled, and a daily can be either
         if dailySummaryLabel.gestureRecognizers?.isEmpty ?? true {
             dailySummaryLabel.isUserInteractionEnabled = true
             dailySummaryLabel.addGestureRecognizer(
                 UITapGestureRecognizer(target: self, action: #selector(dailyTwistsTapped)))
         }
 
-        let summary = NSMutableAttributedString(
-            string: "DAILY CHALLENGE, "
-                + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey),
-            attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
-                         .foregroundColor: UIColor(white: 1, alpha: 0.55)])
+        let summary = NSMutableAttributedString()
 
         if sender == "Pause" {
             let scoring = DailyChallengeSession.shared.isScoringAttempt
             summary.append(NSAttributedString(
-                string: "\n" + (scoring ? "COMPETITION RUN" : "FREE PLAY"),
+                string: scoring ? "COMPETITION RUN" : "FREE PLAY",
                 attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
                              .foregroundColor: scoring
                                 ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
                                 : UIColor(white: 1, alpha: 0.55)]))
+            summary.append(NSAttributedString(string: "\n"))
             // Mid-run, what is riding on this one (play-test round 13). On the game-over
             // screen the posted-or-not line below already says it, and better
         }
+        // The day itself is no longer named here: the block sits under a header that
+        // already says Daily Challenge and which day it is, and saying it twice in two
+        // sizes six points apart was what made the block look bolted on
 
-        for twist in challenge.twists {
-            summary.append(NSAttributedString(string: "\n"))
+        for (position, twist) in challenge.twists.enumerated() {
+            if position > 0 { summary.append(NSAttributedString(string: "\n")) }
             summary.append(twist.titleLine(font: .boldSystemFont(ofSize: 14),
                                            colour: .white))
         }
         if challenge.twists.isEmpty {
-            summary.append(NSAttributedString(string: "\n"))
             summary.append(DailyTwist.vanillaLine(font: .boldSystemFont(ofSize: 14),
                                                   colour: .white))
             // A no-twist day is Vanilla, badged like any other (play-test round 3)
         }
 
+        dailyResultLabel.isHidden = sender == "Pause"
         if sender != "Pause" {
-            let result: String
             if DailyChallengeSession.shared.lastRunPosted {
-                result = dailyRank.map { "Posted, #\($0) on today's board" }
+                dailyResultLabel.text = dailyStanding.map { "Posted, \($0.text) on today's board" }
+                // The same figures the briefing screen prints, from the same place: a
+                // placing with the field size beside it (play-test round 126)
                     ?? "Submitted to today's board"
                 // The placing arrives asynchronously when Game Center answers. Until
                 // then "submitted" is the honest word (§12.5): the score is on its way,
@@ -592,12 +643,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                 // Store Connect - the retry loop carries it and the briefing screen's
                 // badge tells the truth of where it got to
             } else {
-                result = "Free play, which never posts"
+                dailyResultLabel.text = "Free play, which never posts"
             }
-            summary.append(NSAttributedString(
-                string: "\n\n\(result)",
-                attributes: [.font: UIFont.systemFont(ofSize: 12),
-                             .foregroundColor: UIColor(white: 1, alpha: 0.55)]))
         }
 
         let paragraph = NSMutableParagraphStyle()
@@ -864,7 +911,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     func updateLabels() {
         updateLivesLabel()
         updateRunStatsLabel()
-        updateDailySummary()
         updateSignedOutNote()
 
         newItemsLabel.isHidden = true
@@ -1005,6 +1051,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
             levelNameLabel.text = ""
         }
+
+        updateDailySummary()
+        // **Last, not first.** Every branch above decides which of the storyboard's two
+        // "title under the level" constraints is running, and the daily's rules replace
+        // both - so the rules have to be placed after the branch that would put them back.
+        // Called first, it left two constraints of equal priority fighting over the title
+        // and the block laid out where nothing could be read
     }
     
     func removeAnimate(nextAction: Notification.Name) {

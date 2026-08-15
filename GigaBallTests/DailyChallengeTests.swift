@@ -777,6 +777,28 @@ final class DailyNoRepeatsTests: XCTestCase {
         XCTAssertEqual(DailyChallengeGenerator.previousKey(of: "2026-03-01"), "2026-02-28")
     }
 
+    // MARK: - The standing
+
+    // Play-test round 126: "For a listed score on the daily challenge menu view, put the
+    // position info in front of the score and show the number of players e.g. 1st / 200."
+
+    func testAStandingReadsAsAPlaceOutOfAField() {
+        XCTAssertEqual(DailyStanding(rank: 1, players: 200).text, "1st / 200")
+        XCTAssertEqual(DailyStanding(rank: 2, players: 200).text, "2nd / 200")
+        XCTAssertEqual(DailyStanding(rank: 3, players: 200).text, "3rd / 200")
+        XCTAssertEqual(DailyStanding(rank: 4, players: 200).text, "4th / 200")
+    }
+
+    func testTheAwkwardOrdinalsAreTheFormattersProblemAndItGetsThemRight() {
+        // 11th, not 11st - which is the reason a formatter does this rather than a switch
+        // on the last digit
+        XCTAssertEqual(DailyStanding.ordinal(11), "11th")
+        XCTAssertEqual(DailyStanding.ordinal(12), "12th")
+        XCTAssertEqual(DailyStanding.ordinal(13), "13th")
+        XCTAssertEqual(DailyStanding.ordinal(21), "21st")
+        XCTAssertEqual(DailyStanding.ordinal(101), "101st")
+    }
+
     func testTwoDaysOfTheSameModeAreOnlySimilarWhenTheirTwistsAre() {
         let plain = DailyChallenge(dateKey: "a", mode: .endlessII, classicLevel: nil, twists: [])
         let alsoPlain = DailyChallenge(dateKey: "b", mode: .endlessII, classicLevel: nil, twists: [])

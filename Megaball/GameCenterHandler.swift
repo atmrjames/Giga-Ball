@@ -116,20 +116,32 @@ final class GameCenterHandler: NSObject {
         submit(total, to: DailyChallengeBoards.total)
     }
 
-    /// Where the local player stands on today's board, for the game-over screen.
+    /// Where the local player stands on today's board, and how big the field is.
     ///
     /// Nil when it cannot be known - signed out, offline, or the board not existing in
     /// App Store Connect yet - and the screen simply says nothing then.
-    func loadDailyRank(completion: @escaping (Int?) -> Void) {
+    ///
+    /// The field size comes from the *global* entry load rather than the by-player one,
+    /// which is the only call that reports it (play-test round 126: "show the number of
+    /// players e.g. 1st / 200"). A range of one row is asked for because the rows are not
+    /// wanted at all - only the count that comes back beside them and the local player's
+    /// own entry, which this call returns as well.
+    func loadDailyStanding(completion: @escaping ((rank: Int, players: Int)?) -> Void) {
         guard GKLocalPlayer.local.isAuthenticated else { completion(nil); return }
         GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
             guard let board = boards?.first else {
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
-            board.loadEntries(for: [GKLocalPlayer.local], timeScope: .allTime) {
-                localEntry, _, _ in
-                DispatchQueue.main.async { completion(localEntry?.rank) }
+            board.loadEntries(for: .global, timeScope: .allTime,
+                              range: NSRange(location: 1, length: 1)) {
+                localEntry, _, players, _ in
+                DispatchQueue.main.async {
+                    guard let rank = localEntry?.rank else { completion(nil); return }
+                    completion((rank: rank, players: max(players, rank)))
+                    // Never fewer players than there are places: a count that has not
+                    // caught up with the entry would print "3rd / 2"
+                }
                 // A recurring board's current occurrence is what loads by default,
                 // which is exactly today's window
             }

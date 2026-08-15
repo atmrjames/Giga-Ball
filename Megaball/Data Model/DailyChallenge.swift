@@ -552,6 +552,28 @@ enum DailyChallengeBoards {
     }
 }
 
+/// Where a player finished on a day's board, and how many they finished among.
+///
+/// A place on its own says nothing about how hard it was won - 3rd of 4 and 3rd of 4,000
+/// are different days (play-test round 126: "show the number of players e.g. 1st / 200").
+/// So the two travel together, and the one place that turns them into words is here rather
+/// than on each screen that prints them.
+struct DailyStanding: Equatable {
+    let rank: Int
+    let players: Int
+
+    /// "1st / 200", the position in the reader's own language.
+    var text: String { "\(DailyStanding.ordinal(rank)) / \(players)" }
+
+    /// 1st, 2nd, 3rd - and whatever the reader's locale makes of them, since a formatter
+    /// knows what English's exceptions are and what other languages do instead.
+    static func ordinal(_ value: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .ordinal
+        return formatter.string(from: NSNumber(value: value)) ?? String(value)
+    }
+}
+
 // MARK: - The session
 
 /// The daily challenge currently being played, if one is.

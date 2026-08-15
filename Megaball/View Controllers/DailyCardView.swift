@@ -40,7 +40,6 @@ final class DailyCardView: UIView {
 
     private let detailsCard = UIView()
     private let resultCard = UIView()
-    private let column = UIStackView()
 
     private func build() {
         translatesAutoresizingMaskIntoConstraints = false
@@ -95,18 +94,33 @@ final class DailyCardView: UIView {
         resultLabel.translatesAutoresizingMaskIntoConstraints = false
         resultCard.addSubview(resultLabel)
 
-        column.axis = .vertical
-        column.spacing = 12
-        column.translatesAutoresizingMaskIntoConstraints = false
-        column.addArrangedSubview(detailsCard)
-        column.addArrangedSubview(resultCard)
-        addSubview(column)
+        detailsCard.translatesAutoresizingMaskIntoConstraints = false
+        resultCard.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(detailsCard)
+        addSubview(resultCard)
+
+        let resultSitsAtTheBottom = resultCard.bottomAnchor.constraint(equalTo: bottomAnchor)
+        resultSitsAtTheBottom.priority = .required - 1
+        // **The day's rules hug the top and the day's score hugs the bottom** (play-test
+        // round 126: "move the score container lower"). They used to be one stack, so the
+        // score sat wherever the twists left it - halfway up a Vanilla day, further down a
+        // three-twist one - and the reader's eye had to find it again on every swipe. Now
+        // it lands just above the date, in the same place on every day.
+        //
+        // One priority below required so that a card too tall for its page - a long day on
+        // a small phone - overflows rather than refusing to lay out, the gap above the
+        // score being the constraint that holds
 
         NSLayoutConstraint.activate([
-            column.topAnchor.constraint(equalTo: topAnchor),
-            column.leadingAnchor.constraint(equalTo: leadingAnchor),
-            column.trailingAnchor.constraint(equalTo: trailingAnchor),
-            column.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            detailsCard.topAnchor.constraint(equalTo: topAnchor),
+            detailsCard.leadingAnchor.constraint(equalTo: leadingAnchor),
+            detailsCard.trailingAnchor.constraint(equalTo: trailingAnchor),
+
+            resultCard.topAnchor.constraint(greaterThanOrEqualTo: detailsCard.bottomAnchor,
+                                            constant: 12),
+            resultCard.leadingAnchor.constraint(equalTo: leadingAnchor),
+            resultCard.trailingAnchor.constraint(equalTo: trailingAnchor),
+            resultSitsAtTheBottom,
 
             stack.topAnchor.constraint(equalTo: detailsCard.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: detailsCard.leadingAnchor, constant: 16),
@@ -132,7 +146,8 @@ final class DailyCardView: UIView {
 
     /// Shows a day. Everything the card draws comes from these arguments, so the same card
     /// can be reused for any day the pager scrolls to.
-    func show(key: String, isToday: Bool, record: DailyChallengeRecord?, rank: Int?) {
+    func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
+              standing: DailyStanding?) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -158,7 +173,7 @@ final class DailyCardView: UIView {
         }
 
         showTwists(challenge)
-        showResult(record, mode: challenge.mode, isToday: isToday, rank: rank)
+        showResult(record, mode: challenge.mode, isToday: isToday, standing: standing)
     }
 
     private func showTwists(_ challenge: DailyChallenge) {
@@ -207,7 +222,7 @@ final class DailyCardView: UIView {
     /// Three states, because there are three: posted, played but not posted (free play, or
     /// a scoring run that could not reach Game Center), and not played at all.
     private func showResult(_ record: DailyChallengeRecord?, mode: GameMode,
-                            isToday: Bool, rank: Int?) {
+                            isToday: Bool, standing: DailyStanding?) {
         guard let record, record.attemptCount > 0 else {
             resultLabel.attributedText = nil
             resultCard.isHidden = true
@@ -255,19 +270,23 @@ final class DailyCardView: UIView {
             string: "  \(title)  ",
             attributes: [.font: UIFont.systemFont(ofSize: 14),
                          .foregroundColor: tint]))
+
+        if record.posted, isToday, let standing {
+            line.append(NSAttributedString(
+                string: standing.text + "   ",
+                attributes: [.font: UIFont.boldSystemFont(ofSize: 14),
+                             .foregroundColor: tint]))
+            // **In front of the score, with the field size after it** (play-test round
+            // 126: "1st / 200"). The placing is what the player came back to read, and
+            // "#3" alone never said whether that was three of four or three of four
+            // thousand. It is only asked for today: the daily board is recurring, so it
+            // resets at the deadline and a past day's placing no longer exists
+        }
+
         line.append(NSAttributedString(
             string: String(score) + unit,
             attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
-
-        if record.posted, isToday, let rank {
-            line.append(NSAttributedString(
-                string: "   #\(rank)",
-                attributes: [.font: UIFont.boldSystemFont(ofSize: 14),
-                             .foregroundColor: tint]))
-            // The placing is only asked for today: the daily board is recurring, so it
-            // resets at the deadline and a past day's rank no longer exists
-        }
         resultLabel.attributedText = line
 
         // The whole container opens the board, not a button on it - the score and the
