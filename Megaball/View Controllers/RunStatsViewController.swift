@@ -79,14 +79,20 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
                 ("clock", "Time", String(format: "%d:%02d", minutes, seconds)),
                 ("rectangle.fill", "Paddle hits", "\(summary.paddleHits)"),
                 ("square.grid.3x2.fill", "Bricks destroyed", "\(summary.bricksDestroyed)"),
-            ] + (summary.isEndless
-                 ? [("ruler", "Bricks per metre", bricksPerMetre)] : []) + [
+            ] + (summary.isEndless ? [] : [
                 ("circle.slash", "Balls lost", "\(summary.ballsLost)"),
                 ("trophy", "Most hits on a single ball", "\(summary.bestBallHits)"),
+            ]) + [
                 ("arrow.down.circle.fill", "Power-ups seen", "\(summary.powerUpsSeen)"),
                 ("checkmark.circle.fill", "Power-ups collected",
                  "\(summary.powerUpsCollected) (\(caught)%)"),
             ]
+            // **An endless run has one ball and one life**, so "balls lost 1" and "most hits
+            // on a single ball" are the same fact as the run itself and say nothing about it
+            // (play-test round 126). Bricks per metre went the same way for the same reason -
+            // interesting-sounding rather than interesting. Paddle hits stays: it is the one
+            // of them that measures how the run was played
+            _ = bricksPerMetre
             factRows = lines.map { (icon: $0.0, label: $0.1, value: $0.2) }
             // The same facts, now as rows for the table below rather than as one centred
             // block of text (play-test round 85: "the game-over More Stats view should use

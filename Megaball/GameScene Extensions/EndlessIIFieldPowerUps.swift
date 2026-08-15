@@ -128,7 +128,7 @@ extension GameScene {
             bloom.alpha = 0.35
             bloom.blendMode = .add
             addChild(bloom)
-            bloom.run(.sequence([.fadeOut(withDuration: 0.7), .removeFromParent()]))
+            bloom.run(.sequence([.fadeOut(withDuration: 1.2), .removeFromParent()]))
 
             let beam = SKSpriteNode(color: .white,
                                     size: CGSize(width: subject.size.width,
@@ -137,7 +137,7 @@ extension GameScene {
             beam.zPosition = 4.1
             beam.alpha = 0.9
             addChild(beam)
-            beam.run(.sequence([.fadeOut(withDuration: 0.7), .removeFromParent()]))
+            beam.run(.sequence([.fadeOut(withDuration: 1.2), .removeFromParent()]))
             // **Made unmissable** (play-test round 102: "doesn't appear to do anything").
             // The mechanics were right all along - a beam through each ball's column, as
             // the description says - but it fired the instant the paddle caught the icon,
