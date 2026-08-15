@@ -190,16 +190,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
 
     
     func collectionViewLayout() {
-        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        var viewWidth = view.frame.size.width
-        if view.frame.size.width > 414 {
-            viewWidth = statsView.frame.size.width
-        }
-        let cellWidth: CGFloat = 50
-        let cellSpacing = (viewWidth - cellWidth*3)/3
-        layout.minimumInteritemSpacing = cellSpacing
-        layout.minimumLineSpacing = cellSpacing
-        backButtonCollectionView!.collectionViewLayout = layout
+        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, MainMenuCollectionViewCell.smallButtonSize, MainMenuCollectionViewCell.smallButtonSize])
+        // One arrangement for every screen (play-test round 128) - see layoutMenuButtonRow
     }
     // Set the spacing between collection view cells
     

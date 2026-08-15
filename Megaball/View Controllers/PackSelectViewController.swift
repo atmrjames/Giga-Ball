@@ -316,14 +316,13 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             // theirs, spread to the row's ends
         }
 
-        let layout = UICollectionViewFlowLayout()
-        let available = backButtonCollectionView.frame.size.width
-        let cellSpacing = max(0, (available - 50*3)/2)
-        layout.itemSize = CGSize(width: 50, height: 50)
-        layout.minimumInteritemSpacing = cellSpacing
-        layout.minimumLineSpacing = cellSpacing
-        backButtonCollectionView.collectionViewLayout = layout
-        // Three 50pt slots - close, an empty middle, Game Center - pushed to the ends
+        layoutMenuButtonRow(backButtonCollectionView,
+                            sizes: Array(repeating: MainMenuCollectionViewCell.smallButtonSize,
+                                         count: 3))
+        // Close, an empty middle, Game Center - and pulled in from the ends rather than
+        // pushed to them (play-test round 128): this row spanning the whole width while
+        // the reference screens' rows sat close in is what made the two read as different
+        // apps. `layoutMenuButtonRow` is the one arrangement now
     }
 
 

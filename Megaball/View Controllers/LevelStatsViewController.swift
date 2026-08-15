@@ -110,31 +110,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
     
     func collectionViewLayout() {
-        let layout = UICollectionViewFlowLayout()
-        let available = backButtonCollectionView.frame.size.width
-        // Spread across the width the buttons actually occupy. This used to measure the
-        // whole screen, or the container, neither of which is the row the buttons are in
-        // once the content is capped - so on iPad they bunched to one side.
-        let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
-        layout.minimumInteritemSpacing = cellSpacing
-        layout.minimumLineSpacing = cellSpacing
-        layout.estimatedItemSize = .zero
-        // Self-sizing off: with an estimate set, a cell measures itself from its own
-        // constraints and the delegate's 75pt play button never reaches the layout - the
-        // cell stays 50 and the button is cropped square (see MainMenuCollectionViewCell)
-        layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
-                                           right: cellSpacing/2)
-        // Half a gap each end: with equal gaps between the three, that puts the middle
-        // button's centre exactly on the row's centre - without it the whole row leans left
-        backButtonCollectionView.collectionViewLayout = layout
-
-        for constraint in backButtonCollectionView.constraints
-        where constraint.firstAttribute == .height {
-            constraint.constant = LevelStatsViewController.playButtonSize
-        }
-        // The storyboard's row is 50 tall, which is the button size this screen used to
-        // have everywhere. The play button now matches the pause menu's, so the row grows
-        // to hold it - in code, because the row is shared furniture in the storyboard
+        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, LevelStatsViewController.playButtonSize, MainMenuCollectionViewCell.smallButtonSize])
+        // One arrangement for every screen (play-test round 128) - see layoutMenuButtonRow
     }
     // Set the spacing between collection view cells
 

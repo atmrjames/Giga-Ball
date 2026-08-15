@@ -276,24 +276,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionViewLayout() {
-        let layout = UICollectionViewFlowLayout()
-        let available = backButtonCollectionView.frame.size.width
-        // Spread across the width the buttons actually occupy. This used to measure the
-        // whole screen, or the container, neither of which is the row the buttons are in
-        // once the content is capped - so on iPad they bunched to one side.
-        let cellSpacing = max(0, (available - 50*2 - LevelStatsViewController.playButtonSize)/3)
-        layout.minimumInteritemSpacing = cellSpacing
-        layout.minimumLineSpacing = cellSpacing
-        layout.sectionInset = UIEdgeInsets(top: 0, left: cellSpacing/2, bottom: 0,
-                                           right: cellSpacing/2)
-        layout.estimatedItemSize = .zero
-        backButtonCollectionView.collectionViewLayout = layout
-
-        for constraint in backButtonCollectionView.constraints
-        where constraint.firstAttribute == .height {
-            constraint.constant = LevelStatsViewController.playButtonSize
-        }
-        // The row grows for the big play button, the same way the mode screens' does
+        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, LevelStatsViewController.playButtonSize, MainMenuCollectionViewCell.smallButtonSize])
+        // One arrangement for every screen (play-test round 128) - see layoutMenuButtonRow
     }
     // Set the spacing between collection view cells
 

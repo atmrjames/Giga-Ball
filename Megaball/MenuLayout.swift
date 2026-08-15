@@ -38,6 +38,52 @@ extension UIViewController {
     // would not scroll at all - the real cause was the settings touch watcher, fixed in
     // round 97, so the margin comes back down to what the button row actually needs
 
+    /// **The one button-row arrangement.** Outer buttons this far in from the row's edges.
+    ///
+    /// Every menu screen used to work its own spacing out, and they disagreed: some spread
+    /// three cells across the whole width, which put the close button hard against the edge,
+    /// and others sat them close in. Mixed together the wide ones read as a different app
+    /// (play-test round 128). The narrow arrangement is the one that stays.
+    static let menuButtonRowInset: CGFloat = 55
+
+    /// Lays a screen's button row out the shared way.
+    ///
+    /// - Parameter sizes: each button's width, in the order they appear. The row is always
+    ///   three cells - some of them the invisible `ButtonNull` spacer - so what differs
+    ///   between screens is only which of the three is the large one.
+    ///
+    /// The outer two land `menuButtonRowInset` from the row's own edges and the rest of the
+    /// width is shared evenly between them, so a screen with a large centre button and a
+    /// screen with three small ones still put their close buttons in the same place.
+    func layoutMenuButtonRow(_ row: UICollectionView, sizes: [CGFloat]) {
+        guard sizes.isEmpty == false else { return }
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.estimatedItemSize = .zero
+        // Self-sizing off: with an estimate set, a cell measures itself from its own
+        // constraints and the delegate's large button never reaches the layout
+
+        let fromScreen = row.superview?.convert(row.frame.origin, to: nil).x ?? 0
+        let inset = max(0, UIViewController.menuButtonRowInset - fromScreen)
+        let available = row.frame.width - inset*2
+        // Measured from the *screen's* edge, not the row's. Some of these rows are inset by
+        // their own container and some are not, so insetting each row by the same amount put
+        // their close buttons in different places - which is the thing being fixed
+        let gaps = max(sizes.count - 1, 1)
+        let spacing = max(0, (available - sizes.reduce(0, +))/CGFloat(gaps))
+
+        layout.minimumInteritemSpacing = spacing
+        layout.minimumLineSpacing = spacing
+        layout.sectionInset = UIEdgeInsets(top: 0, left: inset, bottom: 0, right: inset)
+        row.collectionViewLayout = layout
+
+        for constraint in row.constraints where constraint.firstAttribute == .height {
+            constraint.constant = sizes.max() ?? MainMenuCollectionViewCell.smallButtonSize
+        }
+        // The row grows to hold its tallest button, which is how a 75pt play button fits a
+        // storyboard row built for 50s
+    }
+
     /// Opens that gap on every list in the screen.
     ///
     /// **Spacer views, not a content inset** (round 96). The inset version pinned
