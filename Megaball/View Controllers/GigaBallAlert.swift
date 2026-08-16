@@ -211,6 +211,7 @@ final class GigaBallAlertViewController: UIViewController {
     private let card = UIView()
 
     private let hapticsSetting = UserDefaults.standard.bool(forKey: "hapticsSetting")
+    private let parallaxSetting = UserDefaults.standard.bool(forKey: "parallaxSetting")
     private let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
     init(title: String, message: NSAttributedString, symbol: String? = nil,
@@ -403,6 +404,36 @@ final class GigaBallAlertViewController: UIViewController {
             stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -22),
             buttons.heightAnchor.constraint(equalToConstant: 44),
         ])
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        applyParallax()
+    }
+    // Here rather than in `viewDidLoad`, because the travel is measured from the window and
+    // the card has no window until it is in one. Re-applying is harmless: the helper takes the
+    // old group off before adding the new, so a rotation gets the iPad's travel rather than
+    // two groups' worth of the phone's
+
+    /// The card drifts with the tilt of the device, if the player has left that on.
+    ///
+    /// **The card, not the whole overlay** (round 163, James's call after the merge): the
+    /// storyboard sheet this replaced drifted the same way and the app's screens all do, so a
+    /// pop-up that sat perfectly still was the odd one out. The blurred backing stays put -
+    /// what drifts is the thing being read, which is what makes it read as lifted off the
+    /// screen rather than as the screen wobbling.
+    ///
+    /// Every pop-up in the app gets it from here: the twists explainer, the closed challenge,
+    /// free play, a power-up's description and the four confirms. That is the point of there
+    /// being one pop-up type.
+    private func applyParallax() {
+        guard parallaxSetting else {
+            card.motionEffects.forEach { card.removeMotionEffect($0) }
+            return
+            // A player who has turned it off may have turned it off while this was on screen -
+            // Settings is one of the places a pop-up is raised from
+        }
+        card.applyMenuParallax()
     }
 
     func appear() {

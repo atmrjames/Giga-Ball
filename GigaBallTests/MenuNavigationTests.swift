@@ -194,6 +194,25 @@ final class GigaBallConfirmTests: XCTestCase {
         XCTAssertEqual(GigaBallConfirm.swipeUpToPause.dismissTitle, "OK")
     }
 
+    func testACardDriftsFurtherOnTheBiggerScreen() {
+        // The figure sixteen screens have each written out for themselves since 2019, in one
+        // place as of round 163 so the pop-ups could have it too. The iPad gets the bigger
+        // travel because the drift is read against what surrounds it
+        XCTAssertEqual(UIView.parallaxTravel(forWidth: 393), 25, "iPhone 17 Pro")
+        XCTAssertEqual(UIView.parallaxTravel(forWidth: 430), 25, "the widest phone")
+        XCTAssertEqual(UIView.parallaxTravel(forWidth: 834), 50, "iPad")
+    }
+
+    func testTheDriftIsReplacedRatherThanStacked() {
+        // It is applied from viewDidLayoutSubviews, which runs many times. Each pass must
+        // leave one group behind it, or the card drifts further every time the screen lays out
+        let card = UIView(frame: CGRect(x: 0, y: 0, width: 300, height: 200))
+        card.applyMenuParallax()
+        card.applyMenuParallax()
+        card.applyMenuParallax()
+        XCTAssertEqual(card.motionEffects.count, 1)
+    }
+
     func testResetDataStillSaysWhatSurvivesIt() {
         // The one confirm that cannot be undone. It has always promised that purchases are
         // kept, and a merge is exactly the kind of change that quietly drops a sentence

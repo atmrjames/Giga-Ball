@@ -294,4 +294,51 @@ extension UIView {
         if let table = self as? UITableView { return [table] }
         return subviews.flatMap { $0.menuLists() }
     }
+
+    /// How far a card drifts with the tilt of the device, at this width.
+    ///
+    /// Twenty-five points on a phone and fifty on an iPad, which is the figure sixteen screens
+    /// have each written out for themselves since 2019. The bigger screen gets the bigger
+    /// travel because the effect is read as a proportion of what is around it: 25 points on an
+    /// 11-inch screen is a card that looks like it is not quite still.
+    static func parallaxTravel(forWidth width: CGFloat) -> Int {
+        width > 450 ? 50 : 25
+    }
+
+    /// Makes this view drift with the tilt of the device, replacing any drift it already has.
+    ///
+    /// **One recipe, at last.** Sixteen screens carry their own copy of these eight lines and
+    /// this is the seventeenth caller, so it is written once here rather than once more there;
+    /// the sixteen are a sweep for another round, and this is what they would call.
+    ///
+    /// The old group is removed first, because these screens re-apply on every appearance and
+    /// motion effects stack - two groups on one card is a card that drifts twice as far as the
+    /// one beside it.
+    @discardableResult
+    func applyMenuParallax() -> UIMotionEffectGroup {
+        for existing in motionEffects where existing is UIMotionEffectGroup {
+            removeMotionEffect(existing)
+        }
+        // All of them, not the first: this runs on every layout pass, and one missed group is
+        // a card that drifts twice as far as the screen it is sitting on
+
+        let amount = UIView.parallaxTravel(forWidth: window?.bounds.width ?? bounds.width)
+        let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x",
+                                                     type: .tiltAlongHorizontalAxis)
+        horizontal.minimumRelativeValue = -amount
+        horizontal.maximumRelativeValue = amount
+        let vertical = UIInterpolatingMotionEffect(keyPath: "center.y",
+                                                   type: .tiltAlongVerticalAxis)
+        vertical.minimumRelativeValue = -amount
+        vertical.maximumRelativeValue = amount
+        // Measured against the *window*, not this view: the screens that wrote this out for
+        // themselves each asked their own full-screen view how wide it was, and a card is a
+        // few hundred points narrower than the screen it sits on - asking the card would put
+        // an iPad on the phone's travel
+
+        let group = UIMotionEffectGroup()
+        group.motionEffects = [horizontal, vertical]
+        addMotionEffect(group)
+        return group
+    }
 }
