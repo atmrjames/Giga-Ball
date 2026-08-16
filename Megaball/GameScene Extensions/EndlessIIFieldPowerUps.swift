@@ -375,6 +375,7 @@ extension GameScene {
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
         \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
+        \.endlessIIDriftClock,
     ]
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
@@ -599,7 +600,8 @@ extension GameScene {
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
           PowerUpIcon.clearAndRetreat),
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
-          PowerUpIcon.safetyPaddle)]
+          PowerUpIcon.safetyPaddle),
+         ("endlessIIDrift", endlessIIDriftClock, PowerUpIcon.drift)]
     }
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
@@ -636,6 +638,11 @@ extension GameScene {
             endlessIIGhostBallClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIClearAndRetreat":
             endlessIIClearAndRetreatClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIDrift":
+            endlessIIDriftClock.restore(remaining: remaining, total: total, level: 0)
+            if endlessIIDriftDirection == 0 { endlessIIDriftDirection = 1 }
+            // A resumed drift keeps drifting. Which way is not worth saving - the field it
+            // comes back to is wherever the save left it, and a direction is one frame old
         case "endlessIISafetyPaddle":
             endlessIISafetyPaddleClock.restore(remaining: remaining, total: total, level: 0)
             showEndlessIISafetyPaddle()
@@ -662,6 +669,7 @@ extension GameScene {
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
             endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)
             endlessIISafetyPaddleClock.run(down: endlessIIClockDelta)
+            endlessIIDriftClock.run(down: endlessIIClockDelta)
             tickEndlessIIGhostBall()
             tickEndlessIISafetyPaddle()
             tickEndlessIIDescent()
@@ -756,6 +764,8 @@ extension GameScene {
         endlessIIDescentAccumulated = 0
         endlessIIClearAndRetreatClock.reset()
         endlessIISafetyPaddleClock.reset()
+        endlessIIDriftClock.reset()
+        endlessIIDriftDirection = 0
         childNode(withName: GameScene.endlessIISafetyPaddleName)?.removeFromParent()
         endlessIIAuraNodes.forEach { $0.removeFromParent() }
         endlessIIAuraNodes.removeAll()

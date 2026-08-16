@@ -483,6 +483,24 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
+    /// Three bricks stepped sideways, with the trail of where they came from.
+    ///
+    /// The step is the whole idea: not one brick moving, but the field going with it - so the
+    /// three are drawn in a line, each further along than the last.
+    static let drift: UIImage = badge(harmful) { context, rect in
+        let height = rect.height*0.13
+        let width = rect.width*0.34
+        for (index, share) in [0.24, 0.5, 0.76].enumerated() {
+            let slide = rect.width*(0.08 + 0.07*CGFloat(index))
+            let bar = CGRect(x: rect.minX + rect.width*0.2 + slide,
+                             y: rect.minY + rect.height*CGFloat(share) - height/2,
+                             width: width, height: height)
+            context.setAlpha(0.45 + 0.275*CGFloat(index))
+            context.fill(bar)
+        }
+        context.setAlpha(1)
+    }
+
     /// A second paddle under the brick line, with the ball bouncing off its top.
     ///
     /// Drawn as a bar low in the badge with the line of the field above it, because where it

@@ -716,6 +716,9 @@ extension GameScene {
             advanceBreather(at: index, by: delta)
         }
 
+        tickEndlessIIDrift(delta)
+        // Before the roles, so a wandering brick wanders from where the drift left it -
+        // and both write the same x, so the order is the whole of their agreement
         tickEndlessIIRoles(delta)
         tickEndlessIIRescue(delta)
         refreshEndlessIIRoundedFaces()

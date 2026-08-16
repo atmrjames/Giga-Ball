@@ -259,6 +259,11 @@ enum PowerUpCatalogue {
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
         PowerUp(id: "randomisedBounce", name: "Randomised Bounce", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
+        PowerUp(id: "drift", name: "Drift", availability: .endlessII,
+                rarity: .uncommon, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        // Bad because a field that will not hold still is a field you have to keep
+        // re-reading - not because it takes anything away
         PowerUp(id: "safetyPaddle", name: "Safety Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true,
                 stacking: .extendsDuration),

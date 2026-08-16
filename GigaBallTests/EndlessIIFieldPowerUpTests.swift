@@ -812,6 +812,85 @@ final class RandomisedBounceTests: XCTestCase {
     }
 
     /// The array checklist, in one place: a power-up that is in some lists and not others is
+    // MARK: - Drift
+
+    // §5.4, James's play-test idea from the tenth round, pulled into 1.3 at round 100: the
+    // field slides sideways, and the falling power-ups with it.
+
+    private func driftScene() -> GameScene {
+        let scene = safetyScene()
+        scene.numberOfBrickColumns = 10
+        return scene
+    }
+
+    @discardableResult
+    private func brick(in scene: GameScene, x: CGFloat, y: CGFloat) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = CGSize(width: scene.brickWidth, height: scene.brickHeight)
+        brick.position = CGPoint(x: x, y: y)
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testTheFieldSlidesWhileItRuns() {
+        let scene = driftScene()
+        let brick = brick(in: scene, x: 0, y: 40)
+        scene.endlessIICollectDrift()
+        let before = brick.position.x
+
+        scene.tickEndlessIIDrift(0.5)
+        XCTAssertNotEqual(brick.position.x, before, accuracy: 0.0001)
+        XCTAssertEqual(brick.position.y, 40, "sideways only - a brick's y is its row (§8.6)")
+    }
+
+    func testItTurnsRoundAtTheWallRatherThanLosingTheField() {
+        // A power-up that quietly destroyed the bricks that reached the edge would be a
+        // different power-up
+        let scene = driftScene()
+        let brick = brick(in: scene, x: scene.gameWidth/2 - scene.brickWidth/2, y: 40)
+        scene.endlessIICollectDrift()
+        scene.endlessIIDriftDirection = 1
+
+        for _ in 0..<20 { scene.tickEndlessIIDrift(0.2) }
+        XCTAssertLessThanOrEqual(brick.position.x + brick.size.width/2,
+                                 scene.gameWidth/2 + 0.001, "never past the wall")
+        XCTAssertNotNil(brick.parent, "and never destroyed by it")
+    }
+
+    func testEverythingLandsBackOnAColumnCentreWhenItEnds() {
+        // The grid is how the generator, the crush and the neighbour rules all speak
+        let scene = driftScene()
+        let brick = brick(in: scene, x: 0, y: 40)
+        scene.endlessIICollectDrift()
+        scene.tickEndlessIIDrift(0.37)
+        XCTAssertNotEqual(brick.position.x, 0, accuracy: 0.0001)
+
+        scene.endlessIIDriftClock.run(down: GameScene.endlessIIDriftDuration)
+        scene.tickEndlessIIDrift(0.016)
+        XCTAssertEqual(brick.position.x,
+                       scene.endlessIIColumnCentre(nearest: brick.position.x),
+                       accuracy: 0.0001)
+        XCTAssertEqual(scene.endlessIIDriftDirection, 0, "and it forgets which way it went")
+    }
+
+    func testAColumnCentreIsWhereABrickBelongs() {
+        let scene = driftScene()
+        let left = -scene.gameWidth/2 + scene.brickWidth/2
+        XCTAssertEqual(scene.endlessIIColumnCentre(nearest: left + 1), left, accuracy: 0.001)
+        XCTAssertEqual(scene.endlessIIColumnCentre(nearest: left + scene.brickWidth*1.4),
+                       left + scene.brickWidth, accuracy: 0.001)
+    }
+
+    func testItLeavesTheFieldAloneOutsideMayhemToo() {
+        let scene = driftScene()
+        scene.gameMode = .classic
+        let brick = brick(in: scene, x: 0, y: 40)
+        scene.endlessIICollectDrift()
+        scene.tickEndlessIIDrift(0.5)
+        XCTAssertEqual(brick.position.x, 0, accuracy: 0.0001)
+    }
+
     // MARK: - Safety Paddle
 
     // §5.4, and the play-test idea from the tenth round: a second, fixed paddle just below
