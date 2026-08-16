@@ -650,6 +650,44 @@ final class SavedMayhemFieldTests: XCTestCase {
                       "restored flashing, and in the flashers list rather than merely tinted")
     }
 
+    /// James, round 170: force-quitting mid-Mayhem and resuming brought the run back as a
+    /// Classic one - the old tray, the score, the multiplier, and 0m at a real height.
+    ///
+    /// The mode was kept in a `UserDefaults` key written once when the run started, and a
+    /// force quit can lose that write before it reaches disk. A missing key reads as zero,
+    /// which is Classic. The save is the thing that survives, so the save carries the mode now.
+    func testASaveKnowsWhichModeItsRunWas() {
+        let defaults = InMemoryKeyValueStore()
+        var game = emptySave()
+        game.gameMode = GameMode.endlessII.rawValue
+        game.save(to: defaults)
+
+        let loaded = SavedGame.load(from: defaults)
+        XCTAssertEqual(loaded?.gameMode, GameMode.endlessII.rawValue)
+        XCTAssertEqual(loaded?.gameMode.flatMap(GameMode.init(rawValue:)), .endlessII)
+    }
+
+    func testASaveWrittenBeforeTheModeFieldStillLoads() {
+        // Optional, so every save written before round 170 decodes exactly as it did - and
+        // falls back to the remembered key, which is what it was always doing
+        let defaults = InMemoryKeyValueStore()
+        var game = emptySave()
+        game.gameMode = nil
+        game.save(to: defaults)
+
+        let loaded = SavedGame.load(from: defaults)
+        XCTAssertNotNil(loaded)
+        XCTAssertNil(loaded?.gameMode)
+    }
+
+    func testAMissingModeKeyReadsAsClassicWhichIsWhyTheSaveCarriesIt() {
+        // The mechanism, pinned: this is what a lost write looks like to GameMode.current
+        let empty = UserDefaults(suiteName: "round170.missingKey")!
+        empty.removePersistentDomain(forName: "round170.missingKey")
+        XCTAssertEqual(GameMode.current(in: empty), .classic,
+                       "so a Mayhem run whose key did not survive comes back as Classic")
+    }
+
     func testAnOlderSaveStillTakesTheCellPath() {
         // Widening, not a migration: a save written before round 150 has no rich field, and
         // must still load exactly as it always did

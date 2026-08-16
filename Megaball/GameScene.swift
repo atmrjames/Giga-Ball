@@ -1058,6 +1058,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gameMode = GameMode.current(in: defaults)
 		// Set by whichever menu launched the run, and remembered so a resumed one knows
 		// what it is
+
+		if defaults.bool(forKey: "resumeGameToLoad"),
+		   let saved = SavedGame.load()?.gameMode,
+		   let savedMode = GameMode(rawValue: saved) {
+			gameMode = savedMode
+			savedMode.makeCurrent(in: defaults)
+		}
+		// **A resumed run takes its mode from its own save**, and puts the key back. The key
+		// is written once when a run starts and a force quit can lose it before it reaches
+		// disk; the save is the thing that survives, so the save is the thing to believe.
+		// Written back because everything else on the way in - the splash's resume card, the
+		// pause screen's board, the stats - asks the key rather than the save (round 170).
+		//
+		// Gated on the same `resumeGameToLoad` the restore itself is gated on (`Playing`), so
+		// this trusts the save in exactly the cases the scene is about to load it from - a
+		// fresh run that ignored a pending save would ignore this too
 		
 		if #available(iOS 13.0, *) {
 			softHaptic = UIImpactFeedbackGenerator(style: .soft)
@@ -6999,6 +7015,10 @@ laserTimer?.invalidate()
 			brickYPositions: brickXPositionArray != [] ? brickYPositionArray! : previous?.brickYPositions ?? [],
 			ballProperties: ballPropertiesArray != [] ? ballPropertiesArray! : previous?.ballProperties ?? [],
 			extraBallProperties: ballPropertiesArray != [] ? extraBallPropertiesArray : previous?.extraBallProperties,
+			gameMode: gameMode.rawValue,
+			// Written with the run rather than remembered beside it: a force quit can lose a
+			// defaults key that a save has already recorded, and then the run comes back as a
+			// different mode (round 170)
 			// Written whenever the ball is - including empty, which is how a run that has just
 			// lost its extras stops claiming to have them
 			fallingPowerUpXPositions: powerUpFallingXPositionArray != [] ? powerUpFallingXPositionArray! : previous?.fallingPowerUpXPositions ?? [],

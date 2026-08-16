@@ -164,10 +164,15 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             let lives = savedGame.numberOfLives
             if currentLevelNumber == 0 {
                 packNameLabel.text = ""
-                levelNumberLabel.text = GameMode.current() == .endlessII
+                let savedMode = savedGame.gameMode.flatMap(GameMode.init(rawValue:))
+                    ?? GameMode.current()
+                levelNumberLabel.text = savedMode == .endlessII
                     ? GameMode.endlessII.name : GameMode.endless.name
-                // The save has no mode field; the remembered mode does, and a level-0
-                // save can only be the mode that was being played when it was written
+                // **The save's own mode, where it has one** (round 170). It used to ask the
+                // remembered key, which a force quit can lose before it reaches disk - and
+                // then this card offered to resume "Endless Mode" into a Mayhem run. Saves
+                // written before the field existed still fall back to the key, which is
+                // what they were always doing
                 scoreLabel.attributedText = resumeDetail(title: "Height", value: String(height) + "m", footnote: nil)
                 // Endless has a single life and no counter anywhere else
             } else {

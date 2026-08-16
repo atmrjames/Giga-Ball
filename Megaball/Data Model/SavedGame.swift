@@ -117,6 +117,23 @@ struct SavedGame: Codable, Equatable {
     /// with no extras, which is exactly what they had.
     var extraBallProperties: [Double]? = nil
 
+    /// Which mode this run belongs to, as `GameMode.rawValue`.
+    ///
+    /// **The save used to have no mode field at all**, and the mode was read from a
+    /// `UserDefaults` key written once when the run started. Those are two pieces of one fact
+    /// kept in two places, and a force quit separates them: the key had not been flushed to
+    /// disk yet, and a missing key reads as zero, which is Classic. So a Mayhem run resumed as
+    /// a Classic one - the old tray, the score, the multiplier, and a height of 0m at forty
+    /// metres up (James, round 170, reproduced by force-quitting mid-run).
+    ///
+    /// It only showed in Mayhem because Classic and the original Endless share a HUD: losing
+    /// the key while playing Endless left a run that still looked and played like Endless,
+    /// which is why it "couldn't be replicated in the classic endless mode".
+    ///
+    /// Optional, so every save written before this decodes exactly as it did - those fall back
+    /// to the remembered key, which is what they were always doing.
+    var gameMode: Int? = nil
+
     // MARK: - Power-ups in flight
     // Three arrays indexed together, one entry per falling power-up.
 
