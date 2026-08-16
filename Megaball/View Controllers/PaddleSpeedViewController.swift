@@ -158,6 +158,7 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         shapeFieldToThePlayArea()
+        roundTheFieldsCorners()
         guard sceneView.bounds.width > 0 else { return }
         if practice == nil {
             let scene = PaddleSpeedScene(size: sceneView.bounds.size)
@@ -263,16 +264,25 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         view.addSubview(hint)
 
         field.translatesAutoresizingMaskIntoConstraints = false
-        field.layer.cornerRadius = 22
-        field.layer.masksToBounds = true
+        field.backgroundColor = .black
         view.addSubview(field)
+        // **Not masked.** A rounded corner on a view holding a live Metal surface makes Core
+        // Animation render that surface into an offscreen buffer and mask it *every frame*,
+        // which is the kind of cost that shows as stutter and nothing else (James, round 147:
+        // "the frame rate is very stutter"). The corners are drawn over the top instead - see
+        // `roundTheFieldsCorners` - which costs one static layer and no per-frame work
 
         sceneView.translatesAutoresizingMaskIntoConstraints = false
         sceneView.backgroundColor = .black
         sceneView.isOpaque = true
         sceneView.allowsTransparency = false
+        sceneView.ignoresSiblingOrder = true
+        sceneView.preferredFramesPerSecond = 120
         field.addSubview(sceneView)
-        // Opaque, with the background drawn *inside* the scene - see `drawnBackdrop`
+        // Opaque, with the background drawn *inside* the scene - see `drawnBackdrop`. The
+        // last two lines are the game's own view settings (GameViewController): this screen
+        // exists to feel like the game, and a field running at a different frame rate from
+        // the game is answering a question nobody asked
 
         let close = UIButton(type: .system)
         close.translatesAutoresizingMaskIntoConstraints = false
@@ -342,6 +352,25 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             close.heightAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
         ])
     }
+
+    /// Draws the field's rounded corners over the top of it rather than masking it.
+    ///
+    /// Four wedges - the difference between the field's rectangle and a rounded rectangle -
+    /// filled with the screen's own backdrop colour, in a layer that never changes. The live
+    /// surface underneath is left alone, which is the whole point.
+    private func roundTheFieldsCorners() {
+        cornerCover.removeFromSuperlayer()
+        guard field.bounds.width > 0 else { return }
+
+        let outer = UIBezierPath(rect: field.bounds)
+        outer.append(UIBezierPath(roundedRect: field.bounds, cornerRadius: 22).reversing())
+        cornerCover.path = outer.cgPath
+        cornerCover.fillRule = .evenOdd
+        cornerCover.fillColor = UIColor.black.cgColor
+        field.layer.addSublayer(cornerCover)
+    }
+
+    private let cornerCover = CAShapeLayer()
 
     private func refreshValueLabel() {
         valueLabel.text = PaddleSpeed.label(CGFloat(slider.value))
@@ -418,7 +447,7 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 /// game (James, round 121). The ball is a physics body now, with the same restitution,
 /// friction and damping the real ball has, so SpriteKit interpolates it exactly as it does
 /// in play - and the ball and paddle wear the player's own chosen theme.
-final class PaddleSpeedScene: SKScene {
+final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
 
     /// The multiplier under test. The paddle moves the finger's travel times this, which is
     /// `GameScene.touchesMoved`'s own line (`paddleX0 + paddleMovedDistance*paddleMovementFactor`).
@@ -446,10 +475,22 @@ final class PaddleSpeedScene: SKScene {
     /// The game's own nominal speed for this ball size (`GameScene.ballSpeedNominal`).
     private var ballSpeed: CGFloat { layout.ballSize*37.5 }
 
+    static let ballCategory: UInt32 = 1
+    static let paddleCategory: UInt32 = 2
+
+    /// The heading the ball arrived on, sampled before the engine's own bounce.
+    ///
+    /// A contact reports the velocity *after* the bounce (ENDLESS-2 8.6), so the angle has to
+    /// be worked out from a sample taken in `update` - which is exactly what the game does
+    /// with `ballStateBeforeStep`. Without it the practice field bent the bounce off an
+    /// already-reflected heading and sent the ball back down.
+    private var arriving = CGVector.zero
+
     override func didMove(to view: SKView) {
         backgroundColor = .clear
         scaleMode = .resizeFill
         physicsWorld.gravity = .zero
+        physicsWorld.contactDelegate = self
         build()
     }
 
@@ -468,11 +509,18 @@ final class PaddleSpeedScene: SKScene {
 
     /// How far the paddle's centre sits above the floor of the field.
     ///
-    /// The game's own clearance between the paddle and the line a lost ball crosses
-    /// (`bottomScreenBlock`, GameScene line 1229) - so the room under the paddle here is the
-    /// room under the paddle there, which is also the room the thumb needs (James, round 122:
-    /// "the paddle needs to be higher... proportionally the same as the actual game view").
-    private var paddleFloorGap: CGFloat { layout.paddleHeight/2 + layout.brickWidth*0.85 }
+    /// **The room the game leaves below the paddle, not the room to the kill line.** Round 122
+    /// used the clearance to `bottomScreenBlock` - about 36 points - on the reasoning that the
+    /// field is a window onto the bottom of the play area. It is, but the window was cut too
+    /// low: in the game there is another 150 points of screen under that line, and all of it
+    /// is where the thumb rests. Dragging in this field meant dragging on the paddle itself
+    /// (James, round 147). `paddleCentreAboveScreenBottom` is the game's own figure, so the
+    /// thumb has exactly the room here that it has in play.
+    private var paddleFloorGap: CGFloat {
+        min(layout.paddleCentreAboveScreenBottom, size.height*0.45)
+    }
+    // Capped at nearly half the field, because the field is shorter than the screen on a
+    // small phone and a paddle in the middle of it would leave the ball nowhere to fall
 
     private func build() {
         guard built == false, size.width > 0 else { return }
@@ -502,6 +550,8 @@ final class PaddleSpeedScene: SKScene {
         paddle.physicsBody?.isDynamic = false
         paddle.physicsBody?.friction = 0
         paddle.physicsBody?.restitution = 1
+        paddle.physicsBody?.categoryBitMask = PaddleSpeedScene.paddleCategory
+        paddle.physicsBody?.contactTestBitMask = PaddleSpeedScene.ballCategory
         addChild(paddle)
 
         ball.texture = SKTexture(image: setup.ballImageArray[index])
@@ -514,6 +564,8 @@ final class PaddleSpeedScene: SKScene {
         ball.physicsBody?.angularDamping = 0
         ball.physicsBody?.allowsRotation = false
         ball.physicsBody?.affectedByGravity = false
+        ball.physicsBody?.categoryBitMask = PaddleSpeedScene.ballCategory
+        ball.physicsBody?.contactTestBitMask = PaddleSpeedScene.paddleCategory
         ball.physicsBody?.velocity = CGVector(dx: ballSpeed*0.6, dy: -ballSpeed*0.8)
         addChild(ball)
         // The same body settings the game gives its ball - perfectly elastic, frictionless
@@ -527,6 +579,8 @@ final class PaddleSpeedScene: SKScene {
     /// engine to conserve it.
     override func update(_ currentTime: TimeInterval) {
         guard let body = ball.physicsBody else { return }
+        arriving = body.velocity
+        // Sampled before the step, because a contact reports the velocity after it
         let speed = hypot(body.velocity.dx, body.velocity.dy)
         if speed > 1 {
             body.velocity = CGVector(dx: body.velocity.dx/speed*ballSpeed,
@@ -548,6 +602,52 @@ final class PaddleSpeedScene: SKScene {
         }
         // The game's own refusal to let a ball run flat (`breakHorizontalRuns`), because a
         // ball crossing this little field sideways for ever answers no question at all
+    }
+
+    /// The game's own bounce, off the game's own formula.
+    ///
+    /// The paddle used to be a plain elastic body, so the practice field returned the ball at
+    /// the angle it arrived at, mirrored - which is a wall, not a paddle. The game bends the
+    /// bounce by where on the paddle the ball landed, and this is the same call `paddleHit`
+    /// makes (James, round 147: "the ball's bounce off the paddle needs to match the game
+    /// logic bounce angle").
+    func didBegin(_ contact: SKPhysicsContact) {
+        let hitThePaddle = contact.bodyA.categoryBitMask == PaddleSpeedScene.paddleCategory
+            || contact.bodyB.categoryBitMask == PaddleSpeedScene.paddleCategory
+        guard hitThePaddle, let body = ball.physicsBody else { return }
+        guard ball.position.y >= paddle.position.y + paddle.size.height/2 else { return }
+        // The top face only, as in the game: a ball meeting the paddle's end or its underside
+        // keeps whatever the engine gave it
+
+        guard let bounced = paddleBounceVelocity() else { return }
+        body.velocity = bounced
+    }
+
+    /// What the paddle would return the ball at, or nil if this is not a bounce off its face.
+    ///
+    /// Separated from the contact so it can be tested: `SKPhysicsContact` cannot be built by
+    /// hand, and the arithmetic is the whole point of the screen.
+    func paddleBounceVelocity() -> CGVector? {
+        let collision = PaddleBounce.collision(ballX: ball.position.x,
+                                               paddleX: paddle.position.x,
+                                               paddleWidth: paddle.size.width)
+        guard collision > -1, collision < 1 else { return nil }
+        return PaddleBounce.velocity(arriving: arriving, collision: collision,
+                                     adjustmentK: PaddleBounce.adjustmentK,
+                                     influence: 1,
+                                     minimumDeg: PaddleBounce.minimumDeg,
+                                     speed: ballSpeed)
+        // Influence 1: no power-up runs here, so the spot on the paddle matters exactly as
+        // much as it does in an ordinary game
+    }
+
+    /// For the tests: where the ball and paddle are, and what the ball is doing.
+    func placeForTesting(ballX: CGFloat, paddleX: CGFloat, arriving: CGVector) {
+        build()
+        ball.position.x = ballX
+        ball.position.y = paddle.position.y + paddle.size.height
+        paddle.position.x = paddleX
+        self.arriving = arriving
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {

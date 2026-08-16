@@ -81,6 +81,19 @@ struct GameSceneLayout {
     /// The gap between the bottom brick row and the paddle.
     var paddleGap: CGFloat { layoutUnit*7 }
 
+    /// How far the paddle's centre sits above the bottom of the screen, in the game.
+    ///
+    /// The scene's own line (`paddlePositionY`), measured from the other end: the screen, less
+    /// the bar, the gap above the bricks, the bricks themselves, the gap under them and half
+    /// the paddle. About a fifth of the screen on a modern phone, and all of it is where the
+    /// thumb goes - which is why the paddle-speed screen needs this number rather than the
+    /// clearance between the paddle and the line a lost ball crosses (James, round 147: "there
+    /// needs to be more room below the paddle for the user's thumb").
+    var paddleCentreAboveScreenBottom: CGFloat {
+        screen.height - topBarHeight - topGap
+            - CGFloat(GameSceneLayout.brickRows)*brickHeight - paddleGap - paddleHeight/2
+    }
+
     var ballSize: CGFloat { layoutUnit*0.67 }
     var paddleWidth: CGFloat { ballSize*7.5 }
     var paddleHeight: CGFloat { ballSize }

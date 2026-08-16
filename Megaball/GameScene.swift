@@ -3546,12 +3546,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let ySpeed = ball.physicsBody!.velocity.dy
 		let paddleLeftEdgePosition = paddleWrapX - paddle.size.width/2
 		let paddleRightEdgePosition = paddleWrapX + paddle.size.width/2
-		var collisionPercentage = Double((ball.position.x - paddleWrapX)/(paddle.size.width/2))
-		// Define collision position between the ball and paddle
-		let ySpeedCorrected: Double = sqrt(Double(ySpeed*ySpeed))
-		// Assumes the ball's ySpeed is always positive
-		var angleDeg = Double(atan2(Double(ySpeedCorrected), Double(xSpeed)))/Double.pi*180
-		// Angle of the ball
+		var collisionPercentage = PaddleBounce.collision(ballX: ball.position.x,
+														 paddleX: paddleWrapX,
+														 paddleWidth: paddle.size.width)
+		// Where on the paddle it landed, -1 to 1 - see PaddleBounce, which every screen that
+		// bounces a ball off a paddle now asks
+		var angleDeg = Double(atan2(Double(abs(ySpeed)), Double(xSpeed)))/Double.pi*180
+		// The angle it arrived at. Vertical taken as an absolute: the answer always goes up
 		
 		if paddleTexture == squarePaddle && ball.position.y >= paddle.position.y + paddleHeight/2 {
 			if collisionPercentage < -1.0 {
@@ -3619,18 +3620,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage < 1.0 && collisionPercentage > -1.0) {
 		// Only applies if the ball hits the top surface of the paddle
 			
-			angleDeg = angleDeg - angleAdjustmentK*collisionPercentage*endlessIIPaddleAngleInfluence
-			// Angle adjustment formula - the ball's angle can change up to angleAdjustmentK deg depending on where the ball hits the paddle
-			
-			if angleDeg < 0+minAngleDeg {
-				angleDeg = minAngleDeg
-			}
-			// Travelling up and right alternative
-			if angleDeg > 180-minAngleDeg {
-				angleDeg = 180-minAngleDeg
-			}
-			// Travelling up and left alternative
-			// Prevents the new angle from over correting to a downward angle
+			angleDeg = PaddleBounce.angleDegrees(
+				arriving: CGVector(dx: xSpeed, dy: ySpeed),
+				collision: collisionPercentage,
+				adjustmentK: angleAdjustmentK,
+				influence: endlessIIPaddleAngleInfluence,
+				minimumDeg: minAngleDeg)
+			// The bend and both clamps, from the one place that owns them. Up to
+			// `angleAdjustmentK` degrees depending on where the ball hit, and never flatter
+			// than `minAngleDeg` - which is what stops the edges returning a ball that runs
+			// along the field sideways
 		}
 
 		if isOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {

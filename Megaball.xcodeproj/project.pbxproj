@@ -69,6 +69,7 @@
 		1AF1700000000423 /* EdgeFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000422 /* EdgeFade.swift */; };
 		1AF1700000000421 /* ContentAwareCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000420 /* ContentAwareCollectionView.swift */; };
 		1AF1700000000401 /* StatsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000400 /* StatsPage.swift */; };
+		1AF17000000007A1 /* PaddleBounce.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000007A0 /* PaddleBounce.swift */; };
 		1AF1700000000601 /* AchievementCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000600 /* AchievementCatalogue.swift */; };
 		1AF1700000000004 /* SavedGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000003 /* SavedGameTests.swift */; };
 		1AF170000000001E /* BrickGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001D /* BrickGridTests.swift */; };
@@ -412,6 +413,7 @@
 		1AF1700000000422 /* EdgeFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeFade.swift; sourceTree = "<group>"; };
 		1AF1700000000420 /* ContentAwareCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentAwareCollectionView.swift; sourceTree = "<group>"; };
 		1AF1700000000400 /* StatsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsPage.swift; sourceTree = "<group>"; };
+		1AF17000000007A0 /* PaddleBounce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddleBounce.swift; sourceTree = "<group>"; };
 		1AF1700000000600 /* AchievementCatalogue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCatalogue.swift; sourceTree = "<group>"; };
 		1AF1700000000003 /* SavedGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGameTests.swift; sourceTree = "<group>"; };
 		1AF170000000001D /* BrickGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickGridTests.swift; sourceTree = "<group>"; };
@@ -1294,6 +1296,7 @@
 				1AF1700000000062 /* GameSceneLayout.swift */,
 				1AF1700000000060 /* GameBackground.swift */,
 				1AF1700000000400 /* StatsPage.swift */,
+				1AF17000000007A0 /* PaddleBounce.swift */,
 				1AF1700000000600 /* AchievementCatalogue.swift */,
 				1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */,
 				1AF1300000000001 /* Scoring.swift */,
@@ -1603,6 +1606,7 @@
 				1AF1700000000423 /* EdgeFade.swift in Sources */,
 				1AF1700000000421 /* ContentAwareCollectionView.swift in Sources */,
 				1AF1700000000401 /* StatsPage.swift in Sources */,
+				1AF17000000007A1 /* PaddleBounce.swift in Sources */,
 				1AF1700000000601 /* AchievementCatalogue.swift in Sources */,
 				1A28AF77244DB591007A1A3E /* Level073.swift in Sources */,
 				1AF335E0241133C4007DC048 /* Level004.swift in Sources */,

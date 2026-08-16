@@ -338,9 +338,9 @@ extension GameScene {
             let collision = endlessIIPendingPortalCollisions
                 .removeValue(forKey: ObjectIdentifier(subject)) ?? 0
             let speed = Double(max(hypot(arriving.dx, arriving.dy), ballSpeedLimit))
-            var angleDeg = atan2(Double(abs(arriving.dy)), Double(arriving.dx))*180/Double.pi
-            angleDeg -= angleAdjustmentK*collision*endlessIIPaddleAngleInfluence
-            angleDeg = min(max(angleDeg, minAngleDeg), 180 - minAngleDeg)
+            let angleDeg = PaddleBounce.angleDegrees(
+                arriving: arriving, collision: collision, adjustmentK: angleAdjustmentK,
+                influence: endlessIIPaddleAngleInfluence, minimumDeg: minAngleDeg)
             let angleRad = angleDeg*Double.pi/180
             // The bounce this spot on the paddle would have given (the same formula
             // paddleHit uses), so where the ball goes through decides where it comes

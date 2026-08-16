@@ -155,3 +155,116 @@ final class BallBounceTests: XCTestCase {
         }
     }
 }
+// MARK: - The paddle's own bounce
+
+/// The angle the paddle returns a ball at, which is the most characteristic number in the
+/// game - and which was written out three times until round 147 put it in one place.
+final class PaddleBounceTests: XCTestCase {
+
+    private let arrivingSteeply = CGVector(dx: 60, dy: -300)
+
+    func testTheMiddleOfThePaddleReturnsTheAngleItArrivedAt() {
+        // Nothing to bend: the spot is the middle, so the paddle behaves as a wall does
+        let straight = PaddleBounce.angleDegrees(arriving: arrivingSteeply, collision: 0,
+                                                 adjustmentK: 45, influence: 1,
+                                                 minimumDeg: 10)
+        let arrivedAt = atan2(300.0, 60.0)*180/Double.pi
+        XCTAssertEqual(straight, arrivedAt, accuracy: 0.001)
+    }
+
+    func testTheSidesOfThePaddleBendItTowardThatSide() {
+        // Right of the middle sends the ball right, which is a smaller angle
+        let right = PaddleBounce.angleDegrees(arriving: arrivingSteeply, collision: 0.5,
+                                              adjustmentK: 45, influence: 1, minimumDeg: 10)
+        let left = PaddleBounce.angleDegrees(arriving: arrivingSteeply, collision: -0.5,
+                                             adjustmentK: 45, influence: 1, minimumDeg: 10)
+        XCTAssertLessThan(right, left)
+        XCTAssertEqual(left - right, 45, accuracy: 0.001, "half the paddle, half the bend")
+    }
+
+    func testItNeverReturnsABallFlatterThanTheMinimum() {
+        // Without this the edges return a ball that runs along the field sideways for
+        // seconds at a time
+        for collision in stride(from: -1.0, through: 1.0, by: 0.1) {
+            let angle = PaddleBounce.angleDegrees(arriving: CGVector(dx: 400, dy: -20),
+                                                  collision: collision, adjustmentK: 45,
+                                                  influence: 1, minimumDeg: 10)
+            XCTAssertGreaterThanOrEqual(angle, 10, "\(collision)")
+            XCTAssertLessThanOrEqual(angle, 170, "\(collision)")
+        }
+    }
+
+    func testItAlwaysSendsTheBallUpwards() {
+        // The vertical component is taken as an absolute: the paddle's top face is the only
+        // one that bounces, so the answer always travels up
+        for dy in [-300.0, 300.0] {
+            let velocity = PaddleBounce.velocity(arriving: CGVector(dx: 100, dy: dy),
+                                                 collision: 0.3, adjustmentK: 45,
+                                                 influence: 1, minimumDeg: 10, speed: 500)
+            XCTAssertGreaterThan(velocity.dy, 0, "arriving dy \(dy)")
+            XCTAssertEqual(hypot(velocity.dx, velocity.dy), 500, accuracy: 0.001)
+        }
+    }
+
+    func testAnInertPaddleStopsTheSpotMatteringAndAFlippedOneInvertsIt() {
+        let plain = PaddleBounce.angleDegrees(arriving: arrivingSteeply, collision: 0.6,
+                                              adjustmentK: 45, influence: 1, minimumDeg: 10)
+        let inert = PaddleBounce.angleDegrees(arriving: arrivingSteeply, collision: 0.6,
+                                              adjustmentK: 45, influence: 0, minimumDeg: 10)
+        let flipped = PaddleBounce.angleDegrees(arriving: arrivingSteeply, collision: 0.6,
+                                                adjustmentK: 45, influence: -1, minimumDeg: 10)
+        let arrivedAt = atan2(300.0, 60.0)*180/Double.pi
+        XCTAssertEqual(inert, arrivedAt, accuracy: 0.001, "the spot stops mattering")
+        XCTAssertEqual((plain + flipped)/2, arrivedAt, accuracy: 0.001,
+                       "flipped bends by the same amount the other way")
+    }
+
+    func testWhereOnThePaddleIsMeasuredFromItsMiddle() {
+        XCTAssertEqual(PaddleBounce.collision(ballX: 100, paddleX: 100, paddleWidth: 80), 0)
+        XCTAssertEqual(PaddleBounce.collision(ballX: 140, paddleX: 100, paddleWidth: 80), 1,
+                       accuracy: 0.001)
+        XCTAssertEqual(PaddleBounce.collision(ballX: 60, paddleX: 100, paddleWidth: 80), -1,
+                       accuracy: 0.001)
+        XCTAssertGreaterThan(PaddleBounce.collision(ballX: 200, paddleX: 100, paddleWidth: 80), 1,
+                            "past the end is not clamped - the caller decides what that means")
+    }
+
+    func testThePracticeFieldBouncesTheWayTheGameDoes() {
+        // Round 147: the practice field's paddle was a plain elastic body, so it mirrored the
+        // ball back rather than bending the bounce by where it landed - which is a wall, not
+        // a paddle. Same formula, same numbers, so the screen answers the question it asks
+        let scene = PaddleSpeedScene(size: CGSize(width: 390, height: 400))
+        scene.layout = GameSceneLayout(screen: CGSize(width: 393, height: 852), bottomInset: 34)
+
+        scene.placeForTesting(ballX: 195, paddleX: 195,
+                              arriving: CGVector(dx: 40, dy: -300))
+        guard let middle = scene.paddleBounceVelocity() else {
+            return XCTFail("a ball on the paddle's middle is a bounce")
+        }
+        XCTAssertGreaterThan(middle.dy, 0, "it always comes back up")
+
+        scene.placeForTesting(ballX: 195 + 30, paddleX: 195,
+                              arriving: CGVector(dx: 40, dy: -300))
+        guard let toTheRight = scene.paddleBounceVelocity() else {
+            return XCTFail("still on the face")
+        }
+        XCTAssertGreaterThan(toTheRight.dx, middle.dx,
+                             "landing right of the middle sends it right, as in the game")
+    }
+
+    func testThePracticeFieldLeavesAnEdgeHitToThePhysics() {
+        // Past the paddle's end is not a face bounce, and the game does not bend those either
+        let scene = PaddleSpeedScene(size: CGSize(width: 390, height: 400))
+        scene.layout = GameSceneLayout(screen: CGSize(width: 393, height: 852), bottomInset: 34)
+        scene.placeForTesting(ballX: 390, paddleX: 100, arriving: CGVector(dx: 40, dy: -300))
+        XCTAssertNil(scene.paddleBounceVelocity())
+    }
+
+    func testThePracticeFieldLeavesTheThumbTheRoomTheGameDoes() {
+        // Round 147: the paddle-speed screen put the paddle a kill-line's clearance above the
+        // field's floor - 36 points - where the game leaves nearly 200
+        let layout = GameSceneLayout(screen: CGSize(width: 393, height: 852), bottomInset: 34)
+        XCTAssertGreaterThan(layout.paddleCentreAboveScreenBottom, 150)
+        XCTAssertLessThan(layout.paddleCentreAboveScreenBottom, layout.screen.height/3)
+    }
+}
