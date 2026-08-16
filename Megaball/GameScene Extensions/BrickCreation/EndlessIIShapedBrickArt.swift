@@ -97,6 +97,69 @@ extension GameScene {
         return endlessIIShapedArt(for: brick.texture, shape) ?? brick.texture
     }
 
+    /// Draws a face's art as a sprite the size of the cell, rather than as a shape node's
+    /// fill.
+    ///
+    /// **`SKShapeNode.fillTexture` does not stretch its texture to the path.** It lays it in
+    /// at the texture's own point size, so what a face shows is a *crop* of the picture, and
+    /// how much of it depends on how big the file happens to be. That went unseen for as long
+    /// as the art was plain: the classic brick is a white rectangle with a hairline edge, and
+    /// a crop of a white rectangle is a white rectangle. The retro art has a bevel, so the
+    /// day it arrived at full resolution (round 154) every shaped brick in the retro theme
+    /// started showing a magnified corner of its own bevel - James, round 156: "some are 4
+    /// times too big and some are 4 times too small". Four times is one doubling in each
+    /// direction, which is exactly what the file's own size had done.
+    ///
+    /// So the art is drawn by a sprite that is *told* its size. Nothing has to line up by
+    /// coincidence, and a texture drawn at any resolution lands the same.
+    ///
+    /// No clipping is needed: the drawn faces are silhouettes already, transparent where the
+    /// shape is not. The shape node stays - it carries the name the style is identified by,
+    /// and the physics is built from its path - but it stops trying to paint.
+    func drawEndlessIIFaceArt(_ texture: SKTexture, on shape: SKShapeNode, cell: CGSize) {
+        shape.fillTexture = nil
+        shape.fillColor = .clear
+        let art = SKSpriteNode(texture: texture, size: cell)
+        art.name = GameScene.faceArtName
+        art.zPosition = 0.01
+        shape.addChild(art)
+    }
+
+    static let faceArtName = "endlessIIFaceArt"
+
+    /// The cell a face was built for, read back off its own path.
+    ///
+    /// The sprite behind a shaped face is shrunk into a hiding rectangle, so `brick.size` is
+    /// no longer the cell by the time a refresh runs - and the face's path is the one thing
+    /// that still is. Reading it back beats remembering it: a remembered number is a second
+    /// copy of the cell, and the Breathing style changes the first one every frame.
+    func endlessIIFaceCell(_ brick: SKSpriteNode, shape: SKShapeNode) -> CGSize {
+        guard let path = shape.path else { return brick.size }
+        let box = path.boundingBox
+        return CGSize(width: box.width, height: box.height)
+    }
+
+    /// Keeps a drawn face showing what the brick is, as a Multi-hit brick steps down through
+    /// its four textures. Returns whether it took the job - a face with no art still has its
+    /// fill refreshed the old way.
+    @discardableResult
+    func refreshEndlessIIFaceArt(_ brick: SKSpriteNode, _ shape: SKShapeNode,
+                                 _ art: ShapedBrickArt?, cell: CGSize) -> Bool {
+        guard let art, let texture = endlessIIShapedArt(for: brick.texture, art) else {
+            shape.childNode(withName: GameScene.faceArtName)?.removeFromParent()
+            return false
+        }
+        if let sprite = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode {
+            if sprite.texture != texture { sprite.texture = texture }
+            if sprite.size != cell { sprite.size = cell }
+            sprite.color = brick.color
+            sprite.colorBlendFactor = brick.colorBlendFactor
+        } else {
+            drawEndlessIIFaceArt(texture, on: shape, cell: cell)
+        }
+        return true
+    }
+
     /// The drawn shape a face uses, if any. Convex and Concave have none yet (§8.5).
     static func shapedArt(for face: EndlessIIFace) -> ShapedBrickArt? {
         switch face {

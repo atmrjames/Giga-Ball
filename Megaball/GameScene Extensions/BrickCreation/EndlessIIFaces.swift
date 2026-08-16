@@ -253,12 +253,16 @@ extension GameScene {
         // fill texture with it. A drawn wedge inside a mirrored path would have had its
         // shading running the wrong way up the slope, and an upside-down one would have been
         // lit from below
-        shape.fillTexture = endlessIIFaceFill(brick, GameScene.shapedArt(for: face))
         shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
         shape.strokeColor = .clear
         shape.zPosition = 0.1
         shape.name = GameScene.brickFaceName
         brick.addChild(shape)
+
+        if refreshEndlessIIFaceArt(brick, shape, GameScene.shapedArt(for: face),
+                                   cell: cell) == false {
+            shape.fillTexture = endlessIIFaceFill(brick, nil)
+        }
 
         let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell, mirrored: mirrored,
                                                    flipped: flipped)
@@ -284,9 +288,12 @@ extension GameScene {
                     as? SKShapeNode else { return }
             let wantedColour = brick.colorBlendFactor > 0.5 ? brick.color : UIColor.white
             let art = brick.endlessIIFace.flatMap { GameScene.shapedArt(for: $0) }
-            let wanted = self.endlessIIFaceFill(brick, art)
-            if shape.fillTexture !== wanted || shape.fillColor != wantedColour {
-                shape.fillTexture = wanted
+            let cell = self.endlessIIFaceCell(brick, shape: shape)
+            if self.refreshEndlessIIFaceArt(brick, shape, art, cell: cell) == false {
+                let wanted = self.endlessIIFaceFill(brick, nil)
+                if shape.fillTexture !== wanted { shape.fillTexture = wanted }
+            }
+            if shape.fillColor != wantedColour, shape.fillTexture != nil {
                 shape.fillColor = wantedColour
             }
         }

@@ -820,6 +820,28 @@ passes through, so there is a test on it. The orientation is recorded on the bri
 carried in the save, or a resumed field would answer the ball differently from the one the
 player left (round 150's lesson, one level further in).
 
+### How a shaped face wears its art
+
+**`SKShapeNode.fillTexture` does not stretch its texture to the path.** It lays it in at the
+texture's own point size, so a face filled that way shows a *crop* of the picture, and how
+much of it depends on how big the file happens to be.
+
+That was true from the day Rounded was built and nobody could see it: the classic brick is a
+white rectangle with a hairline edge, and a crop of a white rectangle is a white rectangle.
+The retro art has a bevel, so when it arrived at full resolution (round 154) every shaped
+brick in the retro theme started showing a magnified corner of its own bevel - James, round
+156, with screenshots: "some are 4 times too big and some are 4 times too small". Four times
+is one doubling in each direction, which is exactly what the file's own size had done.
+
+The art is now drawn by a **sprite that is told its size** - the cell, read back off the
+face's own path so it survives Breathing changing `brick.size` every frame - and the shape
+node stops painting. No clipping is needed, because the drawn faces are silhouettes already.
+A texture redrawn at any resolution now lands the same, which is the property the tests hold.
+
+Convex and Concave keep the old fill until they are drawn, because a fill that is
+approximately right beats a dome that is not drawn at all. That is one more reason their art
+is the next batch worth having.
+
 ### Shaped brick faces — the first batch, and what is still to draw
 
 James delivered twenty-eight on 16 August 2026: a Rounded and a Wedge texture for every

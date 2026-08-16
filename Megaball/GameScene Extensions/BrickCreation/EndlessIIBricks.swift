@@ -641,12 +641,18 @@ extension GameScene {
         // A rounded rectangle is convex, which is all a polygon body asks for
 
         let shape = SKShapeNode(path: path)
-        shape.fillTexture = endlessIIFaceFill(brick, .rounded)
         shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
         shape.strokeColor = .clear
         shape.zPosition = 0.1
         shape.name = GameScene.roundedBrickOutlineName
         brick.addChild(shape)
+
+        if refreshEndlessIIFaceArt(brick, shape, .rounded, cell: face) == false {
+            shape.fillTexture = endlessIIFaceFill(brick, nil)
+        }
+        // Drawn art goes on as a sprite that is told its size; anything with none falls back
+        // to the shape's own fill, which lays the texture in at whatever size the file is
+        // (see `drawEndlessIIFaceArt` - that is the bug this replaced)
 
         brick.size = CGSize(width: face.width*0.78, height: face.height*0.78)
         // Small enough to sit entirely inside the rounded face, so no square corner shows
@@ -668,9 +674,12 @@ extension GameScene {
                   let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName)
                     as? SKShapeNode else { return }
             let wantedColour = brick.colorBlendFactor > 0.5 ? brick.color : UIColor.white
-            let wanted = self.endlessIIFaceFill(brick, .rounded)
-            if shape.fillTexture !== wanted || shape.fillColor != wantedColour {
-                shape.fillTexture = wanted
+            let cell = self.endlessIIFaceCell(brick, shape: shape)
+            if self.refreshEndlessIIFaceArt(brick, shape, .rounded, cell: cell) == false {
+                let wanted = self.endlessIIFaceFill(brick, nil)
+                if shape.fillTexture !== wanted { shape.fillTexture = wanted }
+            }
+            if shape.fillColor != wantedColour, shape.fillTexture != nil {
                 shape.fillColor = wantedColour
                 // Colour as well as texture: a rounded brick that also picked up a role is
                 // tinted after its face was built, and the face has to follow

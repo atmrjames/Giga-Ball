@@ -343,3 +343,83 @@ final class EndlessIIFaceOrientationTests: XCTestCase {
         XCTAssertEqual(brick.endlessIIFaceMirrored, false, "a mirrored dome is the same dome")
     }
 }
+
+// MARK: - How a face wears its art
+
+/// "Retro textures are now sized incorrectly. Some are 4 times too big and some are 4 times
+/// too small" (James, round 156, with screenshots).
+///
+/// The cause was not the textures. `SKShapeNode.fillTexture` lays its texture in at the
+/// texture's own point size rather than stretching it to the path, so a face showed a *crop*
+/// of the picture whose size depended on how big the file happened to be. Invisible for as
+/// long as the art was a plain white rectangle; obvious the moment the retro art arrived at
+/// full resolution with a bevel on it.
+final class EndlessIIFaceArtTests: XCTestCase {
+
+    private func retro() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickSetting = 1
+        scene.brickNormalTexture = scene.retroBrickNormalTexture
+        return scene
+    }
+
+    private func brick(_ scene: GameScene) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: 40, height: 20))
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testTheArtIsASpriteToldItsSizeRatherThanAFillLeftToGuess() {
+        let scene = retro()
+        let subject = brick(scene)
+        scene.makeFace(.wedge, on: subject)
+
+        guard let shape = subject.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
+        else { return XCTFail("no face") }
+        guard let art = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        else { return XCTFail("no drawn art") }
+
+        XCTAssertEqual(art.size, CGSize(width: 40, height: 20),
+                       "the cell, not the texture's own size - which is the whole bug")
+        XCTAssertNil(shape.fillTexture,
+                     "and the shape stops painting, or the crop is drawn underneath")
+    }
+
+    func testATextureOfAnySizeLandsTheSame() {
+        // The property that makes the fix a fix: the drawn size comes from the cell, so a
+        // texture redrawn at twice the resolution is the same picture in the same place
+        let scene = retro()
+        let subject = brick(scene)
+        scene.makeFace(.wedge, on: subject)
+        let art = subject.childNode(withName: GameScene.brickFaceName)?
+            .childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+
+        let texture = scene.endlessIIShapedArt(for: scene.brickNormalTexture, .wedge)
+        XCTAssertNotEqual(art?.size, texture?.size(),
+                          "the two differ here, and before the fix the second one won")
+    }
+
+    func testAFaceWithNoDrawnArtStillGetsItsOldFill() {
+        // Convex and Concave (§8.5). They keep the stretched texture until they are drawn,
+        // and the fallback has to stay wired or they would come out blank
+        let scene = retro()
+        let subject = brick(scene)
+        scene.makeFace(.convex, on: subject)
+
+        let shape = subject.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
+        XCTAssertNil(shape?.childNode(withName: GameScene.faceArtName))
+        XCTAssertNotNil(shape?.fillTexture, "or a dome would be a hole in the field")
+    }
+
+    func testARoundedBrickWearsItTheSameWay() {
+        let scene = retro()
+        let subject = brick(scene)
+        scene.makeRounded(subject)
+
+        let shape = subject.childNode(withName: GameScene.roundedBrickOutlineName) as? SKShapeNode
+        let art = shape?.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        XCTAssertEqual(art?.size, CGSize(width: 40, height: 20))
+    }
+}
