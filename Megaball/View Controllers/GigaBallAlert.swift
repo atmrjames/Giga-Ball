@@ -19,6 +19,135 @@
 
 import UIKit
 
+/// The four questions the app stops to ask.
+///
+/// **These were the app's other pop-up** (round 89's note, and §12.0's "two pop-up types, and
+/// only one of them is `GigaBallAlert`"). MAIN MENU, RESET BALL, RESET DATA and SWIPE UP were a
+/// storyboard sheet, `WarningViewController`, with its own card, its own three buttons and its
+/// own copy of the blur, the parallax and the show/hide animation. Every improvement to the
+/// pop-ups therefore had to be made twice, and three rounds of play-test feedback - round 82's
+/// icons above titles, round 89's coloured glass on the confirm, round 85's "the main menu
+/// pop-up needs a home icon" - landed on a different screen than the one they looked like they
+/// were about. Round 162 made them one type, which is why this is an enum of *what is asked*
+/// rather than another view controller.
+///
+/// The wiring is untouched: each answer posts the notification it always posted, to the same
+/// observer. What went is the second card.
+enum GigaBallConfirm {
+    /// Settings, mid-game: put a stuck ball back on the paddle.
+    case resetBall
+    /// Settings: throw away every score, statistic and setting on the device.
+    case resetData
+    /// The pause menu: end the run and go back to the menus.
+    case mainMenu
+    /// The first pause of all: how pausing works, and where to turn it off.
+    case swipeUpToPause
+
+    var title: String {
+        switch self {
+        case .resetBall: return "RESET BALL"
+        case .resetData: return "RESET DATA"
+        case .mainMenu: return "MAIN MENU"
+        case .swipeUpToPause: return "SWIPE UP"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .resetBall:
+            return "Only reset if the ball becomes stuck."
+        case .resetData:
+            return "Are you sure you want to reset the game data? You will irreversibly lose "
+                + "all game progress, statistics and settings.\nIn-app purchases will remain."
+        case .mainMenu:
+            return "Are you sure?\nCurrent progress will be lost."
+        case .swipeUpToPause:
+            return "Swipe up anywhere to pause.\nDisable in Settings."
+        }
+    }
+
+    /// The mark above the title (play-test round 85, "the main menu pop-up needs a home icon").
+    var symbol: String {
+        switch self {
+        case .resetBall: return "arrow.clockwise"
+        case .resetData: return "trash.fill"
+        case .mainMenu: return "house.fill"
+        case .swipeUpToPause: return "hand.draw.fill"
+        }
+    }
+
+    /// What the green button says, or nil where there is nothing to weigh up.
+    ///
+    /// The swipe-up explainer is the one of the four that asks nothing - it is telling the
+    /// player something - so it gets the single lime OK a one-button pop-up already takes,
+    /// which is exactly what the old sheet did with its centre button.
+    var confirmTitle: String? {
+        self == .swipeUpToPause ? nil : "OK"
+    }
+
+    /// What the pale button says. "Cancel" everywhere there is something to cancel.
+    var dismissTitle: String {
+        self == .swipeUpToPause ? "OK" : "Cancel"
+    }
+
+    /// Asks it, on top of whatever is on screen.
+    func show(on presenter: UIViewController) {
+        GigaBallAlert.show(on: presenter, title: title, message: message, symbol: symbol,
+                           dismissTitle: dismissTitle,
+                           dismiss: { GigaBallConfirm.stepBack(self) },
+                           confirmTitle: confirmTitle,
+                           confirm: confirmTitle == nil ? nil : { self.go(from: presenter) })
+        // `dismiss` is never nil, which is what keeps a tap outside the card from answering
+        // for the player: `GigaBallAlert` only offers tap-to-close where the pale button does
+        // nothing, and none of these four are that. The old sheet could not be dismissed by
+        // tapping past it either
+    }
+
+    /// The pale button: nothing happens, but the screen underneath is told to refresh.
+    ///
+    /// Settings redraws its rows on `returnNotificiation` - it is the screen a cancel returns
+    /// to, and the row that opened the question may have been mid-change. Posted for all four,
+    /// as the sheet posted it, rather than reasoned about per case: it is a refresh, and a
+    /// screen that is not listening does not hear it.
+    private static func stepBack(_ confirm: GigaBallConfirm) {
+        if confirm == .swipeUpToPause {
+            UserDefaults.standard.set(false, forKey: "firstPause")
+            CloudKitHandler().saveToiCloud()
+            // The explainer is shown once. Its only button is the pale one, so this is where
+            // "seen it" is recorded - and it goes to iCloud, so a second device does not
+            // explain the same gesture again
+        }
+        NotificationCenter.default.post(name: .returnNotificiation, object: nil)
+    }
+
+    /// The green button: the thing the pop-up exists to ask about.
+    private func go(from presenter: UIViewController) {
+        switch self {
+        case .resetBall:
+            NotificationCenter.default.post(name: .killBallRemoveVC, object: nil)
+        case .resetData:
+            NotificationCenter.default.post(name: .resetNotificiation, object: nil)
+        case .mainMenu:
+            MenuViewController().clearSavedGame()
+            // The save goes first, or the run just abandoned is offered back on the splash
+            if let pauseMenu = presenter as? PauseMenuViewController {
+                pauseMenu.moveToMainMenu()
+                // The pause menu's own return carries the pack number the menus need to
+                // reopen the right level list. Posting a bare copy of the same notifications
+                // was how a quit-while-paused used to land on the pack list rather than on
+                // the played pack's levels
+            } else {
+                NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+                NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
+                NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
+            }
+        case .swipeUpToPause:
+            break
+            // No green button, so nothing reaches here
+        }
+    }
+}
+
 enum GigaBallAlert {
 
     /// Puts a message on top of `presenter`, in the game's own dress.

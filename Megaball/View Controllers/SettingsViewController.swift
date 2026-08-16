@@ -652,10 +652,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             case 9:
                 if navigatedFrom! != "PauseMenu" {
                 // Reset game data
-                    showWarning(senderID: "resetData")
+                    showWarning(.resetData)
                 } else {
                 // Kill ball
-                    showWarning(senderID: "killBall")
+                    showWarning(.resetBall)
                 }
 //            case 11:
 //            // Restore purchases
@@ -956,19 +956,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Load the total stats array from the NSCoder data store
     }
     
-    func showWarning(senderID: String) {
-        
+    /// Asks one of the app's confirms, with this screen's own parallax stood down first.
+    ///
+    /// The pop-up sits over the settings card, and two layers both drifting with the tilt read
+    /// as one layer coming loose. The old sheet did this for the same reason; keeping it here
+    /// is what lets `GigaBallConfirm` stay a plain question with no screen of its own.
+    func showWarning(_ confirm: GigaBallConfirm) {
         if group != nil {
             backgroundView.removeMotionEffect(group!)
         }
-        // Remove parallax to prevent a double parallax in the layered views
-        
-        let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
-        warningView.senderID = senderID
-        self.addChild(warningView)
-        warningView.view.frame = self.view.frame
-        self.view.addSubview(warningView.view)
-        warningView.didMove(toParent: self)
+        confirm.show(on: self)
     }
     
     func resetData() {

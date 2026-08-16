@@ -184,13 +184,8 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         inbetweenView.didMove(toParent: self)
     }
     
-    func showWarning(senderID: String) {
-        let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
-        warningView.senderID = senderID
-        self.addChild(warningView)
-        warningView.view.frame = self.view.frame
-        self.view.addSubview(warningView.view)
-        warningView.didMove(toParent: self)
+    func showConfirm(_ confirm: GigaBallConfirm) {
+        confirm.show(on: self)
     }
 
     override var shouldAutorotate: Bool {

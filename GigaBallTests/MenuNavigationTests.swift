@@ -149,3 +149,56 @@ final class MenuNavigationTests: XCTestCase {
         XCTAssertEqual(move(from: width, by: 200), MenuNavigation.Move.none)
     }
 }
+
+/// The four confirms, after round 162 folded `WarningViewController` into `GigaBallAlert`.
+///
+/// They are the pop-ups that matter most - one of them throws away every score on the device -
+/// and they used to be a storyboard sheet nobody could see from the alert's own code. What is
+/// worth pinning is that the merge kept the words and the shape: a player who has learned that
+/// the green button is the one that does the thing should not find that changed by a refactor.
+final class GigaBallConfirmTests: XCTestCase {
+
+    private let all: [GigaBallConfirm] = [.resetBall, .resetData, .mainMenu, .swipeUpToPause]
+
+    func testTheFourConfirmsAreTheOnesThePlayTestKnows() {
+        // Round 89's note names them: MAIN MENU, RESET BALL, RESET DATA, SWIPE UP
+        XCTAssertEqual(Set(all.map(\.title)),
+                       ["MAIN MENU", "RESET BALL", "RESET DATA", "SWIPE UP"])
+    }
+
+    func testEveryConfirmSaysSomethingAndWearsAMark() {
+        // Play-test round 85 asked for an icon above the title and the sheet had no slot for
+        // one at all. Every one of the four has a mark now, and no two share it - the icon is
+        // how a pop-up is recognised before it is read
+        for confirm in all {
+            XCTAssertFalse(confirm.message.isEmpty, confirm.title)
+            XCTAssertFalse(confirm.symbol.isEmpty, confirm.title)
+        }
+        XCTAssertEqual(Set(all.map(\.symbol)).count, all.count,
+                       "four questions, four marks")
+    }
+
+    func testAskingSomethingOffersCancelAndOK() {
+        for confirm in [GigaBallConfirm.resetBall, .resetData, .mainMenu] {
+            XCTAssertEqual(confirm.dismissTitle, "Cancel", confirm.title)
+            XCTAssertEqual(confirm.confirmTitle, "OK", confirm.title)
+        }
+        // The pale button steps back and the green one does the thing, which is the pairing
+        // every other pop-up in the app already uses
+    }
+
+    func testTheSwipeExplainerHasNothingToWeighUp() {
+        // It tells the player how pausing works rather than asking them anything, so it takes
+        // the single lime OK - which is what the old sheet's centre button was
+        XCTAssertNil(GigaBallConfirm.swipeUpToPause.confirmTitle)
+        XCTAssertEqual(GigaBallConfirm.swipeUpToPause.dismissTitle, "OK")
+    }
+
+    func testResetDataStillSaysWhatSurvivesIt() {
+        // The one confirm that cannot be undone. It has always promised that purchases are
+        // kept, and a merge is exactly the kind of change that quietly drops a sentence
+        let message = GigaBallConfirm.resetData.message
+        XCTAssertTrue(message.contains("irreversibly"), message)
+        XCTAssertTrue(message.contains("In-app purchases will remain."), message)
+    }
+}

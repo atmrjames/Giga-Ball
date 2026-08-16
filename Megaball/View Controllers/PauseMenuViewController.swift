@@ -1238,7 +1238,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             interfaceHaptic.impactOccurred()
         }
         if self.sender == "Pause" {
-            showWarning(senderID: "pauseMenu")
+            GigaBallConfirm.mainMenu.show(on: self)
         } else {
             MenuViewController().clearSavedGame()
             moveToMainMenu()
@@ -1360,15 +1360,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         settingsView.view.frame = self.view.frame
         self.view.addSubview(settingsView.view)
         settingsView.didMove(toParent: self)
-    }
-    
-    func showWarning(senderID: String) {
-        let warningView = self.storyboard?.instantiateViewController(withIdentifier: "warningView") as! WarningViewController
-        warningView.senderID = senderID
-        self.addChild(warningView)
-        warningView.view.frame = self.view.frame
-        self.view.addSubview(warningView.view)
-        warningView.didMove(toParent: self)
     }
     
     func moveToMainMenu() {

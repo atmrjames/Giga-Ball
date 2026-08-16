@@ -42,7 +42,7 @@ enum CollisionTypes: UInt32 {
 protocol GameViewControllerDelegate: AnyObject {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int, livesRemaining: Int)
-	func showWarning(senderID: String)
+	func showConfirm(_ confirm: GigaBallConfirm)
 	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
 	var selectedLevel: Int? { get set }
 	var numberOfLevels: Int? { get set }
@@ -5820,7 +5820,7 @@ laserTimer?.invalidate()
 		// Pass over highscore data to pause menu
 		
 		if firstPause && sender == "Pause" {
-			gameViewControllerDelegate?.showWarning(senderID: "firstPause")
+			gameViewControllerDelegate?.showConfirm(.swipeUpToPause)
 		}
 		// Pop-up to explain swipe up to pause
     }
