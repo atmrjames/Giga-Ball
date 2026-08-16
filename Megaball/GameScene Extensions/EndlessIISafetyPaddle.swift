@@ -94,6 +94,51 @@ extension GameScene {
         if hapticsSetting { heavyHaptic.impactOccurred() }
     }
 
+    /// **A ball coming up from underneath goes straight through it** (James, round 166).
+    ///
+    /// The surface is there to keep a falling ball in the field, not to seal the bricks off
+    /// from below. Blocking the climb was the "price" the power-up was written with, and in
+    /// play it reads as the ball being cheated rather than as a trade: a shot from the paddle
+    /// that would have reached the field bounces off a bar the player was given as a gift.
+    ///
+    /// Done exactly as the real paddle steps out of a ball's way - the bit is cleared on *the
+    /// ball's* body rather than on the bar's, so with four balls in play each one gets its own
+    /// answer. One bar cannot be solid and not solid at the same time; four balls can each be
+    /// told something different about it.
+    ///
+    /// Solid only once a ball is *clear above* it, rather than from the moment its centre
+    /// passes: a ball made solid while it still overlaps the bar is one the engine shoves out
+    /// of the way, which is a jolt in the middle of a climb. On the way down that costs
+    /// nothing - a descending ball is clear above the bar until the instant they touch, which
+    /// is when the bounce is wanted anyway.
+    func refreshEndlessIISafetyPaddleReachability() {
+        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else {
+            for subject in endlessIIBallsInPlay {
+                setEndlessIISafetyPaddleReachable(true, for: subject)
+            }
+            return
+            // No bar: every ball gets the bit back. Nothing would collide with it either way,
+            // but a mask left cleared is a mask that lies about what the ball can hit
+        }
+        let top = bar.position.y + bar.size.height/2
+        for subject in endlessIIBallsInPlay {
+            setEndlessIISafetyPaddleReachable(subject.position.y - subject.size.height/2 >= top,
+                                              for: subject)
+        }
+    }
+
+    func setEndlessIISafetyPaddleReachable(_ reachable: Bool, for subject: SKSpriteNode) {
+        guard let body = subject.physicsBody else { return }
+        let bit = CollisionTypes.safetyPaddleCategory.rawValue
+
+        let collision = reachable ? body.collisionBitMask | bit : body.collisionBitMask & ~bit
+        let contact = reachable ? body.contactTestBitMask | bit : body.contactTestBitMask & ~bit
+
+        if body.collisionBitMask != collision { body.collisionBitMask = collision }
+        if body.contactTestBitMask != contact { body.contactTestBitMask = contact }
+    }
+
     /// Takes it away, whenever the clock is not running.
     ///
     /// Called every frame rather than scheduled, because a clock can end in more ways than

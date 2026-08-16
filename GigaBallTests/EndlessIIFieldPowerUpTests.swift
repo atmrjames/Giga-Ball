@@ -844,18 +844,64 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertEqual(brick.position.y, 40, "sideways only - a brick's y is its row (§8.6)")
     }
 
-    func testItTurnsRoundAtTheWallRatherThanLosingTheField() {
+    func testItGoesRoundTheSideRatherThanLosingTheField() {
         // A power-up that quietly destroyed the bricks that reached the edge would be a
-        // different power-up
+        // different power-up, so a brick that runs out of field comes back at the other side
         let scene = driftScene()
         let brick = brick(in: scene, x: scene.gameWidth/2 - scene.brickWidth/2, y: 40)
         scene.endlessIICollectDrift()
         scene.endlessIIDriftDirection = 1
 
         for _ in 0..<20 { scene.tickEndlessIIDrift(0.2) }
-        XCTAssertLessThanOrEqual(brick.position.x + brick.size.width/2,
-                                 scene.gameWidth/2 + 0.001, "never past the wall")
         XCTAssertNotNil(brick.parent, "and never destroyed by it")
+        XCTAssertLessThan(brick.position.x, 0,
+                          "out at the right and back in at the left, still going the same way")
+        XCTAssertEqual(brick.position.y, 40, "and never off its row (§8.6)")
+    }
+
+    func testItKeepsGoingTheSameWayForTheWholeDrift() {
+        // James, round 167: "the bricks should slowly drift from left to right or right to
+        // left". They swayed instead - *any* brick reaching a wall turned the whole field
+        // round, and on a field that spans the width there is nearly always a brick near an
+        // edge, so it reversed every second or two and travelled about half a cell each way.
+        // Measured in play at 1-2 second intervals and never more than 22 points of travel
+        let scene = driftScene()
+        brick(in: scene, x: scene.gameWidth/2 - scene.brickWidth/2, y: 40)
+        brick(in: scene, x: -scene.gameWidth/2 + scene.brickWidth/2, y: 40)
+        // One against each wall, which is the arrangement that used to reverse it every frame
+        scene.endlessIICollectDrift()
+        scene.endlessIIDriftDirection = 1
+
+        for _ in 0..<40 { scene.tickEndlessIIDrift(0.1) }
+        XCTAssertEqual(scene.endlessIIDriftDirection, 1, "one direction, for the whole drift")
+    }
+
+    func testAWrappedBrickLandsOnAColumnCentre() {
+        // The shift is the field's whole width, which is a whole number of columns - so a
+        // brick that goes round the side lands on a column rather than between two, and the
+        // cells the generator and the crush speak in stay the cells everything else means
+        let scene = driftScene()
+        let left = -scene.gameWidth/2 + scene.brickWidth/2
+        let brick = brick(in: scene, x: left, y: 40)
+        scene.endlessIICollectDrift()
+        scene.endlessIIDriftDirection = -1
+
+        for _ in 0..<40 { scene.tickEndlessIIDrift(0.1) }
+        scene.endlessIIDriftClock.run(down: GameScene.endlessIIDriftDuration)
+        scene.tickEndlessIIDrift(0.016)
+        XCTAssertEqual(brick.position.x,
+                       scene.endlessIIColumnCentre(nearest: brick.position.x), accuracy: 0.0001)
+    }
+
+    func testAnAnchoredBrickIsLeftWhereItWasStruck() {
+        // The rule the descent uses. A Fixed brick's whole meaning is that it stopped there
+        let scene = driftScene()
+        let brick = brick(in: scene, x: 0, y: 40)
+        brick.endlessIIIsAnchored = true
+        scene.endlessIICollectDrift()
+        scene.tickEndlessIIDrift(0.5)
+
+        XCTAssertEqual(brick.position.x, 0, accuracy: 0.0001)
     }
 
     func testEverythingLandsBackOnAColumnCentreWhenItEnds() {
@@ -963,6 +1009,84 @@ final class RandomisedBounceTests: XCTestCase {
         scene.gameMode = .classic
         scene.endlessIICollectSafetyPaddle()
         XCTAssertNil(scene.childNode(withName: GameScene.endlessIISafetyPaddleName))
+    }
+
+    /// James, round 166: "with Safety Paddle, the ball shouldn't contact it when coming from
+    /// below, it should pass through it."
+    ///
+    /// It was written as a trade - keeps the ball up, seals the bricks off from underneath -
+    /// and in play the second half reads as the ball being cheated rather than as a price:
+    /// a shot from the paddle that would have reached the field bounces off a bar the player
+    /// was *given*. The bit is cleared on the ball rather than the bar, so four balls each
+    /// get their own answer about one surface.
+    private func ballUnderTheBar(_ scene: GameScene) -> SKSpriteNode {
+        let ball = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        ball.physicsBody?.collisionBitMask = CollisionTypes.safetyPaddleCategory.rawValue
+        ball.physicsBody?.contactTestBitMask = CollisionTypes.safetyPaddleCategory.rawValue
+        scene.addChild(ball)
+        return ball
+    }
+
+    private func meetsTheBar(_ ball: SKSpriteNode) -> Bool {
+        let bit = CollisionTypes.safetyPaddleCategory.rawValue
+        return (ball.physicsBody?.collisionBitMask ?? 0) & bit != 0
+    }
+
+    func testABallClimbingFromUnderneathPassesThrough() {
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+        guard let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return XCTFail("the bar stands") }
+
+        let ball = ballUnderTheBar(scene)
+        ball.position.y = bar.position.y - bar.size.height
+        scene.endlessIIExtraBalls = [ball]
+        scene.refreshEndlessIISafetyPaddleReachability()
+
+        XCTAssertFalse(meetsTheBar(ball), "underneath it, so it climbs straight through")
+    }
+
+    func testABallAboveItIsStillCaught() {
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+        guard let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return XCTFail("the bar stands") }
+
+        let ball = ballUnderTheBar(scene)
+        ball.position.y = bar.position.y + bar.size.height + ball.size.height
+        scene.endlessIIExtraBalls = [ball]
+        scene.refreshEndlessIISafetyPaddleReachability()
+
+        XCTAssertTrue(meetsTheBar(ball), "which is the half of the power-up that is a gift")
+    }
+
+    func testItGoesSolidOnlyOnceTheBallIsClearOfIt() {
+        // Not at the moment the ball's centre passes: a ball made solid while it still
+        // overlaps the bar is one the engine shoves aside, which is a jolt mid-climb
+        let scene = safetyScene()
+        scene.endlessIICollectSafetyPaddle()
+        guard let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return XCTFail("the bar stands") }
+
+        let ball = ballUnderTheBar(scene)
+        ball.position.y = bar.position.y + bar.size.height/2 + 1
+        scene.endlessIIExtraBalls = [ball]
+        scene.refreshEndlessIISafetyPaddleReachability()
+
+        XCTAssertFalse(meetsTheBar(ball), "its underside is still inside the bar")
+    }
+
+    func testWithNoBarStandingEveryBallHasItsFullMaskBack() {
+        let scene = safetyScene()
+        let ball = ballUnderTheBar(scene)
+        ball.physicsBody?.collisionBitMask = 0
+        ball.physicsBody?.contactTestBitMask = 0
+        scene.endlessIIExtraBalls = [ball]
+        scene.refreshEndlessIISafetyPaddleReachability()
+
+        XCTAssertTrue(meetsTheBar(ball),
+                      "a mask left cleared is a mask that lies about what the ball can hit")
     }
 
     func testAResumedRunFindsItStanding() {

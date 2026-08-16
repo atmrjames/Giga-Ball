@@ -11,11 +11,16 @@
 //
 //  Three decisions the note left open, taken here and worth arguing with:
 //
-//  - **At the wall it turns round.** A field that carried on would have to lose the bricks
-//    that reached the edge, and a power-up that quietly destroys part of the field is a
-//    different power-up. So it sways: out to the wall, then back. Under Wrap-Around it does
-//    carry on, because there the wall is a doorway and coming back in the other side is what
-//    everything else does (§5.4, and the note asked for exactly this).
+//  - **It goes round the sides, always.** Round 100 had it turn round at the wall instead, on
+//    the reasoning that a field carrying on would have to lose the bricks that reached the
+//    edge - and that is still true, which is why it wraps rather than carries on. What the
+//    turn-round actually produced was not a sway but a shudder: *any* brick reaching a wall
+//    turned the whole field round, and on a field that spans the width there is nearly always
+//    a brick near an edge, so it reversed every second or two and travelled about half a cell
+//    each way. Measured in play, round 167: direction flipping at 1-2 second intervals and the
+//    field never moving more than 22 points. James asked for bricks that "slowly drift from
+//    left to right or right to left", which is travel, and travel needs somewhere to go. So
+//    the doorway Wrap-Around opened is now open whenever Drift runs.
 //  - **Anchored bricks stay put**, the same ones the descent leaves alone. A Fixed brick's
 //    whole meaning is that it stopped where it was struck.
 //  - **Everything lands back on a column centre.** The grid is how the generator, the crush
@@ -56,7 +61,6 @@ extension GameScene {
         }
 
         let step = CGFloat(endlessIIDriftDirection)*GameScene.endlessIIDriftSpeed*brickWidth*CGFloat(delta)
-        var turnAround = false
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard self.endlessIIStaysPut(node) == false else { return }
@@ -65,16 +69,12 @@ extension GameScene {
 
             var x = node.position.x + step
             let half = (node as? SKSpriteNode)?.size.width ?? self.brickWidth
-            if self.endlessIIWrapIsRunning {
-                if x - half/2 > self.gameWidth/2 { x -= self.gameWidth }
-                if x + half/2 < -self.gameWidth/2 { x += self.gameWidth }
-                // Out one side and in at the other, still travelling the same way
-            } else if x + half/2 > self.gameWidth/2 || x - half/2 < -self.gameWidth/2 {
-                turnAround = true
-                return
-                // Held where it is this frame; the whole field turns round below, so the
-                // ones that had room do not slide out of step with the one that did not
-            }
+            if x - half/2 > self.gameWidth/2 { x -= self.gameWidth }
+            if x + half/2 < -self.gameWidth/2 { x += self.gameWidth }
+            // Out one side and in at the other, still travelling the same way. Shifted by the
+            // field's whole width, which is a whole number of columns - so a brick that goes
+            // round the side lands on a column centre rather than between two, and the cells
+            // the generator and the crush speak in stay the cells everything else means
             node.position.x = x
         }
 
@@ -82,9 +82,9 @@ extension GameScene {
             node.position.x += step
         }
         // The drops drift too, which is most of what makes the power-up feel like weather
-        // rather than like the bricks misbehaving
-
-        if turnAround { endlessIIDriftDirection = -endlessIIDriftDirection }
+        // rather than like the bricks misbehaving. They are not wrapped: a power-up that
+        // vanished off one side and reappeared at the other is a drop the player has already
+        // decided whether to chase
     }
 
     /// Puts every brick back on a column centre and forgets the direction.

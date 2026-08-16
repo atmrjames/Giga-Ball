@@ -2433,6 +2433,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// The paddle moves under the player's finger, so whether a ball is beneath it is
 			// a question with a new answer every frame
 
+			refreshEndlessIISafetyPaddleReachability()
+			// And the same question about the safety paddle, which a ball climbing from
+			// underneath passes through - asked here, before the step, because a mask
+			// decided after the engine has already resolved the contact is a mask decided
+			// too late
+
 			recordBallStatesBeforeStep()
 			// Before the physics runs, because how a ball arrived is the only thing that says
 			// which face it hit - and by the time a contact is reported that is already gone
@@ -5324,7 +5330,9 @@ laserTimer?.invalidate()
 		// of them actually passed through anything
 
 		refreshPaddleReachability()
-		// Applied last, because everything above hands the paddle back
+		refreshEndlessIISafetyPaddleReachability()
+		// Applied last, because everything above hands the paddle back - and the safety
+		// paddle with it, which a ball climbing from underneath has to be let through
 	}
 	// Set ball's physics bodies
 
