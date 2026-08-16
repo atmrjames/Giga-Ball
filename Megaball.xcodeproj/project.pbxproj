@@ -50,6 +50,7 @@
 		000000001AF1800000000011 /* EndlessIIVision.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000010 /* EndlessIIVision.swift */; };
 		000000001AF1800000000002 /* BallPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000001 /* BallPath.swift */; };
 		000000001AF1800000000004 /* BallPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000003 /* BallPathTests.swift */; };
+		000000001AF1C00000001301 /* AimHoldControlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1C00000001300 /* AimHoldControlTests.swift */; };
 		1AF170000000009F /* PowerUpEligibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009E /* PowerUpEligibility.swift */; };
 		1AF1700000000091 /* EndlessIIBalls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000090 /* EndlessIIBalls.swift */; };
 		1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000080 /* EndlessIINeighbourTests.swift */; };
@@ -74,6 +75,7 @@
 		1AF1700000000421 /* ContentAwareCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000420 /* ContentAwareCollectionView.swift */; };
 		1AF1700000000401 /* StatsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000400 /* StatsPage.swift */; };
 		1AF17000000007A1 /* PaddleBounce.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000007A0 /* PaddleBounce.swift */; };
+		000000001AF1C00000001201 /* AimHoldControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1C00000001200 /* AimHoldControl.swift */; };
 		1AF1700000000601 /* AchievementCatalogue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000600 /* AchievementCatalogue.swift */; };
 		1AF1700000000004 /* SavedGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000003 /* SavedGameTests.swift */; };
 		1AF170000000001E /* BrickGridTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000001D /* BrickGridTests.swift */; };
@@ -398,6 +400,7 @@
 		000000001AF1800000000010 /* EndlessIIVision.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIVision.swift; sourceTree = "<group>"; };
 		000000001AF1800000000001 /* BallPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallPath.swift; sourceTree = "<group>"; };
 		000000001AF1800000000003 /* BallPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallPathTests.swift; sourceTree = "<group>"; };
+		000000001AF1C00000001300 /* AimHoldControlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AimHoldControlTests.swift; sourceTree = "<group>"; };
 		1AF170000000009E /* PowerUpEligibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpEligibility.swift; sourceTree = "<group>"; };
 		1AF1700000000090 /* EndlessIIBalls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBalls.swift; sourceTree = "<group>"; };
 		1AF1700000000080 /* EndlessIINeighbourTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIINeighbourTests.swift; sourceTree = "<group>"; };
@@ -422,6 +425,7 @@
 		1AF1700000000420 /* ContentAwareCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentAwareCollectionView.swift; sourceTree = "<group>"; };
 		1AF1700000000400 /* StatsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsPage.swift; sourceTree = "<group>"; };
 		1AF17000000007A0 /* PaddleBounce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddleBounce.swift; sourceTree = "<group>"; };
+		000000001AF1C00000001200 /* AimHoldControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AimHoldControl.swift; sourceTree = "<group>"; };
 		1AF1700000000600 /* AchievementCatalogue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCatalogue.swift; sourceTree = "<group>"; };
 		1AF1700000000003 /* SavedGameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedGameTests.swift; sourceTree = "<group>"; };
 		1AF170000000001D /* BrickGridTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickGridTests.swift; sourceTree = "<group>"; };
@@ -745,6 +749,7 @@
 				000000001AF1800000000040 /* EndlessIIPaddlePowerUpTests.swift */,
 				000000001AF1800000000020 /* EndlessIIVisionTests.swift */,
 				000000001AF1800000000003 /* BallPathTests.swift */,
+				000000001AF1C00000001300 /* AimHoldControlTests.swift */,
 				1AF170000000009C /* MenuNavigationTests.swift */,
 				1AF1700000000070 /* GameSceneLayoutTests.swift */,
 				1AF170000000006E /* GameBackgroundTests.swift */,
@@ -1309,6 +1314,7 @@
 				1AF1700000000060 /* GameBackground.swift */,
 				1AF1700000000400 /* StatsPage.swift */,
 				1AF17000000007A0 /* PaddleBounce.swift */,
+				000000001AF1C00000001200 /* AimHoldControl.swift */,
 				1AF1700000000600 /* AchievementCatalogue.swift */,
 				1A57A2AB23F592FB004D7AC2 /* TotalStats.swift */,
 				1AF1300000000001 /* Scoring.swift */,
@@ -1542,6 +1548,7 @@
 				000000001AF1800000000041 /* EndlessIIPaddlePowerUpTests.swift in Sources */,
 				000000001AF1800000000021 /* EndlessIIVisionTests.swift in Sources */,
 				000000001AF1800000000004 /* BallPathTests.swift in Sources */,
+				000000001AF1C00000001301 /* AimHoldControlTests.swift in Sources */,
 				1AF170000000009D /* MenuNavigationTests.swift in Sources */,
 				1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */,
 				1AF170000000006F /* GameBackgroundTests.swift in Sources */,
@@ -1623,6 +1630,7 @@
 				1AF1700000000421 /* ContentAwareCollectionView.swift in Sources */,
 				1AF1700000000401 /* StatsPage.swift in Sources */,
 				1AF17000000007A1 /* PaddleBounce.swift in Sources */,
+				000000001AF1C00000001201 /* AimHoldControl.swift in Sources */,
 				1AF1700000000601 /* AchievementCatalogue.swift in Sources */,
 				1A28AF77244DB591007A1A3E /* Level073.swift in Sources */,
 				1AF335E0241133C4007DC048 /* Level004.swift in Sources */,

@@ -197,6 +197,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAimArrow: SKShapeNode?
 	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
 	var endlessIIAimHold = false
+	/// How far this touch has travelled while the aim hold has been on, in points. Only a
+	/// touch that stayed put is a launch (`AimHoldControl`).
+	var endlessIIAimTravel: CGFloat = 0
 
 	// The field batch's clocks and drawing - see EndlessIIFieldPowerUps
 	var endlessIIWreckingBallClock = EndlessIIClock()
@@ -1808,11 +1811,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleMovedDistance = touchLocation.x - previousLocation.x
 
 			if endlessIIAimHold {
-				endlessIIAimMoved(to: touchLocation.x)
-				return
+				endlessIIAimTravel += abs(touchLocation.x - previousLocation.x)
+					+ abs(touchLocation.y - previousLocation.y)
+				// Distance travelled, not distance from the start: a finger that goes out and
+				// comes back has still moved, and calling that a tap is how a shot goes off
+				// in the middle of an adjustment
+
+				if AimHoldControl.intent(touchY: touchLocation.y,
+				                         paddleTopY: paddle.position.y + paddle.size.height/2)
+					== .aim {
+					endlessIIAimMoved(to: touchLocation.x)
+					return
+				}
+				// Above the paddle the drag is the aim; on or below it, it falls through to
+				// the paddle arithmetic and carries the paddle - and the held ball with it -
+				// which is the whole of round 33's request (§12.0). The world stays frozen
+				// either way: the freeze is the field, not the player
 			}
-			// While the aim hold is on, the drag is the aim and nothing else moves - the
-			// world is frozen, and lifting the finger is what fires and unfreezes
 
 			paddleMovedDistance *= endlessIIControlDirection
 			// Reversed Controls, and otherwise one - the whole power-up is this line
@@ -1871,6 +1886,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case is Playing:
             touchBeganWhilstPlaying = true
             paddleMoved = false
+            endlessIIAimTravel = 0
         default:
             break
         }
@@ -1917,12 +1933,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // it. The pause after losing a ball is there to be felt, but a player who does not
         // want it should not have to spend the skip and the launch on the same tap
 
-        if touchBeganWhilstPlaying && gameState.currentState is Playing && endlessIIAimLaunch() {
+        if touchBeganWhilstPlaying, gameState.currentState is Playing,
+           AimHoldControl.launches(travelled: endlessIIAimTravel), endlessIIAimLaunch() {
             touchBeganWhilstPlaying = false
+            endlessIIAimTravel = 0
             return
         }
-        // Aimed Sticky owns the launch while it runs (§5.4's launchControl group), whether
-        // the finger dragged or only tapped
+        endlessIIAimTravel = 0
+        // Aimed Sticky owns the launch while it runs (§5.4's launchControl group), but only
+        // a *tap* takes it. A release that fired would mean a player who dragged the paddle
+        // to line the shot up had already taken it by the time they let go, so there would
+        // be no way to reposition - which is exactly what round 33 asked for and what the
+        // hold used to prevent. The counter is cleared either way, or the tap that follows
+        // an adjustment would still be carrying the adjustment's travel
 
         if endlessIITapLaunchesHeldBall && touchBeganWhilstPlaying && paddleMoved == false && gameState.currentState is Playing {
             endlessIILaunchHeldBall()
