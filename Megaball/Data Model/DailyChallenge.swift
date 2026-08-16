@@ -552,18 +552,28 @@ enum DailyChallengeBoards {
     }
 }
 
-/// Where a player finished on a day's board, and how many they finished among.
+/// Where a player stands on a board, and how many they stand among.
 ///
 /// A place on its own says nothing about how hard it was won - 3rd of 4 and 3rd of 4,000
 /// are different days (play-test round 126: "show the number of players e.g. 1st / 200").
 /// So the two travel together, and the one place that turns them into words is here rather
 /// than on each screen that prints them.
-struct DailyStanding: Equatable {
+///
+/// Written for the daily, and named `DailyStanding` until round 160 gave the endless and
+/// classic game-overs the same line against their own boards. Nothing about a rank and a
+/// field size was ever daily-specific; only the screen that first wanted them was.
+struct LeaderboardStanding: Equatable {
     let rank: Int
     let players: Int
 
     /// "1st / 200", the position in the reader's own language.
-    var text: String { "\(DailyStanding.ordinal(rank)) / \(players)" }
+    ///
+    /// The field size is grouped and the place is not: one is a count, which is what
+    /// separators are for, and the other is an ordinal, which has never worn one. A daily's
+    /// field is small enough that this shows nowhere; the endless boards' fields are not.
+    var text: String {
+        "\(LeaderboardStanding.ordinal(rank)) / \(StatsPage.grouped(players))"
+    }
 
     /// 1st, 2nd, 3rd - and whatever the reader's locale makes of them, since a formatter
     /// knows what English's exceptions are and what other languages do instead.

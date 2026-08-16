@@ -812,20 +812,33 @@ final class DailyNoRepeatsTests: XCTestCase {
     // position info in front of the score and show the number of players e.g. 1st / 200."
 
     func testAStandingReadsAsAPlaceOutOfAField() {
-        XCTAssertEqual(DailyStanding(rank: 1, players: 200).text, "1st / 200")
-        XCTAssertEqual(DailyStanding(rank: 2, players: 200).text, "2nd / 200")
-        XCTAssertEqual(DailyStanding(rank: 3, players: 200).text, "3rd / 200")
-        XCTAssertEqual(DailyStanding(rank: 4, players: 200).text, "4th / 200")
+        XCTAssertEqual(LeaderboardStanding(rank: 1, players: 200).text, "1st / 200")
+        XCTAssertEqual(LeaderboardStanding(rank: 2, players: 200).text, "2nd / 200")
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 200).text, "3rd / 200")
+        XCTAssertEqual(LeaderboardStanding(rank: 4, players: 200).text, "4th / 200")
+    }
+
+    func testABigFieldIsGroupedAndThePlaceIsNot() {
+        // The endless boards have years of players on them, and "3rd / 100000" has to be
+        // counted rather than read (round 160). The daily's own fields are small enough
+        // that the line above still reads exactly as play-test round 126 asked for it.
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 1204).text,
+                       "3rd / " + StatsPage.grouped(1204))
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 999).text, "3rd / 999")
+        XCTAssertEqual(LeaderboardStanding(rank: 1204, players: 2000).text,
+                       LeaderboardStanding.ordinal(1204) + " / " + StatsPage.grouped(2000))
+        // A four-figure place is the formatter's business and it groups those too, which is
+        // the same reading it gives every other long number on the screen
     }
 
     func testTheAwkwardOrdinalsAreTheFormattersProblemAndItGetsThemRight() {
         // 11th, not 11st - which is the reason a formatter does this rather than a switch
         // on the last digit
-        XCTAssertEqual(DailyStanding.ordinal(11), "11th")
-        XCTAssertEqual(DailyStanding.ordinal(12), "12th")
-        XCTAssertEqual(DailyStanding.ordinal(13), "13th")
-        XCTAssertEqual(DailyStanding.ordinal(21), "21st")
-        XCTAssertEqual(DailyStanding.ordinal(101), "101st")
+        XCTAssertEqual(LeaderboardStanding.ordinal(11), "11th")
+        XCTAssertEqual(LeaderboardStanding.ordinal(12), "12th")
+        XCTAssertEqual(LeaderboardStanding.ordinal(13), "13th")
+        XCTAssertEqual(LeaderboardStanding.ordinal(21), "21st")
+        XCTAssertEqual(LeaderboardStanding.ordinal(101), "101st")
     }
 
     func testTwoDaysOfTheSameModeAreOnlySimilarWhenTheirTwistsAre() {

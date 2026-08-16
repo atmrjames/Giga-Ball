@@ -50,7 +50,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// Whether the pager has been put on today yet - see viewDidLayoutSubviews.
     private var landedOnOpening = false
 
-    var todayStanding: DailyStanding?
+    var todayStanding: LeaderboardStanding?
     var todayRankRequested = false
     // Where today's posted score stands, once Game Center has answered - asked for at
     // most once per visit to the screen, because the answer barely moves and the ask
@@ -462,9 +462,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
               totalStatsArray[0].dailyRecord(forKey: viewedKey)?.posted == true
         else { return }
         todayRankRequested = true
-        GameCenterHandler().loadDailyStanding { [weak self] standing in
+        GameCenterHandler().loadRank(leaderboardID: DailyChallengeBoards.daily) {
+            [weak self] standing in
             guard let self, let standing else { return }
-            self.todayStanding = DailyStanding(rank: standing.rank, players: standing.players)
+            self.todayStanding = LeaderboardStanding(rank: standing.rank, players: standing.players)
             self.days.reloadData()
             // The placing joins the card when Game Center answers; the recurring board
             // resets at the deadline, so only today has one to ask for

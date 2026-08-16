@@ -618,11 +618,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
 
-        let packLeaderboardIDs = [2: "leaderboardClassicPackScore", 3: "leaderboardSpacePackScore", 4: "leaderboardNaturePackScore", 5: "leaderboardUrbanPackScore", 6: "leaderboardFoodPackScore", 7: "leaderboardComputerPackScore", 8: "leaderboardBodyPackScore", 9: "leaderboardWorldPackScore", 10: "leaderboardEmojiPackScore", 11: "leaderboardNumbersPackScore", 12: "leaderboardChallengePackScore"]
-        // Show corresponding leaderboard for the current level pack
-
+        // Show corresponding leaderboard for the current level pack. The list of boards used
+        // to be written out here as well as in `gameCenterSave`, at two different offsets;
+        // it lives with the packs now
         let gcViewController: GKGameCenterViewController
-        if let packNumber = packNumber, let leaderboardID = packLeaderboardIDs[packNumber] {
+        if let packNumber = packNumber,
+           let leaderboardID = LevelPackSetup.packScoreLeaderboard(forPack: packNumber) {
             gcViewController = GKGameCenterViewController(leaderboardID: leaderboardID, playerScope: .global, timeScope: .allTime)
         } else {
             gcViewController = GKGameCenterViewController(state: .leaderboards)

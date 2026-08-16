@@ -59,12 +59,12 @@ final class GameCenterHandler: NSObject {
         // Leaderboard Total Score
 
         if totalStatsArray[0].endlessModeHeight.count > 0 {
-            submit(totalStatsArray[0].endlessModeHeight.max()!, to: "leaderboardBestHeight")
+            submit(totalStatsArray[0].endlessModeHeight.max()!, to: GameMode.endlessBestHeightLeaderboard)
         }
         // Leaderboard Endless Best Height
 
         if totalStatsArray[0].endlessModeHeight.count > 0 {
-            submit(totalStatsArray[0].endlessModeHeight.reduce(0, +), to: "leaderboardTotalHeight")
+            submit(totalStatsArray[0].endlessModeHeight.reduce(0, +), to: GameMode.endlessTotalHeightLeaderboard)
         }
         // Leaderboard Endless Total Height
         // Endless mode leaderboards
@@ -75,15 +75,16 @@ final class GameCenterHandler: NSObject {
         }
         // Endless 2.0's own boards. Not comparable to the originals, so not posted to them
 
-        var arrayIndex = 0
-        let leaderboardIdentifierArray = ["leaderboardClassicPackScore", "leaderboardSpacePackScore", "leaderboardNaturePackScore", "leaderboardUrbanPackScore", "leaderboardFoodPackScore", "leaderboardComputerPackScore", "leaderboardBodyPackScore", "leaderboardWorldPackScore", "leaderboardEmojiPackScore", "leaderboardNumbersPackScore", "leaderboardChallengePackScore"]
-        while arrayIndex <= 10 {
+        for (arrayIndex, leaderboardIdentifier) in LevelPackSetup.packScoreLeaderboards.enumerated()
+        where totalStatsArray[0].packHighScores.indices.contains(arrayIndex) {
             if totalStatsArray[0].packHighScores[arrayIndex] > 0 {
-                submit(totalStatsArray[0].packHighScores[arrayIndex], to: leaderboardIdentifierArray[arrayIndex])
+                submit(totalStatsArray[0].packHighScores[arrayIndex], to: leaderboardIdentifier)
             }
-            arrayIndex+=1
         }
-        // Level pack total leaderboards
+        // Level pack total leaderboards. The list of boards used to be written out here and
+        // again in the level selector at a different offset; it lives in `LevelPackSetup`
+        // now, beside the packs it names, and the index it is walked with is the one
+        // `packHighScores` uses
     }
 
     private func submit(_ score: Int, to leaderboardID: String) {
@@ -116,19 +117,26 @@ final class GameCenterHandler: NSObject {
         submit(total, to: DailyChallengeBoards.total)
     }
 
-    /// Where the local player stands on today's board, and how big the field is.
+    /// Where the local player stands on a board, and how big the field is.
     ///
-    /// Nil when it cannot be known - signed out, offline, or the board not existing in
-    /// App Store Connect yet - and the screen simply says nothing then.
+    /// Nil when it cannot be known - signed out, offline, the board not existing in App
+    /// Store Connect yet, or the player holding no entry on it - and the screen simply says
+    /// nothing then. That last case is why Endless Mayhem needs no special handling on the
+    /// game-over screen: its boards do not exist, so the answer is nil and the line stays
+    /// off, exactly as §12.0 says it should until James creates them.
     ///
     /// The field size comes from the *global* entry load rather than the by-player one,
     /// which is the only call that reports it (play-test round 126: "show the number of
     /// players e.g. 1st / 200"). A range of one row is asked for because the rows are not
     /// wanted at all - only the count that comes back beside them and the local player's
     /// own entry, which this call returns as well.
-    func loadDailyStanding(completion: @escaping ((rank: Int, players: Int)?) -> Void) {
+    ///
+    /// Written for the daily and generalised in round 160 for the endless and classic
+    /// game-overs, which ask the same question of their own boards.
+    func loadRank(leaderboardID: String,
+                  completion: @escaping ((rank: Int, players: Int)?) -> Void) {
         guard GKLocalPlayer.local.isAuthenticated else { completion(nil); return }
-        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
+        GKLeaderboard.loadLeaderboards(IDs: [leaderboardID]) { boards, _ in
             guard let board = boards?.first else {
                 DispatchQueue.main.async { completion(nil) }
                 return
@@ -142,8 +150,9 @@ final class GameCenterHandler: NSObject {
                     // Never fewer players than there are places: a count that has not
                     // caught up with the entry would print "3rd / 2"
                 }
-                // A recurring board's current occurrence is what loads by default,
-                // which is exactly today's window
+                // A recurring board's current occurrence is what loads by default, which
+                // for the daily is exactly today's window; a classic board has only the
+                // one occurrence and reads the same way
             }
         }
     }

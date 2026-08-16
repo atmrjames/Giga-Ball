@@ -112,6 +112,43 @@ enum GameMode: Int, CaseIterable {
     static let endlessIIBestHeightLeaderboard = "leaderboardEndless2BestHeight"
     static let endlessIITotalHeightLeaderboard = "leaderboardEndless2TotalHeight"
 
+    /// The original Endless mode's boards, which have existed since 2020 and hold years of
+    /// climbs. Named here beside Endless 2.0's so the four read as one set.
+    static let endlessBestHeightLeaderboard = "leaderboardBestHeight"
+    static let endlessTotalHeightLeaderboard = "leaderboardTotalHeight"
+
+    /// The board a finished run is measured against, and the name the screen printing that
+    /// standing should call it by (§12.0, "global rank on the game-over screen").
+    ///
+    /// One board per mode rather than one per level: the per-level boards in
+    /// `levelLeaderboardsArray` exist in App Store Connect but nothing has posted to them
+    /// for years, so a rank asked of one would be a place won under rules nobody remembers.
+    /// What `gameCenterSave` actually keeps current is the pack's total and each endless
+    /// mode's best height, and those are what a player is standing on.
+    ///
+    /// Nil where there is no board to ask: the Tutorial and Single Level Mode belong to no
+    /// pack, and the daily has its own screen and its own loader. Mayhem answers with its
+    /// board, which does not exist in App Store Connect yet - the load simply comes back
+    /// empty and the line stays off, which is the standing arrangement for that mode
+    /// everywhere else too.
+    func runLeaderboard(packNumber: Int) -> (id: String, name: String)? {
+        switch self {
+        case .classic:
+            guard let id = LevelPackSetup.packScoreLeaderboard(forPack: packNumber),
+                  LevelPackSetup().levelPackNameArray.indices.contains(packNumber)
+            else { return nil }
+            return (id, LevelPackSetup().levelPackNameArray[packNumber])
+            // The pack's own name, not the mode's: "3rd of 400 on the Classic Pack board"
+            // says which board, where "on the Classic Mode board" names one that is not there
+        case .endless:
+            return (GameMode.endlessBestHeightLeaderboard, name)
+        case .endlessII:
+            return (GameMode.endlessIIBestHeightLeaderboard, name)
+        case .daily:
+            return nil
+        }
+    }
+
     /// The mode a run belongs to, as stored.
     static func current(in defaults: UserDefaults = .standard) -> GameMode {
         GameMode(rawValue: defaults.integer(forKey: defaultsKey)) ?? .classic

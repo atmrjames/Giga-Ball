@@ -315,12 +315,17 @@ enum StatsPage {
 
     /// A count, with the reader's own thousands separator in it.
     ///
-    /// **This page only.** A lifetime brick count runs to six or seven digits and "1234567" has
-    /// to be counted rather than read. The score in the game does *not* get this treatment and
-    /// must not: it is a number that changes several times a second, and a separator appearing
-    /// and disappearing as it crosses a thousand is movement in a place the eye is already
-    /// watching. The scene draws its numbers through `FixedWidthNumberNode` and knows nothing
-    /// about this function.
+    /// **Counts and totals, never a live score.** A lifetime brick count runs to six or seven
+    /// digits and "1234567" has to be counted rather than read. The score in the game does
+    /// *not* get this treatment and must not: it is a number that changes several times a
+    /// second, and a separator appearing and disappearing as it crosses a thousand is movement
+    /// in a place the eye is already watching. The scene draws its numbers through
+    /// `FixedWidthNumberNode` and knows nothing about this function.
+    ///
+    /// Written for this page and named after it, and now also the app's one grouping function:
+    /// a leaderboard's field size is a count like any other, and "3rd / 100000" is exactly the
+    /// number this exists for (round 160). Nothing under a thousand changes shape, so the
+    /// daily's "1st / 200" reads as it always has.
     ///
     /// The separator is the reader's, not a comma: a German player's thousands separator is a
     /// full stop, and hard-coding a comma would print a decimal point in the middle of their

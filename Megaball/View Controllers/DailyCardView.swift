@@ -147,7 +147,7 @@ final class DailyCardView: UIView {
     /// Shows a day. Everything the card draws comes from these arguments, so the same card
     /// can be reused for any day the pager scrolls to.
     func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
-              standing: DailyStanding?) {
+              standing: LeaderboardStanding?) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -222,7 +222,7 @@ final class DailyCardView: UIView {
     /// Three states, because there are three: posted, played but not posted (free play, or
     /// a scoring run that could not reach Game Center), and not played at all.
     private func showResult(_ record: DailyChallengeRecord?, mode: GameMode,
-                            isToday: Bool, standing: DailyStanding?) {
+                            isToday: Bool, standing: LeaderboardStanding?) {
         guard let record, record.attemptCount > 0 else {
             resultLabel.attributedText = nil
             resultCard.isHidden = true

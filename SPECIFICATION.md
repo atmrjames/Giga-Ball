@@ -388,8 +388,15 @@ power-ups.
 - **41 achievements**, covering pack completions, score thresholds, level counts, speed
   runs, no-ball-lost runs, power-up usage and endless height milestones.
 - Submission happens at the end of every level and game, and when opening stats screens.
-  It is guarded on the player being authenticated.
+  It is guarded on the player being authenticated. **The per-level boards are the exception:
+  they exist and nothing has posted to them for years**, so anything reading a standing uses
+  the boards that are kept current - each pack's total and each endless mode's best height.
 - Leaderboards are opened directly to the relevant board from level and pack screens.
+- The game-over screen names where the run stands: "3rd / 1,204 on the Classic Pack board",
+  asked once as the screen goes up (`GameCenterHandler.loadRank`) against the board
+  `GameMode.runLeaderboard(packNumber:)` chooses. Silent when there is no board or no answer -
+  signed out, offline, Single Level Mode, or Endless Mayhem, whose boards do not yet exist in
+  App Store Connect.
 
 Game Center can be disabled in settings.
 

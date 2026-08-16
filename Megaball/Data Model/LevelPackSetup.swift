@@ -547,7 +547,43 @@ class LevelPackSetup {
         "leaderboardLevel59Score",
         "leaderboardLevel60Score"
     ]
-    
+
+    /// Each pack's total-score board, in the order the packs themselves are in.
+    ///
+    /// Nil for anything that is not a pack with a board: the Tutorial and Endless Mode
+    /// occupy the first two slots of `levelPackNameArray` and have no pack total, and a
+    /// `packNumber` from outside the list is simply not on a board.
+    ///
+    /// Written once here because it was written twice: the save loop carried its own copy
+    /// counting from zero and the level selector carried another keyed by `packNumber`, two
+    /// offsets apart, which is exactly the pair that goes wrong the first time a pack is
+    /// added. Both read this now, and so does the game-over screen's standing.
+    static func packScoreLeaderboard(forPack packNumber: Int) -> String? {
+        let index = packNumber - firstPackNumber
+        guard packScoreLeaderboards.indices.contains(index) else { return nil }
+        return packScoreLeaderboards[index]
+    }
+
+    /// Where the packs proper start in `levelPackNameArray` - the Tutorial and Endless Mode
+    /// hold 0 and 1, and the Classic Pack is the first thing with a pack board.
+    static let firstPackNumber = 2
+
+    /// The boards themselves, in pack order from the Classic Pack. Indexed by
+    /// `packNumber - firstPackNumber`, which is also the index `packHighScores` uses.
+    static let packScoreLeaderboards: [String] = [
+        "leaderboardClassicPackScore",
+        "leaderboardSpacePackScore",
+        "leaderboardNaturePackScore",
+        "leaderboardUrbanPackScore",
+        "leaderboardFoodPackScore",
+        "leaderboardComputerPackScore",
+        "leaderboardBodyPackScore",
+        "leaderboardWorldPackScore",
+        "leaderboardEmojiPackScore",
+        "leaderboardNumbersPackScore",
+        "leaderboardChallengePackScore"
+    ]
+
     let powerUpImageArray: [UIImage] = [
         UIImage(named:"PowerUpGetALife.png")!,
         UIImage(named:"PowerUpLoseALife.png")!,

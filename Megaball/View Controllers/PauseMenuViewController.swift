@@ -65,6 +65,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     private var livesUnderHighscore: NSLayoutConstraint!
     private var livesUnderScore: NSLayoutConstraint!
     private var statsUnderTheResult: NSLayoutConstraint!
+    private var statsWellUnderTheResult: NSLayoutConstraint!
     private weak var activePowerUpHUD: PausedPowerUpHUD?
     // Added in code rather than the storyboard: the pause screen's labels are all wired
     // through outlets and constraints there, and adding one more by hand risks the
@@ -76,7 +77,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     // and name - names only, because mid-run is when someone forgets what Flipped Angle
     // means, not when they want to read about it
 
-    let dailyResultLabel = UILabel()
+    let resultLabel = UILabel()
     /// The rules sit with the level they are the rules of; the title makes room for them.
     private var rulesUnderTheLevel: NSLayoutConstraint!
     private var titleUnderTheRules: NSLayoutConstraint!
@@ -216,11 +217,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             runStatsLabel.isHidden = true
             moreStatsButton.isHidden = true
             statsUnderTheResult.isActive = false
+            statsWellUnderTheResult.isActive = false
             return
         }
         runStatsLabel.isHidden = false
         moreStatsButton.isHidden = false
         statsUnderTheResult.isActive = true
+        statsWellUnderTheResult.isActive = true
         showActivePowerUps()
         let text = NSMutableAttributedString()
         var items: [(String, String, Int)] = [
@@ -259,8 +262,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     }
     // Asked of the session, which outlives the scene until the menus return
 
-    var dailyStanding: DailyStanding?
-    // Where the posted run stands on today's board, once Game Center has answered
+    var standing: LeaderboardStanding?
+    // Where the finished run stands on its board, once Game Center has answered - today's
+    // board for a daily, the mode's own for an endless or classic run
 
     @IBOutlet var levelTitleLowerConstraint: NSLayoutConstraint!
     @IBOutlet var levelNameLabelNormalConstraint: NSLayoutConstraint!
@@ -335,16 +339,49 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         showAnimate()
         announceClosedDayIfNeeded()
 
-        if isDailyChallenge, sender != "Pause", DailyChallengeSession.shared.lastRunPosted {
-            GameCenterHandler().loadDailyStanding { [weak self] standing in
-                guard let self, let standing else { return }
-                self.dailyStanding = DailyStanding(rank: standing.rank,
-                                                   players: standing.players)
-                self.updateDailySummary()
-            }
-            // The placing joins the summary when Game Center answers; a screen already
-            // dismissed just ignores it
+        askForStanding()
+    }
+
+    /// The board this finished run stands on, if it stands on one.
+    ///
+    /// A daily answers with today's board and only when the run actually posted - free play
+    /// left no entry to stand on. Everything else answers with its mode's own board, which
+    /// for a classic run is the pack's: a pack total is what `gameCenterSave` keeps current,
+    /// where the per-level boards have had nothing posted to them for years.
+    ///
+    /// Nil in Single Level Mode, where the run was one level out of a pack and did not move
+    /// the pack total it would otherwise be quoting - and nil in Endless Mayhem in practice,
+    /// because its board does not exist in App Store Connect yet, which the load discovers
+    /// for itself.
+    private var runBoard: (id: String, name: String)? {
+        if isDailyChallenge {
+            return DailyChallengeSession.shared.lastRunPosted
+                ? (DailyChallengeBoards.daily, "today's")
+                : nil
+            // The name goes unused here: the daily's sentence is written whole in
+            // `updateResultLine`, because it has a posted-or-not to say first
         }
+        guard endlessMode || numberOfLevels > 1 else { return nil }
+        return GameMode.current(in: defaults).runLeaderboard(packNumber: packNumber)
+    }
+
+    /// Where this run stands globally, asked of Game Center once as the screen goes up.
+    ///
+    /// Only at the end of a run: mid-pause there is no result to place. What comes back
+    /// counts the run that has just finished, because `InbewteenLevels` submits the score
+    /// immediately before this screen is built - subject to Game Center taking its own
+    /// moment over it, which is why the daily's line says "submitted" until the placing
+    /// arrives rather than claiming a place it does not have yet.
+    private func askForStanding() {
+        guard sender != "Pause", let board = runBoard else { return }
+        GameCenterHandler().loadRank(leaderboardID: board.id) { [weak self] standing in
+            guard let self, let standing else { return }
+            self.standing = LeaderboardStanding(rank: standing.rank,
+                                                players: standing.players)
+            self.updateResultLine()
+        }
+        // The placing joins the block when Game Center answers; a screen already
+        // dismissed just ignores it
     }
     
     func setUpLivesLabel() {
@@ -361,13 +398,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         dailySummaryLabel.isHidden = true
         containterView.addSubview(dailySummaryLabel)
 
-        dailyResultLabel.translatesAutoresizingMaskIntoConstraints = false
-        dailyResultLabel.textAlignment = .center
-        dailyResultLabel.numberOfLines = 0
-        dailyResultLabel.font = .systemFont(ofSize: 12)
-        dailyResultLabel.textColor = UIColor(white: 1, alpha: 0.55)
-        dailyResultLabel.isHidden = true
-        containterView.addSubview(dailyResultLabel)
+        resultLabel.translatesAutoresizingMaskIntoConstraints = false
+        resultLabel.textAlignment = .center
+        resultLabel.numberOfLines = 0
+        resultLabel.font = .systemFont(ofSize: 12)
+        resultLabel.textColor = UIColor(white: 1, alpha: 0.55)
+        resultLabel.isHidden = true
+        resultLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        // **This line is never squashed.** It sits between two blocks that both hang off
+        // required constraints - the score above it, the stats below hung from the button
+        // row - and when the two met on a classic game over, the label was what gave: its
+        // frame came out about two thirds of a line tall and the words were sliced through
+        // the middle (round 160's screenshot). A label with default resistance loses that
+        // argument every time; the margins around it are what should bend, and below they do
+        containterView.addSubview(resultLabel)
 
         signedOutLabel.translatesAutoresizingMaskIntoConstraints = false
         signedOutLabel.textAlignment = .center
@@ -379,7 +423,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         containterView.addSubview(signedOutLabel)
 
         statsUnderTheResult = runStatsLabel.topAnchor.constraint(
-            greaterThanOrEqualTo: dailyResultLabel.bottomAnchor, constant: 20)
+            greaterThanOrEqualTo: resultLabel.bottomAnchor, constant: 8)
+        statsWellUnderTheResult = runStatsLabel.topAnchor.constraint(
+            greaterThanOrEqualTo: resultLabel.bottomAnchor, constant: 20)
+        statsWellUnderTheResult.priority = .defaultHigh
+        // **Eight required, twenty wanted.** Twenty was required until round 160, and with
+        // the 22 above the line that asked for 42pt of clearance inside the 34pt the layout
+        // actually guarantees between the score block and the stats - which is why the line
+        // was crushed rather than moved on the fullest screen the app has. Eight and eight
+        // fit a 12pt line inside that 34 with room to spare, and where a screen has more to
+        // give the high-priority pair still spread the two blocks apart as they always did
         // Switched on with the stats themselves: the result line and the stats block are
         // both in the lower half now, and only a screen showing both needs them kept apart
 
@@ -395,7 +448,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         NSLayoutConstraint.activate([
             signedOutLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
-                                                    dailyResultLabel.bottomAnchor,
+                                                    resultLabel.bottomAnchor,
                                                 constant: 14),
             signedOutLabel.bottomAnchor.constraint(equalTo: buttonCollectionView.topAnchor,
                                                    constant: -12),
@@ -429,21 +482,23 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                                                         containterView.trailingAnchor,
                                                         constant: -30),
 
-            dailyResultLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            dailyResultLabel.topAnchor.constraint(greaterThanOrEqualTo:
-                                                    livesLabel.bottomAnchor, constant: 22),
+            resultLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            resultLabel.topAnchor.constraint(greaterThanOrEqualTo:
+                                                    livesLabel.bottomAnchor, constant: 8),
             {
-                let preferred = dailyResultLabel.topAnchor.constraint(
+                let preferred = resultLabel.topAnchor.constraint(
                     equalTo: livesLabel.bottomAnchor, constant: 22)
                 preferred.priority = .defaultHigh
                 return preferred
             }(),
             // Under the run's numbers, which is what it is one of: the score, the balls,
-            // and then whether the score reached the board
-            dailyResultLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
+            // and then whether the score reached the board. The 22 is the wanted gap and
+            // the 8 is the one that must hold: see `statsUnderTheResult` for why the pair
+            // of required 20s either side of this line could not both be honoured
+            resultLabel.leadingAnchor.constraint(greaterThanOrEqualTo:
                                                         containterView.leadingAnchor,
                                                       constant: 30),
-            dailyResultLabel.trailingAnchor.constraint(lessThanOrEqualTo:
+            resultLabel.trailingAnchor.constraint(lessThanOrEqualTo:
                                                         containterView.trailingAnchor,
                                                        constant: -30),
         ])
@@ -572,15 +627,62 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
                            symbol: "dice.fill")
     }
 
+    /// The one line under the run's numbers saying where the score went.
+    ///
+    /// The same sentence in every mode, which is why it is one method and not a daily one
+    /// with an endless one beside it: a daily that posted names today's board, a daily that
+    /// did not says so, and an endless or classic run names the board it stands on. Mid-run
+    /// it says nothing - the score has not gone anywhere yet.
+    ///
+    /// Run twice: once as the labels are built, and again if Game Center answers. Before it
+    /// answers a daily says "submitted", because the score is genuinely on its way, and
+    /// every other mode says nothing at all - there the line *is* the placing, and a line
+    /// that appears empty and then fills reads as a glitch.
+    func updateResultLine() {
+        guard sender != "Pause" else { resultLabel.isHidden = true; return }
+
+        if isDailyChallenge {
+            resultLabel.isHidden = false
+            if DailyChallengeSession.shared.lastRunPosted {
+                resultLabel.text = standing.map { "Posted, \($0.text) on today's board" }
+                // The same figures the briefing screen prints, from the same place: a
+                // placing with the field size beside it (play-test round 126)
+                    ?? "Submitted to today's board"
+                // The placing arrives asynchronously when Game Center answers. Until
+                // then "submitted" is the honest word (§12.5): the score is on its way,
+                // and if it cannot land - signed out, offline, board not yet in App
+                // Store Connect - the retry loop carries it and the briefing screen's
+                // badge tells the truth of where it got to
+            } else {
+                resultLabel.text = "Free play, which never posts"
+            }
+            return
+        }
+
+        guard let board = runBoard, let standing else {
+            resultLabel.isHidden = true
+            return
+            // No board, or no answer from it: a run in Single Level Mode or the Tutorial,
+            // a player signed out or offline, or Endless Mayhem, whose board James has yet
+            // to create. Every one of those is a run with nowhere to stand, and the screen
+            // says nothing rather than explaining itself - the signed-out note below
+            // already covers the one case a player can do something about
+        }
+        resultLabel.isHidden = false
+        resultLabel.text = "\(standing.text) on the \(board.name) board"
+        // "12th / 843 on the Endless Mode board" - the daily's grammar, against the board
+        // this run's mode actually posts to (play-test request, ninth round)
+    }
+
     /// The compact daily block: what kind of run this is, then each twist by icon and name.
     ///
     /// Two labels, not one (play-test round 126). The rules sit with the level info at the
     /// top of the screen, because that is what they are the rules of; the result - posted,
     /// or free play - sits with the run's numbers lower down, because that is what it is.
+    /// The result line itself belongs to `updateResultLine`, which every mode shares.
     func updateDailySummary() {
         guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
             dailySummaryLabel.isHidden = true
-            dailyResultLabel.isHidden = true
             rulesUnderTheLevel?.isActive = false
             titleUnderTheRules?.isActive = false
             return
@@ -628,23 +730,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             summary.append(DailyTwist.vanillaLine(font: .boldSystemFont(ofSize: 14),
                                                   colour: .white))
             // A no-twist day is Vanilla, badged like any other (play-test round 3)
-        }
-
-        dailyResultLabel.isHidden = sender == "Pause"
-        if sender != "Pause" {
-            if DailyChallengeSession.shared.lastRunPosted {
-                dailyResultLabel.text = dailyStanding.map { "Posted, \($0.text) on today's board" }
-                // The same figures the briefing screen prints, from the same place: a
-                // placing with the field size beside it (play-test round 126)
-                    ?? "Submitted to today's board"
-                // The placing arrives asynchronously when Game Center answers. Until
-                // then "submitted" is the honest word (§12.5): the score is on its way,
-                // and if it cannot land - signed out, offline, board not yet in App
-                // Store Connect - the retry loop carries it and the briefing screen's
-                // badge tells the truth of where it got to
-            } else {
-                dailyResultLabel.text = "Free play, which never posts"
-            }
         }
 
         let paragraph = NSMutableParagraphStyle()
@@ -1068,6 +1153,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         }
 
         updateDailySummary()
+        updateResultLine()
         // **Last, not first.** Every branch above decides which of the storyboard's two
         // "title under the level" constraints is running, and the daily's rules replace
         // both - so the rules have to be placed after the branch that would put them back.
