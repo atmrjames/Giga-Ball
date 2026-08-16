@@ -17,6 +17,7 @@
 		1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A2 /* EndlessIIClusterTests.swift */; };
 		1AF17000000000A1 /* EndlessIIClusters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A0 /* EndlessIIClusters.swift */; };
 		1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000094 /* EndlessIIBallsTests.swift */; };
+		1AF17000000009B1 /* CatalogueDumpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000009B0 /* CatalogueDumpTests.swift */; };
 		1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000092 /* EndlessIIMultiBall.swift */; };
 		1AF170000000009B /* MenuNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009A /* MenuNavigation.swift */; };
 		1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000096 /* EndlessIIStickyPaddle.swift */; };
@@ -359,6 +360,7 @@
 		1AF17000000000A2 /* EndlessIIClusterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusterTests.swift; sourceTree = "<group>"; };
 		1AF17000000000A0 /* EndlessIIClusters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusters.swift; sourceTree = "<group>"; };
 		1AF1700000000094 /* EndlessIIBallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBallsTests.swift; sourceTree = "<group>"; };
+		1AF17000000009B0 /* CatalogueDumpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogueDumpTests.swift; sourceTree = "<group>"; };
 		1AF1700000000092 /* EndlessIIMultiBall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIMultiBall.swift; sourceTree = "<group>"; };
 		1AF170000000009A /* MenuNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuNavigation.swift; sourceTree = "<group>"; };
 		1AF1700000000096 /* EndlessIIStickyPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStickyPaddle.swift; sourceTree = "<group>"; };
@@ -723,6 +725,7 @@
 				1AF17000000000B0 /* BackstopTests.swift */,
 				1AF17000000000A2 /* EndlessIIClusterTests.swift */,
 				1AF1700000000094 /* EndlessIIBallsTests.swift */,
+				1AF17000000009B0 /* CatalogueDumpTests.swift */,
 				1AF1700000000080 /* EndlessIINeighbourTests.swift */,
 				1AF1700000000072 /* BrickTypeCatalogueTests.swift */,
 				1AF1700000000402 /* StatsPageTests.swift */,
@@ -1514,6 +1517,7 @@
 				1AF17000000000B1 /* BackstopTests.swift in Sources */,
 				1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */,
 				1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */,
+				1AF17000000009B1 /* CatalogueDumpTests.swift in Sources */,
 				1AF1700000000081 /* EndlessIINeighbourTests.swift in Sources */,
 				1AF1700000000073 /* BrickTypeCatalogueTests.swift in Sources */,
 				1AF1700000000403 /* StatsPageTests.swift in Sources */,
