@@ -97,12 +97,14 @@ extension UIViewController {
 
     /// **How far in the outer buttons sit when the row has a large centre button.**
     ///
-    /// There are two arrangements, and which one a row wears is decided by what is *in* it
-    /// (James, round 135): a row with a big play button in the middle pulls its small buttons
-    /// in, so the three read as one group around the thing that matters; a row that is only
-    /// small buttons pushes them out to the row's own ends, which is where they have always
-    /// been and where a close button is easiest to reach. Round 128 put every row in the
-    /// narrow arrangement, which was half the answer.
+    /// Where every outer button sits, measured from the screen's edge.
+    ///
+    /// Round 135 had two arrangements, chosen by what was in the row: a big play button drew
+    /// the small ones in to here, and a row of only small buttons went to the row's own ends.
+    /// The second half is gone (James, round 157: "everything out to 55pt"), because "the
+    /// row's own ends" was never one place - it was 51pt on the menus, 53 on the level list
+    /// and 55 on the daily, depending on what each screen's container happened to be. A
+    /// promise about where a thumb lands has to be one number.
     static let menuButtonRowInset: CGFloat = 55
 
     /// Where a lone small button sits when there is no large one to group around.
@@ -118,12 +120,17 @@ extension UIViewController {
     ///   three cells - some of them the invisible `ButtonNull` spacer - so what differs
     ///   between screens is only whether one of the three is large.
     ///
-    /// A large button anywhere in the row draws the small ones in to `menuButtonRowInset`;
-    /// without one they go to the row's ends. The rest of the width is shared evenly either
-    /// way, so the middle of three always lands on the row's centre.
+    /// Every row's outer buttons land `menuButtonRowInset` from the screen's edge, whatever
+    /// is in it. The rest of the width is shared evenly, so the middle of three always lands
+    /// on the row's centre.
     ///
-    /// The main menu is deliberately not routed through here: its information and settings
-    /// buttons sit where James wants them and asked to be left alone.
+    /// **Two rows do not come through here yet**: the main menu and the in-game pause row
+    /// build their own layouts, and both size their collection view by assigning to
+    /// `frame.size.width` - which autolayout overwrites on the next pass, so widening them in
+    /// code moves nothing (tried and measured, round 157). Reaching 55pt on those two means
+    /// changing the storyboard's width constraint, and the pause row additionally needs
+    /// per-cell sizing: its three cells are 75pt boxes holding 50pt icons, so its outer icon
+    /// carries 12.5pt of padding the other rows have not got. That is why it sits at 63pt.
     func layoutMenuButtonRow(_ row: UICollectionView, sizes: [CGFloat]) {
         guard sizes.isEmpty == false else { return }
         let layout = UICollectionViewFlowLayout()
@@ -132,17 +139,14 @@ extension UIViewController {
         // Self-sizing off: with an estimate set, a cell measures itself from its own
         // constraints and the delegate's large button never reaches the layout
 
-        let hasLargeButton = sizes.contains {
-            $0 > MainMenuCollectionViewCell.smallButtonSize
-        }
         let fromScreen = row.superview?.convert(row.frame.origin, to: nil).x ?? 0
-        let inset = hasLargeButton
-            ? max(0, UIViewController.menuButtonRowInset - fromScreen)
-            : 0
-        // Nothing large in the row means the wide arrangement: the outer buttons go to the
-        // row's own ends. Measured from the screen only in the narrow case, because that is
-        // where 55pt is a promise about where the thumb lands - the wide case's promise is
-        // "as far out as this row goes", which the row already knows
+        let inset = max(0, UIViewController.menuButtonRowInset - fromScreen)
+        // **One arrangement now** (James, round 157: "everything out to 55pt"). Round 135
+        // had two - a row with a big button pulled its small ones in to 55, a row of only
+        // small ones went to its own ends - and the second one turned out to mean whatever
+        // each screen's container happened to be: 51pt on the menus, 53 on the level list,
+        // 55 on the daily. Three values for one promise. Measured from the *screen's* edge,
+        // because that is what 55pt is a promise about: where the thumb lands
         let available = row.frame.width - inset*2
         // Measured from the *screen's* edge, not the row's. Some of these rows are inset by
         // their own container and some are not, so insetting each row by the same amount put
