@@ -165,6 +165,11 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             scene.layout = playLayout
             scene.speedFactor = PaddleSpeed.snapped(CGFloat(slider.value))
             scene.themeIndex = defaults.integer(forKey: "ballSetting")
+            scene.soundsSetting = defaults.bool(forKey: "soundsSetting")
+            scene.hapticsSetting = hapticsSetting
+            // The player's own two switches, so the practice field is as loud and as felt as
+            // the game is (James, round 161) - and as silent, for somebody who plays with
+            // both off
             scene.backdrop = drawnBackdrop()
             sceneView.presentScene(scene)
             practice = scene
@@ -437,6 +442,35 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
     /// The ball and paddle the player has chosen, by index into the theme arrays.
     var themeIndex: Int = 0
 
+    /// The player's own sound and haptic switches (James, round 161: "these things should be
+    /// the same as in the actual game view").
+    ///
+    /// A practice field that bounces in silence is not the game being practised. Every event
+    /// this screen can produce - a paddle bounce, a brick going, a ball lost - is one the game
+    /// answers with a sound and a tap, and they are the same sound and the same tap here,
+    /// played from the same files and the same generator styles.
+    var soundsSetting: Bool = true
+    var hapticsSetting: Bool = true
+
+    /// The game's own sounds, pre-loaded exactly as `GameScene` pre-loads them - the first
+    /// play of a sound file is where the stutter is, and this screen is judged on smoothness.
+    ///
+    /// Static, so presenting the screen twice does not decode them twice.
+    static let paddleHitSound = SKAction.playSoundFileNamed("ballPaddleHit.mp3",
+                                                           waitForCompletion: true)
+    static let brickHitSound = SKAction.playSoundFileNamed("brickHit.mp3",
+                                                          waitForCompletion: true)
+    static let ballLostSound = SKAction.playSoundFileNamed("ballLostSound.mp3",
+                                                          waitForCompletion: true)
+    // `ballLostSound` rather than `gameOverSound`: the game plays the second one when the
+    // lost ball was the last, and nothing can be lost here
+
+    private let lightHaptic = UIImpactFeedbackGenerator(style: .light)
+    private let ballLostHaptic = UIImpactFeedbackGenerator(style: .heavy)
+    // Light for a bounce and a brick, heavy for a lost ball - `GameScene`'s own pairing. Its
+    // heavy one is called `softHaptic` and is built `.heavy` all the same, so this matches
+    // what the player feels rather than what the property is called
+
     /// The device's own play area. **Everything here is measured from it** - the ball's size
     /// and speed, the paddle's size, and how far the paddle sits above the floor - so the
     /// number being chosen behaves exactly as it will in play (James, round 122: "everything
@@ -596,12 +630,7 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
                 brick.position = CGPoint(x: size.width/2 + offset, y: row.y)
                 brick.zPosition = 1
                 brick.name = PaddleSpeedScene.brickName
-                brick.physicsBody = SKPhysicsBody(rectangleOf: brick.size)
-                brick.physicsBody?.isDynamic = false
-                brick.physicsBody?.friction = 0
-                brick.physicsBody?.restitution = 1
-                brick.physicsBody?.categoryBitMask = PaddleSpeedScene.brickCategory
-                brick.physicsBody?.contactTestBitMask = PaddleSpeedScene.ballCategory
+                brick.physicsBody = brickBody(size: brick.size)
                 addChild(brick)
             }
         }
@@ -617,30 +646,68 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
     /// answering fewer and fewer questions the longer it was open.
     static let brickReturn: TimeInterval = 4
 
-    /// A struck brick goes away and comes back.
+    /// The body a practice brick carries, in one place because it is built twice - once when
+    /// the field goes up and again when a knocked-out brick comes back.
+    private func brickBody(size: CGSize) -> SKPhysicsBody {
+        let body = SKPhysicsBody(rectangleOf: size)
+        body.isDynamic = false
+        body.friction = 0
+        body.restitution = 1
+        body.categoryBitMask = PaddleSpeedScene.brickCategory
+        body.contactTestBitMask = PaddleSpeedScene.ballCategory
+        return body
+    }
+
+    /// A struck brick goes away the way the game's bricks go, and then comes back.
+    ///
+    /// **Two frames solid and then simply gone** - `GameScene.removeBrick`'s own timing, down
+    /// to the `0.0167*2`. It used to fade over 0.15s with its body taken away on the instant,
+    /// which was wrong twice (James, round 161): a brick in the game does not fade, it
+    /// vanishes; and a brick whose body goes on the contact is a brick the ball can pass
+    /// through instead of bouncing off, so the very bounce the ball was in the middle of never
+    /// happened. Those two frames are what the game keeps it solid for.
+    ///
+    /// Coming back is this screen's own idea and stays gentle: nothing here can be finished, so
+    /// a brick that stayed destroyed would leave the field answering fewer questions the longer
+    /// it was open. It fades in rather than appearing, because an appearing brick reads as a
+    /// glitch where a fading one reads as the field refilling itself.
     func knockOut(_ brick: SKSpriteNode) {
-        guard brick.physicsBody != nil else { return }
-        brick.physicsBody = nil
-        // Taken away first: a brick fading out is a brick the ball must already be through
+        guard canKnockOut(brick) else { return }
+
+        if hapticsSetting { lightHaptic.impactOccurred() }
+        if soundsSetting { run(PaddleSpeedScene.brickHitSound) }
+        // The game's pairing for an ordinary brick, in the game's order - felt and heard on
+        // the strike, not on the disappearance
+
         brick.run(.sequence([
-            .fadeOut(withDuration: 0.15),
+            .wait(forDuration: 0.0167*2),
+            .run {
+                brick.isHidden = true
+                brick.physicsBody = nil
+            },
             .wait(forDuration: PaddleSpeedScene.brickReturn),
-            .fadeIn(withDuration: 0.35),
             .run { [weak self] in
                 guard let self else { return }
-                let body = SKPhysicsBody(rectangleOf: brick.size)
-                body.isDynamic = false
-                body.friction = 0
-                body.restitution = 1
-                body.categoryBitMask = PaddleSpeedScene.brickCategory
-                body.contactTestBitMask = PaddleSpeedScene.ballCategory
-                brick.physicsBody = body
-                _ = self
+                brick.alpha = 0
+                brick.isHidden = false
+                brick.physicsBody = self.brickBody(size: brick.size)
             },
-        ]))
+            .fadeIn(withDuration: 0.35),
+        ]), withKey: PaddleSpeedScene.knockOutKey)
         // A repeating action on a brick is the trap §8.6 keeps warning about, and this is not
         // one: it runs once and stops. Nothing here counts bricks or generates rows anyway -
         // that is the game's business, and this is a practice field
+    }
+
+    static let knockOutKey = "knockedOut"
+
+    /// Whether this brick is available to be struck.
+    ///
+    /// The whole cycle runs under one key, so this is false for both halves of it: the two
+    /// frames the brick is still solid for - during which the ball is touching it and reports
+    /// a contact per frame - and the four seconds it is away.
+    func canKnockOut(_ brick: SKSpriteNode) -> Bool {
+        brick.action(forKey: PaddleSpeedScene.knockOutKey) == nil
     }
 
     /// Sends the ball away and drops a new one in from the top.
@@ -654,18 +721,31 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
         // One serve at a time: the ball is below the paddle for many frames, and each of them
         // would otherwise start another
 
+        if soundsSetting { run(PaddleSpeedScene.ballLostSound) }
+        // First, as `ballLostAnimation` plays it - the sound is the loss, and it belongs with
+        // the moment the ball went rather than with the moment the next one arrives
+
         let entry = CGPoint(x: size.width/2, y: size.height - layout.ballSize)
         ball.physicsBody?.velocity = .zero
         ball.run(.sequence([
-            .fadeOut(withDuration: 0.2),
+            .group([.scale(to: 0, duration: 0.1), .fadeOut(withDuration: 0.1)]),
+            // **The game's own loss, to the same tenth of a second** (James, round 161): the
+            // ball shrinks to nothing as it fades, where this field used to fade it flat over
+            // twice as long. `GameScene.ballLostAnimation` is the pair of actions
             .run { [weak self] in
                 guard let self else { return }
+                if self.hapticsSetting { self.ballLostHaptic.impactOccurred() }
+                // On the animation's completion, which is where `ballLost` fires it - the
+                // thump lands when the ball has gone, not when it started going
                 self.ball.position = entry
+                self.ball.setScale(1)
                 self.ball.physicsBody?.velocity = CGVector(dx: self.ballSpeed*0.35,
                                                            dy: -self.ballSpeed*0.94)
             },
             .fadeIn(withDuration: 0.2),
         ]), withKey: PaddleSpeedScene.servingKey)
+        // The fresh ball falling in is this screen's own, and stays as it was: the game puts
+        // the next ball on the paddle to be launched, and there is no launch here
     }
 
     static let servingKey = "serving"
@@ -725,6 +805,12 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
         guard ball.position.y >= paddle.position.y + paddle.size.height/2 else { return }
         // The top face only, as in the game: a ball meeting the paddle's end or its underside
         // keeps whatever the engine gave it
+
+        if hapticsSetting { lightHaptic.impactOccurred() }
+        if soundsSetting { run(PaddleSpeedScene.paddleHitSound) }
+        // Before the angle rules, which is where `paddleHit` puts them: the landing is what is
+        // heard and felt, whatever the bounce then does with it. This is the event the screen
+        // exists for, and it was the one the practice field answered with nothing at all
 
         guard let bounced = paddleBounceVelocity() else { return }
         body.velocity = bounced

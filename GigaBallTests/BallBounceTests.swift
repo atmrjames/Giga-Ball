@@ -362,6 +362,50 @@ final class PaddleBounceTests: XCTestCase {
         XCTAssertNil(scene.paddleBounceVelocity())
     }
 
+    func testAStruckPracticeBrickStaysSolidTheFrameItIsStruck() {
+        // James, round 161: "brick hit disappear animation" should be the game's. The game
+        // hides a destroyed brick and keeps its body for two frames, so the bounce the ball is
+        // in the middle of resolves against something; the practice field used to take the
+        // body away on the contact and fade the brick over 0.15s, so the ball could pass
+        // through the brick it had just broken - which is not a thing the game ever does
+        let scene = PaddleSpeedScene(size: CGSize(width: 390, height: 400))
+        scene.layout = GameSceneLayout(screen: CGSize(width: 393, height: 852), bottomInset: 34)
+        scene.soundsSetting = false
+        scene.hapticsSetting = false
+        // Silent, because a test that plays a sound is a test that opens an audio context
+        scene.placeForTesting(ballX: 195, paddleX: 195, arriving: CGVector(dx: 40, dy: -300))
+
+        guard let brick = scene.children.first(where: { $0.name == PaddleSpeedScene.brickName })
+                as? SKSpriteNode else {
+            return XCTFail("the practice field puts bricks up")
+        }
+
+        XCTAssertTrue(scene.canKnockOut(brick))
+        scene.knockOut(brick)
+        XCTAssertNotNil(brick.physicsBody,
+                        "still solid on the frame it was struck, as in the game")
+        XCTAssertFalse(brick.isHidden, "and still drawn - it goes two frames later")
+    }
+
+    func testAPracticeBrickIsNotKnockedOutTwice() {
+        // The ball is touching the brick for every one of the frames it stays solid for, and
+        // each of them reports a contact. Without the guard each would restart the sequence,
+        // so the brick would never reach the moment it goes away
+        let scene = PaddleSpeedScene(size: CGSize(width: 390, height: 400))
+        scene.layout = GameSceneLayout(screen: CGSize(width: 393, height: 852), bottomInset: 34)
+        scene.soundsSetting = false
+        scene.hapticsSetting = false
+        scene.placeForTesting(ballX: 195, paddleX: 195, arriving: CGVector(dx: 40, dy: -300))
+
+        guard let brick = scene.children.first(where: { $0.name == PaddleSpeedScene.brickName })
+                as? SKSpriteNode else {
+            return XCTFail("the practice field puts bricks up")
+        }
+        scene.knockOut(brick)
+        XCTAssertFalse(scene.canKnockOut(brick),
+                       "a brick on its way out is not struck again, nor is one that is away")
+    }
+
     func testThePracticeFieldLeavesTheThumbTheRoomTheGameDoes() {
         // Round 147: the paddle-speed screen put the paddle a kill-line's clearance above the
         // field's floor - 36 points - where the game leaves nearly 200
