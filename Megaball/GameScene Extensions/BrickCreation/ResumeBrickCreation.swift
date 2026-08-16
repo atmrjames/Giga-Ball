@@ -39,6 +39,8 @@ extension GameScene {
             hidden: sprite.isHidden,
             role: sprite.endlessIIRole?.rawValue,
             face: sprite.endlessIIFace?.rawValue,
+            faceMirrored: sprite.endlessIIFaceMirrored,
+            faceFlipped: sprite.endlessIIFaceFlipped,
             styles: endlessIIStyles(on: sprite)
                 .filter { $0 == .rounded || $0 == .spinning || $0 == .flashing
                     || $0 == .breathing }
@@ -94,7 +96,12 @@ extension GameScene {
                 applyEndlessIIStyle(style(for: role), to: brick)
             }
             if let raw = record.face, let face = EndlessIIFace(rawValue: raw) {
+                brick.endlessIIFaceMirrored = record.faceMirrored
+                brick.endlessIIFaceFlipped = record.faceFlipped
                 applyEndlessIIStyle(face.style, to: brick)
+                // Orientation first: `makeFace` rolls one only when the brick does not
+                // already carry it, so this is what stops a resumed wedge pointing the other
+                // way and a resumed dome coming back the right way up
             }
             for raw in record.styles {
                 guard let style = EndlessIIStyle(rawValue: raw) else { continue }

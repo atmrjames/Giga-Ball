@@ -199,6 +199,10 @@ struct SavedGame: Codable, Equatable {
         var role: String?
         /// `EndlessIIFace`'s raw value, when it is shaped.
         var face: String?
+    /// Which way the face was turned. Optional so a save written before round 154 restores
+    /// as it always did, with the shape the right way up.
+    var faceMirrored: Bool?
+    var faceFlipped: Bool?
         /// The styles tracked by identity rather than by the sprite - spinning, flashing,
         /// breathing, rounded.
         var styles: [String]

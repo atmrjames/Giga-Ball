@@ -81,28 +81,31 @@ enum EndlessIIFaceGeometry {
 
     /// The outline the player sees. May be concave; is never used for physics.
     static func silhouette(_ face: EndlessIIFace, size: CGSize,
-                           mirrored: Bool = false) -> CGPath {
-        path(points(face, size: size, mirrored: mirrored))
+                           mirrored: Bool = false, flipped: Bool = false) -> CGPath {
+        path(points(face, size: size, mirrored: mirrored, flipped: flipped))
     }
 
     /// The convex pieces the physics body is built from. One for the shapes that are already
     /// convex, two for the notch.
     static func bodyPieces(_ face: EndlessIIFace, size: CGSize,
-                           mirrored: Bool = false) -> [CGPath] {
+                           mirrored: Bool = false, flipped: Bool = false) -> [CGPath] {
         let w = size.width, h = size.height
         switch face {
         case .convex, .wedge:
-            return [silhouette(face, size: size, mirrored: mirrored)]
+            return [silhouette(face, size: size, mirrored: mirrored, flipped: flipped)]
         case .concave:
             let notch = h*concaveNotch
-            return [
-                path([CGPoint(x: -w/2, y: -h/2), CGPoint(x: 0, y: -h/2),
-                      CGPoint(x: 0, y: notch), CGPoint(x: -w/2, y: h/2)]),
-                path([CGPoint(x: 0, y: -h/2), CGPoint(x: w/2, y: -h/2),
-                      CGPoint(x: w/2, y: h/2), CGPoint(x: 0, y: notch)]),
+            let halves = [
+                [CGPoint(x: -w/2, y: -h/2), CGPoint(x: 0, y: -h/2),
+                 CGPoint(x: 0, y: notch), CGPoint(x: -w/2, y: h/2)],
+                [CGPoint(x: 0, y: -h/2), CGPoint(x: w/2, y: -h/2),
+                 CGPoint(x: w/2, y: h/2), CGPoint(x: 0, y: notch)],
             ]
+            return halves.map { path(reflected($0, mirrored: mirrored, flipped: flipped)) }
             // Split down the middle, where the notch bottoms out: each half is then a
-            // quadrilateral with one sloped edge, which is convex
+            // quadrilateral with one sloped edge, which is convex. Both halves are reflected
+            // by the same rule the silhouette uses, or a notch that faces down would be
+            // drawn facing down and answer the ball facing up
         }
     }
 
@@ -112,27 +115,31 @@ enum EndlessIIFaceGeometry {
     /// the Wedge's is not centred on the node - it lives in the fat corner opposite the
     /// point.
     static func hidingRect(_ face: EndlessIIFace, size: CGSize,
-                           mirrored: Bool = false) -> CGRect {
+                           mirrored: Bool = false, flipped: Bool = false) -> CGRect {
         let w = size.width, h = size.height
+        let rect: CGRect
         switch face {
         case .convex:
-            return CGRect(x: -w*0.275, y: -h*0.14, width: w*0.55, height: h*0.28)
+            rect = CGRect(x: -w*0.275, y: -h*0.14, width: w*0.55, height: h*0.28)
         case .concave:
-            return CGRect(x: -w*0.40, y: -h*0.08, width: w*0.80, height: h*0.16)
+            rect = CGRect(x: -w*0.40, y: -h*0.08, width: w*0.80, height: h*0.16)
             // Wide and shallow: it has to stay under the notch at x = 0, which is the
             // lowest point of the face
         case .wedge:
-            let rect = CGRect(x: w*0.05, y: -h*0.45, width: w*0.40, height: h*0.40)
-            return mirrored ? rect.offsetBy(dx: -rect.midX*2, dy: 0) : rect
-            // Tucked into the corner beneath the slope. Mirrored by reflecting its centre,
-            // which is what keeps it under the hypotenuse whichever way the point faces
+            rect = CGRect(x: w*0.05, y: -h*0.45, width: w*0.40, height: h*0.40)
+            // Tucked into the corner beneath the slope
         }
+        return rect.offsetBy(dx: mirrored ? -rect.midX*2 : 0,
+                             dy: flipped ? -rect.midY*2 : 0)
+        // Reflected by its centre, which is what keeps it inside the face whichever way the
+        // face is turned. The dome's and the notch's are centred on y already, so only the
+        // Wedge's actually travels when the shape is turned upside down
     }
 
     /// The corners of each face, counterclockwise - which is the winding a polygon body
     /// wants.
     private static func points(_ face: EndlessIIFace, size: CGSize,
-                               mirrored: Bool) -> [CGPoint] {
+                               mirrored: Bool, flipped: Bool = false) -> [CGPoint] {
         let w = size.width, h = size.height
         let shape: [CGPoint]
         switch face {
@@ -150,10 +157,25 @@ enum EndlessIIFaceGeometry {
             shape = [CGPoint(x: -w/2, y: -h/2), CGPoint(x: w/2, y: -h/2),
                      CGPoint(x: w/2, y: h/2)]
         }
-        guard mirrored else { return shape }
-        return shape.map { CGPoint(x: -$0.x, y: $0.y) }.reversed()
-        // Reversed as well as reflected: mirroring alone flips the winding, and a clockwise
-        // path is one a polygon body reads inside out
+        return reflected(shape, mirrored: mirrored, flipped: flipped)
+    }
+
+    /// A shape turned over in one axis, the other, or both.
+    ///
+    /// **Flipping vertically is the interesting one** (James, round 154). Every shaped brick
+    /// used to face up, and in a mode where the field comes down to meet the ball almost
+    /// every hit lands on a brick's *underside* - so a field of domes and wedges was a field
+    /// of flat undersides, and the shapes were doing far less than they read as doing.
+    ///
+    /// Reversed when exactly one reflection is applied: each one flips the winding on its
+    /// own, and a clockwise path is one a polygon body reads inside out - but two reflections
+    /// are a rotation, which does not.
+    private static func reflected(_ shape: [CGPoint],
+                                  mirrored: Bool, flipped: Bool) -> [CGPoint] {
+        guard mirrored || flipped else { return shape }
+        let turned = shape.map { CGPoint(x: mirrored ? -$0.x : $0.x,
+                                         y: flipped ? -$0.y : $0.y) }
+        return mirrored == flipped ? turned : turned.reversed()
     }
 
     private static func path(_ points: [CGPoint]) -> CGPath {
@@ -183,8 +205,8 @@ enum EndlessIIFaceGeometry {
 
     /// The corners of a face, for the tests and for the reference page's artwork.
     static func corners(_ face: EndlessIIFace, size: CGSize,
-                        mirrored: Bool = false) -> [CGPoint] {
-        points(face, size: size, mirrored: mirrored)
+                        mirrored: Bool = false, flipped: Bool = false) -> [CGPoint] {
+        points(face, size: size, mirrored: mirrored, flipped: flipped)
     }
 }
 
@@ -204,10 +226,20 @@ extension GameScene {
     /// on quietly being the brick's identity while the shape node does the showing.
     func makeFace(_ face: EndlessIIFace, on brick: SKSpriteNode) {
         let cell = brick.size
-        let mirrored = face == .wedge ? Bool.random() : false
-        // Only the Wedge has a handedness worth varying. A mirrored dome is the same dome
+        let mirrored = face == .wedge ? (brick.endlessIIFaceMirrored ?? Bool.random()) : false
+        let flipped = brick.endlessIIFaceFlipped ?? Bool.random()
+        // Only the Wedge has a handedness worth varying - a mirrored dome is the same dome -
+        // but all three have a *way up*, and turning it over is what James asked for in round
+        // 154. It matters more than it sounds: the field descends to meet the ball, so most
+        // hits land on a brick's underside, and a face that always pointed up presented a
+        // flat one. Half of them now point down, where the ball actually arrives
+        brick.endlessIIFaceMirrored = mirrored
+        brick.endlessIIFaceFlipped = flipped
+        // Recorded, because a resumed game rebuilds the brick and would otherwise re-roll
+        // the orientation - the round-150 lesson, one level further in
 
-        let pieces = EndlessIIFaceGeometry.bodyPieces(face, size: cell, mirrored: mirrored)
+        let pieces = EndlessIIFaceGeometry.bodyPieces(face, size: cell, mirrored: mirrored,
+                                                      flipped: flipped)
             .map { SKPhysicsBody(polygonFrom: $0) }
         brick.physicsBody = brickBody(pieces.count == 1 ? pieces[0]
                                                         : SKPhysicsBody(bodies: pieces))
@@ -215,10 +247,12 @@ extension GameScene {
 
         let shape = SKShapeNode(path: EndlessIIFaceGeometry.silhouette(face, size: cell))
         shape.xScale = mirrored ? -1 : 1
-        // The path is built unmirrored and the *node* is flipped, which is the same geometry
-        // - mirroring is a pure reflection in x - and unlike a mirrored path it takes the
+        shape.yScale = flipped ? -1 : 1
+        // The path is built the right way up and the *node* is turned, which is the same
+        // geometry - each reflection is a pure one - and unlike a reflected path it takes the
         // fill texture with it. A drawn wedge inside a mirrored path would have had its
-        // shading running the wrong way up the slope
+        // shading running the wrong way up the slope, and an upside-down one would have been
+        // lit from below
         shape.fillTexture = endlessIIFaceFill(brick, GameScene.shapedArt(for: face))
         shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
         shape.strokeColor = .clear
@@ -226,7 +260,8 @@ extension GameScene {
         shape.name = GameScene.brickFaceName
         brick.addChild(shape)
 
-        let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell, mirrored: mirrored)
+        let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell, mirrored: mirrored,
+                                                   flipped: flipped)
         brick.size = hide.size
         brick.anchorPoint = CGPoint(x: 0.5 - hide.midX/hide.width,
                                     y: 0.5 - hide.midY/hide.height)

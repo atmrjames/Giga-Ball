@@ -232,6 +232,31 @@ extension SKNode {
         }
     }
 
+    /// Which way up, and which way round, a shaped brick's face was turned.
+    ///
+    /// Stored beside the face for the same reason the face is stored: a resumed game rebuilds
+    /// the brick, and an orientation that was re-rolled would give the player back a field
+    /// that answers the ball differently from the one they left (round 150's bug, one level
+    /// further in).
+    /// Optional rather than defaulting to false, and that is the whole mechanism: `makeFace`
+    /// rolls an orientation only when it is *not* already set, so a resumed brick that
+    /// carries one is rebuilt facing the way it faced, while a new brick rolls and records.
+    var endlessIIFaceMirrored: Bool? {
+        get { userData?["endlessIIFaceMirrored"] as? Bool }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?["endlessIIFaceMirrored"] = newValue
+        }
+    }
+
+    var endlessIIFaceFlipped: Bool? {
+        get { userData?["endlessIIFaceFlipped"] as? Bool }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?["endlessIIFaceFlipped"] = newValue
+        }
+    }
+
     /// Whether a Fixed brick has been struck and anchored itself.
     var endlessIIIsAnchored: Bool {
         get { userData?["endlessIIAnchored"] as? Bool ?? false }

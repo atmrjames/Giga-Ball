@@ -26,9 +26,11 @@ final class EndlessIIFaceTests: XCTestCase {
 
     func testEveryBodyPieceIsConvex() {
         for face in EndlessIIFace.allCases {
-            for mirrored in [false, true] {
+            for (mirrored, flipped) in [(false, false), (true, false),
+                                    (false, true), (true, true)] {
                 for piece in EndlessIIFaceGeometry.bodyPieces(face, size: cell,
-                                                              mirrored: mirrored) {
+                                                              mirrored: mirrored,
+                                                              flipped: flipped) {
                     var points: [CGPoint] = []
                     piece.applyWithBlock { element in
                         let type = element.pointee.type
@@ -37,7 +39,8 @@ final class EndlessIIFaceTests: XCTestCase {
                         }
                     }
                     XCTAssertTrue(EndlessIIFaceGeometry.isConvex(points),
-                                  "\(face) mirrored:\(mirrored) has a piece a polygon body cannot take")
+                                  "\(face) mirrored:\(mirrored) flipped:\(flipped) has a "
+                                  + "piece a polygon body cannot take")
                 }
             }
         }
@@ -48,18 +51,22 @@ final class EndlessIIFaceTests: XCTestCase {
         // centre, so no centred rectangle fits inside it and the hiding rectangle has to
         // be off-centre. Checked for every face, both ways round.
         for face in EndlessIIFace.allCases {
-            for mirrored in [false, true] {
+            for (mirrored, flipped) in [(false, false), (true, false),
+                                    (false, true), (true, true)] {
                 let silhouette = EndlessIIFaceGeometry.silhouette(face, size: cell,
-                                                                  mirrored: mirrored)
+                                                                  mirrored: mirrored,
+                                                                  flipped: flipped)
                 let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell,
-                                                            mirrored: mirrored)
+                                                            mirrored: mirrored,
+                                                            flipped: flipped)
                 let corners = [CGPoint(x: hide.minX, y: hide.minY),
                                CGPoint(x: hide.maxX, y: hide.minY),
                                CGPoint(x: hide.maxX, y: hide.maxY),
                                CGPoint(x: hide.minX, y: hide.maxY)]
                 for corner in corners {
                     XCTAssertTrue(silhouette.contains(corner),
-                                  "\(face) mirrored:\(mirrored) leaves \(corner) outside its own face")
+                                  "\(face) mirrored:\(mirrored) flipped:\(flipped) leaves "
+                                  + "\(corner) outside its own face")
                 }
                 XCTAssertGreaterThan(hide.width, 0)
                 XCTAssertGreaterThan(hide.height, 0)
@@ -237,5 +244,102 @@ final class EndlessIIShapedBrickArtTests: XCTestCase {
         XCTAssertEqual(plain.copy(using: &flipped)?.boundingBox, mirrored.boundingBox,
                        "mirroring is a reflection in x and nothing else, which is what makes "
                        + "flipping the node the same picture as mirroring the path")
+    }
+}
+
+// MARK: - Which way up
+
+/// "Flip horizontally and vertically the asymmetrical brick types like wedge so they appear
+/// in different orientations in the app" (James, round 154).
+///
+/// The vertical flip is the one that changes the game rather than the picture. Every shaped
+/// brick used to face up, and the field descends to meet the ball, so nearly every hit lands
+/// on a brick's underside - a field of domes and wedges was a field of flat undersides.
+final class EndlessIIFaceOrientationTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    func testFlippingTurnsTheShapeOverRatherThanMovingIt() {
+        for face in EndlessIIFace.allCases {
+            let up = EndlessIIFaceGeometry.corners(face, size: cell)
+            let down = EndlessIIFaceGeometry.corners(face, size: cell, flipped: true)
+
+            XCTAssertEqual(Set(up.map(\.x)), Set(down.map(\.x)),
+                           "\(face) keeps every x - a flip is a reflection, not a slide")
+            XCTAssertEqual(Set(up.map { -$0.y }), Set(down.map(\.y)),
+                           "\(face) has every y negated and nothing else")
+        }
+    }
+
+    func testTheDomeAndTheNotchHaveAWayUpEvenThoughTheyHaveNoHandedness() {
+        // A mirrored dome is the same dome, which is why only the Wedge is mirrored. A dome
+        // turned over is not the same dome, which is why all three are flipped
+        for face in EndlessIIFace.allCases {
+            let plain = EndlessIIFaceGeometry.corners(face, size: cell)
+            let flipped = EndlessIIFaceGeometry.corners(face, size: cell, flipped: true)
+            XCTAssertNotEqual(Set(plain.map(\.debugDescription)),
+                              Set(flipped.map(\.debugDescription)),
+                              "\(face) looks the same upside down, so flipping it is wasted")
+            // The whole corner, not its y: a wedge's three corners use the same two y values
+            // either way up, and only the pairing tells the two triangles apart
+        }
+    }
+
+    func testTwoReflectionsKeepTheWindingOneReversesIt() {
+        // Each reflection on its own flips the winding, and a clockwise path is one a polygon
+        // body reads inside out. Two reflections are a rotation, which does not - so the
+        // reversal has to be conditional, and a body built the other way is a brick the ball
+        // passes through
+        for face in EndlessIIFace.allCases {
+            for (mirrored, flipped) in [(false, false), (true, false),
+                                        (false, true), (true, true)] {
+                let points = EndlessIIFaceGeometry.corners(face, size: cell,
+                                                           mirrored: mirrored, flipped: flipped)
+                XCTAssertTrue(EndlessIIFaceGeometry.isConvex(points) || face == .concave,
+                              "\(face) mirrored:\(mirrored) flipped:\(flipped)")
+                XCTAssertEqual(signedArea(points) > 0, signedArea(
+                    EndlessIIFaceGeometry.corners(face, size: cell)) > 0,
+                    "\(face) mirrored:\(mirrored) flipped:\(flipped) winds the other way")
+            }
+        }
+    }
+
+    private func signedArea(_ points: [CGPoint]) -> CGFloat {
+        var total: CGFloat = 0
+        for index in points.indices {
+            let a = points[index], b = points[(index + 1) % points.count]
+            total += a.x*b.y - b.x*a.y
+        }
+        return total/2
+    }
+
+    func testAShapedBrickRemembersWhichWayItFacedAcrossASave() {
+        // Round 150's bug one level in: a resumed field that answers the ball differently
+        // from the one the player left. `makeFace` rolls an orientation only when the brick
+        // does not already carry one, and the save carries it
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        brick.endlessIIFaceMirrored = true
+        brick.endlessIIFaceFlipped = true
+        scene.addChild(brick)
+
+        scene.makeFace(.wedge, on: brick)
+        XCTAssertEqual(brick.endlessIIFaceMirrored, true)
+        XCTAssertEqual(brick.endlessIIFaceFlipped, true)
+        XCTAssertEqual(brick.childNode(withName: GameScene.brickFaceName)?.yScale, -1,
+                       "and it is drawn the way it is recorded")
+    }
+
+    func testANewBrickRollsAnOrientationAndWritesItDown() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        scene.addChild(brick)
+        XCTAssertNil(brick.endlessIIFaceFlipped)
+
+        scene.makeFace(.convex, on: brick)
+        XCTAssertNotNil(brick.endlessIIFaceFlipped, "rolled, and written down to be saved")
+        XCTAssertEqual(brick.endlessIIFaceMirrored, false, "a mirrored dome is the same dome")
     }
 }
