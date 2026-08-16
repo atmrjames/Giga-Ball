@@ -364,8 +364,8 @@ final class InGameRecentsTests: XCTestCase {
         XCTAssertEqual(boundary, 28)
         XCTAssertEqual(names[boundary-1], "Shrink Ball", "the last of the original set")
         XCTAssertEqual(names[boundary], "Multi-Ball", "the first of Mayhem's")
-        XCTAssertEqual(names.count - boundary, 31,
-                       "Mayhem's own, up to the four shaped paddle faces")
+        XCTAssertEqual(names.count - boundary, 32,
+                       "Mayhem's own, up to Double Paddle")
         XCTAssertEqual(boundary, PowerUpCatalogue.existing.count)
     }
 

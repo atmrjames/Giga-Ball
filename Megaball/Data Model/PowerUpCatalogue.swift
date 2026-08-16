@@ -275,6 +275,12 @@ enum PowerUpCatalogue {
         // once - and no conflict rule against the rest of the paddle group is needed: a
         // shape only says where the ball behaves as though it landed, so Inert flattens it,
         // Flipped mirrors it and Auto-Aim overrides it, all for free
+        PowerUp(id: "doublePaddle", name: "Double Paddle", availability: .endlessII,
+                rarity: .uncommon, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        // The paddle in two halves with a hole between them. Harmful, though it is the
+        // gentlest of the harmful paddles: nothing is taken away, and the same span is
+        // covered - there is simply a way through the middle of it now
         PowerUp(id: "drift", name: "Drift", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),

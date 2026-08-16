@@ -699,3 +699,145 @@ final class AimedStickyThroughThePortalPaddleTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIPortalPaddleOwedTurn)
     }
 }
+
+// MARK: - Double Paddle
+
+/// "Double paddle - the paddle splits in two, each half the width of the original" (James's
+/// play-test idea from the second round, pulled into 1.3 at round 100).
+///
+/// The interesting claim to hold is not that the paddle looks split but that it *is* split:
+/// one node, one contact path, and a real hole in the middle where there is no body at all.
+final class EndlessIIDoublePaddleTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.paddle.physicsBody?.categoryBitMask = CollisionTypes.paddleCategory.rawValue
+        scene.paddle.name = PaddleCategoryName
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    private func halves(_ scene: GameScene) -> [SKNode] {
+        scene.paddle.children.filter { $0.name == GameScene.doublePaddleHalfName }
+    }
+
+    func testCollectingItLeavesAHoleInTheMiddleOfThePaddle() {
+        let scene = mayhem()
+        let whole = scene.paddle.physicsBody?.area ?? 0
+        scene.endlessIICollectDoublePaddle()
+
+        let split = scene.paddle.physicsBody?.area ?? 0
+        XCTAssertLessThan(split, whole, "there is less paddle than there was")
+        XCTAssertEqual(split, whole*(1 - GameScene.endlessIIDoublePaddleGap), accuracy: whole*0.02,
+                       "and what is missing is exactly the gap - a ball down the middle has "
+                       + "somewhere to fall through, which is the whole power-up")
+    }
+
+    func testTheSplitPaddleIsStillOnePaddle() {
+        // The cheap part of the design, and the part worth guarding: a second *node* would
+        // have meant teaching the touch handler, the bounce, the Halo and the Portal about a
+        // list of paddles
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+
+        XCTAssertEqual(scene.children.filter { $0.name == PaddleCategoryName }.count, 1)
+        XCTAssertEqual(scene.paddle.physicsBody?.categoryBitMask,
+                       CollisionTypes.paddleCategory.rawValue,
+                       "and a contact still arrives as a paddle contact")
+        XCTAssertEqual(scene.paddle.size.width, 120,
+                       "the span is unchanged, so the bounce still reads the landing spot "
+                       + "across the whole paddle")
+    }
+
+    func testItDrawsTwoHalvesAndStopsDrawingItself() {
+        let scene = mayhem()
+        scene.paddle.texture = SKTexture(image: PowerUpIcon.doublePaddle)
+        scene.endlessIICollectDoublePaddle()
+
+        XCTAssertEqual(halves(scene).count, 2)
+        XCTAssertNil(scene.paddle.texture, "or the split would be drawn over a whole paddle")
+        let gap = 120*GameScene.endlessIIDoublePaddleGap
+        for half in halves(scene) {
+            XCTAssertEqual(abs(half.position.x), (120 - gap)/2/2 + gap/2, accuracy: 0.01,
+                           "each half sits over its own body")
+        }
+    }
+
+    func testAResizedPaddleIsCutAgain() {
+        // Expand and Shrink Paddle write the width directly. A split paddle that grew and
+        // kept the body it had when it was small would be a paddle with a hole in the wrong
+        // place
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        let narrow = scene.paddle.physicsBody?.area ?? 0
+
+        scene.paddle.size.width = 200
+        scene.refreshEndlessIIDoublePaddle()
+        XCTAssertGreaterThan(scene.paddle.physicsBody?.area ?? 0, narrow)
+        XCTAssertEqual(halves(scene).count, 2, "still two, and both wider")
+    }
+
+    func testTheRebuiltBodyKeepsWhateverMasksThePaddleHad() {
+        // Wrap-Around takes the border bit away so the paddle can leave the field, and every
+        // level state puts it back. A replacement body built from remembered constants would
+        // undo whichever was in force when the split started
+        let scene = mayhem()
+        scene.paddle.physicsBody?.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+        scene.endlessIICollectDoublePaddle()
+
+        XCTAssertEqual(scene.paddle.physicsBody?.collisionBitMask,
+                       CollisionTypes.paddleCategory.rawValue,
+                       "the border bit stays gone")
+    }
+
+    func testItPutsThePaddleBackWhenTheClockStops() {
+        let scene = mayhem()
+        let whole = scene.paddle.physicsBody?.area ?? 0
+        let dress = SKTexture(image: PowerUpIcon.doublePaddle)
+        scene.paddle.texture = dress
+        scene.endlessIICollectDoublePaddle()
+
+        scene.endlessIIDoublePaddleClock.run(down: GameScene.endlessIIDoublePaddleDuration)
+        scene.refreshEndlessIIDoublePaddle()
+
+        XCTAssertTrue(halves(scene).isEmpty)
+        XCTAssertEqual(scene.paddle.texture, dress, "wearing its own dress again")
+        XCTAssertEqual(scene.paddle.physicsBody?.area ?? 0, whole, accuracy: whole*0.01,
+                       "and whole - a power-up that left the paddle in pieces after its "
+                       + "clock stopped would be a power-up that never ended")
+    }
+
+    func testTheLifeResetPutsItBackToo() {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        scene.endlessIIResetPaddlePowerUps()
+
+        XCTAssertFalse(scene.endlessIIDoublePaddleClock.isRunning)
+        XCTAssertTrue(halves(scene).isEmpty)
+    }
+
+    func testItIsAClockTheLockFreezesAndTheWipeClears() {
+        XCTAssertTrue(GameScene.endlessIITimedClockPaths.contains(\GameScene.endlessIIDoublePaddleClock))
+        XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(\GameScene.endlessIIDoublePaddleClock))
+    }
+
+    func testItSavesAndComesBackSplit() {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        guard let saved = scene.endlessIIPaddleClockSaveEntries()
+            .first(where: { $0.key == "endlessIIDoublePaddle" }) else {
+            return XCTFail("a running Double Paddle must be in the save")
+        }
+
+        let resumed = mayhem()
+        XCTAssertTrue(resumed.endlessIIRestorePaddleClock(key: saved.key, remaining: saved.remaining,
+                                                          total: saved.total, magnitude: saved.magnitude))
+        XCTAssertEqual(halves(resumed).count, 2,
+                       "split on the spot, so a resumed game draws the paddle it is about "
+                       + "to bounce with")
+    }
+}

@@ -448,6 +448,7 @@ extension GameScene {
 
     // MARK: - Each frame
 
+
     /// Runs the batch's clocks down and drives the halo. Called from `update`.
     ///
     /// The clocks and the halo live here; magnetism, steering and the paddle portals write
@@ -455,6 +456,7 @@ extension GameScene {
     /// writes stick (§8.6). The frame's delta is kept for them.
     func tickEndlessIIPaddlePowerUps(_ currentTime: TimeInterval) {
         refreshEndlessIIPaddleSurface()
+        refreshEndlessIIDoublePaddle()
         // Takes the shape away the moment its last turn is spent, and leaves the paddle's
         // own face behind
         guard gameMode == .endlessII else { return }
@@ -620,6 +622,7 @@ extension GameScene {
             ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
              PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),
+            ("endlessIIDoublePaddle", endlessIIDoublePaddleClock, PowerUpIcon.doublePaddle),
         ]
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
@@ -648,7 +651,8 @@ extension GameScene {
          ("endlessIIFlippedAngle", endlessIIFlippedAngleClock),
          ("endlessIIReversedControls", endlessIIReversedControlsClock),
          ("endlessIIAutoAim", endlessIIAutoAimClock),
-         ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock)]
+         ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock),
+         ("endlessIIDoublePaddle", endlessIIDoublePaddleClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -687,6 +691,11 @@ extension GameScene {
             // Which shape is not saved, and a resumed run comes back domed. Worth a note
             // rather than a fix: the save format is shared with a shipped version, and a
             // fifth field for a fifteen-second power-up is not worth a migration
+        case "endlessIIDoublePaddle":
+            endlessIIDoublePaddleClock.restore(remaining: remaining, total: total, level: 0)
+            refreshEndlessIIDoublePaddle()
+            // Split again on the spot rather than at the next frame, so a resumed game draws
+            // the paddle it is about to bounce with
         default:
             return false
         }
@@ -705,6 +714,8 @@ extension GameScene {
         endlessIIReversedControlsClock.reset()
         endlessIIAutoAimClock.reset()
         endlessIIPaddleSurfaceClock.reset()
+        endlessIIDoublePaddleClock.reset()
+        refreshEndlessIIDoublePaddle()
         endlessIIPaddleSurface = nil
         paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
         endlessIIPendingPaddlePortals.removeAll()

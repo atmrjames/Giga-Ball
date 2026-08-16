@@ -522,6 +522,24 @@ enum PowerUpIcon {
     static let wavyPaddle = paddleSurface(.wavy)
     static let jaggedPaddle = paddleSurface(.jagged)
 
+    /// Two paddle halves with a ball falling between them.
+    ///
+    /// The gap is the picture. A pair of bars alone would read as a wide paddle drawn badly,
+    /// so the ball is on its way *through* the middle - which is the only thing the split
+    /// changes and the only thing worth showing.
+    static let doublePaddle: UIImage = badge(harmful) { context, rect in
+        let bar = rect.height*0.12
+        let y = rect.maxY - rect.height*0.34
+        let width = rect.width*0.28
+        context.setLineWidth(0)
+        for x in [rect.midX - rect.width*0.11 - width, rect.midX + rect.width*0.11] {
+            context.fill(CGRect(x: x, y: y, width: width, height: bar))
+        }
+
+        dot(context, at: CGPoint(x: rect.midX, y: y + bar/2), radius: rect.width*0.085)
+        // Level with the paddle rather than above it: the ball is in the gap, not aimed at it
+    }
+
     /// Three bricks stepped sideways, with the trail of where they came from.
     ///
     /// The step is the whole idea: not one brick moving, but the field going with it - so the
@@ -748,6 +766,14 @@ enum PowerUpIcon {
             let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.width*0.22)
             colour.setFill()
             path.fill()
+            context.cgContext.setFillColor(UIColor.white.cgColor)
+            // White *before* the glyph runs, because the badge's own colour is still the
+            // fill colour otherwise and a glyph that fills without saying so paints red on
+            // red. Three icons had lost a part that way before anyone looked: Safety
+            // Paddle's paddle, all three of Drift's bricks, and Double Paddle's two halves.
+            // Setting it here rather than in each glyph is the fix that also covers the next
+            // one - a stroked glyph already gets white from `stroke`, and the two icons that
+            // want another colour set it themselves
             glyph(context.cgContext, rect)
         }
     }
