@@ -17,6 +17,48 @@
 
 import UIKit
 
+/// The heading that sits over a reference page's grid - BEHAVIOURS, CLASSIC GAME MODES.
+///
+/// One recipe, because there are two of these pages and they had drifted: the bricks page's
+/// headings were 15pt black at a 24pt inset in a 34pt band, and the power-ups page's were 13pt
+/// bold, indented with two spaces in the string itself, in a 30pt band (play-test round 145:
+/// "the text on the power-ups and bricks info screen sticky headers is different - make them
+/// the same"). Two screens showing the same kind of heading in two sizes reads as one of them
+/// being wrong, which it was.
+enum ReferenceHeading {
+
+    /// How tall the band is, which is also how much of the top the scroll fade must leave
+    /// alone - see `stickyHeaderBand`.
+    static let height: CGFloat = 34
+
+    /// Fills a dequeued supplementary view in: a dark blur, and the title over it.
+    ///
+    /// The blur is what lets the heading pin: squares travelling under it disappear behind it
+    /// rather than showing through the bare label.
+    static func fill(_ header: UICollectionReusableView, title: String) {
+        header.subviews.forEach { $0.removeFromSuperview() }
+        // Reused like a cell, so last time's label has to go or they stack up
+
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        blur.frame = header.bounds
+        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        header.addSubview(blur)
+
+        let label = UILabel()
+        label.text = title.uppercased()
+        label.font = .systemFont(ofSize: 15, weight: .black)
+        label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor,
+                                            constant: -24),
+            label.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+        ])
+    }
+}
+
 extension UIViewController {
 
     /// The most screen a menu should use, whatever it has been given.

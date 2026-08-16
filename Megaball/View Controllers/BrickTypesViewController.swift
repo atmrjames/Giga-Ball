@@ -156,7 +156,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         view.register(UICollectionReusableView.self,
                       forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
                       withReuseIdentifier: "gridHeader")
-        view.stickyHeaderBand = 34
+        view.stickyHeaderBand = ReferenceHeading.height
         // The height its headings are given below, kept solid so a pinned BEHAVIOURS does
         // not fade with the squares travelling under it
         itemsView.addSubview(view)
@@ -203,7 +203,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         referenceSizeForHeaderInSection section: Int) -> CGSize {
         guard collectionView == grid else { return .zero }
-        return CGSize(width: collectionView.bounds.width, height: 34)
+        return CGSize(width: collectionView.bounds.width, height: ReferenceHeading.height)
     }
 
     func collectionView(_ collectionView: UICollectionView,
@@ -211,27 +211,9 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
                         at indexPath: IndexPath) -> UICollectionReusableView {
         let header = collectionView.dequeueReusableSupplementaryView(
             ofKind: kind, withReuseIdentifier: "gridHeader", for: indexPath)
-        header.subviews.forEach { $0.removeFromSuperview() }
-
-        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
-        blur.frame = header.bounds
-        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        header.addSubview(blur)
-
-        let label = UILabel()
-        label.text = sections[indexPath.section].title.uppercased()
-        label.font = .systemFont(ofSize: 15, weight: .black)
-        label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        header.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor, constant: -24),
-            label.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-        ])
-        // The same size, weight, colour and inset the rows' headings had - this is the style
-        // James asked the power-up page's headings to be matched to, and it is the one the
-        // brick page already wore
+        ReferenceHeading.fill(header, title: sections[indexPath.section].title)
+        // The recipe lives in `ReferenceHeading` since round 145, because the power-up page
+        // draws the same heading and the two had drifted apart
         return header
     }
 

@@ -235,6 +235,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     private var grid: UICollectionView?
     private weak var achievementPicker: UISegmentedControl?
+    /// Held so the achievements page can move the grid down under its picker.
+    private var gridTop: NSLayoutConstraint?
     private let emptyNote = UILabel()
 
     /// Builds the grid over the table, and takes the table out of the way.
@@ -275,10 +277,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         itemsView.addSubview(view)
         grid = view
 
+        let top = view.topAnchor.constraint(equalTo: itemsTableView.topAnchor)
+        gridTop = top
         NSLayoutConstraint.activate([
             view.leadingAnchor.constraint(equalTo: itemsTableView.leadingAnchor),
             view.trailingAnchor.constraint(equalTo: itemsTableView.trailingAnchor),
-            view.topAnchor.constraint(equalTo: itemsTableView.topAnchor),
+            top,
             view.bottomAnchor.constraint(equalTo: itemsTableView.bottomAnchor),
         ])
         itemsTableView.isHidden = true
@@ -419,7 +423,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
 
     /// How tall a grid heading is, and so how much of the top the fade must leave alone.
-    static let gridHeadingHeight: CGFloat = 30
+    static let gridHeadingHeight = ReferenceHeading.height
 
     /// Whether the grid draws headings at all - the in-game split, or the mode split.
     var hasGridHeadings: Bool { showsRecentsSection || showsModeSections }
@@ -477,19 +481,22 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         emptyNote.isHidden = true
         itemsView.addSubview(emptyNote)
 
+        gridTop?.isActive = false
         NSLayoutConstraint.activate([
             picker.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 20),
             picker.trailingAnchor.constraint(equalTo: grid.trailingAnchor, constant: -20),
-            picker.topAnchor.constraint(equalTo: grid.topAnchor),
+            picker.topAnchor.constraint(equalTo: itemsTableView.topAnchor),
+            grid.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 14),
             emptyNote.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 40),
             emptyNote.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 30),
             emptyNote.trailingAnchor.constraint(equalTo: grid.trailingAnchor, constant: -30),
         ])
-        grid.contentInset.top = 52
-        grid.verticalScrollIndicatorInsets.top = 52
-        // The picker sits *over* the grid's top rather than above it, with the grid inset to
-        // match: the screen's layout is the storyboard's, and pushing the grid down would
-        // have meant moving a constraint that four other lists share
+        // **The grid starts under the picker rather than behind it** (play-test round 145:
+        // "something weird is happening with the tab bar and table view interaction"). It was
+        // laid over the grid's top with a content inset making room, which is how a navigation
+        // bar works - but this picker has no bar behind it, so the squares travelled *through*
+        // it: half a row showing above the segments, the rest behind them. Nothing is inset
+        // now and nothing overlaps
     }
 
     @objc private func achievementTabChanged(_ picker: UISegmentedControl) {
@@ -499,8 +506,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         emptyNote.text = AchievementCatalogue.emptyNote(
             for: AchievementCatalogue.tabs[achievementTab].mode)
         emptyNote.isHidden = shownAchievements.isEmpty == false
-        grid?.setContentOffset(CGPoint(x: 0, y: -(grid?.contentInset.top ?? 0)),
-                               animated: false)
+        grid?.setContentOffset(.zero, animated: false)
         // Back to the top on a change of tab: the tabs hold very different numbers of
         // squares, and staying at row twelve of a list that now has four is a blank screen
     }
@@ -517,27 +523,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                         at indexPath: IndexPath) -> UICollectionReusableView {
         let header = collectionView.dequeueReusableSupplementaryView(
             ofKind: kind, withReuseIdentifier: "gridHeader", for: indexPath)
-        header.subviews.forEach { $0.removeFromSuperview() }
-        // Reused like a cell, so last time's label has to go or they stack up
-
-        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
-        blur.frame = header.bounds
-        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        header.addSubview(blur)
-        // Its own backing, so squares sliding under a pinned heading disappear behind it
-        // rather than showing through the bare label - the same reason the rows' headers
-        // have one
-
-        let label = UILabel()
-        label.text = showsModeSections
-            ? (indexPath.section == 0 ? "  CLASSIC GAME MODES" : "  ENDLESS MAYHEM")
-            : (indexPath.section == 0 ? "  THIS RUN" : "  OTHER")
+        let title = showsModeSections
+            ? (indexPath.section == 0 ? "Classic game modes" : "Endless Mayhem")
+            : (indexPath.section == 0 ? "This run" : "Other")
         // Which pair of headings applies is the same question as which sections exist
-        label.font = .boldSystemFont(ofSize: 13)
-        label.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        label.frame = header.bounds
-        label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        header.addSubview(label)
+        ReferenceHeading.fill(header, title: title)
+        // The bricks page's own recipe, shared since round 145 - these two pages were showing
+        // the same kind of heading in two different sizes
         return header
     }
 

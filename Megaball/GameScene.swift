@@ -7020,6 +7020,13 @@ laserTimer?.invalidate()
 
 	/// The moving parts of a background, which only two of them have.
 	///
+	/// **Every layer wears the overlay's anchor point** (play-test round 145: the Glow and the
+	/// Clouds "sit too low - they start below half way down"). The background node the scene
+	/// file owns is anchored at its top, and the overlay copies that; a layer left on the
+	/// default centre anchor sits half its own height lower, which is exactly the half a
+	/// screen the play test saw. The picker was right all along, because it draws one image
+	/// into a rectangle and never has to agree with anything about anchors.
+	///
 	/// Held as one list and torn down on every apply, because the setting can change at any
 	/// moment - from the settings screen, mid-run, with the scene live behind the pause menu -
 	/// and a layer left over from the last choice would drift across the new one for ever.
@@ -7038,6 +7045,7 @@ laserTimer?.invalidate()
 	private func addBackgroundHaze(over overlay: SKSpriteNode) {
 		guard let image = GameBackground.hazeImage(size: overlay.size) else { return }
 		let haze = SKSpriteNode(texture: SKTexture(image: image), size: overlay.size)
+		haze.anchorPoint = overlay.anchorPoint
 		haze.position = overlay.position
 		haze.zPosition = overlay.zPosition + 0.01
 		haze.alpha = 1
@@ -7068,6 +7076,7 @@ laserTimer?.invalidate()
 			let texture = SKTexture(image: image)
 			for copy in 0...1 {
 				let cloud = SKSpriteNode(texture: texture, size: overlay.size)
+				cloud.anchorPoint = overlay.anchorPoint
 				cloud.position = CGPoint(x: overlay.position.x + overlay.size.width*CGFloat(copy),
 										 y: overlay.position.y)
 				cloud.zPosition = overlay.zPosition + 0.01
