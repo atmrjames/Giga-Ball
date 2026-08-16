@@ -333,11 +333,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
         if view.frame.size.width <= 414 {
             tableViewContainer.frame.size.width = view.frame.size.width
-            iconCollectionView.frame.size.width = tableViewContainer.frame.size.width-100
         }
-        // Ensures the collection view is the correct size
-                
-        let spacing = (iconCollectionView.frame.size.width-(50*3))/2
+        // Ensures the container is the correct size
+
+        let rowWidth = tableViewContainer.frame.size.width
+            - UIViewController.menuButtonRowInset*2
+        // **The width is the storyboard's now** (round 157). This used to assign
+        // `iconCollectionView.frame.size.width` here, which autolayout overwrote on the next
+        // pass - so the row was never the width this line thought it was, and the spacing
+        // below was computed from a number that never existed. The row's leading and
+        // trailing constraints are `menuButtonRowInset`, and this is the same arithmetic
+        // read off the same constant, so the two cannot drift
+
+        let spacing = (rowWidth-(50*3))/2
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
 

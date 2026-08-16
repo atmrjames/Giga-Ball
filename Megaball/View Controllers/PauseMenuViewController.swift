@@ -655,6 +655,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         dailySummaryLabel.attributedText = summary
     }
 
+    /// Where this row's collection view starts, so its 50pt icons land on the same
+    /// `menuButtonRowInset` every other screen's do.
+    ///
+    /// Half a cell's padding further out: 75pt boxes around 50pt icons leave 12.5pt each
+    /// side. Kept beside the layout that uses it and matched by the storyboard's leading
+    /// constraint - the one number that has to be written twice, because a storyboard cannot
+    /// read a constant.
+    static var pauseButtonRowInset: CGFloat {
+        UIViewController.menuButtonRowInset - (75 - MainMenuCollectionViewCell.smallButtonSize)/2
+    }
+
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         
@@ -663,12 +674,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         } else {
             containterView.frame.size.width = 414
         }
-        buttonCollectionView.frame.size.width = containterView.frame.size.width-100
-        // Ensures the collection view is the correct size
-        
+        let rowWidth = containterView.frame.size.width - PauseMenuViewController.pauseButtonRowInset*2
+        // **The width is the storyboard's now** (round 157), and this reads the same number
+        // its leading constraint does. The row starts 12.5pt further out than every other
+        // screen's on purpose: its cells are 75pt boxes holding 50pt icons, so the icon
+        // carries half the difference as padding - and it is the *icon* that has to land on
+        // `menuButtonRowInset`, because that is the thing a thumb aims at
+
         layout.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         layout.itemSize = CGSize(width: 75, height: 75)
-        let spacing = (buttonCollectionView.frame.size.width-(75*3))/2
+        let spacing = (rowWidth-(75*3))/2
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
         buttonCollectionView!.collectionViewLayout = layout
