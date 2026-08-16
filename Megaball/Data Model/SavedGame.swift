@@ -170,6 +170,49 @@ struct SavedGame: Codable, Equatable {
     /// the record is written. Optional so older saves decode.
     var dailyWasScoringAttempt: Bool?
 
+    /// Everything about one Endless Mayhem brick, so a resumed field is the field that was
+    /// left rather than a field that merely resembles it.
+    ///
+    /// The four legacy arrays store a texture, a colour and a *cell index*, which is all
+    /// Classic and the original Endless have ever needed. Mayhem needs more, and the play
+    /// test found out how much (round 150: "on quitting the app and resuming, the bricks are
+    /// different - some overlapping, some different types, some in different positions").
+    /// A Tiny set is four quarter-cell bricks sharing one cell, and four cell indices that
+    /// round to the same cell restore as four full-size bricks stacked on one another: one
+    /// brick you can see and four bodies to hit, which is a very good description of the
+    /// phantom brick bounce this project has been chasing since round 128.
+    ///
+    /// So Mayhem saves the brick itself: where it is to the point, how big it is, what it is
+    /// and what it is wearing.
+    struct SavedBrick: Codable, Equatable {
+        var texture: Int
+        var colour: Int
+        var x: Double
+        var y: Double
+        var width: Double
+        var height: Double
+        /// A Big brick's sprite hangs off its node, so the anchor has to come back with it.
+        var anchorX: Double
+        var anchorY: Double
+        var hidden: Bool
+        /// `EndlessIIRole`'s raw value, when it has one.
+        var role: String?
+        /// `EndlessIIFace`'s raw value, when it is shaped.
+        var face: String?
+        /// The styles tracked by identity rather than by the sprite - spinning, flashing,
+        /// breathing, rounded.
+        var styles: [String]
+        var portalBlue: Bool
+        var anchored: Bool
+        /// The power-up a power-up brick is holding.
+        var powerUpIndex: Int?
+        var staysPlain: Bool
+    }
+
+    /// The Mayhem field, saved properly. Absent in every other mode and in every save written
+    /// before round 150, which is what keeps this a widening rather than a migration.
+    var endlessIIBricks: [SavedBrick]?
+
     /// Each surviving brick's hidden state, indexed with the brick arrays.
     ///
     /// The texture indices encode hidden for normal and invisible bricks, but not for

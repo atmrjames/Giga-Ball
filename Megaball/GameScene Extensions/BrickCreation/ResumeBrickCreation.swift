@@ -20,8 +20,183 @@ extension GameScene {
         endlessMode ? yBrickOffsetEndless : yBrickOffset
     }
 
+    /// One brick, described well enough to be put back exactly (round 150).
+    ///
+    /// Everything the four legacy arrays cannot say: the size a Tiny or Big brick actually
+    /// is, the anchor a Big brick hangs from, the exact position a Moving or drifting brick
+    /// had reached, and every style it was wearing.
+    func savedBrick(for sprite: SKSpriteNode, texture: Int, colour: Int,
+                    restingY: CGFloat) -> SavedGame.SavedBrick {
+        SavedGame.SavedBrick(
+            texture: texture,
+            colour: colour,
+            x: Double(sprite.position.x),
+            y: Double(restingY),
+            width: Double(sprite.size.width),
+            height: Double(sprite.size.height),
+            anchorX: Double(sprite.anchorPoint.x),
+            anchorY: Double(sprite.anchorPoint.y),
+            hidden: sprite.isHidden,
+            role: sprite.endlessIIRole?.rawValue,
+            face: sprite.endlessIIFace?.rawValue,
+            styles: endlessIIStyles(on: sprite)
+                .filter { $0 == .rounded || $0 == .spinning || $0 == .flashing
+                    || $0 == .breathing }
+                .map(\.rawValue),
+            // Only the four tracked by identity or by a child node. The rest are roles and
+            // faces, which have their own fields - saving a style twice is a way for the two
+            // copies to disagree
+            portalBlue: sprite.endlessIIPortalIsBlue,
+            anchored: sprite.endlessIIIsAnchored,
+            powerUpIndex: sprite.endlessIIPowerUpIndex,
+            staysPlain: sprite.endlessIIStaysPlain)
+    }
+
+    /// Rebuilds the Mayhem field from the rich record, exactly as it was left.
+    ///
+    /// Returns whether it did: a save written before round 150, or any other mode, falls
+    /// through to the cell-index path below.
+    @discardableResult
+    func resumeEndlessIIBricks() -> Bool {
+        guard gameMode == .endlessII,
+              let saved = savedGame?.endlessIIBricks, saved.isEmpty == false else {
+            return false
+        }
+
+        for record in saved {
+            let brick = SKSpriteNode(imageNamed: "BrickNormal")
+            brick.texture = resumedTexture(record.texture) ?? brickNormalTexture
+            brick.isHidden = record.hidden
+            if let colour = resumedColour(record.colour), brick.texture == brickNormalTexture {
+                brick.color = colour
+                brick.colorBlendFactor = 1
+            }
+            brick.size = CGSize(width: record.width, height: record.height)
+            brick.anchorPoint = CGPoint(x: record.anchorX, y: record.anchorY)
+            brick.position = CGPoint(x: record.x, y: record.y)
+            brick.zPosition = 1
+            brick.name = BrickCategoryName
+
+            let centre = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                                 y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+            brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: brick.size,
+                                                        center: centre))
+            // The body follows the sprite rather than the node, which is the whole of how a
+            // Big brick keeps its node on a row centre (§8.6)
+
+            brick.endlessIIStaysPlain = record.staysPlain
+            brick.endlessIIIsAnchored = record.anchored
+            brick.endlessIIPortalIsBlue = record.portalBlue
+            brick.endlessIIPowerUpIndex = record.powerUpIndex
+            addChild(brick)
+
+            if let raw = record.role, let role = EndlessIIRole(rawValue: raw) {
+                applyEndlessIIStyle(style(for: role), to: brick)
+            }
+            if let raw = record.face, let face = EndlessIIFace(rawValue: raw) {
+                applyEndlessIIStyle(face.style, to: brick)
+            }
+            for raw in record.styles {
+                guard let style = EndlessIIStyle(rawValue: raw) else { continue }
+                applyEndlessIIStyle(style, to: brick)
+            }
+            // Applied through the same call the generator uses, so a restored spinner is in
+            // the spinners list, a restored flasher is in the flashers list, and a restored
+            // breather breathes - which is what "the same field" has to mean
+
+            brick.endlessIIIsAnchored = record.anchored
+            // Set again: `makeFixed` starts a brick unanchored, and a Fixed brick that had
+            // already been struck must come back struck
+            bricksLeft += 1
+        }
+
+        applyEndlessIIPowerUpSchedule()
+        showEndlessIIBest()
+        seedEndlessIIMarkers()
+        countBricks()
+        resumeGame()
+        return true
+    }
+
+    /// The role a style stands for, which is the same list `endlessIIStyles(on:)` reads back.
+    private func style(for role: EndlessIIRole) -> EndlessIIStyle {
+        switch role {
+        case .gravity: return .gravity
+        case .moving: return .moving
+        case .directional: return .directional
+        case .exploding: return .exploding
+        case .spawner: return .spawner
+        case .portal: return .portal
+        case .fixed: return .fixed
+        }
+    }
+
+    // MARK: - What a saved index means
+
+    /// The texture a saved index stands for. One mapping, asked by both restore paths -
+    /// the cell-index one every mode has always used and Mayhem's own (round 150).
+    func resumedTexture(_ index: Int) -> SKTexture? {
+        switch index {
+        case 0: return brickNormalTexture
+        case 1: return brickNormalTexture
+        case 2: return brickInvisibleTexture
+        case 3: return brickInvisibleTexture
+        case 4: return brickMultiHit1Texture
+        case 5: return brickMultiHit2Texture
+        case 6: return brickMultiHit3Texture
+        case 7: return brickMultiHit4Texture
+        case 8: return brickIndestructible1Texture
+        case 9: return brickIndestructible2Texture
+        case 10: return brickNullTexture
+        default: return brickNormalTexture
+        }
+    }
+
+    /// Whether a saved index means hidden. The index carries it for two of the types only,
+    /// which is why the save writes the flag separately as well - a Fog of War day fogs
+    /// every type, and resuming used to reveal everything the run had hidden (round 8).
+    func resumedIsHidden(_ index: Int, saved: Bool?) -> Bool {
+        if let saved { return saved }
+        return index == 1 || index == 3
+    }
+
+    /// The colour a saved index stands for, for the plain bricks that carry one.
+    func resumedColour(_ index: Int) -> UIColor? {
+        switch index {
+        case 0: return brickBlue
+        case 1: return brickBlueDark
+        case 2: return brickBlueDarkExtra
+        case 3: return brickBlueLight
+        case 4: return brickGreenGigaball
+        case 5: return brickGreenSI
+        case 6: return brickGrey
+        case 7: return brickGreyDark
+        case 8: return brickGreyLight
+        case 9: return brickOrange
+        case 10: return brickOrangeDark
+        case 11: return brickOrangeLight
+        case 12: return brickPink
+        case 13: return brickPurple
+        case 14: return brickWhite
+        case 15: return brickYellow
+        case 16: return brickYellowLight
+        case 17: return brickBrown
+        case 18: return brickBrownLight
+        case 19: return brickGreen
+        case 20: return brickGreenDark
+        case 21: return brickGreenLight
+        case 22: return brickPurpleDark
+        case 23: return brickYellowDark
+        default: return nil
+        }
+    }
+
     func resumeBrickCreation() {
         guard let savedGame else { return }
+        if resumeEndlessIIBricks() { return }
+        // Mayhem puts its own field back, brick for brick. Everything else - Classic, the
+        // original Endless, and any Mayhem save written before round 150 - takes the cell
+        // path below, which is what those modes have always used
         // Same as resumeGame: bound once instead of unwrapped at every use
 
         
@@ -37,105 +212,14 @@ extension GameScene {
         for i in 0..<savedGame.brickTextures.count {
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
                         
-            var brickTexture: SKTexture?
-            switch savedGame.brickTextures[i] {
-            case 0:
-                brickTexture = brickNormalTexture
-                brick.isHidden = false
-            case 1:
-                brickTexture = brickNormalTexture
-                brick.isHidden = true
-            case 2:
-                brickTexture = brickInvisibleTexture
-                brick.isHidden = false
-            case 3:
-                brickTexture = brickInvisibleTexture
-                brick.isHidden = true
-            case 4:
-                brickTexture = brickMultiHit1Texture
-            case 5:
-                brickTexture = brickMultiHit2Texture
-            case 6:
-                brickTexture = brickMultiHit3Texture
-            case 7:
-                brickTexture = brickMultiHit4Texture
-            case 8:
-                brickTexture = brickIndestructible1Texture
-            case 9:
-                brickTexture = brickIndestructible2Texture
-            case 10:
-                brickTexture = brickNullTexture
-            default:
-                brickTexture = brickNormalTexture
+            brick.texture = resumedTexture(savedGame.brickTextures[i])
+            let savedHidden = savedGame.brickHidden.flatMap {
+                $0.indices.contains(i) ? $0[i] : nil
             }
-
-            if let hidden = savedGame.brickHidden, hidden.indices.contains(i) {
-                brick.isHidden = hidden[i]
-            }
-            // The saved field's own word beats the texture encoding: the texture index
-            // only carries hidden for two of the types, and a Fog of War day fogs them
-            // all - resuming re-fogged everything the run had revealed (play-test
-            // round 8). Saves from before the array exists keep the old behaviour
-            brick.texture = brickTexture!
-            
-            if savedGame.brickColours.count > 0 {
-                var brickColour: UIColor?
-                switch savedGame.brickColours[i] {
-                case 0:
-                    brickColour = brickBlue
-                case 1:
-                    brickColour = brickBlueDark
-                case 2:
-                    brickColour = brickBlueDarkExtra
-                case 3:
-                    brickColour = brickBlueLight
-                case 4:
-                    brickColour = brickGreenGigaball
-                case 5:
-                    brickColour = brickGreenSI
-                case 6:
-                    brickColour = brickGrey
-                case 7:
-                    brickColour = brickGreyDark
-                case 8:
-                    brickColour = brickGreyLight
-                case 9:
-                    brickColour = brickOrange
-                case 10:
-                    brickColour = brickOrangeDark
-                case 11:
-                    brickColour = brickOrangeLight
-                case 12:
-                    brickColour = brickPink
-                case 13:
-                    brickColour = brickPurple
-                case 14:
-                    brickColour = brickWhite
-                case 15:
-                    brickColour = brickYellow
-                case 16:
-                    brickColour = brickYellowLight
-                
-                case 17:
-                    brickColour = brickBrown
-                case 18:
-                    brickColour = brickBrownLight
-                case 19:
-                    brickColour = brickGreen
-                case 20:
-                    brickColour = brickGreenDark
-                case 21:
-                    brickColour = brickGreenLight
-                case 22:
-                    brickColour = brickPurpleDark
-                case 23:
-                    brickColour = brickYellowDark
-                default:
-                    brickColour = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-                }
-                if brick.texture == brickNormalTexture && brickColour != nil {
-                    brick.color = brickColour!
-                }
+            brick.isHidden = resumedIsHidden(savedGame.brickTextures[i], saved: savedHidden)
+            if brick.texture == brickNormalTexture,
+               let colour = resumedColour(savedGame.brickColours[i]) {
+                brick.color = colour
             }
             // Assign brick texture & colour
             

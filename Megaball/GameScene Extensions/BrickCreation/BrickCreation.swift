@@ -90,12 +90,22 @@ extension GameScene {
         // the saved field carries its own hidden flags, and re-fogging it took back
         // everything the run had revealed (play-test round 8)
 
-        applyEndlessIISizes(to: &brickBuildArray)
-        applyEndlessIIBehaviours(to: brickBuildArray)
-        applyEndlessIIRoles(to: brickBuildArray)
+        if savedGame == nil {
+            applyEndlessIISizes(to: &brickBuildArray)
+            applyEndlessIIBehaviours(to: brickBuildArray)
+            applyEndlessIIRoles(to: brickBuildArray)
+        }
         // Endless 2.0 only, and after the animation above, which resets the colour blend.
         // Sizes here means Tiny only - Big is built by the row generator, which is the only
-        // place that can leave itself the room
+        // place that can leave itself the room.
+        //
+        // **Never on a resume** (play-test round 150: "on quitting the app and resuming, the
+        // bricks are different - some overlapping, some different types, some in different
+        // positions"). A resumed field arrives already styled, and these three lines rolled
+        // it *again*: a plain brick could come back spinning, and a brick could be split into
+        // a Tiny set of four on top of whatever it already was. Both halves of that report
+        // were this line and the save's own coarseness, and both are fixed - the save now
+        // records each Mayhem brick as itself, and this stops inventing new ones on top
 
         if hapticsSetting {
             interfaceHaptic.impactOccurred()

@@ -2176,10 +2176,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Determine the launch angle based on the location of the ball on the paddle
         }
         
-        let dxLaunch = cos(ballLaunchAngleRad) * Double(ballSpeedLimit)
-        let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)
-		ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
-        // Launches ball
+        if endlessIIAimLaunchesThroughThePaddle {
+            endlessIIPortalTheAimedLaunch(ball, angle: ballLaunchAngleRad)
+            // **Sticky Paddle and Portal Paddle speak in sequence** (play-test round 150),
+            // the way Aimed Sticky and Portal Paddle have since round 134. The catch wins the
+            // contact - a held ball is held - and the *launch* is what goes through the
+            // paddle: the ball leaves at the angle this spot on the paddle would have given
+            // and arrives at the top of the field travelling down. Before this the sticky
+            // catch returned before the portal was ever asked, so a Portal Paddle spent a
+            // turn on the contact and did nothing with it
+        } else {
+            let dxLaunch = cos(ballLaunchAngleRad) * Double(ballSpeedLimit)
+            let dyLaunch = sin(ballLaunchAngleRad) * Double(ballSpeedLimit)
+            ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
+            // Launches ball
+        }
 		
 		if soundsSetting {
 			self.run(ballReleaseSound)
@@ -6449,6 +6460,7 @@ laserTimer?.invalidate()
 		
 		var brickTextureArray: [Int]? = []
 		var brickColourArray: [Int]? = []
+		var richBricks: [SavedGame.SavedBrick] = []
 		var brickXPositionArray: [Int]? = []
 		var brickYPositionArray: [Int]? = []
 		var brickHiddenArray: [Bool] = []
@@ -6747,6 +6759,16 @@ laserTimer?.invalidate()
 				
 				brickXPositionArray!.append(Int(currentBrickXIndex))
 				brickYPositionArray!.append(Int(currentBrickYIndex))
+
+				if self.gameMode == .endlessII {
+					richBricks.append(self.savedBrick(for: sprite,
+													  texture: currentBrickTexture ?? 0,
+													  colour: currentBrickColour ?? 100,
+													  restingY: restingY))
+				}
+				// Mayhem saves the brick itself as well as its cell (round 150). The cell
+				// arrays stay, because every other mode reads them and a shipped save must
+				// keep loading
 			}
 			// Brick save
 				
@@ -6867,6 +6889,12 @@ laserTimer?.invalidate()
 		// that case, so the last snapshot survives. Preserved here by falling back to the
 		// previous save field by field
 
+		let savedMayhemBricks: [SavedGame.SavedBrick]? = brickXPositionArray != []
+			? (richBricks.isEmpty ? nil : richBricks)
+			: previous?.endlessIIBricks
+		// Worked out before the initialiser rather than inside it: that call already has
+		// forty arguments and the type-checker gives up on one more ternary
+
 		savedGame = SavedGame(
 			levelNumber: currentLevelNumber,
 			endLevelNumber: currentEndLevelNumber,
@@ -6911,6 +6939,10 @@ laserTimer?.invalidate()
 				: previous?.brickHidden,
 			pausedBetweenLevels: savedBetweenLevels
 		)
+		savedGame?.endlessIIBricks = savedMayhemBricks
+		// Set after the initialiser rather than passed into it: that call already takes forty
+		// arguments and one more optional tipped the type-checker over its own limit
+
 		savedGame?.save()
 		
 		resumeGameToLoad = true

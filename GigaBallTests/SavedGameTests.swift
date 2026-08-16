@@ -16,6 +16,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class SavedGameTests: XCTestCase {
@@ -525,5 +526,137 @@ final class SavedGameTests: XCTestCase {
         let game = sampleGame()
         XCTAssertNil(game.pausedBetweenLevels)
         XCTAssertFalse(game.resumesBetweenLevels)
+    }
+}
+// MARK: - The Mayhem field, saved as itself
+
+/// Play-test round 150: "on quitting the app and resuming Endless Mayhem, the bricks are
+/// different. Some overlapping, some different types, some in different positions."
+final class SavedMayhemFieldTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// An empty save, for the two tests that only care about the Mayhem field.
+    private func emptySave() -> SavedGame {
+        SavedGame(
+            levelNumber: 0, endLevelNumber: 0, packNumber: 0,
+            levelScore: 0, totalScore: 0, numberOfLives: 1,
+            endlessHeight: 0, numberOfLevels: 1,
+            levelTimerValue: 0, packTimerValue: 0,
+            deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0,
+            paddleHitsPerLevel: 0,
+            multiplier: 1,
+            brickTextures: [], brickColours: [],
+            brickXPositions: [], brickYPositions: [],
+            ballProperties: [],
+            fallingPowerUpXPositions: [], fallingPowerUpYPositions: [],
+            fallingPowerUps: [],
+            activePowerUps: [], activePowerUpDurations: [],
+            activePowerUpTimers: [], activePowerUpMagnitudes: []
+        )
+    }
+
+    private func brick(in scene: GameScene, x: CGFloat, y: CGFloat,
+                       size: CGSize? = nil) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = size ?? CGSize(width: scene.brickWidth, height: scene.brickHeight)
+        brick.position = CGPoint(x: x, y: y)
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testATinySetSurvivesTheRoundTrip() {
+        // The heart of it. Four quarter-cell bricks share one cell, so four *cell indices*
+        // round to the same cell - and the old restore put four full-size bricks on one
+        // spot: one brick you can see and four bodies to hit, which is the phantom brick
+        let scene = mayhem()
+        let quarter = CGSize(width: scene.brickWidth/2, height: scene.brickHeight/2)
+        let offsets: [CGPoint] = [CGPoint(x: -10, y: 5), CGPoint(x: 10, y: 5),
+                                  CGPoint(x: -10, y: -5), CGPoint(x: 10, y: -5)]
+        let saved = offsets.map { offset -> SavedGame.SavedBrick in
+            let node = brick(in: scene, x: offset.x, y: offset.y, size: quarter)
+            return scene.savedBrick(for: node, texture: 0, colour: 100,
+                                    restingY: node.position.y)
+        }
+
+        XCTAssertEqual(Set(saved.map(\.x)).count, 2, "two columns of quarters")
+        XCTAssertEqual(Set(saved.map(\.y)).count, 2, "two rows of them")
+        for record in saved {
+            XCTAssertEqual(record.width, Double(quarter.width), accuracy: 0.001)
+            XCTAssertEqual(record.height, Double(quarter.height), accuracy: 0.001)
+        }
+        // Four distinct positions and four quarter sizes, where the cell arrays could only
+        // have said "four bricks in this one cell"
+    }
+
+    func testABigBricksAnchorAndSizeAreSaved() {
+        // A Big brick keeps its node on a row centre and hangs its sprite off it (§8.6).
+        // Restored on a centred anchor at cell size it would be a different brick entirely
+        let scene = mayhem()
+        let big = brick(in: scene, x: 0, y: 40,
+                        size: CGSize(width: scene.brickWidth*2, height: scene.brickHeight*2))
+        big.anchorPoint = CGPoint(x: 0.25, y: 0.75)
+
+        let record = scene.savedBrick(for: big, texture: 0, colour: 100, restingY: 40)
+        XCTAssertEqual(record.width, Double(scene.brickWidth*2), accuracy: 0.001)
+        XCTAssertEqual(record.anchorX, 0.25, accuracy: 0.001)
+        XCTAssertEqual(record.anchorY, 0.75, accuracy: 0.001)
+    }
+
+    func testEveryStyleAndRoleIsWrittenDown() {
+        let scene = mayhem()
+        let node = brick(in: scene, x: 0, y: 40)
+        scene.applyEndlessIIStyle(.spinning, to: node)
+        scene.applyEndlessIIStyle(.gravity, to: node)
+        node.endlessIIIsAnchored = true
+
+        let record = scene.savedBrick(for: node, texture: 0, colour: 100, restingY: 40)
+        XCTAssertEqual(record.role, EndlessIIRole.gravity.rawValue)
+        XCTAssertTrue(record.styles.contains(EndlessIIStyle.spinning.rawValue))
+        XCTAssertTrue(record.anchored)
+    }
+
+    func testTheRestoreRebuildsWhatWasSaved() {
+        let scene = mayhem()
+        let node = brick(in: scene, x: -60, y: 40)
+        scene.applyEndlessIIStyle(.flashing, to: node)
+        let record = scene.savedBrick(for: node, texture: 0, colour: 100, restingY: 40)
+
+        let resumed = mayhem()
+        var save = emptySave()
+        save.endlessIIBricks = [record]
+        resumed.savedGame = save
+        XCTAssertTrue(resumed.resumeEndlessIIBricks())
+
+        var found: [SKSpriteNode] = []
+        resumed.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { found.append(sprite) }
+        }
+        XCTAssertEqual(found.count, 1)
+        XCTAssertEqual(Double(found[0].position.x), -60, accuracy: 0.001)
+        XCTAssertEqual(Double(found[0].position.y), 40, accuracy: 0.001)
+        XCTAssertTrue(resumed.endlessIIStyles(on: found[0]).contains(.flashing),
+                      "restored flashing, and in the flashers list rather than merely tinted")
+    }
+
+    func testAnOlderSaveStillTakesTheCellPath() {
+        // Widening, not a migration: a save written before round 150 has no rich field, and
+        // must still load exactly as it always did
+        let scene = mayhem()
+        var save = emptySave()
+        save.endlessIIBricks = nil
+        scene.savedGame = save
+        XCTAssertFalse(scene.resumeEndlessIIBricks())
     }
 }

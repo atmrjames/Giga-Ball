@@ -158,7 +158,6 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         shapeFieldToThePlayArea()
-        roundTheFieldsCorners()
         guard sceneView.bounds.width > 0 else { return }
         if practice == nil {
             let scene = PaddleSpeedScene(size: sceneView.bounds.size)
@@ -266,11 +265,12 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         field.translatesAutoresizingMaskIntoConstraints = false
         field.backgroundColor = .black
         view.addSubview(field)
-        // **Not masked.** A rounded corner on a view holding a live Metal surface makes Core
-        // Animation render that surface into an offscreen buffer and mask it *every frame*,
-        // which is the kind of cost that shows as stutter and nothing else (James, round 147:
-        // "the frame rate is very stutter"). The corners are drawn over the top instead - see
-        // `roundTheFieldsCorners` - which costs one static layer and no per-frame work
+        // **Square, and not masked.** Round 147 took the corner *mask* off because a rounded
+        // corner on a view holding a live Metal surface makes Core Animation render that
+        // surface into an offscreen buffer and mask it every frame - which is stutter and
+        // nothing else - and drew the corners over the top instead. Round 150 took the
+        // corners off altogether: the field sits in the middle of the screen rather than in a
+        // card, and square is what a window onto the game looks like (James's call)
 
         sceneView.translatesAutoresizingMaskIntoConstraints = false
         sceneView.backgroundColor = .black
@@ -352,25 +352,6 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             close.heightAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
         ])
     }
-
-    /// Draws the field's rounded corners over the top of it rather than masking it.
-    ///
-    /// Four wedges - the difference between the field's rectangle and a rounded rectangle -
-    /// filled with the screen's own backdrop colour, in a layer that never changes. The live
-    /// surface underneath is left alone, which is the whole point.
-    private func roundTheFieldsCorners() {
-        cornerCover.removeFromSuperlayer()
-        guard field.bounds.width > 0 else { return }
-
-        let outer = UIBezierPath(rect: field.bounds)
-        outer.append(UIBezierPath(roundedRect: field.bounds, cornerRadius: 22).reversing())
-        cornerCover.path = outer.cgPath
-        cornerCover.fillRule = .evenOdd
-        cornerCover.fillColor = UIColor.black.cgColor
-        field.layer.addSublayer(cornerCover)
-    }
-
-    private let cornerCover = CAShapeLayer()
 
     private func refreshValueLabel() {
         valueLabel.text = PaddleSpeed.label(CGFloat(slider.value))
@@ -566,11 +547,128 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody?.affectedByGravity = false
         ball.physicsBody?.categoryBitMask = PaddleSpeedScene.ballCategory
         ball.physicsBody?.contactTestBitMask = PaddleSpeedScene.paddleCategory
+            | PaddleSpeedScene.brickCategory
+        ball.physicsBody?.collisionBitMask = PaddleSpeedScene.paddleCategory
+            | PaddleSpeedScene.brickCategory | 0xFFFFFFF0
+        // The walls are the scene's own edge loop, which keeps its default category - so the
+        // ball collides with everything except the categories named here for contacts
         ball.physicsBody?.velocity = CGVector(dx: ballSpeed*0.6, dy: -ballSpeed*0.8)
         addChild(ball)
+        buildBricks()
         // The same body settings the game gives its ball - perfectly elastic, frictionless
         // and undamped - so a bounce here is a bounce there
     }
+
+    /// The bricks the practice field puts up: sparse, standard, and one on the lowest row.
+    ///
+    /// The point is not a game - there is nothing to win here - but a paddle speed cannot be
+    /// judged against an empty field (James, round 150). A handful of ordinary bricks, with at
+    /// least one at the height the lowest row sits at in play, is enough to make a rally feel
+    /// like the game's rallies: the ball comes back off something, at the angles it will come
+    /// back off something.
+    private func buildBricks() {
+        let columns = 5
+        let spacing = layout.brickWidth*1.35
+        let lowest = paddleFloorGap + layout.paddleGap + layout.brickHeight/2
+        // The game's own distance between the paddle and the lowest brick row
+
+        let ceiling = size.height - layout.brickHeight*2
+        guard ceiling > lowest else { return }
+        let patterns: [[Int]] = [[2], [0, 3], [1, 4], [2, 3]]
+        let gap = (ceiling - lowest)/CGFloat(patterns.count - 1)
+
+        var rows: [(y: CGFloat, columns: [Int])] = []
+        for (index, columns) in patterns.enumerated() {
+            rows.append((lowest + gap*CGFloat(index), columns))
+        }
+        // Low density on purpose - seven bricks, spread out, so most shots are about the
+        // paddle rather than about the field - and spread across *this* field's height
+        // rather than the game's row spacing. The first cut used the game's rows and put
+        // three of the four above the top of a field that is half a screen tall
+
+        for row in rows {
+            for column in row.columns {
+                let brick = SKSpriteNode(texture: SKTexture(imageNamed: "BrickNormal"))
+                brick.size = CGSize(width: layout.brickWidth, height: layout.brickHeight)
+                brick.color = .white
+                brick.colorBlendFactor = 1
+                let offset = CGFloat(column - (columns - 1)/2)*spacing
+                brick.position = CGPoint(x: size.width/2 + offset, y: row.y)
+                brick.zPosition = 1
+                brick.name = PaddleSpeedScene.brickName
+                brick.physicsBody = SKPhysicsBody(rectangleOf: brick.size)
+                brick.physicsBody?.isDynamic = false
+                brick.physicsBody?.friction = 0
+                brick.physicsBody?.restitution = 1
+                brick.physicsBody?.categoryBitMask = PaddleSpeedScene.brickCategory
+                brick.physicsBody?.contactTestBitMask = PaddleSpeedScene.ballCategory
+                addChild(brick)
+            }
+        }
+    }
+
+    static let brickName = "practiceBrick"
+    static let brickCategory: UInt32 = 4
+
+    /// How long a struck brick stays away before it fades back.
+    ///
+    /// Long enough to notice it went, short enough that the field is never empty for long -
+    /// nothing here can be finished, so a brick that stayed destroyed would leave the screen
+    /// answering fewer and fewer questions the longer it was open.
+    static let brickReturn: TimeInterval = 4
+
+    /// A struck brick goes away and comes back.
+    func knockOut(_ brick: SKSpriteNode) {
+        guard brick.physicsBody != nil else { return }
+        brick.physicsBody = nil
+        // Taken away first: a brick fading out is a brick the ball must already be through
+        brick.run(.sequence([
+            .fadeOut(withDuration: 0.15),
+            .wait(forDuration: PaddleSpeedScene.brickReturn),
+            .fadeIn(withDuration: 0.35),
+            .run { [weak self] in
+                guard let self else { return }
+                let body = SKPhysicsBody(rectangleOf: brick.size)
+                body.isDynamic = false
+                body.friction = 0
+                body.restitution = 1
+                body.categoryBitMask = PaddleSpeedScene.brickCategory
+                body.contactTestBitMask = PaddleSpeedScene.ballCategory
+                brick.physicsBody = body
+                _ = self
+            },
+        ]))
+        // A repeating action on a brick is the trap §8.6 keeps warning about, and this is not
+        // one: it runs once and stops. Nothing here counts bricks or generates rows anyway -
+        // that is the game's business, and this is a practice field
+    }
+
+    /// Sends the ball away and drops a new one in from the top.
+    ///
+    /// The old field just teleported the ball back, and a ball that went *under* the paddle
+    /// stayed there, bouncing around below it - something that never happens in the game,
+    /// because down there the ball is lost (James, round 150). Now it fades out where it went
+    /// wrong and a fresh one falls in from above, which is what the game does between lives.
+    func serveAgain() {
+        guard ball.action(forKey: PaddleSpeedScene.servingKey) == nil else { return }
+        // One serve at a time: the ball is below the paddle for many frames, and each of them
+        // would otherwise start another
+
+        let entry = CGPoint(x: size.width/2, y: size.height - layout.ballSize)
+        ball.physicsBody?.velocity = .zero
+        ball.run(.sequence([
+            .fadeOut(withDuration: 0.2),
+            .run { [weak self] in
+                guard let self else { return }
+                self.ball.position = entry
+                self.ball.physicsBody?.velocity = CGVector(dx: self.ballSpeed*0.35,
+                                                           dy: -self.ballSpeed*0.94)
+            },
+            .fadeIn(withDuration: 0.2),
+        ]), withKey: PaddleSpeedScene.servingKey)
+    }
+
+    static let servingKey = "serving"
 
     /// Keeps the speed constant and serves the ball again when it gets past the paddle.
     ///
@@ -587,12 +685,16 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
                                      dy: body.velocity.dy/speed*ballSpeed)
         }
 
-        if ball.position.y < 0 {
-            ball.position = CGPoint(x: size.width/2, y: size.height*0.7)
-            body.velocity = CGVector(dx: body.velocity.dx < 0 ? -ballSpeed*0.6 : ballSpeed*0.6,
-                                     dy: -ballSpeed*0.8)
-            // Served again rather than lost. Nothing here is a game, so nothing here can be
-            // failed - a player trying speeds out should not be punished for trying
+        if ball.action(forKey: PaddleSpeedScene.servingKey) != nil { return }
+        // Mid-serve: the ball is fading, and the speed and angle rules below would drag a
+        // ball that is deliberately standing still
+
+        if ball.position.y < paddle.position.y - paddle.size.height {
+            serveAgain()
+            return
+            // Below the paddle is lost in the game, so it is a fresh ball here rather than a
+            // ball rattling about underneath one - which is a thing the game never does and
+            // so tells the player nothing about the speed they are choosing
         }
 
         let floor = CGFloat(0.25)*ballSpeed
@@ -612,6 +714,11 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
     /// makes (James, round 147: "the ball's bounce off the paddle needs to match the game
     /// logic bounce angle").
     func didBegin(_ contact: SKPhysicsContact) {
+        for body in [contact.bodyA, contact.bodyB]
+        where body.categoryBitMask == PaddleSpeedScene.brickCategory {
+            if let brick = body.node as? SKSpriteNode { knockOut(brick) }
+        }
+
         let hitThePaddle = contact.bodyA.categoryBitMask == PaddleSpeedScene.paddleCategory
             || contact.bodyB.categoryBitMask == PaddleSpeedScene.paddleCategory
         guard hitThePaddle, let body = ball.physicsBody else { return }
