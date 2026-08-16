@@ -457,6 +457,7 @@ extension GameScene {
     func tickEndlessIIPaddlePowerUps(_ currentTime: TimeInterval) {
         refreshEndlessIIPaddleSurface()
         refreshEndlessIIDoublePaddle()
+        tickEndlessIIMirrorPaddle()
         // Takes the shape away the moment its last turn is spent, and leaves the paddle's
         // own face behind
         guard gameMode == .endlessII else { return }
@@ -623,6 +624,7 @@ extension GameScene {
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
              PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),
             ("endlessIIDoublePaddle", endlessIIDoublePaddleClock, PowerUpIcon.doublePaddle),
+            ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock, PowerUpIcon.mirrorPaddle),
         ]
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
@@ -652,7 +654,8 @@ extension GameScene {
          ("endlessIIReversedControls", endlessIIReversedControlsClock),
          ("endlessIIAutoAim", endlessIIAutoAimClock),
          ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock),
-         ("endlessIIDoublePaddle", endlessIIDoublePaddleClock)]
+         ("endlessIIDoublePaddle", endlessIIDoublePaddleClock),
+         ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -696,6 +699,11 @@ extension GameScene {
             refreshEndlessIIDoublePaddle()
             // Split again on the spot rather than at the next frame, so a resumed game draws
             // the paddle it is about to bounce with
+        case "endlessIIMirrorPaddle":
+            endlessIIMirrorPaddleClock.restore(remaining: remaining, total: total, level: 0)
+            showEndlessIIMirrorPaddle()
+            // Standing again on the spot, for the same reason: a resumed game draws the
+            // surfaces it is about to bounce off
         default:
             return false
         }
@@ -716,6 +724,10 @@ extension GameScene {
         endlessIIPaddleSurfaceClock.reset()
         endlessIIDoublePaddleClock.reset()
         refreshEndlessIIDoublePaddle()
+        endlessIIMirrorPaddleClock.reset()
+        tickEndlessIIMirrorPaddle()
+        // The tick is what takes the mirror off the field, so the reset has to run it -
+        // a surface left standing after the life that earned it would change the next one
         endlessIIPaddleSurface = nil
         paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
         endlessIIPendingPaddlePortals.removeAll()

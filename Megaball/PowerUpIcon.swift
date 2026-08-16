@@ -540,6 +540,33 @@ enum PowerUpIcon {
         // Level with the paddle rather than above it: the ball is in the gap, not aimed at it
     }
 
+    /// Two paddles either side of a centre line, one of them faded.
+    ///
+    /// The line is what makes it a mirror rather than two paddles: without it the pair reads
+    /// as Double Paddle's split, which is the one picture this must not be mistaken for. The
+    /// far one is paler because it is the reflection - the player still only moves one.
+    static let mirrorPaddle: UIImage = badge() { context, rect in
+        let bar = rect.height*0.12
+        let width = rect.width*0.3
+        let y = rect.maxY - rect.height*0.34
+
+        context.setStrokeColor(UIColor.white.withAlphaComponent(0.4).cgColor)
+        context.setLineWidth(max(1, rect.width*0.02))
+        context.setLineDash(phase: 0, lengths: [rect.height*0.07, rect.height*0.07])
+        context.move(to: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.18))
+        context.strokePath()
+        context.setLineDash(phase: 0, lengths: [])
+        // Dashed, because a solid line down the middle of a small square reads as a wall
+
+        context.fill(CGRect(x: rect.midX - rect.width*0.09 - width, y: y,
+                            width: width, height: bar))
+        context.setAlpha(0.5)
+        context.fill(CGRect(x: rect.midX + rect.width*0.09, y: y,
+                            width: width, height: bar))
+        context.setAlpha(1)
+    }
+
     /// Three bricks stepped sideways, with the trail of where they came from.
     ///
     /// The step is the whole idea: not one brick moving, but the field going with it - so the

@@ -281,6 +281,14 @@ enum PowerUpCatalogue {
         // The paddle in two halves with a hole between them. Harmful, though it is the
         // gentlest of the harmful paddles: nothing is taken away, and the same span is
         // covered - there is simply a way through the middle of it now
+        PowerUp(id: "mirrorPaddle", name: "Mirror Paddle", availability: .endlessII,
+                rarity: .uncommon, valence: .beneficial, isTimed: true,
+                stacking: .extendsDuration),
+        // A second paddle level with the first, holding the mirrored x. Beneficial, and the
+        // one in this batch that is: it covers the side the player has just left, which is
+        // where the ball they cannot reach is. Double-edged all the same - two paddles near
+        // the centre are one paddle, and a mirror can send a ball back across the field just
+        // as it can save it
         PowerUp(id: "drift", name: "Drift", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),

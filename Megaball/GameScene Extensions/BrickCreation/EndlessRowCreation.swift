@@ -55,6 +55,7 @@ extension GameScene {
         powerUpProbArray[57] = gameMode == .endlessII ? 3 : 0 // Wavy Paddle - rare, bad
         powerUpProbArray[58] = gameMode == .endlessII ? 3 : 0 // Jagged Paddle - rare, bad
         powerUpProbArray[59] = gameMode == .endlessII ? 4 : 0 // Double Paddle - uncommon, bad
+        powerUpProbArray[60] = gameMode == .endlessII ? 4 : 0 // Mirror Paddle - uncommon, good
         // Rare rather than uncommon, all four: they are one idea in four flavours, so at an
         // uncommon rate the paddle would be shaped more often than it was flat
         // and bad. The weight is the tunable here: it is a strong handicap, and if it

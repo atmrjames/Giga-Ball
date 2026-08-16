@@ -36,6 +36,11 @@ enum CollisionTypes: UInt32 {
 	/// short one would have been read as the ceiling - and rather than the paddle's, because
 	/// this must not spend a paddle turn or count as a landing. It is furniture, not a paddle
 	case safetyPaddleCategory = 512
+	/// The Mirror Paddle's own surface (§12.0), for the reason above and one more: every
+	/// power-up that answers a paddle contact - Aimed Sticky, Portal Paddle, Magnetism -
+	/// would answer this one, and a ball caught by a power-up on a paddle the player is not
+	/// touching is a ball nobody can launch
+	case mirrorPaddleCategory = 1024
 }
 // Setup for collisionBitMask
 
@@ -232,6 +237,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The shape of the paddle's top, while one of the four shaped faces runs (§12.0).
 	var endlessIIPaddleSurface: PaddleBounce.Surface?
 	var endlessIIPaddleSurfaceClock = EndlessIIClock()
+	/// Mirror Paddle: a second paddle level with the first, holding the mirrored x (§12.0).
+	var endlessIIMirrorPaddleClock = EndlessIIClock()
+
 	/// Drift: while this runs the whole field slides sideways (§5.4).
 	var endlessIIDriftClock = EndlessIIClock()
 	/// Which way it is sliding: -1, 0 for not drifting, or 1.
@@ -438,7 +446,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 60)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 61)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -992,6 +1000,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpWavyPaddle = SKTexture(image: PowerUpIcon.wavyPaddle)
 	let powerUpJaggedPaddle = SKTexture(image: PowerUpIcon.jaggedPaddle)
 	let powerUpDoublePaddle = SKTexture(image: PowerUpIcon.doublePaddle)
+	let powerUpMirrorPaddle = SKTexture(image: PowerUpIcon.mirrorPaddle)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1168,7 +1177,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -2699,6 +2708,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Ball hits Frame
 			
+			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue
+				&& secondBody.categoryBitMask == CollisionTypes.mirrorPaddleCategory.rawValue {
+				endlessIIMirrorPaddleHit(struckBall)
+			}
+			// Ball hits the Mirror Paddle, which returns it the way the real one would
+
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue
 				&& secondBody.categoryBitMask == CollisionTypes.safetyPaddleCategory.rawValue {
 				endlessIISafetyPaddleHit(struckBall)
@@ -4985,6 +5000,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[59] += 1
 
+		case powerUpMirrorPaddle:
+		// 60 - Mirror Paddle. Good
+			endlessIICollectMirrorPaddle()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[60] += 1
+
 		case powerUpMultiBall:
 		// Multi-Ball
 			endlessIIAddBall()
@@ -5314,13 +5335,13 @@ laserTimer?.invalidate()
 
 			if ballDress == .giga {
 			// Giga-Ball power-up
-				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
+				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
 				// Reset undestructi-ball power-up
-				body.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
+				body.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
 				// Set giga-ball power-up
 			} else {
-				body.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
-				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
+				body.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
+				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
 				// Set ball physics body
 			}
 		}

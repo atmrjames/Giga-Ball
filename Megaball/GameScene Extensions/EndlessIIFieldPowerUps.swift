@@ -375,7 +375,7 @@ extension GameScene {
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
         \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
-        \.endlessIIDriftClock, \.endlessIIDoublePaddleClock,
+        \.endlessIIDriftClock, \.endlessIIDoublePaddleClock, \.endlessIIMirrorPaddleClock,
     ]
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot

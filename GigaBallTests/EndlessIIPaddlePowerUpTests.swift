@@ -904,3 +904,171 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
                        "the same paddle, whatever it is wearing")
     }
 }
+
+/// Mirror Paddle (§12.0), the sixty-first power-up and the other half of the Double Paddle
+/// row: "a mirrored second paddle that travels the other way".
+///
+/// The queue priced this half as the expensive one - "somewhere else on the screen", so a real
+/// second surface with a real second contact path - and it is. What is worth pinning is that
+/// the second surface behaves like a paddle without *being* the paddle: no paddle turn, no
+/// landing, and none of the power-ups that answer a paddle contact answering this one.
+final class EndlessIIMirrorPaddleTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 60, y: -300)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    private func mirror(_ scene: GameScene) -> SKSpriteNode? {
+        scene.childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode
+    }
+
+    func testItStandsOppositeThePaddle() {
+        XCTAssertEqual(GameScene.endlessIIMirrorPaddleX(paddleX: 80), -80)
+        XCTAssertEqual(GameScene.endlessIIMirrorPaddleX(paddleX: -80), 80)
+        XCTAssertEqual(GameScene.endlessIIMirrorPaddleX(paddleX: 0), 0,
+                       "and the two are one paddle in the middle, which is the trade")
+    }
+
+    func testCollectingItPutsASecondPaddleOnTheField() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+
+        XCTAssertTrue(scene.endlessIIMirrorPaddleClock.isRunning)
+        guard let mirror = mirror(scene) else { return XCTFail("a second paddle stands") }
+        XCTAssertEqual(mirror.position.x, -scene.paddle.position.x, accuracy: 0.001)
+        XCTAssertEqual(mirror.position.y, scene.paddle.position.y, accuracy: 0.001,
+                       "level with the paddle - it is a paddle, not furniture overhead")
+        XCTAssertEqual(mirror.size, scene.paddle.size)
+    }
+
+    func testItIsNotThePaddleAndNotTheSafetyPaddle() {
+        // Its own category, the Safety Paddle's lesson applied again: the paddle's would spend
+        // a paddle turn and count a landing, and Aimed Sticky, Portal Paddle and Magnetism all
+        // answer paddle contacts
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+
+        XCTAssertEqual(mirror(scene)?.physicsBody?.categoryBitMask,
+                       CollisionTypes.mirrorPaddleCategory.rawValue)
+        XCTAssertNotEqual(CollisionTypes.mirrorPaddleCategory.rawValue,
+                          CollisionTypes.paddleCategory.rawValue)
+        XCTAssertEqual(mirror(scene)?.physicsBody?.isDynamic, false)
+    }
+
+    func testItFollowsThePaddleTheOtherWay() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.paddle.position.x = -95
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertEqual(mirror(scene)?.position.x ?? 0, 95, accuracy: 0.001,
+                       "the player goes left, it goes right")
+    }
+
+    func testItKeepsThePaddlesSizeWhenExpandOrShrinkWritesOne() {
+        // The width is written directly by the size power-ups, and a mirror that kept the
+        // width it was born with would be a different paddle from the one it mirrors
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.paddle.size = CGSize(width: 200, height: 12)
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertEqual(mirror(scene)?.size.width ?? 0, 200, accuracy: 0.001)
+        XCTAssertNotNil(mirror(scene)?.physicsBody, "and the body is rebuilt to match")
+    }
+
+    func testASecondCollectionLengthensItRatherThanStackingTwo() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        let first = scene.endlessIIMirrorPaddleClock.remaining
+        scene.endlessIICollectMirrorPaddle()
+
+        XCTAssertGreaterThan(scene.endlessIIMirrorPaddleClock.remaining, first)
+        var found = 0
+        scene.enumerateChildNodes(withName: GameScene.endlessIIMirrorPaddleName) { _, _ in
+            found += 1
+        }
+        XCTAssertEqual(found, 1, "longer, not two of them")
+    }
+
+    func testItIsNeverStranded() {
+        // A surface left standing after its clock stops would change the rest of the run -
+        // the Safety Paddle's own rule
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIIMirrorPaddleClock.run(down: GameScene.endlessIIMirrorPaddleDuration)
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertNil(scene.childNode(withName: GameScene.endlessIIMirrorPaddleName),
+                     "the tick that finds the clock stopped takes it away")
+    }
+
+    func testItLeavesTheFieldAloneOutsideMayhem() {
+        let scene = mayhem()
+        scene.gameMode = .classic
+        scene.endlessIICollectMirrorPaddle()
+        XCTAssertNil(scene.childNode(withName: GameScene.endlessIIMirrorPaddleName))
+    }
+
+    func testAResumedRunFindsItStanding() {
+        let saving = mayhem()
+        saving.endlessIICollectMirrorPaddle()
+        guard let saved = saving.endlessIIPaddleClockSaveEntries()
+            .first(where: { $0.key == "endlessIIMirrorPaddle" }) else {
+            return XCTFail("a running Mirror Paddle must be in the save")
+        }
+
+        let resumed = mayhem()
+        XCTAssertTrue(resumed.endlessIIRestorePaddleClock(key: saved.key,
+                                                          remaining: saved.remaining,
+                                                          total: saved.total,
+                                                          magnitude: saved.magnitude))
+        XCTAssertNotNil(resumed.childNode(withName: GameScene.endlessIIMirrorPaddleName),
+                        "standing on the spot, so a resumed game draws what it bounces off")
+    }
+
+    func testTheBounceBendsByWhereTheBallLanded() {
+        // A mirror that returned the ball at the angle it arrived would be a moving wall.
+        // `PaddleBounce`'s own call, at influence 1, exactly as the real paddle makes it
+        let scene = mayhem()
+        scene.paddle.position.x = 0
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a second paddle stands") }
+
+        let ball = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        ball.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
+        ball.position = CGPoint(x: mirror.position.x + 40, y: mirror.position.y + 8)
+        scene.addChild(ball)
+
+        scene.endlessIIMirrorPaddleHit(ball)
+        let sent = ball.physicsBody?.velocity ?? .zero
+        XCTAssertGreaterThan(sent.dy, 0, "it always comes back up")
+        XCTAssertGreaterThan(sent.dx, 0, "landing right of the middle sends it right")
+    }
+
+    func testAnUndersideContactIsLeftToThePhysics() {
+        // The top face only, as on the real paddle
+        let scene = mayhem()
+        scene.paddle.position.x = 0
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a second paddle stands") }
+
+        let ball = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        let arriving = CGVector(dx: 20, dy: 300)
+        ball.physicsBody?.velocity = arriving
+        ball.position = CGPoint(x: mirror.position.x, y: mirror.position.y - 20)
+        scene.addChild(ball)
+
+        scene.endlessIIMirrorPaddleHit(ball)
+        XCTAssertEqual(ball.physicsBody?.velocity.dy ?? 0, arriving.dy, accuracy: 0.001,
+                       "a ball meeting the underside keeps whatever the engine gave it")
+    }
+}
