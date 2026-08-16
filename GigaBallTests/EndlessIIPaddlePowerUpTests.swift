@@ -840,4 +840,67 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
                        "split on the spot, so a resumed game draws the paddle it is about "
                        + "to bounce with")
     }
+
+    /// James, round 166: "I got the double paddle power up but it didn't seem to do anything."
+    ///
+    /// It did everything except be visible. In the Retro theme the paddle the player sees is
+    /// not the paddle sprite - it is `paddleRetroTexture`, a separate node drawn over the top
+    /// at zPosition 4 with its own art - so the body was split, the halves were drawn
+    /// underneath it, and a whole paddle was painted over them. The only sign of the power-up
+    /// was a ball falling through the middle of a paddle that looked solid.
+    private func retro(_ scene: GameScene) {
+        scene.paddleTexture = scene.retroPaddle
+        scene.paddleRetroTexture.texture = scene.retroPaddle
+        scene.paddleRetroTexture.size = CGSize(width: 146, height: 31)
+        scene.paddleRetroTexture.isHidden = false
+    }
+
+    func testTheRetroDressDoesNotPaintOverTheSplit() {
+        let scene = mayhem()
+        retro(scene)
+        scene.endlessIICollectDoublePaddle()
+
+        XCTAssertEqual(halves(scene).count, 2)
+        XCTAssertTrue(scene.paddleRetroTexture.isHidden,
+                      "a whole paddle drawn over the split is the power-up doing nothing")
+    }
+
+    func testTheRetroDressComesBackWhenTheSplitEnds() {
+        let scene = mayhem()
+        retro(scene)
+        scene.endlessIICollectDoublePaddle()
+        scene.endlessIIDoublePaddleClock.run(down: GameScene.endlessIIDoublePaddleDuration)
+        scene.refreshEndlessIIDoublePaddle()
+
+        XCTAssertEqual(halves(scene).count, 0)
+        XCTAssertFalse(scene.paddleRetroTexture.isHidden,
+                       "the player's own paddle comes back when the power-up ends")
+    }
+
+    func testTheHalvesWearTheThemeThePlayerChose() {
+        let scene = mayhem()
+        retro(scene)
+        scene.endlessIICollectDoublePaddle()
+
+        let half = halves(scene).first as? SKSpriteNode
+        XCTAssertEqual(half?.texture, scene.retroPaddle,
+                       "a split paddle still looks like the paddle that was chosen")
+        XCTAssertEqual(half?.size.height, scene.paddleRetroTexture.size.height,
+                       "at the art's own proportions - the Retro dress is much taller than "
+                       + "the paddle it stands for")
+    }
+
+    func testTheBodyIsThePaddlesHeightWhateverThePictureIs() {
+        // The Retro dress is two and a half times as tall as the paddle. A body built to the
+        // picture would catch balls above and below the paddle everybody else is playing with
+        let plain = mayhem()
+        plain.endlessIICollectDoublePaddle()
+        let plainArea = plain.paddle.physicsBody?.area ?? 0
+
+        let themed = mayhem()
+        retro(themed)
+        themed.endlessIICollectDoublePaddle()
+        XCTAssertEqual(themed.paddle.physicsBody?.area ?? 0, plainArea, accuracy: 0.0001,
+                       "the same paddle, whatever it is wearing")
+    }
 }

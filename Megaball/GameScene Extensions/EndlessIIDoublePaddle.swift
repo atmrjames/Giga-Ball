@@ -70,10 +70,22 @@ extension GameScene {
             paddle.colorBlendFactor = 0
             paddle.physicsBody = paddleBodyMatchingCurrent(SKPhysicsBody(rectangleOf: paddle.size))
             endlessIIDoublePaddleDress = nil
+            paddleRetroTexture.isHidden = paddleTexture != retroPaddle
+            // The Retro dress comes back by the same rule the rest of the game shows it by
             return
             // Put back exactly: one body, one sprite, its own dress. A power-up that left the
             // paddle in pieces after its clock stopped would be a power-up that never ended
         }
+
+        paddleRetroTexture.isHidden = true
+        // **Every frame, and outside the width guard below.** This is what James's "I got the
+        // double paddle power up but it didn't seem to do anything" was: in the Retro theme
+        // the paddle the player sees is not the paddle sprite at all - it is
+        // `paddleRetroTexture`, a separate node drawn over the top at zPosition 4 with its own
+        // art. The body was split and the halves were drawn underneath it, and a whole paddle
+        // was painted over them, so the only sign of the power-up was a ball that sometimes
+        // fell through the middle of a paddle that looked solid. Outside the guard because the
+        // level states show this overlay again on their own schedule
 
         if paddle.texture != nil { endlessIIDoublePaddleDress = paddle.texture }
         // The paddle's dress changes underneath this - themes, Lasers, the sticky and retro
@@ -86,10 +98,15 @@ extension GameScene {
         let gap = paddle.size.width*GameScene.endlessIIDoublePaddleGap
         let halfWidth = (paddle.size.width - gap)/2
         let offset = (halfWidth + gap)/2
-        let size = CGSize(width: halfWidth, height: paddle.size.height)
+        let dress = endlessIIDoublePaddleHalfDress
+        let size = CGSize(width: halfWidth, height: dress.height)
 
-        let left = SKPhysicsBody(rectangleOf: size, center: CGPoint(x: -offset, y: 0))
-        let right = SKPhysicsBody(rectangleOf: size, center: CGPoint(x: offset, y: 0))
+        let bodySize = CGSize(width: halfWidth, height: paddle.size.height)
+        let left = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: -offset, y: 0))
+        let right = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: offset, y: 0))
+        // The *body* is the paddle's own height, whatever the picture's is: the Retro dress is
+        // two and a half times as tall as the paddle it stands for, and a body built to the
+        // picture would catch balls above and below the paddle everybody else is playing with
         paddle.physicsBody = paddleBodyMatchingCurrent(SKPhysicsBody(bodies: [left, right]))
         // One body made of two rectangles. Every contact still arrives as a paddle contact,
         // which is the whole trick - nothing downstream has to know there are two of them
@@ -98,7 +115,7 @@ extension GameScene {
             .filter { $0.name == GameScene.doublePaddleHalfName }
             .forEach { $0.removeFromParent() }
         for x in [-offset, offset] {
-            let half = SKSpriteNode(texture: endlessIIDoublePaddleDress, size: size)
+            let half = SKSpriteNode(texture: dress.texture, size: size)
             half.name = GameScene.doublePaddleHalfName
             half.position = CGPoint(x: x, y: 0)
             half.zPosition = 0.1
@@ -110,6 +127,19 @@ extension GameScene {
         // The node keeps its size - the bounce measures where the ball landed across the
         // whole span, and the span has not changed - but stops drawing itself, because what
         // is drawn now is its two children
+    }
+
+    /// What the halves are painted with, and how tall the picture is.
+    ///
+    /// The Retro theme keeps its paddle art on `paddleRetroTexture` rather than on the paddle,
+    /// at its own proportions - two and a half times the paddle's height and a little wider.
+    /// So the halves take that art when it is the theme in play, and the plain sprite's
+    /// otherwise. A split paddle should still look like the paddle the player chose.
+    var endlessIIDoublePaddleHalfDress: (texture: SKTexture?, height: CGFloat) {
+        if paddleTexture == retroPaddle, let art = paddleRetroTexture.texture {
+            return (art, paddleRetroTexture.size.height)
+        }
+        return (endlessIIDoublePaddleDress, paddle.size.height)
     }
 
     /// Dresses a replacement body in the settings the paddle's current one is wearing.
