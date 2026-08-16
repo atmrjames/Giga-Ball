@@ -341,4 +341,30 @@ extension UIView {
         addMotionEffect(group)
         return group
     }
+
+    /// Every view under this one that is drifting with the tilt, including this one.
+    ///
+    /// The screens do not all hang their parallax off the same view - the pause menu drifts
+    /// its `containterView`, Settings its `backgroundView`, the menus their own - so finding
+    /// them is a search rather than a lookup.
+    func viewsWithParallax() -> [UIView] {
+        let mine = motionEffects.contains { $0 is UIMotionEffectGroup } ? [self] : []
+        return mine + subviews.flatMap { $0.viewsWithParallax() }
+    }
+
+    /// Takes the drift off, and hands back what to put it back on.
+    ///
+    /// **A pop-up stands the screen behind it still** (James, round 164). Two layers both
+    /// drifting read as one of them coming loose - which is why Settings had been doing this
+    /// by hand since long before there was a second pop-up type to do it for. Now the pop-up
+    /// does it for whatever raised it, so no screen has to remember.
+    static func standDownParallax(under root: UIView) -> [UIView] {
+        let drifting = root.viewsWithParallax()
+        for view in drifting {
+            for effect in view.motionEffects where effect is UIMotionEffectGroup {
+                view.removeMotionEffect(effect)
+            }
+        }
+        return drifting
+    }
 }

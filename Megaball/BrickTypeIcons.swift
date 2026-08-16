@@ -147,11 +147,22 @@ enum BrickTypeIcons {
         let tint = colour(of: style)
 
         switch style {
-        case .convex, .concave, .wedge:
-            // Clipped to the very path the game builds the body and the outline from, so
-            // the picture cannot drift from the shape - `EndlessIIFaceGeometry` draws in
-            // scene coordinates (y up) about the shape's own centre, which is what the
-            // transform below undoes
+        case .wedge:
+            // **The drawn face, the same one the game wears** (James, round 164: "update the
+            // info pages with the new textures"). It is a silhouette already - transparent
+            // where the shape is not - so it needs no clipping, and the highlight sits where
+            // it was drawn to sit rather than where a stretched rectangle happens to put it
+            artwork(shapedArtwork("BrickNormal", .wedge))?.tinted(tint).draw(in: frame)
+            return
+
+        case .convex, .concave:
+            // No drawn art for these two yet (§8.5), so they keep the approximation: an
+            // ordinary brick clipped to the very path the game builds the body and the outline
+            // from, so the picture cannot drift from the shape. `EndlessIIFaceGeometry` draws
+            // in scene coordinates (y up) about the shape's own centre, which is what the
+            // transform below undoes.
+            //
+            // The day that art lands, these join the case above and this branch goes
             guard let face = style.face else { return }
             context.saveGState()
             context.translateBy(x: frame.midX, y: frame.midY)
@@ -165,15 +176,7 @@ enum BrickTypeIcons {
             return
 
         case .rounded:
-            // The body is the rounded rectangle, filled with the brick's own texture and
-            // colour, exactly as `makeRounded` builds it
-            context.saveGState()
-            let radius = min(frame.width, frame.height)*GameScene.roundedBrickCornerFraction
-            context.addPath(CGPath(roundedRect: frame, cornerWidth: radius,
-                                   cornerHeight: radius, transform: nil))
-            context.clip()
-            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
-            context.restoreGState()
+            artwork(shapedArtwork("BrickNormal", .rounded))?.tinted(tint).draw(in: frame)
             return
 
         case .spinning:
@@ -360,6 +363,21 @@ enum BrickTypeIcons {
     /// substitute here would be the page disagreeing with the game again.
     private static func artwork(_ named: String) -> UIImage? {
         UIImage(named: retroName(for: named) ?? named)
+    }
+
+    /// What a brick's drawn face for a shape is called.
+    ///
+    /// The scene's own rule - the plain texture's name with the shape's name after it - read
+    /// off `GameScene.ShapedBrickArt` rather than spelled again here, so the page cannot end
+    /// up naming an asset the game does not use.
+    ///
+    /// The theme is resolved on the *base* name and the shape appended after, because
+    /// `retroName(for:)` knows the six plain bricks and not their shaped faces: given
+    /// "BrickNormalRounded" it would find nothing and a Retro player would be shown the
+    /// classic face on a page that is otherwise entirely their theme.
+    private static func shapedArtwork(_ base: String,
+                                      _ shape: GameScene.ShapedBrickArt) -> String {
+        (retroName(for: base) ?? base) + shape.rawValue
     }
 
     /// What the Retro theme calls a brick, if it has its own.

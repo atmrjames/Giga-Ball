@@ -213,6 +213,37 @@ final class GigaBallConfirmTests: XCTestCase {
         XCTAssertEqual(card.motionEffects.count, 1)
     }
 
+    func testAPopUpStillsEveryDriftingLayerBehindIt() {
+        // Round 164: a confirm over a paused game had two drifting layers, because Settings
+        // stood its own parallax down by hand and the pause menu did not. The screens hang
+        // their drift off different views - containterView, backgroundView - so the pop-up
+        // searches for it rather than being told where it is
+        let screen = UIView(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        let card = UIView(frame: screen.bounds)
+        let deeper = UIView(frame: screen.bounds)
+        screen.addSubview(card)
+        card.addSubview(deeper)
+        card.applyMenuParallax()
+        deeper.applyMenuParallax()
+
+        let stoodDown = UIView.standDownParallax(under: screen)
+        XCTAssertEqual(Set(stoodDown.map(ObjectIdentifier.init)),
+                       [ObjectIdentifier(card), ObjectIdentifier(deeper)])
+        XCTAssertTrue(card.motionEffects.isEmpty)
+        XCTAssertTrue(deeper.motionEffects.isEmpty)
+
+        stoodDown.forEach { $0.applyMenuParallax() }
+        XCTAssertEqual(card.motionEffects.count, 1, "and it moves again afterwards")
+        XCTAssertEqual(deeper.motionEffects.count, 1)
+    }
+
+    func testAStillScreenIsLeftAlone() {
+        // Parallax off in settings means nothing to stand down, and nothing to hand back
+        let screen = UIView(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        screen.addSubview(UIView(frame: screen.bounds))
+        XCTAssertTrue(UIView.standDownParallax(under: screen).isEmpty)
+    }
+
     func testResetDataStillSaysWhatSurvivesIt() {
         // The one confirm that cannot be undone. It has always promised that purchases are
         // kept, and a merge is exactly the kind of change that quietly drops a sentence

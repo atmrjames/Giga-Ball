@@ -956,15 +956,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Load the total stats array from the NSCoder data store
     }
     
-    /// Asks one of the app's confirms, with this screen's own parallax stood down first.
+    /// Asks one of the app's confirms.
     ///
-    /// The pop-up sits over the settings card, and two layers both drifting with the tilt read
-    /// as one layer coming loose. The old sheet did this for the same reason; keeping it here
-    /// is what lets `GigaBallConfirm` stay a plain question with no screen of its own.
+    /// This screen used to stand its own parallax down first, because two layers both drifting
+    /// with the tilt read as one of them coming loose. Round 164 moved that into the pop-up,
+    /// which now stills whatever raised it and hands the drift back on the way out - so every
+    /// screen gets what Settings had been doing by hand, including the pause menu, which was
+    /// the one that showed the problem again.
     func showWarning(_ confirm: GigaBallConfirm) {
-        if group != nil {
-            backgroundView.removeMotionEffect(group!)
-        }
         confirm.show(on: self)
     }
     

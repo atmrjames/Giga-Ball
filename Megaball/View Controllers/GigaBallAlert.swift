@@ -190,6 +190,9 @@ enum GigaBallAlert {
                                                 dismissTitle: dismissTitle,
                                                 confirmTitle: confirmTitle,
                                                 confirm: confirm, dismiss: dismiss)
+        alert.stoodDown = UIView.standDownParallax(under: presenter.view)
+        // Before the alert's own view goes in, so the search finds the screen behind it and
+        // not the card about to sit on top. Put back when the pop-up closes
         presenter.addChild(alert)
         alert.view.frame = presenter.view.bounds
         alert.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -209,6 +212,11 @@ final class GigaBallAlertViewController: UIViewController {
     private let confirm: (() -> Void)?
     private let dismiss: (() -> Void)?
     private let card = UIView()
+
+    /// The views behind this pop-up whose drift was taken off while it is up, to be handed
+    /// back when it closes. Empty when the player has parallax off, or when whatever raised
+    /// this never had any.
+    var stoodDown: [UIView] = []
 
     private let hapticsSetting = UserDefaults.standard.bool(forKey: "hapticsSetting")
     private let parallaxSetting = UserDefaults.standard.bool(forKey: "parallaxSetting")
@@ -465,6 +473,11 @@ final class GigaBallAlertViewController: UIViewController {
             self.willMove(toParent: nil)
             self.view.removeFromSuperview()
             self.removeFromParent()
+            self.stoodDown.forEach { $0.applyMenuParallax() }
+            // The screen behind moves again. Re-applied rather than remembered as objects,
+            // because the helper is the one recipe and hands back the same 25 or 50 the
+            // screen had - and it takes any group off first, so a screen that has already
+            // put its own back is not given a second
             next?()
             // After the pop-up has gone, so a screen it pushes is not fighting this one
             // for the window

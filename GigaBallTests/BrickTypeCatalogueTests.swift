@@ -234,4 +234,29 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertTrue(ItemsStatsViewController.descriptionIsCentred(
             BrickTypeCatalogue.allEntries[0].description, font: descriptionFont, width: 0))
     }
+
+    /// Every drawn face the naming rule can ask for is actually in the asset catalogue.
+    ///
+    /// The rule is a string built at runtime - the plain texture's name with the shape's name
+    /// after it - so a missing file is not a compile error and not a crash. It is a brick that
+    /// draws nothing, in a mode where bricks that draw nothing already exist on purpose, which
+    /// is the kind of thing that goes unnoticed for rounds.
+    func testEveryShapedFaceHasItsArtwork() {
+        // The names `endlessIIBrickTextureName` can return, in both themes. The two
+        // Indestructibles are deliberately absent from the retro list: that theme has never
+        // had its own Indestructible art, so those bricks wear the classic face in both
+        let classic = ["BrickNormal", "BrickInvisible", "BrickMultiHit1", "BrickMultiHit2",
+                       "BrickMultiHit3", "BrickMultiHit4",
+                       "BrickIndestructible1", "BrickIndestructible2"]
+        let retro = ["retroBrickNormal", "retroBrickInvisible", "RetroBrickMultiHit1",
+                     "RetroBrickMultiHit2", "RetroBrickMultiHit3", "RetroBrickMultiHit4"]
+
+        for base in classic + retro {
+            XCTAssertNotNil(UIImage(named: base), base)
+            for shape in [GameScene.ShapedBrickArt.rounded, .wedge] {
+                let name = base + shape.rawValue
+                XCTAssertNotNil(UIImage(named: name), name)
+            }
+        }
+    }
 }
