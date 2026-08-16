@@ -591,7 +591,8 @@ extension GameScene {
     /// with nothing in the ring to say so, and both were quietly lost by a save and resume.
     /// Now a clock that is in the table is in all three, and a clock that is not is in none.
     var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: UIImage)] {
-        [("endlessIIWreckingBall", endlessIIWreckingBallClock, PowerUpIcon.wreckingBall),
+        [("endlessIIWreckingBall", endlessIIWreckingBallClock,
+          PowerUpIcon.hud("WreckingBallIcon", PowerUpIcon.wreckingBall)),
          ("endlessIIAura", endlessIIAuraClock, PowerUpIcon.aura),
          ("endlessIIDescent", endlessIIDescentClock, PowerUpIcon.descent),
          ("endlessIIWrapAround", endlessIIWrapAroundClock, PowerUpIcon.wrapAround),

@@ -164,9 +164,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // The app icon and the ball and paddle theme restyle a game already in progress,
         // and open a picker that does not belong over live gameplay
 
+        rows.append(.background)
+        // Between the theme and the sounds (James, round 169). It belongs with the two rows
+        // above it: all three are what the game *looks* like, and it had been sitting among
+        // the rows that decide how it plays
+
         rows += [.sounds, .music]
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
-        rows += [.background, .perspective, .paddleSpeed, .swipeUpToPause]
+        rows += [.perspective, .paddleSpeed, .swipeUpToPause]
 
         if navigatedFrom == "PauseMenu" { rows.append(.reset) }
         // Reset Ball from the pause menu, which works. From the main menu the same row is

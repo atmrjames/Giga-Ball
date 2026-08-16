@@ -360,7 +360,8 @@ extension GameScene {
         if endlessIILandingRemaining > 0, endlessIILandingTotal > 0 {
             entries.append(PowerUpRingHUD.Entry(
                 id: "endlessIILanding",
-                texture: SKTexture(image: PowerUpIcon.landingMarker),
+                texture: SKTexture(image: PowerUpIcon.hud("LandingMarkerIcon",
+                                                          PowerUpIcon.landingMarker)),
                 remaining: CGFloat(endlessIILandingRemaining/endlessIILandingTotal),
                 segments: nil))
         }

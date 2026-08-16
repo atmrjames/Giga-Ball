@@ -31,7 +31,7 @@ enum PowerUpIcon {
     /// Three rather than four, which is the maximum - a picture of the limit says "four balls"
     /// where a picture of more than one says "another ball", and the second is what the
     /// power-up does.
-    static let multiBall: UIImage = badge { context, rect in
+    static let multiBall: UIImage = artwork("PowerUpMultiBall") { context, rect in
         let radius = rect.width*0.115
         let centres = [CGPoint(x: rect.midX, y: rect.midY - rect.height*0.14),
                        CGPoint(x: rect.midX - rect.width*0.19, y: rect.midY + rect.height*0.13),
@@ -63,7 +63,7 @@ enum PowerUpIcon {
     }
 
     /// Landing Marker: the ghost ball above the paddle's line.
-    static let landingMarker: UIImage = badge { context, rect in
+    static let landingMarker: UIImage = artwork("PowerUpLandingMarker") { context, rect in
         context.setStrokeColor(UIColor.white.cgColor)
         context.setLineWidth(rect.width*0.07)
         context.setLineCap(.round)
@@ -261,7 +261,7 @@ enum PowerUpIcon {
     }
 
     /// Wrecking Ball: a heavier ball, with impact marks.
-    static let wreckingBall: UIImage = badge { context, rect in
+    static let wreckingBall: UIImage = artwork("PowerUpWreckingBall") { context, rect in
         dot(context, at: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width*0.17)
         stroke(context, width: rect.width*0.06)
         for angle in stride(from: CGFloat.pi/6, to: 2*CGFloat.pi, by: CGFloat.pi/3) {
@@ -361,7 +361,7 @@ enum PowerUpIcon {
     }
 
     /// Lock: a padlock, shut. Freezes every running clock (§5.4).
-    static let lock: UIImage = badge { context, rect in
+    static let lock: UIImage = artwork("PowerUpLock") { context, rect in
         stroke(context, width: rect.width*0.07)
         let body = CGRect(x: rect.minX + rect.width*0.24, y: rect.midY - rect.height*0.04,
                           width: rect.width*0.52, height: rect.height*0.36)
@@ -786,6 +786,29 @@ enum PowerUpIcon {
     ///
     /// Green unless told otherwise - the harmful ones wear the same red the falling assets
     /// do, so what a power-up will do to you is readable before it does it.
+    /// A power-up's picture: James's artwork if it is in the catalogue, and the placeholder
+    /// drawn below if it is not.
+    ///
+    /// **This is how a placeholder retires** (§8.5 tracks which are still placeholders). The
+    /// art arrives under the name the icon already carries and nothing else changes - no call
+    /// site moves, no list is re-ordered, and the drawing stays where it is as the fallback,
+    /// which is what keeps a half-drawn set from being a half-broken app.
+    private static func artwork(_ named: String, _ colour: UIColor = beneficial,
+                                _ glyph: (CGContext, CGRect) -> Void) -> UIImage {
+        UIImage(named: named) ?? badge(colour, glyph)
+    }
+
+    /// The icon the *HUD* wears for a power-up, which is not always the same picture.
+    ///
+    /// The badge is a rounded square built to be read on a falling capsule and on a reference
+    /// page. The HUD draws its icons inside a ring, and a square inside a circle is a square
+    /// inside a circle - so where James has drawn a round one it is used there instead
+    /// (round 169: "this includes 2 HUD icons too"). Falls back to the badge, so a power-up
+    /// without round art looks exactly as it did.
+    static func hud(_ named: String, _ badge: UIImage) -> UIImage {
+        UIImage(named: named) ?? badge
+    }
+
     private static func badge(_ colour: UIColor = beneficial,
                               _ glyph: (CGContext, CGRect) -> Void) -> UIImage {
         UIGraphicsImageRenderer(size: canvas).image { context in

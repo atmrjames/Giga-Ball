@@ -107,11 +107,16 @@ extension UIViewController {
     /// promise about where a thumb lands has to be one number.
     static let menuButtonRowInset: CGFloat = 55
 
-    /// Where a lone small button sits when there is no large one to group around.
+    /// Where a small button sits when there is no large one to group around.
     ///
-    /// The wide arrangement, in points, for the two screens that build a close button by hand
-    /// rather than taking the shared row - `layoutMenuButtonRow` gets the same answer from the
-    /// row's own edges, and these have no row to ask.
+    /// **The wide arrangement**, for the screens whose button row is small buttons only -
+    /// Settings, Information, the pack grid, Statistics - and for the two screens that build a
+    /// close button by hand rather than taking the shared row.
+    ///
+    /// It was only the second of those until round 169: `layoutMenuButtonRow` had put every
+    /// row out to `menuButtonRowInset`, which round 157 asked for and round 169 took back for
+    /// the rows with nothing in the middle. A close button pulled in to 55pt beside an empty
+    /// centre reads as a button that has been moved rather than placed.
     static let menuButtonWideInset: CGFloat = 24
 
     /// Lays a screen's button row out the shared way.
@@ -140,13 +145,23 @@ extension UIViewController {
         // constraints and the delegate's large button never reaches the layout
 
         let fromScreen = row.superview?.convert(row.frame.origin, to: nil).x ?? 0
-        let inset = max(0, UIViewController.menuButtonRowInset - fromScreen)
-        // **One arrangement now** (James, round 157: "everything out to 55pt"). Round 135
-        // had two - a row with a big button pulled its small ones in to 55, a row of only
-        // small ones went to its own ends - and the second one turned out to mean whatever
-        // each screen's container happened to be: 51pt on the menus, 53 on the level list,
-        // 55 on the daily. Three values for one promise. Measured from the *screen's* edge,
-        // because that is what 55pt is a promise about: where the thumb lands
+        let hasLargeButton = sizes.contains { $0 > MainMenuCollectionViewCell.smallButtonSize }
+        let target = hasLargeButton ? UIViewController.menuButtonRowInset
+                                    : UIViewController.menuButtonWideInset
+        let inset = max(0, target - fromScreen)
+        // **Two arrangements, chosen by what is in the row** (James, round 169: "only views
+        // with a big centre button should have the narrower position small buttons").
+        //
+        // Round 135 had two and picked between them the same way; round 157 collapsed them
+        // into one because the *wide* one was not a number at all - it was "the row's own
+        // ends", which meant whatever each screen's container happened to be: 51pt on the
+        // menus, 53 on the level list, 55 on the daily. Three values for one promise.
+        //
+        // So this is round 135's rule with round 157's fix kept: still two arrangements, but
+        // both are now numbers measured from the *screen's* edge, which is what an inset is a
+        // promise about - where the thumb lands. A row with a big centre button draws its
+        // small ones in to sit with it; a row of only small buttons spreads to the wide inset,
+        // because there is nothing in the middle for them to group around
         let available = row.frame.width - inset*2
         // Measured from the *screen's* edge, not the row's. Some of these rows are inset by
         // their own container and some are not, so insetting each row by the same amount put
