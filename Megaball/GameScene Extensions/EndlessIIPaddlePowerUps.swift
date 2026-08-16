@@ -81,6 +81,70 @@ extension GameScene {
         // and counting hits meant the effect ended in the middle of using it
     }
 
+    // MARK: - Shaped paddle faces
+
+    /// Gives the paddle a shaped top for the next few turns (§12.0).
+    ///
+    /// One shape at a time: a paddle cannot be domed and dished at once, so the later
+    /// collection replaces the earlier and the turns start again. Nothing else in the paddle
+    /// group needs a conflict rule against these, which is the part worth knowing - a shape
+    /// only decides *where the ball behaves as though it landed*, so Inert Paddle still
+    /// flattens it (influence zero hears nothing the shape says), Flipped Angle still mirrors
+    /// it, and Auto-Aim still overrides it, because the aim replaces the angle afterwards.
+    func endlessIICollectPaddleSurface(_ surface: PaddleBounce.Surface) {
+        endlessIIPaddleSurface = surface
+        endlessIIPaddleSurfaceClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        showEndlessIIPaddleSurface()
+    }
+
+    /// Draws the shape over the paddle's top, so the face can be read rather than guessed.
+    ///
+    /// A curve along the top edge, in the harmful pink these power-ups wear, redrawn whenever
+    /// the paddle changes size. It is a picture of the very function the bounce uses - the
+    /// same `shaped` call, sampled across the width - so the drawing cannot promise a face
+    /// the bounce does not give.
+    func showEndlessIIPaddleSurface() {
+        paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
+        guard let surface = endlessIIPaddleSurface, endlessIIPaddleSurfaceClock.isRunning
+        else { return }
+
+        let width = paddle.size.width
+        let height = paddle.size.height
+        let path = CGMutablePath()
+        let samples = 48
+        for step in 0...samples {
+            let share = Double(step)/Double(samples)
+            let collision = share*2 - 1
+            let x = CGFloat(collision)*width/2
+            let lift = CGFloat(PaddleBounce.shaped(collision, by: surface) - collision)
+            let y = height/2 + lift*height*0.45
+            // The *difference* the shape makes, drawn as height: a flat paddle would be a
+            // straight line, and every bump is somewhere the angle disagrees with a flat face
+            if step == 0 { path.move(to: CGPoint(x: x, y: y)) }
+            else { path.addLine(to: CGPoint(x: x, y: y)) }
+        }
+
+        let profile = SKShapeNode(path: path)
+        profile.name = GameScene.paddleSurfaceName
+        profile.strokeColor = GameScene.endlessIIPaddleSurfaceColour
+        profile.lineWidth = max(2, height*0.22)
+        profile.lineCap = .round
+        profile.zPosition = 1
+        paddle.addChild(profile)
+    }
+
+    static let paddleSurfaceName = "endlessIIPaddleSurface"
+    static let endlessIIPaddleSurfaceColour = UIColor(red: 1, green: 0.22, blue: 0.62, alpha: 1)
+
+    /// Takes the shape away when its turns run out.
+    func refreshEndlessIIPaddleSurface() {
+        guard endlessIIPaddleSurface != nil else { return }
+        if endlessIIPaddleSurfaceClock.isRunning == false {
+            endlessIIPaddleSurface = nil
+            paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
+        }
+    }
+
     func endlessIICollectInertPaddle() {
         endlessIIInertPaddleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
         endlessIIFlippedAngleClock.reset()
@@ -285,6 +349,7 @@ extension GameScene {
         endlessIIFlippedAngleClock.spendTurn()
         endlessIIReversedControlsClock.spendTurn()
         endlessIIAutoAimClock.spendTurn()
+        endlessIIPaddleSurfaceClock.spendTurn()
         endlessIISpendLandingTurn()
     }
 
@@ -389,6 +454,9 @@ extension GameScene {
     /// to physics bodies, so they run from `didSimulatePhysics` instead - the one place such
     /// writes stick (§8.6). The frame's delta is kept for them.
     func tickEndlessIIPaddlePowerUps(_ currentTime: TimeInterval) {
+        refreshEndlessIIPaddleSurface()
+        // Takes the shape away the moment its last turn is spent, and leaves the paddle's
+        // own face behind
         guard gameMode == .endlessII else { return }
 
         let delta = endlessIIPaddleLastTick == 0 ? 0
@@ -550,6 +618,8 @@ extension GameScene {
             ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.flippedAngle),
             ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.reversedControls),
             ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
+            ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
+             PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),
         ]
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
@@ -577,7 +647,8 @@ extension GameScene {
          ("endlessIIInertPaddle", endlessIIInertPaddleClock),
          ("endlessIIFlippedAngle", endlessIIFlippedAngleClock),
          ("endlessIIReversedControls", endlessIIReversedControlsClock),
-         ("endlessIIAutoAim", endlessIIAutoAimClock)]
+         ("endlessIIAutoAim", endlessIIAutoAimClock),
+         ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -609,6 +680,13 @@ extension GameScene {
             endlessIIReversedControlsClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIAutoAim":
             endlessIIAutoAimClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIPaddleSurface":
+            endlessIIPaddleSurfaceClock.restore(remaining: remaining, total: total, level: 0)
+            if endlessIIPaddleSurface == nil { endlessIIPaddleSurface = .convex }
+            showEndlessIIPaddleSurface()
+            // Which shape is not saved, and a resumed run comes back domed. Worth a note
+            // rather than a fix: the save format is shared with a shipped version, and a
+            // fifth field for a fifteen-second power-up is not worth a migration
         default:
             return false
         }
@@ -626,6 +704,9 @@ extension GameScene {
         endlessIIFlippedAngleClock.reset()
         endlessIIReversedControlsClock.reset()
         endlessIIAutoAimClock.reset()
+        endlessIIPaddleSurfaceClock.reset()
+        endlessIIPaddleSurface = nil
+        paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
         endlessIIPendingPaddlePortals.removeAll()
         endlessIIPaddleHaloNode?.removeFromParent()
         endlessIIPaddleHaloNode = nil

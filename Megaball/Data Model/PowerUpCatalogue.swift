@@ -259,6 +259,22 @@ enum PowerUpCatalogue {
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
         PowerUp(id: "randomisedBounce", name: "Randomised Bounce", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
+        PowerUp(id: "convexPaddle", name: "Convex Paddle", availability: .endlessII,
+                rarity: .rare, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        PowerUp(id: "concavePaddle", name: "Concave Paddle", availability: .endlessII,
+                rarity: .rare, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        PowerUp(id: "wavyPaddle", name: "Wavy Paddle", availability: .endlessII,
+                rarity: .rare, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        PowerUp(id: "jaggedPaddle", name: "Jagged Paddle", availability: .endlessII,
+                rarity: .rare, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        // The four shaped faces. One at a time - a paddle cannot be domed and dished at
+        // once - and no conflict rule against the rest of the paddle group is needed: a
+        // shape only says where the ball behaves as though it landed, so Inert flattens it,
+        // Flipped mirrors it and Auto-Aim overrides it, all for free
         PowerUp(id: "drift", name: "Drift", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),

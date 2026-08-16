@@ -603,14 +603,18 @@ class LevelPackSetup {
         PowerUpIcon.randomisedBounce,
         PowerUpIcon.ghostBall,
         PowerUpIcon.safetyPaddle,
-        PowerUpIcon.drift
+        PowerUpIcon.drift,
+        PowerUpIcon.convexPaddle,
+        PowerUpIcon.concavePaddle,
+        PowerUpIcon.wavyPaddle,
+        PowerUpIcon.jaggedPaddle
     ]
     // Multi-Ball is drawn rather than an asset. §8.5 has the icons down as still to make, and
     // a placeholder that matches the set is worth more during design than a slot with the
     // wrong picture in it - see PowerUpIcon
     
-    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54]
-    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58]
+    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     // Multi-Ball is last in the list and belongs to no pack. It is not unlocked by finishing
     // one - it exists only in Endless 2.0, which every player already has
     
@@ -669,7 +673,11 @@ class LevelPackSetup {
         "Randomised Bounce",
         "Ghost Ball",
         "Safety Paddle",
-        "Drift"
+        "Drift",
+        "Convex Paddle",
+        "Concave Paddle",
+        "Wavy Paddle",
+        "Jagged Paddle"
     ]
     
     let powerUpUnlockedDescriptionArray: [String] = [
@@ -706,8 +714,9 @@ class LevelPackSetup {
         "", // Landing Marker - never locked
         "", "", "", "", "", "", "", "", // The paddle batch - Endless 2.0's own, never locked
         "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "" // The field batch and after - the same, Lock, Key, Wipe,
-        // Randomised Bounce, Ghost Ball, Safety Paddle and Drift included
+        "", "", "", "", "", "", "", "", "", "", "" // The field batch and after - the same,
+        // Lock, Key, Wipe, Randomised Bounce, Ghost Ball, Safety Paddle, Drift and the four
+        // shaped paddle faces included
     ]
     
     let powerUpHiddenUnlockedDescriptionArray: [String] = [
@@ -744,8 +753,9 @@ class LevelPackSetup {
         "", // Landing Marker - never locked
         "", "", "", "", "", "", "", "", // The paddle batch - Endless 2.0's own, never locked
         "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "" // The field batch and after - the same, Lock, Key, Wipe,
-        // Randomised Bounce, Ghost Ball, Safety Paddle and Drift included
+        "", "", "", "", "", "", "", "", "", "", "" // The field batch and after - the same,
+        // Lock, Key, Wipe, Randomised Bounce, Ghost Ball, Safety Paddle, Drift and the four
+        // shaped paddle faces included
     ]
     
     let powerUpDescriptionArray: [String] = [
@@ -803,7 +813,11 @@ class LevelPackSetup {
         "The ball leaves every surface at an angle of its own choosing",
         "The ball is invisible until it drops below the lowest bricks",
         "A second paddle appears under the lowest bricks, and holds the ball up for a while",
-        "The whole field slides sideways, and the falling power-ups with it"
+        "The whole field slides sideways, and the falling power-ups with it",
+        "The paddle's top is domed, so a landing near the middle turns the ball much further than it looks like it should",
+        "The paddle's top is dished, so the middle barely turns the ball at all and the ends throw it away hard",
+        "The paddle's top ripples, so two landings a ball's width apart can send it opposite ways",
+        "The paddle's top is sawtoothed, and where the ball goes stops being something you can read at all"
     ]
     
     let powerUpMultiplierArray: [String] = [
@@ -861,6 +875,10 @@ class LevelPackSetup {
         "-0.1",
         "-0.1",
         "+0.1",
+        "-0.1",
+        "-0.1",
+        "-0.1",
+        "-0.1",
         "-0.1"
     ]
     
@@ -923,7 +941,11 @@ class LevelPackSetup {
         "15s",
         "12s",
         "12s",
-        "10s"
+        "10s",
+        "5 hits",
+        "5 hits",
+        "5 hits",
+        "5 hits"
     ]
     
     let achievementsNameArray: [String] = [

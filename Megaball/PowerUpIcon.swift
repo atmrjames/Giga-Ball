@@ -483,6 +483,45 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
+    /// The four shaped paddle faces, each drawn as the profile it gives the paddle.
+    ///
+    /// Drawn from `PaddleBounce.shaped` itself rather than by hand, so a picture cannot
+    /// promise a face the bounce does not give - the same rule the brick faces follow.
+    static func paddleSurface(_ surface: PaddleBounce.Surface) -> UIImage {
+        badge(harmful) { context, rect in
+            stroke(context, width: rect.width*0.08)
+            let width = rect.width*0.64
+            let left = rect.midX - width/2
+            let middle = rect.midY + rect.height*0.06
+            let lift = rect.height*0.2
+
+            let path = CGMutablePath()
+            for step in 0...40 {
+                let share = CGFloat(step)/40
+                let collision = Double(share*2 - 1)
+                let x = left + share*width
+                let shaped = PaddleBounce.shaped(collision, by: surface) - collision
+                let y = middle - CGFloat(shaped)*lift
+                // UIKit's y runs down the page, so the lift is subtracted rather than added
+                if step == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                else { path.addLine(to: CGPoint(x: x, y: y)) }
+            }
+            context.addPath(path)
+            context.strokePath()
+
+            context.setLineWidth(rect.width*0.05)
+            context.move(to: CGPoint(x: left, y: rect.maxY - rect.height*0.2))
+            context.addLine(to: CGPoint(x: left + width, y: rect.maxY - rect.height*0.2))
+            context.strokePath()
+            // The flat paddle underneath, for the shape to be a shape *of* something
+        }
+    }
+
+    static let convexPaddle = paddleSurface(.convex)
+    static let concavePaddle = paddleSurface(.concave)
+    static let wavyPaddle = paddleSurface(.wavy)
+    static let jaggedPaddle = paddleSurface(.jagged)
+
     /// Three bricks stepped sideways, with the trail of where they came from.
     ///
     /// The step is the whole idea: not one brick moving, but the field going with it - so the

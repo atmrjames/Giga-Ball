@@ -229,6 +229,108 @@ final class PaddleBounceTests: XCTestCase {
                             "past the end is not clamped - the caller decides what that means")
     }
 
+    // MARK: - Shaped paddle faces
+
+    // §12.0, James's idea from the fourth play test: convex, concave, wavy and jagged paddle
+    // tops, all bad, each making the outgoing angle harder to predict.
+
+    func testEveryShapeIsEvenHandedAndStaysInRange() {
+        // Odd - f(-x) = -f(x) - so no shape favours a side. A paddle with a bias is a paddle
+        // that is wrong rather than one that is tricky. And inside -1...1, so a shaped face
+        // can never send a ball flatter than a flat one could
+        for surface in PaddleBounce.Surface.allCases {
+            for step in stride(from: 0.05, through: 1.0, by: 0.05) {
+                let right = PaddleBounce.shaped(step, by: surface)
+                let left = PaddleBounce.shaped(-step, by: surface)
+                XCTAssertEqual(right, -left, accuracy: 0.0001, "\(surface) at \(step)")
+                XCTAssertLessThanOrEqual(abs(right), 1.0001, "\(surface) at \(step)")
+            }
+            XCTAssertEqual(PaddleBounce.shaped(0, by: surface), 0, accuracy: 0.0001,
+                           "\(surface): the middle is still the middle")
+        }
+    }
+
+    func testNoShapeMeansNoChange() {
+        for step in stride(from: -1.0, through: 1.0, by: 0.25) {
+            XCTAssertEqual(PaddleBounce.shaped(step, by: nil), step)
+        }
+    }
+
+    func testConvexIsSteeperInTheMiddleAndConcaveIsFlatter() {
+        // The two are opposites, which is the whole of why both exist
+        let convex = PaddleBounce.shaped(0.2, by: .convex)
+        let flat = 0.2
+        let concave = PaddleBounce.shaped(0.2, by: .concave)
+        XCTAssertGreaterThan(convex, flat, "a dome exaggerates a near-centre landing")
+        XCTAssertLessThan(concave, flat, "a dish forgives one")
+    }
+
+    func testTheWavyAndJaggedFacesTurnBackOnThemselves() {
+        // Both are unpredictable in the same way: further out is not always further round,
+        // so two landings close together can send the ball opposite ways
+        for surface in [PaddleBounce.Surface.wavy, .jagged] {
+            var reversals = 0
+            var previous = PaddleBounce.shaped(-1, by: surface)
+            var rising = true
+            for step in stride(from: -0.95, through: 1.0, by: 0.05) {
+                let value = PaddleBounce.shaped(step, by: surface)
+                let nowRising = value > previous
+                if nowRising != rising { reversals += 1 }
+                rising = nowRising
+                previous = value
+            }
+            XCTAssertGreaterThan(reversals, 2, "\(surface) should turn back on itself")
+        }
+    }
+
+    func testAShapedFaceStillCannotReturnABallFlatterThanTheMinimum() {
+        for surface in PaddleBounce.Surface.allCases {
+            for step in stride(from: -1.0, through: 1.0, by: 0.1) {
+                let angle = PaddleBounce.angleDegrees(
+                    arriving: CGVector(dx: 400, dy: -20),
+                    collision: PaddleBounce.shaped(step, by: surface),
+                    adjustmentK: 45, influence: 1, minimumDeg: 10)
+                XCTAssertGreaterThanOrEqual(angle, 10, "\(surface) at \(step)")
+                XCTAssertLessThanOrEqual(angle, 170, "\(surface) at \(step)")
+            }
+        }
+    }
+
+    func testAnInertPaddleFlattensEveryShape() {
+        // Inert sets the influence to zero, so nothing the shape says is heard - which is the
+        // reason the shapes need no conflict rule against it
+        for surface in PaddleBounce.Surface.allCases {
+            let angle = PaddleBounce.angleDegrees(
+                arriving: CGVector(dx: 60, dy: -300),
+                collision: PaddleBounce.shaped(0.8, by: surface),
+                adjustmentK: 45, influence: 0, minimumDeg: 10)
+            XCTAssertEqual(angle, atan2(300.0, 60.0)*180/Double.pi, accuracy: 0.001,
+                           "\(surface)")
+        }
+    }
+
+    func testEveryShapedFaceIsAPowerUpTheGameCanActuallyOffer() {
+        // §8.6's rule in the power-up axis: being in an enum and in a formula is not enough.
+        // Each of the four has to be in the name array, the drop weights and the catalogue,
+        // or it is a shape nobody will ever meet
+        let setup = LevelPackSetup()
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.powerUpProbArray = Array(repeating: 0, count: setup.powerUpNameArray.count)
+        scene.applyEndlessRowPowerUpWeights()
+
+        for surface in PaddleBounce.Surface.allCases {
+            guard let index = setup.powerUpNameArray.firstIndex(of: surface.displayName) else {
+                return XCTFail("\(surface) is not in the name array")
+            }
+            XCTAssertGreaterThan(scene.powerUpProbArray[index], 0,
+                                 "\(surface) never drops in Mayhem")
+            XCTAssertEqual(setup.powerUpMultiplierArray[index], "-0.1", "all four are bad")
+            XCTAssertTrue(PowerUpCatalogue.all.contains { $0.name == surface.displayName },
+                          "\(surface) is not in the catalogue")
+        }
+    }
+
     func testThePracticeFieldBouncesTheWayTheGameDoes() {
         // Round 147: the practice field's paddle was a plain elastic body, so it mirrored the
         // ball back rather than bending the bounce by where it landed - which is a wall, not

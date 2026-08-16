@@ -50,6 +50,12 @@ extension GameScene {
         powerUpProbArray[52] = gameMode == .endlessII ? 5 : 0 // Ghost Ball - uncommon
         powerUpProbArray[53] = gameMode == .endlessII ? 5 : 0 // Safety Paddle - uncommon
         powerUpProbArray[54] = gameMode == .endlessII ? 5 : 0 // Drift - uncommon, bad
+        powerUpProbArray[55] = gameMode == .endlessII ? 3 : 0 // Convex Paddle - rare, bad
+        powerUpProbArray[56] = gameMode == .endlessII ? 3 : 0 // Concave Paddle - rare, bad
+        powerUpProbArray[57] = gameMode == .endlessII ? 3 : 0 // Wavy Paddle - rare, bad
+        powerUpProbArray[58] = gameMode == .endlessII ? 3 : 0 // Jagged Paddle - rare, bad
+        // Rare rather than uncommon, all four: they are one idea in four flavours, so at an
+        // uncommon rate the paddle would be shaped more often than it was flat
         // and bad. The weight is the tunable here: it is a strong handicap, and if it
         // reads as too punishing in play this is the number to move, not the effect
         powerUpProbArray[51] = gameMode == .endlessII ? 5 : 0 // Randomised Bounce -
