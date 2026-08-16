@@ -553,7 +553,9 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
-        guard collectionView == grid else { return .zero }
+        guard collectionView == grid else { return collectionView.ownSectionInset }
+        // The button row keeps the inset its own layout was given - see
+        // `ownSectionInset`. `.zero` here was overruling it
         return UIEdgeInsets(top: UIViewController.menuListBreathingRoom.top,
                             left: PackSelectViewController.gridInset,
                             bottom: UIViewController.menuListBreathingRoom.bottom,

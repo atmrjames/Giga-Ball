@@ -368,3 +368,25 @@ extension UIView {
         return drifting
     }
 }
+
+extension UICollectionView {
+
+    /// The section inset this collection view's own layout was given.
+    ///
+    /// **What `insetForSectionAt` should answer for a collection view it is not about.** A
+    /// screen with a grid *and* a button row has one delegate serving both, and each of the
+    /// three screens that do wrote `guard collectionView == grid else { return .zero }` -
+    /// which silently threw away the inset `layoutMenuButtonRow` had just set on the row,
+    /// because a delegate's answer beats the layout's own property.
+    ///
+    /// That is why the pack screen's Game Center button sat 90pt from the right edge while
+    /// its close button sat at 20 (James, round 165's screenshot), on a screen rounds 157 and
+    /// 158 had supposedly moved out to 55: those rounds set the property, and this delegate
+    /// method had been overruling it since long before them.
+    ///
+    /// Handing back the layout's own value is right for any row - where nothing set one it is
+    /// `.zero`, which is what these were returning anyway.
+    var ownSectionInset: UIEdgeInsets {
+        (collectionViewLayout as? UICollectionViewFlowLayout)?.sectionInset ?? .zero
+    }
+}

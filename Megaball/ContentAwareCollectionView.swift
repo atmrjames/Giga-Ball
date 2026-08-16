@@ -49,9 +49,24 @@ final class ContentAwareCollectionView: UICollectionView {
         // that pads nothing and only muddies the question of whether the content fits
     }
 
+    /// Whether this grid must keep taking drags even when everything fits.
+    ///
+    /// **For a grid that made itself fit.** The pack screen spends the first part of a drag
+    /// collapsing its logo, and the room that frees is exactly what lets all eleven packs fit -
+    /// at which point the rule below switches scrolling off, the drag stops being reported, and
+    /// the logo can never grow back (round 165, found by dragging back down and watching
+    /// nothing happen). A grid that has swallowed a header has to keep listening, or the
+    /// gesture is a one-way door.
+    var keepsTakingDrags = false {
+        didSet { setNeedsLayout() }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        isScrollEnabled = contentSize.height > bounds.height + 0.5
+        isScrollEnabled = keepsTakingDrags || contentSize.height > bounds.height + 0.5
+        alwaysBounceVertical = keepsTakingDrags
+        // Bounce as well as scroll: with the content fitting there is nowhere to scroll *to*,
+        // and without the bounce a downward drag reports nothing at all
         // A grid that fits does not scroll, so it cannot be dragged out from under its own
         // title and left hanging - the same bargain the tables make
 

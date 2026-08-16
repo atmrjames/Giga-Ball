@@ -237,6 +237,24 @@ final class GigaBallConfirmTests: XCTestCase {
         XCTAssertEqual(deeper.motionEffects.count, 1)
     }
 
+    func testAGridThatSwallowedItsHeaderKeepsListening() {
+        // Round 165: the pack grid spends the first part of a drag collapsing the mode logo,
+        // and the room that frees is exactly what makes all eleven packs fit - at which point
+        // the fits-so-it-does-not-scroll rule switched scrolling off, the drag stopped being
+        // reported, and the logo could never grow back. Found by dragging down and watching
+        // nothing happen
+        let grid = ContentAwareCollectionView(frame: CGRect(x: 0, y: 0, width: 300, height: 600),
+                                              collectionViewLayout: UICollectionViewFlowLayout())
+        grid.layoutSubviews()
+        XCTAssertFalse(grid.isScrollEnabled, "nothing in it, so nothing to scroll")
+
+        grid.keepsTakingDrags = true
+        grid.layoutSubviews()
+        XCTAssertTrue(grid.isScrollEnabled, "the collapse has to be givable back")
+        XCTAssertTrue(grid.alwaysBounceVertical,
+                      "and with everything fitting, only a bounce reports a downward drag")
+    }
+
     func testAStillScreenIsLeftAlone() {
         // Parallax off in settings means nothing to stand down, and nothing to hand back
         let screen = UIView(frame: CGRect(x: 0, y: 0, width: 393, height: 852))

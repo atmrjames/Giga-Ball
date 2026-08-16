@@ -140,17 +140,56 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     // three mode menus are a set, and this one was wearing a logo less than half the size
     // of its siblings'
 
+    /// How far the logo has been collapsed, in points, out of `logoTravel`.
+    ///
+    /// Kept here rather than read off the scroll offset, which is the whole of round 165's
+    /// change: the drag spends itself on the logo first and only reaches the packs once the
+    /// logo is small.
+    private var logoCollapsed: CGFloat = 0
+
+    /// The height the logo has to give: full size down to the size it wears when scrolled.
+    static var logoTravel: CGFloat { logoRestSize - logoScrolledSize }
+
     /// The logo trades its size for the grid's room as the packs scroll up (play-test round
-    /// 36): full size at rest, easing down to the small size over the first hundred points of
-    /// scroll. Driven by the offset rather than animated, so it tracks the finger exactly and
-    /// runs backwards for free.
+    /// 36), and **the packs do not move until it has finished** (James, round 165: "the packs
+    /// shouldn't start scrolling until the logo has shrunk down to its smallest size").
+    ///
+    /// The old version read the collapse straight off `contentOffset`, which meant the two
+    /// happened at once - and because the grid is pinned to the logo's bottom, the packs then
+    /// travelled at the finger's speed *plus* the speed the logo was giving room back at,
+    /// about 1.8 points for every one dragged. That is what "doesn't work well" was: a list
+    /// that outruns the thumb pushing it.
+    ///
+    /// So the first hundred-odd points of the drag are spent on the logo and the list is held
+    /// at its top while they are. The offset is put back each frame and the distance it tried
+    /// to move is added to the collapse instead - the gesture keeps pushing, so the collapse
+    /// keeps advancing, and it unwinds the same way when the drag comes back down. Once the
+    /// logo is at its smallest the offset is left alone and the packs scroll normally.
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard scrollView == packCollectionView, let width = logoWidth else { return }
-        let progress = min(max(scrollView.contentOffset.y/140, 0), 1)
-        // Over a longer travel than the 100 it took when the logo was small: the same
-        // hundred points now has three times the height to give back, and the grid jumped
-        width.constant = PackSelectViewController.logoRestSize
-            - (PackSelectViewController.logoRestSize - PackSelectViewController.logoScrolledSize)*progress
+        guard scrollView == packCollectionView, logoWidth != nil else { return }
+
+        let top = -scrollView.adjustedContentInset.top
+        let tried = scrollView.contentOffset.y - top
+        let travel = PackSelectViewController.logoTravel
+
+        if tried > 0, logoCollapsed < travel {
+            logoCollapsed = min(travel, logoCollapsed + tried)
+            scrollView.contentOffset.y = top
+            // Held at the top: the drag is collapsing the logo, not scrolling the packs
+        } else if tried < 0, logoCollapsed > 0 {
+            logoCollapsed = max(0, logoCollapsed + tried)
+            scrollView.contentOffset.y = top
+            // And back up again, so a pull downwards grows the logo before it bounces the list
+        }
+        applyLogoCollapse()
+    }
+
+    /// Sets the logo to whatever `logoCollapsed` says, and lets the grid have the difference.
+    private func applyLogoCollapse() {
+        logoWidth?.constant = PackSelectViewController.logoRestSize - logoCollapsed
+        (packCollectionView as? ContentAwareCollectionView)?.keepsTakingDrags = logoCollapsed > 0
+        // While the logo is down, the grid keeps listening even though everything now fits -
+        // the room that made it fit is the logo's, and it has to be givable back
     }
 
     // MARK: - The pack grid
@@ -266,7 +305,13 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
-        guard collectionView == packCollectionView else { return .zero }
+        guard collectionView == packCollectionView else {
+            return collectionView.ownSectionInset
+            // The button row keeps what `layoutMenuButtonRow` gave it. Returning `.zero`
+            // here is what had been overruling that row's 55pt since long before rounds
+            // 157 and 158 set it (James, round 165: the Game Center icon is in the wrong
+            // spot) - two collection views, one delegate, and this method answers for both
+        }
 
         // No vertical inset any more: the cells stretch to fill the height, so there is
         // nothing left over to centre, and on a screen too small for that the grid runs past
