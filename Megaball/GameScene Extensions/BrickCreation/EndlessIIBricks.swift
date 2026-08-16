@@ -623,11 +623,13 @@ extension GameScene {
     /// has always been and change only the glancing ones near a corner, which is the
     /// interesting part.
     ///
-    /// There is no artwork for it, so the face is drawn: a rounded-rectangle shape filled
-    /// with the brick's own texture and colour, so a Multi-hit or Indestructible brick keeps
-    /// its own look and only loses its corners. The sprite behind it is shrunk rather than
-    /// hidden - hiding it would hide the face too, since that is its child - and shrunk by
-    /// `size` rather than by scale, which children would inherit.
+    /// The face is a rounded-rectangle shape filled with the brick's own colour and, since
+    /// round 153, with a texture drawn as that shape (`endlessIIFaceFill`) - so a Multi-hit
+    /// or Indestructible brick keeps its own look and only loses its corners. Before the art
+    /// existed the fill was the brick's rectangular texture stretched into the path, which is
+    /// still what happens for any brick with no drawn face. The sprite behind it is shrunk
+    /// rather than hidden - hiding it would hide the face too, since that is its child - and
+    /// shrunk by `size` rather than by scale, which children would inherit.
     func makeRounded(_ brick: SKSpriteNode) {
         let face = brick.size
         let radius = min(face.width, face.height)*GameScene.roundedBrickCornerFraction
@@ -639,7 +641,7 @@ extension GameScene {
         // A rounded rectangle is convex, which is all a polygon body asks for
 
         let shape = SKShapeNode(path: path)
-        shape.fillTexture = brick.texture
+        shape.fillTexture = endlessIIFaceFill(brick, .rounded)
         shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
         shape.strokeColor = .clear
         shape.zPosition = 0.1
@@ -666,8 +668,9 @@ extension GameScene {
                   let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName)
                     as? SKShapeNode else { return }
             let wantedColour = brick.colorBlendFactor > 0.5 ? brick.color : UIColor.white
-            if shape.fillTexture !== brick.texture || shape.fillColor != wantedColour {
-                shape.fillTexture = brick.texture
+            let wanted = self.endlessIIFaceFill(brick, .rounded)
+            if shape.fillTexture !== wanted || shape.fillColor != wantedColour {
+                shape.fillTexture = wanted
                 shape.fillColor = wantedColour
                 // Colour as well as texture: a rounded brick that also picked up a role is
                 // tinted after its face was built, and the face has to follow

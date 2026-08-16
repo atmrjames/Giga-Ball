@@ -57,20 +57,20 @@ extension GameScene {
     /// redrawn texture with longer spikes is longer-spiked in the game the day it lands.
     static let plainBallTexturePoints: CGFloat = 50
 
-    /// The spiked texture for the current theme and dress, or nil where there is no art.
+    /// The spiked texture for the current theme and dress.
     ///
-    /// Nil is a real answer, not a failure: the glass theme's three wrecking textures do not
-    /// exist yet (§8.5), and a glass ball that keeps its own look for twelve seconds is a far
-    /// better answer than one that turns into somebody else's theme.
+    /// Optional, and it stays optional now that all twelve themes have art (James delivered
+    /// the glass three on 16 August 2026, the round after the rest): a thirteenth theme
+    /// would otherwise reach past the end of this list, and a ball that keeps its own look
+    /// is a far better answer to missing art than one wearing somebody else's theme.
     func endlessIIWreckingTexture(for dress: BallDress) -> SKTexture? {
-        let themes: [String?] = ["", "3D", "Ice", "Outline", "Square", nil,
-                                 "Pixel", "Split", "Candy", "Glow", "Rainbow", "Retro"]
-        // Same order as `ballTextureArray`, and the same length - the nil is the glass
-        // theme, which has no art. Index 9 is the theme the code calls the giga *look* and
-        // James calls Glow; the file names use his word
+        let themes = ["", "3D", "Ice", "Outline", "Square", "Glass",
+                      "Pixel", "Split", "Candy", "Glow", "Rainbow", "Retro"]
+        // Same order as `ballTextureArray`, and the same length. Index 9 is the theme the
+        // code calls the giga *look* and James calls Glow; the file names use his word
 
-        guard themes.indices.contains(ballSetting), let theme = themes[ballSetting]
-        else { return nil }
+        guard themes.indices.contains(ballSetting) else { return nil }
+        let theme = themes[ballSetting]
 
         let body: String
         switch dress {

@@ -800,9 +800,33 @@ Everything new is currently wearing a placeholder that reads correctly, which wa
 order: the mechanics have all changed shape at least once since they were drawn. With phase
 8 complete this section is now the shopping list, slot by slot, for the real assets.
 
+### Shaped brick faces — the first batch, and what is still to draw
+
+James delivered twenty-eight on 16 August 2026: a Rounded and a Wedge texture for every
+brick type that has one, in both the classic and the retro theme. They are in the catalogue
+as the plain texture's name with `Rounded` or `Wedge` on the end, which is what
+`endlessIIBrickTextureName` builds them from - so a new brick type needs one line there and
+two files, and nothing else.
+
+Before them, Rounded and Wedge drew their faces by stretching the brick's *rectangular*
+texture into the shape's path. It read correctly and was never quite right: a stretched
+rectangle puts its highlight in the wrong place and runs its shading off the edge of the
+shape rather than along it.
+
+**Still to draw:** Convex and Concave, both themes, both of which keep the stretched
+rectangle until they exist. `GameScene.shapedArt(for:)` returns nil for them and a test says
+so, so the day they are drawn the change is two lines.
+
+**Two things worth James's eye.** The retro theme's plain textures are 28×14 half-size art
+where these new ones are 56×28 - so a retro *rounded* brick is smoother than the square ones
+beside it. The fill stretches to the path either way, so this is a look question rather than
+a bug. And the retro theme has never had an Indestructible texture of its own: those bricks
+wear the classic one, and now wear the classic shaped one, which is right rather than a
+substitute - but it does mean the retro field has two bricks in it that are not retro.
+
 ### Wrecking ball textures — three still to draw
 
-James delivered thirty-three of the thirty-six on 16 August 2026: a spiked ball for each of
+James delivered thirty-six on 16 August 2026 (thirty-three, then glass): a spiked ball for each of
 the twelve ball themes, in each of the three ball colours (normal, Giga-Ball,
 Undestructi-Ball). They are in the catalogue as `ballWrecking<Body><Theme>`, where the body
 is `Normal`, `Giga` or `Undestructi` and the theme is the empty string for classic, and
@@ -810,10 +834,10 @@ otherwise `3D`, `Ice`, `Outline`, `Square`, `Pixel`, `Split`, `Candy`, `Glow`, `
 or `Retro`. Note `Glow` is the theme the code has always called the giga *look* - it is
 index 9 in the ball arrays, and the files use James's word for it.
 
-**Missing: the glass theme, all three bodies.** Until they exist a glass ball simply keeps
-its own look while the Wrecking Ball runs, which is a better answer than wearing another
-theme's spikes; `endlessIIWreckingTexture` returns nil for that index and a test holds it
-there, so the day the three files land the only change is deleting the nil.
+**Complete** as of the following round: James drew the glass three the same evening, so all
+thirty-six exist. The nil answer is still there for a theme with no art - it is now held
+against an index that does not exist rather than against glass - because a ball wearing
+somebody else's spikes is worse than a ball wearing none.
 
 Two of the delivered files arrived misnamed and were placed by what they actually are:
 `ballWreckingGigaRainbow Copy` is the giga rainbow (there was no other), and

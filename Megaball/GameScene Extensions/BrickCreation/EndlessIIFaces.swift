@@ -213,9 +213,13 @@ extension GameScene {
                                                         : SKPhysicsBody(bodies: pieces))
         // One convex polygon where the shape allows it, a compound of two where it does not
 
-        let shape = SKShapeNode(path: EndlessIIFaceGeometry.silhouette(face, size: cell,
-                                                                       mirrored: mirrored))
-        shape.fillTexture = brick.texture
+        let shape = SKShapeNode(path: EndlessIIFaceGeometry.silhouette(face, size: cell))
+        shape.xScale = mirrored ? -1 : 1
+        // The path is built unmirrored and the *node* is flipped, which is the same geometry
+        // - mirroring is a pure reflection in x - and unlike a mirrored path it takes the
+        // fill texture with it. A drawn wedge inside a mirrored path would have had its
+        // shading running the wrong way up the slope
+        shape.fillTexture = endlessIIFaceFill(brick, GameScene.shapedArt(for: face))
         shape.fillColor = brick.colorBlendFactor > 0.5 ? brick.color : .white
         shape.strokeColor = .clear
         shape.zPosition = 0.1
@@ -244,8 +248,10 @@ extension GameScene {
                   let shape = brick.childNode(withName: GameScene.brickFaceName)
                     as? SKShapeNode else { return }
             let wantedColour = brick.colorBlendFactor > 0.5 ? brick.color : UIColor.white
-            if shape.fillTexture !== brick.texture || shape.fillColor != wantedColour {
-                shape.fillTexture = brick.texture
+            let art = brick.endlessIIFace.flatMap { GameScene.shapedArt(for: $0) }
+            let wanted = self.endlessIIFaceFill(brick, art)
+            if shape.fillTexture !== wanted || shape.fillColor != wantedColour {
+                shape.fillTexture = wanted
                 shape.fillColor = wantedColour
             }
         }

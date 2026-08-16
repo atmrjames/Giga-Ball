@@ -139,3 +139,103 @@ final class EndlessIIFaceTests: XCTestCase {
         }
     }
 }
+
+// MARK: - The drawn faces
+
+/// James's art, round 153: a texture drawn *as* a rounded brick and *as* a wedge, for each
+/// brick type, in both themes. Before it existed the face was the rectangular texture
+/// stretched into the path.
+final class EndlessIIShapedBrickArtTests: XCTestCase {
+
+    private func scene(retro: Bool = false) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickSetting = retro ? 1 : 0
+        if retro {
+            scene.brickNormalTexture = scene.retroBrickNormalTexture
+            scene.brickInvisibleTexture = scene.retroBrickInvisibleTexture
+            scene.brickMultiHit1Texture = scene.retroBrickMultiHit1Texture
+            scene.brickMultiHit2Texture = scene.retroBrickMultiHit2Texture
+            scene.brickMultiHit3Texture = scene.retroBrickMultiHit3Texture
+            scene.brickMultiHit4Texture = scene.retroBrickMultiHit4Texture
+            // What `didMove` does at set-up when the retro theme is on
+        }
+        return scene
+    }
+
+    func testEveryBrickTypeHasBothShapesDrawn() {
+        // The count that stops one being missed. A brick type with no drawn face falls back
+        // to the stretched rectangle, which looks like art nobody got round to rather than
+        // like a bug - so it has to be asserted rather than noticed
+        for retro in [false, true] {
+            let scene = scene(retro: retro)
+            var types = [scene.brickNormalTexture, scene.brickInvisibleTexture,
+                         scene.brickMultiHit1Texture, scene.brickMultiHit2Texture,
+                         scene.brickMultiHit3Texture, scene.brickMultiHit4Texture]
+            types += [scene.brickIndestructible1Texture, scene.brickIndestructible2Texture]
+
+            for texture in types {
+                for shape in [GameScene.ShapedBrickArt.rounded, .wedge] {
+                    let art = scene.endlessIIShapedArt(for: texture, shape)
+                    XCTAssertNotNil(art, "no \(shape) art, retro: \(retro)")
+                    let size = art?.size() ?? .zero
+                    XCTAssertEqual(size.width/size.height, 2, accuracy: 0.01,
+                                   "the drawn face has the cell's own 2:1 shape, or it sits "
+                                   + "inside its own path rather than filling it")
+                    // The *size* is deliberately not asserted equal: the retro theme's plain
+                    // textures are 28x14 where its drawn faces are 56x28, so a retro rounded
+                    // brick is smoother than the square ones beside it. That is a question
+                    // for James rather than a bug - the fill stretches to the path either way
+                }
+            }
+        }
+    }
+
+    func testTheRetroThemeGetsItsOwnArtWhereItHasAnyOfItsOwn() {
+        let classic = scene(), retro = scene(retro: true)
+        XCTAssertNotEqual(classic.endlessIIShapedArt(for: classic.brickNormalTexture, .rounded),
+                          retro.endlessIIShapedArt(for: retro.brickNormalTexture, .rounded))
+
+        XCTAssertEqual(retro.endlessIIBrickTextureName(retro.brickIndestructible1Texture),
+                       "BrickIndestructible1",
+                       "the retro theme has never had its own Indestructible texture - those "
+                       + "bricks wear the classic one, so the classic shaped art is the "
+                       + "matching art rather than a substitute")
+    }
+
+    func testABrickWithNoDrawnFaceKeepsItsOwnTextureStretched() {
+        // A power-up brick, a Null, anything a role has dressed
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickNullTexture)
+        XCTAssertNil(scene.endlessIIShapedArt(for: brick.texture, .rounded))
+        XCTAssertEqual(scene.endlessIIFaceFill(brick, .rounded), brick.texture)
+    }
+
+    func testConvexAndConcaveHaveNoDrawnFaceYet() {
+        // §8.5. Stated rather than assumed, so the day they are drawn the test says where
+        XCTAssertNil(GameScene.shapedArt(for: .convex))
+        XCTAssertNil(GameScene.shapedArt(for: .concave))
+        XCTAssertEqual(GameScene.shapedArt(for: .wedge), .wedge)
+
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        XCTAssertEqual(scene.endlessIIFaceFill(brick, GameScene.shapedArt(for: .convex)),
+                       brick.texture, "the dome still stretches the rectangle")
+    }
+
+    func testTheWedgeArtIsHandedTheSameWayTheGeometryIs() {
+        // The art has its mass in the bottom-right under a slope rising to the right, which
+        // is the unmirrored path. The mirrored one is drawn by flipping the *node*, so the
+        // texture turns over with the shape - a mirrored path with an unmirrored fill would
+        // have had the shading running the wrong way up the slope
+        let size = CGSize(width: 56, height: 28)
+        let plain = EndlessIIFaceGeometry.silhouette(.wedge, size: size)
+        let mirrored = EndlessIIFaceGeometry.silhouette(.wedge, size: size, mirrored: true)
+
+        XCTAssertEqual(plain.boundingBox.width, mirrored.boundingBox.width, accuracy: 0.01)
+        var flipped = CGAffineTransform(scaleX: -1, y: 1)
+        XCTAssertEqual(plain.copy(using: &flipped)?.boundingBox, mirrored.boundingBox,
+                       "mirroring is a reflection in x and nothing else, which is what makes "
+                       + "flipping the node the same picture as mirroring the path")
+    }
+}

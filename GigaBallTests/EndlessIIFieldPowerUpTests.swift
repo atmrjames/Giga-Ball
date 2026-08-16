@@ -1177,17 +1177,17 @@ final class EndlessIIWreckingBallLookTests: XCTestCase {
     }
 
     func testAThemeWithNoArtIsSimplyLeftAlone() {
-        // The glass theme's three wrecking textures do not exist yet (§8.5). A glass ball
-        // that keeps its own look is a better answer than one wearing somebody else's theme
-        let glass = 5
-        let scene = mayhem(theme: glass)
+        // The answer to missing art, held here against a theme index that does not exist.
+        // It was the glass theme until James drew it (round 153); the rule outlives the gap,
+        // because a ball wearing somebody else's spikes is worse than a ball wearing none
+        let scene = mayhem(theme: 99)
         scene.ball.texture = scene.ballTexture
         scene.endlessIICollectWreckingBall()
         scene.refreshEndlessIIWreckingBall()
 
         XCTAssertNil(scene.endlessIIWreckingTexture(for: .normal))
         XCTAssertNil(spikes(scene))
-        XCTAssertEqual(scene.ball.texture, scene.ballTexture, "still a glass ball")
+        XCTAssertEqual(scene.ball.texture, scene.ballTexture, "still its own ball")
     }
 
     func testTheThemeOrderIsPinnedByTheThreeTexturesThatAreADifferentSize() {
@@ -1197,13 +1197,13 @@ final class EndlessIIWreckingBallLookTests: XCTestCase {
         // spikes are drawn *inside* a 50pt square, the candy cane's reach 72, and the glass
         // theme has no art at all. Any shuffle of the order moves at least one of them
         let scene = mayhem()
-        let expected: [(theme: Int, width: CGFloat?)] = [(4, 50), (5, nil), (8, 72)]
+        let expected: [(theme: Int, width: CGFloat?)] = [(4, 50), (8, 72), (99, nil)]
 
         for (theme, width) in expected {
             scene.ballSetting = theme
             let texture = scene.endlessIIWreckingTexture(for: .normal)
             guard let width else {
-                XCTAssertNil(texture, "the glass theme has no wrecking art (§8.5)")
+                XCTAssertNil(texture, "a theme that does not exist has no art")
                 continue
             }
             XCTAssertEqual(texture?.size().width, width, "theme \(theme) is not where it was")
@@ -1212,9 +1212,9 @@ final class EndlessIIWreckingBallLookTests: XCTestCase {
 
     func testEveryOtherThemeHasArtForAllThreeBalls() {
         // The count that stops a theme being silently skipped - the same trap as a style
-        // that is in the enum but not in a pool
+        // that is in the enum but not in a pool. All twelve since round 153
         let scene = mayhem()
-        for theme in 0..<LevelPackSetup().ballImageArray.count where theme != 5 {
+        for theme in 0..<LevelPackSetup().ballImageArray.count {
             scene.ballSetting = theme
             for dress in [GameScene.BallDress.normal, .giga, .undestructi] {
                 XCTAssertNotNil(scene.endlessIIWreckingTexture(for: dress),
