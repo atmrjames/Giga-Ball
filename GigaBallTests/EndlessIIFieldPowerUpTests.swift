@@ -939,6 +939,75 @@ final class RandomisedBounceTests: XCTestCase {
 
     // MARK: - Safety Paddle
 
+    /// James, round 169: "I got stuck with an empty screen, no bricks coming down from the top
+    /// after the lowest brick it destroyed. This happened after the clear and retreat power up
+    /// and coming back from the pause screen."
+    ///
+    /// It looked like a pause bug and was not. `moveEndlessModeRowDown` sets
+    /// `endlessMoveInProgress` and the new row's own action clears it on completion - so if
+    /// those bricks leave before the action finishes, which is what Clear And Retreat does to
+    /// them, the completion never runs. `countBricks` was the only other writer and it wrote
+    /// from *inside* its loop over the bricks, so an empty field never reached the line at all
+    /// and the flag stayed true, and the guard refused to generate another row for the rest of
+    /// the run. Pausing appeared to fix it because the ball reset clears the flag by hand.
+    /// `countBricks` reads the achievement arrays, so the scene it is asked of needs its
+    /// stats - the class's own helper does not set them, and an empty `totalStatsArray` is an
+    /// index-out-of-range that takes the whole test run down with it rather than one test.
+    ///
+    /// The field is **held** in each of these, which is the only way to ask the question. The
+    /// last thing `countBricks` does is start the next row when the bottom is clear, and that
+    /// sets the flag again - so on an unheld field the flag is true afterwards either way, and
+    /// "stuck true" and "true because the descent just began" are the same reading. Holding it
+    /// stops the follow-on move, so what is left is what the count itself decided.
+    private func descentScene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessMode = true
+        scene.endlessIIClearAndRetreatClock.collect(5)
+        return scene
+    }
+
+    private func brick(on scene: GameScene, x: CGFloat, moving: Bool = false) {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = CGSize(width: 30, height: 15)
+        brick.position = CGPoint(x: x, y: 200)
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        if moving { brick.run(.moveBy(x: 0, y: -15, duration: 5)) }
+    }
+
+    func testAnEmptyFieldIsNotStillMoving() {
+        let scene = descentScene()
+        scene.endlessMoveInProgress = true
+
+        scene.countBricks()
+        XCTAssertFalse(scene.endlessMoveInProgress,
+                       "nothing on the field can be mid-step, so nothing holds the descent")
+    }
+
+    func testAStillFieldIsNotMovingEitherWhateverTheLastBrickSaid() {
+        // The flag used to be whatever the last brick examined happened to say
+        let scene = descentScene()
+        scene.endlessMoveInProgress = true
+        for x in [CGFloat(-40), 0, 40] { brick(on: scene, x: x) }
+
+        scene.countBricks()
+        XCTAssertFalse(scene.endlessMoveInProgress)
+    }
+
+    func testAFieldWithOneBrickMidStepIsMoving() {
+        // Enumeration order is not ours to choose, which is the point: one brick mid-step
+        // holds the field whether it is seen first or last
+        let scene = descentScene()
+        scene.endlessMoveInProgress = false
+        brick(on: scene, x: -40)
+        brick(on: scene, x: 40, moving: true)
+
+        scene.countBricks()
+        XCTAssertTrue(scene.endlessMoveInProgress)
+    }
+
     // §5.4, and the play-test idea from the tenth round: a second, fixed paddle just below
     // the lowest brick row. Good because it keeps the ball up in the field; bad because it
     // stops the ball reaching the bricks from below.

@@ -3330,6 +3330,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func countBricks() {
 		bricksLeft = 0
 		var endlessModeBricks = 0
+		var anyBrickIsMoving = false
 
 		enumerateChildNodes(withName: BrickCategoryName) { (nodeBrick, _) in
 			let spriteBrick = nodeBrick as! SKSpriteNode
@@ -3347,15 +3348,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// not hold the field up while it waits
 				// Count number of active bricks in bottom row of bricks in endless mode
 				
-				if self.endlessMode && spriteBrick.hasActions() {
-					self.endlessMoveInProgress = true
-				} else {
-					self.endlessMoveInProgress = false
-				}
-				// Checks if brick move is already in progress in endless mode
+				if self.endlessMode && spriteBrick.hasActions() { anyBrickIsMoving = true }
+				// Whether *any* brick is mid-step, gathered across the whole field and applied
+				// once below. It used to be written per brick inside this loop, so the answer
+				// was whatever the last brick examined happened to say - and, worse, a field
+				// with no bricks left in it never reached this line at all, so the flag kept
+				// whatever it had (round 171)
 			}
 		}
 		
+		if endlessMode { endlessMoveInProgress = anyBrickIsMoving }
+		// **Read off the field, every time, including when the field is empty.**
+		//
+		// This is the stuck-forever bug James found (round 169: "I got stuck with an empty
+		// screen, no bricks coming down from the top"). `moveEndlessModeRowDown` sets the flag
+		// and the new row's own action clears it on completion - so if those bricks leave
+		// before the action finishes, which is exactly what Clear And Retreat does to them,
+		// the completion never runs and the flag stays true. The guard below then refuses to
+		// generate another row for the rest of the run.
+		//
+		// It looked like a pause bug because pausing and resuming appeared to fix it: the ball
+		// reset on the way back through clears the flag by hand. What actually fixed it was
+		// anything that wrote `false` over a flag nothing else could.
+
 		if endlessMode && bricksLeft == 0 && totalStatsArray[0].achievementsUnlockedArray[22] == false {
 			totalStatsArray[0].achievementsUnlockedArray[22] = true
 			totalStatsArray[0].achievementDates[22] = Date()
