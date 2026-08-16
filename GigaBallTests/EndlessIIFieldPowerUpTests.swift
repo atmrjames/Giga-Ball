@@ -1063,3 +1063,163 @@ final class GhostBallTests: XCTestCase {
         XCTAssertEqual(scene.ball.alpha, 1)
     }
 }
+
+// MARK: - The wrecking ball's spikes
+
+/// James's art, round 152, with one instruction attached: "These spikes should be visual
+/// only. The actual physics body of the ball when the wrecking ball is active should be no
+/// different to normal."
+///
+/// So most of what these tests hold is what must *not* change.
+final class EndlessIIWreckingBallLookTests: XCTestCase {
+
+    private func mayhem(theme: Int = 0) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSize = 20
+        scene.ballSetting = theme
+        scene.totalStatsArray = [TotalStats()]
+        scene.ball.size = CGSize(width: 20, height: 20)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 10)
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    private func spikes(_ scene: GameScene) -> SKSpriteNode? {
+        scene.ball.childNode(withName: GameScene.wreckingSpikesName) as? SKSpriteNode
+    }
+
+    func testTheBallsPhysicsBodyIsNotTouched() {
+        let scene = mayhem()
+        let body = scene.ball.physicsBody
+        let area = body?.area
+
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+
+        XCTAssertTrue(scene.ball.physicsBody === body, "the same body, not a new one")
+        XCTAssertEqual(scene.ball.physicsBody?.area, area)
+        XCTAssertEqual(scene.ball.size, CGSize(width: 20, height: 20),
+                       "and the same size - the sticky band, the paddle clamp and the "
+                       + "direction marker all measure themselves against it")
+    }
+
+    func testTheSpikesAreDrawnBiggerThanTheBall() {
+        // The whole point of the art: 64pt of texture around a 50pt ball. The overhang is
+        // read off the texture rather than written down, so a redrawn spike is a longer
+        // spike the day it lands
+        let scene = mayhem()
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+
+        guard let spikes = spikes(scene) else { return XCTFail("no spikes") }
+        XCTAssertGreaterThan(spikes.size.width, scene.ball.size.width)
+        let texture = scene.endlessIIWreckingTexture(for: .normal)
+        XCTAssertEqual(spikes.size.width,
+                       20*(texture?.size().width ?? 0)/GameScene.plainBallTexturePoints,
+                       accuracy: 0.01)
+    }
+
+    func testTheBallStopsDrawingItselfAndStartsAgainAfterwards() {
+        let scene = mayhem()
+        scene.ball.texture = scene.ballTexture
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+        XCTAssertNil(scene.ball.texture, "or the spiked art is drawn over a plain ball")
+
+        scene.endlessIIWreckingBallClock.run(down: GameScene.endlessIIPaddlePowerUpDuration)
+        scene.refreshEndlessIIWreckingBall()
+        XCTAssertNil(spikes(scene))
+        XCTAssertEqual(scene.ball.texture, scene.ballTexture)
+    }
+
+    func testItComesBackWearingWhateverTheBallBecameWhileItWasSpiked() {
+        // A Giga-Ball collected *during* a wrecking ball. The dress is the state, so the
+        // ball that emerges from the spikes is the ball it turned into, not the one it was
+        let scene = mayhem()
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+        scene.ballDress = .giga
+
+        scene.endlessIIWreckingBallClock.run(down: GameScene.endlessIIPaddlePowerUpDuration)
+        scene.refreshEndlessIIWreckingBall()
+        XCTAssertEqual(scene.ball.texture, scene.gigaBallTexture)
+    }
+
+    func testThePhysicsMasksReadTheDressRatherThanThePicture() {
+        // Eleven places used to ask `ball.texture` whether the Giga-Ball was running, and
+        // the spikes take that picture away. This is the one that decides whether the ball
+        // passes through bricks
+        let scene = mayhem()
+        scene.ballDress = .giga
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+        scene.ballPhysicsBodySet()
+
+        let bricks = CollisionTypes.brickCategory.rawValue
+        let collides = scene.ball.physicsBody?.collisionBitMask ?? bricks
+        XCTAssertEqual(collides & bricks, 0,
+                       "a spiked Giga-Ball still passes through bricks - the spikes took "
+                       + "the picture away, and the picture was carrying this rule")
+    }
+
+    func testEveryBallInPlayGetsThem() {
+        let scene = mayhem()
+        scene.endlessIIAddBall()
+        XCTAssertEqual(scene.endlessIIBallsInPlay.count, 2, "the ball and one extra")
+
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+        for subject in scene.endlessIIBallsInPlay {
+            XCTAssertNotNil(subject.childNode(withName: GameScene.wreckingSpikesName),
+                            "a power-up belongs to the run, not to one ball")
+        }
+    }
+
+    func testAThemeWithNoArtIsSimplyLeftAlone() {
+        // The glass theme's three wrecking textures do not exist yet (§8.5). A glass ball
+        // that keeps its own look is a better answer than one wearing somebody else's theme
+        let glass = 5
+        let scene = mayhem(theme: glass)
+        scene.ball.texture = scene.ballTexture
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+
+        XCTAssertNil(scene.endlessIIWreckingTexture(for: .normal))
+        XCTAssertNil(spikes(scene))
+        XCTAssertEqual(scene.ball.texture, scene.ballTexture, "still a glass ball")
+    }
+
+    func testTheThemeOrderIsPinnedByTheThreeTexturesThatAreADifferentSize() {
+        // The map from a theme index to a file name is written out by hand, and a map that
+        // is one out gives an Ice ball Outline spikes - which looks like art nobody likes
+        // rather than like a bug. Three themes have a size of their own: the square theme's
+        // spikes are drawn *inside* a 50pt square, the candy cane's reach 72, and the glass
+        // theme has no art at all. Any shuffle of the order moves at least one of them
+        let scene = mayhem()
+        let expected: [(theme: Int, width: CGFloat?)] = [(4, 50), (5, nil), (8, 72)]
+
+        for (theme, width) in expected {
+            scene.ballSetting = theme
+            let texture = scene.endlessIIWreckingTexture(for: .normal)
+            guard let width else {
+                XCTAssertNil(texture, "the glass theme has no wrecking art (§8.5)")
+                continue
+            }
+            XCTAssertEqual(texture?.size().width, width, "theme \(theme) is not where it was")
+        }
+    }
+
+    func testEveryOtherThemeHasArtForAllThreeBalls() {
+        // The count that stops a theme being silently skipped - the same trap as a style
+        // that is in the enum but not in a pool
+        let scene = mayhem()
+        for theme in 0..<LevelPackSetup().ballImageArray.count where theme != 5 {
+            scene.ballSetting = theme
+            for dress in [GameScene.BallDress.normal, .giga, .undestructi] {
+                XCTAssertNotNil(scene.endlessIIWreckingTexture(for: dress),
+                                "theme \(theme) has no wrecking art")
+            }
+        }
+    }
+}

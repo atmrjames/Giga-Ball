@@ -543,6 +543,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let directionMarkerInnerUndestructiTexture: SKTexture = SKTexture(imageNamed: "directionMarkerInnerUndestructi")
 	// direction marker textures
 	
+	/// What the ball *is*, as against what it is wearing.
+	///
+	/// Eleven places used to ask `ball.texture` whether the Giga-Ball or the Undestructi-Ball
+	/// was running - the laser's own texture and pass-through, the direction marker's three
+	/// answers, the physics masks, the save. That works only for as long as nothing else ever
+	/// changes the picture, and the Wrecking Ball's spikes change the picture (round 152).
+	var ballDress: BallDress = .normal
 	var ballTexture: SKTexture = SKTexture(imageNamed: "ballNormal")
 	let threeDBall: SKTexture = SKTexture(imageNamed: "3DBall")
 	let outlineBall: SKTexture = SKTexture(imageNamed: "outlineBall")
@@ -1288,6 +1295,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		background.zPosition = 0
 		applyBackgroundSetting()
 		
+		ballDress = .normal
 		ball.texture = ballTexture
 		ball.physicsBody = SKPhysicsBody(circleOfRadius: ballSize/2)
         ball.physicsBody!.allowsRotation = false
@@ -2454,6 +2462,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// The ball's own tally closes here and starts again. Counted per ball rather than
 		// derived, because a maximum cannot be recovered from totals the way an average can
         self.ball.isHidden = true
+		ballDress = .normal
 		ball.texture = ballTexture
 		ballRelativePositionOnPaddle = 0
         ball.position.x = paddle.position.x
@@ -2911,6 +2920,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func deactivateGigaBall() {
 		gigaBallDeactivate = false
 		gigaBallIcon.texture = iconGigaBallDisabledTexture
+		ballDress = .normal
 		ball.texture = ballTexture
 		ballPhysicsBodySet()
 		powerUpLimit = 2
@@ -3122,7 +3132,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// The run's count for the game-over summary - after the null-cell return, which
 		// is a placeholder leaving, not a brick dying
 		
-		if ball.texture == undestructiballTexture {
+		if ballDress == .undestructi {
 			countBricks()
 			return
 		}
@@ -4524,6 +4534,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gigaBallIconBar.isHidden = false
 			// Show power-up icon timer
 			gigaBallDeactivate = false
+            ballDress = .giga
             ball.texture = gigaBallTexture
             ballPhysicsBodySet()
 			powerUpMultiplierScore = 0.1
@@ -4561,6 +4572,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gigaBallIconBar.isHidden = false
 			// Show power-up icon timer
 			gigaBallDeactivate = false
+			ballDress = .undestructi
 			ball.texture = undestructiballTexture
 			ballPhysicsBodySet()
 			powerUpLimit = 2
@@ -4570,6 +4582,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
+                self.ballDress = .normal
                 self.ball.texture = self.ballTexture
 				self.ballPhysicsBodySet()
 				self.gigaBallIcon.texture = self.iconGigaBallDisabledTexture
@@ -5170,6 +5183,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
 		ball.physicsBody!.linearDamping = ballLinearDampening
 		powerUpLimit = 2
+		ballDress = .normal
 		ball.texture = ballTexture
 		ballPhysicsBodySet()
 		gigaBallIconBar.isHidden = true
@@ -5269,7 +5283,7 @@ laserTimer?.invalidate()
 		for subject in endlessIIBallsInPlay {
 			guard let body = subject.physicsBody else { continue }
 
-			if ball.texture == gigaBallTexture {
+			if ballDress == .giga {
 			// Giga-Ball power-up
 				body.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.paddleCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue | CollisionTypes.boarderCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.backstopCategory.rawValue | CollisionTypes.safetyPaddleCategory.rawValue
 				// Reset undestructi-ball power-up
@@ -6283,7 +6297,7 @@ laserTimer?.invalidate()
 			laser.zPosition = 2
 			// Define laser properties
 			
-			if ball.texture == gigaBallTexture {
+			if ballDress == .giga {
 				laser.physicsBody!.collisionBitMask = 0
 				laser.texture = laserGigaTexture
 				
@@ -6578,7 +6592,7 @@ laserTimer?.invalidate()
 				powerUpActiveDurationArray?.append(remainingTime)
 				powerUpActiveTimerArray?.append(Double(gigaBallPowerUp.duration))
 				var magnitude: Int?
-				if ball.texture == gigaBallTexture {
+				if ballDress == .giga {
 					magnitude = 0 // giga-ball
 				} else {
 					magnitude = 1 // undestructi-ball
@@ -7224,7 +7238,7 @@ laserTimer?.invalidate()
 			laser.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
 			laser.physicsBody!.contactTestBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue
 
-			if ball.texture == gigaBallTexture {
+			if ballDress == .giga {
 				laser.physicsBody!.collisionBitMask = 0
 				laser.texture = laserGigaTexture
 			}
@@ -7482,10 +7496,12 @@ laserTimer?.invalidate()
 						switch savedGame.activePowerUpMagnitudes[i] {
 						case 0:
 							gigaBallIcon.texture = self.iconGigaBallTexture
+							ballDress = .giga
 							ball.texture = gigaBallTexture
 							powerUpLimit = 4
 						case 1:
 							gigaBallIcon.texture = self.iconUndestructiballTexture
+							ballDress = .undestructi
 							ball.texture = undestructiballTexture
 							powerUpLimit = 2
 							// Power up set
@@ -7504,6 +7520,7 @@ laserTimer?.invalidate()
 								self.gigaBallIconBar.isHidden = true
 								// Hide power-up icons
 							} else {
+								self.ballDress = .normal
 								self.ball.texture = self.ballTexture
 								self.ballPhysicsBodySet()
 								self.gigaBallIcon.texture = self.iconGigaBallDisabledTexture
@@ -7761,9 +7778,9 @@ laserTimer?.invalidate()
             directionMarker.position.y = ball.position.y
             // Set direction marker rotation to match the ball's direction of travel and position
             
-            if ball.texture == gigaBallTexture {
+            if ballDress == .giga {
                 directionMarker.texture = directionMarkerOuterGigaTexture
-            } else if ball.texture == undestructiballTexture {
+            } else if ballDress == .undestructi {
                 directionMarker.texture = directionMarkerOuterUndestructiTexture
             } else {
                 directionMarker.texture = directionMarkerOuterTexture
@@ -7772,9 +7789,9 @@ laserTimer?.invalidate()
             
             if directionMarker.position.x > 0 + frame.size.width/2 - directionMarker.size.width/2 {
                 if angleDeg > -90 && angleDeg < 90 {
-                    if ball.texture == gigaBallTexture {
+                    if ballDress == .giga {
                         directionMarker.texture = directionMarkerInnerGigaTexture
-                    } else if ball.texture == undestructiballTexture {
+                    } else if ballDress == .undestructi {
                         directionMarker.texture = directionMarkerInnerUndestructiTexture
                     } else {
                         directionMarker.texture = directionMarkerInnerTexture
@@ -7784,9 +7801,9 @@ laserTimer?.invalidate()
             }
             else if directionMarker.position.x < 0 - frame.size.width/2 + directionMarker.size.width/2 {
                 if angleDeg < -90 || angleDeg > 90 {
-                    if ball.texture == gigaBallTexture {
+                    if ballDress == .giga {
                         directionMarker.texture = directionMarkerInnerGigaTexture
-                    } else if ball.texture == undestructiballTexture {
+                    } else if ballDress == .undestructi {
                         directionMarker.texture = directionMarkerInnerUndestructiTexture
                     } else {
                         directionMarker.texture = directionMarkerInnerTexture

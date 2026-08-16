@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "ballWreckingUndestructi3D.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "ballWreckingUndestructi3D@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "ballWreckingUndestructi3D@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

@@ -466,6 +466,7 @@ extension GameScene {
         removeAction(forKey: "powerUpUndestructiBall")
         gigaBallIcon.removeAction(forKey: "powerUpGigaBallTimer")
         gigaBallIconBar.removeAction(forKey: "gigaBallTimer")
+        ballDress = .normal
         ball.texture = ballTexture
         ballPhysicsBodySet()
         gigaBallIcon.texture = iconGigaBallDisabledTexture
@@ -675,6 +676,10 @@ extension GameScene {
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
+        refreshEndlessIIWreckingBall()
+        // Outside the Playing guard, like the Aura's tick: the spikes have to come off a
+        // ball whose clock ran out while the game was paused, and go back on when a run is
+        // resumed - neither of which happens while nothing is being ticked
     }
 
     // MARK: - Randomised Bounce

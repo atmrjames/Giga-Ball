@@ -56,7 +56,10 @@ extension GameScene {
             speed: currentSpeed > 0 ? currentSpeed : ballSpeedLimit,
             offset: Double.random(in: -1...1))
 
-        let extra = SKSpriteNode(texture: parent.texture)
+        let extra = SKSpriteNode(texture: ballDressTexture(ballDress))
+        // The dress rather than the parent's current texture: while the Wrecking Ball runs
+        // the parent has no texture of its own, because a child is drawing the spikes for
+        // it, and an extra ball born from that would be a ball with no picture at all
         extra.size = parent.size
         extra.zPosition = parent.zPosition
         extra.name = BallCategoryName

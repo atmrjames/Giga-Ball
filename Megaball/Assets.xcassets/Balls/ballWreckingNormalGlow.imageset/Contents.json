@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "ballWreckingNormalGlow.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "ballWreckingNormalGlow@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "ballWreckingNormalGlow@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

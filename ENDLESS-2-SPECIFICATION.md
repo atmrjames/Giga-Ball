@@ -800,6 +800,32 @@ Everything new is currently wearing a placeholder that reads correctly, which wa
 order: the mechanics have all changed shape at least once since they were drawn. With phase
 8 complete this section is now the shopping list, slot by slot, for the real assets.
 
+### Wrecking ball textures — three still to draw
+
+James delivered thirty-three of the thirty-six on 16 August 2026: a spiked ball for each of
+the twelve ball themes, in each of the three ball colours (normal, Giga-Ball,
+Undestructi-Ball). They are in the catalogue as `ballWrecking<Body><Theme>`, where the body
+is `Normal`, `Giga` or `Undestructi` and the theme is the empty string for classic, and
+otherwise `3D`, `Ice`, `Outline`, `Square`, `Pixel`, `Split`, `Candy`, `Glow`, `Rainbow`
+or `Retro`. Note `Glow` is the theme the code has always called the giga *look* - it is
+index 9 in the ball arrays, and the files use James's word for it.
+
+**Missing: the glass theme, all three bodies.** Until they exist a glass ball simply keeps
+its own look while the Wrecking Ball runs, which is a better answer than wearing another
+theme's spikes; `endlessIIWreckingTexture` returns nil for that index and a test holds it
+there, so the day the three files land the only change is deleting the nil.
+
+Two of the delivered files arrived misnamed and were placed by what they actually are:
+`ballWreckingGigaRainbow Copy` is the giga rainbow (there was no other), and
+`ballWreckingGigaCandy Copy` is the *undestructi* candy - it is the grey-blue of
+`candyUndestructi`, not the yellow-green of `candyGiga`, and undestructi candy was otherwise
+missing. Worth confirming.
+
+The spikes are drawn at the texture's own proportions against a 50pt plain ball, so the
+overhang is whatever the art says: 64pt for most themes, 72 for the candy cane, and 50 for
+the square theme, whose spikes are drawn inside the square. A redrawn texture with longer
+spikes is longer-spiked in the game the day it lands, with no number to change.
+
 ### Power-up icons — twenty drawn placeholders
 
 Every one is a `static let` in `PowerUpIcon.swift`, drawn at 120×120 into the standard
