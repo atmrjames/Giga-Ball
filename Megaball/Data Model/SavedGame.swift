@@ -228,6 +228,18 @@ struct SavedGame: Codable, Equatable {
         /// The power-up a power-up brick is holding.
         var powerUpIndex: Int?
         var staysPlain: Bool
+
+        /// Which face a Directional brick may be destroyed from - `EndlessIISide`'s raw value.
+        ///
+        /// The role came back and the side did not, so `makeDirectional` rolled a fresh one and
+        /// a resumed brick was open somewhere else (James, round 174: "after force quitting the
+        /// app and restarting during endless mayhem, the open face on a directional brick had
+        /// changed"). A brick whose rules change while the player is not looking is worse than
+        /// a hard brick.
+        ///
+        /// Optional, so saves written before this restore as they did - with a rolled side,
+        /// which is what they have always had.
+        var vulnerableSide: String? = nil
     }
 
     /// The Mayhem field, saved properly. Absent in every other mode and in every save written

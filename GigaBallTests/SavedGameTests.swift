@@ -627,6 +627,58 @@ final class SavedMayhemFieldTests: XCTestCase {
         XCTAssertTrue(record.anchored)
     }
 
+    /// James, round 174: "after force quitting the app and restarting during endless mayhem,
+    /// the open face on a directional brick had changed."
+    ///
+    /// The role came back and the side did not, so `makeDirectional` rolled a fresh one. A
+    /// brick whose rules change while the player is not looking is worse than a hard brick.
+    func testADirectionalBrickComesBackOpenOnTheSameSide() {
+        let scene = mayhem()
+        let node = brick(in: scene, x: 0, y: 40)
+        scene.applyEndlessIIStyle(.directional, to: node)
+        node.endlessIIVulnerableSide = .left
+        let record = scene.savedBrick(for: node, texture: 0, colour: 100, restingY: 40)
+        XCTAssertEqual(record.vulnerableSide, EndlessIISide.left.rawValue,
+                       "written down, where it used to be left to chance")
+
+        let resumed = mayhem()
+        var save = emptySave()
+        save.endlessIIBricks = [record]
+        resumed.savedGame = save
+        XCTAssertTrue(resumed.resumeEndlessIIBricks())
+
+        var found: [SKSpriteNode] = []
+        resumed.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { found.append(sprite) }
+        }
+        XCTAssertEqual(found.count, 1)
+        XCTAssertEqual(found[0].endlessIIRole, .directional)
+        XCTAssertEqual(found[0].endlessIIVulnerableSide, .left,
+                       "the same face open, not a freshly rolled one")
+    }
+
+    func testASaveWithoutASideStillRestoresADirectionalBrick() {
+        // Optional, so saves written before round 174 restore as they did - with a rolled side
+        let scene = mayhem()
+        let node = brick(in: scene, x: 0, y: 40)
+        scene.applyEndlessIIStyle(.directional, to: node)
+        var record = scene.savedBrick(for: node, texture: 0, colour: 100, restingY: 40)
+        record.vulnerableSide = nil
+
+        let resumed = mayhem()
+        var save = emptySave()
+        save.endlessIIBricks = [record]
+        resumed.savedGame = save
+        XCTAssertTrue(resumed.resumeEndlessIIBricks())
+
+        var found: [SKSpriteNode] = []
+        resumed.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { found.append(sprite) }
+        }
+        XCTAssertEqual(found.count, 1)
+        XCTAssertNotNil(found[0].endlessIIVulnerableSide, "open somewhere, which is the old best")
+    }
+
     func testTheRestoreRebuildsWhatWasSaved() {
         let scene = mayhem()
         let node = brick(in: scene, x: -60, y: 40)

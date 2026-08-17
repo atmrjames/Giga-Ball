@@ -247,7 +247,12 @@ extension GameScene {
         // destroyed at all, which is not a hard brick but a broken one. If every side is
         // blocked the brick stays as it is rather than becoming an accidental wall
 
-        let side: EndlessIISide = sides.randomElement() ?? .bottom
+        let side: EndlessIISide = brick.endlessIIVulnerableSide
+            ?? sides.randomElement() ?? .bottom
+        // A side the brick already carries is kept. That is how a resumed run comes back with
+        // the same face open (round 174): the restore writes the saved side before applying the
+        // role, and rolling here would throw it away - the same bargain `makeFace` makes with
+        // a shaped brick's orientation
         brick.endlessIIRole = .directional
         brick.endlessIIVulnerableSide = side
         tint(brick, GameScene.directionalBrickColour)

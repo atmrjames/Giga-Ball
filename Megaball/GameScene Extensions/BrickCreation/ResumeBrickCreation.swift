@@ -51,7 +51,8 @@ extension GameScene {
             portalBlue: sprite.endlessIIPortalIsBlue,
             anchored: sprite.endlessIIIsAnchored,
             powerUpIndex: sprite.endlessIIPowerUpIndex,
-            staysPlain: sprite.endlessIIStaysPlain)
+            staysPlain: sprite.endlessIIStaysPlain,
+            vulnerableSide: sprite.endlessIIVulnerableSide?.rawValue)
     }
 
     /// Rebuilds the Mayhem field from the rich record, exactly as it was left.
@@ -91,6 +92,13 @@ extension GameScene {
             brick.endlessIIPortalIsBlue = record.portalBlue
             brick.endlessIIPowerUpIndex = record.powerUpIndex
             addChild(brick)
+
+            if let raw = record.vulnerableSide, let side = EndlessIISide(rawValue: raw) {
+                brick.endlessIIVulnerableSide = side
+            }
+            // Before the role is applied, for the reason the shaped face is: `makeDirectional`
+            // rolls a side only when the brick does not already carry one, so this is what
+            // stops a resumed brick being open somewhere else
 
             if let raw = record.role, let role = EndlessIIRole(rawValue: raw) {
                 applyEndlessIIStyle(style(for: role), to: brick)
