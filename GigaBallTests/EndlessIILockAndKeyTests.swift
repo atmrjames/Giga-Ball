@@ -197,12 +197,13 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         // timed power-up is added and left out of it, a Lock will neither drop for it nor
         // freeze it - which from the outside looks like the Lock being broken
         let scene = mayhem()
-        XCTAssertEqual(scene.endlessIITimedClocks.count, 15)
+        XCTAssertEqual(scene.endlessIITimedClocks.count, 13)
         // Ten since round 125: Randomised Bounce and Ghost Ball are both timed, so a Lock
         // freezes them and a Wipe clears them without either of those being edited. Eleven
         // since round 136, when Clear And Retreat stopped being instant, twelve since round
-        // 143 and the Safety Paddle, thirteen since round 148 and Drift, fourteen since
-        // round 151 and Double Paddle, and fifteen since round 168 and the Mirror Paddle
+        // 143 and the Safety Paddle, thirteen since round 148 and Drift. Double Paddle and
+        // Mirror Paddle visited in rounds 151 and 168 and left in round 180, when both moved
+        // to paddle hits - a Lock stops time, and they no longer spend any
 
         for path in GameScene.endlessIITimedClockPaths {
             let fresh = mayhem()

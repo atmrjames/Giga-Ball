@@ -70,6 +70,16 @@ extension GameScene {
             ballIsOnPaddle = true
             subject.physicsBody?.velocity = .zero
             subject.position.y = ballStartingPositionY
+            ballRelativePositionOnPaddle = subject.position.x - paddle.position.x
+            // **Where it landed, not where the last launch left off** (James, round 169:
+            // "all of a sudden, the other ball appeared on the middle of the paddle";
+            // round 180, mid-Ghost Ball: "the ball suddenly appeared back on my paddle").
+            // The on-paddle follow places the ball at `paddle.x + this offset` every frame,
+            // and `releaseBall` zeroes the offset - so a caught ball sat at its landing
+            // spot for one frame and then snapped to the paddle's centre, which reads as a
+            // teleport. The extras' branch above has always recorded its offset
+            // (`endlessIIHeldOffsets`); this is the main ball getting the same memory -
+            // and it is why round 175's hunt through the extras found nothing
             endlessIIFirstBallWasCaught()
             if musicSetting { MusicHandler.sharedHelper.menuVolume() }
         }

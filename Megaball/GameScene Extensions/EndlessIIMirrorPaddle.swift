@@ -37,18 +37,20 @@ import SpriteKit
 
 extension GameScene {
 
-    /// How long the mirror stands.
+    /// How many paddle hits the mirror stands for.
     ///
-    /// The same twelve seconds Double Paddle and the Safety Paddle get. Long enough to plan a
-    /// shot around, short enough that the field it is helping with is still the field it
-    /// arrived in.
-    static let endlessIIMirrorPaddleDuration: TimeInterval = 12
+    /// It was twelve seconds, but the seconds were never wired to any run-down loop, so the
+    /// mirror simply never left and its ring never moved (James, round 180: "it wasn't
+    /// counting down it's segments, it just remained on the whole time"). Paddle hits now,
+    /// like the rest of the paddle batch - and hits on the *real* paddle only, because
+    /// `endlessIIMirrorPaddleHit` deliberately spends nothing.
+    static let endlessIIMirrorPaddleTurns = Int(GameScene.endlessIIPaddlePowerUpTurns)
 
     static let endlessIIMirrorPaddleName = "endlessIIMirrorPaddle"
 
     func endlessIICollectMirrorPaddle() {
         guard gameMode == .endlessII else { return }
-        endlessIIMirrorPaddleClock.collect(GameScene.endlessIIMirrorPaddleDuration)
+        endlessIIMirrorPaddleClock.collect(turns: GameScene.endlessIIMirrorPaddleTurns)
         showEndlessIIMirrorPaddle()
     }
 
@@ -67,6 +69,10 @@ extension GameScene {
     /// the rest of the file is the plumbing that keeps a second sprite honest.
     static func endlessIIMirrorPaddleX(paddleX: CGFloat) -> CGFloat { -paddleX }
 
+    /// The mirror's tint: the Giga-Ball lime, so the pair never read as two of yours.
+    static let endlessIIMirrorPaddleColour: UIColor =
+        #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+
     /// Puts the mirror on the field, or leaves the one already there alone.
     ///
     /// A second collection lengthens the clock rather than building a second mirror - what
@@ -84,7 +90,13 @@ extension GameScene {
         mirror.name = GameScene.endlessIIMirrorPaddleName
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
-        mirror.zPosition = paddle.zPosition
+        mirror.zPosition = paddle.zPosition - 0.1
+        mirror.color = GameScene.endlessIIMirrorPaddleColour
+        mirror.colorBlendFactor = 1
+        // The Giga-Ball lime, and a step behind the real paddle (James, round 180: "the
+        // mirrored paddle should be a different colour (Giga-Ball green/yellow) and sit
+        // behind the original paddle so it's clear which one follows the tap"). When the
+        // two cross in the middle, the white one in front is yours
         mirror.alpha = 0
         mirror.physicsBody = endlessIIMirrorPaddleBody(size: mirror.size)
         addChild(mirror)
@@ -146,6 +158,11 @@ extension GameScene {
             // width it was born with would be a different paddle from the one it mirrors
         }
         mirror.texture = endlessIIMirrorPaddleDress
+        mirror.color = GameScene.endlessIIMirrorPaddleColour
+        mirror.colorBlendFactor = 1
+        // Re-tinted after the dress, every frame: the dress follows the paddle's own
+        // texture, and a texture write resets nothing but still ships with whatever colour
+        // the sprite carries - one missed frame here and the mirror flashes white
     }
 
     /// The ball met the mirror. Returns it the way the paddle would have.

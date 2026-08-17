@@ -3848,10 +3848,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Check to see if there are any non-hidden destructible bricks left
 		
-		if nonHiddenNodeFound == false || endlessIIBottomZoneIsAllHidden {
+		let classicRuleApplies = gameMode != .endlessII && nonHiddenNodeFound == false
+		if classicRuleApplies || endlessIIBottomZoneIsAllHidden {
 		// Only run if there are only hidden destructible bricks left - or, in Mayhem, if the
 		// bottom zone is held up by nothing the player can see, which is the same interaction
-		// answering a question only this mode asks (round 173)
+		// answering a question only this mode asks (round 173).
+		//
+		// **The Classic rule does not run in Mayhem at all** (James, round 180: "the bricks
+		// flash then disappearing on paddle bounce happened again. And it isn't linked to the
+		// descent power up"). Classic's question is "is everything you could still hit
+		// invisible" - the right question for a mode where a hidden brick can be the last
+		// brick. Mayhem always has more rows coming, and its Fixed bricks wear the
+		// Indestructible texture this check deliberately ignores - so a moment where the only
+		// *visible* bricks were Fixed walls read as an empty field, and every paddle hit
+		// flashed the mode's ordinary hidden bricks on and straight off again. In Mayhem a
+		// hidden brick only matters when it stalls the descent, and the zone rule above is
+		// exactly that question
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				if sprite.isHidden,

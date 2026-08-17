@@ -994,8 +994,8 @@ class LevelPackSetup {
         "5 hits",
         "5 hits",
         "5 hits",
-        "12s",
-        "12s",
+        "5 hits",
+        "5 hits",
         ""
     ]
     

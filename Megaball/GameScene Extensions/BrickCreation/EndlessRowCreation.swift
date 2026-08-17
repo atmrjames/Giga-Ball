@@ -752,6 +752,19 @@ extension GameScene {
                     brickCurrent.removeFromParent()
                 }
                 // Remove null bricks after animation
+
+                self.countBricks()
+                // **The chain re-asks its own question when the refusal ends** (James, round
+                // 180: "sometimes the bricks wouldn't descend the whole way to the bottom",
+                // both endless modes). A step recounts 0.075s after it began, and these
+                // build-ins run 0.05s on the same frame-quantised clock - so one hiccupped
+                // frame leaves an action alive at the recount, round 171's honest flag
+                // refuses the step, and nothing asked again until the next brick was
+                // destroyed. The field parked above the zone until something happened to
+                // count. Counting here makes the cadence self-healing: whenever the last
+                // animation genuinely ends, the zone question is asked once more, and an
+                // empty zone steps again. The earlier completions in the same row see the
+                // next step's own animations and decline, which is the gate doing its job
             })
             // Run animation for each brick
         }

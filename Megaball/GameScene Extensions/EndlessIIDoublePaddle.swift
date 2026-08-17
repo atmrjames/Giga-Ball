@@ -29,23 +29,55 @@ import SpriteKit
 
 extension GameScene {
 
-    /// How long the paddle stays split.
+    /// How many paddle hits the split lasts.
     ///
-    /// Time rather than paddle turns, unlike most of the batch: the interesting thing about a
-    /// split paddle is the shots you decline to take, and a clock that only moves when you
-    /// *do* take one would last a strangely long time in exactly the situation it is hardest.
-    static let endlessIIDoublePaddleDuration: TimeInterval = 12
+    /// It was twelve seconds, argued for on the grounds that the interesting thing about a
+    /// split paddle is the shots you decline to take - but the twelve seconds were never
+    /// wired to any run-down loop, so in play it simply never ended, and James's round-180
+    /// ruling settles the design: "it doesn't ever end. This should be based on paddle hits,
+    /// not timed." Five, like the rest of the paddle batch.
+    static let endlessIIDoublePaddleTurns = Int(GameScene.endlessIIPaddlePowerUpTurns)
 
-    /// How wide the hole is, as a share of the paddle. A little over a ball, so a ball
-    /// straight down the middle goes through and a ball anywhere else does not.
-    static let endlessIIDoublePaddleGap: CGFloat = 0.14
+    /// How wide each gap is, in balls.
+    ///
+    /// Measured off the ball rather than the paddle (James, round 180: the gap "should be
+    /// bigger - big enough for ball to fit though... the ball should be able to fall through
+    /// the middle"). The old gap was 14% of the paddle - almost exactly one ball on the
+    /// standard paddle, so the ball nearly never fitted: it clipped a half instead, and the
+    /// middle read as solid. Half a ball of clearance either side makes falling through a
+    /// thing that happens, without the gap being most of the paddle.
+    static let endlessIIDoublePaddleGapBalls: CGFloat = 1.5
 
     static let doublePaddleHalfName = "endlessIIDoublePaddleHalf"
 
     func endlessIICollectDoublePaddle() {
         guard gameMode == .endlessII else { return }
-        endlessIIDoublePaddleClock.collect(GameScene.endlessIIDoublePaddleDuration)
+        endlessIIDoublePaddleClock.collect(turns: GameScene.endlessIIDoublePaddleTurns)
         refreshEndlessIIDoublePaddle()
+    }
+
+    /// How the current span divides into segments and gaps.
+    ///
+    /// **A longer paddle makes more segments, not longer segments** (James, round 180). The
+    /// segment is fixed at the standard paddle's half - the piece the unexpanded split shows
+    /// two of - and an expanded span fits as many of those as it can with at least a
+    /// ball-and-a-half of gap between neighbours; whatever width is left over widens the gaps
+    /// evenly rather than the pieces. A shrunken paddle keeps its two segments and gives up
+    /// gap width down to the minimum, because one segment is not a split at all.
+    static func endlessIIDoublePaddleLayout(span: CGFloat, standardWidth: CGFloat,
+                                            ballSize: CGFloat)
+    -> (segment: CGFloat, gap: CGFloat, count: Int) {
+        let minGap = ballSize*endlessIIDoublePaddleGapBalls
+        var segment = max(1, (standardWidth - minGap)/2)
+        var count = max(2, Int(floor((span + minGap)/(segment + minGap))))
+        if CGFloat(count)*segment + CGFloat(count - 1)*minGap > span {
+            count = 2
+            segment = max(1, (span - minGap)/2)
+            // Too narrow for two standard pieces: the pieces give way, the gap does not -
+            // a gap the ball cannot fall through is the one thing this must never build
+        }
+        let gap = (span - CGFloat(count)*segment)/CGFloat(count - 1)
+        return (segment, gap, count)
     }
 
     /// Whether the paddle is currently in two pieces.
@@ -95,26 +127,32 @@ extension GameScene {
         guard abs(endlessIIDoublePaddleWidth - paddle.size.width) > 0.5 else { return }
         endlessIIDoublePaddleWidth = paddle.size.width
 
-        let gap = paddle.size.width*GameScene.endlessIIDoublePaddleGap
-        let halfWidth = (paddle.size.width - gap)/2
-        let offset = (halfWidth + gap)/2
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
+                                                           standardWidth: paddleWidth,
+                                                           ballSize: ballSize)
         let dress = endlessIIDoublePaddleHalfDress
-        let size = CGSize(width: halfWidth, height: dress.height)
+        let size = CGSize(width: layout.segment, height: dress.height)
 
-        let bodySize = CGSize(width: halfWidth, height: paddle.size.height)
-        let left = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: -offset, y: 0))
-        let right = SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: offset, y: 0))
+        let bodySize = CGSize(width: layout.segment, height: paddle.size.height)
+        let pitch = layout.segment + layout.gap
+        let first = -paddle.size.width/2 + layout.segment/2
+        let centres = (0..<layout.count).map { first + pitch*CGFloat($0) }
         // The *body* is the paddle's own height, whatever the picture's is: the Retro dress is
         // two and a half times as tall as the paddle it stands for, and a body built to the
         // picture would catch balls above and below the paddle everybody else is playing with
-        paddle.physicsBody = paddleBodyMatchingCurrent(SKPhysicsBody(bodies: [left, right]))
-        // One body made of two rectangles. Every contact still arrives as a paddle contact,
-        // which is the whole trick - nothing downstream has to know there are two of them
+        paddle.physicsBody = paddleBodyMatchingCurrent(SKPhysicsBody(
+            bodies: centres.map {
+                SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: $0, y: 0))
+            }))
+        // One body made of several rectangles. Every contact still arrives as a paddle
+        // contact, which is the whole trick - nothing downstream has to know how many pieces
+        // there are. The gaps carry no rectangle at all, so there is nothing in them for the
+        // ball to collide with - a ball down a gap falls through (round 180)
 
         paddle.children
             .filter { $0.name == GameScene.doublePaddleHalfName }
             .forEach { $0.removeFromParent() }
-        for x in [-offset, offset] {
+        for x in centres {
             let half = SKSpriteNode(texture: dress.texture, size: size)
             half.name = GameScene.doublePaddleHalfName
             half.position = CGPoint(x: x, y: 0)

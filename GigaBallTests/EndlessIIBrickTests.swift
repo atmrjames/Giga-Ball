@@ -127,6 +127,53 @@ final class EndlessIIBrickTests: XCTestCase {
         XCTAssertFalse(field.isHidden)
     }
 
+    /// James, round 180: "the bricks flash then disappearing on paddle bounce happened
+    /// again. And it isn't linked to the descent power up."
+    ///
+    /// The second cause, found where the first was: Classic's own trigger - "is everything
+    /// you could still hit invisible" - was still being asked in Mayhem, and Mayhem's Fixed
+    /// bricks wear the Indestructible texture that check deliberately ignores. A field whose
+    /// only visible bricks were Fixed walls read as an empty one, and every paddle hit
+    /// flashed the mode's ordinary hidden bricks on and straight off again.
+    func testAFieldOfVisibleFixedWallsDoesNotFireClassicsRule() {
+        let scene = zoneScene()
+        let wall = SKSpriteNode(texture: scene.brickIndestructible2Texture)
+        wall.size = CGSize(width: 40, height: 20)
+        wall.position = CGPoint(x: 0, y: 300)
+        wall.name = BrickCategoryName
+        scene.addChild(wall)
+        // A visible Fixed brick, high in the field - outside the zone, outside the checked
+        // texture list
+
+        let hidden = zoneBrick(on: scene, y: 300, hidden: true)
+        // And a hidden ordinary brick beside it, also outside the zone - the brick the
+        // spurious flash kept showing and taking away
+
+        scene.invisibleBrickFlash()
+        XCTAssertTrue(hidden.isHidden,
+                      "no flash: Mayhem answers its zone rule and only its zone rule")
+    }
+
+    func testClassicsOwnRuleStillFiresInClassic() {
+        let scene = zoneScene()
+        scene.gameMode = .classic
+        let hidden = zoneBrick(on: scene, y: 300, hidden: true)
+
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(hidden.isHidden,
+                       "everything hittable is invisible, which is Classic's whole trigger")
+    }
+
+    func testTheZoneRuleStillFlashesItsLurker() {
+        // Scoping Classic's rule out of Mayhem must not take the round-173 feature with it
+        let scene = zoneScene()
+        let lurker = zoneBrick(on: scene, y: 0, hidden: true)
+        zoneBrick(on: scene, y: 300, hidden: false)
+
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(lurker.isHidden)
+    }
+
     func testOverlappingFlashesStillPutEveryBrickBack() {
         // A second flash replaces the first's pending action under its key, so the bricks the
         // first revealed must not be stranded visible - the list lives on the scene, not in

@@ -288,6 +288,31 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIMagnetismClock.isRunning, "five turns and it is gone")
     }
 
+    /// James, round 169: "all of a sudden, the other ball appeared on the middle of the
+    /// paddle" - and round 180, mid-Ghost Ball: "the ball suddenly appeared back on my
+    /// paddle. I think one of the stuck ball features must've kicked in."
+    ///
+    /// It was the aimed catch. The on-paddle follow places the ball at the paddle's x plus
+    /// a remembered offset, and `releaseBall` zeroes that offset - so a caught ball sat at
+    /// its landing spot for a frame and then snapped to the paddle's centre. The extras'
+    /// branch had always recorded its offset, which is why round 175's hunt through the
+    /// extras found nothing.
+    func testAnAimedCatchHoldsTheBallWhereItLanded() {
+        let scene = paddleScene()
+        scene.addChild(scene.ball)
+        scene.addChild(scene.paddle)
+        scene.paddle.position = CGPoint(x: -30, y: -300)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.position = CGPoint(x: 10, y: -290)
+        scene.endlessIICollectAimedSticky()
+
+        XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
+        XCTAssertEqual(scene.ballRelativePositionOnPaddle, 40, accuracy: 0.001,
+                       "the follow keeps it forty points right of centre - where it landed, "
+                       + "not the middle of the paddle")
+    }
+
     func testTheLastAimedCatchStillOwnsItsLaunch() {
         // Round 10 report: "On the last go of an aimed sticky power up the ball stuck to
         // the paddle, no arrow appeared... The ball then fell to the bottom of the screen
@@ -713,12 +738,70 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         let scene = GameScene()
         scene.gameMode = .endlessII
         scene.totalStatsArray = [TotalStats()]
+        scene.ballSize = 16
+        scene.paddleWidth = 120
         scene.paddle.size = CGSize(width: 120, height: 12)
         scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
         scene.paddle.physicsBody?.categoryBitMask = CollisionTypes.paddleCategory.rawValue
         scene.paddle.name = PaddleCategoryName
         scene.addChild(scene.paddle)
         return scene
+    }
+
+    /// James, round 180: the gap "should be bigger - big enough for ball to fit though",
+    /// it must not collide - "the ball should be able to fall through the middle" - and a
+    /// "longer paddle should make more segments, not longer segments."
+    func testTheGapFitsTheBallWithRoomToSpare() {
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 120, standardWidth: 120,
+                                                           ballSize: 16)
+        XCTAssertEqual(layout.count, 2, "the unexpanded split is the familiar two pieces")
+        XCTAssertGreaterThanOrEqual(layout.gap, 16*1.5 - 0.001,
+                                    "a ball and a half - falling through is a thing that "
+                                    + "happens, not a pixel-perfect trick")
+    }
+
+    func testALongerPaddleMakesMoreSegmentsNotLongerOnes() {
+        let standard = GameScene.endlessIIDoublePaddleLayout(span: 120, standardWidth: 120,
+                                                             ballSize: 16)
+        let expanded = GameScene.endlessIIDoublePaddleLayout(span: 240, standardWidth: 120,
+                                                             ballSize: 16)
+        XCTAssertGreaterThan(expanded.count, standard.count, "more segments")
+        XCTAssertEqual(expanded.segment, standard.segment, accuracy: 0.001,
+                       "each the size the split has always shown, not stretched")
+    }
+
+    func testAShrunkenPaddleGivesUpPieceNeverGap() {
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 70, standardWidth: 120,
+                                                           ballSize: 16)
+        XCTAssertEqual(layout.count, 2, "one segment is not a split at all")
+        XCTAssertGreaterThanOrEqual(layout.gap, 16*1.5 - 0.001,
+                                    "a gap the ball cannot fall through is the one thing "
+                                    + "this must never build")
+    }
+
+    func testTheLayoutAlwaysSpansThePaddleExactly() {
+        for span in [70, 120, 180, 240, 300] as [CGFloat] {
+            let layout = GameScene.endlessIIDoublePaddleLayout(span: span, standardWidth: 120,
+                                                               ballSize: 16)
+            let total = CGFloat(layout.count)*layout.segment
+                + CGFloat(layout.count - 1)*layout.gap
+            XCTAssertEqual(total, span, accuracy: 0.001, "at span \(span)")
+        }
+    }
+
+    func testItEndsOnPaddleHitsNowNotOnAClockNobodyRan() {
+        // Round 180: "it doesn't ever end. This should be based on paddle hits, not timed."
+        // The old twelve seconds were in the Lock's freeze list but in no run-down loop,
+        // so nothing ever decremented them
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        XCTAssertTrue(scene.endlessIIDoublePaddleClock.countsTurns)
+
+        for _ in 0..<GameScene.endlessIIDoublePaddleTurns {
+            scene.endlessIISpendPaddleTurns()
+        }
+        XCTAssertFalse(scene.endlessIIDoublePaddleClock.isRunning,
+                       "five landings and the paddle is whole again")
     }
 
     private func halves(_ scene: GameScene) -> [SKNode] {
@@ -732,8 +815,11 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
 
         let split = scene.paddle.physicsBody?.area ?? 0
         XCTAssertLessThan(split, whole, "there is less paddle than there was")
-        XCTAssertEqual(split, whole*(1 - GameScene.endlessIIDoublePaddleGap), accuracy: whole*0.02,
-                       "and what is missing is exactly the gap - a ball down the middle has "
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 120, standardWidth: 120,
+                                                           ballSize: 16)
+        let gapShare = layout.gap*CGFloat(layout.count - 1)/120
+        XCTAssertEqual(split, whole*(1 - gapShare), accuracy: whole*0.02,
+                       "and what is missing is exactly the gaps - a ball down one has "
                        + "somewhere to fall through, which is the whole power-up")
     }
 
@@ -753,17 +839,19 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
                        + "across the whole paddle")
     }
 
-    func testItDrawsTwoHalvesAndStopsDrawingItself() {
+    func testItDrawsItsSegmentsAndStopsDrawingItself() {
         let scene = mayhem()
         scene.paddle.texture = SKTexture(image: PowerUpIcon.doublePaddle)
         scene.endlessIICollectDoublePaddle()
 
-        XCTAssertEqual(halves(scene).count, 2)
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 120, standardWidth: 120,
+                                                           ballSize: 16)
+        XCTAssertEqual(halves(scene).count, layout.count)
         XCTAssertNil(scene.paddle.texture, "or the split would be drawn over a whole paddle")
-        let gap = 120*GameScene.endlessIIDoublePaddleGap
+        let expected = 120/2 - layout.segment/2
         for half in halves(scene) {
-            XCTAssertEqual(abs(half.position.x), (120 - gap)/2/2 + gap/2, accuracy: 0.01,
-                           "each half sits over its own body")
+            XCTAssertEqual(abs(half.position.x), expected, accuracy: 0.01,
+                           "each piece sits over its own body")
         }
     }
 
@@ -778,7 +866,12 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         scene.paddle.size.width = 200
         scene.refreshEndlessIIDoublePaddle()
         XCTAssertGreaterThan(scene.paddle.physicsBody?.area ?? 0, narrow)
-        XCTAssertEqual(halves(scene).count, 2, "still two, and both wider")
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 200, standardWidth: 120,
+                                                           ballSize: 16)
+        XCTAssertEqual(halves(scene).count, layout.count)
+        XCTAssertGreaterThan(layout.count, 2,
+                             "a wider paddle is cut into more segments, not longer ones - "
+                             + "round 180's rule applied to the recut too")
     }
 
     func testTheRebuiltBodyKeepsWhateverMasksThePaddleHad() {
@@ -801,7 +894,9 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         scene.paddle.texture = dress
         scene.endlessIICollectDoublePaddle()
 
-        scene.endlessIIDoublePaddleClock.run(down: GameScene.endlessIIDoublePaddleDuration)
+        for _ in 0..<GameScene.endlessIIDoublePaddleTurns {
+            scene.endlessIISpendPaddleTurns()
+        }
         scene.refreshEndlessIIDoublePaddle()
 
         XCTAssertTrue(halves(scene).isEmpty)
@@ -820,8 +915,10 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         XCTAssertTrue(halves(scene).isEmpty)
     }
 
-    func testItIsAClockTheLockFreezesAndTheWipeClears() {
-        XCTAssertTrue(GameScene.endlessIITimedClockPaths.contains(\GameScene.endlessIIDoublePaddleClock))
+    func testItIsAClockTheWipeClearsAndTheLockIgnores() {
+        // Round 180 moved it to paddle hits, and a Lock stops time - it has no opinion
+        // about clocks that do not spend any (the sticky paddle's own arrangement)
+        XCTAssertFalse(GameScene.endlessIITimedClockPaths.contains(\GameScene.endlessIIDoublePaddleClock))
         XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(\GameScene.endlessIIDoublePaddleClock))
     }
 
@@ -869,7 +966,9 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         let scene = mayhem()
         retro(scene)
         scene.endlessIICollectDoublePaddle()
-        scene.endlessIIDoublePaddleClock.run(down: GameScene.endlessIIDoublePaddleDuration)
+        for _ in 0..<GameScene.endlessIIDoublePaddleTurns {
+            scene.endlessIISpendPaddleTurns()
+        }
         scene.refreshEndlessIIDoublePaddle()
 
         XCTAssertEqual(halves(scene).count, 0)
@@ -926,6 +1025,46 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
 
     private func mirror(_ scene: GameScene) -> SKSpriteNode? {
         scene.childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode
+    }
+
+    /// James, round 180: "the mirrored paddle should be a different colour (Giga-Ball
+    /// green/yellow) and sit behind the original paddle so it's clear which one follows the
+    /// tap. It also wasn't counting down it's segments, it just remained on the whole time."
+    func testTheMirrorIsGreenAndStandsBehindThePaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+
+        XCTAssertLessThan(mirror.zPosition, scene.paddle.zPosition,
+                          "when the two cross, the one in front is yours")
+        XCTAssertEqual(mirror.color, GameScene.endlessIIMirrorPaddleColour,
+                       "the Giga-Ball lime, so the pair never read as two of yours")
+        XCTAssertEqual(mirror.colorBlendFactor, 1, accuracy: 0.001)
+    }
+
+    func testTheMirrorStaysGreenThroughTheDressRefresh() {
+        // The tick re-dresses the mirror in the paddle's texture every frame, and a texture
+        // write leaves whatever colour the sprite carries - one missed re-tint and the
+        // mirror flashes white
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertEqual(mirror(scene)?.color, GameScene.endlessIIMirrorPaddleColour)
+    }
+
+    func testTheMirrorEndsOnPaddleHitsNow() {
+        // The old twelve seconds were in the Lock's freeze list but in no run-down loop -
+        // collected once, the mirror simply never left and its ring never moved
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        XCTAssertTrue(scene.endlessIIMirrorPaddleClock.countsTurns)
+
+        for _ in 0..<GameScene.endlessIIMirrorPaddleTurns {
+            scene.endlessIISpendPaddleTurns()
+        }
+        XCTAssertFalse(scene.endlessIIMirrorPaddleClock.isRunning)
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertNil(mirror(scene), "and the mirror leaves with its clock")
     }
 
     func testItStandsOppositeThePaddle() {
@@ -1002,7 +1141,9 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         // the Safety Paddle's own rule
         let scene = mayhem()
         scene.endlessIICollectMirrorPaddle()
-        scene.endlessIIMirrorPaddleClock.run(down: GameScene.endlessIIMirrorPaddleDuration)
+        for _ in 0..<GameScene.endlessIIMirrorPaddleTurns {
+            scene.endlessIIMirrorPaddleClock.spendTurn()
+        }
         scene.tickEndlessIIMirrorPaddle()
 
         XCTAssertNil(scene.childNode(withName: GameScene.endlessIIMirrorPaddleName),

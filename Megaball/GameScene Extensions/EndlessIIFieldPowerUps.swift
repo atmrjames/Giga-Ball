@@ -442,8 +442,13 @@ extension GameScene {
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
         \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
-        \.endlessIIDriftClock, \.endlessIIDoublePaddleClock, \.endlessIIMirrorPaddleClock,
+        \.endlessIIDriftClock,
     ]
+    // Double Paddle and Mirror Paddle left this list in round 180: they were designed as
+    // 12-second clocks but were never in any run-down loop, so both ran for ever (James:
+    // "it doesn't ever end" / "it just remained on the whole time") - and the cure was the
+    // design change he asked for, not the loop: they end on paddle hits now, like the rest
+    // of the paddle batch, which also puts them where a Lock rightly ignores them
 
     /// Every clock a Lock would freeze. One list, so the drop rule and the freeze cannot
     /// disagree about what "a timed power-up" means.
@@ -466,6 +471,7 @@ extension GameScene {
             \.endlessIIAimedStickyClock, \.endlessIIInertPaddleClock,
             \.endlessIIFlippedAngleClock, \.endlessIIReversedControlsClock,
             \.endlessIIAutoAimClock,
+            \.endlessIIDoublePaddleClock, \.endlessIIMirrorPaddleClock,
         ]
 
     // MARK: - Wipe
@@ -787,8 +793,14 @@ extension GameScene {
     // MARK: - Randomised Bounce
 
     /// How long one collection lasts, and how much of the angle it throws away.
+    ///
+    /// The spread is James's number (round 180: "pick a random number between -25 and +25
+    /// then apply that to the angle of the ball after each bounce"). The mechanism was
+    /// already exactly that - an offset on the honest angle, not a fresh roll - but at 35
+    /// degrees the nudge was wide enough to read as "totally random", which is what the
+    /// play test called it.
     static let endlessIIRandomisedBounceDuration: TimeInterval = 15
-    static let endlessIIRandomisedBounceSpread: Double = 35
+    static let endlessIIRandomisedBounceSpread: Double = 25
 
     /// Starts or extends Randomised Bounce (§5.4: timed, extends its own duration).
     func endlessIICollectRandomisedBounce() {

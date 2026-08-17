@@ -350,6 +350,10 @@ extension GameScene {
         endlessIIReversedControlsClock.spendTurn()
         endlessIIAutoAimClock.spendTurn()
         endlessIIPaddleSurfaceClock.spendTurn()
+        endlessIIDoublePaddleClock.spendTurn()
+        endlessIIMirrorPaddleClock.spendTurn()
+        // On hits since round 180 (James: "it doesn't ever end. This should be based on
+        // paddle hits, not timed") - both had been 12-second clocks that no loop ran down
         endlessIISpendLandingTurn()
     }
 
