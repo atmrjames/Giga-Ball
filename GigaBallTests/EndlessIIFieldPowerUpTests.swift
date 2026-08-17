@@ -399,9 +399,81 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
     func testDescentIsSlowEnoughToWatch() {
         // A row a second, against the 0.55 it ran at - which read as the field falling
         XCTAssertGreaterThanOrEqual(GameScene.endlessIIDescentStep, 0.9)
-        let rows = GameScene.endlessIIDescentDuration/GameScene.endlessIIDescentStep
-        XCTAssertGreaterThan(rows, 4, "still the biggest single source of height in the mode")
-        XCTAssertLessThan(rows, 9, "and not the run being handed to you (round 51)")
+        XCTAssertGreaterThan(GameScene.endlessIIDescentRows, 4,
+                             "still the biggest single source of height in the mode")
+        XCTAssertLessThan(GameScene.endlessIIDescentRows, 9,
+                          "and not the run being handed to you (round 51)")
+    }
+
+    /// James's suggestion, round 52: measure the descent in rows rather than seconds - "a
+    /// fixed number of rows is what the player actually experiences, where seconds are what
+    /// the code happens to count."
+    func testADescentIsWorthExactlyItsRowsHoweverLongTheyTake() {
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+
+        var steps = 0
+        for _ in 0..<GameScene.endlessIIDescentRows*3 {
+            scene.endlessMoveInProgress = false
+            // Each animated step would otherwise block the next - the loop stands in for
+            // the animations finishing, however long each took
+            scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep
+            scene.tickEndlessIIDescent()
+            if scene.endlessHeight > steps { steps = scene.endlessHeight }
+        }
+
+        XCTAssertEqual(steps, GameScene.endlessIIDescentRows,
+                       "six rows, not six seconds' worth of whatever the field allowed")
+        XCTAssertFalse(scene.endlessIIDescentClock.isRunning, "and spent means over")
+    }
+
+    func testAHoldSpendsNoRows() {
+        // The whole reason rows are the better unit: a held field used to eat the clock
+        // without yielding anything
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+        let budget = scene.endlessIIDescentClock.remaining
+
+        scene.endlessMoveInProgress = true
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep*4
+        scene.tickEndlessIIDescent()
+
+        XCTAssertEqual(scene.endlessIIDescentClock.remaining, budget, accuracy: 0.001,
+                       "no row taken, no row spent")
+    }
+
+    func testALockedDescentNeitherStepsNorSpends() {
+        // A Lock freezes the timed power-ups, and for a clock that counts rows the freeze
+        // is the cadence stopping. The raw frame delta used to leak through here - a locked
+        // Descent kept stepping while its clock stood still, free rows for the freeze
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+        scene.endlessIILockClock.collect(10)
+
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep*2
+        scene.tickEndlessIIDescent()
+
+        XCTAssertEqual(scene.endlessHeight, 0)
+        XCTAssertEqual(scene.endlessIIDescentClock.remaining,
+                       TimeInterval(GameScene.endlessIIDescentRows), accuracy: 0.001)
+    }
+
+    func testDescentsRingIsSegmentedIntoRows() {
+        // Six marks say "six rows"; a smooth arc only says "about half a Descent"
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+        let entry = scene.endlessIIFieldRingEntries().first { $0.id == "endlessIIDescent" }
+        XCTAssertEqual(entry?.segments, GameScene.endlessIIDescentRows)
+    }
+
+    func testARestoredDescentStillCountsRows() {
+        // The flag is not in the save; the restore path sets it the way collect(turns:) does
+        let scene = fieldScene()
+        scene.endlessIIRestoreFieldClock(key: "endlessIIDescent", remaining: 3, total: 6,
+                                         magnitude: 0)
+        XCTAssertTrue(scene.endlessIIDescentClock.countsTurns)
+        XCTAssertTrue(scene.endlessIIDescentClock
+                        .outlastsALockDrop(lead: GameScene.endlessIILockLead))
     }
 
     // MARK: - Auto-Aim

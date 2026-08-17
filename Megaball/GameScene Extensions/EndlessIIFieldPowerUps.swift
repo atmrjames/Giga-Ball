@@ -413,7 +413,11 @@ extension GameScene {
     /// power-up that did not drop.
     var endlessIILockMayDrop: Bool {
         guard gameMode == .endlessII, endlessIILocked == false else { return false }
-        return endlessIITimedClocks.contains { $0.remaining > GameScene.endlessIILockLead }
+        return endlessIITimedClocks.contains {
+            $0.outlastsALockDrop(lead: GameScene.endlessIILockLead)
+        }
+        // Asked of each clock rather than compared in seconds (§12.0's descent-in-rows
+        // item): Descent's clock counts rows now, and rows do not decay while the Lock falls
     }
 
     /// Whether a Key is worth dropping: only while there is a Lock to undo.
@@ -582,19 +586,20 @@ extension GameScene {
 
     // MARK: - Descent
 
-    /// How long a Descent runs.
+    /// How many rows a Descent is worth.
     ///
-    /// Its own, rather than the ten seconds every other timed power-up gets. At a row every
-    /// `endlessIIDescentStep` that shared duration was around eighteen rows a collection,
-    /// which is a great deal of height from one pick-up - enough that it would dominate any
-    /// accounting of which power-up gains the most, and enough to feel like the run being
-    /// handed to you (play-test round 51). Six seconds is nearer eleven rows: still clearly
-    /// the biggest single source of height in the mode, which is the point of it, without
-    /// being the only one that matters.
-    static let endlessIIDescentDuration: TimeInterval = 6
+    /// Rows rather than seconds (James's suggestion, round 52, built round 178): a fixed
+    /// number of rows is what the player actually experiences, where seconds were what the
+    /// code happened to count - and counted badly, because a hold or a slow animation ate
+    /// clock without yielding a row, so two collections were worth different heights
+    /// depending on what the field was doing. Six, matching the six seconds it replaced at
+    /// a row a second: still clearly the biggest single source of height in the mode, which
+    /// is the point of it (round 51), without being the only one that matters. The ring
+    /// shows six segments now, so what is left reads as rows rather than as "about half".
+    static let endlessIIDescentRows = 6
 
     func endlessIICollectDescent() {
-        endlessIIDescentClock.collect(GameScene.endlessIIDescentDuration)
+        endlessIIDescentClock.collect(turns: GameScene.endlessIIDescentRows)
     }
 
     /// How often the field steps down while Descent runs.
@@ -624,7 +629,11 @@ extension GameScene {
             return
         }
 
-        endlessIIDescentAccumulated += endlessIIPaddleFrameDelta
+        endlessIIDescentAccumulated += endlessIIClockDelta
+        // `endlessIIClockDelta`, not the raw frame delta: a Lock freezes the timed
+        // power-ups, and for a clock that counts rows the freeze is the *cadence* stopping.
+        // The raw delta here used to let a locked Descent keep stepping while its clock
+        // stood still - free rows for the length of the freeze
         guard endlessIIDescentAccumulated >= GameScene.endlessIIDescentStep else { return }
 
         guard endlessMoveInProgress == false else { return }
@@ -649,7 +658,10 @@ extension GameScene {
         // Subtracting keeps the phase: a long frame or a short hold leaves the remainder
         // behind, and the rate stays the rate.
 
+        endlessIIDescentClock.spendTurn()
         moveEndlessModeRowDown()
+        // A row taken is a row spent - the budget is rows, so nothing but a taken step can
+        // spend one, and a Descent is always worth exactly its six however long they take
     }
 
     /// Whether Descent owns extra steps of the field right now.
@@ -691,7 +703,10 @@ extension GameScene {
         endlessIIFieldClocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
             return PowerUpRingHUD.Entry(id: id, texture: SKTexture(image: icon),
-                                        remaining: clock.fraction, segments: nil)
+                                        remaining: clock.fraction,
+                                        segments: clock.countsTurns ? Int(clock.total) : nil)
+            // Descent's ring is segmented like the sticky paddle's: six marks say "six rows",
+            // where a smooth arc only says "about half a Descent"
         }
     }
 
@@ -713,6 +728,9 @@ extension GameScene {
                                        deepestLevel: GameScene.endlessIIAuraReach.count - 1)
         case "endlessIIDescent":
             endlessIIDescentClock.restore(remaining: remaining, total: total, level: 0)
+            endlessIIDescentClock.countsTurns = true
+            // The flag is not in the save; what marks a restored Descent as rows is the same
+            // thing that marks a fresh one - this line and `collect(turns:)` respectively
         case "endlessIIWrapAround":
             endlessIIWrapAroundClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIRandomisedBounce":
@@ -747,7 +765,6 @@ extension GameScene {
 
             endlessIIWreckingBallClock.run(down: endlessIIClockDelta)
             endlessIIAuraClock.run(down: endlessIIClockDelta)
-            endlessIIDescentClock.run(down: endlessIIClockDelta)
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
             endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)

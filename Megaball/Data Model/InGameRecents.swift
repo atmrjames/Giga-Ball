@@ -273,7 +273,8 @@ extension GameScene {
         for (clock, index) in clocks where clock.isRunning { active.insert(index) }
         InGameRecents.shared.activePowerUpRings = clocks
             .filter { $0.0.isRunning }
-            .map { (index: $0.1, remaining: $0.0.fraction, segments: nil) }
+            .map { (index: $0.1, remaining: $0.0.fraction,
+                    segments: $0.0.countsTurns ? Int($0.0.total) : nil) }
         // The rings the pause screen redraws. Mayhem's clocks carry a fraction already; the
         // original tray power-ups are added by the caller from their bars, which is the only
         // place that reading exists

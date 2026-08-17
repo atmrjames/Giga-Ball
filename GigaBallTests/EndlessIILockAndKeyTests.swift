@@ -124,6 +124,42 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         XCTAssertFalse(scene.endlessIILockMayDrop)
     }
 
+    /// §12.0's descent-in-rows item, the half that lives here: the drop rule used to compare
+    /// every clock's `remaining` against a lead measured in seconds, and Descent's clock
+    /// counts rows now. A row does not decay while the Lock falls, so a running Descent is
+    /// always worth freezing - even at one row left, where a seconds clock with the same
+    /// number would have expired before the Lock landed.
+    func testALockDropsForADescentDownToItsLastRow() {
+        let scene = mayhem()
+        scene.endlessIICollectDescent()
+        for _ in 1..<GameScene.endlessIIDescentRows {
+            scene.endlessIIDescentClock.spendTurn()
+        }
+        XCTAssertEqual(scene.endlessIIDescentClock.remaining, 1, accuracy: 0.001)
+        XCTAssertLessThan(scene.endlessIIDescentClock.remaining,
+                          GameScene.endlessIILockLead,
+                          "fewer rows than the lead has seconds, which is the trap")
+        XCTAssertTrue(scene.endlessIILockMayDrop,
+                      "that row will still be there when the Lock lands")
+    }
+
+    func testALockStopsADescentSteppingAsWellAsCounting() {
+        // The freeze reaches the cadence: a locked Descent takes no rows and spends none.
+        // The raw frame delta used to leak into the pacing, which was free rows for the
+        // length of every freeze
+        let scene = mayhem()
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessIICollectDescent()
+        scene.endlessIICollectLock()
+
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep*3
+        scene.tickEndlessIIDescent()
+
+        XCTAssertEqual(scene.endlessHeight, 0, "no step while frozen")
+        XCTAssertEqual(scene.endlessIIDescentClock.remaining,
+                       TimeInterval(GameScene.endlessIIDescentRows), accuracy: 0.001)
+    }
+
     func testALockDoesNotDropWhileOneIsAlreadyRunning() {
         let scene = mayhem()
         scene.endlessIIAuraClock.collect(10)
