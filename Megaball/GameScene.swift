@@ -446,7 +446,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 61)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 62)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -1015,6 +1015,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpJaggedPaddle = SKTexture(image: PowerUpIcon.jaggedPaddle)
 	let powerUpDoublePaddle = SKTexture(image: PowerUpIcon.doublePaddle)
 	let powerUpMirrorPaddle = SKTexture(image: PowerUpIcon.mirrorPaddle)
+	let powerUpCluster = SKTexture(image: PowerUpIcon.cluster)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1206,7 +1207,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -2891,19 +2892,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if firstBody.categoryBitMask == CollisionTypes.brickCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
                 if let brickNode = firstBody.node {
-					totalStatsArray[0].lasersHit+=1
+					if secondBody.node?.name == LaserCategoryName {
+						totalStatsArray[0].lasersHit+=1
+					}
+					// A Cluster ball wears the laser's category - so every brick already
+					// tests contact with it - but it is not a laser, and the lasers-fired
+					// statistic must not count it
 					hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode), hitFrom: .bottom)
-					// Lasers only ever arrive from underneath
+					// Lasers only ever arrive from underneath - and a cluster ball almost
+					// always does: it is released climbing, so `.bottom` is the honest face
+					// for everything but a grazing sideways strike
                 }
             }
-            // Laser hits Brick
+            // Laser (or a Cluster ball) hits Brick
 			
 			if firstBody.categoryBitMask == CollisionTypes.screenBlockCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
-				if let laserNode = secondBody.node {
+				if let laserNode = secondBody.node,
+				   let block = firstBody.node as? SKSpriteNode,
+				   endlessIIClusterSurvivesWall(laserNode, block: block) == false {
 					laserNode.removeFromParent()
                 }
+				// A laser dies on any block it meets; a Cluster ball is a normal ball, so a
+				// *side* wall bounces it - the engine does the bounce, this only declines to
+				// remove it - and the ceiling still swallows it, a hit spent on nothing
             }
             // Laser hits Top
+			
+			if firstBody.categoryBitMask == CollisionTypes.laserCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
+				firstBody.node?.removeFromParent()
+            }
+            // A Cluster ball that bounced its way back down leaves quietly - it is
+            // ammunition, not a run ball, so it costs nothing on the way out
             
             if firstBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue {
 
@@ -5098,6 +5117,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIICollectMirrorPaddle()
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[60] += 1
+
+		case powerUpCluster:
+		// 61 - Cluster. Good
+			endlessIIReleaseCluster()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[61] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball

@@ -571,6 +571,28 @@ enum PowerUpIcon {
     ///
     /// The step is the whole idea: not one brick moving, but the field going with it - so the
     /// three are drawn in a line, each further along than the last.
+    /// A burst of tiny balls rising from a paddle - the release, drawn at the moment it
+    /// happens, because "twelve tiny balls" is the whole of what the power-up is.
+    static let cluster: UIImage = badge { context, rect in
+        let bar = rect.height*0.12
+        context.fill(CGRect(x: rect.midX - rect.width*0.28,
+                            y: rect.maxY - rect.height*0.2,
+                            width: rect.width*0.56, height: bar))
+        // The paddle the burst leaves from
+
+        let origin = CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.2)
+        let dot = rect.width*0.075
+        for (index, angle) in [150, 118, 90, 62, 30, 135, 75].enumerated() {
+            let rad = CGFloat(angle) * .pi/180
+            let reach = rect.height*(index < 5 ? 0.62 : 0.34)
+            let centre = CGPoint(x: origin.x + cos(rad)*reach,
+                                 y: origin.y - sin(rad)*reach)
+            context.fillEllipse(in: CGRect(x: centre.x - dot, y: centre.y - dot,
+                                           width: dot*2, height: dot*2))
+        }
+        // Two ranks of dots at mixed angles - a spray, not a fan: the release is random
+    }
+
     static let drift: UIImage = artwork("PowerUpDrift", harmful) { context, rect in
         let height = rect.height*0.13
         let width = rect.width*0.34

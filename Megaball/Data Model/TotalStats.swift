@@ -74,8 +74,8 @@ class TotalStats: Codable {
 
     /// The best run of hits on one ball, with the absent-means-none case handled.
     var longestBallRun: Int { bestBallHits ?? 0 }
-    var powerupsCollected: [Int] = Array(repeating: 0, count: 61)
-    var powerupsGenerated: [Int] = Array(repeating: 0, count: 61)
+    var powerupsCollected: [Int] = Array(repeating: 0, count: 62)
+    var powerupsGenerated: [Int] = Array(repeating: 0, count: 62)
     // One slot per power-up, in power-up order. Sized by count rather than written out,
     // because the literal was miscounted once already - and every new power-up grows this,
     // the unlock array below, and the iCloud copies in CloudKitHandler together
@@ -458,10 +458,11 @@ class TotalStats: Codable {
         true, // Landing Marker - the same
         true, true, true, true, true, true, true, true, // The paddle batch - the same
         true, true, true, true, true, true, true, true, true,
-        true, true, true, true, true, true, true, true, true, true, true, true, true // The
+        true, true, true, true, true, true, true, true, true, true, true, true, true, // The
         // field batch and after, Lock, Key, Wipe, Randomised Bounce, Ghost Ball, Safety
         // Paddle, Drift, the four shaped paddle faces, Double Paddle and Mirror Paddle
         // included - never locked
+        true // Cluster - the same
     ]
     
     var achievementsUnlockedArray: [Bool] = [

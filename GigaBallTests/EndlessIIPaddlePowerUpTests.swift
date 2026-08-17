@@ -1072,3 +1072,112 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
                        "a ball meeting the underside keeps whatever the engine gave it")
     }
 }
+
+/// Cluster (§12.0, James's round-169 design): "a set of ~12 tiny balls are released upwards
+/// at random angles from the centre of the paddle. If they hit something they count as a
+/// single hit, but are also destroyed immediately. They do not combine with other power-ups.
+/// They are just normal balls."
+final class EndlessIIClusterPowerUpTests: XCTestCase {
+// Not EndlessIIClusterTests - that name belongs to the brick formations' suite
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSize = 12
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 40, y: -300)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    private func pellets(_ scene: GameScene) -> [SKSpriteNode] {
+        var found: [SKSpriteNode] = []
+        scene.enumerateChildNodes(withName: ClusterCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { found.append(sprite) }
+        }
+        return found
+    }
+
+    func testTheBurstIsTwelveTinyBallsFromThePaddlesCentre() {
+        let scene = mayhem()
+        scene.endlessIIReleaseCluster()
+
+        let burst = pellets(scene)
+        XCTAssertEqual(burst.count, GameScene.endlessIIClusterCount)
+        for pellet in burst {
+            XCTAssertEqual(pellet.position.x, scene.paddle.position.x, accuracy: 0.001,
+                           "from the centre of the paddle, wherever the paddle is")
+            XCTAssertLessThan(pellet.size.width, scene.ballSize,
+                              "tiny - visibly not a run ball")
+        }
+    }
+
+    func testEveryBallLeavesUpwardsAtItsOwnAngle() {
+        let scene = mayhem()
+        scene.endlessIIReleaseCluster()
+
+        var headings = Set<Int>()
+        for pellet in pellets(scene) {
+            let velocity = pellet.physicsBody?.velocity ?? .zero
+            XCTAssertGreaterThan(velocity.dy, 0, "released upwards - all of them")
+            headings.insert(Int(atan2(velocity.dy, velocity.dx)*180 / .pi))
+        }
+        XCTAssertGreaterThan(headings.count, 3,
+                             "random angles - a burst, not a volley in step")
+    }
+
+    func testAClusterBallIsAmmunitionAndNotARunBall() {
+        // "They are just normal balls" means normal hit rules, not membership of the run:
+        // a Multi-Ball ball is a ball the run continues on, and a cluster ball is not
+        let scene = mayhem()
+        scene.endlessIIReleaseCluster()
+
+        XCTAssertTrue(scene.endlessIIExtraBalls.isEmpty,
+                      "not in the extras - losing all twelve costs nothing")
+        for pellet in pellets(scene) {
+            XCTAssertNotEqual(pellet.name, BallCategoryName)
+            XCTAssertEqual(pellet.physicsBody?.categoryBitMask,
+                           CollisionTypes.laserCategory.rawValue,
+                           "the laser's category, so every brick already tests contact "
+                           + "with it and hitBrick's laser path does one-hit-then-gone")
+        }
+    }
+
+    func testAClusterBallBouncesOffASideWallAndDiesAtTheCeiling() {
+        // The ball half of "just normal balls": a laser dies on any block it meets, and a
+        // cluster ball only dies where there is nothing to bounce toward
+        let scene = mayhem()
+        let side = SKSpriteNode(); side.size = CGSize(width: 10, height: 400)
+        let top = SKSpriteNode(); top.size = CGSize(width: 400, height: 10)
+        let pellet = SKNode(); pellet.name = ClusterCategoryName
+
+        XCTAssertTrue(scene.endlessIIClusterSurvivesWall(pellet, block: side))
+        XCTAssertFalse(scene.endlessIIClusterSurvivesWall(pellet, block: top))
+
+        let laser = SKNode(); laser.name = LaserCategoryName
+        XCTAssertFalse(scene.endlessIIClusterSurvivesWall(laser, block: side),
+                       "a real laser still dies on whatever block it meets")
+    }
+
+    func testTheBurstOnlyExistsInMayhem() {
+        let scene = mayhem()
+        scene.gameMode = .classic
+        scene.endlessIIReleaseCluster()
+        XCTAssertTrue(pellets(scene).isEmpty)
+    }
+
+    func testClusterIsInThePoolAndWorthAGoodChip() {
+        // §8.6: a style - or a power-up - has to be in a pool to exist; from the outside
+        // "never offered" looks exactly like "very rare"
+        let scene = mayhem()
+        scene.applyEndlessRowPowerUpWeights()
+        XCTAssertGreaterThan(scene.powerUpProbArray[61], 0)
+
+        let setup = LevelPackSetup()
+        XCTAssertEqual(setup.powerUpNameArray[61], "Cluster")
+        XCTAssertEqual(setup.powerUpMultiplierArray[61], "+0.1", "good, and says so")
+        XCTAssertFalse(GameScene.endlessIIHarmfulPowerUps.contains(61),
+                       "so a free shot may set it off, and No Good News days zero it")
+    }
+}

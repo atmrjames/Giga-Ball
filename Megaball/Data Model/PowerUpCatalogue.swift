@@ -284,6 +284,10 @@ enum PowerUpCatalogue {
         PowerUp(id: "mirrorPaddle", name: "Mirror Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true,
                 stacking: .extendsDuration),
+        PowerUp(id: "cluster", name: "Cluster", availability: .endlessII,
+                rarity: .uncommon, valence: .beneficial, isTimed: false, stacking: .repeats),
+        // About twelve tiny balls burst upwards from the paddle at random angles; each is a
+        // single hit and dies on contact. Ammunition, not Multi-Ball - see EndlessIICluster
         // A second paddle level with the first, holding the mirrored x. Beneficial, and the
         // one in this batch that is: it covers the side the player has just left, which is
         // where the ball they cannot reach is. Double-edged all the same - two paddles near
