@@ -863,6 +863,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Stats trackers
 	
 	var finalBrickRowHeight: CGFloat = 0
+
+	/// How far the lower limit is currently lifted by a Clear And Retreat, in points.
+	///
+	/// Held as the *applied* amount rather than derived from the clock, so the lift and its
+	/// undoing are one subtraction and cannot drift: a clock that ends while the game is paused
+	/// still has its lift taken off by the next tick, and a run resumed mid-retreat lifts once
+	/// from a floor the setup has just recomputed.
+	var endlessIIRetreatFloorLift: CGFloat = 0
 	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
 	var endlessIISpinners: [EndlessIISpinner] = []
@@ -1843,15 +1851,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// in the middle of an adjustment
 
 				if AimHoldControl.intent(touchY: touchLocation.y,
-				                         paddleTopY: paddle.position.y + paddle.size.height/2)
+				                         paddleTopY: paddle.position.y + paddle.size.height/2,
+				                         paddleMayMove: stickyPaddleCatches != 0)
 					== .aim {
 					endlessIIAimMoved(to: touchLocation.x)
 					return
 				}
-				// Above the paddle the drag is the aim; on or below it, it falls through to
-				// the paddle arithmetic and carries the paddle - and the held ball with it -
-				// which is the whole of round 33's request (§12.0). The world stays frozen
-				// either way: the freeze is the field, not the player
+				// **The drag is the aim, and only the aim** - unless Sticky Paddle is running
+				// too, in which case above the paddle aims and on or below it carries the
+				// paddle with the held ball, which is round 33's request (§12.0).
+				//
+				// Round 155 gave every aim that second behaviour and James took it back in
+				// round 172: "moving the paddle when aimed sticky is active is not good". Two
+				// decisions on one finger, and the aim is the one the power-up is for. The
+				// world stays frozen either way: the freeze is the field, not the player
 			}
 
 			paddleMovedDistance *= endlessIIControlDirection

@@ -601,6 +601,50 @@ extension GameScene {
         return false
     }
 
+    /// Destroys an oversized brick that has ended up sharing space with an anchored one.
+    ///
+    /// `endlessIICrushedByAnchor` answers "is this brick descending onto an anchor", which is
+    /// one of the two ways the field can reach an overlap and not the one James saw (round 172:
+    /// "I have a big brick overlapping a fixed brick - in this case the fixed brick should
+    /// destroy the big brick"). The other way round: **a Fixed brick anchors when it is
+    /// struck**, and a Big brick's other half may already be over the cell it anchors in. No
+    /// descent happens, so nothing asks the crush rule, and the two sit inside each other.
+    ///
+    /// Asked every frame rather than at the step, because that is the only way to catch a state
+    /// that arrives without the field moving. Cheap: it does nothing at all until something is
+    /// anchored, and Mayhem's fields are tens of bricks.
+    ///
+    /// The frames are inset before they are compared, so bricks that merely *touch* - which
+    /// every pair of neighbours does - are not read as overlapping.
+    func endlessIIResolveAnchorOverlaps() {
+        guard gameMode == .endlessII else { return }
+
+        var anchors: [CGRect] = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard node.endlessIIIsAnchored, let sprite = node as? SKSpriteNode else { return }
+            anchors.append(sprite.frame)
+        }
+        guard anchors.isEmpty == false else { return }
+
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let sprite = node as? SKSpriteNode, sprite.parent != nil,
+                  sprite.endlessIIIsAnchored == false else { return }
+            guard sprite.size.width > self.brickWidth*1.5
+                    || sprite.size.height > self.brickHeight*1.5 else { return }
+            // Oversized only. An ordinary brick occupies one cell and the generator does not
+            // put two in a cell, so an overlap there would be a different bug with a different
+            // answer - and destroying an ordinary brick on a near miss is a brick the player
+            // was owed
+            let frame = sprite.frame.insetBy(dx: self.brickWidth*0.25,
+                                             dy: self.brickHeight*0.25)
+            guard anchors.contains(where: { $0.intersects(frame) }) else { return }
+
+            self.endlessIIBrickDestroyed(sprite)
+            self.endlessIIDestroy(sprite)
+            // The ordinary destroy path, so it scores, rolls and counts like the crush does
+        }
+    }
+
     static let fixedBrickColour = UIColor(red: 0.60, green: 0.80, blue: 0.35, alpha: 1)
     static let fixedAnchoredColour = UIColor(red: 0.95, green: 0.95, blue: 0.98, alpha: 1)
 

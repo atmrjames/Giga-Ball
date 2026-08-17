@@ -199,6 +199,73 @@ extension EndlessIIStyleTests {
         }
     }
 
+    /// James, round 172: "at one point I had a big brick overlapping a fixed brick. In this
+    /// case, the fixed brick should destroy the big brick."
+    ///
+    /// The crush rule answers "is this brick descending onto an anchor", which is the other way
+    /// into an overlap. This one needs no descent at all: a Fixed brick anchors when it is
+    /// *struck*, and a Big brick's other half may already be over the cell it anchors in.
+    private func overlapScene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        return scene
+    }
+
+    private func brick(on scene: GameScene, at x: CGFloat, wide: Bool,
+                       anchored: Bool = false) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = CGSize(width: wide ? scene.brickWidth*2 : scene.brickWidth,
+                            height: scene.brickHeight)
+        brick.position = CGPoint(x: x, y: 100)
+        brick.name = BrickCategoryName
+        brick.endlessIIIsAnchored = anchored
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testAnAnchorDestroysABigBrickSharingItsSpace() {
+        let scene = overlapScene()
+        let anchor = brick(on: scene, at: 0, wide: false, anchored: true)
+        let big = brick(on: scene, at: 20, wide: true)
+        // The Big brick's left half sits over the anchor
+
+        scene.endlessIIResolveAnchorOverlaps()
+        XCTAssertNil(big.parent, "the fixed brick destroys the big brick")
+        XCTAssertNotNil(anchor.parent, "and outlives it, which is what being fixed means")
+    }
+
+    func testAnAnchorLeavesTheBrickBesideItAlone() {
+        // Every pair of neighbours touches; touching is not overlapping
+        let scene = overlapScene()
+        brick(on: scene, at: 0, wide: false, anchored: true)
+        let big = brick(on: scene, at: scene.brickWidth*2, wide: true)
+
+        scene.endlessIIResolveAnchorOverlaps()
+        XCTAssertNotNil(big.parent)
+    }
+
+    func testWithNothingAnchoredNothingIsDestroyed() {
+        let scene = overlapScene()
+        let plain = brick(on: scene, at: 0, wide: false)
+        let big = brick(on: scene, at: 20, wide: true)
+
+        scene.endlessIIResolveAnchorOverlaps()
+        XCTAssertNotNil(plain.parent)
+        XCTAssertNotNil(big.parent, "an overlap with an ordinary brick is a different bug")
+    }
+
+    func testAnAnchoredBigBrickIsNotDestroyedByAnotherAnchor() {
+        let scene = overlapScene()
+        brick(on: scene, at: 0, wide: false, anchored: true)
+        let big = brick(on: scene, at: 20, wide: true, anchored: true)
+
+        scene.endlessIIResolveAnchorOverlaps()
+        XCTAssertNotNil(big.parent, "an anchored brick stopped where it was struck")
+    }
+
     func testAnAnchorFlagTravelsWithItsBrick() {
         let brick = SKSpriteNode()
         XCTAssertFalse(brick.endlessIIIsAnchored)

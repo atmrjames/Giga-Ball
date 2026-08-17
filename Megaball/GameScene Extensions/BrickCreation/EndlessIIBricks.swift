@@ -728,6 +728,10 @@ extension GameScene {
             advanceBreather(at: index, by: delta)
         }
 
+        endlessIIResolveAnchorOverlaps()
+        // Before the drift and the roles move anything: a brick sharing space with an anchor
+        // should not get another step out of it first
+
         tickEndlessIIDrift(delta)
         // Before the roles, so a wandering brick wanders from where the drift left it -
         // and both write the same x, so the order is the whole of their agreement

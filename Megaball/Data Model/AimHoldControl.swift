@@ -37,8 +37,18 @@ enum AimHoldControl {
     /// a thumb resting on the thing it is dragging should drag it. Everything above it is
     /// aiming, including the whole empty field, because that is where a player looks when
     /// choosing where to shoot.
-    static func intent(touchY: CGFloat, paddleTopY: CGFloat) -> Intent {
-        touchY > paddleTopY ? .aim : .paddle
+    ///
+    /// **Unless the paddle may not be carried at all**, which is the ordinary case (James,
+    /// round 172: "moving the paddle when aimed sticky is active is not good, it should just
+    /// be the arrow angle - unless sticky paddle is also active, then the paddle movement
+    /// should be allowed too"). Aimed Sticky freezes the world so the shot can be chosen; a
+    /// drag that also slides the paddle is two decisions on one finger, and the aim is the one
+    /// the power-up is for. Sticky Paddle running underneath is what buys the second decision
+    /// back: that power-up's whole promise is that the ball comes with the paddle.
+    static func intent(touchY: CGFloat, paddleTopY: CGFloat,
+                       paddleMayMove: Bool = true) -> Intent {
+        guard paddleMayMove else { return .aim }
+        return touchY > paddleTopY ? .aim : .paddle
     }
 
     /// Whether lifting the finger should fire.

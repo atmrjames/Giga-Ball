@@ -91,10 +91,40 @@ extension GameScene {
 
         endlessIIClearAndRetreatClock.collect(GameScene.endlessIIClearAndRetreatDuration)
         endlessIIRaiseTheLowestBrickLevel(by: GameScene.endlessIIRetreatRows)
+        tickEndlessIIRetreatFloor()
+        // The floor goes up with the clear, on the spot rather than a frame later
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
         if soundsSetting { run(endlessRowDownSound) }
+    }
+
+    /// Lifts the lower limit while a retreat runs, and puts it back when the clock ends.
+    ///
+    /// **"As if the game is set 2 rows higher"** (James, round 169: "it should move the low
+    /// brick line up 2 rows too"). Clearing the two lowest rows moved the *bricks* two rows
+    /// away from the paddle and left the line they die on where it was - so the room the
+    /// power-up made was room the descent could take straight back into. Lifting the line
+    /// makes the retreat real: for as long as the clock runs, the lowest a brick may reach is
+    /// two rows further from the paddle, and the drawn line says so.
+    ///
+    /// Safe to move because **the field is held for the whole duration** - `endlessIIFieldIsHeld`
+    /// is true while this clock runs, so nothing generates a row or steps the field against a
+    /// floor that is temporarily somewhere else. When the clock ends the line drops back and
+    /// the descent closes the gap, which is where the deferred height comes from.
+    ///
+    /// Driven from the tick rather than scheduled, because a clock can end in more ways than by
+    /// running out: a Wipe ends it, and a run ending resets it (the Safety Paddle's own rule).
+    func tickEndlessIIRetreatFloor() {
+        guard gameMode == .endlessII else { return }
+        let wanted = endlessIIClearAndRetreatClock.isRunning
+            ? CGFloat(GameScene.endlessIIRetreatRows)*brickHeight : 0
+        guard abs(wanted - endlessIIRetreatFloorLift) > 0.5 else { return }
+
+        finalBrickRowHeight += wanted - endlessIIRetreatFloorLift
+        endlessIIRetreatFloorLift = wanted
+        showEndlessIILowerLimit()
+        // The line reads `finalBrickRowHeight`, so it moves by being asked again
     }
 
     /// Destroys the lowest occupied rows, one row at a time from the bottom.
@@ -536,12 +566,18 @@ extension GameScene {
 
     /// How often the field steps down while Descent runs.
     ///
-    /// The spec says "continuously"; this is the grid-preserving reading of it - a fast,
-    /// steady cadence of the same one-row step the field has always made, because a brick's
+    /// The spec says "continuously"; this is the grid-preserving reading of it - a steady
+    /// cadence of the same one-row step the field has always made, because a brick's
     /// position.y is its row and a field that drifted off its row centres would break
-    /// everything that reads them (§8.6). Just under two rows a second reads as continuous
-    /// motion and keeps every landing on a centre.
-    static let endlessIIDescentStep: TimeInterval = 0.55
+    /// everything that reads them (§8.6).
+    ///
+    /// **Slower than it was** (James, round 172: "moves the bricks down too fast and at a
+    /// variable rate - it should be a slow and steady rate for a fixed period"). It ran at
+    /// 0.55s, just under two rows a second, which read as the field falling rather than
+    /// descending. A row a second is a rate a player can watch and plan against, and over the
+    /// fixed six seconds it is still the largest single source of height in the mode - which
+    /// is the point of the power-up (round 51).
+    static let endlessIIDescentStep: TimeInterval = 1.0
 
     /// Drives the descent. Called from the field batch's tick.
     ///
@@ -557,7 +593,6 @@ extension GameScene {
 
         endlessIIDescentAccumulated += endlessIIPaddleFrameDelta
         guard endlessIIDescentAccumulated >= GameScene.endlessIIDescentStep else { return }
-        endlessIIDescentAccumulated = 0
 
         guard endlessMoveInProgress == false else { return }
         // A step already animating finishes first - two moves at once would stack their
@@ -567,6 +602,19 @@ extension GameScene {
         // Descent is the field's other way down, and it must stop for an aim like the
         // cadence does - otherwise the one power-up that exists to drop the field does it
         // while the player is holding the ball still and cannot answer (round 87)
+
+        endlessIIDescentAccumulated -= GameScene.endlessIIDescentStep
+        // **Spent only when the step is actually taken, and subtracted rather than zeroed.**
+        //
+        // This is the "variable rate" James saw. The countdown used to be zeroed the moment it
+        // came due, *before* the two guards below - so a step that could not be taken because
+        // the last one was still animating, or because an aim was holding the field, threw its
+        // whole interval away and started again from nothing. The next step then arrived a
+        // whole extra interval late, and the cadence wandered between one and two seconds
+        // depending on what the field happened to be doing.
+        //
+        // Subtracting keeps the phase: a long frame or a short hold leaves the remainder
+        // behind, and the rate stays the rate.
 
         moveEndlessModeRowDown()
     }
@@ -677,6 +725,9 @@ extension GameScene {
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
+        tickEndlessIIRetreatFloor()
+        // Outside the Playing guard, like the Aura's: the floor has to come back down after a
+        // clock that ended while the game was paused
         refreshEndlessIIWreckingBall()
         // Outside the Playing guard, like the Aura's tick: the spikes have to come off a
         // ball whose clock ran out while the game was paused, and go back on when a run is

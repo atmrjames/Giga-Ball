@@ -355,6 +355,55 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         XCTAssertEqual(scene.endlessHeight, 0)
     }
 
+    /// James, round 172: "Descent power up moves the bricks down too fast and at a variable
+    /// rate. It should be a slow and steady rate for a fixed period of time."
+    ///
+    /// The variable rate was the countdown being zeroed the moment it came due, *before* the
+    /// guards - so a step that could not be taken because the last one was still animating, or
+    /// because an aim was holding the field, threw its whole interval away and the next step
+    /// arrived an interval late.
+    func testAHeldStepDoesNotThrowAwayItsInterval() {
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+        scene.endlessMoveInProgress = true
+
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 0, "nothing steps while one is animating")
+
+        scene.endlessMoveInProgress = false
+        scene.endlessIIPaddleFrameDelta = 0
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 1,
+                       "and the interval it waited is still owed to it, so the step lands "
+                       + "at once rather than a whole interval later")
+    }
+
+    func testTheRemainderIsCarriedRatherThanDiscarded() {
+        // A long frame leaves the remainder behind, so the rate stays the rate
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep*1.5
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 1)
+
+        scene.endlessMoveInProgress = false
+        // The step just taken is animating, and one animating step blocks the next - which is
+        // the rule above. What is being asked here is only what the countdown kept
+        scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep*0.5
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 2, "the half it carried completes the next step")
+    }
+
+    func testDescentIsSlowEnoughToWatch() {
+        // A row a second, against the 0.55 it ran at - which read as the field falling
+        XCTAssertGreaterThanOrEqual(GameScene.endlessIIDescentStep, 0.9)
+        let rows = GameScene.endlessIIDescentDuration/GameScene.endlessIIDescentStep
+        XCTAssertGreaterThan(rows, 4, "still the biggest single source of height in the mode")
+        XCTAssertLessThan(rows, 9, "and not the run being handed to you (round 51)")
+    }
+
     // MARK: - Auto-Aim
 
     func testAutoAimPointsAtTheTargetAndStaysInTheLaunchableArc() {
@@ -975,6 +1024,59 @@ final class RandomisedBounceTests: XCTestCase {
         brick.name = BrickCategoryName
         scene.addChild(brick)
         if moving { brick.run(.moveBy(x: 0, y: -15, duration: 5)) }
+    }
+
+    /// James, round 169: "clear and retreat should remove the bottom 2 rows, it should move all
+    /// rows up 2 rows for some time. It should move the low brick line up 2 rows too. As if the
+    /// game is set 2 rows higher."
+    ///
+    /// The line is the half that can be done without deciding what happens to a brick pushed
+    /// off the top of the field, and it is the half that makes the retreat real: clearing the
+    /// two lowest rows moved the bricks away from the paddle and left the line they die on
+    /// where it was, so the room the power-up made was room the descent took straight back.
+    func testARetreatLiftsTheLineTheFieldDiesOn() {
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = -100
+        let floor = scene.finalBrickRowHeight
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(scene.finalBrickRowHeight,
+                       floor + CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
+                       accuracy: 0.001,
+                       "two rows further from the paddle for as long as the clock runs")
+    }
+
+    func testTheLineComesBackDownWhenTheRetreatEnds() {
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = -100
+        let floor = scene.finalBrickRowHeight
+
+        scene.endlessIICollectClearAndRetreat()
+        scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
+        scene.tickEndlessIIRetreatFloor()
+
+        XCTAssertEqual(scene.finalBrickRowHeight, floor, accuracy: 0.001,
+                       "or the run would keep the room for ever, which is a different power-up")
+        XCTAssertEqual(scene.endlessIIRetreatFloorLift, 0)
+    }
+
+    func testASecondRetreatDoesNotStackTheLift() {
+        // extendsDuration: longer, not higher
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = -100
+        let floor = scene.finalBrickRowHeight
+
+        scene.endlessIICollectClearAndRetreat()
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(scene.finalBrickRowHeight,
+                       floor + CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
+                       accuracy: 0.001)
     }
 
     func testAnEmptyFieldIsNotStillMoving() {

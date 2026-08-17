@@ -29,6 +29,31 @@ final class AimHoldControlTests: XCTestCase {
                        .paddle, "and the thumb's usual home is below the paddle")
     }
 
+    /// James, round 172: "I think moving the paddle when aimed sticky is active is not good. It
+    /// should just be the arrow angle. Unless sticky paddle is also active, then the paddle
+    /// movement should be allowed too."
+    ///
+    /// So round 33's two-decision control is what *Sticky Paddle underneath* buys, not what
+    /// Aimed Sticky gives on its own. The two tests above describe the paired case and pass
+    /// unchanged, because carrying the paddle is still the default answer for the question
+    /// "may it move" - it is the question that is new.
+    func testWithoutStickyPaddleEveryDragIsTheAim() {
+        for y in [CGFloat(0), paddleTop + 1, paddleTop, paddleTop - 200] {
+            XCTAssertEqual(AimHoldControl.intent(touchY: y, paddleTopY: paddleTop,
+                                                 paddleMayMove: false),
+                           .aim, "at \(y): two decisions on one finger, and the aim is the "
+                           + "one the power-up is for")
+        }
+    }
+
+    func testWithStickyPaddleTheHeightStillDecides() {
+        XCTAssertEqual(AimHoldControl.intent(touchY: 0, paddleTopY: paddleTop,
+                                             paddleMayMove: true), .aim)
+        XCTAssertEqual(AimHoldControl.intent(touchY: paddleTop - 200, paddleTopY: paddleTop,
+                                             paddleMayMove: true), .paddle,
+                       "that power-up's whole promise is that the ball comes with the paddle")
+    }
+
     func testOnlyATapLaunches() {
         XCTAssertTrue(AimHoldControl.launches(travelled: 0))
         XCTAssertTrue(AimHoldControl.launches(travelled: AimHoldControl.tapSlop),
