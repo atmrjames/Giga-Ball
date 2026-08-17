@@ -99,11 +99,9 @@ final class EndlessIIBrickTests: XCTestCase {
                           period: period, phase: 0, bodyScale: 1)
     }
 
-    func testItBreathesBetweenHalfACellAndTheWholeOfIt() {
-        let brick = breather()
+    private func range(of brick: EndlessIIBreather) -> (smallest: CGFloat, largest: CGFloat) {
         var smallest = CGFloat.greatestFiniteMagnitude
         var largest = -CGFloat.greatestFiniteMagnitude
-
         var moment: TimeInterval = 0
         while moment <= brick.period {
             let scale = brick.scale(at: moment)
@@ -111,11 +109,38 @@ final class EndlessIIBrickTests: XCTestCase {
             largest = max(largest, scale)
             moment += brick.period/200
         }
+        return (smallest, largest)
+    }
 
-        XCTAssertEqual(smallest, EndlessIIBreather.smallest, accuracy: 0.01)
-        XCTAssertEqual(largest, 1, accuracy: 0.01,
-                       "it never swells past the cell it owns - the room beyond belongs to "
-                       + "its neighbours, and nothing reserves it")
+    /// James, round 175: "breathing bricks can go from one size class to any other size class
+    /// including down to nothing."
+    func testItBreathesDownToNothing() {
+        let measured = range(of: breather())
+        XCTAssertEqual(measured.smallest, 0, accuracy: 0.01,
+                       "the bottom of the breath is the brick not being there")
+        XCTAssertEqual(EndlessIIBreather.smallest, 0)
+    }
+
+    func testAHemmedInBrickStillOnlyFillsItsOwnCell() {
+        // Which is what every breathing brick did before round 175, so a crowded field looks
+        // exactly as it did
+        let measured = range(of: breather())
+        XCTAssertEqual(measured.largest, 1, accuracy: 0.01,
+                       "the room beyond belongs to its neighbours, and nothing reserves it")
+    }
+
+    func testABrickWithRoomBreathesUpThroughTheSizeClasses() {
+        var roomy = breather()
+        roomy.ceiling = 2
+        let measured = range(of: roomy)
+        XCTAssertEqual(measured.largest, 2, accuracy: 0.01)
+        XCTAssertEqual(measured.smallest, 0, accuracy: 0.01,
+                       "both ends, so one brick covers every class between nothing and Big")
+    }
+
+    func testItNeverBreathesPastABigBrick() {
+        XCTAssertEqual(EndlessIIBreather.largest, 2,
+                       "a Big brick is the largest thing the field has a name for")
     }
 
     func testTheCycleReturnsToWhereItStarted() {

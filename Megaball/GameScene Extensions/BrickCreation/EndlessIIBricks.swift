@@ -44,9 +44,27 @@ struct EndlessIIBreather {
     /// The size the body was last built at, so it is only rebuilt when it is worth it.
     var bodyScale: CGFloat
 
-    /// How small it gets: half a cell, which is a Tiny brick's size and so a size the field
-    /// already reads as a brick.
-    static let smallest: CGFloat = 0.5
+    /// How large it may get, as a multiple of a cell.
+    ///
+    /// **A brick may breathe up through the size classes** (James, round 175: "breathing bricks
+    /// can go from one size class to any other size class including down to nothing"), so the
+    /// ceiling is no longer the size it was born at - it is whatever the space around it allows,
+    /// worked out once when the breather is made and never larger than a Big brick.
+    static let largest: CGFloat = 2
+
+    /// How small it gets: nothing at all.
+    ///
+    /// It was half a cell - a Tiny brick's size, so a size the field already read as a brick.
+    /// Round 175 took it to nothing, which is the other end of "any size class": the brick
+    /// disappears for the moment at the bottom of the breath and comes back. Below
+    /// `solidBelow` it carries no body, the same arrangement a Flashing brick has in its
+    /// passable phase - and for one extra reason, that `SKPhysicsBody(rectangleOf:)` hands back
+    /// nothing at all for an empty rectangle, which would be a brick you cannot see and cannot
+    /// hit either.
+    static let smallest: CGFloat = 0
+
+    /// The scale below which the brick is a picture rather than a brick.
+    static let solidBelow: CGFloat = 0.12
 
     /// How far the scale must travel before the body is rebuilt.
     ///
@@ -55,14 +73,22 @@ struct EndlessIIBreather {
     /// brick on the field is a lot of work to be a tenth of a brick more accurate.
     static let bodyStep: CGFloat = 0.08
 
-    /// The scale at a moment in the cycle: smallest, up to full, and back.
+    /// The largest this one may actually reach, in multiples of its birth size.
+    ///
+    /// One, unless there was room to grow. Held per breather rather than asked of the field each
+    /// frame: the neighbours change constantly, and a brick that started breathing to twice its
+    /// size should not stop halfway through a breath because something arrived beside it - it
+    /// would look like the brick being interrupted rather than like the field being crowded.
+    var ceiling: CGFloat = 1
+
+    /// The scale at a moment in the cycle: smallest, up to its ceiling, and back.
     func scale(at moment: TimeInterval) -> CGFloat {
         let turn = moment/period*2*Double.pi
         let eased = (1 - cos(turn))/2
         // A cosine rather than a triangle: it pauses at each end, which is what makes it
         // read as breathing rather than as pumping
         return EndlessIIBreather.smallest
-            + (1 - EndlessIIBreather.smallest)*CGFloat(eased)
+            + (ceiling - EndlessIIBreather.smallest)*CGFloat(eased)
     }
 }
 
@@ -610,9 +636,47 @@ extension GameScene {
             EndlessIIBreather(brick: brick, full: brick.size,
                               period: .random(in: 2.2...3.2),
                               phase: .random(in: 0...3.2),
-                              bodyScale: 1))
+                              bodyScale: 1,
+                              ceiling: endlessIIBreathingCeiling(for: brick)))
         // Staggered starts and slightly different periods, so a row of them ripples rather
         // than pulsing as one animal
+    }
+
+    /// How far a breathing brick may grow without ending up inside a neighbour.
+    ///
+    /// **"Ensure there is enough space around the brick so it doesn't overlap a neighbouring
+    /// brick when it grows"** (James, round 175). A brick that swells into the cell beside it
+    /// leaves two bricks in one place, which is the phantom-brick shape this project has spent
+    /// rounds chasing: one picture and two bodies.
+    ///
+    /// Asked of the cells around it rather than of frames, because the cell is what the field
+    /// speaks in - and asked once, at birth, so a breath is not interrupted halfway by a row
+    /// arriving beside it (see `ceiling`).
+    ///
+    /// One when it is hemmed in, which is what every breathing brick did before this - so a
+    /// crowded field looks exactly as it did, and only a brick with room takes it.
+    func endlessIIBreathingCeiling(for brick: SKSpriteNode) -> CGFloat {
+        guard gameMode == .endlessII else { return 1 }
+        guard brickWidth > 0, brickHeight > 0, numberOfBrickColumns > 0 else { return 1 }
+        // No grid yet, so no neighbours to measure against - and asking anyway divides by a
+        // zero cell size, which reaches `Int(_:)` as an infinity and traps. A brick built
+        // before the field has proportions keeps to its own cell, which is the old behaviour
+        let cell = endlessIICell(of: brick)
+        let occupied = endlessIIOccupancy()
+
+        for step in stride(from: CGFloat(2), to: 1, by: -0.5) {
+            let reach = Int((step - 1).rounded(.up))
+            var clear = true
+            for column in (cell.column - reach)...(cell.column + reach) {
+                for row in (cell.row - reach)...(cell.row + reach)
+                where !(column == cell.column && row == cell.row) {
+                    let neighbours = occupied[EndlessIICell(column: column, row: row)] ?? []
+                    if neighbours.contains(where: { $0 !== brick }) { clear = false }
+                }
+            }
+            if clear { return min(step, EndlessIIBreather.largest) }
+        }
+        return 1
     }
 
     /// Rounds a brick's corners - the same oblong shape, not a circle.
@@ -787,11 +851,20 @@ extension GameScene {
         brick.size = CGSize(width: breather.full.width*scale,
                             height: breather.full.height*scale)
 
-        if abs(scale - breather.bodyScale) >= EndlessIIBreather.bodyStep {
+        if abs(scale - breather.bodyScale) >= EndlessIIBreather.bodyStep
+            || (scale < EndlessIIBreather.solidBelow) != (brick.physicsBody == nil) {
             breather.bodyScale = scale
-            brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: brick.size))
+            brick.physicsBody = scale < EndlessIIBreather.solidBelow
+                ? nil : brickBody(SKPhysicsBody(rectangleOf: brick.size))
             // Rebuilt in steps rather than every frame: a body cannot be resized, only
-            // replaced, and the sprite is the thing the player is reading
+            // replaced, and the sprite is the thing the player is reading.
+            //
+            // **Nothing at the bottom of the breath.** A brick breathing down to nothing is a
+            // brick that is not there for a moment, the way a Flashing brick is not there in
+            // its passable phase - and `SKPhysicsBody(rectangleOf:)` returns nothing for an
+            // empty rectangle anyway, so the alternative was a brick you cannot see and cannot
+            // hit. The second half of the condition is what makes the body come *back* the
+            // instant the breath rises past the line, whatever the step arithmetic says
         }
         endlessIIBreathers[index] = breather
 
