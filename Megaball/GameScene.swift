@@ -3785,6 +3785,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		invisibleBrickFlash()
     }
 	
+	/// Whether Mayhem's bottom zone is held up by nothing the player can see.
+	///
+	/// **The one place a hidden brick costs a run rather than a shot** (James, round 172: "if an
+	/// invisible brick is the only brick on the bottom row of Endless Mayhem mode, it should
+	/// briefly flash up when the ball hits the paddle"). In Classic a hidden brick is a brick
+	/// you cannot find; here the bottom zone is what the descent waits on, so a hidden brick
+	/// down there stops the field, stops the height, and gives no reason for either.
+	///
+	/// The bottom *zone*, not the lowest occupied row: that is the test the descent itself uses
+	/// to decide what holds it up (`countBricks`), so this asks exactly the question the stall
+	/// answers. At least one hidden brick and nothing visible beside it - a zone with anything
+	/// visible in it explains itself.
+	var endlessIIBottomZoneIsAllHidden: Bool {
+		guard gameMode == .endlessII else { return false }
+		var hidden = 0
+		var visible = 0
+		enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+			guard let sprite = node as? SKSpriteNode,
+			      self.brickHasReachedTheBottomZone(sprite),
+			      sprite.endlessIIIsAnchored == false else { return }
+			if sprite.isHidden { hidden += 1 } else { visible += 1 }
+		}
+		return hidden > 0 && visible == 0
+	}
+
 	func invisibleBrickFlash() {
 		var nonHiddenNodeFound = false
 		enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
@@ -3796,7 +3821,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Check to see if there are any non-hidden destructible bricks left
 		
-		if nonHiddenNodeFound == false {
+		if nonHiddenNodeFound == false || endlessIIBottomZoneIsAllHidden {
 		// Only run if there are only hidden destructible and indestructible bricks left
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
@@ -3824,7 +3849,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let sequence = SKAction.sequence([waitDuration, completionBlock])
 			self.run(sequence, withKey: "invisibleBrickFlash")
 		}
-		// Show hidden bricks if there are no noraml or invisible bricks showing
+		// Show hidden bricks if there are no noraml or invisible bricks showing - or, in
+		// Mayhem, if the bottom zone is held up by nothing the player can see, which is the
+		// same interaction answering a question only this mode asks
 	}
     
     func powerUpGenerator (sprite: SKSpriteNode) {

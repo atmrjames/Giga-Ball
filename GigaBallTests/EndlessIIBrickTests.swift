@@ -14,6 +14,75 @@ import SpriteKit
 
 final class EndlessIIBrickTests: XCTestCase {
 
+    /// James, round 172: "if an invisible brick is the only brick on the bottom row of Endless
+    /// Mayhem mode, it should briefly flash up when the ball hits the paddle. Copy the same
+    /// existing interaction that happens in Classic mode when all bricks left are invisible."
+    ///
+    /// Classic flashes when there is nothing visible *anywhere*, because there a hidden brick
+    /// is a brick you cannot find. Mayhem needs the question asked of the bottom zone as well:
+    /// that is what the descent waits on, so a hidden brick down there stops the field, stops
+    /// the height, and gives no reason for either.
+    private func zoneScene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = 0
+        return scene
+    }
+
+    private func zoneBrick(on scene: GameScene, y: CGFloat, hidden: Bool) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.size = CGSize(width: 40, height: scene.brickHeight)
+        brick.position = CGPoint(x: 0, y: y)
+        brick.name = BrickCategoryName
+        brick.isHidden = hidden
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testAHiddenBrickAloneInTheBottomZoneAsksForTheFlash() {
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 0, hidden: true)
+        zoneBrick(on: scene, y: 200, hidden: false)
+        // Something visible higher up, so Classic's own rule would say nothing
+
+        XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden)
+    }
+
+    func testAVisibleBrickInTheZoneExplainsItself() {
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 0, hidden: true)
+        zoneBrick(on: scene, y: 0, hidden: false)
+
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden)
+    }
+
+    func testAnEmptyZoneAsksForNothing() {
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 200, hidden: true)
+
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
+                       "nothing is holding the field up, so nothing needs explaining")
+    }
+
+    func testAnAnchoredBrickIsNotWhatHoldsTheFieldUp() {
+        // An anchored brick does not descend and does not block the descent either
+        let scene = zoneScene()
+        let anchored = zoneBrick(on: scene, y: 0, hidden: true)
+        anchored.endlessIIIsAnchored = true
+
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden)
+    }
+
+    func testTheClassicRuleIsNotAskedOfOtherModes() {
+        let scene = zoneScene()
+        scene.gameMode = .classic
+        zoneBrick(on: scene, y: 0, hidden: true)
+
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
+                       "Classic has its own rule and this is not it")
+    }
+
     private func flasher(solidFor: TimeInterval = 2, passableFor: TimeInterval = 2)
     -> EndlessIIFlasher {
         EndlessIIFlasher(brick: SKSpriteNode(), solidFor: solidFor,
