@@ -178,3 +178,68 @@ final class PowerUpArrayTests: XCTestCase {
         }
     }
 }
+
+/// Which power-ups are wearing James's artwork.
+///
+/// `PowerUpIcon.artwork` falls back to a drawn placeholder when the catalogue has no image under
+/// the name it is given - which is what lets the art arrive one piece at a time, and also means a
+/// misspelled asset name is invisible: the icon looks exactly as it did the day before the art
+/// was drawn. The two are told apart by size. A placeholder is drawn on a 120pt canvas; the
+/// artwork is 250px square, so anything bigger than the canvas came out of the catalogue.
+final class PowerUpArtworkTests: XCTestCase {
+
+    /// James, round 176: "you'll find a load more power-up icons on the Desktop. Some to replace
+    /// the exist ones, many new."
+    private let drawn: [(String, UIImage)] = [
+        ("Aimed Sticky", PowerUpIcon.aimedSticky),
+        ("Aura", PowerUpIcon.aura),
+        ("Auto Aim", PowerUpIcon.autoAim),
+        ("Ball Steering", PowerUpIcon.ballSteering),
+        ("Clear And Retreat", PowerUpIcon.clearAndRetreat),
+        ("Cull", PowerUpIcon.cull),
+        ("Descent", PowerUpIcon.descent),
+        ("Double Paddle", PowerUpIcon.doublePaddle),
+        ("Drift", PowerUpIcon.drift),
+        ("Flipped Angle", PowerUpIcon.flippedAngle),
+        ("Ghost Ball", PowerUpIcon.ghostBall),
+        ("Inert Paddle", PowerUpIcon.inertPaddle),
+        ("Infill", PowerUpIcon.infill),
+        ("Key", PowerUpIcon.key),
+        ("Landing Marker", PowerUpIcon.landingMarker),
+        ("Laser Beam", PowerUpIcon.laserBeam),
+        ("Magnetism", PowerUpIcon.magnetism),
+        ("Mirror Paddle", PowerUpIcon.mirrorPaddle),
+        ("Multi-Ball", PowerUpIcon.multiBall),
+        ("Paddle Halo", PowerUpIcon.paddleHalo),
+        ("Randomised Bounce", PowerUpIcon.randomisedBounce),
+        ("Reversed Controls", PowerUpIcon.reversedControls),
+        ("Safety Paddle", PowerUpIcon.safetyPaddle),
+        ("Trajectory Line", PowerUpIcon.trajectoryLine),
+        ("Wipe", PowerUpIcon.wipe),
+        ("Wrecking Ball", PowerUpIcon.wreckingBall),
+    ]
+
+    func testEveryDrawnPowerUpFindsItsArtwork() {
+        for (name, icon) in drawn {
+            XCTAssertGreaterThan(icon.size.width, PowerUpIcon.canvas.width,
+                                 "\(name) is still drawing its placeholder - the artwork is not "
+                                 + "in the catalogue under the name the icon asks for")
+        }
+    }
+
+    func testTheOnesWithNoArtworkYetStillDrawThemselves() {
+        // The other half of the same rule: §8.5 still lists these, and they must keep looking
+        // like something until it does arrive
+        for (name, icon) in [("Portal Paddle", PowerUpIcon.portalPaddle),
+                             ("Wrap Around", PowerUpIcon.wrapAround)] {
+            XCTAssertEqual(icon.size, PowerUpIcon.canvas, name)
+        }
+    }
+
+    func testTheArtworkIsSquare() {
+        // The badge is drawn square and the reference pages lay it out as one
+        for (name, icon) in drawn {
+            XCTAssertEqual(icon.size.width, icon.size.height, accuracy: 0.001, name)
+        }
+    }
+}

@@ -99,32 +99,65 @@ extension GameScene {
         if soundsSetting { run(endlessRowDownSound) }
     }
 
-    /// Lifts the lower limit while a retreat runs, and puts it back when the clock ends.
+    /// Lifts the whole field - line and bricks - while a retreat runs, and puts both back.
     ///
-    /// **"As if the game is set 2 rows higher"** (James, round 169: "it should move the low
-    /// brick line up 2 rows too"). Clearing the two lowest rows moved the *bricks* two rows
-    /// away from the paddle and left the line they die on where it was - so the room the
-    /// power-up made was room the descent could take straight back into. Lifting the line
-    /// makes the retreat real: for as long as the clock runs, the lowest a brick may reach is
-    /// two rows further from the paddle, and the drawn line says so.
+    /// **"As if the game is set 2 rows higher"** (James, round 169: "it should move all rows
+    /// up 2 rows for some time. It should move the low brick line up 2 rows too"). Round 172
+    /// did the line and deferred the bricks on the question of what happens to a row lifted
+    /// off the top of the field; round 177 answered it: "it's ok if the top 2 rows just get
+    /// hidden behind the HUD. They're there, but effectively out of the game and hidden from
+    /// view." So the bricks lift with the line now - every one of them, anchored included,
+    /// because this is the frame moving rather than the conveyor conveying, and an anchor is
+    /// anchored to the field, which is what moved.
+    ///
+    /// Lifted in one write rather than an action: `countBricks` gates the descent on
+    /// `hasActions()` (§8.6), and a brick still gliding upward when the hold ends would stall
+    /// the field. The build-in destinations shift with the bricks, because a save taken
+    /// mid-flight reads those instead of positions.
     ///
     /// Safe to move because **the field is held for the whole duration** - `endlessIIFieldIsHeld`
     /// is true while this clock runs, so nothing generates a row or steps the field against a
-    /// floor that is temporarily somewhere else. When the clock ends the line drops back and
-    /// the descent closes the gap, which is where the deferred height comes from.
+    /// floor that is temporarily somewhere else. When the clock ends the field comes back down
+    /// two rows - the hidden rows re-enter, the line drops back - and the descent closes the
+    /// gap the *clear* made, which is where the deferred height comes from.
     ///
     /// Driven from the tick rather than scheduled, because a clock can end in more ways than by
     /// running out: a Wipe ends it, and a run ending resets it (the Safety Paddle's own rule).
+    /// One variable drives line and bricks together, which is also what makes a resume honest:
+    /// the save writes rows with the lift subtracted (`endlessIICanonicalRestingY`), the lift
+    /// variable starts a fresh scene at zero, and the first tick of a restored running clock
+    /// lifts everything once - never twice.
     func tickEndlessIIRetreatFloor() {
         guard gameMode == .endlessII else { return }
         let wanted = endlessIIClearAndRetreatClock.isRunning
             ? CGFloat(GameScene.endlessIIRetreatRows)*brickHeight : 0
         guard abs(wanted - endlessIIRetreatFloorLift) > 0.5 else { return }
 
-        finalBrickRowHeight += wanted - endlessIIRetreatFloorLift
+        let delta = wanted - endlessIIRetreatFloorLift
+        finalBrickRowHeight += delta
         endlessIIRetreatFloorLift = wanted
         showEndlessIILowerLimit()
         // The line reads `finalBrickRowHeight`, so it moves by being asked again
+
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            node.position.y += delta
+        }
+        for key in endlessIIBuildInFinalY.keys {
+            endlessIIBuildInFinalY[key]! += delta
+        }
+        // Whole rows at a time, so a brick's position.y is still its row (§8.6) - the rows
+        // themselves are simply two further from the paddle until the clock ends
+    }
+
+    /// The row a brick belongs on with the retreat's temporary lift taken back off.
+    ///
+    /// For the save: a run saved mid-retreat stores its bricks where they *belong*, exactly
+    /// as one saved mid-build-in stores destinations rather than flight positions - and for
+    /// the same reason. The restored clock is still running, so the first tick after the
+    /// restore applies the lift to the restored field; a save that kept the lifted positions
+    /// would be lifted a second time.
+    func endlessIICanonicalRestingY(_ restingY: CGFloat) -> CGFloat {
+        restingY - endlessIIRetreatFloorLift
     }
 
     /// Destroys the lowest occupied rows, one row at a time from the bottom.

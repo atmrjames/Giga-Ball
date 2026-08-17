@@ -33,9 +33,18 @@ extension GameScene {
 
     /// Notes that a ball has hit a side wall it should pass through. Returns whether it did,
     /// so the caller skips the bounce it would otherwise be correcting.
+    ///
+    /// Noted once per ball, however many times the engine mentions it: one wall hit can be
+    /// reported as more than one contact (the block and the frame both answer to a ball, and a
+    /// manifold can carry several points), and two notes used to mean two teleports - a round
+    /// trip that put the ball straight back on the wall it struck. That is James's round-177
+    /// wrap: "the ball is still hitting the wall a lot rather than wrapping around. It seems
+    /// to wrap around the first time, but then reverts to hitting the wall."
     func endlessIIWrapTook(_ subject: SKSpriteNode) -> Bool {
         guard endlessIIWrapIsRunning else { return false }
-        endlessIIPendingWraps.append(subject)
+        if endlessIIPendingWraps.contains(where: { $0 === subject }) == false {
+            endlessIIPendingWraps.append(subject)
+        }
         return true
     }
 
@@ -53,6 +62,16 @@ extension GameScene {
             guard subject.parent != nil, let body = subject.physicsBody else { continue }
             let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
                 ?? body.velocity
+
+            let intoItsWall = arriving.dx != 0
+                && (subject.position.x > 0) == (arriving.dx > 0)
+            guard intoItsWall else { continue }
+            // Only a ball actually leaving through the wall it is beside wraps. A contact
+            // note that arrives after the teleport - a duplicate report, or the same pair
+            // re-mentioned a frame late - finds the ball beside the *other* wall with a
+            // heading that points away from it, and teleporting that ball is how a wrap
+            // becomes a bounce (round 177). The pre-step heading is the honest one; the
+            // engine's own bounce has already turned the live velocity around.
 
             if subject === ball { crookedBallNote("wrap") }
             let radius = subject.size.width/2

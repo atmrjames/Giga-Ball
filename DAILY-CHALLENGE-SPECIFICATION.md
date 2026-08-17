@@ -558,6 +558,15 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   recording the run's natural end uses.
 - **Monochrome performance** (§5, §4 Blackout).
 
+- **An early launch snaps the fog shut** (round 177, James: "if fog of war twist is in
+  play, at the start if the player launches the ball before the fade out animation has
+  finished, make all the bricks disappear immediately"). `snapDailyFogShut`, called from
+  `releaseBall` so it covers every launch - and scoped to what the fog still owns (the
+  taking and pending lists), never a brick a strike has revealed, which a later launch
+  must not take back. The splash into a daily also lists **every** twist now rather than
+  the first (same round): the storyboard's fixed one-line label height clipped the rest,
+  the trap that ate the run-kind line in rounds 14 and 15, and the box now grows a line
+  per twist.
 - ~~**Fog of War's opening reveal**~~ **Built** (round 23). The opening field builds in
   visible, holds for 1.1 seconds and fades out together over half a second: one look at
   what you are about to lose sight of, which is the difference between a twist and a

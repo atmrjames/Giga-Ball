@@ -740,6 +740,72 @@ final class SavedMayhemFieldTests: XCTestCase {
                        "so a Mayhem run whose key did not survive comes back as Classic")
     }
 
+    /// James, rounds 169 and 176, with a screenshot: "Endless Mayhem is still coming back from
+    /// a force quit with Classic Mode score and ball lives container."
+    ///
+    /// Round 170 answered the half of this that was a lost `UserDefaults` write, and the HUD
+    /// came back anyway - because a *resumed* run never goes through `Playing`'s
+    /// `switch levelNumber`, so `resumeBrickCreation` is the only place a level-0 resume is
+    /// dressed as endless, and Mayhem returned from it on its own brick path before reaching
+    /// the line that does the dressing. Hence Classic's tray over a descending field, and
+    /// hence James being unable to reproduce it in the original Endless, which falls through
+    /// to the cell path and always got there.
+    func testAResumedMayhemRunComesBackAsMayhemAndNotAsClassic() {
+        let scene = mayhem()
+        let node = brick(in: scene, x: 0, y: 0)
+        let record = scene.savedBrick(for: node, texture: 0, colour: 100, restingY: 0)
+        // In the bottom zone, holding the field up. The resume ends in `countBricks`, and a
+        // field with nothing down there legitimately starts its next row on the spot - which
+        // scores a metre and turns the 47 below into a 48, as the full suite duly reported
+
+        let resumed = mayhem()
+        resumed.levelNumber = 0
+        var save = emptySave()
+        save.endlessIIBricks = [record]
+        save.endlessHeight = 47
+        resumed.savedGame = save
+        resumed.resumeBrickCreation()
+
+        XCTAssertTrue(resumed.endlessMode, "an endless run, however its bricks were stored")
+        XCTAssertTrue(resumed.livesRowSuppressed, "no ball container")
+        XCTAssertTrue(resumed.multiplierLabel.isHidden, "no multiplier")
+        XCTAssertEqual(resumed.endlessHeight, 47, "and the height it was actually at, not 0m")
+    }
+
+    func testAResumedMayhemRunCanStillDropPowerUps() {
+        // The quieter half of the same early return: `powerUpProbAllocation` sat under it too,
+        // so every weight stayed at zero and nothing fell out of a brick
+        let scene = mayhem()
+        let record = scene.savedBrick(for: brick(in: scene, x: 0, y: 40),
+                                      texture: 0, colour: 100, restingY: 40)
+
+        let resumed = mayhem()
+        resumed.levelNumber = 0
+        var save = emptySave()
+        save.endlessIIBricks = [record]
+        resumed.savedGame = save
+        resumed.resumeBrickCreation()
+
+        XCTAssertGreaterThan(resumed.powerUpProbArray.reduce(0, +), 0)
+    }
+
+    func testAResumedClassicRunIsStillClassic() {
+        // The other direction, because the fix moved a line that had a level check on it
+        let scene = mayhem()
+        scene.gameMode = .classic
+        scene.levelNumber = 3
+        var save = emptySave()
+        save.levelNumber = 3
+        save.brickTextures = []
+        save.brickColours = []
+        save.brickXPositions = []
+        save.brickYPositions = []
+        scene.savedGame = save
+        scene.resumeBrickCreation()
+
+        XCTAssertFalse(scene.endlessMode)
+    }
+
     func testAnOlderSaveStillTakesTheCellPath() {
         // Widening, not a migration: a save written before round 150 has no rich field, and
         // must still load exactly as it always did

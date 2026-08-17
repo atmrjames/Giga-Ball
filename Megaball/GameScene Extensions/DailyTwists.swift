@@ -258,10 +258,14 @@ extension GameScene {
         // and a test that waited out the animation would be a test about a timer
 
         for brick in showing where brick.parent != nil {
+            dailyFogTaking.append(brick)
             brick.run(.sequence([
                 .wait(forDuration: GameScene.dailyFogLook),
                 .fadeOut(withDuration: GameScene.dailyFogClose),
-                .run { brick.isHidden = true; brick.alpha = 1 },
+                .run { [weak self] in
+                    brick.isHidden = true; brick.alpha = 1
+                    self?.dailyFogTaken(brick)
+                },
             ]))
             // Hidden *and* returned to full alpha at the end: `revealDailyFog` fades a
             // struck brick back in from zero, and a brick left on alpha zero would be
@@ -282,6 +286,39 @@ extension GameScene {
     static let dailyFogLook: TimeInterval = 0.45
     static let dailyFogClose: TimeInterval = 0.3
 
+    /// Takes at once whatever the fog was still taking gently.
+    ///
+    /// James, round 177: "if fog of war twist is in play, at the start if the player launches
+    /// the ball before the fade out animation has finished, make all the bricks disappear
+    /// immediately." The look and the fades exist to show the field *before* play starts; a
+    /// player who launches early has declared the look over, and a field still fading around
+    /// a live ball hands back sight the twist is meant to have taken.
+    ///
+    /// Called from `releaseBall`, so it covers every launch - which is also why it must only
+    /// touch what the fog still owns: `dailyFogTaking` (scheduled or mid-fade) and
+    /// `dailyFogPending` (never scheduled at all), never the bricks a strike has revealed,
+    /// which a later launch must not take back. Hiding a brick whose fade is mid-flight is
+    /// safe: the fade's own completion sets the same two values this does, and the scheduled
+    /// closes that have not started yet check `isHidden` and stand down.
+    func snapDailyFogShut() {
+        guard dailyFogIsOn else { return }
+        for brick in dailyFogTaking where brick.parent != nil {
+            brick.isHidden = true
+            brick.alpha = 1
+        }
+        dailyFogTaking.removeAll()
+
+        guard dailyFogHasClosed == false else { return }
+        dailyFogHasClosed = true
+        for brick in dailyFogPending where brick.parent != nil {
+            brick.isHidden = true
+        }
+        dailyFogPending.removeAll()
+        // The sweeper's own job, done without the look: a launch this early means the
+        // build-in is still running, and rows still to land arrive fogged through
+        // `applyDailyFog`'s closed-fog branch
+    }
+
     /// Fogs one brick a beat after it has landed, rather than waiting for the whole field.
     ///
     /// This is the answer to playing before the fog closed: the fog no longer starts when
@@ -298,6 +335,8 @@ extension GameScene {
         guard dailyFogIsOn, dailyFogHasClosed == false else { return }
         guard let index = dailyFogPending.firstIndex(where: { $0 === brick }) else { return }
         dailyFogPending.remove(at: index)
+        dailyFogTaking.append(brick)
+        // In the taking list until its fade lands it hidden - `snapDailyFogShut` reads this
 
         run(.sequence([
             .wait(forDuration: arrival + GameScene.dailyFogLook),
@@ -306,10 +345,24 @@ extension GameScene {
                 guard self.dailyFogIsOn else { return }
                 brick.run(.sequence([
                     .fadeOut(withDuration: GameScene.dailyFogClose),
-                    .run { brick.isHidden = true; brick.alpha = 1 },
+                    .run { [weak self] in
+                        brick.isHidden = true; brick.alpha = 1
+                        self?.dailyFogTaken(brick)
+                    },
                 ]))
             },
         ]))
+    }
+
+    /// Strikes one brick off the taking list, once the fog has it (or a hit saved it).
+    ///
+    /// Without this the list only ever grows, and `snapDailyFogShut` on a *later* launch
+    /// would re-hide bricks the fog had long finished with - including any a strike had
+    /// revealed since, which is exactly what a reveal promises cannot happen.
+    func dailyFogTaken(_ brick: SKSpriteNode) {
+        if let index = dailyFogTaking.firstIndex(where: { $0 === brick }) {
+            dailyFogTaking.remove(at: index)
+        }
     }
 
     /// Brings one brick out of the fog, spending the strike on the reveal. Returns
@@ -335,6 +388,10 @@ extension GameScene {
         guard ownBranchReveals == false else { return false }
         // Normal-shaped bricks (styled ones included) and the invisible texture reach
         // switch branches that already do first-hit-reveals-only - the fog leans on them
+
+        dailyFogTaken(brick)
+        // Out of the taking list, or a later launch's snap would take back what this
+        // strike has just given
 
         brick.isHidden = false
         brick.alpha = 0

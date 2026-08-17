@@ -55,6 +55,12 @@ class IntroViewController: UIViewController, UICollectionViewDelegate, UICollect
         // The way back into a paused run, from wherever this screen was reached
         showAnimate()
     }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        alignCloseButtonWithReturnToGame(backButtonCollectionView)
+        // In to the narrow position when the big play is here (round 176) - see the helper
+    }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         1

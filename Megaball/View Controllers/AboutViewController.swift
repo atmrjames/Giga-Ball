@@ -127,6 +127,8 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        alignCloseButtonWithReturnToGame(backButtonCollectionView)
+        // In to the narrow position when the big play is here (round 176) - see the helper
     }
 
     

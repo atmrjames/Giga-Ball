@@ -96,6 +96,15 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        collectionViewLayout()
+        // **Again, now the row knows how wide it is** (James, round 176, with a screenshot:
+        // "Game Centre button on stats screen is too narrow"). This screen was the only one
+        // laying its button row out from `viewDidLoad` alone, where the row is still the width
+        // the storyboard drew it. `layoutMenuButtonRow` shares the leftover width between the
+        // buttons, so a row measured narrow gives a gap that is too small twice over, and the
+        // right-hand button - the only screen where that is Game Center - stops well short of
+        // where the close button opposite it sits. Every other screen with this row already
+        // calls this from here
         SettingsTableViewCell.fitGlassPanel(under: statsTableView)
     }
 

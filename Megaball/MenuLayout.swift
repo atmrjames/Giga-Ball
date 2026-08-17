@@ -146,6 +146,21 @@ extension UIViewController {
 
         let fromScreen = row.superview?.convert(row.frame.origin, to: nil).x ?? 0
         let hasLargeButton = sizes.contains { $0 > MainMenuCollectionViewCell.smallButtonSize }
+                             || carriesReturnToGameButton
+        // **A big button on the screen counts, not only a big button in the row** (James, round
+        // 176: "as the pause screen info and settings views (including child views) have a big
+        // play button, the small buttons should adopt the narrower position. In the main menu
+        // info and settings views, these buttons should adopt the wider position").
+        //
+        // Settings and Information are one screen each, reached from two places, and the pause
+        // versions carry the 75pt play that `ReturnToGameButton` adds. That button is a subview
+        // of the screen rather than a cell in this row, so `sizes` cannot see it - which is why
+        // both versions had been taking the wide arrangement and the pause ones read as a close
+        // button that had wandered away from the play beside it.
+        //
+        // Asked of the screen rather than passed in by each caller, so it holds for the child
+        // views too - the reference pages go three deep, and `pausedGameBehind` is the same walk
+        // up the chain that decides whether the play button is there in the first place
         let target = hasLargeButton ? UIViewController.menuButtonRowInset
                                     : UIViewController.menuButtonWideInset
         let inset = max(0, target - fromScreen)

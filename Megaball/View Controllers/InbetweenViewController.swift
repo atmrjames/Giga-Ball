@@ -421,6 +421,21 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             levelNameLabel.attributedText = lines
             // One twist per line, the same as the pause summary (play-test round 3), and
             // a no-twist day says Vanilla with its own badge rather than saying nothing
+
+            let lineCount = max(challenge.twists.count, 1)
+            for constraint in levelNameLabel.constraints
+            where constraint.firstAttribute == .height {
+                constraint.constant = ceil(font.lineHeight)*CGFloat(lineCount)
+                    + 2*CGFloat(lineCount - 1)
+            }
+            // The box grows a line per twist (James, round 177, with a screenshot: "on a day
+            // where there's more than one twist, only one twist shows up there"). The
+            // storyboard gives this label a fixed one-line height, so `numberOfLines = 0`
+            // had nothing to grow into and every twist after the first was clipped away -
+            // the same fixed-height trap that swallowed the run-kind line twice (rounds 14
+            // and 15, `showRunKind` below). Resized rather than removed, because the PASSED
+            // banner hangs off this label's bottom edge and still needs an edge to hang off.
+            // The 2s are the paragraph spacing set just above
         }
     }
 

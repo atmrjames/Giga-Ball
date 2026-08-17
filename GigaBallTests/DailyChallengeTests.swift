@@ -597,6 +597,57 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertFalse(empty.isHidden, "an empty cell has nothing to hide")
     }
 
+    /// James, round 177: "if fog of war twist is in play, at the start if the player launches
+    /// the ball before the fade out animation has finished, make all the bricks disappear
+    /// immediately."
+    func testLaunchingEarlySnapsTheFogShut() {
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: [.fogOfWar]))
+        scene.addChild(scene.ball)
+        let looking = SKSpriteNode(texture: scene.brickNormalTexture)
+        scene.addChild(looking)
+        scene.applyDailyFog(to: [looking])
+        scene.closeDailyFog()
+        // Animated: the brick is mid-look, visible, its fade still to come - which is
+        // exactly the state a keen player launches into
+
+        XCTAssertFalse(looking.isHidden, "still having its look")
+        scene.snapDailyFogShut()
+        XCTAssertTrue(looking.isHidden, "the launch ends the look at once")
+    }
+
+    func testTheSnapTakesTheBricksTheBuildInNeverGotTo() {
+        // A launch during the build-in: some bricks are fading, some still waiting in the
+        // pending list, and the snap owes both the same answer
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: [.fogOfWar]))
+        let waiting = SKSpriteNode(texture: scene.brickNormalTexture)
+        scene.addChild(waiting)
+        scene.applyDailyFog(to: [waiting])
+        // Pending, never scheduled - the build-in had not reached it
+
+        scene.snapDailyFogShut()
+        XCTAssertTrue(waiting.isHidden)
+        XCTAssertTrue(scene.dailyFogHasClosed,
+                      "and rows still to land arrive fogged, as after any close")
+    }
+
+    func testALaterLaunchDoesNotTakeBackWhatAStrikeRevealed() {
+        // The snap runs on every launch, so it must only touch what the fog still owns. A
+        // brick the first strike has shown stays shown - that is the reveal's promise.
+        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .classic,
+                                              classicLevel: 1, twists: [.fogOfWar]))
+        let wall = SKSpriteNode(texture: scene.brickIndestructible2Texture)
+        scene.addChild(wall)
+        scene.applyDailyFog(to: [wall])
+        scene.closeDailyFog(animated: false)
+        XCTAssertTrue(scene.revealDailyFog(wall))
+        XCTAssertFalse(wall.isHidden)
+
+        scene.snapDailyFogShut()
+        XCTAssertFalse(wall.isHidden, "revealed is revealed, however many balls follow")
+    }
+
     func testFogSpendsTheFirstStrikeOnTheReveal() {
         // Round 4: "some bricks never show up. All brick types should appear on the
         // first hit." Round 5, after the first fix: "In fog of war, no bricks appeared

@@ -45,7 +45,7 @@ enum PowerUpIcon {
     }
 
     /// Trajectory Line: the path ahead, drawn as it will be drawn - a line with a bounce in it.
-    static let trajectoryLine: UIImage = badge { context, rect in
+    static let trajectoryLine: UIImage = artwork("PowerUpTrajectory") { context, rect in
         context.setStrokeColor(UIColor.white.cgColor)
         context.setLineWidth(rect.width*0.07)
         context.setLineCap(.round)
@@ -82,7 +82,7 @@ enum PowerUpIcon {
     // MARK: - The paddle batch
 
     /// Aimed Sticky: a held ball with the aim arrow leaving it.
-    static let aimedSticky: UIImage = badge { context, rect in
+    static let aimedSticky: UIImage = artwork("PowerUpAimedSticky") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.2))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.2))
@@ -103,7 +103,7 @@ enum PowerUpIcon {
     }
 
     /// Magnetism: the ball's path curving in toward the paddle.
-    static let magnetism: UIImage = badge { context, rect in
+    static let magnetism: UIImage = artwork("PowerUpMagnetism") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.2))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.2))
@@ -136,7 +136,7 @@ enum PowerUpIcon {
     }
 
     /// Paddle Halo: the glow reaching up from the paddle.
-    static let paddleHalo: UIImage = badge { context, rect in
+    static let paddleHalo: UIImage = artwork("PowerUpPaddleHalo") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
@@ -148,7 +148,7 @@ enum PowerUpIcon {
     }
 
     /// Ball Steering: the ball leaning both ways.
-    static let ballSteering: UIImage = badge { context, rect in
+    static let ballSteering: UIImage = artwork("PowerUpBallSteering") { context, rect in
         stroke(context, width: rect.width*0.07)
         dot(context, at: CGPoint(x: rect.midX, y: rect.midY - rect.height*0.1),
             radius: rect.width*0.11)
@@ -166,7 +166,7 @@ enum PowerUpIcon {
     }
 
     /// Inert Paddle: the bounce coming off exactly as it went in.
-    static let inertPaddle: UIImage = badge(harmful) { context, rect in
+    static let inertPaddle: UIImage = artwork("PowerUpInertPaddle", harmful) { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
@@ -180,7 +180,7 @@ enum PowerUpIcon {
     }
 
     /// Flipped Angle: the bounce sent back the way it came from.
-    static let flippedAngle: UIImage = badge(harmful) { context, rect in
+    static let flippedAngle: UIImage = artwork("PowerUpFlippedAngle", harmful) { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.24))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.24))
@@ -199,7 +199,7 @@ enum PowerUpIcon {
     }
 
     /// Reversed Controls: the finger goes one way, the paddle the other.
-    static let reversedControls: UIImage = badge(harmful) { context, rect in
+    static let reversedControls: UIImage = artwork("PowerUpReversedControls", harmful) { context, rect in
         stroke(context, width: rect.width*0.07)
         for (y, direction) in [(rect.midY - rect.height*0.14, CGFloat(1)),
                                (rect.midY + rect.height*0.14, CGFloat(-1))] {
@@ -214,7 +214,7 @@ enum PowerUpIcon {
     }
 
     /// Cull: half the field, gone.
-    static let cull: UIImage = badge { context, rect in
+    static let cull: UIImage = artwork("PowerUpCull") { context, rect in
         stroke(context, width: rect.width*0.06)
         context.setFillColor(UIColor.white.cgColor)
         for (index, y) in [rect.minY + rect.height*0.28, rect.midY,
@@ -233,7 +233,7 @@ enum PowerUpIcon {
     }
 
     /// Clear And Retreat: the bottom row going, the field moving up.
-    static let clearAndRetreat: UIImage = badge { context, rect in
+    static let clearAndRetreat: UIImage = artwork("PowerUpClearAndRetreat") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: rect.maxY - rect.height*0.22))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: rect.maxY - rect.height*0.22))
@@ -250,7 +250,7 @@ enum PowerUpIcon {
     }
 
     /// Laser Beam: the column, floor to ceiling.
-    static let laserBeam: UIImage = badge { context, rect in
+    static let laserBeam: UIImage = artwork("PowerUpLaserBeam") { context, rect in
         context.setFillColor(UIColor.white.cgColor)
         context.fill(CGRect(x: rect.midX - rect.width*0.07, y: rect.minY + rect.height*0.14,
                             width: rect.width*0.14, height: rect.height*0.72))
@@ -276,7 +276,7 @@ enum PowerUpIcon {
     }
 
     /// Aura: the ball inside its glow.
-    static let aura: UIImage = badge { context, rect in
+    static let aura: UIImage = artwork("PowerUpAura") { context, rect in
         dot(context, at: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width*0.11)
         stroke(context, width: rect.width*0.06)
         context.strokeEllipse(in: CGRect(x: rect.midX - rect.width*0.28,
@@ -285,7 +285,7 @@ enum PowerUpIcon {
     }
 
     /// Infill: bricks arriving where there were none.
-    static let infill: UIImage = badge(harmful) { context, rect in
+    static let infill: UIImage = artwork("PowerUpInfill", harmful) { context, rect in
         context.setFillColor(UIColor.white.cgColor)
         for (row, columns) in [(0.3, [0, 2]), (0.55, [1]), (0.8, [0, 2])] {
             for column in columns {
@@ -298,7 +298,7 @@ enum PowerUpIcon {
     }
 
     /// Descent: the field on its way down.
-    static let descent: UIImage = badge { context, rect in
+    static let descent: UIImage = artwork("PowerUpDescent") { context, rect in
         stroke(context, width: rect.width*0.06)
         for y in [rect.minY + rect.height*0.26, rect.minY + rect.height*0.42] {
             context.move(to: CGPoint(x: rect.minX + rect.width*0.22, y: y))
@@ -317,7 +317,7 @@ enum PowerUpIcon {
     }
 
     /// Auto-Aim: the crosshair the paddle puts on the lowest brick.
-    static let autoAim: UIImage = badge { context, rect in
+    static let autoAim: UIImage = artwork("PowerUpAutoAim") { context, rect in
         stroke(context, width: rect.width*0.06)
         let centre = CGPoint(x: rect.midX, y: rect.midY - rect.height*0.06)
         let radius = rect.width*0.2
@@ -382,7 +382,7 @@ enum PowerUpIcon {
 
     /// Key: the way out of a Lock. Deliberately the same weight of line, because the two
     /// are read together - one is only ever on screen because the other is.
-    static let key: UIImage = badge { context, rect in
+    static let key: UIImage = artwork("PowerUpKey") { context, rect in
         stroke(context, width: rect.width*0.07)
         let bow = rect.width*0.15
         let centre = CGPoint(x: rect.minX + rect.width*0.31, y: rect.midY)
@@ -405,7 +405,7 @@ enum PowerUpIcon {
     /// Three rings of decreasing weight with a stroke through them - the ring is the shape the
     /// power-up timers are drawn as everywhere else in this mode, so what is being crossed out
     /// is recognisable as *your timers* rather than as a generic no-entry sign.
-    static let wipe: UIImage = badge(harmful) { context, rect in
+    static let wipe: UIImage = artwork("PowerUpWipe", harmful) { context, rect in
         stroke(context, width: rect.width*0.07)
         let radius = rect.width*0.11
         for (index, x) in [rect.width*0.28, rect.width*0.5, rect.width*0.72].enumerated() {
@@ -432,7 +432,7 @@ enum PowerUpIcon {
     /// power-up takes away is knowing which of them you will get - drawn as a fan rather
     /// than as dice or a question mark, so the picture is of the *bounce* going wrong
     /// rather than of randomness in the abstract.
-    static let randomisedBounce: UIImage = badge(harmful) { context, rect in
+    static let randomisedBounce: UIImage = artwork("PowerUpRandomBounce", harmful) { context, rect in
         stroke(context, width: rect.width*0.08)
 
         let hit = CGPoint(x: rect.midX, y: rect.midY + rect.height*0.2)
@@ -465,7 +465,7 @@ enum PowerUpIcon {
     /// would read as a rendering fault rather than as the ball being *absent*. The line under
     /// it is the lowest brick row - what the player gets back is the last part of the flight,
     /// which is the part they can still do something about.
-    static let ghostBall: UIImage = badge(harmful) { context, rect in
+    static let ghostBall: UIImage = artwork("PowerUpGhostBall", harmful) { context, rect in
         stroke(context, width: rect.width*0.07)
         let radius = rect.width*0.2
         let centre = CGPoint(x: rect.midX, y: rect.midY - rect.height*0.06)
@@ -527,7 +527,7 @@ enum PowerUpIcon {
     /// The gap is the picture. A pair of bars alone would read as a wide paddle drawn badly,
     /// so the ball is on its way *through* the middle - which is the only thing the split
     /// changes and the only thing worth showing.
-    static let doublePaddle: UIImage = badge(harmful) { context, rect in
+    static let doublePaddle: UIImage = artwork("PowerUpDoublePaddle", harmful) { context, rect in
         let bar = rect.height*0.12
         let y = rect.maxY - rect.height*0.34
         let width = rect.width*0.28
@@ -545,7 +545,7 @@ enum PowerUpIcon {
     /// The line is what makes it a mirror rather than two paddles: without it the pair reads
     /// as Double Paddle's split, which is the one picture this must not be mistaken for. The
     /// far one is paler because it is the reflection - the player still only moves one.
-    static let mirrorPaddle: UIImage = badge() { context, rect in
+    static let mirrorPaddle: UIImage = artwork("PowerUpMirrorPaddle") { context, rect in
         let bar = rect.height*0.12
         let width = rect.width*0.3
         let y = rect.maxY - rect.height*0.34
@@ -571,7 +571,7 @@ enum PowerUpIcon {
     ///
     /// The step is the whole idea: not one brick moving, but the field going with it - so the
     /// three are drawn in a line, each further along than the last.
-    static let drift: UIImage = badge(harmful) { context, rect in
+    static let drift: UIImage = artwork("PowerUpDrift", harmful) { context, rect in
         let height = rect.height*0.13
         let width = rect.width*0.34
         for (index, share) in [0.24, 0.5, 0.76].enumerated() {
@@ -590,7 +590,7 @@ enum PowerUpIcon {
     /// Drawn as a bar low in the badge with the line of the field above it, because where it
     /// sits is the whole power-up: high enough to keep the ball in play, low enough that the
     /// ball has to get past it to reach the bricks.
-    static let safetyPaddle: UIImage = badge { context, rect in
+    static let safetyPaddle: UIImage = artwork("PowerUpSafetyPaddle") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18,
                                  y: rect.minY + rect.height*0.26))

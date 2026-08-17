@@ -83,6 +83,65 @@ final class EndlessIIBrickTests: XCTestCase {
                        "Classic has its own rule and this is not it")
     }
 
+    // MARK: - The flash itself
+
+    /// James, round 177: "all of a sudden all the bricks flashed when the ball hit the paddle
+    /// and then disappeared. I didn't have any power-ups at the time... It kept happening every
+    /// so often after that when the ball hit the paddle."
+    ///
+    /// The trigger was round 173's, and legitimate - a hidden brick had descended into the
+    /// bottom zone. The damage was the off-phase: it hid everything wearing the ordinary brick
+    /// texture, an assumption safe only in Classic, where the interaction never fires while
+    /// such a brick is visible. Mayhem's ordinary bricks wear exactly that texture, so one
+    /// flash swallowed the field - and a field of freshly hidden bricks re-arms the Classic
+    /// trigger, which is the "kept happening".
+    func testTheFlashGivesBackOnlyWhatItBorrowed() {
+        let scene = zoneScene()
+        let lurker = zoneBrick(on: scene, y: 0, hidden: true)
+        let field = (1...5).map { zoneBrick(on: scene, y: CGFloat(200 + 20*$0), hidden: false) }
+
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(lurker.isHidden, "the lurker is what the flash is for")
+
+        scene.invisibleBrickFlashOff()
+        XCTAssertTrue(lurker.isHidden, "borrowed, and given back")
+        for brick in field {
+            XCTAssertFalse(brick.isHidden, "a visible brick is not the flash's to take")
+            XCTAssertEqual(brick.alpha, 1, accuracy: 0.0001)
+        }
+    }
+
+    func testAFlashedFieldDoesNotReArmTheTrigger() {
+        // The second half of the report: once the field had been swallowed, every later paddle
+        // hit flashed it again. After a full flash cycle the field must look untouched, so the
+        // Classic all-hidden rule reads exactly as it did before the flash.
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 0, hidden: true)
+        let field = zoneBrick(on: scene, y: 300, hidden: false)
+
+        scene.invisibleBrickFlash()
+        scene.invisibleBrickFlashOff()
+        scene.invisibleBrickFlash()
+        scene.invisibleBrickFlashOff()
+
+        XCTAssertFalse(field.isHidden)
+    }
+
+    func testOverlappingFlashesStillPutEveryBrickBack() {
+        // A second flash replaces the first's pending action under its key, so the bricks the
+        // first revealed must not be stranded visible - the list lives on the scene, not in
+        // the action
+        let scene = zoneScene()
+        let first = zoneBrick(on: scene, y: 0, hidden: true)
+        scene.invisibleBrickFlash()
+        let second = zoneBrick(on: scene, y: 0, hidden: true)
+        scene.invisibleBrickFlash()
+
+        scene.invisibleBrickFlashOff()
+        XCTAssertTrue(first.isHidden)
+        XCTAssertTrue(second.isHidden)
+    }
+
     private func flasher(solidFor: TimeInterval = 2, passableFor: TimeInterval = 2)
     -> EndlessIIFlasher {
         EndlessIIFlasher(brick: SKSpriteNode(), solidFor: solidFor,

@@ -541,6 +541,54 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                        "still travelling the same way")
     }
 
+    /// James, round 177: "Wrap around power-up, the ball is still hitting the wall a lot
+    /// rather than wrapping around. It seems to wrap around the first time, but then reverts
+    /// to hitting the wall. The paddle seems to have no problems."
+    ///
+    /// One wall hit can be reported as more than one contact, and each note used to be its
+    /// own teleport - two of them are a round trip that lands the ball back on the wall it
+    /// struck, wearing the engine's bounce. The paddle never suffered because its wrap is a
+    /// position rule with no contact in it.
+    func testOneWallHitWrapsOnceHoweverOftenTheEngineMentionsIt() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.ball.position = CGPoint(x: 195, y: 0)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 80, dy: 50))
+        scene.endlessIICollectWrapAround()
+
+        XCTAssertTrue(scene.endlessIIWrapTook(scene.ball))
+        XCTAssertTrue(scene.endlessIIWrapTook(scene.ball))
+        XCTAssertTrue(scene.endlessIIWrapTook(scene.ball))
+        scene.applyEndlessIIWraps()
+
+        XCTAssertLessThan(scene.ball.position.x, 0,
+                          "wrapped once - not shuttled back to the wall it struck")
+    }
+
+    func testALateContactNoteDoesNotWrapABallTravellingAwayFromItsWall() {
+        // The other way a duplicate arrives: a frame late, after the teleport. The ball is
+        // then beside the far wall heading away from it, and that ball is mid-flight - not
+        // leaving the field
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.ball.position = CGPoint(x: -194, y: 0)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 80, dy: 50)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 80, dy: 50))
+        // Just in from the left wall, travelling right - exactly where a wrap leaves a ball
+
+        scene.endlessIICollectWrapAround()
+        XCTAssertTrue(scene.endlessIIWrapTook(scene.ball))
+        scene.applyEndlessIIWraps()
+
+        XCTAssertLessThan(scene.ball.position.x, 0, "left where it was, mid-flight")
+    }
+
     func testAStraddlingPaddleAnswersFromItsNearestCopy() {
         // §12.0's Wrap-Around item: "a paddle half off one side should appear half on
         // the other - and its physics body has to follow." The ghost carries the body;
@@ -1013,6 +1061,13 @@ final class RandomisedBounceTests: XCTestCase {
         scene.gameMode = .endlessII
         scene.totalStatsArray = [TotalStats()]
         scene.endlessMode = true
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.numberOfBrickColumns = 10
+        // Real cell geometry, because a test that destroys a brick runs the gravity fill
+        // sweep, and `EndlessIIFieldGeometry.cell(at:)` divides by these - a zero-width
+        // cell is NaN, and Int(NaN) is the crash the full suite caught (round 177)
         scene.endlessIIClearAndRetreatClock.collect(5)
         return scene
     }
@@ -1062,6 +1117,78 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertEqual(scene.finalBrickRowHeight, floor, accuracy: 0.001,
                        "or the run would keep the room for ever, which is a different power-up")
         XCTAssertEqual(scene.endlessIIRetreatFloorLift, 0)
+    }
+
+    /// James, round 177, answering round 172's open question: "I think it's ok if the top 2
+    /// rows just get hidden behind the HUD. They're there, but effectively out of the game
+    /// and hidden from view." So the bricks lift with the line now - the whole field, two
+    /// rows further from the paddle, for as long as the clock runs.
+    func testARetreatLiftsTheBricksWithTheLine() {
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        let low = brick(in: scene, x: 0, y: 40)
+        let next = brick(in: scene, x: 0, y: 60)
+        let survivor = brick(in: scene, x: 0, y: 120)
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertNil(low.parent)
+        XCTAssertNil(next.parent)
+        XCTAssertEqual(survivor.position.y, 120 + 2*scene.brickHeight, accuracy: 0.001,
+                       "the rows that survive the clear are carried up with the frame")
+    }
+
+    func testTheFieldComesBackDownWhenTheRetreatEnds() {
+        // "For some time": the lift is the clock's, and the clear's two rows are the only
+        // permanent part
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        _ = brick(in: scene, x: 0, y: 40)
+        _ = brick(in: scene, x: 0, y: 60)
+        let survivor = brick(in: scene, x: 0, y: 120)
+
+        scene.endlessIICollectClearAndRetreat()
+        scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
+        scene.tickEndlessIIRetreatFloor()
+
+        XCTAssertEqual(survivor.position.y, 120, accuracy: 0.001,
+                       "the hidden rows re-enter from behind the HUD as the line drops back")
+    }
+
+    func testAnAnchoredBrickRidesTheLiftToo() {
+        // The frame is what moves, not the conveyor - an anchor is anchored to the field,
+        // and the field went up
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        _ = brick(in: scene, x: 0, y: 40)
+        _ = brick(in: scene, x: 0, y: 60)
+        let anchored = brick(in: scene, x: 0, y: 140)
+        anchored.endlessIIIsAnchored = true
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(anchored.position.y, 140 + 2*scene.brickHeight, accuracy: 0.001)
+    }
+
+    func testASaveTakenMidRetreatStoresTheRowsWhereTheyBelong() {
+        // The restored clock is still running, so the restore's first tick lifts the field
+        // again - a save that kept the lifted positions would be lifted twice
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        _ = brick(in: scene, x: 0, y: 40)
+        _ = brick(in: scene, x: 0, y: 60)
+        let survivor = brick(in: scene, x: 0, y: 120)
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(scene.endlessIICanonicalRestingY(survivor.position.y), 120,
+                       accuracy: 0.001, "where it belongs, not where the lift has it")
+
+        scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
+        scene.tickEndlessIIRetreatFloor()
+        XCTAssertEqual(scene.endlessIICanonicalRestingY(survivor.position.y), 120,
+                       accuracy: 0.001, "and the same answer once the lift is over")
     }
 
     func testASecondRetreatDoesNotStackTheLift() {

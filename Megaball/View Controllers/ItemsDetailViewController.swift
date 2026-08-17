@@ -193,6 +193,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        alignCloseButtonWithReturnToGame(backButtonCollectionView)
+        // In to the narrow position when the big play is here (round 176) - see the helper
         grid?.collectionViewLayout.invalidateLayout()
         // The square's size is worked out from the collection view's own width, and
         // `limitMenuContentSize` may have just changed it

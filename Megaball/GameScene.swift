@@ -873,6 +873,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIRetreatFloorLift: CGFloat = 0
 	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
+	var invisibleBrickFlashRevealed: [SKSpriteNode] = []
+	// What the invisible-brick flash turned visible, so the off-phase restores exactly that -
+	// see `invisibleBrickFlashOff`
 	var endlessIISpinners: [EndlessIISpinner] = []
 	var endlessIIFlashers: [EndlessIIFlasher] = []
 	var endlessIIBreathers: [EndlessIIBreather] = []
@@ -903,6 +906,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The opening field, while it is still on show. Fog of War lets the level be seen once
 	/// and then takes it away - see `closeDailyFog`.
 	var dailyFogPending: [SKSpriteNode] = []
+	var dailyFogTaking: [SKSpriteNode] = []
+	// What the fog is mid-way through taking - scheduled or fading - so an early launch can
+	// finish the job at once (`snapDailyFogShut`)
 	var dailyFogHasClosed = false
 	/// Whether the opening field is still waiting for a clear screen to arrive on.
 	var endlessIIBuildInWaiting = false
@@ -1066,7 +1072,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gameMode = GameMode.current(in: defaults)
 		// Set by whichever menu launched the run, and remembered so a resumed one knows
 		// what it is
-
 		if defaults.bool(forKey: "resumeGameToLoad"),
 		   let saved = SavedGame.load()?.gameMode,
 		   let savedMode = GameMode(rawValue: saved) {
@@ -2209,6 +2214,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballIsOnPaddle = false
 		ballLostBool = false
         // Resets ball on paddle status
+
+		snapDailyFogShut()
+		// A launch before the fog has finished closing ends the look at once (round 177)
 		
 		ballRelativePositionOnPaddle = 0
         
@@ -3822,36 +3830,50 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Check to see if there are any non-hidden destructible bricks left
 		
 		if nonHiddenNodeFound == false || endlessIIBottomZoneIsAllHidden {
-		// Only run if there are only hidden destructible and indestructible bricks left
+		// Only run if there are only hidden destructible bricks left - or, in Mayhem, if the
+		// bottom zone is held up by nothing the player can see, which is the same interaction
+		// answering a question only this mode asks (round 173)
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
-				if sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
-					if sprite.texture == self.brickNormalTexture {
-						node.alpha = 0.75
-					} else {
-						node.alpha = 0.75
-					}
-					node.isHidden = false
+				if sprite.isHidden,
+				   sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
+					sprite.alpha = 0.75
+					sprite.isHidden = false
+					self.invisibleBrickFlashRevealed.append(sprite)
 				}
 			}
-			// Flash bricks on
+			// Flash bricks on - **only the hidden ones, and remembered by name** (James, round
+			// 177: "all of a sudden all the bricks flashed when the ball hit the paddle and
+			// then disappeared... it kept happening every so often after that"). The off-phase
+			// used to hide *everything* wearing these textures, which was safe in Classic only
+			// because this ran when nothing wearing them was visible - re-hiding the hidden.
+			// Round 173's Mayhem trigger fires with a field full of visible bricks above the
+			// zone, and Mayhem colours its ordinary bricks with `brickNormalTexture`, so one
+			// flash swallowed the whole field - and a field of freshly hidden bricks then
+			// satisfies `nonHiddenNodeFound == false` on every later paddle hit, which is the
+			// "kept happening". Restoring exactly what was revealed keeps both modes honest.
 			let waitDuration = SKAction.wait(forDuration: 0.2)
 			let completionBlock = SKAction.run {
-				self.enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-					let sprite = node as! SKSpriteNode
-					if sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
-						node.isHidden = true
-						node.alpha = 1.0
-					}
-				}
+				self.invisibleBrickFlashOff()
 			}
 			// Flash bricks off
 			let sequence = SKAction.sequence([waitDuration, completionBlock])
 			self.run(sequence, withKey: "invisibleBrickFlash")
 		}
-		// Show hidden bricks if there are no noraml or invisible bricks showing - or, in
-		// Mayhem, if the bottom zone is held up by nothing the player can see, which is the
-		// same interaction answering a question only this mode asks
+	}
+
+	/// Puts back exactly the bricks the flash revealed, and no others.
+	///
+	/// A list rather than a re-enumeration, and kept on the scene rather than captured in the
+	/// action: a second flash while one is mid-flight *replaces* the pending action under its
+	/// key, and a captured list would take its bricks down with it - revealed once, hidden
+	/// never. The survivor's completion drains whatever every flash revealed.
+	func invisibleBrickFlashOff() {
+		for sprite in invisibleBrickFlashRevealed {
+			sprite.isHidden = true
+			sprite.alpha = 1.0
+		}
+		invisibleBrickFlashRevealed = []
 	}
     
     func powerUpGenerator (sprite: SKSpriteNode) {
@@ -6914,7 +6936,7 @@ laserTimer?.invalidate()
 					richBricks.append(self.savedBrick(for: sprite,
 													  texture: currentBrickTexture ?? 0,
 													  colour: currentBrickColour ?? 100,
-													  restingY: restingY))
+													  restingY: self.endlessIICanonicalRestingY(restingY)))
 				}
 				// Mayhem saves the brick itself as well as its cell (round 150). The cell
 				// arrays stay, because every other mode reads them and a shipped save must

@@ -84,6 +84,8 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
+        alignCloseButtonWithReturnToGame(backButtonCollectionView)
+        // In to the narrow position when the big play is here (round 176) - see the helper
         alignDescription()
         SettingsTableViewCell.fitGlassPanel(under: statsTableView)
     }

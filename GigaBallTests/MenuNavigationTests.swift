@@ -270,3 +270,133 @@ final class GigaBallConfirmTests: XCTestCase {
         XCTAssertTrue(message.contains("In-app purchases will remain."), message)
     }
 }
+
+/// Where the round buttons along the bottom of a menu land.
+///
+/// The promise is a distance from the *screen's* edge, the same on every screen and the same on
+/// both sides, so a thumb learns one place. `layoutMenuButtonRow` keeps it by sharing the
+/// leftover width between the buttons - which makes the row's own width an input, and a row
+/// measured before it has been laid out is the way this goes wrong.
+final class MenuButtonRowTests: XCTestCase {
+
+    private let sizes = Array(repeating: MainMenuCollectionViewCell.smallButtonSize, count: 3)
+
+    /// The pause menus these tests hang a screen off.
+    ///
+    /// Held here rather than in a local, because a view controller does not retain its parent:
+    /// a pause menu that goes out of scope is deallocated at once, `parent` reads nil, and the
+    /// screen stops looking like a paused one halfway through the test that says it is.
+    private var pauseMenus: [PauseMenuViewController] = []
+
+    override func tearDown() {
+        pauseMenus = []
+        super.tearDown()
+    }
+
+    /// A pause menu with a screen opened from it, as `ReturnToGameButton` recognises the pair.
+    private func screenOpenedFromAPausedGame() -> UIViewController {
+        let pause = PauseMenuViewController()
+        pause.sender = "Pause"
+        pauseMenus.append(pause)
+        let screen = UIViewController()
+        pause.addChild(screen)
+        screen.didMove(toParent: pause)
+        return screen
+    }
+
+    /// A row of the given width, hung in a container the way a menu's is, and laid out.
+    ///
+    /// `pausedBehind` puts the screen where the pause menu opened it, which is the whole
+    /// difference between the two versions of Settings and Information.
+    private func laidOutRow(width: CGFloat, leading: CGFloat = 20,
+                            sizes: [CGFloat]? = nil,
+                            pausedBehind: Bool = false) -> UICollectionViewFlowLayout {
+        let host = pausedBehind ? screenOpenedFromAPausedGame() : UIViewController()
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: leading*2 + width, height: 200))
+        let row = UICollectionView(frame: CGRect(x: leading, y: 0, width: width, height: 50),
+                                  collectionViewLayout: UICollectionViewFlowLayout())
+        container.addSubview(row)
+        host.view.addSubview(container)
+        host.layoutMenuButtonRow(row, sizes: sizes ?? self.sizes)
+        return row.collectionViewLayout as! UICollectionViewFlowLayout
+    }
+
+    func testTheRowIsInsetTheSameOnBothSides() {
+        let layout = laidOutRow(width: 362)
+        XCTAssertEqual(layout.sectionInset.left, layout.sectionInset.right)
+    }
+
+    /// James, round 176, with a screenshot: "Game Centre button on stats screen is too narrow."
+    ///
+    /// The arithmetic shares `row.frame.width` out, so the three buttons only reach the row's
+    /// far end if the width they were shared out of is the one the row ends up with. The stats
+    /// screen laid its row out from `viewDidLoad` only - at the storyboard's width - and its
+    /// right-hand button, the one screen where that is Game Center, stopped short of the close
+    /// button's mirror image. What this pins is the arithmetic being width-dependent at all,
+    /// which is why the call has to be repeated once the width is known.
+    func testTheButtonsSpanExactlyTheRowTheyWereMeasuredAgainst() {
+        for width in [362, 393, 402, 500] as [CGFloat] {
+            let layout = laidOutRow(width: width)
+            let inset = layout.sectionInset.left
+            let spanned = inset*2 + sizes.reduce(0, +)
+                        + layout.minimumInteritemSpacing*CGFloat(sizes.count - 1)
+            XCTAssertEqual(spanned, width, accuracy: 0.001,
+                           "the last button lands \(width - spanned)pt short at width \(width)")
+        }
+    }
+
+    func testARowLaidOutTwiceEndsUpAtTheSecondWidth() {
+        // Which is the fix: `viewDidLayoutSubviews` runs after the width is real
+        let narrow = laidOutRow(width: 375).minimumInteritemSpacing
+        let wide = laidOutRow(width: 402).minimumInteritemSpacing
+        XCTAssertNotEqual(narrow, wide, accuracy: 0.001,
+                          "a row laid out at the wrong width cannot be right at the real one")
+    }
+
+    func testARowOfSmallButtonsTakesTheWideArrangement() {
+        // Round 169: only a row with a big centre button draws its small ones in
+        let layout = laidOutRow(width: 362, leading: 0)
+        XCTAssertEqual(layout.sectionInset.left, UIViewController.menuButtonWideInset,
+                       accuracy: 0.001)
+    }
+
+    /// James, round 176: "as the pause screen info and settings views (including child views)
+    /// have a big play button, the small buttons should adopt the narrower position. In the main
+    /// menu info and settings views, these buttons should adopt the wider position."
+    ///
+    /// One screen each, reached from two places. The play button is `ReturnToGameButton`'s, and
+    /// it is a subview rather than a cell, so the row's own contents cannot tell the two apart.
+    func testTheSameScreenOpenedFromAPausedGameDrawsItsButtonsIn() {
+        let fromMenu = laidOutRow(width: 362, leading: 0)
+        let fromPause = laidOutRow(width: 362, leading: 0, pausedBehind: true)
+
+        XCTAssertEqual(fromMenu.sectionInset.left, UIViewController.menuButtonWideInset,
+                       accuracy: 0.001)
+        XCTAssertEqual(fromPause.sectionInset.left, UIViewController.menuButtonRowInset,
+                       accuracy: 0.001, "grouped around the play button that is on the screen")
+    }
+
+    func testAScreenWithNoPausedGameBehindItCarriesNoPlayButton() {
+        // The question the row now asks, on its own: this is what makes the two versions differ
+        let plain = UIViewController()
+        XCTAssertFalse(plain.carriesReturnToGameButton)
+
+        XCTAssertTrue(screenOpenedFromAPausedGame().carriesReturnToGameButton)
+    }
+
+    func testAScreenThatTurnsThePlayButtonDownKeepsTheWideArrangement() {
+        // The background selector hides the button because it is a picture of the playfield -
+        // so there is nothing on screen for its close button to group around
+        let picture = screenOpenedFromAPausedGame()
+        picture.wantsReturnToGameButton = false
+        XCTAssertFalse(picture.carriesReturnToGameButton)
+    }
+
+    func testARowWithABigButtonDrawsTheSmallOnesIn() {
+        var withPlay = sizes
+        withPlay[1] = LevelStatsViewController.playButtonSize
+        let layout = laidOutRow(width: 362, leading: 0, sizes: withPlay)
+        XCTAssertEqual(layout.sectionInset.left, UIViewController.menuButtonRowInset,
+                       accuracy: 0.001)
+    }
+}

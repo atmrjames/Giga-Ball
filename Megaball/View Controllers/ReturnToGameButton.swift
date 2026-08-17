@@ -34,6 +34,53 @@ extension UIViewController {
         return nil
     }
 
+    /// Whether this screen has the big play on it, or is going to.
+    ///
+    /// The same two conditions `installReturnToGameButton` and `keepReturnToGameButtonFrontmost`
+    /// both check, named once - and asked rather than looked for, because the button row is laid
+    /// out from `viewDidLoad` on some of these screens, where the button has not been added yet.
+    /// `layoutMenuButtonRow` is the caller: a screen with this button lays its small buttons out
+    /// in the narrow arrangement, grouped around it.
+    var carriesReturnToGameButton: Bool {
+        pausedGameBehind != nil && wantsReturnToGameButton
+    }
+
+    /// Draws a hand-built close button in to the narrow position when the big play is here.
+    ///
+    /// `layoutMenuButtonRow` already asks `carriesReturnToGameButton` and moves the shared
+    /// rows; this is the same rule for the screens that never took the shared row - Settings,
+    /// the reference pages, the run stats - whose close is a lone 50pt collection view pinned
+    /// by a storyboard or code constraint (James, round 176: "as the pause screen info and
+    /// settings views (including child views) have a big play button, the small buttons should
+    /// adopt the narrower position. In the main menu info and settings views, these buttons
+    /// should adopt the wider position").
+    ///
+    /// Does nothing when there is no play button to group around, so the storyboard's own
+    /// position stands everywhere the screen is reached from a menu - one call site per screen,
+    /// and the two openings never need telling apart by the caller. Safe to run on every layout
+    /// pass: it only ever writes the one value.
+    ///
+    /// The constraint is found rather than handed over because each screen pins its close in
+    /// its own file - storyboard outlets here, code there - and what they all share is the
+    /// shape: a leading pin on the button itself, held by an ancestor.
+    func alignCloseButtonWithReturnToGame(_ close: UIView) {
+        guard carriesReturnToGameButton, let holder = close.superview else { return }
+        let fromScreen = holder.convert(CGPoint.zero, to: nil).x
+        let target = max(0, UIViewController.menuButtonRowInset - fromScreen)
+        // Measured from the screen's edge, the way `layoutMenuButtonRow` measures its insets -
+        // an inset is a promise about where the thumb lands, not about a container
+
+        for ancestor in sequence(first: holder, next: { $0.superview }) {
+            for constraint in ancestor.constraints
+            where constraint.firstItem === close && constraint.firstAttribute == .leading {
+                constraint.constant = target
+            }
+        }
+        // Walked up rather than read off `holder` alone: a constraint lives on the nearest
+        // common ancestor of the views it relates, which for a pin to the safe area is the
+        // screen's root rather than the button's own superview
+    }
+
     /// Puts the big play on this screen if a paused game is behind it.
     ///
     /// Deliberately does nothing where there is no run to go back to, so the same call can sit

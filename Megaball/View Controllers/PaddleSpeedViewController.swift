@@ -155,8 +155,13 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         refreshValueLabel()
     }
 
+    private weak var closeButton: UIButton?
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        if let closeButton { alignCloseButtonWithReturnToGame(closeButton) }
+        // In to the narrow position when the big play is here (round 176) - this screen is a
+        // child of Settings, which the pause menu opens
         shapeFieldToThePlayArea()
         guard sceneView.bounds.width > 0 else { return }
         if practice == nil {
@@ -290,6 +295,8 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         // the game is answering a question nobody asked
 
         let close = UIButton(type: .system)
+        closeButton = close
+        // Remembered so the layout pass can draw it in beside the big play (round 176)
         close.translatesAutoresizingMaskIntoConstraints = false
         close.backgroundColor = UIColor(white: 0.92, alpha: 1)
         close.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)

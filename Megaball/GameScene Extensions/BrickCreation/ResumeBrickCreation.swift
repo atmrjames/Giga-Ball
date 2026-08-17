@@ -208,18 +208,37 @@ extension GameScene {
 
     func resumeBrickCreation() {
         guard let savedGame else { return }
+        // Same as resumeGame: bound once instead of unwrapped at every use
+
+        if levelNumber == 0 {
+            prepEndlessMode(height: savedGame.endlessHeight)
+        }
+        powerUpProbAllocation(levelNumber: levelNumber)
+        // **Both of these belong above the Mayhem branch below, and used to sit under it.**
+        //
+        // A resumed run never goes through `Playing`'s `switch levelNumber` - that is the
+        // fresh-level path - so this is the only place a level-0 resume is dressed as an
+        // endless run: `prepEndlessMode` is what sets `endlessMode`, hides the lives row and
+        // the multiplier, and turns the score label into a height. Mayhem returned before
+        // reaching it, so a resumed Mayhem run came back wearing Classic's HUD - the score,
+        // the multiplier and the ball container - over a field that still descended (James,
+        // rounds 169 and 176, with a screenshot). It could not be reproduced in the original
+        // Endless for the same reason: that mode falls through to the cell path and always
+        // reached these two lines.
+        //
+        // `powerUpProbAllocation` was in the same trap and is the quieter half: a resumed
+        // Mayhem run had every drop weight at zero until something else happened to call it,
+        // so nothing fell from a brick.
+        //
+        // Hoisted rather than repeated inside the branch, and hoisted *above* it rather than
+        // below: `prepEndlessMode` calls `resetEndlessIIBricks`, which empties the spinners,
+        // flashers and breathers - run after the restore it would throw away the very lists
+        // the restore had just filled.
+
         if resumeEndlessIIBricks() { return }
         // Mayhem puts its own field back, brick for brick. Everything else - Classic, the
         // original Endless, and any Mayhem save written before round 150 - takes the cell
         // path below, which is what those modes have always used
-        // Same as resumeGame: bound once instead of unwrapped at every use
-
-        
-        if levelNumber == 0 {
-            prepEndlessMode(height: savedGame.endlessHeight)
-        }
-
-        powerUpProbAllocation(levelNumber: levelNumber)
         
         var brickArray: [SKNode] = []
         // Array to store all bricks
