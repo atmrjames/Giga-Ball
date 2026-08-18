@@ -11,7 +11,13 @@ import GameplayKit
 
 extension GameScene {
     func brickCreation(brickArray: [SKNode]) {
-                
+
+        applyDailyLayoutFlip(to: brickArray)
+        // Before anything is measured off a position. The levels hand their bricks over
+        // already placed, so this is the one door a daily's Mirrored or Upside Down has to
+        // reach every level through - and it stands down on a resume, where the save already
+        // holds the turned-over field
+
         powerUpProbAllocation(levelNumber: levelNumber)
         
         var brickBuildArray: [SKNode] = []

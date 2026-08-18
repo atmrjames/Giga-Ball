@@ -92,11 +92,28 @@ enum DailyTwist: String, CaseIterable, Codable {
     case oneLife, loaded, suddenDeath, spareBalls
     case noPowerUps, noGoodNews, noBadNews, powerShower, drought
     case fogOfWar
+    case mirrored, upsideDown
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
     enum Category: CaseIterable {
-        case economy, lives, dress
+        case economy, lives, dress, layout
+
+        /// The date this category may first be *drawn* (§2.1), and the reason it exists.
+        ///
+        /// A twist's own `activationKey` keeps a new twist out of an old day's pool, which
+        /// leaves the roll that picks within the pool untouched. A new **category** is not
+        /// covered by that: `rawChallenge` draws a category by index out of this list, so a
+        /// fourth entry turns every past day's `roll(3)` into a `roll(4)` and rewrites what
+        /// dates already played drew. The same trick one level up closes it - an old day
+        /// sees exactly the three categories it saw, in the same order, and rolls the same
+        /// number.
+        var activationKey: String {
+            switch self {
+            case .economy, .lives, .dress: return "2026-08-01"
+            case .layout: return "2026-09-01"
+            }
+        }
     }
 
     var category: Category {
@@ -104,6 +121,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .oneLife, .loaded, .suddenDeath, .spareBalls: return .lives
         case .noPowerUps, .noGoodNews, .noBadNews, .powerShower, .drought: return .economy
         case .fogOfWar: return .dress
+        case .mirrored, .upsideDown: return .layout
         }
     }
 
@@ -119,6 +137,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .powerShower: return "Power Shower"
         case .drought: return "Drought"
         case .fogOfWar: return "Fog of War"
+        case .mirrored: return "Mirrored"
+        case .upsideDown: return "Upside Down"
         }
     }
 
@@ -134,6 +154,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .powerShower: return "Power-ups everywhere."
         case .drought: return "Power-ups are very rare today."
         case .fogOfWar: return "Every brick is invisible until it is first struck."
+        case .mirrored: return "The level is the wrong way round."
+        case .upsideDown: return "The level is built the wrong way up."
         }
     }
 
@@ -147,6 +169,11 @@ enum DailyTwist: String, CaseIterable, Codable {
             return mode == .endless || mode == .endlessII
             // The generous day for the modes whose baseline is a single ball - James's
             // suggestion from the first daily play test
+        case .mirrored, .upsideDown:
+            return mode == .classic
+            // A designed layout is the thing being turned over, and only Classic has one:
+            // the endless fields are generated a row at a time, where "the wrong way round"
+            // would be a different random field rather than a familiar one seen afresh
         case .suddenDeath:
             return false
             // Parked, on the same play test: in the endless modes it was One Life said
@@ -161,8 +188,13 @@ enum DailyTwist: String, CaseIterable, Codable {
 
     /// The date this twist may first be offered (§2.1). Append-only.
     var activationKey: String {
-        "2026-08-01"
-        // The launch pool activates together; later twists carry later dates
+        switch self {
+        case .mirrored, .upsideDown: return "2026-09-01"
+        default: return "2026-08-01"
+        }
+        // The launch pool activates together; later twists carry later dates. A twist's date
+        // keeps it out of an older day's *pool*, and `Category.activationKey` does the same
+        // for the category it arrives in - between them, nothing already played changes
     }
 
     /// The draw weight within its category.
@@ -179,6 +211,14 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// therefore the far end of the briefing screen's day browsing.
     static var firstActivationKey: String {
         allCases.map(\.activationKey).min() ?? "2026-08-01"
+    }
+
+    /// Whether the day's layout is turned over, and which way. Nil when it is not.
+    ///
+    /// One question rather than two, because §4.2 puts both in the `layout` category and a
+    /// day therefore has at most one of them - the caller should not have to know that.
+    static func layoutFlip(in twists: [DailyTwist]) -> DailyTwist? {
+        twists.first { $0.category == .layout }
     }
 }
 
@@ -316,7 +356,9 @@ enum DailyChallengeGenerator {
         // 4. The twists: a category first, then a twist inside it, both weighted - at most
         // one per category, so the set is legal by construction (§4.2)
         var twists: [DailyTwist] = []
-        var categories = DailyTwist.Category.allCases
+        var categories = DailyTwist.Category.allCases.filter { $0.activationKey <= key }
+        // Filtered before the roll, not after: the index this draws is taken against the
+        // list's length, so a category the day cannot use must not be in the list at all
         for _ in 0..<twistCount {
             guard categories.isEmpty == false else { break }
             let category = categories.remove(at: stream.roll(categories.count))

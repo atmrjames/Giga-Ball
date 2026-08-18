@@ -275,12 +275,18 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                    sender: "MainMenu", levelPack: pack)
     }
 
-    /// Three across, and as many rows as that takes, sized so the whole grid fits the space it
-    /// has been given rather than scrolling.
+    /// Three across, square, as many rows as that takes - and it scrolls when that is more
+    /// rows than fit.
     ///
-    /// Worked out from the collection view's own width and height every layout pass, because
-    /// this screen is the same on a small phone and an iPad, where `limitMenuContentSize` has
-    /// already narrowed the container by the time this runs.
+    /// Worked out from the collection view's own width every layout pass, because this screen
+    /// is the same on a small phone and an iPad, where the menus' aspect cap has already
+    /// narrowed the container by the time this runs.
+    ///
+    /// **Three whatever the width, deliberately** - unlike the reference grids, which take
+    /// `columns(fitting:base:)` and hold their cards to a phone's size (round 186). This is a
+    /// front door with eleven cards on it, not a catalogue with fifty: seven small packs
+    /// across an iPad would be a sparse screen where three large ones are a clear one. The
+    /// glyph scales with the card, so a big card is a big mark rather than more empty card.
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard collectionView == packCollectionView else { return CGSize(width: 50, height: 50) }

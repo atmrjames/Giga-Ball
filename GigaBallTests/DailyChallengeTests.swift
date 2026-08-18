@@ -117,6 +117,128 @@ final class DailyChallengeTests: XCTestCase {
         }
     }
 
+    /// **Every day already played must still read the same.** §2.1's whole promise.
+    ///
+    /// Recorded off the build that shipped before the layout category existed, one line per
+    /// day, in the generator's own terms: date, mode, Classic level, twists in the order
+    /// drawn. Nothing here is derived from the code it checks - if a future pool, weight or
+    /// category shifts the stream for a day in the launch window, this says so by name.
+    ///
+    /// It is the category list that makes this worth writing. A new *twist* is kept out of an
+    /// older day's pool by its `activationKey`, which leaves the roll inside that pool alone;
+    /// a new *category* would be drawn by index out of `Category.allCases`, turning every past
+    /// `roll(3)` into a `roll(4)` and rewriting days people have played. `Category` carries an
+    /// activation date of its own for exactly that reason, and this is the proof.
+    func testTheDaysAlreadyPlayedStillReadExactlyTheSame() {
+        let recorded = [
+            "2026-08-01|endless|-|",
+            "2026-08-02|endlessII|-|spareBalls",
+            "2026-08-03|classic|73|powerShower",
+            "2026-08-04|classic|16|oneLife",
+            "2026-08-05|endless|-|fogOfWar",
+            "2026-08-06|classic|2|",
+            "2026-08-07|classic|83|loaded",
+            "2026-08-08|endlessII|-|spareBalls,fogOfWar",
+            "2026-08-09|classic|105|drought,oneLife",
+            "2026-08-10|classic|30|",
+            "2026-08-11|classic|81|oneLife",
+            "2026-08-12|classic|23|fogOfWar",
+            "2026-08-13|classic|70|oneLife",
+            "2026-08-14|endless|-|fogOfWar",
+            "2026-08-15|classic|69|fogOfWar",
+            "2026-08-16|endlessII|-|",
+            "2026-08-17|endless|-|powerShower,fogOfWar",
+            "2026-08-18|endlessII|-|spareBalls,fogOfWar",
+            "2026-08-19|endless|-|",
+            "2026-08-20|classic|95|",
+            "2026-08-21|endless|-|fogOfWar,drought",
+            "2026-08-22|endlessII|-|noPowerUps",
+            "2026-08-23|classic|55|fogOfWar,noGoodNews",
+            "2026-08-24|classic|66|",
+            "2026-08-25|classic|96|loaded",
+            "2026-08-26|endlessII|-|spareBalls,drought",
+            "2026-08-27|endless|-|fogOfWar,drought",
+            "2026-08-28|classic|96|noPowerUps,fogOfWar",
+            "2026-08-29|endlessII|-|fogOfWar",
+            "2026-08-30|endlessII|-|noPowerUps,fogOfWar",
+        ]
+        for line in recorded {
+            let parts = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+            let challenge = DailyChallengeGenerator.challenge(forKey: parts[0])
+            XCTAssertEqual(String(describing: challenge.mode), parts[1], parts[0])
+            XCTAssertEqual(challenge.classicLevel.map(String.init) ?? "-", parts[2], parts[0])
+            XCTAssertEqual(challenge.twists.map(\.rawValue).joined(separator: ","), parts[3],
+                           parts[0])
+        }
+    }
+
+    func testNoDayBeforeALayoutDayCanDrawOne() {
+        // The other half of the same promise, said forward rather than backward: the
+        // category is not in the list at all until its date, so it cannot be rolled for
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!
+        for _ in 0..<300 {
+            let key = DailyDay.key(for: day)
+            let challenge = DailyChallengeGenerator.challenge(forKey: key)
+            for twist in challenge.twists {
+                XCTAssertLessThanOrEqual(twist.activationKey, key, "\(key): \(twist)")
+                XCTAssertLessThanOrEqual(twist.category.activationKey, key, "\(key): \(twist)")
+            }
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+    }
+
+    func testTheLayoutTwistsAreOfferedOnceTheirDateArrives() {
+        // And that they are actually reachable - "never offered" and "very rare" look the
+        // same from outside, which is §8.6's own lesson about pools
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+        var seen = Set<DailyTwist>()
+        for _ in 0..<400 {
+            let challenge = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: day))
+            seen.formUnion(challenge.twists)
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        XCTAssertTrue(seen.contains(.mirrored), "Mirrored is in the enum but never drawn")
+        XCTAssertTrue(seen.contains(.upsideDown), "Upside Down is in the enum but never drawn")
+    }
+
+    func testOnlyClassicHasALayoutToTurnOver() {
+        for twist in [DailyTwist.mirrored, .upsideDown] {
+            XCTAssertTrue(twist.applies(to: .classic))
+            XCTAssertFalse(twist.applies(to: .endless))
+            XCTAssertFalse(twist.applies(to: .endlessII))
+            XCTAssertEqual(twist.category, .layout, "one per day, by §4.2")
+        }
+        XCTAssertEqual(DailyTwist.layoutFlip(in: [.oneLife, .upsideDown]), .upsideDown)
+        XCTAssertNil(DailyTwist.layoutFlip(in: [.oneLife, .fogOfWar]))
+    }
+
+    /// Upside Down reflects about the middle of the rows the level *occupies*.
+    ///
+    /// About the whole grid instead, a level that only fills the top third would land in the
+    /// player's lap - a different game rather than the same one seen upside down.
+    func testTurningALevelOverKeepsItInTheBandItWasBuiltIn() {
+        let rows: [CGFloat] = [200, 180, 160, 140]
+        let flipped = rows.map { DailyLayout.flippedY($0, lowest: 140, highest: 200) }
+
+        XCTAssertEqual(flipped, [140, 160, 180, 200], "top and bottom trade places")
+        XCTAssertEqual(flipped.min(), rows.min(), "and the band itself has not moved")
+        XCTAssertEqual(flipped.max(), rows.max())
+    }
+
+    func testTurningALevelOverIsItsOwnUndoAndLandsOnRowCentres() {
+        let spacing: CGFloat = 20
+        let rows = (0..<12).map { 300 - spacing*CGFloat($0) }
+        for y in rows {
+            let there = DailyLayout.flippedY(y, lowest: rows.min()!, highest: rows.max()!)
+            XCTAssertEqual(DailyLayout.flippedY(there, lowest: rows.min()!,
+                                                highest: rows.max()!),
+                           y, accuracy: 0.0001, "twice over is where it started")
+            XCTAssertTrue(rows.contains { abs($0 - there) < 0.0001 },
+                          "\(y) landed at \(there), which is not a row centre - and a "
+                          + "brick's position is read as its cell")
+        }
+    }
+
     func testAClassicDayCarriesALevelAndTheOthersDoNot() {
         var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!
         for _ in 0..<200 {
@@ -699,6 +821,98 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertTrue(scene.isDailyChallenge)
         DailyChallengeSession.shared.active = nil
         XCTAssertFalse(scene.isDailyChallenge)
+    }
+}
+
+/// The layout twists, end to end: a real level, built through the door every level uses.
+///
+/// The arithmetic is tested on its own in `DailyChallengeTests`; this is the wiring. A
+/// reflection that is right and never called looks exactly like no twist at all, and there is
+/// only one place in the app where it can be called from - so that place is what is checked.
+final class DailyLayoutTwistTests: XCTestCase {
+
+    /// A Classic scene with real cell geometry, on a day carrying the given twist.
+    private func scene(with twist: DailyTwist?) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 440
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffset = 400
+        scene.levelNumber = 1
+        DailyChallengeSession.shared.active = twist.map {
+            DailyChallenge(dateKey: "2026-09-02", mode: .classic, classicLevel: 1, twists: [$0])
+        }
+        return scene
+    }
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    /// The bricks a level puts on the field, as (x, y) pairs, rounded so two runs compare.
+    private func field(_ scene: GameScene) -> Set<[Int]> {
+        var found: Set<[Int]> = []
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            found.insert([Int((node.position.x).rounded()), Int((node.position.y).rounded())])
+        }
+        return found
+    }
+
+    private func builtField(with twist: DailyTwist?) -> Set<[Int]> {
+        let scene = self.scene(with: twist)
+        scene.loadLevel89()
+        return field(scene)
+    }
+
+    func testAMirroredDayBuildsTheLevelTheOtherWayRound() {
+        let plain = builtField(with: nil)
+        let mirrored = builtField(with: .mirrored)
+
+        XCTAssertFalse(plain.isEmpty, "the level built nothing, so nothing below means anything")
+        XCTAssertEqual(mirrored, Set(plain.map { [-$0[0], $0[1]] }),
+                       "every brick is where its reflection was")
+        XCTAssertEqual(mirrored.count, plain.count,
+                       "and none were lost off the side - the columns are symmetric about "
+                       + "the centre line, so a reflection is a permutation of them")
+    }
+
+    func testAnUpsideDownDayBuildsTheLevelTheOtherWayUp() {
+        let plain = builtField(with: nil)
+        let flipped = builtField(with: .upsideDown)
+
+        XCTAssertFalse(plain.isEmpty)
+        let lowest = plain.map { $0[1] }.min()!
+        let highest = plain.map { $0[1] }.max()!
+        XCTAssertEqual(flipped, Set(plain.map { [$0[0], lowest + highest - $0[1]] }))
+
+        XCTAssertEqual(flipped.map { $0[1] }.min(), lowest,
+                       "and the field is still in the band it was built in - a level tipped "
+                       + "into the player's lap is a different game, not the same one over")
+        XCTAssertEqual(flipped.map { $0[1] }.max(), highest)
+    }
+
+    func testAnOrdinaryDayLeavesTheLevelExactlyAsItWasDrawn() {
+        XCTAssertEqual(builtField(with: .fogOfWar), builtField(with: nil),
+                       "only the layout category turns a level over")
+    }
+
+    func testTheRowsStayRowsWhicheverWayTheLevelIsTurned() {
+        // A brick's position is read as its cell all over this game (§8.6). Both reflections
+        // are about lines the grid is symmetric across, so the set of occupied rows and
+        // columns can only be permuted - never moved off the grid
+        let plain = builtField(with: nil)
+        for twist in [DailyTwist.mirrored, .upsideDown] {
+            let turned = builtField(with: twist)
+            XCTAssertEqual(Set(turned.map { $0[0] }), Set(plain.map { $0[0] }),
+                           "\(twist): the columns in use are the same columns")
+            XCTAssertEqual(Set(turned.map { $0[1] }), Set(plain.map { $0[1] }),
+                           "\(twist): and the rows in use are the same rows")
+        }
     }
 }
 

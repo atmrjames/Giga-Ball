@@ -795,6 +795,59 @@ enum PowerUpIcon {
         // A brick drawn in dashes: there, but not shown until struck
     }
 
+    /// Mirrored: an arrow doubling back on itself across a centre line - the level going
+    /// the other way, said without needing to name a direction.
+    static let twistMirrored: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        context.setLineDash(phase: 0, lengths: [rect.height*0.09, rect.height*0.07])
+        context.move(to: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.18))
+        context.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.18))
+        context.strokePath()
+        context.setLineDash(phase: 0, lengths: [])
+        // The line the level is folded along, drawn as a fold rather than as a wall
+
+        for side in [CGFloat(-1), 1] {
+            let tip = rect.midX + side*rect.width*0.30
+            let tail = rect.midX + side*rect.width*0.10
+            context.move(to: CGPoint(x: tail, y: rect.midY))
+            context.addLine(to: CGPoint(x: tip, y: rect.midY))
+            context.strokePath()
+            for up in [CGFloat(-1), 1] {
+                context.move(to: CGPoint(x: tip, y: rect.midY))
+                context.addLine(to: CGPoint(x: tip - side*rect.width*0.09,
+                                            y: rect.midY + up*rect.height*0.09))
+                context.strokePath()
+            }
+        }
+        // Two heads pointing away from each other: whatever was on the left is on the right
+    }
+
+    /// Upside Down: the same fold laid flat, with the arrows pointing up and down.
+    static let twistUpsideDown: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        context.setLineDash(phase: 0, lengths: [rect.width*0.09, rect.width*0.07])
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.midY))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.midY))
+        context.strokePath()
+        context.setLineDash(phase: 0, lengths: [])
+
+        for side in [CGFloat(-1), 1] {
+            let tip = rect.midY + side*rect.height*0.30
+            let tail = rect.midY + side*rect.height*0.10
+            context.move(to: CGPoint(x: rect.midX, y: tail))
+            context.addLine(to: CGPoint(x: rect.midX, y: tip))
+            context.strokePath()
+            for across in [CGFloat(-1), 1] {
+                context.move(to: CGPoint(x: rect.midX, y: tip))
+                context.addLine(to: CGPoint(x: rect.midX + across*rect.width*0.09,
+                                            y: tip - side*rect.height*0.09))
+                context.strokePath()
+            }
+        }
+        // Deliberately the mirror badge turned a quarter: the pair read as a pair, which is
+        // what they are - one category, one per day
+    }
+
     /// Vanilla: the app icon itself (play-test round 11: "for vanilla icon, just use app
     /// icon") - the plain game is the game. The drawn brick-and-ball stays as the
     /// fallback for the unlikely build where the icon files cannot be read.
@@ -896,6 +949,8 @@ extension DailyTwist {
         case .powerShower: return PowerUpIcon.twistPowerShower
         case .drought: return PowerUpIcon.twistDrought
         case .fogOfWar: return PowerUpIcon.twistFogOfWar
+        case .mirrored: return PowerUpIcon.twistMirrored
+        case .upsideDown: return PowerUpIcon.twistUpsideDown
         }
     }
 

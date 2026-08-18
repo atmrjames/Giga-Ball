@@ -194,6 +194,54 @@ extension GameScene {
         // before drawing, but everything else that reads the sum should read the truth
     }
 
+    /// Which way the day turns the level over, if it does.
+    var dailyLayoutFlip: DailyTwist? {
+        guard isDailyChallenge else { return nil }
+        return DailyTwist.layoutFlip(in: DailyChallengeSession.shared.active?.twists ?? [])
+    }
+
+    /// Turns the day's level over, before anything is built from it.
+    ///
+    /// **Layout only, and only on a fresh field.** The bricks arrive already placed - every
+    /// `loadLevelN` sets `position` and hands the array over - so one reflection here reaches
+    /// all hundred-odd levels without touching any of them. A *resumed* run must not be
+    /// flipped again: the save holds the positions the player left, which are the flipped
+    /// ones, and a second reflection would put the level back the way it was drawn.
+    ///
+    /// The two reflections are not the same kind of reflection, and that is the whole of it.
+    /// **Mirrored** is about the field's own centre line, because a shape that sat on the
+    /// left is meant to end up on the right - that is the twist. **Upside Down** is about the
+    /// middle of the rows the level actually *occupies*: reflecting about the whole grid
+    /// instead would drop a level that only fills the top third straight into the player's
+    /// lap, which is a different game rather than the same one seen upside down.
+    ///
+    /// Both land every brick exactly on a cell centre, which matters even in Classic - the
+    /// grid arithmetic elsewhere reads a brick's position as its cell.
+    func applyDailyLayoutFlip(to bricks: [SKNode]) {
+        guard savedGame == nil, let flip = dailyLayoutFlip else { return }
+
+        let placed = bricks.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.texture != brickNullTexture }
+        guard placed.isEmpty == false else { return }
+        // Empty cells are dropped by `brickCreation` anyway, and counting them would make
+        // the occupied band the whole grid - which is exactly the reflection to avoid
+
+        switch flip {
+        case .mirrored:
+            for brick in bricks { brick.position.x = -brick.position.x }
+            // A negation, because the columns are laid out symmetrically about x = 0
+        case .upsideDown:
+            let lowest = placed.map(\.position.y).min()!
+            let highest = placed.map(\.position.y).max()!
+            for brick in bricks {
+                brick.position.y = DailyLayout.flippedY(brick.position.y,
+                                                        lowest: lowest, highest: highest)
+            }
+        default:
+            return
+        }
+    }
+
     /// Whether the day hides its field until it is struck.
     var dailyFogIsOn: Bool {
         isDailyChallenge && DailyChallengeSession.shared.has(.fogOfWar)
@@ -398,5 +446,19 @@ extension GameScene {
         brick.run(.fadeIn(withDuration: 0.2))
         // The same fade an invisible brick has always come back with
         return true
+    }
+}
+
+
+/// The layout twists' arithmetic, apart from the scene so it can be tested without one.
+enum DailyLayout {
+
+    /// Where a brick goes when the level is turned upside down.
+    ///
+    /// Reflected about the midpoint of the occupied band: `lowest` and `highest` swap, and
+    /// everything between them trades places evenly. Because the rows are evenly spaced,
+    /// every answer is a row centre - which is the property the rest of the game relies on.
+    static func flippedY(_ y: CGFloat, lowest: CGFloat, highest: CGFloat) -> CGFloat {
+        lowest + highest - y
     }
 }

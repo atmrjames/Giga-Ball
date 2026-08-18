@@ -162,8 +162,8 @@ and its hooks into the scene. The launch pool, from the brief plus fills:
 | **Power Shower** | Drop rate greatly up | All | |
 | **Drought** | Drop rate greatly down | All | |
 | **Always On** | One power-up permanently active | All | Drawn from a curated subset (§4.1) |
-| **Upside Down** | The level's brick layout is mirrored vertically | Classic | Bricks build "the wrong way around" — layout-only; gravity and paddle unchanged |
-| **Mirrored** | The level's layout is mirrored horizontally | Classic | The "wrong way around" for muscle memory |
+| **Upside Down** | The level's brick layout is mirrored vertically | Classic | **Built, round 187.** Bricks build "the wrong way around" — layout-only; gravity and paddle unchanged. Reflected about the middle of the rows the level *occupies*, not the whole grid: a level that only fills the top third would otherwise be dropped into the player's lap, which is a different game rather than the same one seen upside down |
+| **Mirrored** | The level's layout is mirrored horizontally | Classic | **Built, round 187.** The "wrong way around" for muscle memory. A negation of x, because the columns are laid out symmetrically about the field's centre line |
 | **Brick Swap** | The level's brick types are remapped for the day (e.g. all normals become multi-hit) | Classic | A small table of remappings, drawn deterministically |
 | **Mayhem Bricks** | Endless daily uses Mayhem's style pool at elevated rates | Endless modes | The variety dial turned up |
 | **Fog of War** | All bricks are invisible until first struck | All | Reuses the invisible machinery |
@@ -189,6 +189,15 @@ Same principle as the power-up conflict groups (§5.3 of the Mayhem spec): twist
 contradict cannot be drawn together. `powerUpEconomy` (No Power-Ups / No Good News / No Bad
 News / Power Shower / Drought / Always On — at most one), `lives` (One Life / Loaded /
 Sudden Death — at most one), `layout` (Upside Down / Mirrored / Brick Swap — at most one).
+
+**A category carries its own activation date, and it has to** (round 187, which added
+`layout`). A twist's `activationKey` keeps a new twist out of an older day's *pool*, which
+leaves the roll inside that pool untouched — that is what makes the pool append-only. A new
+**category** is not covered by that at all: the generator draws a category by index out of
+`Category.allCases`, so a fourth entry turns every past day's `roll(3)` into a `roll(4)` and
+rewrites challenges people have already played. `Category.activationKey` closes it by the
+same trick one level up, and a golden-record test holds thirty days of the launch window to
+the exact challenges they drew before `layout` existed.
 The generator redraws within the day's stream until the set is legal, which stays
 deterministic because the stream is.
 
