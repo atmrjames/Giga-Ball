@@ -186,6 +186,49 @@ final class SavedGameTests: XCTestCase {
                      "Bricks that no longer line up must not load")
     }
 
+    // MARK: - Whether there is a run to go back to
+
+    /// Round 181, found on the simulator: force-quit a run, relaunch, and the app sits on
+    /// the splash screen with the title showing and no way past it - for ever.
+    ///
+    /// `resumeGameToLoad` and the save are two different keys, and a quit taken between the
+    /// two writes leaves the flag set with nothing behind it. The splash asked the flag
+    /// alone, offered a resume, found no save to describe, correctly refused to draw a
+    /// prompt it would have had to unwrap a nil for - and then never dismissed, because
+    /// dismissal only ever ran on the no-resume path. The crash the save format was written
+    /// to end had quietly become a hang, which is worse: a crash loop at least says so.
+    func testAFlagWithNoSaveBehindItIsNotAResume() {
+        defaults.set(true, forKey: SavedGame.resumeFlagKey)
+        XCTAssertNil(SavedGame.load(from: defaults), "the state the force quit left")
+        XCTAssertFalse(SavedGame.canResume(from: defaults),
+                       "no save, no resume - whatever the flag says")
+    }
+
+    func testASaveWithNoFlagIsNotOfferedEither() {
+        // The other direction: a finished run clears the flag and may leave the save behind
+        // until the next write. Offering it would resume a game the player has ended
+        sampleGame().save(to: defaults)
+        XCTAssertFalse(SavedGame.canResume(from: defaults))
+    }
+
+    func testTheFlagAndTheSaveTogetherAreAResume() {
+        sampleGame().save(to: defaults)
+        defaults.set(true, forKey: SavedGame.resumeFlagKey)
+        XCTAssertTrue(SavedGame.canResume(from: defaults))
+    }
+
+    func testAnUndecodableSaveWithTheFlagSetIsNotAResume() {
+        // The original reason the guard existed: garbage in the save decodes to nil, and
+        // the prompt that describes it would have trapped at launch
+        defaults.set(true, forKey: SavedGame.resumeFlagKey)
+        defaults.set(Data([0x00, 0x01, 0x02]), forKey: SavedGame.defaultsKey)
+        XCTAssertFalse(SavedGame.canResume(from: defaults))
+    }
+
+    func testAFreshInstallOffersNothing() {
+        XCTAssertFalse(SavedGame.canResume(from: defaults))
+    }
+
     func testGarbageInTheCurrentFormatIsDiscarded() {
         defaults.set(Data([0x00, 0x01, 0x02, 0x03]), forKey: SavedGame.defaultsKey)
         XCTAssertNil(SavedGame.load(from: defaults))

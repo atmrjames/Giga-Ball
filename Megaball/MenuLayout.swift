@@ -239,6 +239,30 @@ extension UIViewController {
         }
     }
 
+    /// How far in a menu's contents sit, for a window of this size.
+    ///
+    /// The whole of the resize behaviour, as arithmetic: what is left over past
+    /// `menuMaximumSize` is split evenly either side, and a window smaller than the maximum
+    /// keeps everything it has. Pulled out of `limitMenuContentSize` in round 181 so the
+    /// iPad resize audit (§12.0) can be *tested* at the sizes iPadOS hands out rather than
+    /// only eyeballed at the two or three a person thinks to try - and those are the sizes
+    /// nobody can see: split view, slide over, and the tall-thin and short-wide extremes.
+    ///
+    /// - Parameter inherited: the safe area the screen already has from its parent. Menus
+    ///   open on top of one another as child view controllers filling their parent, so a
+    ///   child inherits the inset its parent applied - adding the full amount again on top
+    ///   halved the content at every level down. Subtracting what is already there is what
+    ///   makes this idempotent however deep the stack goes.
+    static func menuContentInsets(available: CGSize,
+                                  inherited: UIEdgeInsets = .zero) -> UIEdgeInsets {
+        let horizontal = max(0, (available.width - menuMaximumSize.width)/2)
+        let vertical = max(0, (available.height - menuMaximumSize.height)/2)
+        return UIEdgeInsets(top: max(0, vertical - inherited.top),
+                            left: max(0, horizontal - inherited.left),
+                            bottom: max(0, vertical - inherited.bottom),
+                            right: max(0, horizontal - inherited.right))
+    }
+
     /// Centres the menu's contents within `menuMaximumSize`, leaving its background alone.
     ///
     /// Call from `viewDidLayoutSubviews`: the inset depends on the size the view has been
@@ -257,25 +281,13 @@ extension UIViewController {
             return
         }
 
-        let available = view.bounds.size
-        let horizontal = max(0, (available.width - UIViewController.menuMaximumSize.width)/2)
-        let vertical = max(0, (available.height - UIViewController.menuMaximumSize.height)/2)
-
-        // Only make up the difference. Menus open on top of one another as child view
-        // controllers filling their parent, so a child inherits the inset its parent
-        // already applied - and adding the full amount again on top halved the content at
-        // every level down. Subtracting what is already there makes this idempotent
-        // however deep the stack goes.
         let inherited = UIEdgeInsets(
             top: view.safeAreaInsets.top - additionalSafeAreaInsets.top,
             left: view.safeAreaInsets.left - additionalSafeAreaInsets.left,
             bottom: view.safeAreaInsets.bottom - additionalSafeAreaInsets.bottom,
             right: view.safeAreaInsets.right - additionalSafeAreaInsets.right)
-
-        let wanted = UIEdgeInsets(top: max(0, vertical - inherited.top),
-                                  left: max(0, horizontal - inherited.left),
-                                  bottom: max(0, vertical - inherited.bottom),
-                                  right: max(0, horizontal - inherited.right))
+        let wanted = UIViewController.menuContentInsets(available: view.bounds.size,
+                                                        inherited: inherited)
 
         guard additionalSafeAreaInsets != wanted else { return }
         // Setting this triggers another layout pass, so assigning unconditionally would

@@ -140,6 +140,24 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         }
         // userSettings loads savedGame, so it has to run before the save is bound below
 
+        if gameToResume == true, SavedGame.canResume() == false {
+            gameToResume = false
+            defaults.set(false, forKey: SavedGame.resumeFlagKey)
+        }
+        // **A flag with no save behind it used to hang the app on this screen, for ever**
+        // (round 181, found by force-quitting mid-run and relaunching). `resumeGameToLoad`
+        // is a separate key from the save itself, so the two can come apart - a quit taken
+        // between the flag being written and the save being written leaves the flag true
+        // and nothing to resume. The guard below then correctly refuses to build a prompt
+        // it has no data for... and `removeAnimate` is only ever called on the
+        // `gameToResume == false` path, so the splash sat there with the title showing and
+        // no way past it. The crash this format was meant to end had become a hang.
+        //
+        // The question itself lives on `SavedGame`, where both halves are in reach; what
+        // belongs here is the *answer to it* being applied before the animation's completion
+        // asks `gameToResume` and decides whether to leave. The stale key is cleared as well
+        // as the local answer, so the state cannot outlive one launch
+
         if gameToResume == true, let savedGame {
             // Both conditions matter. resumeGameToLoad is a separate flag from the save
             // itself, so a save that fails to decode leaves the flag true and nothing to

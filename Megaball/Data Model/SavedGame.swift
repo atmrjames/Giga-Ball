@@ -361,6 +361,24 @@ struct SavedGame: Codable, Equatable {
     /// Prefers the current format, falls back to migrating the old one, and
     /// never throws out to the caller - a save that cannot be read is a save
     /// that is not there, which loses a game in progress but not the app.
+    /// The key the app sets when a run is left in progress, alongside the save itself.
+    static let resumeFlagKey = "resumeGameToLoad"
+
+    /// Whether there is genuinely a run to go back to.
+    ///
+    /// **The flag and the save are two different keys, and they can come apart** - a quit
+    /// taken between the two writes leaves the flag set with nothing behind it. Asking the
+    /// flag alone is what hung the splash screen for ever in round 181: it offered a resume,
+    /// found no save to describe, refused to draw the prompt (correctly - drawing it would
+    /// have unwrapped a nil and trapped at launch), and then never dismissed, because
+    /// dismissal only ever ran on the no-resume path.
+    ///
+    /// So the question is asked once, here, where both halves are in reach, rather than at
+    /// the three or four call sites that each know only one of them.
+    static func canResume(from defaults: KeyValueStore = UserDefaults.standard) -> Bool {
+        (defaults.object(forKey: resumeFlagKey) as? Bool ?? false) && load(from: defaults) != nil
+    }
+
     static func load(from defaults: KeyValueStore = UserDefaults.standard) -> SavedGame? {
         if let data = defaults.data(forKey: defaultsKey) {
             if var game = try? PropertyListDecoder().decode(SavedGame.self, from: data),
