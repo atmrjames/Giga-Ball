@@ -565,6 +565,22 @@ enum DailyChallengeBoards {
 struct LeaderboardStanding: Equatable {
     let rank: Int
     let players: Int
+    /// The score at the top of the board, where Game Center knew one.
+    ///
+    /// Optional rather than zero: a board with no entries yet and a board whose leader
+    /// happens to have nothing are different facts, and only the first should print nothing
+    /// (James, round 185: "add global high score details to game over / completion screens
+    /// alongside rank details").
+    var best: Int? = nil
+
+    /// The board's leading score, said the way the screen it appears on says numbers.
+    ///
+    /// - Parameter suffix: "m" for the endless boards, whose scores are heights, and nothing
+    ///   for the ones whose scores are points. The caller knows which board it asked about;
+    ///   this only knows how to group digits.
+    func bestText(suffix: String = "") -> String? {
+        best.map { "Best \(StatsPage.grouped($0))\(suffix)" }
+    }
 
     /// "1st / 200", the position in the reader's own language.
     ///

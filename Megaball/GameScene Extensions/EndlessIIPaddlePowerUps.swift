@@ -472,6 +472,8 @@ extension GameScene {
         endlessIIPaddleLastTick = currentTime
         endlessIIPaddleFrameDelta = delta
         tickEndlessIIPaddleTravel(delta)
+        tickEndlessIIAimHold()
+        // A freeze with nothing left to aim is a game that has stopped - see the backstop
         // How fast the paddle is moving, sampled here rather than read at the contact - see
         // EndlessIIBallSpin for why the contact's reading is the wrong one
 

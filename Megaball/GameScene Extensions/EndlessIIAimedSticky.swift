@@ -115,6 +115,21 @@ extension GameScene {
         endlessIIAimHold = true
     }
 
+    /// Ends a hold that has nothing left to aim.
+    ///
+    /// The freeze stops every ball, brick and laser on the field, so it must never outlive the
+    /// shot it was taken for. `endlessIIAimLaunch` ends it on the way out and round 182's
+    /// ball-lost path ends it when the held ball reaches the bottom - this is the backstop for
+    /// every other way the target could go (a Wipe, a life lost, a resume, a power-up that
+    /// empties the queue), because a frozen world with no arrow and no ball to fire is a game
+    /// that has stopped rather than a game that is waiting.
+    ///
+    /// Called once a frame from the paddle tick, which runs whatever else is happening.
+    func tickEndlessIIAimHold() {
+        guard endlessIIAimHold, endlessIIAimTarget == nil else { return }
+        endlessIIEndAimHold(launching: nil)
+    }
+
     /// Lets the world go again, restoring every heading the freeze took.
     ///
     /// The launching ball is skipped - its velocity belongs to the aim, applied by the

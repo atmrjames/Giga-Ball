@@ -69,6 +69,19 @@ extension GameScene {
     /// without the run standing still long enough to notice.
     static let endlessIIClearAndRetreatDuration: TimeInterval = 8
 
+    /// How long the field takes to give up its two rows - and to take them back, in seconds.
+    ///
+    /// **It used to be one write, and one write is a teleport.** The whole field jumped two
+    /// rows in the frame the power-up was caught, which is what James saw and reported as
+    /// "the power animation when I collected it shifted up 2 rows" (round 184). Nothing was
+    /// in the wrong place; it simply arrived there in no time at all, and a jump the height
+    /// of two rows reads as a glitch rather than as the field retreating.
+    ///
+    /// Short enough that the eight seconds of held field are still the power-up, long enough
+    /// that the movement is legible - and the same on the way back down, where the rows
+    /// hidden behind the HUD come back into view rather than appearing there.
+    static let endlessIIRetreatLiftSeconds: TimeInterval = 0.35
+
     /// Raises the lowest brick level by two rows and holds the field there (§5.4).
     ///
     /// **It used to be instant, and instant was the bug** (play-test round 126: "should be
@@ -91,8 +104,10 @@ extension GameScene {
 
         endlessIIClearAndRetreatClock.collect(GameScene.endlessIIClearAndRetreatDuration)
         endlessIIRaiseTheLowestBrickLevel(by: GameScene.endlessIIRetreatRows)
-        tickEndlessIIRetreatFloor()
-        // The floor goes up with the clear, on the spot rather than a frame later
+        // The clear is instant - the rows are gone the moment the power-up is caught - and
+        // the lift that follows is glided from the tick over the next third of a second.
+        // Safe to be a frame later than the clear because the field is held for the whole
+        // retreat, and held now for the glide at each end of it too
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
@@ -127,15 +142,24 @@ extension GameScene {
     /// the save writes rows with the lift subtracted (`endlessIICanonicalRestingY`), the lift
     /// variable starts a fresh scene at zero, and the first tick of a restored running clock
     /// lifts everything once - never twice.
-    func tickEndlessIIRetreatFloor() {
+    func tickEndlessIIRetreatFloor(_ frameDelta: TimeInterval = 0) {
         guard gameMode == .endlessII else { return }
-        let wanted = endlessIIClearAndRetreatClock.isRunning
-            ? CGFloat(GameScene.endlessIIRetreatRows)*brickHeight : 0
-        guard abs(wanted - endlessIIRetreatFloorLift) > 0.5 else { return }
+        let wanted = endlessIIRetreatFloorWanted
+        let room = wanted - endlessIIRetreatFloorLift
+        guard abs(room) > 0.01 else { return }
 
-        let delta = wanted - endlessIIRetreatFloorLift
+        let travel = CGFloat(GameScene.endlessIIRetreatRows)*brickHeight
+            / CGFloat(GameScene.endlessIIRetreatLiftSeconds)*CGFloat(max(0, frameDelta))
+        let delta = room > 0 ? min(room, travel) : max(room, -travel)
+        guard delta != 0 else { return }
+        // A frame with no time in it moves nothing rather than snapping: the collect path
+        // calls the tick with no delta, and the movement is the following frames' work
+
         finalBrickRowHeight += delta
-        endlessIIRetreatFloorLift = wanted
+        endlessIIRetreatFloorLift += delta
+        if abs(wanted - endlessIIRetreatFloorLift) < 0.01 { endlessIIRetreatFloorLift = wanted }
+        // Landed exactly, so the lift a save subtracts is a whole number of rows and the
+        // arithmetic that decides the field is settled has nothing left to be unsure about
         showEndlessIILowerLimit()
         // The line reads `finalBrickRowHeight`, so it moves by being asked again
 
@@ -147,6 +171,23 @@ extension GameScene {
         }
         // Whole rows at a time, so a brick's position.y is still its row (§8.6) - the rows
         // themselves are simply two further from the paddle until the clock ends
+    }
+
+    /// Where the field's two borrowed rows should be right now: up while the clock runs,
+    /// back down once it has stopped.
+    var endlessIIRetreatFloorWanted: CGFloat {
+        endlessIIClearAndRetreatClock.isRunning
+            ? CGFloat(GameScene.endlessIIRetreatRows)*brickHeight : 0
+    }
+
+    /// Whether the field has finished moving to where the retreat wants it.
+    ///
+    /// The field is held while it has not, which is what makes a glided lift safe: a brick's
+    /// `position.y` is its row (§8.6), and mid-glide every brick is between two. Nothing may
+    /// read a row off the field until it has landed - so the descent, the generator and the
+    /// bottom-zone check all stand down for the third of a second at each end.
+    var endlessIIRetreatFloorHasSettled: Bool {
+        abs(endlessIIRetreatFloorWanted - endlessIIRetreatFloorLift) <= 0.01
     }
 
     /// The row a brick belongs on with the retreat's temporary lift taken back off.
@@ -703,17 +744,19 @@ extension GameScene {
     var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: UIImage)] {
         [("endlessIIWreckingBall", endlessIIWreckingBallClock,
           PowerUpIcon.hud("WreckingBallIcon", PowerUpIcon.wreckingBall)),
-         ("endlessIIAura", endlessIIAuraClock, PowerUpIcon.aura),
+         ("endlessIIAura", endlessIIAuraClock,
+          PowerUpIcon.hud("AuraIcon", PowerUpIcon.aura)),
          ("endlessIIDescent", endlessIIDescentClock, PowerUpIcon.descent),
          ("endlessIIWrapAround", endlessIIWrapAroundClock, PowerUpIcon.wrapAround),
          ("endlessIIRandomisedBounce", endlessIIRandomisedBounceClock,
           PowerUpIcon.randomisedBounce),
          ("endlessIIGhostBall", endlessIIGhostBallClock, PowerUpIcon.ghostBall),
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
-          PowerUpIcon.clearAndRetreat),
+          PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat)),
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
           PowerUpIcon.safetyPaddle),
-         ("endlessIIDrift", endlessIIDriftClock, PowerUpIcon.drift)]
+         ("endlessIIDrift", endlessIIDriftClock,
+          PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))]
     }
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
@@ -792,7 +835,7 @@ extension GameScene {
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
-        tickEndlessIIRetreatFloor()
+        tickEndlessIIRetreatFloor(endlessIIPaddleFrameDelta)
         // Outside the Playing guard, like the Aura's: the floor has to come back down after a
         // clock that ended while the game was paused
         refreshEndlessIIWreckingBall()
@@ -803,15 +846,23 @@ extension GameScene {
 
     // MARK: - Randomised Bounce
 
-    /// How long one collection lasts, and how much of the angle it throws away.
+    /// How long one collection lasts, and how much of the angle it throws off.
     ///
-    /// The spread is James's number (round 180: "pick a random number between -25 and +25
-    /// then apply that to the angle of the ball after each bounce"). The mechanism was
-    /// already exactly that - an offset on the honest angle, not a fresh roll - but at 35
-    /// degrees the nudge was wide enough to read as "totally random", which is what the
-    /// play test called it.
+    /// **A share of the bounce, not a number of degrees** (James, round 185: "randomised
+    /// bounce is way too erratic. It should just be the ball bouncing slightly differently
+    /// from how it normally does. Instead the ball seems to go crazy, vibrating and glitching
+    /// constantly. Perhaps the bounce angle adjustment should be much narrower, like +/- 10%
+    /// of the actual bounce angle").
+    ///
+    /// Round 180 narrowed it from 35 degrees to 25 and it was still wrong, because degrees
+    /// were the wrong unit. A fixed ±25° is nothing to a bounce leaving at 90° and everything
+    /// to one leaving at 15°: it throws the shallow bounces *below the minimum the game
+    /// allows*, where `breakHorizontalRuns` catches them and fires its own escape - every
+    /// frame, with its own jitter, which is the vibrating and glitching. Proportional, it
+    /// cannot: ten per cent of a shallow angle is a shallow nudge, so the ball never lands
+    /// where the escape hatch has to save it.
     static let endlessIIRandomisedBounceDuration: TimeInterval = 15
-    static let endlessIIRandomisedBounceSpread: Double = 25
+    static let endlessIIRandomisedBounceSpread: Double = 0.10
 
     /// Starts or extends Randomised Bounce (§5.4: timed, extends its own duration).
     func endlessIICollectRandomisedBounce() {
@@ -829,11 +880,13 @@ extension GameScene {
     /// `breakHorizontalRuns`), and a bad power-up is allowed to be unfair but not to hand the
     /// player a ball that can never be lost or played. So the offset is clamped back inside
     /// the launchable arc rather than allowed out of it.
+    /// - Parameter share: the fraction of the arriving angle to throw it off by, where a
+    ///   caller wants to name one. Tests pass it to ask for a known bounce; play rolls it.
     static func randomisedBounceAngle(from angleDeg: Double, minimumDeg: Double,
                                       spread: Double = endlessIIRandomisedBounceSpread,
-                                      offset: Double? = nil) -> Double {
-        let thrown = offset ?? Double.random(in: -spread...spread)
-        return min(max(angleDeg + thrown, minimumDeg), 180 - minimumDeg)
+                                      share: Double? = nil) -> Double {
+        let fraction = share ?? Double.random(in: -spread...spread)
+        return min(max(angleDeg + angleDeg*fraction, minimumDeg), 180 - minimumDeg)
     }
 
     /// Whether this bounce should be randomised at all.

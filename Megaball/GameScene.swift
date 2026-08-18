@@ -1871,10 +1871,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if AimHoldControl.intent(touchY: touchLocation.y,
 				                         paddleTopY: paddle.position.y + paddle.size.height/2,
 				                         paddleMayMove: stickyPaddleCatches != 0)
-					== .aim {
-					endlessIIAimMoved(to: touchLocation.x)
+					== .aim,
+				   endlessIIAimMoved(to: touchLocation.x) {
 					return
 				}
+				// **Only swallowed if the aim actually took it** (James, round 185: "aimed
+				// sticky still has the same issue as before"). The return value was thrown
+				// away, so the drag was eaten whenever the *hold* flag was up - whether or
+				// not there was a ball to aim. Round 182 closed the one way the target could
+				// outlive its ball; this closes every other way at once, because a touch the
+				// aim declines now falls through to the paddle instead of into nothing
 				// **The drag is the aim, and only the aim** - unless Sticky Paddle is running
 				// too, in which case above the paddle aims and on or below it carries the
 				// paddle with the held ball, which is round 33's request (§12.0).
@@ -3474,9 +3480,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// whole power-up, and the cadence's job is to close exactly that kind of gap. Left to
 	/// run, the descent took the two rows straight back and the retreat lasted under a
 	/// second, which is what "it should be timed" was asking for.
+	/// The retreat's glide holds it too, at both ends: while the field is sliding its two
+	/// rows up or back down every brick is between rows, and a brick's `position.y` is its
+	/// row (§8.6). A third of a second of nothing reading the field is the price of the
+	/// movement being visible at all.
 	var endlessIIFieldIsHeld: Bool {
 		endlessIIAimHold || endlessIIAimedStickyOwedTurn
 			|| endlessIIClearAndRetreatClock.isRunning
+			|| (gameMode == .endlessII && endlessIIRetreatFloorHasSettled == false)
 	}
 
 	func moveEndlessModeRowDown() {

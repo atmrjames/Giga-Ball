@@ -41,6 +41,9 @@ final class PackGridCell: UICollectionViewCell {
     private let name = UILabel()
     private let tick = UIImageView()
     private let lock = UIImageView()
+    /// What became of one appearance of a power-up: ACTIVE, FALLING, BRICK, COLLECTED,
+    /// MISSED. Empty on every other grid, which is every grid but the in-game recents
+    private let status = UILabel()
     /// Opens the pack's level list. Named for where it sits rather than for what it was.
     private let play = UIButton(type: .system)
 
@@ -114,6 +117,17 @@ final class PackGridCell: UICollectionViewCell {
         lock.tintColor = mark(0.4)
         card.addSubview(lock)
 
+        status.translatesAutoresizingMaskIntoConstraints = false
+        status.textAlignment = .center
+        status.font = .boldSystemFont(ofSize: 10)
+        status.adjustsFontSizeToFitWidth = true
+        status.minimumScaleFactor = 0.7
+        status.isHidden = true
+        card.addSubview(status)
+        // Along the bottom rather than in a corner: the two corner marks are a balanced pair
+        // (round 36) and a third mark up there would unbalance them, where the foot of the
+        // card is empty on every one of these squares
+
         play.translatesAutoresizingMaskIntoConstraints = false
         play.setImage(UIImage(systemName: "list.bullet",
                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 15,
@@ -163,6 +177,10 @@ final class PackGridCell: UICollectionViewCell {
             play.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: -3),
             play.widthAnchor.constraint(equalToConstant: 44),
             play.heightAnchor.constraint(equalToConstant: 44),
+
+            status.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 6),
+            status.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -6),
+            status.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -6),
             // 44, Apple's minimum, rather than 32 (play-test round 70). The glyph inside is
             // unchanged and still sits in the same corner - the button grows outwards from
             // it, which is why the insets go negative. It catches more without looking
@@ -225,7 +243,15 @@ final class PackGridCell: UICollectionViewCell {
 
     func show(name packName: String, icon packIcon: UIImage?,
               unlocked: Bool, completed: Bool, recolour: Bool = true,
-              nameSize: CGFloat = 13) {
+              nameSize: CGFloat = 13, status statusNote: String = "") {
+        status.text = statusNote
+        status.isHidden = statusNote.isEmpty
+        status.textColor = mark(0.6)
+        // What became of this appearance (James, round 185: "this run power ups in the in
+        // game info screen are missing the details from the game like, active, missed,
+        // falling, brick"). The list already knew - `InGameRecents.statusNote` has answered
+        // this since round 8 and the *table* has always shown it - but the page is a grid of
+        // squares now, and the answer never made it onto the square
         name.text = packName
         icon.image = unlocked
             ? (isGlass && recolour ? packIcon?.withRenderingMode(.alwaysTemplate) : packIcon)

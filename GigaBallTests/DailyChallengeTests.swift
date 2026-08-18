@@ -892,6 +892,42 @@ final class DailyNoRepeatsTests: XCTestCase {
         XCTAssertEqual(LeaderboardStanding.ordinal(101), "101st")
     }
 
+    func testTheBoardsLeadingScoreIsSaidBesideThePlacing() {
+        // James, round 185: "Add global high score details to game over / completion
+        // screens alongside rank details". The endless boards are heights, so the figure
+        // wears an "m"; a classic pack board's score is points and wears nothing
+        let endless = LeaderboardStanding(rank: 12, players: 843, best: 1204)
+        XCTAssertEqual(endless.bestText(suffix: GameMode.endlessII.leaderboardUnit),
+                       "Best 1,204m")
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 40, best: 128_400)
+                        .bestText(suffix: GameMode.classic.leaderboardUnit),
+                       "Best " + StatsPage.grouped(128_400))
+        // Grouped the same way the field size beside it is, which is the whole reason it
+        // goes through StatsPage rather than String(describing:)
+    }
+
+    func testABoardWithNoLeaderYetSaysNothingRatherThanBestZero() {
+        // A board Game Center answered for but had no entries in, and every standing built
+        // before round 185 - the field defaults to nil, so the old two-argument
+        // initialisers still compile and still print the placing alone
+        XCTAssertNil(LeaderboardStanding(rank: 4, players: 4).bestText())
+        XCTAssertNil(LeaderboardStanding(rank: 4, players: 4, best: nil).bestText(suffix: "m"))
+        XCTAssertEqual(LeaderboardStanding(rank: 4, players: 4, best: 0).bestText(),
+                       "Best 0")
+        // Zero is a real score somebody holds, and it prints. Only "no leader at all" is
+        // silent
+    }
+
+    func testOnlyTheHeightBoardsMeasureTheirScoresInMetres() {
+        XCTAssertEqual(GameMode.endless.leaderboardUnit, "m")
+        XCTAssertEqual(GameMode.endlessII.leaderboardUnit, "m")
+        XCTAssertEqual(GameMode.classic.leaderboardUnit, "")
+        XCTAssertEqual(GameMode.daily.leaderboardUnit, "")
+        // The endless modes post to `endlessBestHeight` boards - the id says what the score
+        // is - and the daily posts a score in whatever its day's mode counts, which the
+        // daily's own line never prints a board best beside
+    }
+
     func testTwoDaysOfTheSameModeAreOnlySimilarWhenTheirTwistsAre() {
         let plain = DailyChallenge(dateKey: "a", mode: .endlessII, classicLevel: nil, twists: [])
         let alsoPlain = DailyChallenge(dateKey: "b", mode: .endlessII, classicLevel: nil, twists: [])

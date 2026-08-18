@@ -930,19 +930,49 @@ final class RandomisedBounceTests: XCTestCase {
     }
 
     func testItThrowsTheAngleOffTheOneTheBallArrivedAt() {
-        XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, offset: 20),
-                       110, accuracy: 0.001)
-        XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, offset: -20),
-                       70, accuracy: 0.001)
+        XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, share: 0.1),
+                       99, accuracy: 0.001)
+        XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, share: -0.1),
+                       81, accuracy: 0.001)
+    }
+
+    /// James, round 185: "randomised bounce is way too erratic... the ball seems to go crazy,
+    /// vibrating and glitching constantly. Perhaps the bounce angle adjustment should be much
+    /// narrower, like +/- 10% of the actual bounce angle."
+    ///
+    /// Degrees were the wrong unit, which is why narrowing them twice did not help. A fixed
+    /// ±25° is nothing to a bounce leaving at 90° and everything to one leaving at 15° - it
+    /// threw the shallow ones below the minimum the game allows, where `breakHorizontalRuns`
+    /// caught them and fired its own jittering escape every frame.
+    func testAShallowBounceIsNudgedGentlyAndASteepOneMore() {
+        let shallow = GameScene.randomisedBounceAngle(from: 15, minimumDeg: 10, share: 0.1)
+        let steep = GameScene.randomisedBounceAngle(from: 120, minimumDeg: 10, share: 0.1)
+
+        XCTAssertEqual(shallow - 15, 1.5, accuracy: 0.001, "a shallow nudge for a shallow bounce")
+        XCTAssertEqual(steep - 120, 12, accuracy: 0.001)
+    }
+
+    func testItNeverThrowsAShallowBounceIntoTheEscapeHatch() {
+        // The vibrating itself: a bounce pushed under `minAngleDeg` is caught by
+        // `breakHorizontalRuns`, which re-aims it with its own random jitter, every frame
+        let minimum = 10.0
+        for arriving in stride(from: 11.0, through: 40.0, by: 1) {
+            for share in stride(from: -0.10, through: 0.10, by: 0.02) {
+                let bounced = GameScene.randomisedBounceAngle(from: arriving,
+                                                              minimumDeg: minimum, share: share)
+                XCTAssertGreaterThanOrEqual(bounced, minimum,
+                                            "\(arriving)° thrown by \(share)")
+            }
+        }
     }
 
     /// A bad power-up may be unfair. It may not hand the player a ball that never comes down,
     /// which is the one heading the game refuses in every other place it touches an angle.
     func testItNeverThrowsTheBallPastTheAngleTheGameRefuses() {
-        for offset in stride(from: -60.0, through: 60.0, by: 5) {
+        for share in stride(from: -0.6, through: 0.6, by: 0.05) {
             for arriving in [12.0, 45.0, 90.0, 135.0, 168.0] {
                 let bounced = GameScene.randomisedBounceAngle(from: arriving, minimumDeg: 10,
-                                                              offset: offset)
+                                                              share: share)
                 XCTAssertGreaterThanOrEqual(bounced, 10)
                 XCTAssertLessThanOrEqual(bounced, 170)
             }
@@ -1153,6 +1183,24 @@ final class RandomisedBounceTests: XCTestCase {
         if moving { brick.run(.moveBy(x: 0, y: -15, duration: 5)) }
     }
 
+    /// Runs the retreat's lift to wherever it is going, the way a run of frames would.
+    ///
+    /// The lift stopped being a single write in round 185 - it glides over a third of a
+    /// second, because a field that jumped two rows in one frame is what James saw and
+    /// reported as the collection animation shifting up two rows. So a test that wants the
+    /// field *where the retreat is taking it* has to let the frames happen. Bounded, so a
+    /// glide that never lands fails rather than hangs.
+    @discardableResult
+    private func settleRetreat(_ scene: GameScene, file: StaticString = #filePath,
+                               line: UInt = #line) -> Int {
+        for frames in 0..<600 {
+            if scene.endlessIIRetreatFloorHasSettled { return frames }
+            scene.tickEndlessIIRetreatFloor(1.0/60.0)
+        }
+        XCTFail("the retreat's lift never settled", file: file, line: line)
+        return -1
+    }
+
     /// James, round 169: "clear and retreat should remove the bottom 2 rows, it should move all
     /// rows up 2 rows for some time. It should move the low brick line up 2 rows too. As if the
     /// game is set 2 rows higher."
@@ -1169,6 +1217,9 @@ final class RandomisedBounceTests: XCTestCase {
         let floor = scene.finalBrickRowHeight
 
         scene.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(scene.finalBrickRowHeight, floor, accuracy: 0.001,
+                       "and not in the frame it was caught in - the line slides")
+        settleRetreat(scene)
         XCTAssertEqual(scene.finalBrickRowHeight,
                        floor + CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
                        accuracy: 0.001,
@@ -1183,8 +1234,9 @@ final class RandomisedBounceTests: XCTestCase {
         let floor = scene.finalBrickRowHeight
 
         scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
         scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
-        scene.tickEndlessIIRetreatFloor()
+        settleRetreat(scene)
 
         XCTAssertEqual(scene.finalBrickRowHeight, floor, accuracy: 0.001,
                        "or the run would keep the room for ever, which is a different power-up")
@@ -1206,6 +1258,7 @@ final class RandomisedBounceTests: XCTestCase {
         scene.endlessIICollectClearAndRetreat()
         XCTAssertNil(low.parent)
         XCTAssertNil(next.parent)
+        settleRetreat(scene)
         XCTAssertEqual(survivor.position.y, 120 + 2*scene.brickHeight, accuracy: 0.001,
                        "the rows that survive the clear are carried up with the frame")
     }
@@ -1221,8 +1274,9 @@ final class RandomisedBounceTests: XCTestCase {
         let survivor = brick(in: scene, x: 0, y: 120)
 
         scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
         scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
-        scene.tickEndlessIIRetreatFloor()
+        settleRetreat(scene)
 
         XCTAssertEqual(survivor.position.y, 120, accuracy: 0.001,
                        "the hidden rows re-enter from behind the HUD as the line drops back")
@@ -1240,6 +1294,7 @@ final class RandomisedBounceTests: XCTestCase {
         anchored.endlessIIIsAnchored = true
 
         scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
         XCTAssertEqual(anchored.position.y, 140 + 2*scene.brickHeight, accuracy: 0.001)
     }
 
@@ -1254,11 +1309,12 @@ final class RandomisedBounceTests: XCTestCase {
         let survivor = brick(in: scene, x: 0, y: 120)
 
         scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
         XCTAssertEqual(scene.endlessIICanonicalRestingY(survivor.position.y), 120,
                        accuracy: 0.001, "where it belongs, not where the lift has it")
 
         scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
-        scene.tickEndlessIIRetreatFloor()
+        settleRetreat(scene)
         XCTAssertEqual(scene.endlessIICanonicalRestingY(survivor.position.y), 120,
                        accuracy: 0.001, "and the same answer once the lift is over")
     }
@@ -1272,9 +1328,88 @@ final class RandomisedBounceTests: XCTestCase {
         let floor = scene.finalBrickRowHeight
 
         scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
         scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
         XCTAssertEqual(scene.finalBrickRowHeight,
                        floor + CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
+                       accuracy: 0.001)
+    }
+
+    /// James, round 184: "the power animation when I collected it shifted up 2 rows".
+    ///
+    /// Nothing was in the wrong place - the field simply arrived two rows higher in the one
+    /// frame the power-up was caught in, and a whole field jumping two rows in no time reads
+    /// as a glitch rather than as a retreat. It slides now.
+    func testTheFieldSlidesItsTwoRowsRatherThanJumpingThem() {
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        _ = brick(in: scene, x: 0, y: 40)
+        _ = brick(in: scene, x: 0, y: 60)
+        let survivor = brick(in: scene, x: 0, y: 120)
+
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertEqual(survivor.position.y, 120, accuracy: 0.001,
+                       "the clear is instant; the lift is not")
+
+        scene.tickEndlessIIRetreatFloor(1.0/60.0)
+        let afterOneFrame = survivor.position.y
+        XCTAssertGreaterThan(afterOneFrame, 120, "it has started")
+        XCTAssertLessThan(afterOneFrame, 120 + 2*scene.brickHeight,
+                          "and one frame is not the whole of it")
+
+        let frames = settleRetreat(scene)
+        XCTAssertGreaterThan(frames, 1, "several frames' worth of movement to watch")
+        XCTAssertEqual(survivor.position.y, 120 + 2*scene.brickHeight, accuracy: 0.001,
+                       "and it lands exactly where the instant version put it")
+    }
+
+    /// The glide is only safe because nothing reads the field while it runs.
+    ///
+    /// A brick's `position.y` is its row (§8.6), and mid-slide every brick is between two -
+    /// so the descent, the generator and the bottom-zone check all have to stand down until
+    /// the field has landed, at *both* ends of the retreat.
+    func testTheFieldIsHeldWhileTheLiftIsStillMoving() {
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        _ = brick(in: scene, x: 0, y: 40)
+        _ = brick(in: scene, x: 0, y: 60)
+        _ = brick(in: scene, x: 0, y: 120)
+
+        scene.endlessIICollectClearAndRetreat()
+        settleRetreat(scene)
+        XCTAssertTrue(scene.endlessIIFieldIsHeld, "held by the clock, as it always was")
+
+        scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
+        scene.tickEndlessIIRetreatFloor(1.0/60.0)
+        XCTAssertFalse(scene.endlessIIRetreatFloorHasSettled)
+        XCTAssertTrue(scene.endlessIIFieldIsHeld,
+                      "the clock has stopped but the field is still coming down, and a row "
+                      + "read off a brick between rows is the trap of §8.6")
+
+        settleRetreat(scene)
+        XCTAssertFalse(scene.endlessIIFieldIsHeld, "and it lets go once the field has landed")
+    }
+
+    /// A run saved mid-slide comes back where it belongs, exactly as one saved mid-lift does.
+    ///
+    /// `endlessIICanonicalRestingY` subtracts however much lift there is, whole rows or a
+    /// fraction of one, so the answer is the brick's own row at every point of the glide -
+    /// which is what stops a resume lifting a field that is already lifted.
+    func testASaveTakenMidSlideStillStoresTheRowsWhereTheyBelong() {
+        let scene = descentScene()
+        scene.endlessIIClearAndRetreatClock.reset()
+        scene.brickHeight = 20
+        _ = brick(in: scene, x: 0, y: 40)
+        _ = brick(in: scene, x: 0, y: 60)
+        let survivor = brick(in: scene, x: 0, y: 120)
+
+        scene.endlessIICollectClearAndRetreat()
+        scene.tickEndlessIIRetreatFloor(1.0/120.0)
+        XCTAssertFalse(scene.endlessIIRetreatFloorHasSettled, "caught in the middle of it")
+        XCTAssertEqual(scene.endlessIICanonicalRestingY(survivor.position.y), 120,
                        accuracy: 0.001)
     }
 

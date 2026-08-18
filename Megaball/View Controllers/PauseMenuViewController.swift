@@ -377,7 +377,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         GameCenterHandler().loadRank(leaderboardID: board.id) { [weak self] standing in
             guard let self, let standing else { return }
             self.standing = LeaderboardStanding(rank: standing.rank,
-                                                players: standing.players)
+                                                players: standing.players,
+                                                best: standing.best)
             self.updateResultLine()
         }
         // The placing joins the block when Game Center answers; a screen already
@@ -669,7 +670,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             // already covers the one case a player can do something about
         }
         resultLabel.isHidden = false
-        resultLabel.text = "\(standing.text) on the \(board.name) board"
+        let suffix = GameMode.current(in: defaults).leaderboardUnit
+        let best = standing.bestText(suffix: suffix).map { " · \($0)" } ?? ""
+        resultLabel.text = "\(standing.text) on the \(board.name) board\(best)"
+        // "12th / 843 on the Endless Mode board · Best 1,204m" - the placing says where this
+        // run stands and the leader says what standing higher would take (round 185). Only
+        // when Game Center actually knew a leader: a board with no entries prints nothing
+        // rather than "Best 0"
         // "12th / 843 on the Endless Mode board" - the daily's grammar, against the board
         // this run's mode actually posts to (play-test request, ninth round)
     }

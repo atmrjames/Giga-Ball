@@ -295,6 +295,17 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// Both are the same shape - a picture, a name, whether it is unlocked and whether it is
     /// the one in use - so they are answered together rather than in two branches that would
     /// drift apart.
+    /// What became of one appearance, for the squares that stand for one.
+    ///
+    /// Only the in-game recents section has a fate to report - everywhere else a square is a
+    /// reference entry rather than something that happened, and a badge saying MISSED under a
+    /// power-up you have simply never met would be a lie. `InGameRecents` has answered this
+    /// since round 8 and the table has always shown it; the grid never asked (round 185).
+    private func gridStatusNote(at indexPath: IndexPath) -> String {
+        guard isRecentRow(indexPath) else { return "" }
+        return InGameRecents.shared.statusNote(at: indexPath.row)
+    }
+
     private func gridItem(at indexPath: IndexPath) -> (name: String, icon: UIImage?, unlocked: Bool, chosen: Bool) {
         let setup = LevelPackSetup()
         if senderID == 2 {
@@ -896,7 +907,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             // Achievement names are sentences and want room round them (play-test round 126)
             square.show(name: item.name, icon: item.icon,
                         unlocked: item.unlocked, completed: item.chosen, recolour: false,
-                        nameSize: gridNameSize)
+                        nameSize: gridNameSize,
+                        status: gridStatusNote(at: indexPath))
             // Both of these lists are pictures - an app icon and a ball-and-paddle theme -
             // and the picture is the thing being chosen
             return square

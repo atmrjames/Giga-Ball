@@ -747,6 +747,49 @@ final class AimedStickyLostBallTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIAimHold, "the hold ends with the ball it was holding")
     }
 
+    /// James, round 185: "aimed sticky still has the same issue as before."
+    ///
+    /// Round 182 closed the one way the aim target could outlive its ball. It was not the only
+    /// way, and it did not need to be: the touch handler called `endlessIIAimMoved` and threw
+    /// the answer away, so a drag was swallowed whenever the *hold flag* was up - whether or
+    /// not there was anything to aim. These two pin the rule from both ends: the aim only
+    /// takes a touch it can use, and a hold with nothing to aim ends itself.
+    func testTheAimDeclinesATouchWhenThereIsNothingToAim() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        XCTAssertFalse(scene.endlessIIAimMoved(to: 40),
+                       "nothing caught yet, so the touch belongs to the paddle")
+
+        _ = extraBall(in: scene)
+        scene.endlessIIFirstBallWasCaught()
+        XCTAssertTrue(scene.endlessIIAimMoved(to: 40), "and once there is, the aim takes it")
+    }
+
+    func testAHoldWithNothingLeftToAimEndsItself() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIFirstBallWasCaught()
+        scene.endlessIIBeginAimHold()
+        XCTAssertTrue(scene.endlessIIAimHold)
+
+        scene.endlessIIClearHeldBalls()
+        // However the queue emptied - a Wipe, a life lost, a resume - the freeze must not
+        // outlive it: a frozen field with no arrow is a game that has stopped
+        scene.tickEndlessIIAimHold()
+
+        XCTAssertFalse(scene.endlessIIAimHold)
+    }
+
+    func testTheBackstopLeavesARealHoldAlone() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIFirstBallWasCaught()
+        scene.endlessIIBeginAimHold()
+
+        scene.tickEndlessIIAimHold()
+        XCTAssertTrue(scene.endlessIIAimHold, "there is still a ball waiting to be fired")
+    }
+
     func testTheQueueDropsBallsTheSceneHasLetGoOf() {
         // The belt to that pair of braces: an extra that leaves the field takes its offset
         // with it, so the two arrays cannot drift apart across a long run

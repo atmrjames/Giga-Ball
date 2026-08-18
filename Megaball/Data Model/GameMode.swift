@@ -149,6 +149,19 @@ enum GameMode: Int, CaseIterable {
         }
     }
 
+    /// What this mode's leaderboard scores are measured in, written the way a score is
+    /// written beside it.
+    ///
+    /// The endless boards are `endlessBestHeight` boards - their score is a height in
+    /// metres - where a classic pack board's score is points, which carry no unit. One
+    /// property rather than a mode test at each place that prints a board figure.
+    var leaderboardUnit: String {
+        switch self {
+        case .classic, .daily: return ""
+        case .endless, .endlessII: return "m"
+        }
+    }
+
     /// The mode a run belongs to, as stored.
     static func current(in defaults: UserDefaults = .standard) -> GameMode {
         GameMode(rawValue: defaults.integer(forKey: defaultsKey)) ?? .classic

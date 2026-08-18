@@ -134,7 +134,7 @@ final class GameCenterHandler: NSObject {
     /// Written for the daily and generalised in round 160 for the endless and classic
     /// game-overs, which ask the same question of their own boards.
     func loadRank(leaderboardID: String,
-                  completion: @escaping ((rank: Int, players: Int)?) -> Void) {
+                  completion: @escaping ((rank: Int, players: Int, best: Int?)?) -> Void) {
         guard GKLocalPlayer.local.isAuthenticated else { completion(nil); return }
         GKLeaderboard.loadLeaderboards(IDs: [leaderboardID]) { boards, _ in
             guard let board = boards?.first else {
@@ -143,12 +143,18 @@ final class GameCenterHandler: NSObject {
             }
             board.loadEntries(for: .global, timeScope: .allTime,
                               range: NSRange(location: 1, length: 1)) {
-                localEntry, _, players, _ in
+                localEntry, entries, players, _ in
                 DispatchQueue.main.async {
                     guard let rank = localEntry?.rank else { completion(nil); return }
-                    completion((rank: rank, players: max(players, rank)))
+                    completion((rank: rank, players: max(players, rank),
+                                best: entries?.first?.score))
                     // Never fewer players than there are places: a count that has not
                     // caught up with the entry would print "3rd / 2"
+                    //
+                    // The range asked for is the *first* place, so the entry that comes back
+                    // beside the local player's is the board's leader - the global best was
+                    // already being fetched and thrown away, and James asked for it in round
+                    // 185. Optional because a board with no entries yet answers with none
                 }
                 // A recurring board's current occurrence is what loads by default, which
                 // for the daily is exactly today's window; a classic board has only the
