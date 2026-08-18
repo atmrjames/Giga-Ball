@@ -1414,3 +1414,171 @@ final class EndlessIIClusterPowerUpTests: XCTestCase {
                        "so a free shot may set it off, and No Good News days zero it")
     }
 }
+
+/// Ball Spin (§12.0, James's play-test idea from the second round): "the paddle's own velocity
+/// at contact grips the ball - as if there were friction between the two - and the ball leaves
+/// on a curved path, curving harder the faster the paddle was moving."
+final class EndlessIIBallSpinTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSpeedLimit = 400
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    // MARK: - The grip
+
+    func testAStillPaddleGripsNothing() {
+        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0), 0)
+        XCTAssertEqual(EndlessIIBallSpin.turnRate(
+            paddleSpeed: EndlessIIBallSpin.gripThreshold - 1), 0,
+            "a paddle creeping along is not friction, it is noise")
+    }
+
+    func testFasterPaddleCurvesHarder() {
+        let gentle = EndlessIIBallSpin.turnRate(paddleSpeed: 300)
+        let brisk = EndlessIIBallSpin.turnRate(paddleSpeed: 900)
+        XCTAssertGreaterThan(gentle, 0)
+        XCTAssertGreaterThan(brisk, gentle, "curving harder the faster the paddle was moving")
+    }
+
+    func testTheCurveIsCappedHoweverHardThePaddleIsFlicked() {
+        let fast = EndlessIIBallSpin.turnRate(paddleSpeed: EndlessIIBallSpin.fullGripSpeed)
+        let absurd = EndlessIIBallSpin.turnRate(paddleSpeed: 12_000)
+        XCTAssertEqual(absurd, fast, accuracy: 0.0001,
+                       "a flick can be silly, and the ball still has to be playable")
+        XCTAssertEqual(fast, EndlessIIBallSpin.strongestTurn, accuracy: 0.0001)
+    }
+
+    func testTheBallCurvesTheWayThePaddleWasTravelling() {
+        // "As if there were friction between the two"
+        XCTAssertGreaterThan(EndlessIIBallSpin.turnRate(paddleSpeed: 500), 0)
+        XCTAssertLessThan(EndlessIIBallSpin.turnRate(paddleSpeed: -500), 0)
+    }
+
+    // MARK: - The flight
+
+    func testTheCurveKeepsTheBallsSpeedExactly() {
+        // The whole game rests on the ball holding its speed - so the curve is a rotation,
+        // never a sideways push
+        let before = CGVector(dx: 120, dy: 260)
+        let after = EndlessIIBallSpin.turned(before, rate: 1.2, delta: 1/60)
+        XCTAssertEqual(hypot(after.dx, after.dy), hypot(before.dx, before.dy), accuracy: 0.001)
+        XCTAssertNotEqual(atan2(after.dy, after.dx), atan2(before.dy, before.dx),
+                          "but it does turn")
+    }
+
+    func testTheGripIsSpentAsTheBallTravels() {
+        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: 900)
+        let afterHalf = EndlessIIBallSpin.decayed(rate, over: 0.5)
+        let afterOne = EndlessIIBallSpin.decayed(rate, over: 1)
+
+        XCTAssertLessThan(abs(afterHalf), abs(rate))
+        XCTAssertLessThan(abs(afterOne), abs(afterHalf),
+                          "sharpest off the paddle, straightening as it goes")
+    }
+
+    // MARK: - In the scene
+
+    func testAPaddleHitWhileItRunsGripsTheBall() {
+        let scene = mayhem()
+        scene.endlessIICollectBallSpin()
+        scene.endlessIIPaddleSpeed = 800
+
+        scene.endlessIIGripBall(scene.ball)
+        XCTAssertNotNil(scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)])
+    }
+
+    func testNothingIsGrippedWithoutThePowerUp() {
+        let scene = mayhem()
+        scene.endlessIIPaddleSpeed = 800
+        scene.endlessIIGripBall(scene.ball)
+        XCTAssertTrue(scene.endlessIIBallSpinRates.isEmpty)
+    }
+
+    func testACaughtBallIsNotGripped() {
+        // A catch is not a bounce, and Aimed Sticky owns what happens next - which is
+        // §12.0's "conflicts with the paddle group", in the one place it actually bites
+        let scene = mayhem()
+        scene.endlessIICollectBallSpin()
+        scene.endlessIIPaddleSpeed = 800
+        scene.endlessIIHeldBalls.append(scene.ball)
+
+        scene.endlessIIGripBall(scene.ball)
+        XCTAssertTrue(scene.endlessIIBallSpinRates.isEmpty)
+    }
+
+    func testACurveIsForgottenWhenItsBallIsCaught() {
+        // The catch owns what happens next: a ball released by an aim must leave at the
+        // angle the aim chose, not that plus whatever the last flick was still worth
+        let scene = mayhem()
+        scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)] = 1.0
+        scene.endlessIIHeldBalls.append(scene.ball)
+
+        scene.applyEndlessIIBallSpin(1/60)
+        XCTAssertTrue(scene.endlessIIBallSpinRates.isEmpty)
+    }
+
+    func testACurveIsForgottenWhenItsBallLeavesTheField() {
+        // The rates are keyed by ball, so they must not grow a tail of dead entries
+        let scene = mayhem()
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls.append(extra)
+        scene.endlessIIBallSpinRates[ObjectIdentifier(extra)] = 1.0
+
+        extra.removeFromParent()
+        scene.applyEndlessIIBallSpin(1/60)
+        XCTAssertTrue(scene.endlessIIBallSpinRates.isEmpty)
+    }
+
+    func testItEndsOnPaddleHitsLikeTheRestOfTheBatch() {
+        let scene = mayhem()
+        scene.endlessIICollectBallSpin()
+        XCTAssertTrue(scene.endlessIIBallSpinClock.countsTurns)
+
+        for _ in 0..<GameScene.endlessIIBallSpinTurns {
+            scene.endlessIISpendPaddleTurns()
+        }
+        XCTAssertFalse(scene.endlessIIBallSpinClock.isRunning)
+    }
+
+    func testItLeavesTheOtherModesAlone() {
+        let scene = mayhem()
+        scene.gameMode = .classic
+        scene.endlessIICollectBallSpin()
+        XCTAssertFalse(scene.endlessIIBallSpinClock.isRunning)
+    }
+
+    func testThePaddleSpeedIsSampledFromItsOwnMovement() {
+        // Sampled once a frame rather than read at the contact, where the paddle has often
+        // already been moved again by the same frame's touch
+        let scene = mayhem()
+        scene.paddle.position.x = 0
+        scene.endlessIIPaddleLastX = 0
+        scene.paddle.position.x = 10
+
+        scene.tickEndlessIIPaddleTravel(0.1)
+        XCTAssertEqual(scene.endlessIIPaddleSpeed, 100, accuracy: 0.001, "points per second")
+
+        scene.tickEndlessIIPaddleTravel(0.1)
+        XCTAssertEqual(scene.endlessIIPaddleSpeed, 0, accuracy: 0.001,
+                       "a paddle let go of reads as still, not as holding the last flick")
+    }
+
+    func testItIsInThePoolAndWorthAGoodChip() {
+        let scene = mayhem()
+        scene.applyEndlessRowPowerUpWeights()
+        XCTAssertGreaterThan(scene.powerUpProbArray[62], 0)
+
+        let setup = LevelPackSetup()
+        XCTAssertEqual(setup.powerUpNameArray[62], "Ball Spin")
+        XCTAssertEqual(setup.powerUpMultiplierArray[62], "+0.1")
+        XCTAssertEqual(setup.powerUpTimerArray[62], "5 hits")
+    }
+}

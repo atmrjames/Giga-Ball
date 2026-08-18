@@ -593,6 +593,32 @@ enum PowerUpIcon {
         // Two ranks of dots at mixed angles - a spray, not a fan: the release is random
     }
 
+    /// Ball Spin: the ball leaving on a curve, with the paddle that threw it under.
+    static let ballSpin: UIImage = badge { context, rect in
+        context.setStrokeColor(UIColor.white.cgColor)
+        context.setLineWidth(rect.width*0.07)
+        context.setLineCap(.round)
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: rect.maxY - rect.height*0.2))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: rect.maxY - rect.height*0.2))
+        context.strokePath()
+        // The paddle
+
+        context.move(to: CGPoint(x: rect.midX + rect.width*0.02,
+                                 y: rect.maxY - rect.height*0.28))
+        context.addCurve(to: CGPoint(x: rect.minX + rect.width*0.26,
+                                     y: rect.minY + rect.height*0.2),
+                         control1: CGPoint(x: rect.maxX - rect.width*0.14, y: rect.midY),
+                         control2: CGPoint(x: rect.minX + rect.width*0.2, y: rect.midY))
+        context.strokePath()
+        // The curve it leaves on, bending back the way the paddle was travelling
+
+        let radius = rect.width*0.085
+        let end = CGPoint(x: rect.minX + rect.width*0.26, y: rect.minY + rect.height*0.2)
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: CGRect(x: end.x - radius, y: end.y - radius,
+                                       width: radius*2, height: radius*2))
+    }
+
     static let drift: UIImage = artwork("PowerUpDrift", harmful) { context, rect in
         let height = rect.height*0.13
         let width = rect.width*0.34

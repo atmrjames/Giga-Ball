@@ -289,6 +289,13 @@ enum PowerUpCatalogue {
         PowerUp(id: "mirrorPaddle", name: "Mirror Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true,
                 stacking: .extendsDuration),
+        PowerUp(id: "ballSpin", name: "Ball Spin", availability: .endlessII,
+                rarity: .uncommon, valence: .beneficial, isTimed: true,
+                stacking: .extendsDuration),
+        // The paddle's own movement grips the ball and it leaves on a curve, sharpest off the
+        // paddle and straightening as it travels. `isTimed` the way the rest of the paddle
+        // batch is: it runs out rather than happening once, and what it counts down is paddle
+        // hits rather than seconds - see EndlessIIBallSpin
         PowerUp(id: "cluster", name: "Cluster", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: false, stacking: .repeats),
         // About twelve tiny balls burst upwards from the paddle at random angles; each is a

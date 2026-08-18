@@ -482,6 +482,7 @@ extension GameScene {
             \.endlessIIFlippedAngleClock, \.endlessIIReversedControlsClock,
             \.endlessIIAutoAimClock,
             \.endlessIIDoublePaddleClock, \.endlessIIMirrorPaddleClock,
+            \.endlessIIBallSpinClock,
         ]
 
     // MARK: - Wipe

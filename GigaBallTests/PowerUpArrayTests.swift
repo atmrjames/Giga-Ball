@@ -232,7 +232,8 @@ final class PowerUpArtworkTests: XCTestCase {
         // The other half of the same rule: §8.5 still lists these, and they must keep looking
         // like something until it does arrive
         for (name, icon) in [("Portal Paddle", PowerUpIcon.portalPaddle),
-                             ("Wrap Around", PowerUpIcon.wrapAround)] {
+                             ("Wrap Around", PowerUpIcon.wrapAround),
+                             ("Ball Spin", PowerUpIcon.ballSpin)] {
             XCTAssertEqual(icon.size, PowerUpIcon.canvas, name)
         }
     }

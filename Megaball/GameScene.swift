@@ -239,6 +239,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleSurfaceClock = EndlessIIClock()
 	/// Mirror Paddle: a second paddle level with the first, holding the mirrored x (§12.0).
 	var endlessIIMirrorPaddleClock = EndlessIIClock()
+	var endlessIIBallSpinClock = EndlessIIClock()
+	/// How fast the paddle is travelling, sampled once a frame - see EndlessIIBallSpin
+	var endlessIIPaddleSpeed: CGFloat = 0
+	var endlessIIPaddleLastX: CGFloat = 0
+	/// The turn rate each gripped ball is still carrying, keyed by ball
+	var endlessIIBallSpinRates: [ObjectIdentifier: CGFloat] = [:]
 
 	/// Drift: while this runs the whole field slides sideways (§5.4).
 	var endlessIIDriftClock = EndlessIIClock()
@@ -446,7 +452,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 62)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 63)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -1016,6 +1022,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpDoublePaddle = SKTexture(image: PowerUpIcon.doublePaddle)
 	let powerUpMirrorPaddle = SKTexture(image: PowerUpIcon.mirrorPaddle)
 	let powerUpCluster = SKTexture(image: PowerUpIcon.cluster)
+	let powerUpBallSpin = SKTexture(image: PowerUpIcon.ballSpin)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1207,7 +1214,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -2318,6 +2325,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didSimulatePhysics() {
+        applyEndlessIIBallSpin(endlessIIPaddleFrameDelta)
         applyEndlessIIBallHandover()
         applyEndlessIIPaddlePhysics()
         applyEndlessIIWraps()
@@ -3809,6 +3817,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// marker drew, the turns were spent, and the ball left at the ordinary bounce angle,
 		// which is exactly "Auto-Aim never hits the brick it is aiming at"
 
+		endlessIIGripBall(subject)
+		// The paddle's own movement grips the ball on the way out (§12.0's Ball Spin note).
+		// After the bounce above, because the spin bends the flight that follows rather than
+		// replacing what the paddle would have done anyway
+
 		invisibleBrickFlash()
     }
 	
@@ -5135,6 +5148,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIIReleaseCluster()
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[61] += 1
+
+		case powerUpBallSpin:
+		// 62 - Ball Spin. Good
+			endlessIICollectBallSpin()
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[62] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball

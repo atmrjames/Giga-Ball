@@ -352,6 +352,7 @@ extension GameScene {
         endlessIIPaddleSurfaceClock.spendTurn()
         endlessIIDoublePaddleClock.spendTurn()
         endlessIIMirrorPaddleClock.spendTurn()
+        endlessIIBallSpinClock.spendTurn()
         // On hits since round 180 (James: "it doesn't ever end. This should be based on
         // paddle hits, not timed") - both had been 12-second clocks that no loop ran down
         endlessIISpendLandingTurn()
@@ -470,6 +471,9 @@ extension GameScene {
             : min(currentTime - endlessIIPaddleLastTick, 0.5)
         endlessIIPaddleLastTick = currentTime
         endlessIIPaddleFrameDelta = delta
+        tickEndlessIIPaddleTravel(delta)
+        // How fast the paddle is moving, sampled here rather than read at the contact - see
+        // EndlessIIBallSpin for why the contact's reading is the wrong one
 
         if gameState.currentState is Playing && isPaused == false {
             tickEndlessIIPaddleHalo()
@@ -629,6 +633,7 @@ extension GameScene {
              PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),
             ("endlessIIDoublePaddle", endlessIIDoublePaddleClock, PowerUpIcon.doublePaddle),
             ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock, PowerUpIcon.mirrorPaddle),
+            ("endlessIIBallSpin", endlessIIBallSpinClock, PowerUpIcon.ballSpin),
         ]
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }
@@ -659,7 +664,8 @@ extension GameScene {
          ("endlessIIAutoAim", endlessIIAutoAimClock),
          ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock),
          ("endlessIIDoublePaddle", endlessIIDoublePaddleClock),
-         ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock)]
+         ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock),
+         ("endlessIIBallSpin", endlessIIBallSpinClock)]
             .filter { $0.1.isRunning }
             .map { ($0.0, $0.1.remaining, $0.1.total, $0.1.level) }
     }
@@ -708,6 +714,13 @@ extension GameScene {
             showEndlessIIMirrorPaddle()
             // Standing again on the spot, for the same reason: a resumed game draws the
             // surfaces it is about to bounce off
+        case "endlessIIBallSpin":
+            endlessIIBallSpinClock.restore(remaining: remaining, total: total, level: 0)
+            endlessIIBallSpinClock.countsTurns = true
+            // The turn flag is not in the save - what marks a restored clock as counting
+            // turns is this line, the way `collect(turns:)` marks a fresh one. The curve
+            // itself is deliberately *not* restored: it is spent within a second of the
+            // bounce that earned it, and a resumed ball has not just been bounced
         default:
             return false
         }
@@ -726,6 +739,7 @@ extension GameScene {
         endlessIIReversedControlsClock.reset()
         endlessIIAutoAimClock.reset()
         endlessIIPaddleSurfaceClock.reset()
+        endlessIIResetBallSpin()
         endlessIIDoublePaddleClock.reset()
         refreshEndlessIIDoublePaddle()
         endlessIIMirrorPaddleClock.reset()
