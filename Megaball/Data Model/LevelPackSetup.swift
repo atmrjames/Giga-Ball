@@ -717,7 +717,7 @@ class LevelPackSetup {
         "Concave Paddle",
         "Wavy Paddle",
         "Jagged Paddle",
-        "Double Paddle",
+        "Split Paddle",
         "Mirror Paddle",
         "Cluster"
     ]
@@ -860,7 +860,7 @@ class LevelPackSetup {
         "The paddle's top is dished, so the middle barely turns the ball at all and the ends throw it away hard",
         "The paddle's top ripples, so two landings a ball's width apart can send it opposite ways",
         "The paddle's top is sawtoothed, and where the ball goes stops being something you can read at all",
-        "The paddle splits in two, leaving a hole in the middle for the ball to fall through",
+        "The paddle splits into pieces with gaps between them for the ball to fall through",
         "A second paddle stands level with yours and holds the mirrored side: you go left, it goes right",
         "A burst of tiny balls flies up from the paddle, each striking one brick and vanishing"
     ]

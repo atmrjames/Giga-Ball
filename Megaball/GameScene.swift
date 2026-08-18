@@ -5315,13 +5315,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 	}
 	
+	/// The nine-slice that protects a paddle picture's rounded ends while its middle stretches.
+	///
+	/// Named rather than written inline because two things now want them: `paddleCenterRectPlus`
+	/// below, which is what an expanded paddle wears, and Split Paddle's segments, which are
+	/// paddles at another width and want their caps kept for exactly the same reason (round
+	/// 182). Each is in its own texture's unit coordinates, so they are not interchangeable -
+	/// the plain art is 80 wide with 10pt caps, the Retro art 91 with 15
+	static let paddleCapRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
+	static let paddleLaserCapRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
+	static let paddleStickyCapRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
+	static let paddleRetroCapRect = CGRect(x: 15.0/91.0, y: 0.0/26.0, width: 61.0/91.0, height: 26.0/26.0)
+	static let paddleRetroLaserCapRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
+	static let paddleRetroStickyCapRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
+
 	func paddleCenterRectPlus() {
-		paddle.centerRect = CGRect(x: 10.0/80.0, y: 0.0/10.0, width: 60.0/80.0, height: 10.0/10.0)
-		paddleLaser.centerRect = CGRect(x: 10.0/80.0, y: 0.0/16.0, width: 60.0/80.0, height: 16.0/16.0)
-		paddleSticky.centerRect = CGRect(x: 10.0/80.0, y: 0.0/11.0, width: 60.0/80.0, height: 11.0/11.0)
-		paddleRetroTexture.centerRect = CGRect(x: 15.0/91.0, y: 0.0/26.0, width: 61.0/91.0, height: 26.0/26.0)
-		paddleRetroLaserTexture.centerRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
-		paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
+		paddle.centerRect = GameScene.paddleCapRect
+		paddleLaser.centerRect = GameScene.paddleLaserCapRect
+		paddleSticky.centerRect = GameScene.paddleStickyCapRect
+		paddleRetroTexture.centerRect = GameScene.paddleRetroCapRect
+		paddleRetroLaserTexture.centerRect = GameScene.paddleRetroLaserCapRect
+		paddleRetroStickyTexture.centerRect = GameScene.paddleRetroStickyCapRect
+	}
+
+	/// Which cap rect belongs to the picture a paddle is currently wearing.
+	///
+	/// A split segment always needs its caps protected - it is narrower than the art is drawn,
+	/// whatever size the paddle itself is - so it cannot simply copy `paddle.centerRect`, which
+	/// is the *unprotected* whole-texture rect whenever the paddle is at its standard width.
+	/// That copy was the distortion James reported in round 182.
+	func paddleCapRect(for texture: SKTexture?) -> CGRect {
+		switch texture {
+		case paddleLaser: return GameScene.paddleLaserCapRect
+		case paddleSticky: return GameScene.paddleStickyCapRect
+		case paddleRetroTexture.texture: return GameScene.paddleRetroCapRect
+		case paddleRetroLaserTexture.texture: return GameScene.paddleRetroLaserCapRect
+		case paddleRetroStickyTexture.texture: return GameScene.paddleRetroStickyCapRect
+		default: return GameScene.paddleCapRect
+		}
 	}
 	
 	func powerUpIconReset(sender: String) {

@@ -328,6 +328,16 @@ extension GameScene {
             let glow = endlessIIAuraNodes[index]
             glow.position = subject.position
             glow.setScale(reach)
+            glow.alpha = subject.alpha
+            // **An effect worn by the ball is as visible as the ball is** (James, round 182:
+            // "with ghost ball and aura power-ups together, I can still see the aura effect
+            // around the ball... it should also be invisible when the ball is invisible. The
+            // aura power should still be functional, just not visible"). Ghost Ball works by
+            // fading the *ball*, and the Wrecking Ball's spikes follow it for free by being
+            // its children - the Aura is the one decoration hung on the scene instead, so it
+            // is the one that has to be told. Only the drawing follows the ball: the reach,
+            // the strikes and the clock below are untouched, so a ghosted Aura still eats
+            // every brick it passes
 
             enumerateChildNodes(withName: BrickCategoryName) { node, _ in
                 guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }

@@ -275,7 +275,12 @@ enum PowerUpCatalogue {
         // once - and no conflict rule against the rest of the paddle group is needed: a
         // shape only says where the ball behaves as though it landed, so Inert flattens it,
         // Flipped mirrors it and Auto-Aim overrides it, all for free
-        PowerUp(id: "doublePaddle", name: "Double Paddle", availability: .endlessII,
+        // **Renamed to Split Paddle for the player in round 182, and only for the player.**
+        // The id, the `endlessIIDoublePaddle` clock key and the asset name stay as they are:
+        // that key is written into save files, and a run left mid-split by a player on the
+        // shipped build has to still come back split. A prettier identifier is not worth a
+        // lost game (CLAUDE.md: existing progress stays valid)
+        PowerUp(id: "doublePaddle", name: "Split Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
         // The paddle in two halves with a hole between them. Harmful, though it is the

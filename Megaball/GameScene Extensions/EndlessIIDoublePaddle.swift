@@ -42,11 +42,12 @@ extension GameScene {
     ///
     /// Measured off the ball rather than the paddle (James, round 180: the gap "should be
     /// bigger - big enough for ball to fit though... the ball should be able to fall through
-    /// the middle"). The old gap was 14% of the paddle - almost exactly one ball on the
-    /// standard paddle, so the ball nearly never fitted: it clipped a half instead, and the
-    /// middle read as solid. Half a ball of clearance either side makes falling through a
-    /// thing that happens, without the gap being most of the paddle.
-    static let endlessIIDoublePaddleGapBalls: CGFloat = 1.5
+    /// the middle"). The original gap was 14% of the paddle - almost exactly one ball on the
+    /// standard paddle, so the ball nearly never fitted: it clipped a segment instead, and the
+    /// middle read as solid. Round 180 took it to a ball and a half; **round 182 takes it to
+    /// two** on James's play test ("the gap is still too small - go with 2 ball widths"),
+    /// which is a gap you can aim a ball through rather than one it has to be threaded into.
+    static let endlessIIDoublePaddleGapBalls: CGFloat = 2
 
     static let doublePaddleHalfName = "endlessIIDoublePaddleHalf"
 
@@ -155,6 +156,15 @@ extension GameScene {
         for x in centres {
             let half = SKSpriteNode(texture: dress.texture, size: size)
             half.name = GameScene.doublePaddleHalfName
+            half.centerRect = dress.centerRect
+            // **The rounded ends survive the cut** (James, round 182: "the edges of the 2
+            // shorter paddles get distorted. Is there a way, like when the paddle shrinks and
+            // expands, to make the rounded edges persist with different size paddles?"). Yes,
+            // and it is the very trick he named: the paddle keeps its caps by nine-slicing its
+            // own texture - `paddleCenterRectPlus` protects the end caps and stretches only
+            // the middle - and a segment is just another paddle at another width, so it wants
+            // the same treatment. Without it the whole texture scaled, and the caps squashed
+            // in proportion to how short the piece was
             half.position = CGPoint(x: x, y: 0)
             half.zPosition = 0.1
             paddle.addChild(half)
@@ -167,17 +177,25 @@ extension GameScene {
         // is drawn now is its two children
     }
 
-    /// What the halves are painted with, and how tall the picture is.
+    /// What the halves are painted with, how tall the picture is, and where its caps are.
     ///
     /// The Retro theme keeps its paddle art on `paddleRetroTexture` rather than on the paddle,
     /// at its own proportions - two and a half times the paddle's height and a little wider.
     /// So the halves take that art when it is the theme in play, and the plain sprite's
     /// otherwise. A split paddle should still look like the paddle the player chose.
-    var endlessIIDoublePaddleHalfDress: (texture: SKTexture?, height: CGFloat) {
+    ///
+    /// The `centerRect` comes with the picture because it belongs to it: it is measured in the
+    /// texture's own unit coordinates, so the plain paddle's caps and the Retro art's caps are
+    /// different fractions of different pictures. Taken from the sprite that is wearing the
+    /// art rather than restated here - `paddleCenterRectPlus` is where these numbers are
+    /// decided, and a second copy of them would be wrong the first time the art changed.
+    var endlessIIDoublePaddleHalfDress: (texture: SKTexture?, height: CGFloat,
+                                         centerRect: CGRect) {
         if paddleTexture == retroPaddle, let art = paddleRetroTexture.texture {
-            return (art, paddleRetroTexture.size.height)
+            return (art, paddleRetroTexture.size.height, paddleCapRect(for: art))
         }
-        return (endlessIIDoublePaddleDress, paddle.size.height)
+        return (endlessIIDoublePaddleDress, paddle.size.height,
+                paddleCapRect(for: endlessIIDoublePaddleDress))
     }
 
     /// Dresses a replacement body in the settings the paddle's current one is wearing.

@@ -1510,6 +1510,73 @@ final class GhostBallTests: XCTestCase {
         return scene
     }
 
+    /// James, round 182: "with ghost ball and aura power-ups together, I can still see the
+    /// aura effect around the ball. Any power-up like this where there's an additional effect
+    /// on the ball, it should also be invisible when the ball is invisible. The aura power
+    /// should still be functional, just not visible."
+    func testTheAuraIsAsInvisibleAsTheBallItRings() {
+        let scene = mayhem()
+        scene.ballSize = 10
+        scene.totalStatsArray = [TotalStats()]
+        scene.ball.position = CGPoint(x: 0, y: 300)   // up among the bricks, so ghosted
+        scene.endlessIICollectAura()
+        scene.endlessIICollectGhostBall()
+
+        scene.tickEndlessIIGhostBall()
+        scene.tickEndlessIIAura()
+
+        XCTAssertEqual(scene.ball.alpha, 0, accuracy: 0.001, "the ball is ghosted")
+        XCTAssertEqual(scene.endlessIIAuraNodes.first?.alpha, 0,
+                       "and its ring goes with it")
+    }
+
+    func testGhostingChangesNothingButTheDrawing() {
+        // "The aura power should still be functional, just not visible" - so the honest test
+        // is that the *same* field is struck either way. Two identical scenes, one ghosted,
+        // and the only difference between them is the alpha
+        func struckBricks(ghosted: Bool) -> Int {
+            let scene = mayhem()
+            scene.ballSize = 10
+            scene.ball.size = CGSize(width: 10, height: 10)
+            scene.brickWidth = 40
+            scene.brickHeight = 20
+            scene.totalStatsArray = [TotalStats()]
+            scene.ball.position = CGPoint(x: 0, y: 300)
+            // Reach is `ballSize/2 * 2.0` = 10, and a brick must be clear of the ball itself
+            // (`endlessIIAuraReaches` wants the nearest point beyond the ball's own radius),
+            // so a brick whose edge sits 8 points away is inside the ring and outside the ball
+            let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: 0, y: 318)
+            scene.addChild(brick)
+            scene.endlessIICollectAura()
+            if ghosted { scene.endlessIICollectGhostBall() }
+            scene.tickEndlessIIGhostBall()
+            scene.tickEndlessIIAura()
+            return scene.endlessIIAuraHitBricks.count
+        }
+
+        let seen = struckBricks(ghosted: false)
+        XCTAssertGreaterThan(seen, 0, "the aura reaches something to begin with")
+        XCTAssertEqual(struckBricks(ghosted: true), seen,
+                       "and reaches exactly the same when nobody can see it")
+    }
+
+    func testTheAuraComesBackWithTheBallBelowTheBricks() {
+        let scene = mayhem()
+        scene.ballSize = 10
+        scene.totalStatsArray = [TotalStats()]
+        scene.ball.position = CGPoint(x: 0, y: 50)   // below the field, so seen
+        scene.endlessIICollectAura()
+        scene.endlessIICollectGhostBall()
+
+        scene.tickEndlessIIGhostBall()
+        scene.tickEndlessIIAura()
+
+        XCTAssertEqual(scene.ball.alpha, 1, accuracy: 0.001)
+        XCTAssertEqual(scene.endlessIIAuraNodes.first?.alpha, 1)
+    }
+
     func testTheBallIsHiddenAmongTheBricksAndSeenBelowThem() {
         XCTAssertFalse(GameScene.ghostBallIsVisible(ballY: 150, lowestBrickRow: 100))
         XCTAssertTrue(GameScene.ghostBallIsVisible(ballY: 50, lowestBrickRow: 100),

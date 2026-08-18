@@ -61,11 +61,22 @@ enum ReferenceHeading {
 
 extension UIViewController {
 
-    /// The most screen a menu should use, whatever it has been given.
+    /// The squarest a menu is allowed to be: width divided by height.
     ///
-    /// Roughly a large phone. Past this the rows stop reading as a list and start reading
-    /// as a table of contents with the labels and values at opposite ends of the screen.
-    static let menuMaximumSize = CGSize(width: 500, height: 820)
+    /// **The shape is what is capped, not the size** (James, round 182: "for the iPad, it's
+    /// not the overall size that should be capped, it's the ratio of width to height. It's ok
+    /// to make the app slightly more square than the phone is, but not much more square").
+    ///
+    /// Phones run from 0.46 (iPhone 17 Pro) to 0.56 (the SE); a 13-inch iPad in portrait is
+    /// 0.75, which is a different-shaped app rather than the same one bigger. This sits just
+    /// past the squarest phone - recognisably the same layout, with the extra width an iPad
+    /// has to spare, and none of the height given away.
+    ///
+    /// Round 180's `menuMaximumSize` of 500x820 capped both directions, which centred a
+    /// phone-sized box in the middle of a 13-inch screen and left 40% of the height empty
+    /// while the pack grid scrolled with two packs hidden. Its *ratio* was 0.61, so the shape
+    /// was never the problem - only the absolute cap on height was.
+    static let menuMaximumAspectRatio: CGFloat = 0.62
 
     /// How large a mode's own logo is at the head of its menu.
     ///
@@ -241,12 +252,12 @@ extension UIViewController {
 
     /// How far in a menu's contents sit, for a window of this size.
     ///
-    /// The whole of the resize behaviour, as arithmetic: what is left over past
-    /// `menuMaximumSize` is split evenly either side, and a window smaller than the maximum
-    /// keeps everything it has. Pulled out of `limitMenuContentSize` in round 181 so the
-    /// iPad resize audit (§12.0) can be *tested* at the sizes iPadOS hands out rather than
-    /// only eyeballed at the two or three a person thinks to try - and those are the sizes
-    /// nobody can see: split view, slide over, and the tall-thin and short-wide extremes.
+    /// The whole of the resize behaviour, as arithmetic: any width past what
+    /// `menuMaximumAspectRatio` allows is split evenly either side, and a window already that
+    /// shape or narrower keeps everything it has. Pulled out of `limitMenuContentSize` in
+    /// round 181 so the iPad resize audit (§12.0) can be *tested* at the sizes iPadOS hands
+    /// out rather than only eyeballed at the two or three a person thinks to try - and those
+    /// are the sizes nobody can see: split view, slide over, and the two extremes.
     ///
     /// - Parameter inherited: the safe area the screen already has from its parent. Menus
     ///   open on top of one another as child view controllers filling their parent, so a
@@ -255,15 +266,20 @@ extension UIViewController {
     ///   makes this idempotent however deep the stack goes.
     static func menuContentInsets(available: CGSize,
                                   inherited: UIEdgeInsets = .zero) -> UIEdgeInsets {
-        let horizontal = max(0, (available.width - menuMaximumSize.width)/2)
-        let vertical = max(0, (available.height - menuMaximumSize.height)/2)
-        return UIEdgeInsets(top: max(0, vertical - inherited.top),
+        let widest = available.height*menuMaximumAspectRatio
+        let horizontal = max(0, (available.width - widest)/2)
+        // **Width only, and only when the window is too square.** A window that is *taller*
+        // than a phone's shape is not the thing being guarded against - a tall thin slide-over
+        // is a narrow phone, which the menus were built for - so nothing is ever taken off the
+        // height. That is also what stops the pack grid scrolling with room to spare on an
+        // iPad, which capping the height was doing
+        return UIEdgeInsets(top: 0,
                             left: max(0, horizontal - inherited.left),
-                            bottom: max(0, vertical - inherited.bottom),
+                            bottom: 0,
                             right: max(0, horizontal - inherited.right))
     }
 
-    /// Centres the menu's contents within `menuMaximumSize`, leaving its background alone.
+    /// Centres the menu's contents within `menuMaximumAspectRatio`, leaving its background alone.
     ///
     /// Call from `viewDidLayoutSubviews`: the inset depends on the size the view has been
     /// given, which is not known before then, and it must be recomputed if that changes.

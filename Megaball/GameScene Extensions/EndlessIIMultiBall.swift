@@ -122,6 +122,28 @@ extension GameScene {
     func endlessIIBallWasLost(_ lost: SKSpriteNode) -> Bool {
         guard gameMode == .endlessII else { return false }
 
+        if endlessIIHeldBalls.contains(where: { $0 === lost }) {
+            if endlessIIAimTarget === lost { endlessIIEndAimHold(launching: nil) }
+            endlessIIReleasedFromPaddle(lost)
+        }
+        // **A ball at the bottom is not being held, whatever happens to it next** (James,
+        // round 182: "with aimed sticky, the paddle got stuck, the ball flew off in the wrong
+        // direction and then ended up below the paddle, vibrating around at the bottom").
+        //
+        // A held ball *can* reach the bottom - the paddle is driven out from under it by a
+        // portal or a wrap, which is the case `endlessIINextHeldBall` was already written to
+        // survive. It survives it by *skipping* nodes that have left the scene, and that is
+        // exactly the hole: the primary ball is never removed from the scene, only moved, so
+        // a stale entry for it can never be skipped. It stayed at the head of the queue for
+        // the rest of the run.
+        //
+        // Everything the report describes follows from that one entry. `endlessIIAimTarget`
+        // reads the head of the queue, so it never went nil; `endlessIIAimMoved` takes every
+        // touch while there is a target, so **the paddle stopped moving**; and the ball
+        // itself was long gone - handed a survivor's position and heading by the carry-on
+        // below - so it "flew off in the wrong direction" and ended up wherever that left it.
+        // The hold is ended first, or the world stays frozen around a ball that is not there
+
         if dailySuddenDeath {
             endlessIIClearExtraBalls()
             return false

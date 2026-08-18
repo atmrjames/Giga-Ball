@@ -196,6 +196,7 @@ final class PowerUpArtworkTests: XCTestCase {
         ("Auto Aim", PowerUpIcon.autoAim),
         ("Ball Steering", PowerUpIcon.ballSteering),
         ("Clear And Retreat", PowerUpIcon.clearAndRetreat),
+        ("Cluster", PowerUpIcon.cluster),
         ("Cull", PowerUpIcon.cull),
         ("Descent", PowerUpIcon.descent),
         ("Double Paddle", PowerUpIcon.doublePaddle),
@@ -231,8 +232,7 @@ final class PowerUpArtworkTests: XCTestCase {
         // The other half of the same rule: §8.5 still lists these, and they must keep looking
         // like something until it does arrive
         for (name, icon) in [("Portal Paddle", PowerUpIcon.portalPaddle),
-                             ("Wrap Around", PowerUpIcon.wrapAround),
-                             ("Cluster", PowerUpIcon.cluster)] {
+                             ("Wrap Around", PowerUpIcon.wrapAround)] {
             XCTAssertEqual(icon.size, PowerUpIcon.canvas, name)
         }
     }

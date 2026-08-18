@@ -409,45 +409,72 @@ final class MenuButtonRowTests: XCTestCase {
 /// half-width split, and the tall-thin and short-wide extremes. `SceneDelegate` sets a
 /// 420x640 floor so the window can never be narrower than a phone; there is no API to cap the
 /// maximum or the ratio, so everything above that floor is this method's problem.
+///
+/// **What is capped is the shape** (James, round 182): the menus may be slightly squarer than
+/// a phone and no more, and no window ever has height taken off it.
 final class MenuResizeTests: XCTestCase {
 
-    private let cap = UIViewController.menuMaximumSize
+    private let ratio: Double = Double(UIViewController.menuMaximumAspectRatio)
 
-    func testAFullScreenIPadCentresTheColumn() {
-        // 13-inch iPad Pro, portrait
-        let insets = UIViewController.menuContentInsets(available: CGSize(width: 1032,
-                                                                         height: 1376))
-        XCTAssertEqual(insets.left, (1032 - cap.width)/2, accuracy: 0.001)
+    /// The shape the menu is left with: its content width over the window's height.
+    private func shape(_ size: CGSize) -> Double {
+        let insets = UIViewController.menuContentInsets(available: size)
+        return Double((size.width - insets.left - insets.right)/size.height)
+    }
+
+    func testTheCapIsSquarerThanAPhoneButNotByMuch() {
+        // Phones run 0.46 (17 Pro) to 0.56 (SE); a 13-inch iPad in portrait is 0.75
+        XCTAssertGreaterThan(ratio, 0.562, "there would be no point capping tighter than a phone")
+        XCTAssertLessThan(ratio, 0.70, "and a 13-inch iPad's own 0.75 is the shape being refused")
+    }
+
+    func testAFullScreenIPadIsNarrowedToTheShapeAndKeepsItsHeight() {
+        let size = CGSize(width: 1032, height: 1376)   // 13-inch iPad Pro, portrait
+        let insets = UIViewController.menuContentInsets(available: size)
+
+        XCTAssertEqual(shape(size), ratio, accuracy: 0.001, "no squarer than the cap")
+        XCTAssertEqual(insets.top, 0, "and not one point of height given away")
+        XCTAssertEqual(insets.bottom, 0)
         XCTAssertEqual(insets.left, insets.right, accuracy: 0.001, "centred, not pushed aside")
-        XCTAssertEqual(insets.top, insets.bottom, accuracy: 0.001)
+    }
+
+    func testAPhoneIsLeftAloneEntirely() {
+        // Every phone is already narrower than the cap, so nothing is taken from any of them
+        for size in [CGSize(width: 402, height: 874),    // iPhone 17 Pro
+                     CGSize(width: 375, height: 667),    // SE
+                     CGSize(width: 440, height: 956)] {  // 17 Pro Max
+            XCTAssertEqual(UIViewController.menuContentInsets(available: size), .zero,
+                           "\(size)")
+        }
     }
 
     func testTheSmallestWindowKeepsEverythingItHas() {
-        // The floor `SceneDelegate` sets. Smaller than the cap in both directions, so there
-        // is nothing to give back - insetting here would be taking room from a window that
-        // has none spare
+        // The floor `SceneDelegate` sets: 420/640 is 0.66, a shade squarer than the cap, so a
+        // little width goes - and the height, which it has least of, is untouched
+        let size = CGSize(width: 420, height: 640)
+        let insets = UIViewController.menuContentInsets(available: size)
+        XCTAssertEqual(insets.top, 0)
+        XCTAssertEqual(insets.bottom, 0)
+        XCTAssertLessThan(insets.left, 12, "and barely any width either")
+    }
+
+    func testATallThinWindowIsNotTouched() {
+        // Slide over: narrower than a phone in shape, which is the shape the menus were built
+        // for. Round 180's size cap took 278pt off the height of a window like this
         let insets = UIViewController.menuContentInsets(available: CGSize(width: 420,
-                                                                         height: 640))
+                                                                         height: 1376))
         XCTAssertEqual(insets, .zero)
     }
 
-    func testATallThinWindowOnlyGivesBackHeight() {
-        // Slide over: narrower than the cap, far taller
-        let insets = UIViewController.menuContentInsets(available: CGSize(width: 420,
-                                                                         height: 1376))
-        XCTAssertEqual(insets.left, 0, "no width to spare, so none is taken")
-        XCTAssertEqual(insets.top, (1376 - cap.height)/2, accuracy: 0.001)
+    func testAShortWideWindowLosesWidthNotHeight() {
+        let size = CGSize(width: 1200, height: 640)   // a landscape half-split
+        let insets = UIViewController.menuContentInsets(available: size)
+        XCTAssertEqual(insets.top, 0)
+        XCTAssertGreaterThan(insets.left, 0)
+        XCTAssertEqual(shape(size), ratio, accuracy: 0.001)
     }
 
-    func testAShortWideWindowOnlyGivesBackWidth() {
-        // A landscape half-split: wider than the cap, shorter than it
-        let insets = UIViewController.menuContentInsets(available: CGSize(width: 1200,
-                                                                         height: 640))
-        XCTAssertEqual(insets.top, 0, "capping the height here only pushes a row below the fold")
-        XCTAssertEqual(insets.left, (1200 - cap.width)/2, accuracy: 0.001)
-    }
-
-    func testNoWindowEverEarnsANegativeInset() {
+    func testNoWindowEverEarnsANegativeInsetOrLosesItsHeight() {
         // A negative additional safe area grows the content past the screen, which is how a
         // close button ends up off the bottom of a small window
         for width in stride(from: CGFloat(320), through: 1600, by: 40) {
@@ -455,21 +482,19 @@ final class MenuResizeTests: XCTestCase {
                 let insets = UIViewController.menuContentInsets(
                     available: CGSize(width: width, height: height))
                 XCTAssertGreaterThanOrEqual(insets.left, 0, "\(width)x\(height)")
-                XCTAssertGreaterThanOrEqual(insets.top, 0, "\(width)x\(height)")
-                XCTAssertGreaterThanOrEqual(insets.bottom, 0, "\(width)x\(height)")
                 XCTAssertGreaterThanOrEqual(insets.right, 0, "\(width)x\(height)")
+                XCTAssertEqual(insets.top, 0, "\(width)x\(height)")
+                XCTAssertEqual(insets.bottom, 0, "\(width)x\(height)")
             }
         }
     }
 
-    func testAScreenNeverInsetsPastWhatItWasGiven() {
-        // Left plus right must leave the cap's worth of room standing, or the column the
-        // whole method exists to protect is narrower than the maximum it is capping to
+    func testNothingIsEverLeftSquarerThanTheCap() {
         for width in stride(from: CGFloat(320), through: 1600, by: 40) {
-            let insets = UIViewController.menuContentInsets(
-                available: CGSize(width: width, height: 900))
-            let column = width - insets.left - insets.right
-            XCTAssertEqual(column, min(width, cap.width), accuracy: 0.001, "\(width)")
+            for height in stride(from: CGFloat(480), through: 2000, by: 40) {
+                let size = CGSize(width: width, height: height)
+                XCTAssertLessThanOrEqual(shape(size), ratio + 0.001, "\(width)x\(height)")
+            }
         }
     }
 

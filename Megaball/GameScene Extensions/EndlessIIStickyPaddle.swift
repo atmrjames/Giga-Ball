@@ -32,8 +32,30 @@ extension GameScene {
     /// The head of the queue, skipping anything that has left the scene - a ball can be lost
     /// while the paddle is holding it if the paddle is driven out from under it by a portal or
     /// a wrap.
+    ///
+    /// **Skipping is not enough on its own** (round 182): an extra that is lost leaves the
+    /// scene and is skipped for ever, but the primary ball is never removed from the scene -
+    /// only repositioned - so a stale entry for it can never be skipped, and it sat at the
+    /// head of the queue holding the aim hostage. `endlessIIBallWasLost` releases a lost ball
+    /// now, which is the fix; this stays as the belt to that pair of braces, and the prune
+    /// below keeps the queue from growing a tail of dead extras across a long run.
     var endlessIINextHeldBall: SKSpriteNode? {
         endlessIIHeldBalls.first { $0.parent != nil }
+    }
+
+    /// Drops anything from the queue that is no longer on the field.
+    ///
+    /// Called from the paddle tick, so a queue can never carry a node the scene has let go -
+    /// the offsets are kept in step index for index, which is why this cannot simply filter.
+    func pruneEndlessIIHeldBalls() {
+        guard endlessIIHeldBalls.isEmpty == false else { return }
+        for index in endlessIIHeldBalls.indices.reversed()
+        where endlessIIHeldBalls[index].parent == nil {
+            endlessIIHeldBalls.remove(at: index)
+            if endlessIIHeldOffsets.indices.contains(index) {
+                endlessIIHeldOffsets.remove(at: index)
+            }
+        }
     }
 
     /// Whether a tap should launch a held extra rather than the first ball.
@@ -128,6 +150,8 @@ extension GameScene {
     /// writing the same position is how a ball ends up jittering between them.
     func tickEndlessIIHeldBalls() {
         guard gameMode == .endlessII, endlessIIHeldBalls.isEmpty == false else { return }
+        pruneEndlessIIHeldBalls()
+        guard endlessIIHeldBalls.isEmpty == false else { return }
 
         for (index, held) in endlessIIHeldBalls.enumerated() where held !== ball {
             guard held.parent != nil else { continue }

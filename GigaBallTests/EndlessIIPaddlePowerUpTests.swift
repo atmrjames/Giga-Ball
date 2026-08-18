@@ -673,6 +673,98 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
 /// "With portal paddle and aimed sticky together, the aiming arrow should come from the top
 /// of the screen down, as the ball should be going through the paddle and wrapping around to
 /// the top" (play-test round 128).
+/// James, round 182, with a screenshot: "with aimed sticky, the paddle got stuck, the ball
+/// flew off in the wrong direction and then ended up below the paddle, vibrating around at
+/// the bottom of the screen."
+///
+/// All three symptoms are one stale entry. A held ball can reach the bottom - the paddle is
+/// driven out from under it by a portal or a wrap - and the queue survived that by *skipping*
+/// nodes that had left the scene. The primary ball never leaves the scene, only moves, so its
+/// entry could never be skipped: it stayed at the head of the queue, `endlessIIAimTarget`
+/// never went nil, and `endlessIIAimMoved` takes every touch while there is a target, which
+/// is a paddle that has stopped moving.
+final class AimedStickyLostBallTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSpeedLimit = 100
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        return scene
+    }
+
+    private func extraBall(in scene: GameScene) -> SKSpriteNode {
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        extra.name = BallCategoryName
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls.append(extra)
+        return extra
+    }
+
+    func testALostBallLetsGoOfThePaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        _ = extraBall(in: scene)          // a second ball, so the run carries on
+        scene.endlessIIFirstBallWasCaught()
+        XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === scene.ball })
+
+        _ = scene.endlessIIBallWasLost(scene.ball)
+
+        XCTAssertFalse(scene.endlessIIHeldBalls.contains { $0 === scene.ball },
+                       "a ball at the bottom is not being held, whatever happens next")
+        XCTAssertNil(scene.endlessIIAimTarget,
+                     "so the aim has nothing to hold on to - which is the stuck paddle")
+    }
+
+    func testThePaddleMovesAgainAfterAHeldBallIsLost() {
+        // The symptom in the words it was reported in: a touch has to reach the paddle again
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        _ = extraBall(in: scene)
+        scene.endlessIIFirstBallWasCaught()
+        XCTAssertTrue(scene.endlessIIAimMoved(to: 40), "while aiming, the aim owns the touch")
+
+        _ = scene.endlessIIBallWasLost(scene.ball)
+
+        XCTAssertFalse(scene.endlessIIAimMoved(to: 40),
+                       "and once there is nothing to aim, the touch belongs to the paddle")
+    }
+
+    func testTheWorldIsNotLeftFrozenAroundABallThatHasGone() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        _ = extraBall(in: scene)
+        scene.endlessIIFirstBallWasCaught()
+        scene.endlessIIBeginAimHold()
+        XCTAssertTrue(scene.endlessIIAimHold)
+
+        _ = scene.endlessIIBallWasLost(scene.ball)
+        XCTAssertFalse(scene.endlessIIAimHold, "the hold ends with the ball it was holding")
+    }
+
+    func testTheQueueDropsBallsTheSceneHasLetGoOf() {
+        // The belt to that pair of braces: an extra that leaves the field takes its offset
+        // with it, so the two arrays cannot drift apart across a long run
+        let scene = mayhem()
+        let extra = extraBall(in: scene)
+        scene.stickyPaddleCatches = 3
+        XCTAssertTrue(scene.endlessIICatchExtraBall(extra))
+        XCTAssertEqual(scene.endlessIIHeldBalls.count, 1)
+
+        extra.removeFromParent()
+        scene.pruneEndlessIIHeldBalls()
+
+        XCTAssertTrue(scene.endlessIIHeldBalls.isEmpty)
+        XCTAssertTrue(scene.endlessIIHeldOffsets.isEmpty,
+                      "index for index, or the next ball launches from the wrong spot")
+    }
+}
+
 final class AimedStickyThroughThePortalPaddleTests: XCTestCase {
 
     private func mayhem() -> GameScene {

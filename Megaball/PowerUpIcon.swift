@@ -573,7 +573,7 @@ enum PowerUpIcon {
     /// three are drawn in a line, each further along than the last.
     /// A burst of tiny balls rising from a paddle - the release, drawn at the moment it
     /// happens, because "twelve tiny balls" is the whole of what the power-up is.
-    static let cluster: UIImage = badge { context, rect in
+    static let cluster: UIImage = artwork("PowerUpCluster") { context, rect in
         let bar = rect.height*0.12
         context.fill(CGRect(x: rect.midX - rect.width*0.28,
                             y: rect.maxY - rect.height*0.2,

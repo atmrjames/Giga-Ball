@@ -1,23 +1,8 @@
 {
   "images" : [
-    {
-      "filename" : "PowerUpDoublePaddle.png",
-      "idiom" : "universal",
-      "scale" : "1x"
-    },
-    {
-      "filename" : "PowerUpDoublePaddle@2x.png",
-      "idiom" : "universal",
-      "scale" : "2x"
-    },
-    {
-      "filename" : "PowerUpDoublePaddle@3x.png",
-      "idiom" : "universal",
-      "scale" : "3x"
-    }
+    { "filename" : "PowerUpDoublePaddle.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "PowerUpDoublePaddle@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "PowerUpDoublePaddle@3x.png", "idiom" : "universal", "scale" : "3x" }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  }
+  "info" : { "author" : "xcode", "version" : 1 }
 }
