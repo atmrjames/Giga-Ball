@@ -49,6 +49,25 @@ final class EndlessIIBrickTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden)
     }
 
+    /// James, round 184: after force-quitting and resuming a Mayhem run with Fog of War
+    /// active, "hidden bricks are flashing on every paddle bounce even though there are other
+    /// visible bricks."
+    ///
+    /// The zone rule exists to explain a brick the player cannot know about. On a fogged day
+    /// every brick starts hidden by design, so the zone is nearly always all-hidden - and
+    /// explaining the fog to the player who chose the fog is the twist being handed back.
+    func testAFoggedDayAsksForNoFlashAtAll() {
+        let scene = zoneScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [.fogOfWar])
+        defer { DailyChallengeSession.shared.active = nil }
+
+        zoneBrick(on: scene, y: 0, hidden: true)
+        XCTAssertTrue(scene.dailyFogIsOn, "the day this is about")
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
+                       "the fog is the reason, and the player was told it")
+    }
+
     func testAVisibleBrickInTheZoneExplainsItself() {
         let scene = zoneScene()
         zoneBrick(on: scene, y: 0, hidden: true)

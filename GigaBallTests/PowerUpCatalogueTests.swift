@@ -194,6 +194,38 @@ final class PowerUpCatalogueTests: XCTestCase {
 /// alphabetical."
 final class InGameRecentsTests: XCTestCase {
 
+    /// James, round 184: "the in game power ups info screen isn't showing the power ups in
+    /// the order that they appeared. Most recent on top, oldest at the bottom."
+    ///
+    /// The list was already newest-first by *appearance*; what it did not do was move a
+    /// power-up when it was caught. A drop that fell early and was collected late sat far
+    /// down the list, under everything that had merely fallen since - even though catching
+    /// it was the freshest thing on the screen.
+    func testCatchingAPowerUpMovesItToTheTop() {
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(4)
+        recents.sawPowerUp(7)
+        recents.sawPowerUp(9)
+        XCTAssertEqual(recents.powerUpIndices, [9, 7, 4])
+
+        recents.collectedPowerUp(4)
+        XCTAssertEqual(recents.powerUpIndices, [4, 9, 7],
+                       "caught just now, so it is the most recent thing that happened")
+        recents.reset()
+    }
+
+    func testCatchingDoesNotDuplicateTheSighting() {
+        // Round 8's rule is untouched: every appearance is its own entry, and a catch is not
+        // an appearance
+        let recents = InGameRecents.shared
+        recents.reset()
+        recents.sawPowerUp(4)
+        recents.collectedPowerUp(4)
+        XCTAssertEqual(recents.powerUpIndices, [4])
+        recents.reset()
+    }
+
     func testEveryAppearanceIsItsOwnEntry() {
         // Round 8: "if a power-up showed up multiple times show it on the list multiple
         // times. Each time is a new entry."

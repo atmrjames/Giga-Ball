@@ -15,6 +15,26 @@ extension GameScene {
     ///
     /// Its own method so the mode boundary can be tested without building a row - the row
     /// builder needs a whole scene, and this is the part of it that guards a constraint.
+    /// Counts the field once, however many bricks finished building in together.
+    ///
+    /// Every brick in a row lands within a frame of every other, and `countBricks` walks the
+    /// whole field - so one count per completion was a dozen sweeps of a field that can hold
+    /// hundreds of bricks, on every row (James, round 184: "the whole game became low frame
+    /// rate and stuttery"). The flag collapses a row's worth of completions into one count on
+    /// the next frame, which is the only one whose answer differs anyway: the earlier ones all
+    /// see the row's remaining animations and decline.
+    func endlessIIRecountAfterBuildIn() {
+        guard endlessIIRecountQueued == false else { return }
+        endlessIIRecountQueued = true
+        run(.sequence([.wait(forDuration: 0), .run { [weak self] in
+            guard let self else { return }
+            self.endlessIIRecountQueued = false
+            self.countBricks()
+        }]))
+        // On the scene, not on a brick: `countBricks` gates row generation on bricks having
+        // no actions (§8.6), and a wait attached to a brick would hold the field's descent
+    }
+
     func applyEndlessRowPowerUpWeights() {
         powerUpProbArray[7] = 7 // Gravity
         powerUpProbArray[18] = 5 // Reset Multi-Hit Bricks
@@ -756,7 +776,7 @@ extension GameScene {
                 }
                 // Remove null bricks after animation
 
-                self.countBricks()
+                self.endlessIIRecountAfterBuildIn()
                 // **The chain re-asks its own question when the refusal ends** (James, round
                 // 180: "sometimes the bricks wouldn't descend the whole way to the bottom",
                 // both endless modes). A step recounts 0.075s after it began, and these
@@ -765,9 +785,13 @@ extension GameScene {
                 // refuses the step, and nothing asked again until the next brick was
                 // destroyed. The field parked above the zone until something happened to
                 // count. Counting here makes the cadence self-healing: whenever the last
-                // animation genuinely ends, the zone question is asked once more, and an
-                // empty zone steps again. The earlier completions in the same row see the
-                // next step's own animations and decline, which is the gate doing its job
+                // animation genuinely ends, the zone question is asked once more.
+                //
+                // **Once per row, not once per brick** (round 184): every brick in the row
+                // finishes within a frame of every other, and `countBricks` walks the whole
+                // field - so counting in each completion was a dozen full sweeps of a field
+                // that can hold hundreds of bricks, every row, which is a stutter with a
+                // clear cause. The debounce below collapses them into the one that matters
             })
             // Run animation for each brick
         }

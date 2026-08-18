@@ -879,6 +879,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIRetreatFloorLift: CGFloat = 0
 	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
+	var paddleIsAgainstTheWall = false
+	// So the wall's haptic fires on arrival rather than every frame a thumb leans on it
+	var endlessIIRecountQueued = false
+	// One recount per row of build-ins rather than one per brick - see
+	// `endlessIIRecountAfterBuildIn`
 	var invisibleBrickFlashRevealed: [SKSpriteNode] = []
 	// What the invisible-brick flash turned visible, so the off-phase restores exactly that -
 	// see `invisibleBrickFlashOff`
@@ -1903,10 +1908,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleX0 = paddle.position.x
 			paddleX1 = paddleX0 + (paddleMovedDistance*paddleMovementFactor)
 			
+			let wanted = paddleX1
 			paddleX1 = endlessIIWrapPaddleX(paddleX1)
 			// Clamped at the walls, unless Wrap-Around has made the walls not walls - then a
 			// centre pushed past an edge comes back in from the other one
-			
+
+			notePaddleTouchedTheWall(wanted: wanted, allowed: paddleX1)
+			// A light tap when the paddle reaches the edge (James, round 184). Measured from
+			// the clamp rather than from the position, because a paddle already at the wall
+			// and pushed further does not move at all - and "it did not move" is exactly the
+			// moment the wall is worth feeling
+
 			paddle.position = CGPoint(x: paddleX1, y: paddle.position.y)
 			// Sets the paddle to match the new calculated position
 				
@@ -3839,6 +3851,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// visible in it explains itself.
 	var endlessIIBottomZoneIsAllHidden: Bool {
 		guard gameMode == .endlessII else { return false }
+		guard dailyFogIsOn == false else { return false }
+		// **Not on a Fog of War day** (James, round 184: after resuming a fogged Mayhem run,
+		// "hidden bricks are flashing on every paddle bounce even though there are other
+		// visible bricks"). The whole rule exists to explain a brick the player has no way of
+		// knowing about - one that stalls the descent for no visible reason (round 173). On a
+		// fogged day *every* brick starts hidden, which is the twist doing exactly what it
+		// says on the briefing card, so the zone is nearly always all-hidden and the flash
+		// fires on every landing. Explaining the fog to a player who chose the fog is not an
+		// explanation, it is the twist being handed back
 		var hidden = 0
 		var visible = 0
 		enumerateChildNodes(withName: BrickCategoryName) { node, _ in

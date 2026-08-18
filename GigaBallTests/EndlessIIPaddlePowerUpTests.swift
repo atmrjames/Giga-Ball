@@ -1582,3 +1582,95 @@ final class EndlessIIBallSpinTests: XCTestCase {
         XCTAssertEqual(setup.powerUpTimerArray[62], "5 hits")
     }
 }
+
+/// Round 184's three paddle answers: the steering lead, the halo standing still, and the
+/// safety paddle wearing the player's own paddle.
+final class EndlessIIRound184Tests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 400
+        scene.paddleWidth = 100
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    // MARK: - Ball Steering reaching the walls
+
+    /// James, round 184: "it's currently impossible/very difficult to get the ball to hit
+    /// bricks in the columns closest to the walls as the ball wants to be always centred over
+    /// the paddle."
+    ///
+    /// The cause is arithmetic rather than feel: the ball was drawn to the paddle's *centre*,
+    /// and a paddle's centre cannot come closer to a wall than half its own width - so the
+    /// outer half-paddle was unreachable however well the player played.
+    func testAStillPaddleSteersExactlyAsItDid() {
+        XCTAssertEqual(EndlessIIPaddleEffects.steeringLead(paddleSpeed: 0, fieldWidth: 400), 0,
+                       "a parked paddle leads by nothing")
+    }
+
+    func testASweptPaddleCarriesTheBallAheadOfIt() {
+        let lead = EndlessIIPaddleEffects.steeringLead(paddleSpeed: 600, fieldWidth: 400)
+        XCTAssertGreaterThan(lead, 0, "the ball runs ahead of a paddle sweeping right")
+        XCTAssertLessThan(EndlessIIPaddleEffects.steeringLead(paddleSpeed: -600,
+                                                              fieldWidth: 400), 0)
+    }
+
+    func testTheLeadCannotThrowTheBallAcrossTheField() {
+        let absurd = EndlessIIPaddleEffects.steeringLead(paddleSpeed: 20_000, fieldWidth: 400)
+        XCTAssertLessThanOrEqual(absurd, 400*EndlessIIPaddleEffects.steeringLeadCap + 0.001)
+    }
+
+    func testASweepReachesNearerTheWallThanAParkedPaddleCan() {
+        // The whole point, stated as the thing the player was asking for
+        let paddleAtItsLimit: CGFloat = 150      // a 100-wide paddle against a 400-wide field
+        let parked = EndlessIIPaddleEffects.steeredTowards(
+            paddleX: paddleAtItsLimit, from: 0, leftWall: -200, rightWall: 200, radius: 5)
+        let swept = EndlessIIPaddleEffects.steeredTowards(
+            paddleX: paddleAtItsLimit, from: 0, leftWall: -200, rightWall: 200, radius: 5,
+            paddleSpeed: 900, fieldWidth: 400)
+
+        XCTAssertGreaterThan(swept, parked,
+                             "sweeping toward the wall reaches columns a parked paddle cannot")
+    }
+
+    func testTheBallIsStillNeverPushedThroughAWall() {
+        let steered = EndlessIIPaddleEffects.steeredTowards(
+            paddleX: 190, from: 190, leftWall: -200, rightWall: 200, radius: 5,
+            paddleSpeed: 5000, fieldWidth: 400)
+        XCTAssertLessThanOrEqual(steered, 195.001)
+    }
+
+    // MARK: - The halo standing still
+
+    /// James, round 184: "the paddle halo power up is much too powerful. Just moving the
+    /// paddle side to side allows the player to gain a lot of height quickly."
+    func testTheHaloStandsInTheMiddleWhereverThePaddleIs() {
+        let scene = mayhem()
+        scene.paddle.position.x = 150
+        XCTAssertEqual(scene.endlessIIPaddleHaloCentre.x, 0,
+                       "swept side to side, the glow no longer sweeps with it")
+        XCTAssertEqual(scene.endlessIIPaddleHaloCentre.y, scene.paddle.position.y,
+                       "still at the paddle's height - it is the paddle's field, not the sky")
+    }
+
+    // MARK: - The safety paddle's look
+
+    /// James, round 184: "safety paddle should be the same width as the standard paddle and
+    /// look the same but be giga-ball yellow/green."
+    func testTheSafetyPaddleIsThePaddlesTwin() {
+        let scene = mayhem()
+        scene.endlessIICollectSafetyPaddle()
+
+        guard let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return XCTFail("a safety paddle stands") }
+        XCTAssertEqual(bar.size.width, scene.paddle.size.width, accuracy: 0.001)
+        XCTAssertEqual(bar.size.height, scene.paddle.size.height, accuracy: 0.001)
+        XCTAssertEqual(bar.color, GameScene.endlessIIHaloColour, "the Giga-Ball lime")
+        XCTAssertEqual(bar.colorBlendFactor, 1, accuracy: 0.001)
+    }
+}

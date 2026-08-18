@@ -102,8 +102,21 @@ final class InGameRecents {
     func collectedPowerUp(_ index: Int) {
         if let position = sightings.firstIndex(where: { $0.index == index
                 && $0.fate == .seen }) {
-            sightings[position].fate = .collected
-            // The newest uncaught appearance of it is the one that was caught
+            var caught = sightings.remove(at: position)
+            caught.fate = .collected
+            sightings.insert(caught, at: 0)
+            // The newest uncaught appearance of it is the one that was caught - and it goes
+            // back to the *front*, because the list is ordered by what happened most recently
+            // and catching it is the most recent thing that happened to it (James, round 184:
+            // "the in game power ups info screen isn't showing the power ups in the order
+            // that they appeared. Most recent on top, oldest at the bottom").
+            //
+            // It used to be marked where it stood, which is why the order looked wrong: a
+            // drop that appeared early and was caught late sat far down the list under
+            // everything that had merely *fallen* since, even though catching it was the
+            // freshest event on the screen. Round 8's rule is untouched - every appearance is
+            // still its own entry, duplicates and all; only which end of the list a catch
+            // moves it to has changed
         } else {
             sightings.insert(Sighting(index: index, fate: .collected), at: 0)
         }

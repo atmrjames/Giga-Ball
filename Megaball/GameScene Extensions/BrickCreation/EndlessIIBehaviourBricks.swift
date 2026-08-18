@@ -534,6 +534,19 @@ extension GameScene {
         addGlyph(pin, to: brick, filled: false)
     }
 
+    /// The row centre a brick belongs on, for a brick that has been stopped between two.
+    ///
+    /// The field's own geometry answers it: `cell(at:)` rounds a point to the nearest cell and
+    /// `centre(of:)` gives that cell's middle, so this is the same grid every other brick is
+    /// placed on rather than a second opinion about where the rows are. A Big brick keeps its
+    /// node on a row centre and expresses its size as an anchor point (§8.6), so measuring the
+    /// node's own position is right for every size.
+    func endlessIISnappedRowY(for brick: SKSpriteNode) -> CGFloat {
+        guard brickHeight > 0, brickWidth > 0 else { return brick.position.y }
+        let geometry = endlessIIGeometry
+        return geometry.centre(of: geometry.cell(at: brick.position)).y
+    }
+
     /// Anchors a Fixed brick, or reports that it is already anchored and should take the hit.
     ///
     /// Returns true when the hit was spent anchoring it, so the caller knows to stop there.
@@ -543,7 +556,15 @@ extension GameScene {
 
         brick.endlessIIIsAnchored = true
         brick.removeAllActions()
-        // Any descent already under way has to stop, or it finishes moving after anchoring
+        brick.position.y = endlessIISnappedRowY(for: brick)
+        // Any descent already under way has to stop, or it finishes moving after anchoring -
+        // **and stopping it leaves the brick wherever the animation had got to**, which is
+        // halfway between two rows (James, round 184, with a screenshot: "somehow a normal
+        // size fixed brick ended up becoming fixed halfway between 2 rows"). A brick's
+        // `position.y` *is* its row (§8.6): the descent reads it, the bottom-row check reads
+        // it, and a brick off its row centre is cleared at the wrong moment or blocks
+        // generation for ever. So the anchor lands it back on the nearest row centre - the
+        // one it was nearest when the ball caught it mid-descent
 
         if brick.texture == brickNormalTexture {
             brick.texture = brickMultiHit1Texture

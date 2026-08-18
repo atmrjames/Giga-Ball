@@ -347,6 +347,57 @@ final class EndlessIIBuildInTimingTests: XCTestCase {
 /// brick requiring the most hits to destroy it."
 final class EndlessIIFixedHardensTests: XCTestCase {
 
+    /// James, round 184, with a screenshot: "somehow a normal size fixed brick ended up
+    /// becoming fixed halfway between 2 rows."
+    ///
+    /// Anchoring stops any descent already under way - it has to, or the brick finishes
+    /// moving after it has been pinned - and stopping an action leaves the node wherever the
+    /// animation had got to. A brick's `position.y` *is* its row (§8.6), so a brick pinned
+    /// between two is read as being on neither: the descent and the bottom-row check both
+    /// measure it, and an anchored one blocks the row it is not really on for ever.
+    func testAnchoringMidDescentLandsTheBrickBackOnARow() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.numberOfBrickColumns = 10
+        scene.yBrickOffsetEndless = 300
+
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.name = BrickCategoryName
+        brick.endlessIIRole = .fixed
+        brick.position = CGPoint(x: 0, y: 300 - 20*3 - 7)
+        // Seven points short of its row: a descent caught in the act
+        scene.addChild(brick)
+
+        XCTAssertTrue(scene.endlessIIAnchorIfNeeded(brick))
+        XCTAssertEqual(brick.position.y, 300 - 20*3, accuracy: 0.001,
+                       "back on the row it was nearest, not left between two")
+    }
+
+    func testABrickAnchoredOnItsRowIsNotMoved() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.numberOfBrickColumns = 10
+        scene.yBrickOffsetEndless = 300
+
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        brick.name = BrickCategoryName
+        brick.endlessIIRole = .fixed
+        brick.position = CGPoint(x: 0, y: 240)
+        scene.addChild(brick)
+
+        XCTAssertTrue(scene.endlessIIAnchorIfNeeded(brick))
+        XCTAssertEqual(brick.position.y, 240, accuracy: 0.001,
+                       "a brick already on a row centre stays exactly where it is")
+    }
+
     func testAnchoringTurnsAPlainBrickIntoAFreshMultiHit() {
         let scene = GameScene()
         scene.gameMode = .endlessII

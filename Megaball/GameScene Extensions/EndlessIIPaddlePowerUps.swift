@@ -546,7 +546,11 @@ extension GameScene {
             subject.position.x = EndlessIIPaddleEffects.steeredTowards(
                 paddleX: paddle.position.x, from: subject.position.x,
                 leftWall: -gameWidth/2, rightWall: gameWidth/2,
-                radius: subject.size.width/2)
+                radius: subject.size.width/2,
+                paddleSpeed: endlessIIPaddleSpeed, fieldWidth: gameWidth)
+            // The paddle's speed leads the target, which is what lets a swept paddle carry the
+            // ball out to the columns beside the walls - see `steeringLead` (round 184). The
+            // speed is the same per-frame sample Ball Spin takes, for the same reason
 
             if let body = subject.physicsBody {
                 body.velocity = EndlessIIPaddleEffects.steeredVelocity(body.velocity)
@@ -556,6 +560,24 @@ extension GameScene {
             // walls still bounce it - the bounce simply does not last, because the pull
             // gathers it back in over the next few frames (play-test round 15)
         }
+    }
+
+    /// Where the halo sits: the middle of the field, at the paddle's height.
+    ///
+    /// **Fixed rather than carried** (James, round 184: "the paddle halo power up is much too
+    /// powerful. Just moving the paddle side to side allows the player to gain a lot of height
+    /// quickly. Perhaps the halo should be fixed to the centre of the game view, so it just
+    /// clears bricks near the centre from the first few rows"). Riding the paddle turned a
+    /// power-up into a technique: sweeping side to side swept the glow across the whole width
+    /// of the field, which cleared the bottom rows as fast as the player could waggle a thumb -
+    /// and in a mode where the bottom rows are what the height is made of, that is the run
+    /// being played for you.
+    ///
+    /// Standing still it is still worth having and still asks something of the player: the
+    /// bricks it reaches are the ones that come to *it*, so the value is in what the field
+    /// happens to bring over the middle rather than in how fast a thumb moves.
+    var endlessIIPaddleHaloCentre: CGPoint {
+        CGPoint(x: 0, y: paddle.position.y)
     }
 
     private func tickEndlessIIPaddleHalo() {
@@ -589,7 +611,7 @@ extension GameScene {
             // Rebuilt only when the reach changes - a fresh CGPath per frame for a shape
             // that is almost always the same size is the kind of habit update loops die of
         }
-        halo.position = paddle.position
+        halo.position = endlessIIPaddleHaloCentre
 
         var destroyed = false
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
@@ -599,7 +621,7 @@ extension GameScene {
             // A Portal is not destructible by anything, and a power-up brick is spent by
             // being *hit* - a halo that silently ate one would eat the power-up with it
             guard EndlessIIPaddleEffects.haloTouches(brick: brick.frame,
-                                                     paddleAt: self.paddle.position,
+                                                     paddleAt: self.endlessIIPaddleHaloCentre,
                                                      reach: reach) else { return }
             self.endlessIIBrickDestroyed(brick)
             self.endlessIIDestroy(brick)

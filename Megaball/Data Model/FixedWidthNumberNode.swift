@@ -14,7 +14,23 @@ import SpriteKit
 
 final class FixedWidthNumberNode: SKNode {
 
-    private var characters: [SKLabelNode] = []
+    /// The character nodes, read off the children rather than kept beside them.
+    ///
+    /// **This used to be a stored array, and that is the one way two numbers can end up drawn
+    /// over each other** (play-test round 122, reproduced at last in round 184: "getting
+    /// overlapped score in Classic Mode... I had paused and left the app a number of times").
+    /// A stored array is a second copy of "which children exist", and the moment the two
+    /// disagree - a node decoded from an archive restores its children but not a plain Swift
+    /// array, which is exactly what a background-and-restore can do - `show` below finds no
+    /// characters, builds a fresh set, and adds them *on top of* the ones already there. Both
+    /// sets then draw the same digits in the same place, a pixel of anti-aliasing apart.
+    ///
+    /// Derived, they cannot drift: whatever is actually hanging off this node is what gets
+    /// reused. The cost is a `compactMap` per write on a handful of nodes, which is nothing
+    /// beside the bug it retires.
+    private var characters: [SKLabelNode] {
+        children.compactMap { $0 as? SKLabelNode }
+    }
 
     /// Draws `text` in the dress of the label this node belongs to.
     ///
@@ -41,23 +57,24 @@ final class FixedWidthNumberNode: SKNode {
         // number - a full stop centred on its own box is a middle dot (play-test round 19)
         position.y = baselineOffset(for: verticalAlignment, font: font)
 
-        while characters.count < text.count {
+        while children.count < text.count {
             let label = SKLabelNode(fontNamed: fontNamed)
             label.horizontalAlignmentMode = .center
             label.verticalAlignmentMode = .baseline
             addChild(label)
-            characters.append(label)
         }
 
+        let placedCharacters = characters
         for (index, character) in text.enumerated() {
-            let label = characters[index]
+            guard placedCharacters.indices.contains(index) else { break }
+            let label = placedCharacters[index]
             label.isHidden = false
             label.text = String(character)
             label.fontSize = fontSize
             label.fontColor = colour
             label.position.x = start + placed.centres[index]
         }
-        for spare in characters.dropFirst(text.count) { spare.isHidden = true }
+        for spare in placedCharacters.dropFirst(text.count) { spare.isHidden = true }
     }
 
     /// How far the baseline sits from where the replaced label anchored itself.

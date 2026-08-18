@@ -34,12 +34,15 @@ extension GameScene {
     /// than a tool.
     static let endlessIISafetyPaddleDuration: TimeInterval = 12
 
-    /// How much of the field it spans.
+    /// How much of the field it used to span, before round 184.
     ///
-    /// A little wider than the paddle and nothing like the whole width: it has to be
-    /// possible to get past it, or the bricks are unreachable for twelve seconds and the run
-    /// simply stops.
-    static let endlessIISafetyPaddleWidth: CGFloat = 0.42
+    /// Kept as the note it earned rather than as a number in use: the width was a share of
+    /// the *field* (0.42), chosen so it was "a little wider than the paddle and nothing like
+    /// the whole width" - it has to be possible to get past it, or the bricks are unreachable
+    /// for twelve seconds and the run simply stops. James's round-184 call takes it to the
+    /// paddle's own width, which honours that reasoning more exactly than a fixed share
+    /// could: the paddle's width is what Expand and Shrink write, so the surface tracks it.
+    static let endlessIISafetyPaddleLegacyWidth: CGFloat = 0.42
 
     static let endlessIISafetyPaddleName = "endlessIISafetyPaddle"
 
@@ -55,6 +58,16 @@ extension GameScene {
         showEndlessIISafetyPaddle()
     }
 
+    /// The picture the safety paddle wears: the player's own paddle, wherever it is kept.
+    ///
+    /// The Retro theme draws its paddle on `paddleRetroTexture` rather than on the paddle
+    /// sprite, so asking the sprite would dress this as a plain bar beside a paddle that is
+    /// anything but - the lesson Double Paddle learned in round 166.
+    var endlessIISafetyPaddleDress: SKTexture? {
+        if paddleTexture == retroPaddle, let art = paddleRetroTexture.texture { return art }
+        return paddle.texture ?? paddleTexture
+    }
+
     /// Puts the surface on the field, or leaves the one already there alone.
     ///
     /// A second collection extends the clock rather than building a second paddle - which is
@@ -64,13 +77,24 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
         guard childNode(withName: GameScene.endlessIISafetyPaddleName) == nil else { return }
 
-        let size = CGSize(width: max(brickWidth*2,
-                                     gameWidth*GameScene.endlessIISafetyPaddleWidth),
-                          height: max(4, brickHeight*0.35))
+        let size = CGSize(width: max(20, paddle.size.width),
+                          height: max(4, paddle.size.height))
+        // **The paddle's own size** (James, round 184: "safety paddle should be the same
+        // width as the standard paddle and look the same but be giga-ball yellow/green"). It
+        // was a fixed share of the field's width, which made it a different object that
+        // happened to bounce - reading it as the paddle's twin is the whole point, and it is
+        // also honest about how much of the floor it really covers.
+        //
         // Never zero on either axis: SpriteKit refuses a body built from an empty rectangle
         // and hands back a node with no body at all, which is a safety paddle the ball falls
         // straight through - the kind of failure that looks like the power-up doing nothing
-        let bar = SKSpriteNode(color: GameScene.endlessIIHaloColour, size: size)
+        let bar = SKSpriteNode(texture: endlessIISafetyPaddleDress, size: size)
+        bar.color = GameScene.endlessIIHaloColour
+        bar.colorBlendFactor = 1
+        bar.centerRect = paddleCapRect(for: endlessIISafetyPaddleDress)
+        // The paddle's picture, tinted the Giga-Ball lime, and nine-sliced so its rounded
+        // ends survive at whatever width the paddle is - the same trick Split Paddle's
+        // segments use (round 182)
         bar.name = GameScene.endlessIISafetyPaddleName
         bar.position = CGPoint(x: 0, y: endlessIISafetyPaddleY)
         bar.zPosition = 2

@@ -10,6 +10,7 @@
 
 import XCTest
 import UIKit
+import SpriteKit
 @testable import Giga_Ball
 
 final class FixedWidthDigitsTests: XCTestCase {
@@ -85,5 +86,78 @@ final class FixedWidthDigitsTests: XCTestCase {
         let placed = FixedWidthDigits.layout("", font: hudFont)
         XCTAssertTrue(placed.centres.isEmpty)
         XCTAssertEqual(placed.width, 0)
+    }
+}
+
+/// The strip of character nodes a HUD number is drawn with.
+///
+/// Round 122 reported a Classic pack showing two scores drawn over each other, and three
+/// sessions failed to reproduce it. Round 184 gave it a repro at last - "I had paused and left
+/// the app a number of times, but not quit" - and with it the mechanism: the strip kept a
+/// stored array of its character nodes *beside* the children those nodes actually were, and
+/// anything that restored the children without the array left `show` unable to see them.
+final class FixedWidthNumberNodeTests: XCTestCase {
+
+    private func strip() -> FixedWidthNumberNode {
+        let node = FixedWidthNumberNode()
+        node.show("1234", fontNamed: "Helvetica", fontSize: 20, colour: .white,
+                  alignment: .center, verticalAlignment: .baseline)
+        return node
+    }
+
+    func testItDrawsOneNodePerCharacter() {
+        XCTAssertEqual(strip().children.count, 4)
+    }
+
+    func testWritingAgainReusesTheSameNodes() {
+        let node = strip()
+        node.show("5678", fontNamed: "Helvetica", fontSize: 20, colour: .white,
+                  alignment: .center, verticalAlignment: .baseline)
+        XCTAssertEqual(node.children.count, 4, "reused, not stacked")
+    }
+
+    func testAShorterNumberHidesTheSparesRatherThanStackingThem() {
+        let node = strip()
+        node.show("7", fontNamed: "Helvetica", fontSize: 20, colour: .white,
+                  alignment: .center, verticalAlignment: .baseline)
+
+        XCTAssertEqual(node.children.count, 4)
+        let showing = node.children.compactMap { $0 as? SKLabelNode }.filter { !$0.isHidden }
+        XCTAssertEqual(showing.count, 1, "one digit visible, three spares waiting")
+    }
+
+    /// The bug itself: a strip whose children exist but whose bookkeeping does not.
+    ///
+    /// Adding the children by hand is exactly the state a decode leaves behind - the nodes
+    /// are there, the plain Swift array that used to track them is not. Before round 184 the
+    /// next write built a second set on top of these and both drew the same digits.
+    func testAStripThatFindsItsChildrenAlreadyThereDoesNotDoubleThem() {
+        let node = FixedWidthNumberNode()
+        for _ in 0..<4 {
+            let label = SKLabelNode(fontNamed: "Helvetica")
+            label.horizontalAlignmentMode = .center
+            label.verticalAlignmentMode = .baseline
+            node.addChild(label)
+        }
+
+        node.show("1234", fontNamed: "Helvetica", fontSize: 20, colour: .white,
+                  alignment: .center, verticalAlignment: .baseline)
+
+        XCTAssertEqual(node.children.count, 4,
+                       "four characters, four nodes - not eight in the same place")
+    }
+
+    func testTheRestoredNodesAreTheOnesThatGetTheDigits() {
+        let node = FixedWidthNumberNode()
+        let label = SKLabelNode(fontNamed: "Helvetica")
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .baseline
+        node.addChild(label)
+
+        node.show("9", fontNamed: "Helvetica", fontSize: 20, colour: .white,
+                  alignment: .center, verticalAlignment: .baseline)
+
+        XCTAssertEqual(label.text, "9", "written into what was already there")
+        XCTAssertFalse(label.isHidden)
     }
 }

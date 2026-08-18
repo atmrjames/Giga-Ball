@@ -117,10 +117,43 @@ enum EndlessIIPaddleEffects {
     /// weight rather than making the ball a cursor.
     static func steeredTowards(paddleX: CGFloat, from x: CGFloat,
                                leftWall: CGFloat, rightWall: CGFloat,
-                               radius: CGFloat) -> CGFloat {
-        let wanted = x + (paddleX - x)*steeringFollow
+                               radius: CGFloat,
+                               paddleSpeed: CGFloat = 0,
+                               fieldWidth: CGFloat = 0) -> CGFloat {
+        let wanted = x + (paddleX + steeringLead(paddleSpeed: paddleSpeed,
+                                                 fieldWidth: fieldWidth) - x)*steeringFollow
         return max(leftWall + radius, min(rightWall - radius, wanted))
     }
+
+    /// How far ahead of the paddle a steered ball is drawn while the paddle is moving.
+    ///
+    /// **This is what lets a steered ball reach the outermost columns** (James, round 184:
+    /// "it's currently impossible/very difficult to get the ball to hit bricks in the columns
+    /// closest to the walls as the ball wants to be always centred over the paddle. I think we
+    /// should add some more inertia to the ball as it moves with the paddle").
+    ///
+    /// The diagnosis is exactly his: the ball was drawn to the paddle's *centre*, and a
+    /// paddle's centre can never come closer to a wall than half its own width - so the outer
+    /// half-paddle of every field was unreachable by construction, however well the player
+    /// played. Leading the target by the paddle's own motion gives the ball the momentum he
+    /// describes: sweep toward a wall and the ball runs ahead of the paddle and can arrive at
+    /// the column beside it; hold still and the lead is nothing, so a parked paddle steers
+    /// exactly as it did.
+    ///
+    /// Capped as a share of the field so a fast flick cannot throw the ball clean across it -
+    /// the clamp in `steeredTowards` would catch that anyway, but a target that far out would
+    /// pin the ball to the wall for as long as the flick lasted.
+    static func steeringLead(paddleSpeed: CGFloat, fieldWidth: CGFloat) -> CGFloat {
+        guard fieldWidth > 0 else { return 0 }
+        let cap = fieldWidth*steeringLeadCap
+        return max(-cap, min(cap, paddleSpeed*steeringLeadSeconds))
+    }
+
+    /// How much of the paddle's travel per second the lead is worth.
+    static let steeringLeadSeconds: CGFloat = 0.14
+
+    /// The furthest the lead may reach, as a share of the field's width.
+    static let steeringLeadCap: CGFloat = 0.3
 
     /// How much of the gap to the paddle a steered ball closes each frame.
     ///

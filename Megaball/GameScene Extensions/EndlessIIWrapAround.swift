@@ -248,3 +248,37 @@ extension GameScene {
         }
     }
 }
+
+extension GameScene {
+
+    /// A light tap when the paddle comes up against a side wall.
+    ///
+    /// James, round 184: "can we add a light haptics feature for when the paddle hits the
+    /// side wall of the game view. Of course for when the user has haptics enabled, and when
+    /// the wrap around power up isn't enabled."
+    ///
+    /// - Parameters:
+    ///   - wanted: where the touch asked the paddle to go.
+    ///   - allowed: where the clamp let it go.
+    ///
+    /// Told from the clamp rather than from the paddle's position: a paddle already against
+    /// the wall and pushed harder does not move at all, so watching the position would feel
+    /// the wall once and then go quiet exactly while the player is leaning on it. It fires on
+    /// the *arrival* either way - once, until the paddle leaves the wall again - because a tap
+    /// every frame while a thumb rests against the edge is a buzz, not a bump.
+    ///
+    /// Wrap-Around is not a wall, so it is silent: while the clock runs the paddle leaves one
+    /// side and arrives at the other, and a knock would be describing something that did not
+    /// happen.
+    func notePaddleTouchedTheWall(wanted: CGFloat, allowed: CGFloat) {
+        guard hapticsSetting, endlessIIWrapIsRunning == false else {
+            paddleIsAgainstTheWall = false
+            return
+        }
+
+        let against = abs(wanted - allowed) > 0.5
+        defer { paddleIsAgainstTheWall = against }
+        guard against, paddleIsAgainstTheWall == false else { return }
+        lightHaptic.impactOccurred()
+    }
+}
