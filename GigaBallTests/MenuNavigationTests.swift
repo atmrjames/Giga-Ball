@@ -518,4 +518,77 @@ final class MenuResizeTests: XCTestCase {
 
         XCTAssertEqual(child.left, half, accuracy: 0.001, "topped up to the same total")
     }
+
+    // MARK: - The reference grids
+
+    /// The width a grid actually has on a window this size, insets already taken off.
+    private func gridWidth(_ size: CGSize) -> CGFloat {
+        let menu = UIViewController.menuContentInsets(available: size)
+        return size.width - menu.left - menu.right - 2*PackSelectViewController.gridInset
+    }
+
+    /// The card `columns` across a grid this wide leaves.
+    private func card(_ available: CGFloat, base: CGFloat) -> CGFloat {
+        let columns = PackSelectViewController.columns(fitting: available, base: base)
+        return (available - PackSelectViewController.gridGap*(columns - 1))/columns
+    }
+
+    /// **No phone may change.** The grids were drawn three across a phone and every icon,
+    /// name and status note is sized for the card that produces; the count adapting is an
+    /// iPad answer and must be invisible everywhere else.
+    func testEveryPhoneKeepsTheColumnCountItsGridWasDrawnFor() {
+        for width in [CGFloat(320), 375, 390, 393, 402, 430, 440] {
+            let available = width - 2*PackSelectViewController.gridInset
+            XCTAssertEqual(PackSelectViewController.columns(fitting: available, base: 3), 3,
+                           "\(width)pt wide is a phone, and a phone is three across")
+            XCTAssertEqual(PackSelectViewController.columns(fitting: available, base: 2), 2,
+                           "and two across where the names are sentences")
+        }
+    }
+
+    /// An iPad, with the aspect cap already applied - the only screen this rule is for.
+    func testAnIPadGetsMoreCardsRatherThanBiggerOnes() {
+        let phone = card(CGFloat(393) - 2*PackSelectViewController.gridInset, base: 3)
+        let pad = card(gridWidth(CGSize(width: 1032, height: 1376)), base: 3)
+
+        XCTAssertGreaterThan(
+            PackSelectViewController.columns(
+                fitting: gridWidth(CGSize(width: 1032, height: 1376)), base: 3), 3)
+        XCTAssertEqual(pad, phone, accuracy: 30,
+                       "a card on a 13-inch iPad is the size of a card on a phone, not "
+                       + "two and a half times it - the count is what grew")
+    }
+
+    /// Across every window iPadOS 26 can hand this app, from the 420pt floor upward.
+    ///
+    /// Each grid is judged against **its own** phone card, not against a shared number: two
+    /// across a phone is already half again the size of three across, and holding a
+    /// sentence-named achievement to a power-up's square would be measuring the wrong thing.
+    ///
+    /// The bound is what rounding to the nearest count allows. A grid takes `n` columns for
+    /// any width up to half a card past `n`, so the widest card the rule can leave is about
+    /// `(1 + 0.5/n)` of the reference - a quarter over at two across, a fifth at three. 1.35
+    /// is that with room, and it is a real ceiling rather than a restatement of the code:
+    /// dropping the `.rounded()` for a floor would breach it at once.
+    func testNoWindowEverProducesACardMuchBiggerThanAPhones() {
+        for base in [CGFloat(2), 3] {
+            let phone = card(CGFloat(393) - 2*PackSelectViewController.gridInset, base: base)
+            for width in stride(from: CGFloat(420), through: 1400, by: 20) {
+                for height in [CGFloat(640), 1024, 1376] {
+                    let available = gridWidth(CGSize(width: width, height: height))
+                    guard available > 0 else { continue }
+                    XCTAssertLessThan(card(available, base: base), phone*1.35,
+                                      "\(width)x\(height), base \(base): a card should "
+                                      + "stay near the size it was drawn at")
+                }
+            }
+        }
+    }
+
+    func testANonsenseWidthFallsBackToTheGridsOwnCount() {
+        XCTAssertEqual(PackSelectViewController.columns(fitting: 0, base: 3), 3)
+        XCTAssertEqual(PackSelectViewController.columns(fitting: -100, base: 2), 2)
+        // A collection view asked to lay out before it has a width answers zero, and the
+        // answer has to be a count rather than a crash
+    }
 }

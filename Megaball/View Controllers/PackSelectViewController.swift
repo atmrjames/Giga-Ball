@@ -323,6 +323,38 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     static let gridInset: CGFloat = 20
     static let gridGap: CGFloat = 10
 
+    /// The screen these grids were drawn against - a current phone, in points.
+    ///
+    /// Not a device check, a *reference*: the card size three across produces here is the
+    /// card size the icons, the names and the status notes were all sized for, and it is
+    /// what `columns(fitting:base:)` tries to hold on to elsewhere.
+    static let referenceScreenWidth: CGFloat = 393
+
+    /// How many cards should go across a grid this wide.
+    ///
+    /// **The count grows on a big screen; the cards do not.** Three across a phone is a
+    /// 111pt square with a 12pt name under a picture. Three across an iPad - even with the
+    /// menus' aspect cap already applied, which leaves about 830pt - is a 270pt square with
+    /// the *same* 12pt name under the same picture scaled up: the phone's layout enlarged
+    /// rather than an iPad's layout, and the name reads as an afterthought on a coaster.
+    /// So the arithmetic asks how many reference-sized cards fit instead.
+    ///
+    /// `max(base, …)` is what keeps every phone exactly as it is, including the small ones
+    /// where the sum would otherwise argue for two: this may only ever add columns to a
+    /// screen wider than the one the grid was drawn for.
+    ///
+    /// - Parameters:
+    ///   - available: the width left for cards, insets already taken off.
+    ///   - base: the count this grid uses on a phone - three for most, two where the names
+    ///     are sentences rather than words.
+    static func columns(fitting available: CGFloat, base: CGFloat) -> CGFloat {
+        let reference = (referenceScreenWidth - 2*gridInset - gridGap*(base - 1))/base
+        guard reference > 0, available > 0 else { return base }
+        return max(base, ((available + gridGap)/(reference + gridGap)).rounded())
+        // The gap is added to both sides of the division because n cards carry n-1 gaps;
+        // adding one imaginary trailing gap to each makes it a plain division
+    }
+
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         guard collectionView == packCollectionView else {
             backButtonHighlighted(indexPath)

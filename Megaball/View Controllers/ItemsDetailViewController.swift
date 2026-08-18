@@ -549,7 +549,6 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard collectionView == grid else { return CGSize(width: 50, height: 50) }
-        let columns = gridColumns
         let taller: CGFloat = senderID == 3 ? 22 : 0
         // Achievement names are sentences - "Endless Mode 1,000m Milestone" - and want two
         // lines where a power-up's one word wants none. The square grows rather than the
@@ -557,6 +556,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // (play-test round 85)
         let gap = PackSelectViewController.gridGap
         let available = collectionView.bounds.width - 2*PackSelectViewController.gridInset
+        let columns = PackSelectViewController.columns(fitting: available, base: gridColumns)
+        // Phone-sized cards however wide the screen is: on an iPad the count goes up rather
+        // than the squares, which would otherwise be the phone's grid photographically
+        // enlarged, 12pt name and all
         let width = max(1, ((available - gap*(columns - 1))/columns).rounded(.down))
         return CGSize(width: width, height: width + taller)
         // Floored for the reason the pack screen's own comment gives -
