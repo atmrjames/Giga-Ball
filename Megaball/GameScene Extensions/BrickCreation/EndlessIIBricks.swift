@@ -329,7 +329,10 @@ extension GameScene {
                 guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else {
                     return nil
                 }
-                let choices = EndlessIISetRow.available(at: endlessHeight)
+                let choices = endlessIIProgression.setRows(at: endlessHeight)
+                // This run's shapes, not every shape gated at this height: set rows join the
+                // introduction schedule like the styles and power-ups do (round 193), so two
+                // runs to the same depth meet different landmarks
                 guard let pattern = choices.randomElement() else { return nil }
                 endlessIISetRowQueue = pattern.rows
             }

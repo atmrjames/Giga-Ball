@@ -58,6 +58,21 @@ struct EndlessIIProgression: Codable, Equatable {
     /// And between one power-up and the next.
     var powerUpSpacing: Int = EndlessIIProgression.powerUpIntroductionSpacing
 
+    /// The order this run introduces its set rows in, as indices into `EndlessIISetRow.all`.
+    ///
+    /// James, round 190, listing what should be held back: "brick types and power ups and
+    /// **brick sequences** and combinations of things".
+    var setRowOrder: [Int] = []
+
+    /// And its phases.
+    var phaseOrder: [EndlessIIPhase] = []
+
+    /// How many set rows are in play from the first metre.
+    var openingSetRows: Int = EndlessIIProgression.openingSetRowRange.lowerBound
+
+    /// How many phases are.
+    var openingPhases: Int = EndlessIIProgression.openingPhaseRange.lowerBound
+
     /// This run's multiplier on each power-up's authored weight, one per index.
     ///
     /// **Bounded, and that is the whole design of it.** James: "Rarity for items can be
@@ -83,6 +98,45 @@ struct EndlessIIProgression: Codable, Equatable {
 
     /// The most and least a run may weight a power-up by.
     static let rarityTweakRange = 0.78...1.30
+
+    static let openingSetRowRange = 2...5
+    static let openingPhaseRange = 3...6
+
+    /// Metres between one set row or phase being introduced and the next.
+    static let sequenceSpacing = 30
+
+    // MARK: - Introductions quicken with depth
+    //
+    // James: "Density should generally rise with height, but new item introduction should
+    // also rise with height." A constant spacing means the *rate* of new things is flat for
+    // the whole run - one every 35m at 40m up and one every 35m at 600m up - which is the
+    // opposite of rising. Each successive gap is a little shorter than the one before it, so
+    // the deeper a run goes the more often something new arrives.
+
+    /// What share of the previous gap each successive introduction takes.
+    static let introductionQuickening = 0.93
+
+    /// The shortest a gap may shrink to, as a share of the run's own spacing. Without a floor
+    /// a long run would end up introducing something every few metres, which is a flood
+    /// rather than a rise.
+    static let shortestGapShare = 0.35
+
+    /// How far above the opening set the `steps`-th introduction sits.
+    ///
+    /// Pure arithmetic, so the quickening can be reasoned about rather than sampled: strictly
+    /// increasing in `steps`, and every gap between one step and the next is no larger than
+    /// the gap before it and no smaller than the floor.
+    static func introductionDistance(steps: Int, spacing: Int) -> Int {
+        guard steps > 0, spacing > 0 else { return 0 }
+        let smallest = Double(spacing)*shortestGapShare
+        var total = 0.0
+        var gap = Double(spacing)
+        for _ in 0..<steps {
+            total += gap
+            gap = max(smallest, gap*introductionQuickening)
+        }
+        return max(1, Int(total.rounded()))
+    }
 
     /// Metres between one style being introduced and the next.
     ///
@@ -135,6 +189,10 @@ struct EndlessIIProgression: Codable, Equatable {
             openingPowerUps: Int.random(in: openingPowerUpRange),
             styleSpacing: Int.random(in: styleSpacingRange),
             powerUpSpacing: Int.random(in: powerUpSpacingRange),
+            setRowOrder: Array(0..<EndlessIISetRow.all.count).shuffled(),
+            phaseOrder: EndlessIIPhase.allCases.shuffled(),
+            openingSetRows: Int.random(in: openingSetRowRange),
+            openingPhases: Int.random(in: openingPhaseRange),
             rarityTweak: (0..<powerUps).map { _ in Double.random(in: rarityTweakRange) })
     }
 
@@ -151,10 +209,17 @@ struct EndlessIIProgression: Codable, Equatable {
     /// rest follow at this run's own spacing. A power-up not in the order at all is treated as
     /// available immediately, which is the safe answer for one added since the save was
     /// written - the opposite of introduced.
+    ///
+    /// **The standard power-ups are never held back** (James, round 190: "The standard brick
+    /// types and power ups are always available"). Those are the ones the original game has,
+    /// everything below `firstEndlessIIPowerUp` - the vocabulary a player already knows, and
+    /// the floor a run is playable on before it has been taught anything.
     func powerUpIntroductionHeight(of index: Int) -> Int {
+        guard index >= LevelPackSetup.firstEndlessIIPowerUp else { return 0 }
         guard let place = powerUpOrder.firstIndex(of: index) else { return 0 }
         guard place >= openingPowerUps else { return 0 }
-        return (place - openingPowerUps + 1)*max(1, powerUpSpacing)
+        return EndlessIIProgression.introductionDistance(steps: place - openingPowerUps + 1,
+                                                         spacing: powerUpSpacing)
     }
 
     /// What a power-up's authored weight should be scaled to at this height.
@@ -187,7 +252,8 @@ struct EndlessIIProgression: Codable, Equatable {
     func introductionHeight(of style: EndlessIIStyle) -> Int {
         guard let place = introductionOrder.firstIndex(of: style) else { return 0 }
         guard place >= openingStyles else { return 0 }
-        return (place - openingStyles + 1)*max(1, styleSpacing)
+        return EndlessIIProgression.introductionDistance(steps: place - openingStyles + 1,
+                                                         spacing: styleSpacing)
     }
 
     /// How strongly a style should be drawn at this height, relative to the others.
@@ -298,7 +364,8 @@ struct EndlessIIProgression: Codable, Equatable {
 /// ordinary generated field. They exist so density ebbs and flows rather than sitting on
 /// whatever the ramp says, because a field that is always exactly as full as its height
 /// dictates reads as a machine.
-enum EndlessIIPhase: String, CaseIterable {
+/// Codable because the run's phase order rides in the save with the rest of its schedule.
+enum EndlessIIPhase: String, CaseIterable, Codable {
     case standard, quiet, swarm, drift, flicker
     case cascade, minefield, fortress, gauntlet, carousel
     /// One kind of brick and nothing else, for as long as it lasts.
@@ -482,10 +549,53 @@ extension EndlessIIProgression {
 
     // MARK: - Phases
 
+    /// The height a set row joins this run, its authored gate included.
+    ///
+    /// **The authored minimum is a floor the schedule can only ever push down from, never
+    /// lift.** A row gated at 150m is gated there because of what it does to a field, and a
+    /// lucky shuffle must not put it in front of somebody at 20m. What the schedule decides is
+    /// how much *later* than that it arrives, and in what order relative to the others - which
+    /// is what makes two runs to the same height meet different shapes.
+    func setRowAvailableHeight(of index: Int) -> Int {
+        let authored = EndlessIISetRow.all.indices.contains(index)
+            ? EndlessIISetRow.all[index].minimumHeight : 0
+        guard let place = setRowOrder.firstIndex(of: index) else { return authored }
+        guard place >= openingSetRows else { return authored }
+        return max(authored,
+                   EndlessIIProgression.introductionDistance(
+                       steps: place - openingSetRows + 1,
+                       spacing: EndlessIIProgression.sequenceSpacing))
+    }
+
+    /// The set rows this run may draw at this height.
+    func setRows(at height: Int) -> [EndlessIISetRow] {
+        EndlessIISetRow.all.indices
+            .filter { height >= setRowAvailableHeight(of: $0) }
+            .map { EndlessIISetRow.all[$0] }
+    }
+
+    /// The height a phase joins this run, its authored gate included. Same rule as the rows.
+    ///
+    /// **Standard is never held back**, for the same reason the standard power-ups are not: it
+    /// is the baseline mix rather than a set piece, and a run whose opening shuffle happened
+    /// to hold back everything gated at zero would have had *no* phase available at all - the
+    /// generator would have fallen back to Standard on every draw anyway, silently, which is
+    /// the "never offered looks exactly like very rare" trap the other way round. A test
+    /// caught it before it shipped.
+    func phaseAvailableHeight(of phase: EndlessIIPhase) -> Int {
+        guard phase != .standard else { return 0 }
+        guard let place = phaseOrder.firstIndex(of: phase) else { return phase.minimumHeight }
+        guard place >= openingPhases else { return phase.minimumHeight }
+        return max(phase.minimumHeight,
+                   EndlessIIProgression.introductionDistance(
+                       steps: place - openingPhases + 1,
+                       spacing: EndlessIIProgression.sequenceSpacing))
+    }
+
     /// Draws a phase that is allowed at this height.
     func pickPhase(at height: Int,
                    roll: (Int) -> Int = { Int.random(in: 0..<$0) }) -> EndlessIIPhase {
-        let allowed = EndlessIIPhase.allCases.filter { height >= $0.minimumHeight }
+        let allowed = EndlessIIPhase.allCases.filter { height >= phaseAvailableHeight(of: $0) }
         let total = allowed.reduce(0) { $0 + $1.weight }
         guard total > 0 else { return .standard }
         var remaining = roll(total)

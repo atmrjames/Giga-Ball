@@ -223,6 +223,138 @@ final class EndlessIIProgressionTests: XCTestCase {
         XCTAssertEqual(run.powerUpWeightScale(for: 99, at: 0), 1, accuracy: 0.0001)
     }
 
+    // MARK: - Introductions quicken with depth (round 193)
+
+    /// James: "new item introduction should also rise with height."
+    func testThingsArriveMoreOftenTheDeeperARunGets() {
+        let spacing = 35
+        var gaps: [Int] = []
+        var previous = 0
+        for step in 1...12 {
+            let here = EndlessIIProgression.introductionDistance(steps: step, spacing: spacing)
+            gaps.append(here - previous)
+            previous = here
+        }
+        for index in 1..<gaps.count {
+            XCTAssertLessThanOrEqual(gaps[index], gaps[index - 1],
+                                     "gap \(index) is wider than the one before it, so the "
+                                     + "rate of new things is falling rather than rising")
+        }
+        XCTAssertLessThan(gaps.last!, gaps.first!,
+                          "and over a run it has to actually shorten, not merely not grow")
+    }
+
+    func testTheGapsNeverShrinkToAFlood() {
+        let spacing = 35
+        let floor = Int((Double(spacing)*EndlessIIProgression.shortestGapShare).rounded(.down))
+        var previous = 0
+        for step in 1...200 {
+            let here = EndlessIIProgression.introductionDistance(steps: step, spacing: spacing)
+            XCTAssertGreaterThanOrEqual(here - previous, floor,
+                                        "a gap under the floor is something new every few "
+                                        + "metres, which is a flood rather than a rise")
+            previous = here
+        }
+    }
+
+    func testIntroductionHeightsAlwaysClimb() {
+        // Whatever the quickening does, the n-th thing must never arrive before the n-1th
+        for spacing in [9, 14, 24, 35, 50] {
+            var previous = -1
+            for step in 0...30 {
+                let here = EndlessIIProgression.introductionDistance(steps: step,
+                                                                     spacing: spacing)
+                XCTAssertGreaterThan(here, previous, "spacing \(spacing), step \(step)")
+                previous = here
+            }
+        }
+    }
+
+    // MARK: - Sequences join the schedule (round 193)
+
+    /// James listed what should be held back: "brick types and power ups and **brick
+    /// sequences** and combinations of things."
+    func testTwoRunsMeetDifferentShapesAtTheSameDepth() {
+        let runs = (0..<40).map { _ in EndlessIIProgression.make(powerUps: 40) }
+        let atFifty = runs.map { Set($0.setRows(at: 50).map(\.name)) }
+        XCTAssertGreaterThan(Set(atFifty.map { $0.sorted().joined() }).count, 1,
+                             "every run meeting the same set rows at 50m is the staleness "
+                             + "this is meant to fix")
+
+        let phasesAtFifty = runs.map { run in
+            Set(EndlessIIPhase.allCases.filter { 50 >= run.phaseAvailableHeight(of: $0) }
+                .map(\.rawValue))
+        }
+        XCTAssertGreaterThan(Set(phasesAtFifty.map { $0.sorted().joined() }).count, 1)
+    }
+
+    /// **The one rule the sequence schedule must never break.**
+    ///
+    /// An authored minimum height is a design statement about what a shape does to a field.
+    /// The schedule may push something later; it may never bring it forward.
+    func testAnAuthoredGateIsNeverUndercutByALuckyShuffle() {
+        for run in (0..<40).map({ _ in EndlessIIProgression.make(powerUps: 40) }) {
+            for index in EndlessIISetRow.all.indices {
+                let row = EndlessIISetRow.all[index]
+                XCTAssertGreaterThanOrEqual(run.setRowAvailableHeight(of: index),
+                                            row.minimumHeight,
+                                            "\(row.name) is gated at \(row.minimumHeight)m "
+                                            + "for a reason and a shuffle must not move it up")
+            }
+            for phase in EndlessIIPhase.allCases {
+                XCTAssertGreaterThanOrEqual(run.phaseAvailableHeight(of: phase),
+                                            phase.minimumHeight, "\(phase)")
+            }
+        }
+    }
+
+    func testEveryShapeIsStillReachableEventually() {
+        // Held back is not locked out: a deep run has to be able to meet all of them, or the
+        // schedule has quietly deleted content
+        for run in (0..<10).map({ _ in EndlessIIProgression.make(powerUps: 40) }) {
+            XCTAssertEqual(run.setRows(at: 10_000).count, EndlessIISetRow.all.count)
+            let phases = EndlessIIPhase.allCases.filter { 10_000 >= run.phaseAvailableHeight(of: $0) }
+            XCTAssertEqual(phases.count, EndlessIIPhase.allCases.count)
+        }
+    }
+
+    /// James: "The standard brick types and power ups are always available."
+    ///
+    /// This caught a real flaw before it shipped. With the opening set shuffled, a run could
+    /// draw an opening whose every phase was gated above zero by its authored minimum - so
+    /// nothing at all was available at the start and `pickPhase` fell back to Standard on
+    /// every draw, silently. Standard is the baseline mix rather than a set piece, so it is
+    /// exempt from the schedule outright.
+    func testStandardIsAlwaysAvailableAndSoIsSomethingElseToDrawWith() {
+        for run in (0..<40).map({ _ in EndlessIIProgression.make(powerUps: 40) }) {
+            XCTAssertEqual(run.phaseAvailableHeight(of: .standard), 0)
+            let openAtZero = EndlessIIPhase.allCases.filter { 0 >= run.phaseAvailableHeight(of: $0) }
+            XCTAssertFalse(openAtZero.isEmpty, "a run has to open with some phase available")
+        }
+    }
+
+    func testTheStandardPowerUpsAreNeverHeldBack() {
+        // The other half of the same rule: the vocabulary a player already knows from the
+        // original game is the floor a run is playable on before it has been taught anything
+        for run in (0..<20).map({ _ in EndlessIIProgression.make(powerUps: 63) }) {
+            for index in 0..<LevelPackSetup.firstEndlessIIPowerUp {
+                XCTAssertEqual(run.powerUpIntroductionHeight(of: index), 0,
+                               "power-up \(index) is one of the standard ones")
+            }
+        }
+    }
+
+    func testASetRowCatalogueChangeCannotHideAShape() {
+        // A schedule restored from an older save has a shorter order. An index it has never
+        // heard of falls back to the authored gate - available, not hidden
+        var run = EndlessIIProgression.make(powerUps: 40)
+        run.setRowOrder = []
+        for index in EndlessIISetRow.all.indices {
+            XCTAssertEqual(run.setRowAvailableHeight(of: index),
+                           EndlessIISetRow.all[index].minimumHeight)
+        }
+    }
+
     func testAScheduleSurvivesBeingWrittenAndReadBack() {
         // It rides in the save, so it has to round-trip exactly: a resumed run that redrew
         // it would be stocked differently from the one the player left
@@ -483,15 +615,25 @@ extension EndlessIIProgressionTests {
 
     // MARK: - The power-up schedule
 
+    /// A schedule over Mayhem's own power-ups.
+    ///
+    /// **From `firstEndlessIIPowerUp` up**, because round 193 exempted the standard ones on
+    /// James's rule that they are always available - a schedule written over indices 0..<28
+    /// is now a schedule over things that are never held back, which would make every test
+    /// below quietly vacuous.
+    private var mayhemsOwn: Range<Int> {
+        LevelPackSetup.firstEndlessIIPowerUp..<LevelPackSetup().powerUpNameArray.count
+    }
+
     private var withPowerUps: EndlessIIProgression {
-        EndlessIIProgression(introductionOrder: order, powerUpOrder: Array(0..<28))
+        EndlessIIProgression(introductionOrder: order, powerUpOrder: Array(mayhemsOwn))
     }
 
     func testNoPowerUpIsEverLockedOut() {
         // The same rule the styles follow: being introduced late makes something unlikely,
         // never impossible. Somebody's first run should still be able to surprise them.
         let p = withPowerUps
-        for index in 0..<28 {
+        for index in mayhemsOwn {
             XCTAssertGreaterThan(p.powerUpWeightScale(for: index, at: 0), 0, "\(index)")
         }
     }
@@ -500,7 +642,7 @@ extension EndlessIIProgressionTests {
         // Being introduced does not make something common - it gives back the weight it was
         // authored with, whatever that was.
         let p = withPowerUps
-        let last = 27
+        let last = mayhemsOwn.upperBound - 1
         let deep = p.powerUpIntroductionHeight(of: last)
         XCTAssertEqual(p.powerUpWeightScale(for: last, at: deep), 1, accuracy: 0.0001)
         XCTAssertEqual(p.powerUpWeightScale(for: last, at: deep + 500), 1, accuracy: 0.0001)
@@ -508,21 +650,21 @@ extension EndlessIIProgressionTests {
 
     func testAnUnintroducedPowerUpIsDampedButPresent() {
         let p = withPowerUps
-        let last = 27
+        let last = mayhemsOwn.upperBound - 1
         let scale = p.powerUpWeightScale(for: last, at: 0)
         XCTAssertLessThan(scale, 1)
         XCTAssertGreaterThan(scale, 0)
     }
 
     func testTheFirstPowerUpIsAvailableImmediately() {
-        XCTAssertEqual(withPowerUps.powerUpIntroductionHeight(of: 0), 0)
+        XCTAssertEqual(withPowerUps.powerUpIntroductionHeight(of: mayhemsOwn.lowerBound), 0)
     }
 
     func testTheWholeSetIsIntroducedWithinAReasonableRun() {
-        // All twenty-eight should be in play well before the ramp ends, or the second half of
-        // a long run would still be meeting basics.
+        // All of them should be in play well before the ramp ends, or the second half of a
+        // long run would still be meeting basics.
         let p = withPowerUps
-        let latest = (0..<28).map { p.powerUpIntroductionHeight(of: $0) }.max() ?? 0
+        let latest = mayhemsOwn.map { p.powerUpIntroductionHeight(of: $0) }.max() ?? 0
         XCTAssertLessThan(latest, EndlessIIProgression.rampMetres)
     }
 
