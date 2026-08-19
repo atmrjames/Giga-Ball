@@ -53,6 +53,39 @@ final class EndlessIISetRowTests: XCTestCase {
         }
     }
 
+    /// James, round 190: "Mazes of indestructible bricks **dotted with normal bricks so they
+    /// don't just fly by**."
+    ///
+    /// Written as a rule about the catalogue rather than about the three shapes named
+    /// "maze", so it holds for anything heavy that gets added later: a pattern made mostly of
+    /// indestructibles has to contain something worth breaking. Without that it is a wall
+    /// that descends past with nothing to earn from it - the ball rattles off it and the row
+    /// is a tax on time.
+    func testAnyMostlyIndestructiblePatternHasSomethingWorthHavingInIt() {
+        for pattern in EndlessIISetRow.all {
+            let cells = pattern.rows.flatMap { Array($0) }.filter { $0 != "." }
+            let walls = cells.filter { $0 == "I" || $0 == "i" }.count
+            guard walls*2 > cells.count else { continue }
+
+            let worthHaving = cells.contains { $0 == "N" || $0 == "M" || $0 == "?" }
+            XCTAssertTrue(worthHaving,
+                          "\(pattern.name) is mostly indestructible with nothing in it - a "
+                          + "wall that just flies by")
+        }
+    }
+
+    func testTheMazesAreGatedByHowHeavyTheyAre() {
+        // Catacomb is open from both sides, Warren has a lid, Bastion is nearly closed. They
+        // should arrive in that order, whatever the run's schedule does on top
+        let byName = Dictionary(uniqueKeysWithValues: EndlessIISetRow.all.map { ($0.name, $0) })
+        guard let light = byName["Catacomb"], let middle = byName["Warren"],
+              let heavy = byName["Bastion"] else {
+            return XCTFail("the mazes have been renamed - the gates below are about them")
+        }
+        XCTAssertLessThan(light.minimumHeight, middle.minimumHeight)
+        XCTAssertLessThan(middle.minimumHeight, heavy.minimumHeight)
+    }
+
     func testNoPatternIsEmpty() {
         for pattern in EndlessIISetRow.all {
             let anything = pattern.rows.contains { $0.contains(where: { $0 != "." }) }
