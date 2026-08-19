@@ -279,6 +279,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     /// What the figure being counted up is measured in - metres for a run, nothing for a score.
     private var heightTallySuffix = "m"
 
+    /// The same call every other menu screen makes, and this screen never did.
+    ///
+    /// Two things had to be true before it could: the content box had to be driven by its
+    /// constraints rather than frozen at a storyboard size (round 191 removed the size-class
+    /// variation that was excluding them on iPad), and the cap had to measure the window
+    /// rather than this view. With both, the pause and game-over screens are shaped like the
+    /// rest of the app on an iPad instead of stretching the full width of one.
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+        collectionViewLayout()
+        // The row's spacing is worked out from the container's width, so it has to be worked
+        // out *again* whenever that width changes - which it now can, where before the
+        // container was a fixed 414 box and one pass at load time was the whole story
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -760,18 +776,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
 
     func collectionViewLayout() {
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        
-        if view.frame.size.width <= 414 {
-            containterView.frame.size.width = view.frame.size.width
-        } else {
-            containterView.frame.size.width = 414
-        }
-        let rowWidth = containterView.frame.size.width - PauseMenuViewController.pauseButtonRowInset*2
-        // **The width is the storyboard's now** (round 157), and this reads the same number
-        // its leading constraint does. The row starts 12.5pt further out than every other
-        // screen's on purpose: its cells are 75pt boxes holding 50pt icons, so the icon
-        // carries half the difference as padding - and it is the *icon* that has to land on
-        // `menuButtonRowInset`, because that is the thing a thumb aims at
+
+        let rowWidth = containterView.bounds.width - PauseMenuViewController.pauseButtonRowInset*2
+        // **The container's own width, whatever it has turned out to be** (round 191). This
+        // used to *set* that width by hand - the view's, clamped to 414 - which was invisible
+        // on a phone, where every width is at or under 414, and pinned the whole screen into a
+        // 414pt box on an iPad. It was one half of the pair; the other was a size-class
+        // variation in the storyboard that excluded the container's leading and bottom
+        // constraints on anything not compact-width, so the hand-set frame stuck. Both are
+        // gone: the constraints size the box and this reads what they decided.
+        //
+        // The row starts 12.5pt further out than every other screen's on purpose: its cells
+        // are 75pt boxes holding 50pt icons, so the icon carries half the difference as
+        // padding - and it is the *icon* that has to land on `menuButtonRowInset`, because
+        // that is the thing a thumb aims at
 
         layout.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         layout.itemSize = CGSize(width: 75, height: 75)

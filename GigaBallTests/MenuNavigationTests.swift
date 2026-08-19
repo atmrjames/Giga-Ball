@@ -538,12 +538,12 @@ final class MenuResizeTests: XCTestCase {
     /// The screen's whole content lives in `containterView`, whose width is meant to follow
     /// the view's, and in the running app on a 13-inch iPad it came out about 422pt of 1032.
     ///
-    /// **These pass, and that is the finding.** Loaded from the storyboard and laid out at an
-    /// iPad's size with no superview, the box fills the width and Home sits in its corner - so
-    /// the constraints are right and the storyboard is not the cause. What the app adds is the
-    /// nesting: the pause menu's view is a subview of the game's, which is a subview of the
-    /// screen that launched it, and a view's safe area comes from its superview's. The cause is
-    /// somewhere in that chain, and these tests are the shape the fix has to keep.
+    /// **These passed even while the app was wrong, and that was the clue.** Laid out here the
+    /// box fills its width, because a detached view controller has no `widthClass=regular` to
+    /// trip the storyboard's size-class variation and nothing has called
+    /// `collectionViewLayout()` to set the width by hand. Those two together were the bug
+    /// (round 191, see §12.0); these tests are the shape it must keep, and the phone-sized one
+    /// is the guard against a fix for the iPad moving the screen everyone else uses.
     private func laidOutPauseScreen(width: CGFloat, height: CGFloat) -> PauseMenuViewController? {
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
         guard let pause = board.instantiateViewController(withIdentifier: "pauseMenuVC")

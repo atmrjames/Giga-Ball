@@ -1532,18 +1532,6 @@ U N L O C K E D</string>
                             <constraint firstItem="NJ2-8t-agb" firstAttribute="leading" secondItem="4uA-Vf-8ca" secondAttribute="leading" id="dCK-Rm-SaV"/>
                             <constraint firstItem="4uA-Vf-8ca" firstAttribute="bottom" secondItem="NJ2-8t-agb" secondAttribute="bottom" id="eVK-qo-75M"/>
                         </constraints>
-                        <variation key="default">
-                            <mask key="constraints">
-                                <exclude reference="eVK-qo-75M"/>
-                                <exclude reference="dCK-Rm-SaV"/>
-                            </mask>
-                        </variation>
-                        <variation key="widthClass=compact">
-                            <mask key="constraints">
-                                <include reference="eVK-qo-75M"/>
-                                <include reference="dCK-Rm-SaV"/>
-                            </mask>
-                        </variation>
                     </view>
                     <connections>
                         <outlet property="backgroundView" destination="Ulk-Qo-bdS" id="2n4-dQ-9SI"/>
