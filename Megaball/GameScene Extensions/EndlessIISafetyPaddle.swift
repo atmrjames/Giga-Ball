@@ -73,6 +73,21 @@ extension GameScene {
         return paddle.texture ?? paddleTexture
     }
 
+    /// The nine-slice the paddle's picture is wearing *right now*.
+    ///
+    /// **Copied live, not looked up** (round 201: "the rounded edges of the safety paddle
+    /// don't look the same as the main paddle"). The paddle wears the whole-texture rect at
+    /// standard width and only switches to the protective cap rect when a resize stretches
+    /// it (`paddleCenterRectZero`/`Plus`); the bar was wearing the cap rect always. At
+    /// standard width that is two different renderings of one picture: the paddle scales its
+    /// caps uniformly with everything else, the bar held them at native size. A twin has to
+    /// copy the state, not the wardrobe - and this only holds because the twin is the
+    /// paddle's own size; Split Paddle's *narrower* segments must keep their own rects
+    /// (round 182's lesson, unchanged).
+    var endlessIIPaddleDressCenterRect: CGRect {
+        paddleTexture == retroPaddle ? paddleRetroTexture.centerRect : paddle.centerRect
+    }
+
     /// Puts the surface on the field, or leaves the one already there alone.
     ///
     /// A second collection extends the clock rather than building a second paddle - which is
@@ -96,10 +111,10 @@ extension GameScene {
         let bar = SKSpriteNode(texture: endlessIISafetyPaddleDress, size: size)
         bar.color = GameScene.endlessIIHaloColour
         bar.colorBlendFactor = 1
-        bar.centerRect = paddleCapRect(for: endlessIISafetyPaddleDress)
-        // The paddle's picture, tinted the Giga-Ball lime, and nine-sliced so its rounded
-        // ends survive at whatever width the paddle is - the same trick Split Paddle's
-        // segments use (round 182)
+        bar.centerRect = endlessIIPaddleDressCenterRect
+        // The paddle's picture, tinted the Giga-Ball lime, wearing the same nine-slice
+        // state the paddle itself is wearing at this moment - see that property's note for
+        // why copying the cap rect unconditionally made the ends look wrong (round 201)
         bar.name = GameScene.endlessIISafetyPaddleName
         bar.position = CGPoint(x: 0, y: endlessIISafetyPaddleY)
         bar.zPosition = 2

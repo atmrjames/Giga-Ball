@@ -633,6 +633,26 @@ enum PowerUpIcon {
         context.setAlpha(1)
     }
 
+    /// Drift's mirror image, for the day the field slides the other way (round 201: "there
+    /// should be 2 versions of the drift power up... use a mirrored version of the power up
+    /// icons for the right to left version"). Mirrored in code rather than drawn twice, so
+    /// the two can never drift apart - and mirrored from whatever `drift` resolves to, so
+    /// the real artwork gets the same treatment the placeholder does.
+    static let driftLeft: UIImage = mirrored(drift)
+
+    /// An image flipped left-for-right, rendered out so SpriteKit sees real pixels.
+    ///
+    /// `UIImage(cgImage:scale:orientation:)` would be cheaper, but an orientation is a
+    /// display *instruction* and `SKTexture(image:)` ignores it - the HUD would show the
+    /// unmirrored art. Redrawing bakes the flip into the bitmap, which everything honours.
+    static func mirrored(_ image: UIImage) -> UIImage {
+        UIGraphicsImageRenderer(size: image.size).image { context in
+            context.cgContext.translateBy(x: image.size.width, y: 0)
+            context.cgContext.scaleBy(x: -1, y: 1)
+            image.draw(at: .zero)
+        }
+    }
+
     /// A second paddle under the brick line, with the ball bouncing off its top.
     ///
     /// Drawn as a bar low in the badge with the line of the field above it, because where it

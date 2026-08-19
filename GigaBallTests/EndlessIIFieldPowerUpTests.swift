@@ -1035,7 +1035,7 @@ final class RandomisedBounceTests: XCTestCase {
     func testTheFieldSlidesWhileItRuns() {
         let scene = driftScene()
         let brick = brick(in: scene, x: 0, y: 40)
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         let before = brick.position.x
 
         scene.tickEndlessIIDrift(0.5)
@@ -1043,12 +1043,30 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertEqual(brick.position.y, 40, "sideways only - a brick's y is its row (§8.6)")
     }
 
+    /// Round 201: two Drifts, one per direction, sharing a clock.
+    func testEachDriftSlidesItsOwnWayAndTheOtherOneReversesIt() {
+        let scene = driftScene()
+        let brick = brick(in: scene, x: 0, y: 200)
+
+        scene.endlessIICollectDrift(direction: -1)
+        scene.tickEndlessIIDrift(1.0)
+        XCTAssertLessThan(brick.position.x, 0, "Drift Left slides the field leftward")
+
+        scene.endlessIICollectDrift(direction: 1)
+        let wasRunning = scene.endlessIIDriftClock.isRunning
+        scene.tickEndlessIIDrift(2.0)
+        XCTAssertTrue(wasRunning, "one clock - the second collection joins it")
+        XCTAssertGreaterThan(brick.position.x, 0,
+                             "collecting the other one mid-drift reverses the slide - a "
+                             + "dial, not two coats of the same paint")
+    }
+
     func testItGoesRoundTheSideRatherThanLosingTheField() {
         // A power-up that quietly destroyed the bricks that reached the edge would be a
         // different power-up, so a brick that runs out of field comes back at the other side
         let scene = driftScene()
         let brick = brick(in: scene, x: scene.gameWidth/2 - scene.brickWidth/2, y: 40)
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         scene.endlessIIDriftDirection = 1
 
         for _ in 0..<20 { scene.tickEndlessIIDrift(0.2) }
@@ -1068,7 +1086,7 @@ final class RandomisedBounceTests: XCTestCase {
         brick(in: scene, x: scene.gameWidth/2 - scene.brickWidth/2, y: 40)
         brick(in: scene, x: -scene.gameWidth/2 + scene.brickWidth/2, y: 40)
         // One against each wall, which is the arrangement that used to reverse it every frame
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         scene.endlessIIDriftDirection = 1
 
         for _ in 0..<40 { scene.tickEndlessIIDrift(0.1) }
@@ -1082,7 +1100,7 @@ final class RandomisedBounceTests: XCTestCase {
         let scene = driftScene()
         let left = -scene.gameWidth/2 + scene.brickWidth/2
         let brick = brick(in: scene, x: left, y: 40)
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         scene.endlessIIDriftDirection = -1
 
         for _ in 0..<40 { scene.tickEndlessIIDrift(0.1) }
@@ -1097,7 +1115,7 @@ final class RandomisedBounceTests: XCTestCase {
         let scene = driftScene()
         let brick = brick(in: scene, x: 0, y: 40)
         brick.endlessIIIsAnchored = true
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         scene.tickEndlessIIDrift(0.5)
 
         XCTAssertEqual(brick.position.x, 0, accuracy: 0.0001)
@@ -1107,7 +1125,7 @@ final class RandomisedBounceTests: XCTestCase {
         // The grid is how the generator, the crush and the neighbour rules all speak
         let scene = driftScene()
         let brick = brick(in: scene, x: 0, y: 40)
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         scene.tickEndlessIIDrift(0.37)
         XCTAssertNotEqual(brick.position.x, 0, accuracy: 0.0001)
 
@@ -1131,7 +1149,7 @@ final class RandomisedBounceTests: XCTestCase {
         let scene = driftScene()
         scene.gameMode = .classic
         let brick = brick(in: scene, x: 0, y: 40)
-        scene.endlessIICollectDrift()
+        scene.endlessIICollectDrift(direction: 1)
         scene.tickEndlessIIDrift(0.5)
         XCTAssertEqual(brick.position.x, 0, accuracy: 0.0001)
     }

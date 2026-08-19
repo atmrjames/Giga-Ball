@@ -87,6 +87,9 @@ extension GameScene {
         // Never zero on either axis: `SKPhysicsBody(rectangleOf:)` with an empty rectangle
         // hands back a node with no body at all - a paddle the ball falls straight through,
         // which is the Safety Paddle's own trap and looks exactly like nothing happening
+        mirror.centerRect = endlessIIPaddleDressCenterRect
+        // The same nine-slice state the paddle is wearing right now (round 201) - without
+        // it an expanded paddle's mirror stretched its rounded ends flat
         mirror.name = GameScene.endlessIIMirrorPaddleName
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
@@ -134,7 +137,8 @@ extension GameScene {
         shadow.alpha = 0.35
         shadow.position = CGPoint(x: 0, y: -paddle.size.height*0.3)
         shadow.zPosition = -0.05
-        shadow.centerRect = paddleCapRect(for: paddle.texture)
+        shadow.centerRect = endlessIIPaddleDressCenterRect
+        // The paddle's own current nine-slice, like the bar and the mirror (round 201)
         paddle.addChild(shadow)
     }
 
@@ -189,6 +193,9 @@ extension GameScene {
 
         if mirror.size != paddle.size, paddle.size.width > 0, paddle.size.height > 0 {
             mirror.size = paddle.size
+            mirror.centerRect = endlessIIPaddleDressCenterRect
+            // The paddle switches its nine-slice on when a resize stretches it; its twin
+            // switches with it or the two wear the same picture differently (round 201)
             mirror.physicsBody = endlessIIMirrorPaddleBody(size: paddle.size)
             // Expand and Shrink write the paddle's width directly, and a mirror that kept the
             // width it was born with would be a different paddle from the one it mirrors

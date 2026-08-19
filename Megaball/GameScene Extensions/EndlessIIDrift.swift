@@ -42,12 +42,18 @@ extension GameScene {
     /// by the time a ball crosses the field and back.
     static let endlessIIDriftSpeed: CGFloat = 0.45
 
-    func endlessIICollectDrift() {
+    /// Starts (or extends) the slide, in the direction the collected power-up names.
+    ///
+    /// **Two Drifts now, one per direction** (James, round 201: "one that moves everything
+    /// left to right and another that moves everything right to left"). The direction used to
+    /// be a coin flip on first collection; it is the power-up's own identity now, which also
+    /// means collecting the *other* one mid-drift reverses the field - the two share one
+    /// clock, so that reversal extends the time as well, and a player holding both has been
+    /// handed a dial rather than two coats of the same paint.
+    func endlessIICollectDrift(direction: Int) {
         guard gameMode == .endlessII else { return }
         endlessIIDriftClock.collect(GameScene.endlessIIDriftDuration)
-        if endlessIIDriftDirection == 0 { endlessIIDriftDirection = Bool.random() ? 1 : -1 }
-        // A second collection extends the drift rather than reversing it: the direction is
-        // only chosen when there is no drift to join
+        endlessIIDriftDirection = direction
     }
 
     /// Slides the field, once a frame. Called from `tickEndlessIIBricks`, before the movers

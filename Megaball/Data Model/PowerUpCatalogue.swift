@@ -305,9 +305,14 @@ enum PowerUpCatalogue {
         // where the ball they cannot reach is. Double-edged all the same - two paddles near
         // the centre are one paddle, and a mirror can send a ball back across the field just
         // as it can save it
-        PowerUp(id: "drift", name: "Drift", availability: .endlessII,
+        PowerUp(id: "drift", name: "Drift Right", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
+        PowerUp(id: "driftLeft", name: "Drift Left", availability: .endlessII,
+                rarity: .uncommon, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        // One per direction (round 201). They share a clock, so collecting the other one
+        // mid-drift reverses the field and extends the time - a dial, not two coats of paint
         // Bad because a field that will not hold still is a field you have to keep
         // re-reading - not because it takes anything away
         PowerUp(id: "safetyPaddle", name: "Safety Paddle", availability: .endlessII,

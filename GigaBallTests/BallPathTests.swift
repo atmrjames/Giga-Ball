@@ -349,6 +349,29 @@ final class BallPathTests: XCTestCase {
                        + "loop was broken two rallies ago is the old bug with extra steps")
     }
 
+    // MARK: - The speed tripwire (round 201)
+
+    /// Round 200: "the ball still sometimes feels jittery like it's speeding up and slowing
+    /// down constantly." The bend check cannot see that - a straight-line ball can still
+    /// surge - so speed gets its own wire.
+    func testASpeedWobbleTripsEvenOnAStraightLine() {
+        var wire = CrookedBallTripwire()
+        _ = wire.recordFrame(position: CGPoint(x: 0, y: 100), velocity: CGVector(dx: 0, dy: -300))
+        let trip = wire.recordFrame(position: CGPoint(x: 0, y: 95),
+                                    velocity: CGVector(dx: 0, dy: -330))
+        XCTAssertNotNil(trip?.speedDelta, "ten percent in one frame is a stutter, not drift")
+        XCTAssertNil(trip?.bendDegrees, "and the heading never moved")
+    }
+
+    func testRenormalisationDriftStaysUnderTheWire() {
+        var wire = CrookedBallTripwire()
+        _ = wire.recordFrame(position: CGPoint(x: 0, y: 100), velocity: CGVector(dx: 0, dy: -300))
+        let trip = wire.recordFrame(position: CGPoint(x: 0, y: 95),
+                                    velocity: CGVector(dx: 0, dy: -301))
+        XCTAssertNil(trip, "a third of a percent is floating-point housekeeping - a false "
+                           + "alarm teaches the reader to ignore the real one")
+    }
+
     /// The portal drift turns a vector the way the unit circle says it should.
     func testRotationTurnsAVectorCounterclockwise() {
         let turned = rotated(CGVector(dx: 0, dy: 100), byDegrees: 90)

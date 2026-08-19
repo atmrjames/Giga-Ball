@@ -756,7 +756,11 @@ extension GameScene {
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
           PowerUpIcon.safetyPaddle),
          ("endlessIIDrift", endlessIIDriftClock,
-          PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))]
+          endlessIIDriftDirection < 0
+              ? PowerUpIcon.mirrored(PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))
+              : PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))]
+        // The ring shows which way the field is sliding: the same art, mirrored for a
+        // leftward drift, exactly as the falling capsule's own icon is (round 201)
     }
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
@@ -802,8 +806,9 @@ extension GameScene {
         case "endlessIIDrift":
             endlessIIDriftClock.restore(remaining: remaining, total: total, level: 0)
             if endlessIIDriftDirection == 0 { endlessIIDriftDirection = 1 }
-            // A resumed drift keeps drifting. Which way is not worth saving - the field it
-            // comes back to is wherever the save left it, and a direction is one frame old
+            // A resumed drift keeps drifting. The direction rides in the save since round
+            // 201 (two Drifts, one per direction, so which way is part of which power-up);
+            // this line is only the fallback for a save written before it carried one
         case "endlessIISafetyPaddle":
             endlessIISafetyPaddleClock.restore(remaining: remaining, total: total, level: 0)
             showEndlessIISafetyPaddle()

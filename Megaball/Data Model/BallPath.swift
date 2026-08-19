@@ -390,11 +390,23 @@ func rotated(_ vector: CGVector, byDegrees degrees: Double) -> CGVector {
 /// thing a test catches and an eyeball does not.
 struct CrookedBallTripwire {
 
-    /// A frame that needs explaining: the heading bent, the position jumped, or both.
+    /// A frame that needs explaining: the heading bent, the position jumped, the speed
+    /// wobbled, or any mix of the three.
     struct Trip {
         var bendDegrees: Double?
         var jumpDistance: CGFloat?
+        var speedDelta: CGFloat?
     }
+
+    /// How much the speed may drift between frames before it needs explaining, as a share
+    /// of the speed itself.
+    ///
+    /// Round 201's addition for the jitter hunt (round 200: "the ball still sometimes feels
+    /// jittery like it's speeding up and slowing down constantly... it seems to happen when
+    /// certain power ups are enabled"). The whole game protects the ball's speed as a single
+    /// value, so between contacts it should not move at all - two percent in one frame is
+    /// far past renormalisation drift and well inside what a hand feels as a stutter.
+    static let speedWobbleShare: CGFloat = 0.02
 
     /// Half a degree, per the §12.0 design: small enough to catch the sightings, large
     /// enough that floating-point drift in the speed renormalisation never fires it.
@@ -430,7 +442,15 @@ struct CrookedBallTripwire {
         // because frame rates vary and a false alarm teaches the reader to ignore the
         // real one. A teleport (wrap, portal, handover) is far past any of it
 
-        return trip.bendDegrees != nil || trip.jumpDistance != nil ? trip : nil
+        let wobble = abs(speed - last.speed)
+        if last.speed > 0, wobble > last.speed*CrookedBallTripwire.speedWobbleShare {
+            trip.speedDelta = wobble
+        }
+        // The jitter James described is exactly this: speed changing with no contact to
+        // blame. The bend check cannot see it - a straight-line ball can still surge
+
+        return trip.bendDegrees != nil || trip.jumpDistance != nil
+            || trip.speedDelta != nil ? trip : nil
     }
 
     /// The smaller way round the circle: 179° to -179° is a 2° bend, not 358°.

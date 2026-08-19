@@ -139,6 +139,13 @@ struct SavedGame: Codable, Equatable {
     /// nil on any run that is not a Time Trial.
     var dailyTimeTrialRemaining: Double? = nil
 
+    /// Which way a saved Drift was sliding the field (round 201). With one Drift the
+    /// direction was a coin flip nobody needed to remember; with one per direction it is
+    /// part of which power-up is running, and a resume that flipped it would visibly hand
+    /// back a different power-up. Optional, and an older save restores rightward - the
+    /// fallback those runs always had.
+    var endlessIIDriftDirection: Int? = nil
+
     /// Which mode this run belongs to, as `GameMode.rawValue`.
     ///
     /// **The save used to have no mode field at all**, and the mode was read from a

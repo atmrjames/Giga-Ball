@@ -452,7 +452,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 63)
+	var powerUpProbArray: [Int] = Array(repeating: 0, count: 64)
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -1032,6 +1032,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpMirrorPaddle = SKTexture(image: PowerUpIcon.mirrorPaddle)
 	let powerUpCluster = SKTexture(image: PowerUpIcon.cluster)
 	let powerUpBallSpin = SKTexture(image: PowerUpIcon.ballSpin)
+	let powerUpDriftLeft = SKTexture(image: PowerUpIcon.driftLeft)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1223,7 +1224,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin, powerUpDriftLeft]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -2439,7 +2440,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         let heading = atan2(Double(body.velocity.dy), Double(body.velocity.dx))*180/Double.pi
         let what = [trip.bendDegrees.map { String(format: "bent %.2f deg", $0) },
-                    trip.jumpDistance.map { String(format: "jumped %.1f pt", $0) }]
+                    trip.jumpDistance.map { String(format: "jumped %.1f pt", $0) },
+                    trip.speedDelta.map { String(format: "speed wobbled %.1f pt/s", $0) }]
             .compactMap { $0 }.joined(separator: ", ")
         let place = String(format: "at (%.0f, %.0f) heading %.1f deg",
                            ball.position.x, ball.position.y, heading)
@@ -5168,8 +5170,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].powerupsCollected[53] += 1
 
 		case powerUpDrift:
-		// 54 - Drift. Bad
-			endlessIICollectDrift()
+		// 54 - Drift Right. Bad
+			endlessIICollectDrift(direction: 1)
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[54] += 1
 
@@ -5220,6 +5222,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIICollectBallSpin()
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[62] += 1
+
+		case powerUpDriftLeft:
+		// 63 - Drift Left. Bad
+			endlessIICollectDrift(direction: -1)
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[63] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball
@@ -7325,6 +7333,8 @@ laserTimer?.invalidate()
 		)
 		savedGame?.endlessIIBricks = savedMayhemBricks
 		savedGame?.dailyTimeTrialRemaining = timeTrialClock
+		savedGame?.endlessIIDriftDirection =
+			endlessIIDriftDirection != 0 ? endlessIIDriftDirection : nil
 		// Set after the initialiser rather than passed into it: that call already takes forty
 		// arguments and one more optional tipped the type-checker over its own limit - twice
 		// now (the Mayhem bricks, then round 197's clock). The clock rides with the run, or a
@@ -7625,6 +7635,10 @@ laserTimer?.invalidate()
 			if let remaining = savedGame.dailyTimeTrialRemaining {
 				dailyTimeTrialRemaining = remaining
 			}
+			if let driftDirection = savedGame.endlessIIDriftDirection {
+				endlessIIDriftDirection = driftDirection
+			}
+			// Which way the field was sliding is part of which Drift is running (round 201)
 
 			if savedGame.ballProperties.count >= SavedGame.ballPropertiesCount {
 				// Read positionally up to index 4 below. isEmpty was not a strong enough
