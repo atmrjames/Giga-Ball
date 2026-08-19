@@ -105,7 +105,41 @@ extension GameScene {
         // Faded in rather than appearing, the Safety Paddle's reasoning: a surface arriving
         // under a ball already on its way down is easier to believe if it is seen arriving
 
+        showEndlessIIPaddleShadow()
         if hapticsSetting { heavyHaptic.impactOccurred() }
+    }
+
+    static let endlessIIPaddleShadowName = "mirrorPaddleShadow"
+
+    /// Hangs a soft shadow under the real paddle while the mirror runs.
+    ///
+    /// James, round 200: "the front white paddle should have a slight soft drop shadow so
+    /// the green/yellow paddle appears behind it." Depth is what says which of two crossing
+    /// paddles is yours, and colour alone stopped saying it the moment they overlapped.
+    ///
+    /// SpriteKit has no layer shadows, so this is the game's usual trick: the paddle's own
+    /// texture again, black, mostly transparent, a little larger and a few points low, as a
+    /// child of the paddle so it follows every move for free. A negative child z draws it
+    /// behind the paddle's own pixels and still in front of the mirror.
+    func showEndlessIIPaddleShadow() {
+        guard paddle.childNode(withName: GameScene.endlessIIPaddleShadowName) == nil else {
+            return
+        }
+        let shadow = SKSpriteNode(texture: paddle.texture,
+                                  size: CGSize(width: paddle.size.width*1.06,
+                                               height: paddle.size.height*1.25))
+        shadow.name = GameScene.endlessIIPaddleShadowName
+        shadow.color = .black
+        shadow.colorBlendFactor = 1
+        shadow.alpha = 0.35
+        shadow.position = CGPoint(x: 0, y: -paddle.size.height*0.3)
+        shadow.zPosition = -0.05
+        shadow.centerRect = paddleCapRect(for: paddle.texture)
+        paddle.addChild(shadow)
+    }
+
+    func removeEndlessIIPaddleShadow() {
+        paddle.childNode(withName: GameScene.endlessIIPaddleShadowName)?.removeFromParent()
     }
 
     func endlessIIMirrorPaddleBody(size: CGSize) -> SKPhysicsBody {
@@ -145,6 +179,8 @@ extension GameScene {
             // second removal on the same node
             mirror.physicsBody = nil
             mirror.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+            removeEndlessIIPaddleShadow()
+            // The shadow is the mirror's costume on the real paddle, and it leaves with it
             return
         }
 

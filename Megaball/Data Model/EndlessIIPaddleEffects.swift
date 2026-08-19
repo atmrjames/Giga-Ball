@@ -63,7 +63,18 @@ enum EndlessIIPaddleEffects {
     /// field it is barely there - and only a *falling* ball is pulled. Curving a rising ball
     /// back toward the paddle would shorten every climb, which turns a beneficial power-up
     /// into a subtle penalty.
+    /// **The whole paddle is the magnet, not a point on it** (James, round 200: "the ball
+    /// should be attracted to the whole length of the paddle, not just a single point...
+    /// the inertia of the ball and power of paddle magnetism should determine where the
+    /// ball hits"). The pull aims at the nearest point of the paddle's span to where the
+    /// ball is currently heading - so a ball already falling onto the paddle gets no turn
+    /// at all and lands wherever its own flight takes it, and a ball that would miss is
+    /// bent just enough to make the edge. The old version aimed at a fixed spot a third
+    /// out from centre, which actively steered every ball away from the middle - the
+    /// "preventing the ball from hitting the centre" James saw - and made the landing the
+    /// magnet's choice rather than the flight's.
     static func magnetised(velocity: CGVector, ballAt ball: CGPoint, paddleAt paddle: CGPoint,
+                           paddleHalfWidth: CGFloat = 0,
                            strength: CGFloat, delta: TimeInterval) -> CGVector {
         guard velocity.dy < 0 else { return velocity }
         let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
@@ -74,8 +85,18 @@ enum EndlessIIPaddleEffects {
         let falloff = max(0, 1 - gap/EndlessIIPaddleEffects.magnetismReach)
         guard falloff > 0 else { return velocity }
 
+        let landingX = ball.x + velocity.dx*(gap / -velocity.dy)
+        // Where this flight lands at paddle height if nothing touches it - the ball's own
+        // inertia, asked directly
+        let margin = max(0, paddleHalfWidth - EndlessIIPaddleEffects.magnetismEdgeMargin)
+        let targetX = min(max(landingX, paddle.x - margin), paddle.x + margin)
+        // The nearest point of the span to where the ball is already going. Inside the span
+        // the target *is* the landing, so the turn below is zero and inertia decides;
+        // outside it the target is the nearer edge, inset a little so "hard to miss" does
+        // not mean "caught by the last pixel"
+
         let currentAngle = atan2(velocity.dy, velocity.dx)
-        let towardPaddle = atan2(paddle.y - ball.y, paddle.x - ball.x)
+        let towardPaddle = atan2(paddle.y - ball.y, targetX - ball.x)
         var turn = towardPaddle - currentAngle
         while turn > .pi { turn -= 2 * .pi }
         while turn < -.pi { turn += 2 * .pi }
@@ -90,6 +111,9 @@ enum EndlessIIPaddleEffects {
         let angle = currentAngle + step
         return CGVector(dx: cos(angle)*speed, dy: sin(angle)*speed)
     }
+
+    /// How far inside the paddle's true edge the magnet aims a missing ball.
+    static let magnetismEdgeMargin: CGFloat = 8
 
     /// How far above the paddle the pull reaches at all.
     static let magnetismReach: CGFloat = 420

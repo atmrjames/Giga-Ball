@@ -270,15 +270,36 @@ extension GameScene {
     /// Wrap-Around is not a wall, so it is silent: while the clock runs the paddle leaves one
     /// side and arrives at the other, and a knock would be describing something that did not
     /// happen.
+    /// How far back inside the field the finger has to come before the wall counts as left.
+    ///
+    /// **Hysteresis, and it is the whole fix for the repeating haptic** (round 200: "if the
+    /// paddle is dragged against the wall the haptics continues to go off"). Arriving and
+    /// leaving used to share one 0.5pt threshold, and a finger held roughly at the edge
+    /// wobbles across half a point constantly - every wobble read as a fresh arrival. Leaving
+    /// now takes twenty points of deliberate movement, so a thumb resting against the wall is
+    /// one contact however much it trembles.
+    static let paddleWallReleaseDistance: CGFloat = 20
+
     func notePaddleTouchedTheWall(wanted: CGFloat, allowed: CGFloat) {
         guard hapticsSetting, endlessIIWrapIsRunning == false else {
             paddleIsAgainstTheWall = false
             return
         }
 
-        let against = abs(wanted - allowed) > 0.5
-        defer { paddleIsAgainstTheWall = against }
-        guard against, paddleIsAgainstTheWall == false else { return }
-        lightHaptic.impactOccurred()
+        let overshoot = abs(wanted - allowed)
+        if paddleIsAgainstTheWall {
+            if overshoot < 0.5, abs(wanted - paddle.position.x)
+                > GameScene.paddleWallReleaseDistance {
+                paddleIsAgainstTheWall = false
+            }
+            // Released only when the finger is genuinely back inside the field - not
+            // merely passing over the clamp point on its way outward again
+            return
+        }
+        guard overshoot > 0.5 else { return }
+        paddleIsAgainstTheWall = true
+        lightHaptic.impactOccurred(intensity: 0.4)
+        // Softer than a full light tap (round 200: "paddle wall hit haptics should be
+        // softer") - the wall is scenery, not an event
     }
 }

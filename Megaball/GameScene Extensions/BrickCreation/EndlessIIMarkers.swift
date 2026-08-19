@@ -173,7 +173,11 @@ extension GameScene {
                                 size: CGSize(width: gameWidth, height: 1))
         line.position = CGPoint(x: 0, y: finalBrickRowHeight - brickHeight/2)
         line.zPosition = 1.2
-        line.alpha = 0.22
+        line.alpha = 0.11
+        // Halved from 0.22 (round 200: "the low level brick line should be about half the
+        // opacity that it currently is"). Safe to dim now where earlier rounds fought to
+        // brighten it: those fights were zPosition bugs wearing an opacity costume, and at
+        // 1.2 the line renders over the backdrop whatever its alpha is
         // **Above the bricks (1), below the ball and paddle (3)** - round 80. A Big brick
         // keeps its node on a row centre and hangs its body a half-row below it (§8.6), so
         // on the last row its lower half covered the line and the kill line stopped being

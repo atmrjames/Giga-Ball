@@ -46,11 +46,16 @@ extension GameScene {
 
     static let endlessIISafetyPaddleName = "endlessIISafetyPaddle"
 
-    /// Where it stands: one row below the lowest a brick may occupy.
+    /// Where it stands: one full brick row below the low-limit line.
     ///
-    /// Below the field, so it never sits inside a brick, and well above the real paddle, so
-    /// the two are read as two things.
-    var endlessIISafetyPaddleY: CGFloat { finalBrickRowHeight - brickHeight }
+    /// **Measured from the line the player sees, not from the row the code counts** (round
+    /// 200: "safety paddle should sit one brick row width below the low level brick line").
+    /// The line is drawn at `finalBrickRowHeight - brickHeight/2`, so the old
+    /// `finalBrickRowHeight - brickHeight` put the bar only half a row under it - close
+    /// enough that a brick arriving on the last row and the bar beneath it read as one
+    /// object. A row of clear air keeps them two things: below the field so it never sits
+    /// inside a brick, and well above the real paddle.
+    var endlessIISafetyPaddleY: CGFloat { finalBrickRowHeight - brickHeight*1.5 }
 
     func endlessIICollectSafetyPaddle() {
         guard gameMode == .endlessII else { return }
@@ -186,6 +191,13 @@ extension GameScene {
     /// bounces off, and every power-up that answers a paddle contact stays out of it.
     func endlessIISafetyPaddleHit(_ subject: SKSpriteNode) {
         guard let body = subject.physicsBody else { return }
+        guard body.velocity.dy < 0 else { return }
+        // **A climbing ball is passing through, not bouncing** (round 200: "safety paddle is
+        // setting off haptics when ball travels through it from below"). The bits that make
+        // the bar solid are restored the moment a ball comes clear above it, and a ball still
+        // edge-touching at that instant registers a contact - which then rang the haptic and,
+        // worse, rewrote a climbing ball's velocity through the bounce arithmetic below. Only
+        // a ball moving *down* has any business here
         if soundsSetting { run(ballPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
 

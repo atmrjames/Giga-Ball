@@ -1466,8 +1466,10 @@ final class RandomisedBounceTests: XCTestCase {
         let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
         XCTAssertNotNil(bar)
         XCTAssertEqual(bar?.position.y ?? 0,
-                       scene.finalBrickRowHeight - scene.brickHeight, accuracy: 0.001,
-                       "below the field, so it never stands inside a brick")
+                       scene.finalBrickRowHeight - scene.brickHeight*1.5, accuracy: 0.001,
+                       "one full brick row below the low-limit line, which is drawn half a "
+                       + "row under the lowest brick row (round 200) - clear air, so the bar "
+                       + "and a last-row brick read as two things")
     }
 
     func testItsSurfaceIsNotThePaddlesAndNotAScreenBlocks() {

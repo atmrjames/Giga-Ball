@@ -2929,18 +2929,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Ball hits Paddle
             
             if firstBody.categoryBitMask == CollisionTypes.brickCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.laserCategory.rawValue {
-                if let brickNode = firstBody.node {
-					if secondBody.node?.name == LaserCategoryName {
+                if let brickNode = firstBody.node,
+                   let brickSprite = brickNode as? SKSpriteNode,
+                   let laserSprite = secondBody.node as? SKSpriteNode {
+					if laserSprite.name == LaserCategoryName {
 						totalStatsArray[0].lasersHit+=1
 					}
 					// A Cluster ball wears the laser's category - so every brick already
 					// tests contact with it - but it is not a laser, and the lasers-fired
 					// statistic must not count it
-					hitBrick(node: brickNode, sprite: brickNode as! SKSpriteNode, laserNode: secondBody.node!, laserSprite: (secondBody.node as! SKSpriteNode), hitFrom: .bottom)
+					hitBrick(node: brickNode, sprite: brickSprite, laserNode: laserSprite, laserSprite: laserSprite, hitFrom: .bottom)
 					// Lasers only ever arrive from underneath - and a cluster ball almost
 					// always does: it is released climbing, so `.bottom` is the honest face
 					// for everything but a grazing sideways strike
                 }
+				// **`if let` on BOTH nodes, and this was a crash in the wild** (round 200,
+				// James at ~250m with a Cluster in flight). A contact's node is nil when the
+				// node was removed earlier in the same physics pass - and a Cluster ball that
+				// meets two bricks in one frame does exactly that: the first contact's
+				// `hitBrick` removes the pellet, the second contact arrives in the same batch
+				// with `secondBody.node == nil`, and the old `secondBody.node!` took the app
+				// down. Twelve pellets into a dense deep field makes the double-contact a
+				// certainty eventually. The brick side was already guarded; the pellet side
+				// was not
             }
             // Laser (or a Cluster ball) hits Brick
 			
@@ -2964,13 +2975,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if firstBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue {
 
-				let powerUpNode = secondBody.node
-				if powerUpNode!.zPosition == 2 {
-					powerUpNode!.removeAllActions()
-					powerUpNode!.zPosition = 1
-					powerUpNode!.physicsBody!.collisionBitMask = 0
-					powerUpNode!.physicsBody!.contactTestBitMask = 0
-					applyPowerUp(node: secondBody.node!)
+				guard let powerUpNode = secondBody.node,
+					  let powerUpBody = powerUpNode.physicsBody else { return }
+				// The same nil-node rule as the Cluster fix above: a power-up in contact
+				// with the paddle at two points in one frame is rare and real, and the
+				// second contact's node can already be gone
+				if powerUpNode.zPosition == 2 {
+					powerUpNode.removeAllActions()
+					powerUpNode.zPosition = 1
+					powerUpBody.collisionBitMask = 0
+					powerUpBody.contactTestBitMask = 0
+					applyPowerUp(node: powerUpNode)
 				} else {
 					return
 				}
@@ -3545,6 +3560,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		endlessHeight+=1
 		creditPowerUpsWithThisMetre()
 		refreshEndlessIIBest()
+		autosaveEndlessRunIfDue()
+		// **A crash must not cost the run** (round 200: James lost ~250m of Mayhem to one -
+		// no resume screen, nothing on the board - because between pauses nothing ever
+		// saved). Every `autosaveEveryMetres` of climb the run writes the same save a pause
+		// writes, so the worst a crash can take is the last few metres. From the row step
+		// rather than the frame, because encoding the field is real work and the row step is
+		// the one moment the field is guaranteed settled on its rows
 		moveEndlessIIMarkersDown()
 		addEndlessIIMarkerIfDue()
 		addEndlessIITickIfDue()
@@ -6705,6 +6727,22 @@ laserTimer?.invalidate()
 		if gameoverStatus { return true }
 		guard endlessMode == false else { return false }
 		return levelNumber == endLevelNumber && gameState.currentState is InbetweenLevels
+	}
+
+	/// How much climb an endless run may owe before it is saved again.
+	static let autosaveEveryMetres = 10
+
+	/// The height the run was last saved at, so the cadence survives nothing and restarts
+	/// with every scene.
+	var endlessLastAutosaveHeight = 0
+
+	/// Saves the run mid-flight, every few metres of climb.
+	func autosaveEndlessRunIfDue() {
+		guard endlessMode, gameState.currentState is Playing,
+			  endlessHeight - endlessLastAutosaveHeight >= GameScene.autosaveEveryMetres
+		else { return }
+		endlessLastAutosaveHeight = endlessHeight
+		saveCurrentGame()
 	}
 
 	func saveCurrentGame() {

@@ -524,15 +524,16 @@ extension GameScene {
             guard subject.parent != nil, let body = subject.physicsBody else { continue }
             guard subject !== ball || ballIsOnPaddle == false else { continue }
             guard subject.position.y < pullCeiling else { continue }
-            let side: CGFloat = subject.position.x >= paddle.position.x ? 1 : -1
-            let target = CGPoint(x: paddle.position.x + side*paddle.size.width*0.3,
-                                 y: paddle.position.y)
-            // Pulled toward a spot a third out from the centre, on the ball's own side - a
-            // magnet aimed dead centre landed every ball vertically, and a vertical bounce
-            // is the least useful one the paddle can give
             body.velocity = EndlessIIPaddleEffects.magnetised(
                 velocity: body.velocity, ballAt: subject.position,
-                paddleAt: target, strength: strength, delta: delta)
+                paddleAt: CGPoint(x: paddle.position.x, y: paddle.position.y),
+                paddleHalfWidth: paddle.size.width/2,
+                strength: strength, delta: delta)
+            // The whole span is the magnet now (round 200) - the arithmetic aims at the
+            // nearest reachable point of the paddle to the ball's own landing, so inertia
+            // decides where on the paddle it arrives. The old fixed target a third out from
+            // centre is gone, and with it both of its bugs: every ball was steered away from
+            // the middle, and the landing was the magnet's choice rather than the flight's
         }
     }
 

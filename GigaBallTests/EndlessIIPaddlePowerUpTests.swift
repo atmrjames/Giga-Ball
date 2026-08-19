@@ -127,6 +127,41 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
         XCTAssertEqual(pull(rising, ballAt: CGPoint(x: 50, y: 100)), rising)
     }
 
+    /// James, round 200: "the ball should be attracted to the whole length of the paddle,
+    /// not just a single point on it. The inertia of the ball and power of paddle magnetism
+    /// should determine where the ball hits."
+    func testABallAlreadyLandingOnThePaddleIsLeftToItsOwnFlight() {
+        // Falling at 45 degrees toward a spot well inside the span: the magnet has nothing
+        // to add, so inertia decides the landing - this is the fix for every ball being
+        // steered away from the centre
+        let before = CGVector(dx: 50, dy: -50)
+        let after = EndlessIIPaddleEffects.magnetised(
+            velocity: before, ballAt: CGPoint(x: -30, y: 30),
+            paddleAt: .zero, paddleHalfWidth: 60, strength: 1, delta: 1.0/60.0)
+        XCTAssertEqual(after.dx, before.dx, accuracy: 0.001)
+        XCTAssertEqual(after.dy, before.dy, accuracy: 0.001)
+    }
+
+    func testABallMissingThePaddleIsBentTowardTheNearerEdge() {
+        // Falling straight down at x = -200 with the paddle spanning -60...60: bent right,
+        // toward the edge it can actually make - not toward the centre
+        let after = EndlessIIPaddleEffects.magnetised(
+            velocity: CGVector(dx: 0, dy: -100), ballAt: CGPoint(x: -200, y: 60),
+            paddleAt: .zero, paddleHalfWidth: 60, strength: 1, delta: 1.0/60.0)
+        XCTAssertGreaterThan(after.dx, 0, "pulled toward the span it would otherwise miss")
+    }
+
+    func testTheCentreOfThePaddleIsReachableAgain() {
+        // The old fixed target a third out from centre meant a ball heading dead-centre was
+        // actively pushed off it. Heading dead-centre now stays dead-centre
+        let before = CGVector(dx: 0, dy: -100)
+        let after = EndlessIIPaddleEffects.magnetised(
+            velocity: before, ballAt: CGPoint(x: 0, y: 100),
+            paddleAt: .zero, paddleHalfWidth: 60, strength: 1, delta: 1.0/60.0)
+        XCTAssertEqual(after.dx, 0, accuracy: 0.001,
+                       "a flight into the middle is not the magnet's to redirect")
+    }
+
     func testThePullFadesWithDistance() {
         let near = pull(CGVector(dx: 0, dy: -100), ballAt: CGPoint(x: -50, y: 60))
         let far = pull(CGVector(dx: 0, dy: -100), ballAt: CGPoint(x: -50, y: 400))
