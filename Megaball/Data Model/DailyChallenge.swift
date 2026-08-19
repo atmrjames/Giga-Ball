@@ -788,11 +788,17 @@ final class DailyChallengeSession {
     /// can stay on a day, and the briefing screen labels it loudly. Remove-before-release
     /// is tracked in the spec's build phases.
     var today: Date {
-        if let offset = UserDefaults.standard.object(forKey: DailyChallengeSession.testOffsetKey) as? Int,
-           offset != 0 {
-            return DailyDay.utcCalendar.date(byAdding: .day, value: offset, to: Date())!
-        }
-        return Date()
+        let offset = testDayOffset
+        guard offset != 0 else { return Date() }
+        return DailyDay.utcCalendar.date(byAdding: .day, value: offset, to: Date())!
+        // Through `testDayOffset`, which reads with `integer(forKey:)`, and not a raw
+        // `object(forKey:) as? Int` - the two are not the same reader. Launching with
+        // `-dailyChallengeTestDayOffset 45` puts a *String* in the argument domain, which
+        // `integer` coerces and the cast rejects: the briefing header (which reads the
+        // property) switched to date mode while the date itself (which read the object)
+        // stayed put, and the rig looked broken in the strangest possible way (round 199).
+        // The launch argument is now the way to drive the clock - it touches no stored
+        // defaults, so there is nothing to forget to reset
     }
 
     static let testOffsetKey = "dailyChallengeTestDayOffset"

@@ -291,18 +291,23 @@ extension GameScene {
         isDailyChallenge && DailyChallengeSession.shared.has(.timeTrial)
     }
 
-    /// Builds the countdown into the HUD, centre top, where the mode icon used to sit.
+    /// Builds the countdown into the HUD: centred, just below the power-up tray.
     ///
-    /// That spot is deliberately empty in every mode (the icon there carried no information
-    /// the player did not already have), which makes it the one place a clock can go without
-    /// crowding the score on the right or the pause button on the left.
+    /// **Not centre-top beside the pause button**, which was the first try - that spot reads
+    /// as free in the scene file and is exactly where the Dynamic Island sits on the device.
+    /// It is the same lesson the old mode icon learned (its removal comment says "directly
+    /// under the notch"), and the first screenshot of a Time Trial run showed a clock that
+    /// was there and invisible. Below the tray is real screen on every device, and a HUD
+    /// label floating over the field's top rows is what every HUD label already does.
     func setupDailyClock() {
         guard dailyTimeTrial, dailyClockLabel == nil else { return }
         let clock = SKLabelNode(fontNamed: scoreLabel.fontName)
         clock.fontSize = scoreLabel.fontSize
         clock.fontColor = scoreLabel.fontColor
-        clock.verticalAlignmentMode = .center
-        clock.position = CGPoint(x: 0, y: pauseButton.position.y)
+        clock.verticalAlignmentMode = .top
+        clock.position = CGPoint(
+            x: 0,
+            y: powerUpTray.position.y - powerUpTray.size.height/2 - labelSpacing/2)
         clock.zPosition = 10
         addChild(clock)
         dailyClockLabel = clock
