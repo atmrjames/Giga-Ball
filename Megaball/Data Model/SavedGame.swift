@@ -132,6 +132,13 @@ struct SavedGame: Codable, Equatable {
     /// drawn schedule - the behaviour they already had.
     var endlessIIProgression: EndlessIIProgression? = nil
 
+    /// Time Trial's clock at the moment of the save, in seconds (round 197).
+    ///
+    /// Saved because it is the one thing that twist cannot give away: without it a pause and
+    /// resume handed back a fresh ninety seconds. Optional so every earlier save decodes, and
+    /// nil on any run that is not a Time Trial.
+    var dailyTimeTrialRemaining: Double? = nil
+
     /// Which mode this run belongs to, as `GameMode.rawValue`.
     ///
     /// **The save used to have no mode field at all**, and the mode was read from a

@@ -896,6 +896,116 @@ final class DailyLayoutTwistTests: XCTestCase {
         XCTAssertEqual(flipped.map { $0[1] }.max(), highest)
     }
 
+    // MARK: - Time Trial (round 197)
+
+    private func timeTrialScene() -> GameScene {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-05", mode: .endlessII, classicLevel: nil, twists: [.timeTrial])
+        return scene
+    }
+
+    /// §4: "90 seconds on the clock; the score at the whistle is the score."
+    func testTheClockStartsAtNinetyAndCountsFlightTimeDown() {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertEqual(scene.dailyTimeTrialRemaining, 90, "the clock the spec names")
+        XCTAssertFalse(scene.spendDailyTimeTrial(1.5))
+        XCTAssertEqual(scene.dailyTimeTrialRemaining, 88.5, accuracy: 0.0001)
+    }
+
+    func testTheWhistleBlowsAtZeroAndNotAMomentBefore() {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+
+        scene.dailyTimeTrialRemaining = 0.2
+        XCTAssertFalse(scene.spendDailyTimeTrial(0.1), "0.1s left is still a run")
+        XCTAssertTrue(scene.spendDailyTimeTrial(0.2),
+                      "spending past zero blows the whistle, and the clock floors rather "
+                      + "than going negative")
+        XCTAssertEqual(scene.dailyTimeTrialRemaining, 0)
+    }
+
+    func testTheClockDoesNotRunOutsidePlay() {
+        // The tick's guards: a scene that is not mid-game - not Playing, ball on the paddle -
+        // must not lose a second. The ninety seconds are seconds of play, not of hesitation
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+
+        scene.tickDailyTimeTrial(5)
+        XCTAssertEqual(scene.dailyTimeTrialRemaining, 90,
+                       "nothing is Playing yet, so nothing is spent")
+    }
+
+    func testAnOrdinaryDayHasNoClockAtAll() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-05", mode: .endlessII, classicLevel: nil, twists: [.fogOfWar])
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertFalse(scene.dailyTimeTrial)
+        scene.setupDailyClock()
+        XCTAssertNil(scene.dailyClockLabel, "no countdown in the HUD on a day without one")
+    }
+
+    func testTheClockLabelSaysWholeSecondsAndTurnsUrgent() {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+        scene.dailyClockLabel = SKLabelNode()
+
+        scene.dailyTimeTrialRemaining = 89.2
+        scene.showDailyClock()
+        XCTAssertEqual(scene.dailyClockLabel?.text, "90",
+                       "rounded up - the player is not told 89 while the 90th second runs")
+
+        scene.dailyTimeTrialRemaining = 9.4
+        scene.showDailyClock()
+        XCTAssertEqual(scene.dailyClockLabel?.text, "10")
+        XCTAssertEqual(scene.dailyClockLabel?.fontColor, .red, "urgent for the last ten")
+    }
+
+    func testTheClockRidesInTheSaveAndComesBack() throws {
+        // The one thing a Time Trial cannot give away is a fresh ninety seconds on resume
+        var save = SavedGame(
+            levelNumber: 0, endLevelNumber: 0, packNumber: 0, levelScore: 0, totalScore: 0,
+            numberOfLives: 1, endlessHeight: 0, numberOfLevels: 1, levelTimerValue: 0,
+            packTimerValue: 0, deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0, paddleHitsPerLevel: 0,
+            multiplier: 1, brickTextures: [], brickColours: [], brickXPositions: [],
+            brickYPositions: [], ballProperties: [],
+            fallingPowerUpXPositions: [], fallingPowerUpYPositions: [], fallingPowerUps: [],
+            activePowerUps: [], activePowerUpDurations: [], activePowerUpTimers: [],
+            activePowerUpMagnitudes: [])
+        save.dailyTimeTrialRemaining = 41.5
+
+        let store = InMemoryKeyValueStore()
+        save.save(to: store)
+        let read = try XCTUnwrap(SavedGame.load(from: store))
+        XCTAssertEqual(read.dailyTimeTrialRemaining, 41.5)
+    }
+
+    func testTimeTrialLandsBesideAnyOtherTwist() {
+        // Its own category, like No Pausing: it contradicts nothing, and a foggy Time Trial
+        // or a one-life Time Trial is where the pool's variety comes from
+        XCTAssertEqual(DailyTwist.timeTrial.category, .tempo)
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            XCTAssertTrue(DailyTwist.timeTrial.applies(to: mode))
+        }
+    }
+
+    func testTimeTrialIsActuallyOfferedOnceItsDateArrives() {
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        var seen = false
+        for _ in 0..<400 {
+            let challenge = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: day))
+            if challenge.twists.contains(.timeTrial) { seen = true; break }
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        XCTAssertTrue(seen, "in the enum but never drawn looks exactly like very rare")
+    }
+
     // MARK: - Brick Swap (round 196)
 
     /// A brick of every Classic type, for the swap to chew on.

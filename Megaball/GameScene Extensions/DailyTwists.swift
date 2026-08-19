@@ -286,6 +286,71 @@ extension GameScene {
         }
     }
 
+    /// Whether the day is a Time Trial.
+    var dailyTimeTrial: Bool {
+        isDailyChallenge && DailyChallengeSession.shared.has(.timeTrial)
+    }
+
+    /// Builds the countdown into the HUD, centre top, where the mode icon used to sit.
+    ///
+    /// That spot is deliberately empty in every mode (the icon there carried no information
+    /// the player did not already have), which makes it the one place a clock can go without
+    /// crowding the score on the right or the pause button on the left.
+    func setupDailyClock() {
+        guard dailyTimeTrial, dailyClockLabel == nil else { return }
+        let clock = SKLabelNode(fontNamed: scoreLabel.fontName)
+        clock.fontSize = scoreLabel.fontSize
+        clock.fontColor = scoreLabel.fontColor
+        clock.verticalAlignmentMode = .center
+        clock.position = CGPoint(x: 0, y: pauseButton.position.y)
+        clock.zPosition = 10
+        addChild(clock)
+        dailyClockLabel = clock
+        showDailyClock()
+    }
+
+    /// Runs the whistle's clock. From `update`, every frame, in every mode.
+    ///
+    /// **The clock runs while the ball is live**: Playing, not paused, ball off the paddle.
+    /// A ball waiting on the paddle does not count down, so the ninety seconds are seconds
+    /// of play rather than seconds of hesitation - and a life lost buys the moment of reset
+    /// back. The pause guard matters on the days that can pause; on a No Pausing Time Trial
+    /// there is no pause to hold it.
+    func tickDailyTimeTrial(_ delta: TimeInterval) {
+        guard dailyTimeTrial, gameoverStatus == false,
+              gameState.currentState is Playing, isPaused == false,
+              ballIsOnPaddle == false, endlessIIAimHold == false
+        else { return }
+        guard spendDailyTimeTrial(delta) else { return }
+
+        gameoverStatus = true
+        removeAction(forKey: "gameTimer")
+        levelTimerBonus = 0
+        gameState.enter(InbetweenLevels.self)
+        // The whistle ends the run the way running out of lives does - the same flag, the
+        // same state - so everything downstream (the daily result, the game-over screen,
+        // posting) treats it as a run that finished rather than a special case. The score
+        // at the whistle is the score, which is the whole twist
+    }
+
+    /// Spends flight time off the clock, and reports whether the whistle blew.
+    ///
+    /// Split from the tick so the arithmetic can be tested without a state machine - the
+    /// guards above need a scene mid-game, and the counting does not.
+    func spendDailyTimeTrial(_ delta: TimeInterval) -> Bool {
+        dailyTimeTrialRemaining = max(0, dailyTimeTrialRemaining - delta)
+        showDailyClock()
+        return dailyTimeTrialRemaining <= 0
+    }
+
+    /// Says what is left, in whole seconds, turning urgent for the last ten.
+    func showDailyClock() {
+        guard let clock = dailyClockLabel else { return }
+        let seconds = Int(dailyTimeTrialRemaining.rounded(.up))
+        clock.text = "\(seconds)"
+        clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
+    }
+
     /// The day's brick remap, when Brick Swap is on. Nil otherwise.
     var dailyBrickSwap: DailyTwist.DailyBrickSwap? {
         guard isDailyChallenge, DailyChallengeSession.shared.has(.brickSwap),

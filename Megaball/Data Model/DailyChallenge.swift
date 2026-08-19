@@ -94,11 +94,12 @@ enum DailyTwist: String, CaseIterable, Codable {
     case fogOfWar
     case mirrored, upsideDown, brickSwap
     case noPausing
+    case timeTrial
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
     enum Category: CaseIterable {
-        case economy, lives, dress, layout, nerve
+        case economy, lives, dress, layout, nerve, tempo
 
         /// The date this category may first be *drawn* (§2.1), and the reason it exists.
         ///
@@ -114,6 +115,7 @@ enum DailyTwist: String, CaseIterable, Codable {
             case .economy, .lives, .dress: return "2026-08-01"
             case .layout: return "2026-09-01"
             case .nerve: return "2026-10-01"
+            case .tempo: return "2026-10-01"
             }
         }
     }
@@ -125,6 +127,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .fogOfWar: return .dress
         case .mirrored, .upsideDown, .brickSwap: return .layout
         case .noPausing: return .nerve
+        case .timeTrial: return .tempo
         }
     }
 
@@ -144,6 +147,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .upsideDown: return "Upside Down"
         case .brickSwap: return "Brick Swap"
         case .noPausing: return "No Pausing"
+        case .timeTrial: return "Time Trial"
         }
     }
 
@@ -163,6 +167,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .upsideDown: return "The level is built the wrong way up."
         case .brickSwap: return "The level's bricks are not the types they were."
         case .noPausing: return "No pausing, and leaving the app ends your attempt."
+        case .timeTrial: return "Ninety seconds. The score at the whistle is the score."
         }
     }
 
@@ -193,6 +198,10 @@ enum DailyTwist: String, CaseIterable, Codable {
         }
     }
 
+    /// How long a Time Trial lasts, in seconds. §4: "90 seconds on the clock; the score at
+    /// the whistle is the score."
+    static let timeTrialSeconds: Double = 90
+
     /// The date this twist may first be offered (§2.1). Append-only.
     var activationKey: String {
         switch self {
@@ -201,7 +210,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         // Joins the layout category on the category's own date. Safe to add to that pool
         // because no date this changes has been played: the pool only shifts days from the
         // activation forward, and the golden test pins the days behind it
-        case .noPausing: return "2026-10-01"
+        case .noPausing, .timeTrial: return "2026-10-01"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date

@@ -848,6 +848,24 @@ enum PowerUpIcon {
         // what they are - one category, one per day
     }
 
+    /// Time Trial: a stopwatch - a circle, a stem, and a hand pointing near the top because
+    /// the time on this clock is nearly up from the moment it starts.
+    static let twistTimeTrial: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let radius = rect.width*0.26
+        let centre = CGPoint(x: rect.midX, y: rect.midY + rect.height*0.05)
+        context.strokeEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius,
+                                         width: radius*2, height: radius*2))
+        context.move(to: CGPoint(x: centre.x, y: centre.y - radius))
+        context.addLine(to: CGPoint(x: centre.x, y: centre.y - radius - rect.height*0.10))
+        context.strokePath()
+        // The stem
+        context.move(to: centre)
+        context.addLine(to: CGPoint(x: centre.x + radius*0.55, y: centre.y - radius*0.55))
+        context.strokePath()
+        // The hand
+    }
+
     /// Brick Swap: two bricks trading places - a pair of small rectangles with arrows
     /// crossing between them.
     static let twistBrickSwap: UIImage = badge(twist) { context, rect in
@@ -991,6 +1009,7 @@ extension DailyTwist {
         case .upsideDown: return PowerUpIcon.twistUpsideDown
         case .noPausing: return PowerUpIcon.twistNoPausing
         case .brickSwap: return PowerUpIcon.twistBrickSwap
+        case .timeTrial: return PowerUpIcon.twistTimeTrial
         }
     }
 

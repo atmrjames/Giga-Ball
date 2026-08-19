@@ -917,6 +917,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The opening field, while it is still on show. Fog of War lets the level be seen once
 	/// and then takes it away - see `closeDailyFog`.
 	var dailyFogPending: [SKSpriteNode] = []
+	/// Time Trial's clock: seconds left before the whistle. See `tickDailyTimeTrial`.
+	var dailyTimeTrialRemaining: Double = DailyTwist.timeTrialSeconds
+	/// The countdown in the HUD, built only on a Time Trial day.
+	var dailyClockLabel: SKLabelNode?
 	var dailyFogTaking: [SKSpriteNode] = []
 	// What the fog is mid-way through taking - scheduled or fading - so an early launch can
 	// finish the job at once (`snapDailyFogShut`)
@@ -1591,6 +1595,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Pause button size and position
 
 		pauseButton.isHidden = dailyNoPausing
+		setupDailyClock()
 		// **Taken off the screen, not merely made inert.** A button that is still drawn and
 		// does nothing reads as a bug, and the twist is announced on the briefing screen
 		// before the run starts - so its absence is a rule the player already knows about
@@ -2457,6 +2462,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		frameDelta = lastFrameTime == 0 ? 0 : max(0, currentTime - lastFrameTime)
 		lastFrameTime = currentTime
+		tickDailyTimeTrial(frameDelta)
 		// Measured once, for everything that needs to know what a frame is worth - the sticky
 		// catch's lookahead first of all, which was a fixed sixtieth and looked two frames
 		// ahead on a 120Hz screen
@@ -7208,6 +7214,20 @@ laserTimer?.invalidate()
 		// that case, so the last snapshot survives. Preserved here by falling back to the
 		// previous save field by field
 
+		let timeTrialClock: Double? = dailyTimeTrial ? dailyTimeTrialRemaining : nil
+		let hasField = brickXPositionArray != []
+		let savedTextures: [Int] = hasField ? brickTextureArray! : previous?.brickTextures ?? []
+		let savedColours: [Int] = hasField ? brickColourArray! : previous?.brickColours ?? []
+		let savedXs: [Int] = hasField ? brickXPositionArray! : previous?.brickXPositions ?? []
+		let savedYs: [Int] = hasField ? brickYPositionArray! : previous?.brickYPositions ?? []
+		let hasBall = ballPropertiesArray != []
+		let savedBall: [Double] = hasBall ? ballPropertiesArray! : previous?.ballProperties ?? []
+		let savedExtras: [Double]? = hasBall ? extraBallPropertiesArray : previous?.extraBallProperties
+		let savedSchedule: EndlessIIProgression? = gameMode == .endlessII ? endlessIIProgression : nil
+		// Hoisted out of the initializer below: with the ternaries inline it had grown past
+		// what the type-checker will take in one expression, and round 197's one extra
+		// argument was the straw
+
 		let savedMayhemBricks: [SavedGame.SavedBrick]? = brickXPositionArray != []
 			? (richBricks.isEmpty ? nil : richBricks)
 			: previous?.endlessIIBricks
@@ -7233,13 +7253,13 @@ laserTimer?.invalidate()
 			powerUpsCollectedPerPack: currentpowerUpsCollectedPerPack,
 			paddleHitsPerLevel: currentpaddleHitsPerLevel,
 			multiplier: currentMultiplier,
-			brickTextures: brickXPositionArray != [] ? brickTextureArray! : previous?.brickTextures ?? [],
-			brickColours: brickXPositionArray != [] ? brickColourArray! : previous?.brickColours ?? [],
-			brickXPositions: brickXPositionArray != [] ? brickXPositionArray! : previous?.brickXPositions ?? [],
-			brickYPositions: brickXPositionArray != [] ? brickYPositionArray! : previous?.brickYPositions ?? [],
-			ballProperties: ballPropertiesArray != [] ? ballPropertiesArray! : previous?.ballProperties ?? [],
-			extraBallProperties: ballPropertiesArray != [] ? extraBallPropertiesArray : previous?.extraBallProperties,
-			endlessIIProgression: gameMode == .endlessII ? endlessIIProgression : nil,
+			brickTextures: savedTextures,
+			brickColours: savedColours,
+			brickXPositions: savedXs,
+			brickYPositions: savedYs,
+			ballProperties: savedBall,
+			extraBallProperties: savedExtras,
+			endlessIIProgression: savedSchedule,
 			// Mayhem's only, because it is the only mode that reads one. Written every save
 			// rather than once, so a schedule is never lost to a save taken mid-run
 			gameMode: gameMode.rawValue,
@@ -7266,8 +7286,12 @@ laserTimer?.invalidate()
 			pausedBetweenLevels: savedBetweenLevels
 		)
 		savedGame?.endlessIIBricks = savedMayhemBricks
+		savedGame?.dailyTimeTrialRemaining = timeTrialClock
 		// Set after the initialiser rather than passed into it: that call already takes forty
-		// arguments and one more optional tipped the type-checker over its own limit
+		// arguments and one more optional tipped the type-checker over its own limit - twice
+		// now (the Mayhem bricks, then round 197's clock). The clock rides with the run, or a
+		// pause-and-resume would hand back a fresh ninety seconds - the one thing a Time
+		// Trial cannot give away
 
 		savedGame?.save()
 		
@@ -7560,6 +7584,9 @@ laserTimer?.invalidate()
 		// implied by the guards rather than stated, and this path runs at launch
 		if resumeGameToLoad {
 			adoptEndlessIISchedule(from: savedGame)
+			if let remaining = savedGame.dailyTimeTrialRemaining {
+				dailyTimeTrialRemaining = remaining
+			}
 
 			if savedGame.ballProperties.count >= SavedGame.ballPropertiesCount {
 				// Read positionally up to index 4 below. isEmpty was not a strong enough
