@@ -93,11 +93,12 @@ enum DailyTwist: String, CaseIterable, Codable {
     case noPowerUps, noGoodNews, noBadNews, powerShower, drought
     case fogOfWar
     case mirrored, upsideDown
+    case noPausing
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
     enum Category: CaseIterable {
-        case economy, lives, dress, layout
+        case economy, lives, dress, layout, nerve
 
         /// The date this category may first be *drawn* (§2.1), and the reason it exists.
         ///
@@ -112,6 +113,7 @@ enum DailyTwist: String, CaseIterable, Codable {
             switch self {
             case .economy, .lives, .dress: return "2026-08-01"
             case .layout: return "2026-09-01"
+            case .nerve: return "2026-10-01"
             }
         }
     }
@@ -122,6 +124,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .noPowerUps, .noGoodNews, .noBadNews, .powerShower, .drought: return .economy
         case .fogOfWar: return .dress
         case .mirrored, .upsideDown: return .layout
+        case .noPausing: return .nerve
         }
     }
 
@@ -139,6 +142,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .fogOfWar: return "Fog of War"
         case .mirrored: return "Mirrored"
         case .upsideDown: return "Upside Down"
+        case .noPausing: return "No Pausing"
         }
     }
 
@@ -156,6 +160,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .fogOfWar: return "Every brick is invisible until it is first struck."
         case .mirrored: return "The level is the wrong way round."
         case .upsideDown: return "The level is built the wrong way up."
+        case .noPausing: return "No pausing, and leaving the app ends your attempt."
         }
     }
 
@@ -190,6 +195,7 @@ enum DailyTwist: String, CaseIterable, Codable {
     var activationKey: String {
         switch self {
         case .mirrored, .upsideDown: return "2026-09-01"
+        case .noPausing: return "2026-10-01"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date
@@ -668,6 +674,16 @@ final class DailyChallengeSession {
     /// question. Written by `recordDailyResult` as it settles the run, so the screen
     /// never has to re-derive what the scene already decided.
     var lastRunPosted = false
+
+    /// Whether the run in play has forfeited its attempt by leaving the app.
+    ///
+    /// The No Pausing twist's second half (§4): "the pause button is disabled for the run.
+    /// Backgrounding the app forfeits posting." Taking the pause button away and leaving the
+    /// background route open would make the twist a suggestion - the app pauses itself when it
+    /// goes to the background, so a player could get exactly what the twist withholds by
+    /// switching apps. The run is not ended, because ending somebody's run from the outside is
+    /// worse than not scoring it; it simply stops being the attempt.
+    var forfeitedByLeaving = false
 
     /// Whether the run in play was resumed after its scoring window had closed.
     ///

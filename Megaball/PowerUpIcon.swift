@@ -848,6 +848,26 @@ enum PowerUpIcon {
         // what they are - one category, one per day
     }
 
+    /// No Pausing: the pause glyph with a stroke through it. The one twist whose badge can
+    /// simply be the control it takes away.
+    static let twistNoPausing: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let barWidth = rect.width*0.10
+        let barHeight = rect.height*0.34
+        for side in [CGFloat(-1), 1] {
+            context.fill(CGRect(x: rect.midX + side*rect.width*0.16 - barWidth/2,
+                                y: rect.midY - barHeight/2,
+                                width: barWidth, height: barHeight))
+        }
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.18,
+                                 y: rect.maxY - rect.height*0.18))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18,
+                                    y: rect.minY + rect.height*0.18))
+        context.strokePath()
+        // Struck through corner to corner rather than crossed out with a circle: the bars
+        // stay legible as a pause, which is the thing being denied
+    }
+
     /// Vanilla: the app icon itself (play-test round 11: "for vanilla icon, just use app
     /// icon") - the plain game is the game. The drawn brick-and-ball stays as the
     /// fallback for the unlikely build where the icon files cannot be read.
@@ -951,6 +971,7 @@ extension DailyTwist {
         case .fogOfWar: return PowerUpIcon.twistFogOfWar
         case .mirrored: return PowerUpIcon.twistMirrored
         case .upsideDown: return PowerUpIcon.twistUpsideDown
+        case .noPausing: return PowerUpIcon.twistNoPausing
         }
     }
 

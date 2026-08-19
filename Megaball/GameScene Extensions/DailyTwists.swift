@@ -99,6 +99,19 @@ extension GameScene {
             ?? DailyChallengeRecord(dateKey: challenge.dateKey)
 
         session.lastRunPosted = false
+        if session.forfeitedByLeaving {
+            session.isScoringAttempt = false
+            record.bestPracticeScore = max(record.bestPracticeScore, score)
+            totalStatsArray[0].upsertDailyRecord(record)
+            session.forfeitedByLeaving = false
+            return
+        }
+        // **No Pausing, forfeited** (§4): "backgrounding the app forfeits posting". The score
+        // is kept as practice rather than thrown away - the run was really played - but it is
+        // not the attempt any more, and the attempt itself was already spent when play was
+        // pressed. Cleared here because a forfeit belongs to the run that earned it and the
+        // next one starts clean
+
         if session.isScoringAttempt {
             session.isScoringAttempt = false
             record.firstAttemptScore = score
@@ -192,6 +205,37 @@ extension GameScene {
         // Both callers sum the table just before calling this, so the sum they left
         // behind still counts the entries the day just zeroed. The drop roll re-sums
         // before drawing, but everything else that reads the sum should read the truth
+    }
+
+    /// Whether the day takes the pause button away.
+    ///
+    /// §4's nerve twist: "The pause button is disabled for the run. Backgrounding the app
+    /// forfeits posting."
+    var dailyNoPausing: Bool {
+        isDailyChallenge && DailyChallengeSession.shared.has(.noPausing)
+    }
+
+    /// Whether the player may pause at all right now.
+    ///
+    /// One question for both routes in - the button and the swipe - because a twist that
+    /// closed the button and left the gesture open would be no twist at all, and the two
+    /// checks are three hundred lines apart.
+    var dailyPausingIsAllowed: Bool { dailyNoPausing == false }
+
+    /// Gives up the day's attempt because the player left the app.
+    ///
+    /// **The run carries on.** Ending somebody's game from the outside is worse than not
+    /// scoring it, and the twist is about nerve rather than punishment - so the ball stays in
+    /// play and what is lost is the posting. Called from the same notification that pauses
+    /// every other run when the app goes to the background: on a No Pausing day that
+    /// notification cannot be allowed to pause, because the app pausing itself would hand the
+    /// player exactly what the twist withholds.
+    ///
+    /// Nothing to undo. A forfeited attempt stays forfeited for the rest of the run, which is
+    /// the point - coming back does not give it back.
+    func dailyForfeitByLeaving() {
+        guard dailyNoPausing else { return }
+        DailyChallengeSession.shared.forfeitedByLeaving = true
     }
 
     /// Which way the day turns the level over, if it does.

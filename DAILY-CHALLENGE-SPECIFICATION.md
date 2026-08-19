@@ -171,7 +171,7 @@ and its hooks into the scene. The launch pool, from the brief plus fills:
 | **Blackout** | The whole game monochrome | All | A *twist*, not a dress: Classic bricks are told apart by colour, so grayscale is genuine difficulty there. Mayhem's glyphs keep it fair rather than impossible |
 | **Mayhem Rules** | Mayhem's power-ups drop in a Classic level | Classic | Suitable ones only — a curated list excluding anything that needs the descending field (Descent, Clear And Retreat) |
 | **Landslide** | The level's bricks descend continuously; whatever reaches the bottom row vanishes, unscored | Classic | Endless's movement in Classic's clothes: the level is escaping, and the score is what you catch |
-| **No Pausing** | The pause button is disabled for the run | All | The nerve twist. Backgrounding the app forfeits posting |
+| **No Pausing** | The pause button is disabled for the run | All | **Built, round 195.** The nerve twist. Backgrounding the app forfeits posting. Both routes into the pause screen ask one question (`dailyPausingIsAllowed`) - the button and the swipe are three hundred lines apart and a twist that closed one would be no twist at all. The button is *taken off the screen* rather than made inert, because a control that is drawn and does nothing reads as a bug where an absent one reads as the rule the briefing screen already announced. The forfeit hangs off the same notification that pauses every other run when the app goes to the background: on this day that notification must not pause, or switching apps would hand the player exactly what the twist withholds. **The run carries on** - ending somebody's game from the outside is worse than not scoring it - and the score is kept as practice rather than thrown away, because it was really played |
 
 ### 4.1 Always On — the curated subset
 
@@ -188,7 +188,9 @@ full vs. flag), because Mayhem's turn-based clocks must not tick down.
 Same principle as the power-up conflict groups (§5.3 of the Mayhem spec): twists that
 contradict cannot be drawn together. `powerUpEconomy` (No Power-Ups / No Good News / No Bad
 News / Power Shower / Drought / Always On — at most one), `lives` (One Life / Loaded /
-Sudden Death — at most one), `layout` (Upside Down / Mirrored / Brick Swap — at most one).
+Sudden Death — at most one), `layout` (Upside Down / Mirrored / Brick Swap — at most one),
+`nerve` (No Pausing — on its own, because it contradicts nothing: a day can be No Pausing
+*and* foggy, or No Pausing with one life, which is where its teeth are).
 
 **A category carries its own activation date, and it has to** (round 187, which added
 `layout`). A twist's `activationKey` keeps a new twist out of an older day's *pool*, which

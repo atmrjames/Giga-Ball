@@ -1589,6 +1589,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch.zPosition = 10
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
+
+		pauseButton.isHidden = dailyNoPausing
+		// **Taken off the screen, not merely made inert.** A button that is still drawn and
+		// does nothing reads as a bug, and the twist is announced on the briefing screen
+		// before the run starts - so its absence is a rule the player already knows about
+		// rather than something broken
 		
 		endlessGameIcon.isHidden = true
 		// Authored visible in GameScene.sks, so it needs hiding explicitly. It sat in the
@@ -1973,7 +1979,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if let name = touchedNode.name {
                 if name == "pauseButton" || name == "pauseButtonTouch" && gameState.currentState is Playing {
-					if endlessMoveInProgress == false {
+					if endlessMoveInProgress == false && dailyPausingIsAllowed {
 						clearSavedGame()
 						// Clear current saved game before re-saving
 						gameState.enter(Paused.self)
@@ -6608,7 +6614,17 @@ laserTimer?.invalidate()
     }
     
     @objc func pauseNotificationKeyReceived() {
-		
+
+		if dailyNoPausing {
+			dailyForfeitByLeaving()
+			return
+		}
+		// **The one notification a No Pausing day must not act on.** This is what pauses a run
+		// when the app goes to the background, and pausing here would hand the player exactly
+		// what the twist takes away - switch apps, come back, carry on. The attempt is given up
+		// instead and the run carries on: ending somebody's game from the outside is worse than
+		// not scoring it
+
 		if self.gameState.currentState is Paused {
 			// do nothing
 		} else if self.gameState.currentState is Playing {
@@ -6654,7 +6670,8 @@ laserTimer?.invalidate()
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-		if endlessMoveInProgress == false && gameState.currentState is Playing && swipeUpPause {
+		if endlessMoveInProgress == false && gameState.currentState is Playing && swipeUpPause
+			&& dailyPausingIsAllowed {
 			clearSavedGame()
 			gameState.enter(Paused.self)
 		}

@@ -1142,6 +1142,85 @@ final class DailyNoRepeatsTests: XCTestCase {
         // daily's own line never prints a board best beside
     }
 
+    // MARK: - No Pausing (round 195)
+
+    /// §4's nerve twist: "The pause button is disabled for the run. Backgrounding the app
+    /// forfeits posting."
+    func testNoPausingClosesBothWaysIntoThePauseScreen() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-02", mode: .endlessII, classicLevel: nil, twists: [.noPausing])
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertTrue(scene.dailyNoPausing)
+        XCTAssertFalse(scene.dailyPausingIsAllowed,
+                       "the button and the swipe ask this one question - a twist that closed "
+                       + "one and left the other open would be no twist at all")
+    }
+
+    func testAnOrdinaryDayCanStillPause() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-02", mode: .endlessII, classicLevel: nil, twists: [.fogOfWar])
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertFalse(scene.dailyNoPausing)
+        XCTAssertTrue(scene.dailyPausingIsAllowed)
+    }
+
+    func testACampaignRunIsNeverAffected() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = nil
+        XCTAssertFalse(scene.dailyNoPausing)
+        XCTAssertTrue(scene.dailyPausingIsAllowed)
+    }
+
+    func testLeavingTheAppForfeitsTheAttemptOnANoPausingDay() {
+        let scene = GameScene()
+        let session = DailyChallengeSession.shared
+        session.active = DailyChallenge(dateKey: "2026-10-02", mode: .endlessII,
+                                        classicLevel: nil, twists: [.noPausing])
+        session.forfeitedByLeaving = false
+        defer { session.active = nil; session.forfeitedByLeaving = false }
+
+        scene.dailyForfeitByLeaving()
+        XCTAssertTrue(session.forfeitedByLeaving,
+                      "the app pausing itself in the background would hand the player exactly "
+                      + "what the twist takes away")
+    }
+
+    func testLeavingTheAppCostsNothingOnAnyOtherDay() {
+        let scene = GameScene()
+        let session = DailyChallengeSession.shared
+        session.active = DailyChallenge(dateKey: "2026-10-02", mode: .endlessII,
+                                        classicLevel: nil, twists: [.drought])
+        session.forfeitedByLeaving = false
+        defer { session.active = nil; session.forfeitedByLeaving = false }
+
+        scene.dailyForfeitByLeaving()
+        XCTAssertFalse(session.forfeitedByLeaving)
+    }
+
+    func testNoPausingIsItsOwnCategorySoItCanLandWithAnything() {
+        // It contradicts nothing - a day can be No Pausing *and* foggy, or No Pausing with
+        // one life, which is where its teeth are
+        XCTAssertEqual(DailyTwist.noPausing.category, .nerve)
+        XCTAssertTrue(DailyTwist.noPausing.applies(to: .classic))
+        XCTAssertTrue(DailyTwist.noPausing.applies(to: .endless))
+        XCTAssertTrue(DailyTwist.noPausing.applies(to: .endlessII))
+    }
+
+    func testNoPausingIsActuallyOfferedOnceItsDateArrives() {
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        var seen = false
+        for _ in 0..<400 {
+            let challenge = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: day))
+            if challenge.twists.contains(.noPausing) { seen = true; break }
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        XCTAssertTrue(seen, "in the enum but never drawn looks exactly like very rare")
+    }
+
     func testTwoDaysOfTheSameModeAreOnlySimilarWhenTheirTwistsAre() {
         let plain = DailyChallenge(dateKey: "a", mode: .endlessII, classicLevel: nil, twists: [])
         let alsoPlain = DailyChallenge(dateKey: "b", mode: .endlessII, classicLevel: nil, twists: [])

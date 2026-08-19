@@ -549,6 +549,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             ?? DailyChallengeRecord(dateKey: viewedKey)
         DailyChallengeSession.shared.isScoringAttempt =
             viewedOffset == 0 && record.attemptCount == 0
+        DailyChallengeSession.shared.forfeitedByLeaving = false
+        // A forfeit belongs to the run that earned it. Cleared as a run starts as well as as
+        // one ends, because the session outlives both and a stale one would quietly unpost a
+        // run that never left the app
         record.attemptCount += 1
         totalStatsArray[0].upsertDailyRecord(record)
         saveData()
