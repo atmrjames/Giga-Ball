@@ -416,6 +416,16 @@ final class MenuResizeTests: XCTestCase {
 
     private let ratio: Double = Double(UIViewController.menuMaximumAspectRatio)
 
+    /// Held for the duration, because a view controller does not retain its parent and a
+    /// pause menu that goes out of scope is deallocated mid-test - the same trap the button
+    /// row tests fell into.
+    private var pauseMenus: [PauseMenuViewController] = []
+
+    override func tearDown() {
+        pauseMenus = []
+        super.tearDown()
+    }
+
     /// The shape the menu is left with: its content width over the window's height.
     private func shape(_ size: CGSize) -> Double {
         let insets = UIViewController.menuContentInsets(available: size)
@@ -517,6 +527,73 @@ final class MenuResizeTests: XCTestCase {
             available: size, inherited: UIEdgeInsets(top: 0, left: half, bottom: 0, right: half))
 
         XCTAssertEqual(child.left, half, accuracy: 0.001, "topped up to the same total")
+    }
+
+    // MARK: - The pause screen's content box
+
+    /// The pause screen, loaded from the storyboard and laid out at a real iPad's size.
+    ///
+    /// Round 188 measured this off a screenshot and could not explain it by reading; this is
+    /// the measurement brought into the suite so the numbers are available without a console.
+    /// The screen's whole content lives in `containterView`, whose width is meant to follow
+    /// the view's, and in the running app on a 13-inch iPad it came out about 422pt of 1032.
+    ///
+    /// **These pass, and that is the finding.** Loaded from the storyboard and laid out at an
+    /// iPad's size with no superview, the box fills the width and Home sits in its corner - so
+    /// the constraints are right and the storyboard is not the cause. What the app adds is the
+    /// nesting: the pause menu's view is a subview of the game's, which is a subview of the
+    /// screen that launched it, and a view's safe area comes from its superview's. The cause is
+    /// somewhere in that chain, and these tests are the shape the fix has to keep.
+    private func laidOutPauseScreen(width: CGFloat, height: CGFloat) -> PauseMenuViewController? {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
+        guard let pause = board.instantiateViewController(withIdentifier: "pauseMenuVC")
+                as? PauseMenuViewController
+        else { return nil }
+        pause.sender = "Pause"
+        pause.levelNumber = 0
+        pause.totalStatsArray = [TotalStats()]
+        pauseMenus.append(pause)
+        pause.loadViewIfNeeded()
+        pause.view.frame = CGRect(x: 0, y: 0, width: width, height: height)
+        pause.view.setNeedsLayout()
+        pause.view.layoutIfNeeded()
+        return pause
+    }
+
+    /// **The content box must be as wide as the screen allows it to be.**
+    ///
+    /// It is pinned leading to the safe area and centred on the background view, so on any
+    /// window with no side safe-area inset it should be the full width. Round 188 found it at
+    /// roughly 40% of that on an iPad, which is what put Home beside the title instead of in
+    /// its corner and bunched the button row into the middle of the screen.
+    func testThePauseScreensContentBoxFillsTheWidthItIsGiven() throws {
+        let pause = try XCTUnwrap(laidOutPauseScreen(width: 1032, height: 1376),
+                                  "the storyboard no longer has a pauseMenuVC")
+        let box = try XCTUnwrap(pause.containterView)
+
+        XCTAssertEqual(box.bounds.width, 1032, accuracy: 1,
+                       "the content box is \(box.bounds.width)pt of 1032 - everything on this "
+                       + "screen is placed against it, so a narrow box is a screen laid out "
+                       + "for a phone on an iPad")
+    }
+
+    /// And Home in the corner, which is the symptom a player actually sees.
+    func testHomeSitsInTheCornerOnAnIPadToo() throws {
+        let pause = try XCTUnwrap(laidOutPauseScreen(width: 1032, height: 1376))
+        let home = try XCTUnwrap(pause.homeButton)
+        let inView = home.convert(home.bounds, to: pause.view)
+
+        XCTAssertLessThan(inView.minX, 120,
+                          "Home is \(inView.minX)pt from the left edge. Its own note says it "
+                          + "belongs in the top-left corner while paused, out of the way - at "
+                          + "a third of the way across it reads as tucked against the title")
+    }
+
+    /// A phone must be unaffected, whatever the fix for the above turns out to be.
+    func testAPhoneSizedWindowStillFillsItsWidth() throws {
+        let pause = try XCTUnwrap(laidOutPauseScreen(width: 402, height: 874))
+        let box = try XCTUnwrap(pause.containterView)
+        XCTAssertEqual(box.bounds.width, 402, accuracy: 1)
     }
 
     // MARK: - The reference grids
