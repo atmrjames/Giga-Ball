@@ -233,6 +233,21 @@ extension GameScene {
 
     // MARK: - Power-up schedule
 
+    /// Takes back the introduction schedule the run was playing with.
+    ///
+    /// **Before anything reads it.** The schedule decides which styles and power-ups this run
+    /// has met (§6.3), so a field rebuilt against a freshly drawn one would be stocked
+    /// differently from the field the player left - round 150's lesson at the level of the
+    /// rules rather than the bricks. It matters more since a run's opening set, its pace and
+    /// its weighting vary too: a redraw is not a reordering, it is a different game.
+    ///
+    /// A save written before the schedule existed carries none, and keeps the one drawn at
+    /// launch - which is exactly what those runs always did.
+    func adoptEndlessIISchedule(from savedGame: SavedGame) {
+        guard let schedule = savedGame.endlessIIProgression else { return }
+        endlessIIProgression = schedule
+    }
+
     /// Damps the power-ups a run has not been introduced to yet.
     ///
     /// Applied on top of whatever the allocation tables decided rather than replacing them,

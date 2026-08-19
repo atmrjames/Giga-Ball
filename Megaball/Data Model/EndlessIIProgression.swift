@@ -21,7 +21,7 @@
 
 import Foundation
 
-struct EndlessIIProgression {
+struct EndlessIIProgression: Codable, Equatable {
 
     /// The order styles are introduced in, shuffled once per run.
     ///
@@ -36,6 +36,53 @@ struct EndlessIIProgression {
     /// what the drop actually reads and a second list of names would only have to be kept in
     /// step with it.
     var powerUpOrder: [Int] = []
+
+    // MARK: - What this run in particular does
+    //
+    // James, round 190: "Each game, what is and isn't available at the start is different so
+    // each game feels very unique... The number of items available at the start should also
+    // differ between games, and the timing and speed at which they are introduced should also
+    // differ." The shuffled orders above already made *which* things arrive differ; these make
+    // *how many* start in play, *how fast* the rest follow, and *how rare* each one is differ
+    // too. All drawn once, at the start of the run, and carried in the save with it.
+
+    /// How many of the shuffled styles are in play from the first metre.
+    var openingStyles: Int = EndlessIIProgression.openingStyleRange.lowerBound
+
+    /// How many power-ups beyond the standard ones are.
+    var openingPowerUps: Int = EndlessIIProgression.openingPowerUpRange.lowerBound
+
+    /// This run's metres between one style being introduced and the next.
+    var styleSpacing: Int = EndlessIIProgression.introductionSpacing
+
+    /// And between one power-up and the next.
+    var powerUpSpacing: Int = EndlessIIProgression.powerUpIntroductionSpacing
+
+    /// This run's multiplier on each power-up's authored weight, one per index.
+    ///
+    /// **Bounded, and that is the whole design of it.** James: "Rarity for items can be
+    /// tweaked again so it's slightly different for each game. Although a generally rare
+    /// power up shouldn't all of a sudden become the most common one." The range is narrow
+    /// enough that the tiers cannot cross - the luckiest Rare stays rarer than the unluckiest
+    /// Common - so a run feels differently weighted without the mode changing what its
+    /// power-ups mean. There is a test on exactly that.
+    var rarityTweak: [Double] = []
+
+    /// How many styles start in play. Two is a run that opens nearly plain; five is one that
+    /// opens busy and has less left to introduce.
+    static let openingStyleRange = 2...5
+
+    /// How many power-ups start in play, beyond the ones that always are.
+    static let openingPowerUpRange = 4...10
+
+    /// The spread of this run's style spacing, in metres, around the standard 35.
+    static let styleSpacingRange = 24...50
+
+    /// And of its power-up spacing, around the standard 14.
+    static let powerUpSpacingRange = 9...20
+
+    /// The most and least a run may weight a power-up by.
+    static let rarityTweakRange = 0.78...1.30
 
     /// Metres between one style being introduced and the next.
     ///
@@ -81,8 +128,14 @@ struct EndlessIIProgression {
         // that names them rather than counted by hand - the hand-count came up short the
         // first time a batch landed, which is exactly what §8.6 says literals do. A new
         // power-up missing from this shuffle is introduced at 0m, the opposite of introduced
-        EndlessIIProgression(introductionOrder: styles.shuffled(),
-                             powerUpOrder: Array(0..<powerUps).shuffled())
+        EndlessIIProgression(
+            introductionOrder: styles.shuffled(),
+            powerUpOrder: Array(0..<powerUps).shuffled(),
+            openingStyles: Int.random(in: openingStyleRange),
+            openingPowerUps: Int.random(in: openingPowerUpRange),
+            styleSpacing: Int.random(in: styleSpacingRange),
+            powerUpSpacing: Int.random(in: powerUpSpacingRange),
+            rarityTweak: (0..<powerUps).map { _ in Double.random(in: rarityTweakRange) })
     }
 
     /// Metres between one power-up being introduced and the next.
@@ -93,9 +146,15 @@ struct EndlessIIProgression {
     static let powerUpIntroductionSpacing = 14
 
     /// The height a power-up is introduced at.
+    ///
+    /// The first `openingPowerUps` of the shuffled order are in play from the start, and the
+    /// rest follow at this run's own spacing. A power-up not in the order at all is treated as
+    /// available immediately, which is the safe answer for one added since the save was
+    /// written - the opposite of introduced.
     func powerUpIntroductionHeight(of index: Int) -> Int {
         guard let place = powerUpOrder.firstIndex(of: index) else { return 0 }
-        return place*EndlessIIProgression.powerUpIntroductionSpacing
+        guard place >= openingPowerUps else { return 0 }
+        return (place - openingPowerUps + 1)*max(1, powerUpSpacing)
     }
 
     /// What a power-up's authored weight should be scaled to at this height.
@@ -105,9 +164,15 @@ struct EndlessIIProgression {
     /// keeps a fraction of it, so an early run can still turn one up as a surprise - the same
     /// rule the styles follow, for the same reason.
     func powerUpWeightScale(for index: Int, at height: Int) -> Double {
-        height >= powerUpIntroductionHeight(of: index)
-            ? 1
-            : EndlessIIProgression.powerUpEarlyScale
+        let introduced = height >= powerUpIntroductionHeight(of: index)
+        let base = introduced ? 1 : EndlessIIProgression.powerUpEarlyScale
+        return base*tweak(for: index)
+    }
+
+    /// This run's weighting for one power-up. One when the run predates the tweak, which is
+    /// what every save written before round 192 restores as.
+    func tweak(for index: Int) -> Double {
+        rarityTweak.indices.contains(index) ? rarityTweak[index] : 1
     }
 
     static let powerUpEarlyScale = 0.15
@@ -116,11 +181,13 @@ struct EndlessIIProgression {
 
     /// The height a style is introduced at.
     ///
-    /// The first is available immediately - a run that opened with nothing unusual for
-    /// twelve metres would just be Endless.
+    /// The first `openingStyles` are available immediately - a run that opened with nothing
+    /// unusual for twelve metres would just be Endless - and how many that is varies per run,
+    /// which is what makes two runs to the same height feel differently stocked.
     func introductionHeight(of style: EndlessIIStyle) -> Int {
         guard let place = introductionOrder.firstIndex(of: style) else { return 0 }
-        return place*EndlessIIProgression.introductionSpacing
+        guard place >= openingStyles else { return 0 }
+        return (place - openingStyles + 1)*max(1, styleSpacing)
     }
 
     /// How strongly a style should be drawn at this height, relative to the others.

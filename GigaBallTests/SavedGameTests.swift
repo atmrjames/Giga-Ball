@@ -849,6 +849,62 @@ final class SavedMayhemFieldTests: XCTestCase {
         XCTAssertFalse(scene.endlessMode)
     }
 
+    /// **A resumed Mayhem run must come back to the field it left, rules and all.**
+    ///
+    /// The introduction schedule is drawn once at launch and decides which styles and
+    /// power-ups this run has met (§6.3). It lived only on the scene, so a resume reshuffled
+    /// it: the run came back stocked differently from the one that was paused. Round 150's
+    /// lesson at the level of the rules rather than the bricks - and it matters more since
+    /// round 192, where a run's opening set and its weighting vary too.
+    func testAResumedRunKeepsTheScheduleItWasPlayingWith() throws {
+        var save = emptySave()
+        let played = EndlessIIProgression.make(powerUps: 40)
+        save.endlessIIProgression = played
+
+        let store = InMemoryKeyValueStore()
+        save.save(to: store)
+        let read = try XCTUnwrap(SavedGame.load(from: store))
+
+        XCTAssertEqual(read.endlessIIProgression, played,
+                       "the schedule has to survive the round trip exactly - a redrawn one "
+                       + "is a differently stocked run under a player who paused")
+    }
+
+    func testASaveWrittenBeforeTheScheduleExistedStillLoads() throws {
+        // Optional, like every field added since: an older save restores with a freshly drawn
+        // schedule, which is the behaviour it already had
+        var save = emptySave()
+        save.endlessIIProgression = nil
+        let store = InMemoryKeyValueStore()
+        save.save(to: store)
+
+        let read = try XCTUnwrap(SavedGame.load(from: store))
+        XCTAssertNil(read.endlessIIProgression)
+    }
+
+    func testAResumedSceneAdoptsTheSavedSchedule() {
+        // The scene half: restoring has to *apply* it, not merely carry it
+        let resumed = mayhem()
+        let played = EndlessIIProgression.make(powerUps: 40)
+        var save = emptySave()
+        save.endlessIIProgression = played
+
+        resumed.adoptEndlessIISchedule(from: save)
+        XCTAssertEqual(resumed.endlessIIProgression, played,
+                       "the run resumes with the schedule it was playing with")
+    }
+
+    func testASaveWithNoScheduleLeavesTheOneDrawnAtLaunch() {
+        let resumed = mayhem()
+        let drawnAtLaunch = resumed.endlessIIProgression
+        var save = emptySave()
+        save.endlessIIProgression = nil
+
+        resumed.adoptEndlessIISchedule(from: save)
+        XCTAssertEqual(resumed.endlessIIProgression, drawnAtLaunch,
+                       "an older save keeps the behaviour it always had")
+    }
+
     func testAnOlderSaveStillTakesTheCellPath() {
         // Widening, not a migration: a save written before round 150 has no rich field, and
         // must still load exactly as it always did

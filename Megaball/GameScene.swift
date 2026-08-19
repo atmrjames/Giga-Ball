@@ -7222,6 +7222,9 @@ laserTimer?.invalidate()
 			brickYPositions: brickXPositionArray != [] ? brickYPositionArray! : previous?.brickYPositions ?? [],
 			ballProperties: ballPropertiesArray != [] ? ballPropertiesArray! : previous?.ballProperties ?? [],
 			extraBallProperties: ballPropertiesArray != [] ? extraBallPropertiesArray : previous?.extraBallProperties,
+			endlessIIProgression: gameMode == .endlessII ? endlessIIProgression : nil,
+			// Mayhem's only, because it is the only mode that reads one. Written every save
+			// rather than once, so a schedule is never lost to a save taken mid-run
 			gameMode: gameMode.rawValue,
 			// Written with the run rather than remembered beside it: a force quit can lose a
 			// defaults key that a save has already recorded, and then the run comes back as a
@@ -7539,6 +7542,8 @@ laserTimer?.invalidate()
 		// twenty-odd uses below. Nothing here is reachable without a save, but that was
 		// implied by the guards rather than stated, and this path runs at launch
 		if resumeGameToLoad {
+			adoptEndlessIISchedule(from: savedGame)
+
 			if savedGame.ballProperties.count >= SavedGame.ballPropertiesCount {
 				// Read positionally up to index 4 below. isEmpty was not a strong enough
 				// guard - a short array traps here, during resume, at launch.

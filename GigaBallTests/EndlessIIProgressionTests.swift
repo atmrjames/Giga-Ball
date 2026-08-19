@@ -125,12 +125,111 @@ final class EndlessIIProgressionTests: XCTestCase {
         XCTAssertEqual(progression.introductionHeight(of: order[0]), 0)
     }
 
-    func testEachStyleComesInAfterTheOneBeforeIt() {
+    func testTheOpeningSetIsInPlayAtOnceAndTheRestComeInInOrder() {
+        // Round 192: a run opens with several styles already in play, not one, and how many
+        // varies per run. Everything after that set still arrives strictly in turn.
         let p = progression
-        for index in 1..<order.count {
+        for index in 0..<p.openingStyles {
+            XCTAssertEqual(p.introductionHeight(of: order[index]), 0,
+                           "\(order[index]) is in the opening set")
+        }
+        for index in (p.openingStyles + 1)..<order.count {
             XCTAssertGreaterThan(p.introductionHeight(of: order[index]),
                                  p.introductionHeight(of: order[index - 1]))
         }
+    }
+
+    // MARK: - What differs between runs (round 192)
+    //
+    // James: "Each game, what is and isn't available at the start is different so each game
+    // feels very unique... The number of items available at the start should also differ
+    // between games, and the timing and speed at which they are introduced should also
+    // differ."
+
+    private func drawnRuns(_ count: Int = 60) -> [EndlessIIProgression] {
+        (0..<count).map { _ in EndlessIIProgression.make(powerUps: 40) }
+    }
+
+    func testTwoRunsOpenWithDifferentAmountsAndFillUpAtDifferentSpeeds() {
+        let runs = drawnRuns()
+        XCTAssertGreaterThan(Set(runs.map(\.openingStyles)).count, 1,
+                             "every run opening with the same number of styles is the "
+                             + "staleness this is meant to fix")
+        XCTAssertGreaterThan(Set(runs.map(\.openingPowerUps)).count, 1)
+        XCTAssertGreaterThan(Set(runs.map(\.styleSpacing)).count, 1,
+                             "the speed things arrive at has to differ too")
+        XCTAssertGreaterThan(Set(runs.map(\.powerUpSpacing)).count, 1)
+    }
+
+    func testEveryRunStaysInsideTheRangesTheDesignAllows() {
+        for run in drawnRuns() {
+            XCTAssertTrue(EndlessIIProgression.openingStyleRange.contains(run.openingStyles))
+            XCTAssertTrue(EndlessIIProgression.openingPowerUpRange.contains(run.openingPowerUps))
+            XCTAssertTrue(EndlessIIProgression.styleSpacingRange.contains(run.styleSpacing))
+            XCTAssertTrue(EndlessIIProgression.powerUpSpacingRange.contains(run.powerUpSpacing))
+            for tweak in run.rarityTweak {
+                XCTAssertTrue(EndlessIIProgression.rarityTweakRange.contains(tweak))
+            }
+        }
+    }
+
+    /// **The one rule the rarity tweak must never break.**
+    ///
+    /// James: "Although a generally rare power up shouldn't all of a sudden become the most
+    /// common one." The luckiest a run can be to a rare one still has to leave it rarer than
+    /// the unluckiest a run can be to a common one - which is a property of the range, so it
+    /// is checked as one rather than by sampling and hoping.
+    func testTheLuckiestRareStaysRarerThanTheUnluckiestCommon() {
+        let most = EndlessIIProgression.rarityTweakRange.upperBound
+        let least = EndlessIIProgression.rarityTweakRange.lowerBound
+        let widestSwing = most/least
+
+        // The authored tiers, as the allocation tables actually space them
+        let rare = 2.0, uncommon = 8.0, common = 30.0
+        XCTAssertLessThan(rare*most, uncommon*least, "a Rare must not out-draw an Uncommon")
+        XCTAssertLessThan(uncommon*most, common*least, "nor an Uncommon a Common")
+        XCTAssertLessThan(widestSwing, 2.0,
+                          "a swing wider than the gap between neighbouring tiers is a "
+                          + "reweighting rather than a tweak")
+    }
+
+    func testAHeldBackPowerUpIsStillRarerThanAnIntroducedOneHoweverTheTweakFalls() {
+        // The tweak multiplies the introduction damping rather than replacing it, so the
+        // damping cannot be cancelled out by a lucky draw
+        let most = EndlessIIProgression.rarityTweakRange.upperBound
+        let least = EndlessIIProgression.rarityTweakRange.lowerBound
+        XCTAssertLessThan(EndlessIIProgression.powerUpEarlyScale*most, 1*least,
+                          "being introduced has to beat being lucky")
+    }
+
+    func testTheOpeningPowerUpsAreAvailableFromTheFirstMetre() {
+        let run = EndlessIIProgression.make(powerUps: 40)
+        for place in 0..<run.openingPowerUps {
+            let index = run.powerUpOrder[place]
+            XCTAssertEqual(run.powerUpIntroductionHeight(of: index), 0)
+            XCTAssertEqual(run.powerUpWeightScale(for: index, at: 0), run.tweak(for: index),
+                           accuracy: 0.0001, "in play, at this run's own weighting")
+        }
+    }
+
+    func testAPowerUpAddedSinceTheSaveWasWrittenCountsAsAvailable() {
+        // A schedule restored from an older save has a shorter order. The safe answer for an
+        // index it has never heard of is "in play" - the opposite of held back, which would
+        // hide a power-up the player already owns
+        var run = EndlessIIProgression.make(powerUps: 10)
+        run.rarityTweak = []
+        XCTAssertEqual(run.powerUpIntroductionHeight(of: 99), 0)
+        XCTAssertEqual(run.tweak(for: 99), 1)
+        XCTAssertEqual(run.powerUpWeightScale(for: 99, at: 0), 1, accuracy: 0.0001)
+    }
+
+    func testAScheduleSurvivesBeingWrittenAndReadBack() {
+        // It rides in the save, so it has to round-trip exactly: a resumed run that redrew
+        // it would be stocked differently from the one the player left
+        let run = EndlessIIProgression.make(powerUps: 40)
+        let data = try! JSONEncoder().encode(run)
+        let back = try! JSONDecoder().decode(EndlessIIProgression.self, from: data)
+        XCTAssertEqual(back, run)
     }
 
     func testNothingIsEverLockedOut() {

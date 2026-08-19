@@ -33,7 +33,10 @@ enum EndlessIIBehaviour {
 /// Independent of behaviour, so a spinning Indestructible brick is a thing that can exist:
 /// an obstacle you cannot remove, presenting a different angle every time the ball reaches
 /// it. See §4.0 of the specification for the full grid.
-enum EndlessIIStyle: String, CaseIterable {
+/// Codable because the run's introduction schedule is drawn once and carried in the save
+/// (round 192): a resumed run that redrew it would change what is available under the
+/// player, which is round 150's lesson one level up.
+enum EndlessIIStyle: String, CaseIterable, Codable {
     case rounded, spinning, flashing
     /// Shrinks and swells where it stands, between half a cell and the whole of it (§4.12).
     case breathing

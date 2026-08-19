@@ -117,6 +117,21 @@ struct SavedGame: Codable, Equatable {
     /// with no extras, which is exactly what they had.
     var extraBallProperties: [Double]? = nil
 
+    /// This run's introduction schedule - which styles and power-ups it opens with, the order
+    /// the rest arrive in, how fast, and how it weights each one (§6.3, round 192).
+    ///
+    /// **Saved, because it is drawn once and cannot be drawn again.** It used to live only on
+    /// the scene, so a resumed Mayhem run reshuffled the lot: the styles being introduced
+    /// changed, the power-ups being held back changed, and the field the player came back to
+    /// was stocked differently from the one they left. That is round 150's lesson - a resumed
+    /// field must be the field that was saved - one level up, at the rules rather than the
+    /// bricks. It mattered less when everything merely differed in order; with a run's opening
+    /// set and rarity varying too, a redraw would be a different game.
+    ///
+    /// Optional so every save written before it decodes, and those restore with a freshly
+    /// drawn schedule - the behaviour they already had.
+    var endlessIIProgression: EndlessIIProgression? = nil
+
     /// Which mode this run belongs to, as `GameMode.rawValue`.
     ///
     /// **The save used to have no mode field at all**, and the mode was read from a
