@@ -227,9 +227,9 @@ final class BallPathTests: XCTestCase {
     /// between, is a loop. Twice is a coincidence and must not be touched.
     func testTheSameBounceThreeTimesProvesALoopAndTwiceDoesNot() {
         var detector = BallLoopDetector()
-        XCTAssertFalse(detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20))
-        XCTAssertFalse(detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20))
-        XCTAssertTrue(detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20))
+        XCTAssertNil(detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20))
+        XCTAssertNil(detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20))
+        XCTAssertNotNil(detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20))
     }
 
     /// An ordinary rally never proves one: same place with a new heading, or same heading
@@ -241,7 +241,7 @@ final class BallPathTests: XCTestCase {
                                                y: CGFloat(300 - step*5),
                                                headingDegrees: Double(step*11 % 180),
                                                cell: 20)
-            XCTAssertFalse(looped, "bounce \(step) repeats nothing and must not be bent")
+            XCTAssertNil(looped, "bounce \(step) repeats nothing and must not be bent")
         }
     }
 
@@ -251,9 +251,9 @@ final class BallPathTests: XCTestCase {
         var detector = BallLoopDetector()
         _ = detector.recordBounce(x: 0, y: 0, headingDegrees: 90, cell: 20)
         _ = detector.recordBounce(x: 0, y: 0, headingDegrees: 90, cell: 20)
-        XCTAssertTrue(detector.recordBounce(x: 0, y: 0, headingDegrees: 90, cell: 20))
-        XCTAssertFalse(detector.recordBounce(x: 0, y: 0, headingDegrees: 90, cell: 20),
-                       "the count starts again after a nudge")
+        XCTAssertNotNil(detector.recordBounce(x: 0, y: 0, headingDegrees: 90, cell: 20))
+        XCTAssertNil(detector.recordBounce(x: 0, y: 0, headingDegrees: 90, cell: 20),
+                     "the count starts again after a nudge")
     }
 
     /// The paddle is the player's touch: whatever was repeating, they can change it now,
@@ -263,7 +263,7 @@ final class BallPathTests: XCTestCase {
         _ = detector.recordBounce(x: 50, y: 50, headingDegrees: 30, cell: 20)
         _ = detector.recordBounce(x: 50, y: 50, headingDegrees: 30, cell: 20)
         detector.playerIntervened()
-        XCTAssertFalse(detector.recordBounce(x: 50, y: 50, headingDegrees: 30, cell: 20))
+        XCTAssertNil(detector.recordBounce(x: 50, y: 50, headingDegrees: 30, cell: 20))
     }
 
     /// A real loop drifts by fractions of a point between laps; the quantisation must
@@ -272,7 +272,81 @@ final class BallPathTests: XCTestCase {
         var detector = BallLoopDetector()
         _ = detector.recordBounce(x: 100.0, y: 300.0, headingDegrees: 45.0, cell: 20)
         _ = detector.recordBounce(x: 101.5, y: 299.2, headingDegrees: 45.8, cell: 20)
-        XCTAssertTrue(detector.recordBounce(x: 99.4, y: 300.9, headingDegrees: 44.3, cell: 20))
+        XCTAssertNotNil(detector.recordBounce(x: 99.4, y: 300.9, headingDegrees: 44.3, cell: 20))
+    }
+
+    /// James, round 190: "still seeing the ball change angle in mid air in Endless Mayhem,
+    /// again around the low brick level line. It seems to be changing by ~5deg which is why I
+    /// think it's got something to do with the ball stuck prevention functions."
+    ///
+    /// It was. The count used to be taken across the whole 24-bounce history, and in Mayhem -
+    /// dense field, descending, the ball rattling among the bottom rows - an ordinary rally
+    /// revisits the same half-brick cell at a similar heading three times inside two dozen
+    /// bounces without ever being stuck. This is that rally: the same bounce recurring every
+    /// eighth time, spread out, which is play rather than a loop. It used to be bent.
+    func testARallyThatRevisitsACellSlowlyIsNotALoop() {
+        var detector = BallLoopDetector()
+        for step in 0..<24 {
+            let repeating = step % 8 == 0
+            let nudge = detector.recordBounce(x: repeating ? 100 : CGFloat(200 + step*9),
+                                              y: repeating ? 300 : CGFloat(400 - step*6),
+                                              headingDegrees: repeating ? 45 : Double(step*13 % 170),
+                                              cell: 20)
+            XCTAssertNil(nudge, "bounce \(step): a cell revisited every eighth bounce is a "
+                                + "rally round the bottom rows, not a loop - this is the "
+                                + "5 degree kick James kept seeing")
+        }
+    }
+
+    /// And a real one still is: a genuine loop retraces a short cycle, so its repeats land
+    /// inside the window.
+    func testATightCycleIsStillCalledALoop() {
+        var detector = BallLoopDetector()
+        var nudges: [Double] = []
+        for step in 0..<9 {
+            // A three-bounce cycle: two other bounces between each repeat
+            let x: CGFloat = [100, 260, 420][step % 3]
+            let y: CGFloat = [300, 460, 300][step % 3]
+            if let nudge = detector.recordBounce(x: x, y: y, headingDegrees: 45, cell: 20) {
+                nudges.append(nudge)
+            }
+        }
+        XCTAssertFalse(nudges.isEmpty, "a three-bounce cycle repeated three times is a loop")
+    }
+
+    /// The nudge starts at a degree and doubles while the loop refuses to break.
+    ///
+    /// A degree is invisible, which is the point (James's own suggestion): a false positive
+    /// costs nothing anyone can see, and a loop that really is one still gets bent out of
+    /// shape because the next proving asks for twice as much.
+    func testTheNudgeStartsSmallAndEscalatesUntilItWorks() {
+        var detector = BallLoopDetector()
+        var nudges: [Double] = []
+        for _ in 0..<5 {
+            for _ in 0..<3 {
+                if let nudge = detector.recordBounce(x: 100, y: 300, headingDegrees: 45,
+                                                    cell: 20) {
+                    nudges.append(nudge)
+                }
+            }
+        }
+        XCTAssertEqual(nudges, [1, 2, 4, 8, 8],
+                       "a degree, then doubling, capped where the old flat kick used to sit")
+    }
+
+    func testAPaddleTouchStartsTheEscalationOverToo() {
+        var detector = BallLoopDetector()
+        for _ in 0..<3 { _ = detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20) }
+        for _ in 0..<3 { _ = detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20) }
+        detector.playerIntervened()
+
+        var again: Double?
+        for _ in 0..<3 {
+            again = detector.recordBounce(x: 100, y: 300, headingDegrees: 45, cell: 20) ?? again
+        }
+        XCTAssertEqual(again, BallLoopDetector.firstNudgeDegrees,
+                       "a paddle hit is a new rally - starting it at eight degrees because a "
+                       + "loop was broken two rallies ago is the old bug with extra steps")
     }
 
     /// The portal drift turns a vector the way the unit circle says it should.

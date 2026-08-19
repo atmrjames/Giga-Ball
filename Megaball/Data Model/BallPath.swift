@@ -287,24 +287,70 @@ struct BallLoopDetector {
     /// takes longer than this to come round is a rally, not a loop.
     static let capacity = 24
 
-    /// Records a bounce, and reports whether it has just proved a loop.
+    /// How near each other those repeats have to be.
     ///
-    /// Proving one clears the history, so the caller's single nudge gets a chance to work
-    /// before the same loop can be proved again.
+    /// **This is the round-190 fix, and it is why James kept seeing the ball turn.** The count
+    /// used to be taken across the whole 24-bounce history, which is far too generous in
+    /// Endless Mayhem: the field is dense and descending, the ball rattles among the bottom
+    /// rows, and a perfectly ordinary rally revisits the same half-brick cell at a similar
+    /// heading three times inside two dozen bounces without ever being stuck. The loop-breaker
+    /// then fired on a rally and kicked the ball 5 to 8 degrees - "still seeing the ball change
+    /// angle in mid air, around the low brick level line, by about 5deg".
+    ///
+    /// A genuine loop repeats *immediately*: the ball is retracing one short cycle, so its
+    /// repeats are a fixed few bounces apart. Nine is the room a four-bounce cycle needs to
+    /// show the same bounce three times (at 1, 5 and 9) and no more than that - a cell a rally
+    /// revisits every eighth bounce can only ever reach two inside it. The longer history is
+    /// still kept, because it costs nothing and a future rule may want it.
+    static let windowThatProvesALoop = 9
+
+    /// How far the heading is nudged the first time a loop is proved, in degrees.
+    ///
+    /// One degree, on James's own suggestion - "perhaps we should also change the 5deg
+    /// adjustment to a 1deg adjustment to make it less of an issue when it does happen like
+    /// this". A single degree is invisible to a player and is still enough to break a loop
+    /// that is balanced on a knife edge, which most are.
+    static let firstNudgeDegrees: Double = 1
+
+    /// The most it will ever nudge by, in degrees.
+    static let hardestNudgeDegrees: Double = 8
+
+    /// How many times in a row this loop has been proved without the ball getting free.
+    private var provings = 0
+
+    /// Records a bounce, and reports the nudge that should break it - nil when there is no
+    /// loop to break.
+    ///
+    /// **The nudge escalates**, which is what lets the first one be as small as a degree. A
+    /// false positive on a rally costs a degree nobody sees; a loop that really is a loop
+    /// proves itself again on the next cycle and gets twice as much, until it comes free. The
+    /// old flat 5-to-8 was sized for the worst case and charged it to every case.
+    ///
+    /// Proving one clears the history, so the nudge gets a chance to work before the same
+    /// loop can be proved again.
     mutating func recordBounce(x: CGFloat, y: CGFloat, headingDegrees: Double,
-                               cell: CGFloat) -> Bool {
+                               cell: CGFloat) -> Double? {
         let signature = BallLoopDetector.signature(x: x, y: y,
                                                    headingDegrees: headingDegrees, cell: cell)
         signatures.append(signature)
         if signatures.count > BallLoopDetector.capacity { signatures.removeFirst() }
-        guard signatures.filter({ $0 == signature }).count
-                >= BallLoopDetector.repeatsThatProveALoop else { return false }
+
+        let window = signatures.suffix(BallLoopDetector.windowThatProvesALoop)
+        guard window.filter({ $0 == signature }).count
+                >= BallLoopDetector.repeatsThatProveALoop else { return nil }
         signatures.removeAll()
-        return true
+        provings += 1
+        return min(BallLoopDetector.firstNudgeDegrees*pow(2, Double(provings - 1)),
+                   BallLoopDetector.hardestNudgeDegrees)
     }
 
     /// The player touched the ball: whatever was repeating, they can change it now.
-    mutating func playerIntervened() { signatures.removeAll() }
+    mutating func playerIntervened() {
+        signatures.removeAll()
+        provings = 0
+        // The escalation resets too. A paddle hit is a new rally, and starting it at eight
+        // degrees because a loop was broken two rallies ago is the old bug with extra steps
+    }
 
     /// A bounce, quantised to half-brick cells and five-degree headings - coarse enough
     /// that a loop's tiny frame-to-frame drift still reads as the same bounce, fine enough

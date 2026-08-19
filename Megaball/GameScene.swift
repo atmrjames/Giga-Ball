@@ -6163,17 +6163,28 @@ laserTimer?.invalidate()
 			// loop-breaker below, so a ball thrown into a repeat still gets broken out of it
 
 			if isExtra == false,
-			   ballLoopDetector.recordBounce(x: ball.position.x, y: ball.position.y,
-			                                 headingDegrees: angleDeg, cell: brickWidth/2) {
-				let nudge = 5 + Double.random(in: 0...3)
+			   let nudge = ballLoopDetector.recordBounce(x: ball.position.x,
+			                                            y: ball.position.y,
+			                                            headingDegrees: angleDeg,
+			                                            cell: brickWidth/2) {
 				angleDeg += horizontalBallControlFlipper ? nudge : -nudge
 				horizontalBallControlFlipper = !horizontalBallControlFlipper
+				crookedBallNote(String(format: "loop-breaker %.1f deg", nudge))
 				// **The loop-breaker** (round 101). Every corrected bounce passes through
 				// here - paddle, wall, brick, backstop, seam - so this is where a bounce
-				// that has repeated itself three times with no paddle contact between is
-				// finally bent. The nudge is random *only now*, once a loop is proven,
-				// which is the whole difference from the removed one-in-ten kick: the
-				// rallies that were never looping are never touched
+				// that has repeated itself with no paddle contact between is finally bent.
+				//
+				// **It leaves a note now** (round 190), and that is why this went unfound
+				// for so long: the tripwire in `crookedBallWatch` stays deliberately silent
+				// when a frame's only excuse is "contact", so a loop-breaker kick at a
+				// contact was filed as an ordinary bounce and never printed. Any sighting
+				// from here on names itself.
+				//
+				// The size comes from the detector rather than being decided here, because
+				// it escalates: a degree the first time, doubling while the same loop keeps
+				// proving itself. James, round 190: "perhaps we should also change the 5deg
+				// adjustment to a 1deg adjustment to make it less of an issue when it does
+				// happen like this"
 			}
 
 			if brickNode != nil {
