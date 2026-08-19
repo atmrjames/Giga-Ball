@@ -848,6 +848,24 @@ enum PowerUpIcon {
         // what they are - one category, one per day
     }
 
+    /// Brick Swap: two bricks trading places - a pair of small rectangles with arrows
+    /// crossing between them.
+    static let twistBrickSwap: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let brick = CGSize(width: rect.width*0.30, height: rect.height*0.16)
+        context.stroke(CGRect(x: rect.minX + rect.width*0.16,
+                              y: rect.minY + rect.height*0.20,
+                              width: brick.width, height: brick.height))
+        context.fill(CGRect(x: rect.maxX - rect.width*0.16 - brick.width,
+                            y: rect.maxY - rect.height*0.20 - brick.height,
+                            width: brick.width, height: brick.height))
+        // One outlined and one filled: two *types*, not two positions
+
+        context.move(to: CGPoint(x: rect.minX + rect.width*0.34, y: rect.maxY - rect.height*0.30))
+        context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.34, y: rect.minY + rect.height*0.30))
+        context.strokePath()
+    }
+
     /// No Pausing: the pause glyph with a stroke through it. The one twist whose badge can
     /// simply be the control it takes away.
     static let twistNoPausing: UIImage = badge(twist) { context, rect in
@@ -972,6 +990,7 @@ extension DailyTwist {
         case .mirrored: return PowerUpIcon.twistMirrored
         case .upsideDown: return PowerUpIcon.twistUpsideDown
         case .noPausing: return PowerUpIcon.twistNoPausing
+        case .brickSwap: return PowerUpIcon.twistBrickSwap
         }
     }
 

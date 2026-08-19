@@ -286,6 +286,66 @@ extension GameScene {
         }
     }
 
+    /// The day's brick remap, when Brick Swap is on. Nil otherwise.
+    var dailyBrickSwap: DailyTwist.DailyBrickSwap? {
+        guard isDailyChallenge, DailyChallengeSession.shared.has(.brickSwap),
+              let key = DailyChallengeSession.shared.active?.dateKey else { return nil }
+        return DailyTwist.DailyBrickSwap.drawn(forKey: key)
+    }
+
+    /// Remaps the day's brick types, before anything is measured off them.
+    ///
+    /// Same shape as the layout flip and applied at the same door: the levels hand their
+    /// bricks over with textures already set, so one pass in `brickCreation` reaches all of
+    /// them, and a *resumed* run must not be touched - the save carries the swapped textures
+    /// already, and swapping again would double-apply a remap whose source type still exists.
+    ///
+    /// The textures are compared and assigned through the scene's own properties rather than
+    /// named constants, because the Retro theme swaps those properties at load - a remap
+    /// written against the standard art would quietly un-theme every brick it touched.
+    ///
+    /// **If the drawn remap finds nothing to change, the field is hardened instead.** A level
+    /// with no multi-hit bricks on a Softened day would be a twist that visibly does nothing,
+    /// and "does nothing" reads as broken (§8.6's lesson about pools, one door over). Still
+    /// deterministic: the fallback depends only on the day and the level.
+    func applyDailyBrickSwap(to bricks: [SKNode]) {
+        guard savedGame == nil, let swap = dailyBrickSwap else { return }
+
+        let sprites = bricks.compactMap { $0 as? SKSpriteNode }
+        let applied = applyBrickSwapPass(swap, to: sprites)
+        if applied == false, swap != .hardened {
+            _ = applyBrickSwapPass(.hardened, to: sprites)
+        }
+    }
+
+    /// One remap over the field. Returns whether it changed anything.
+    func applyBrickSwapPass(_ swap: DailyTwist.DailyBrickSwap,
+                                    to sprites: [SKSpriteNode]) -> Bool {
+        var touched = false
+        for brick in sprites {
+            switch swap {
+            case .hardened where brick.texture == brickNormalTexture:
+                brick.texture = brickMultiHit3Texture
+                brick.color = .white
+                // The level painted this brick through `colorBlendFactor`, which
+                // `brickCreation` only turns on for normals - but the *colour* stays set,
+                // and a multi-hit texture with a stale blend reads tinted. White is inert
+            case .softened where brick.texture == brickMultiHit1Texture
+                            || brick.texture == brickMultiHit2Texture
+                            || brick.texture == brickMultiHit3Texture:
+                brick.texture = brickNormalTexture
+            case .veiled where brick.texture == brickNormalTexture:
+                brick.texture = brickInvisibleTexture
+                // `brickCreation`'s own invisible check runs after this pass and hides it,
+                // the same way it hides a level's authored invisibles
+            default:
+                continue
+            }
+            touched = true
+        }
+        return touched
+    }
+
     /// Whether the day hides its field until it is struck.
     var dailyFogIsOn: Bool {
         isDailyChallenge && DailyChallengeSession.shared.has(.fogOfWar)

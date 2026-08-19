@@ -896,6 +896,134 @@ final class DailyLayoutTwistTests: XCTestCase {
         XCTAssertEqual(flipped.map { $0[1] }.max(), highest)
     }
 
+    // MARK: - Brick Swap (round 196)
+
+    /// A brick of every Classic type, for the swap to chew on.
+    private func fieldOfEveryType(in scene: GameScene) -> [SKSpriteNode] {
+        [scene.brickNormalTexture, scene.brickMultiHit1Texture, scene.brickMultiHit2Texture,
+         scene.brickMultiHit3Texture, scene.brickInvisibleTexture,
+         scene.brickIndestructible1Texture, scene.brickIndestructible2Texture].map {
+            let brick = SKSpriteNode(texture: $0)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            return brick
+        }
+    }
+
+    private func swappedScene(dateKey: String) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: dateKey, mode: .classic, classicLevel: 1, twists: [.brickSwap])
+        return scene
+    }
+
+    /// **Nothing may become indestructible, and indestructibles stay indestructible.**
+    ///
+    /// The one rule the table must never break: a Classic level has to stay completable, and
+    /// a normal brick turned indestructible in the wrong level is a level that cannot be
+    /// finished - a much worse day than a hard one. Checked over every remap in the table
+    /// rather than the one a date happens to draw.
+    func testNoSwapEverMakesALevelUncompletable() {
+        for swap in DailyTwist.DailyBrickSwap.allCases {
+            let scene = swappedScene(dateKey: "2026-09-05")
+            defer { DailyChallengeSession.shared.active = nil }
+            let bricks = fieldOfEveryType(in: scene)
+            let indestructibles = [scene.brickIndestructible1Texture,
+                                   scene.brickIndestructible2Texture]
+            let breakableBefore = bricks.filter {
+                indestructibles.contains($0.texture!) == false
+            }
+
+            _ = scene.applyBrickSwapPass(swap, to: bricks)
+
+            for brick in breakableBefore {
+                XCTAssertFalse(indestructibles.contains(brick.texture!),
+                               "\(swap) turned a breakable brick indestructible")
+            }
+            XCTAssertEqual(bricks[5].texture, scene.brickIndestructible1Texture,
+                           "\(swap): an indestructible is structure, not a type to remap")
+            XCTAssertEqual(bricks[6].texture, scene.brickIndestructible2Texture)
+        }
+    }
+
+    func testEachRemapDoesWhatItsNameSays() {
+        let scene = swappedScene(dateKey: "2026-09-05")
+        defer { DailyChallengeSession.shared.active = nil }
+
+        var bricks = fieldOfEveryType(in: scene)
+        _ = scene.applyBrickSwapPass(.hardened, to: bricks)
+        XCTAssertEqual(bricks[0].texture, scene.brickMultiHit3Texture,
+                       "hardened: every ordinary brick takes three hits - the spec's example")
+
+        bricks = fieldOfEveryType(in: scene)
+        _ = scene.applyBrickSwapPass(.softened, to: bricks)
+        for index in 1...3 {
+            XCTAssertEqual(bricks[index].texture, scene.brickNormalTexture,
+                           "softened: every multi-hit stage is ordinary")
+        }
+
+        bricks = fieldOfEveryType(in: scene)
+        _ = scene.applyBrickSwapPass(.veiled, to: bricks)
+        XCTAssertEqual(bricks[0].texture, scene.brickInvisibleTexture,
+                       "veiled: ordinary bricks hide until struck")
+    }
+
+    /// A Softened day on a level with no multi-hit bricks would be a twist that visibly does
+    /// nothing, and "does nothing" reads as broken - so the field hardens instead. Still
+    /// deterministic: the fallback depends only on the day and the level.
+    func testARemapThatFindsNothingHardensInstead() {
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+        while DailyTwist.DailyBrickSwap.drawn(forKey: DailyDay.key(for: day)) != .softened {
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        let key = DailyDay.key(for: day)
+        // A real date whose draw is Softened, walked to rather than invented, so this test
+        // exercises the exact path a player would
+
+        let scene = swappedScene(dateKey: key)
+        defer { DailyChallengeSession.shared.active = nil }
+        let onlyNormals = [SKSpriteNode(texture: scene.brickNormalTexture)]
+        onlyNormals.forEach { scene.addChild($0) }
+
+        scene.applyDailyBrickSwap(to: onlyNormals)
+        XCTAssertEqual(onlyNormals[0].texture, scene.brickMultiHit3Texture,
+                       "nothing to soften, so the day hardens rather than doing nothing")
+    }
+
+    func testTheDaysRemapIsDeterministicAndVaries() {
+        let first = DailyTwist.DailyBrickSwap.drawn(forKey: "2026-09-05")
+        XCTAssertEqual(DailyTwist.DailyBrickSwap.drawn(forKey: "2026-09-05"), first,
+                       "every device has to draw the same remap for the same day")
+
+        let keys = (1...30).map { String(format: "2026-09-%02d", $0) }
+        let drawn = Set(keys.map { DailyTwist.DailyBrickSwap.drawn(forKey: $0) })
+        XCTAssertGreaterThan(drawn.count, 1, "a table that always draws one entry is not a table")
+    }
+
+    func testAResumedFieldIsNotSwappedAgain() {
+        let scene = swappedScene(dateKey: "2026-09-05")
+        defer { DailyChallengeSession.shared.active = nil }
+        scene.savedGame = SavedGame(
+            levelNumber: 1, endLevelNumber: 1, packNumber: 0, levelScore: 0, totalScore: 0,
+            numberOfLives: 3, endlessHeight: 0, numberOfLevels: 1, levelTimerValue: 0,
+            packTimerValue: 0, deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0, paddleHitsPerLevel: 0,
+            multiplier: 1, brickTextures: [], brickColours: [], brickXPositions: [],
+            brickYPositions: [], ballProperties: [],
+            fallingPowerUpXPositions: [], fallingPowerUpYPositions: [], fallingPowerUps: [],
+            activePowerUps: [], activePowerUpDurations: [], activePowerUpTimers: [],
+            activePowerUpMagnitudes: [])
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+        scene.addChild(brick)
+
+        scene.applyDailyBrickSwap(to: [brick])
+        XCTAssertEqual(brick.texture, scene.brickNormalTexture,
+                       "the save already carries the swapped field - swapping again would "
+                       + "double-apply")
+    }
+
     func testAnOrdinaryDayLeavesTheLevelExactlyAsItWasDrawn() {
         XCTAssertEqual(builtField(with: .fogOfWar), builtField(with: nil),
                        "only the layout category turns a level over")

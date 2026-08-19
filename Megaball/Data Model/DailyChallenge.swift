@@ -92,7 +92,7 @@ enum DailyTwist: String, CaseIterable, Codable {
     case oneLife, loaded, suddenDeath, spareBalls
     case noPowerUps, noGoodNews, noBadNews, powerShower, drought
     case fogOfWar
-    case mirrored, upsideDown
+    case mirrored, upsideDown, brickSwap
     case noPausing
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
@@ -123,7 +123,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .oneLife, .loaded, .suddenDeath, .spareBalls: return .lives
         case .noPowerUps, .noGoodNews, .noBadNews, .powerShower, .drought: return .economy
         case .fogOfWar: return .dress
-        case .mirrored, .upsideDown: return .layout
+        case .mirrored, .upsideDown, .brickSwap: return .layout
         case .noPausing: return .nerve
         }
     }
@@ -142,6 +142,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .fogOfWar: return "Fog of War"
         case .mirrored: return "Mirrored"
         case .upsideDown: return "Upside Down"
+        case .brickSwap: return "Brick Swap"
         case .noPausing: return "No Pausing"
         }
     }
@@ -160,6 +161,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .fogOfWar: return "Every brick is invisible until it is first struck."
         case .mirrored: return "The level is the wrong way round."
         case .upsideDown: return "The level is built the wrong way up."
+        case .brickSwap: return "The level's bricks are not the types they were."
         case .noPausing: return "No pausing, and leaving the app ends your attempt."
         }
     }
@@ -174,7 +176,7 @@ enum DailyTwist: String, CaseIterable, Codable {
             return mode == .endless || mode == .endlessII
             // The generous day for the modes whose baseline is a single ball - James's
             // suggestion from the first daily play test
-        case .mirrored, .upsideDown:
+        case .mirrored, .upsideDown, .brickSwap:
             return mode == .classic
             // A designed layout is the thing being turned over, and only Classic has one:
             // the endless fields are generated a row at a time, where "the wrong way round"
@@ -195,6 +197,10 @@ enum DailyTwist: String, CaseIterable, Codable {
     var activationKey: String {
         switch self {
         case .mirrored, .upsideDown: return "2026-09-01"
+        case .brickSwap: return "2026-09-01"
+        // Joins the layout category on the category's own date. Safe to add to that pool
+        // because no date this changes has been played: the pool only shifts days from the
+        // activation forward, and the golden test pins the days behind it
         case .noPausing: return "2026-10-01"
         default: return "2026-08-01"
         }
@@ -217,6 +223,36 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// therefore the far end of the briefing screen's day browsing.
     static var firstActivationKey: String {
         allCases.map(\.activationKey).min() ?? "2026-08-01"
+    }
+
+    /// The remappings Brick Swap can draw, one per day (§4: "a small table of remappings,
+    /// drawn deterministically").
+    ///
+    /// **Nothing here may map a breakable brick to an indestructible one**, and there is a
+    /// test on the table rather than on the cases: a Classic level has to stay completable,
+    /// and a normal brick turned indestructible in the wrong level is a level that cannot be
+    /// finished - a much worse day than a hard one.
+    enum DailyBrickSwap: CaseIterable {
+        /// Every ordinary brick takes three hits (§4's own example).
+        case hardened
+        /// Every multi-hit brick is ordinary - the generous draw.
+        case softened
+        /// Every ordinary brick is invisible until struck. Different from Fog of War, which
+        /// hides *everything* including the types that stay hidden machinery-side; this
+        /// turns one type over and leaves multi-hits and indestructibles standing as
+        /// landmarks to navigate by.
+        case veiled
+
+        /// The day's remap, drawn from the key on its own stream.
+        ///
+        /// **Its own seed offset, never a roll in `rawChallenge`.** The challenge stream's
+        /// layout is what keeps every already-played day stable (§2.1), so a twist's private
+        /// details have to come from a separate stream keyed off the same date - the same
+        /// reason `seedOffset` exists at all.
+        static func drawn(forKey key: String) -> DailyBrickSwap {
+            var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key) &+ 0xB51C)
+            return allCases[stream.roll(allCases.count)]
+        }
     }
 
     /// Whether the day's layout is turned over, and which way. Nil when it is not.
