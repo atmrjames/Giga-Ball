@@ -283,6 +283,49 @@ extension UIViewController {
     ///
     /// Call from `viewDidLayoutSubviews`: the inset depends on the size the view has been
     /// given, which is not known before then, and it must be recomputed if that changes.
+    /// Sizes a child screen's view to fill this one, and keeps it filling it.
+    ///
+    /// **`bounds`, not `frame`.** A view's frame is its rect in its *superview's* coordinates,
+    /// and every screen in this app is a child view added over another - so `self.view.frame`
+    /// is measured in the grandparent's space and is the wrong rect to hand a child. It is
+    /// also the wrong *size* the moment a transform is involved, because a frame is the
+    /// transformed bounding box: the pause menu's parallax and the menus' 1.15 dismissal
+    /// scale both make it lie. `MenuNavigation` learned this and said so in a comment; the six
+    /// older presentation sites never got the fix, and round 188 found the result on an iPad -
+    /// the pause screen laid out 420pt wide on a 1032pt screen, Home tucked against the title
+    /// instead of in its corner, because `menuContentInsets` had been handed a view roughly
+    /// half the screen's height and capped the width against that.
+    ///
+    /// The autoresizing mask is the other half. A frame assigned once is a frame that never
+    /// changes, so nothing triggers the layout pass that would notice a bad one and correct
+    /// it - which is why a wrong answer *stuck* rather than being fixed on the next pass. With
+    /// the mask the child tracks the parent, on rotation and on an iPad window resize too.
+    func fillSelf(with child: UIView) {
+        child.transform = .identity
+        child.frame = view.bounds
+        child.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        // The transform first: setting a frame on a transformed view garbles the bounds,
+        // which is `MenuNavigation`'s own hard-won note
+    }
+
+    /// The size the aspect cap should measure itself against: the **window**, not this view.
+    ///
+    /// The cap is a shape - width against height - so it has to be given the shape the player
+    /// is actually looking at. `view.bounds` is not reliably that: every screen here is a
+    /// child view added over another, and a screen presented over the game view gets whatever
+    /// rect that view had. Round 188 measured the result on a 13-inch iPad: the pause screen
+    /// laid out **420pt wide on a 1032pt window**, which is the cap dividing by a height of
+    /// about 677 rather than 1376 - so Home sat beside the title instead of in its corner and
+    /// the button row bunched into the middle.
+    ///
+    /// The window rather than the screen, deliberately: iPadOS 26 hands this app windows it
+    /// never asked for (§12.0's resize audit), and the shape to cap is the shape of the window
+    /// it has been given. `view.bounds` remains the fallback for a view not yet in a window,
+    /// where there is nothing better to ask and the answer is corrected on the next pass.
+    var menuAvailableSize: CGSize {
+        view.window?.bounds.size ?? view.bounds.size
+    }
+
     func limitMenuContentSize() {
         keepReturnToGameButtonFrontmost()
         giveMenuListsBreathingRoom()
@@ -302,7 +345,7 @@ extension UIViewController {
             left: view.safeAreaInsets.left - additionalSafeAreaInsets.left,
             bottom: view.safeAreaInsets.bottom - additionalSafeAreaInsets.bottom,
             right: view.safeAreaInsets.right - additionalSafeAreaInsets.right)
-        let wanted = UIViewController.menuContentInsets(available: view.bounds.size,
+        let wanted = UIViewController.menuContentInsets(available: menuAvailableSize,
                                                         inherited: inherited)
 
         guard additionalSafeAreaInsets != wanted else { return }

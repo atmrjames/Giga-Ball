@@ -1036,7 +1036,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         itemStatsView.passedIndex = passedIndex
         itemStatsView.sender = sender
         self.addChild(itemStatsView)
-        itemStatsView.view.frame = self.view.frame
+        fillSelf(with: itemStatsView.view)
         self.view.addSubview(itemStatsView.view)
         itemStatsView.didMove(toParent: self)
     }

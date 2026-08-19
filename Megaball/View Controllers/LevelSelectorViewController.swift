@@ -464,7 +464,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         levelStatsView.levelNumber = levelNumber
         levelStatsView.packNumber = packNumber
         self.addChild(levelStatsView)
-        levelStatsView.view.frame = self.view.frame
+        fillSelf(with: levelStatsView.view)
         self.view.addSubview(levelStatsView.view)
         levelStatsView.didMove(toParent: self)
     }

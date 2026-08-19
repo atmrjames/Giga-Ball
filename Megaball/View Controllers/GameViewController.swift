@@ -162,7 +162,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         pauseMenuVC.previousHighscore = previousHighscore
         // Update pause menu view controller properties with function input values
         self.addChild(pauseMenuVC)
-        pauseMenuVC.view.frame = self.view.frame
+        fillSelf(with: pauseMenuVC.view)
         self.view.addSubview(pauseMenuVC.view)
         pauseMenuVC.didMove(toParent: self)
     }
@@ -179,7 +179,7 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
         inbetweenView.numberOfLevels = numberOfLevels
         // Update pause menu view controller properties with function input values
         self.addChild(inbetweenView)
-        inbetweenView.view.frame = self.view.frame
+        fillSelf(with: inbetweenView.view)
         self.view.addSubview(inbetweenView.view)
         inbetweenView.didMove(toParent: self)
     }

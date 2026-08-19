@@ -422,7 +422,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         itemStatsView.passedIndex = index
         itemStatsView.sender = ItemsStatsViewController.brickTypesSender
         self.addChild(itemStatsView)
-        itemStatsView.view.frame = self.view.frame
+        fillSelf(with: itemStatsView.view)
         self.view.addSubview(itemStatsView.view)
         itemStatsView.didMove(toParent: self)
     }

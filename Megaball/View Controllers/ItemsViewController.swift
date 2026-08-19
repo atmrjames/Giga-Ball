@@ -458,7 +458,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // Carried through so the power-ups page can lead with this run's recents when
         // the whole stack was opened from the pause menu (§12.0)
         self.addChild(itemsDetailView)
-        itemsDetailView.view.frame = self.view.frame
+        fillSelf(with: itemsDetailView.view)
         self.view.addSubview(itemsDetailView.view)
         itemsDetailView.didMove(toParent: self)
     }
@@ -468,7 +468,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let brickTypesView = self.storyboard?.instantiateViewController(withIdentifier: "brickTypesView") as! BrickTypesViewController
         brickTypesView.navigatedFrom = navigatedFrom
         self.addChild(brickTypesView)
-        brickTypesView.view.frame = self.view.frame
+        fillSelf(with: brickTypesView.view)
         self.view.addSubview(brickTypesView.view)
         brickTypesView.didMove(toParent: self)
     }

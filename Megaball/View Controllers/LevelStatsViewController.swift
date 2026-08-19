@@ -271,7 +271,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         modeSelectView.levelSender = sender
         modeSelectView.levelPack = levelPack
         self.addChild(modeSelectView)
-        modeSelectView.view.frame = self.view.frame
+        fillSelf(with: modeSelectView.view)
         self.view.addSubview(modeSelectView.view)
         modeSelectView.didMove(toParent: self)
     }
