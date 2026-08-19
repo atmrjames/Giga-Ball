@@ -848,6 +848,22 @@ enum PowerUpIcon {
         // what they are - one category, one per day
     }
 
+    /// Mayhem Bricks: a brick with motion marks - the ordinary rectangle, busier than it
+    /// should be.
+    static let twistMayhemBricks: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        context.stroke(CGRect(x: rect.midX - rect.width*0.19, y: rect.midY - rect.height*0.10,
+                              width: rect.width*0.38, height: rect.height*0.20))
+        for (dx, dy) in [(-0.30, -0.22), (0.30, -0.22), (-0.30, 0.22), (0.30, 0.22)] {
+            let x = rect.midX + rect.width*CGFloat(dx)
+            let y = rect.midY + rect.height*CGFloat(dy)
+            context.move(to: CGPoint(x: x - rect.width*0.05, y: y))
+            context.addLine(to: CGPoint(x: x + rect.width*0.05, y: y))
+            context.strokePath()
+        }
+        // Four short dashes around the corners: the brick is doing something, whatever it is
+    }
+
     /// Time Trial: a stopwatch - a circle, a stem, and a hand pointing near the top because
     /// the time on this clock is nearly up from the moment it starts.
     static let twistTimeTrial: UIImage = badge(twist) { context, rect in
@@ -1010,6 +1026,7 @@ extension DailyTwist {
         case .noPausing: return PowerUpIcon.twistNoPausing
         case .brickSwap: return PowerUpIcon.twistBrickSwap
         case .timeTrial: return PowerUpIcon.twistTimeTrial
+        case .mayhemBricks: return PowerUpIcon.twistMayhemBricks
         }
     }
 

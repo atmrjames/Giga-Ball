@@ -351,6 +351,27 @@ extension GameScene {
         clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
     }
 
+    /// How much more often a brick takes a style on a Mayhem Bricks day.
+    ///
+    /// Three, against an opening chance of 4-in-100 ramping to 22: the opening plays like the
+    /// mid-game and the mid-game like the depths, without the field ever becoming the wall of
+    /// set pieces a x10 would make of it. The stacking roll is deliberately left alone - more
+    /// bricks doing *something* is the twist; more bricks doing two things at once is a
+    /// different, nastier day nobody asked for.
+    static let dailyMayhemBricksFactor = 3
+
+    /// Whether the day turns the style dial up.
+    var dailyMayhemBricks: Bool {
+        isDailyChallenge && DailyChallengeSession.shared.has(.mayhemBricks)
+    }
+
+    /// The day's word on a style chance the progression just computed.
+    func dailyStyledChance(_ chance: Int) -> Int {
+        dailyMayhemBricks ? min(85, chance*GameScene.dailyMayhemBricksFactor) : chance
+        // Capped where a motif phase sits, which is the loudest the field ever legitimately
+        // gets - the twist may match the game's own maximum, never exceed it
+    }
+
     /// The day's brick remap, when Brick Swap is on. Nil otherwise.
     var dailyBrickSwap: DailyTwist.DailyBrickSwap? {
         guard isDailyChallenge, DailyChallengeSession.shared.has(.brickSwap),

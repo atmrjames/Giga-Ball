@@ -896,6 +896,58 @@ final class DailyLayoutTwistTests: XCTestCase {
         XCTAssertEqual(flipped.map { $0[1] }.max(), highest)
     }
 
+    // MARK: - Mayhem Bricks (round 198)
+
+    /// §4: "Endless daily uses Mayhem's style pool at elevated rates" - "the variety dial
+    /// turned up."
+    func testMayhemBricksTurnsTheStyleDialUpAndNoFurtherThanTheGameItselfGoes() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-08", mode: .endlessII, classicLevel: nil, twists: [.mayhemBricks])
+        defer { DailyChallengeSession.shared.active = nil }
+
+        XCTAssertEqual(scene.dailyStyledChance(4), 12,
+                       "the opening plays like the mid-game")
+        XCTAssertEqual(scene.dailyStyledChance(22), 66,
+                       "and the depths get louder still")
+        XCTAssertEqual(scene.dailyStyledChance(40), 85,
+                       "capped where a motif phase sits - the loudest the field ever "
+                       + "legitimately gets, matched and never exceeded")
+    }
+
+    func testAnOrdinaryDayLeavesTheDialAlone() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-08", mode: .endlessII, classicLevel: nil, twists: [.drought])
+        defer { DailyChallengeSession.shared.active = nil }
+        XCTAssertEqual(scene.dailyStyledChance(4), 4)
+
+        DailyChallengeSession.shared.active = nil
+        XCTAssertEqual(scene.dailyStyledChance(22), 22, "and a campaign run more so")
+    }
+
+    func testMayhemBricksOnlyLandsWhereTheStylePoolExists() {
+        // §4's table says "Endless modes", and the twist is narrower on purpose: the original
+        // Endless has no style machinery at all, so "Mayhem's style pool" there is a port of
+        // the whole style system, not a rate change - queued as its own question rather than
+        // smuggled in under a twist
+        XCTAssertTrue(DailyTwist.mayhemBricks.applies(to: .endlessII))
+        XCTAssertFalse(DailyTwist.mayhemBricks.applies(to: .endless))
+        XCTAssertFalse(DailyTwist.mayhemBricks.applies(to: .classic))
+        XCTAssertEqual(DailyTwist.mayhemBricks.category, .dress)
+    }
+
+    func testMayhemBricksIsActuallyOfferedOnceItsDateArrives() {
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        var seen = false
+        for _ in 0..<600 {
+            let challenge = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: day))
+            if challenge.twists.contains(.mayhemBricks) { seen = true; break }
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        XCTAssertTrue(seen, "in the enum but never drawn looks exactly like very rare")
+    }
+
     // MARK: - Time Trial (round 197)
 
     private func timeTrialScene() -> GameScene {

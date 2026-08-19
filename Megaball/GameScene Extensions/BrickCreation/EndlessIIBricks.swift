@@ -566,7 +566,10 @@ extension GameScene {
             let alreadyStyled = endlessIIStyles(on: brick).isEmpty == false
             var chance = alreadyStyled
                 ? progression.stackChance(at: height)
-                : progression.styleChance(at: height)
+                : dailyStyledChance(progression.styleChance(at: height))
+            // A Mayhem Bricks day multiplies the *first* style's chance and leaves stacking
+            // alone - the twist is more bricks doing something, not more bricks doing two
+            // things at once
             if endlessIIPhaseStyles.isEmpty == false { chance = 85 }
             // A motif phase is the motif. Running it at the ordinary rate would produce a
             // stretch of plain bricks with the occasional themed one, which is not a phase

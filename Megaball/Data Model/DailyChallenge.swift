@@ -95,6 +95,7 @@ enum DailyTwist: String, CaseIterable, Codable {
     case mirrored, upsideDown, brickSwap
     case noPausing
     case timeTrial
+    case mayhemBricks
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
@@ -128,6 +129,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .mirrored, .upsideDown, .brickSwap: return .layout
         case .noPausing: return .nerve
         case .timeTrial: return .tempo
+        case .mayhemBricks: return .dress
         }
     }
 
@@ -148,6 +150,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .brickSwap: return "Brick Swap"
         case .noPausing: return "No Pausing"
         case .timeTrial: return "Time Trial"
+        case .mayhemBricks: return "Mayhem Bricks"
         }
     }
 
@@ -168,6 +171,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .brickSwap: return "The level's bricks are not the types they were."
         case .noPausing: return "No pausing, and leaving the app ends your attempt."
         case .timeTrial: return "Ninety seconds. The score at the whistle is the score."
+        case .mayhemBricks: return "The strange bricks are out in force today."
         }
     }
 
@@ -183,6 +187,14 @@ enum DailyTwist: String, CaseIterable, Codable {
             // suggestion from the first daily play test
         case .mirrored, .upsideDown, .brickSwap:
             return mode == .classic
+        case .mayhemBricks:
+            return mode == .endlessII
+            // §4's table says "Endless modes", and this is narrower on purpose: the original
+            // Endless has no style machinery at all - its rows come from height-band tables -
+            // so "Mayhem's style pool" there is not a rate change but a port of the whole
+            // style system into a mode that never had it. That is queued as its own question
+            // rather than smuggled in under a twist. Here, where the pool exists, the twist
+            // is the variety dial turned up - which is the table's own gloss on it
             // A designed layout is the thing being turned over, and only Classic has one:
             // the endless fields are generated a row at a time, where "the wrong way round"
             // would be a different random field rather than a familiar one seen afresh
@@ -211,6 +223,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         // because no date this changes has been played: the pool only shifts days from the
         // activation forward, and the golden test pins the days behind it
         case .noPausing, .timeTrial: return "2026-10-01"
+        case .mayhemBricks: return "2026-10-01"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date
