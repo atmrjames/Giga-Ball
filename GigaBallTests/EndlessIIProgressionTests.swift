@@ -355,6 +355,77 @@ final class EndlessIIProgressionTests: XCTestCase {
         }
     }
 
+    // MARK: - The power-up brick kindness gate (round 202)
+
+    /// James: "good power ups only, then introduce bad power ups higher up, but not really
+    /// bad ones, then worse ones can be added even higher up."
+    func testABrickHoldsKinderGiftsThanTheSkyDrops() {
+        var run = EndlessIIProgression.make(powerUps: 64)
+        run.brickBadFromHeight = 80
+        run.brickDisastrousFromHeight = 200
+
+        XCTAssertTrue(run.brickMayHold(20, at: 0), "Giga-Ball is good, and good is always in")
+        XCTAssertTrue(run.brickMayHold(3, at: 0), "Fast Ball is a nuisance, not a run-turner")
+        XCTAssertFalse(run.brickMayHold(54, at: 79), "Drift is bad, and 79m is before its day")
+        XCTAssertTrue(run.brickMayHold(54, at: 80))
+        XCTAssertFalse(run.brickMayHold(38, at: 199),
+                       "Reversed Controls is disastrous - a brick's gift goes off in your "
+                       + "hand, so it waits longest")
+        XCTAssertTrue(run.brickMayHold(38, at: 200))
+    }
+
+    func testTheDisastrousTierCanNeverArriveBeforeTheBadOne() {
+        // Whatever the two draws land on - the ranges overlap nothing today, but a rule the
+        // numbers happen to satisfy is not a rule
+        var run = EndlessIIProgression.make(powerUps: 64)
+        run.brickBadFromHeight = 300
+        run.brickDisastrousFromHeight = 100
+        XCTAssertFalse(run.brickMayHold(38, at: 250),
+                       "disastrous waits for bad even when its own height has passed")
+        XCTAssertTrue(run.brickMayHold(38, at: 300))
+    }
+
+    func testTheGateHeightsDifferBetweenRunsAndStayInRange() {
+        let runs = (0..<50).map { _ in EndlessIIProgression.make(powerUps: 64) }
+        XCTAssertGreaterThan(Set(runs.map(\.badPowerUpBricksFrom)).count, 1,
+                             "every run gating at the same height is the staleness the "
+                             + "note is aimed at")
+        XCTAssertGreaterThan(Set(runs.map(\.disastrousPowerUpBricksFrom)).count, 1)
+        for run in runs {
+            XCTAssertTrue(EndlessIIProgression.brickBadRange.contains(run.badPowerUpBricksFrom))
+            XCTAssertTrue(EndlessIIProgression.brickDisastrousRange
+                .contains(run.disastrousPowerUpBricksFrom))
+        }
+    }
+
+    func testAScheduleSavedBeforeTheGateStillDecodesAndGates() throws {
+        // Round 192's saves carry no gate heights. Optionals decode as nil, and nil reads
+        // as the range midpoints - close to what those runs would have drawn
+        var old = EndlessIIProgression.make(powerUps: 64)
+        old.brickBadFromHeight = nil
+        old.brickDisastrousFromHeight = nil
+        let data = try JSONEncoder().encode(old)
+        let back = try JSONDecoder().decode(EndlessIIProgression.self, from: data)
+
+        XCTAssertEqual(back.badPowerUpBricksFrom,
+                       EndlessIIProgression.midpoint(of: EndlessIIProgression.brickBadRange))
+        XCTAssertFalse(back.brickMayHold(38, at: 0), "and the gate still stands")
+    }
+
+    func testEverySeverityEntryNamesARealPowerUp() {
+        let count = LevelPackSetup().powerUpNameArray.count
+        for index in EndlessIIProgression.powerUpSeverity.keys {
+            XCTAssertTrue((0..<count).contains(index),
+                          "\(index) is not a power-up - a stale entry gates nothing")
+        }
+    }
+
+    func testBothDriftsCarryTheSameSeverity() {
+        // One power-up in two directions must not be kinder one way round
+        XCTAssertEqual(EndlessIIProgression.powerUpSeverity[54],
+                       EndlessIIProgression.powerUpSeverity[63])
+    }
+
     func testAScheduleSurvivesBeingWrittenAndReadBack() {
         // It rides in the save, so it has to round-trip exactly: a resumed run that redrew
         // it would be stocked differently from the one the player left

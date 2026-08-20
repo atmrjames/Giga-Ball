@@ -73,6 +73,85 @@ struct EndlessIIProgression: Codable, Equatable {
     /// How many phases are.
     var openingPhases: Int = EndlessIIProgression.openingPhaseRange.lowerBound
 
+    /// The height this run first allows a *bad* power-up inside a power-up brick, and the
+    /// height the *disastrous* ones join them. Optionals so a schedule saved before round
+    /// 202 still decodes - those runs read the range midpoints, which is close to what they
+    /// would have drawn.
+    ///
+    /// James, round 200: "the power up bricks power ups should be limited to power-ups that
+    /// aren't completely disastrous, at least early on... good power ups only, then
+    /// introduce bad power ups higher up, but not really bad ones, then worse ones can be
+    /// added even higher up. Like everything in endless mayhem mode, there should be some
+    /// randomness to which power ups are and aren't available as bricks and when."
+    ///
+    /// **The brick draw only.** A falling drop can be dodged; a brick's gift goes off in
+    /// your hand, which is why the brick is held to a kinder standard than the sky is.
+    var brickBadFromHeight: Int? = nil
+    var brickDisastrousFromHeight: Int? = nil
+
+    var badPowerUpBricksFrom: Int {
+        brickBadFromHeight ?? EndlessIIProgression.midpoint(of: EndlessIIProgression.brickBadRange)
+    }
+    var disastrousPowerUpBricksFrom: Int {
+        brickDisastrousFromHeight
+            ?? EndlessIIProgression.midpoint(of: EndlessIIProgression.brickDisastrousRange)
+    }
+
+    static let brickBadRange = 50...120
+    static let brickDisastrousRange = 160...280
+
+    static func midpoint(of range: ClosedRange<Int>) -> Int {
+        (range.lowerBound + range.upperBound)/2
+    }
+
+    /// Whether a power-up brick at this height may hold this power-up.
+    func brickMayHold(_ index: Int, at height: Int) -> Bool {
+        switch EndlessIIProgression.powerUpSeverity[index] ?? .good {
+        case .good: return true
+        case .mild: return true
+            // Mild annoyances were always allowed - the note's "good power ups only" is
+            // about the ones that turn a run, and a Fast Ball does not
+        case .bad: return height >= badPowerUpBricksFrom
+        case .disastrous: return height >= max(disastrousPowerUpBricksFrom,
+                                               badPowerUpBricksFrom)
+            // Never before the bad ones, however the two draws land
+        }
+    }
+
+    /// How much a harmful power-up hurts, for the brick gate.
+    enum PowerUpSeverity { case good, mild, bad, disastrous }
+
+    /// The authored tiers, by power-up index. Anything absent is `.good`.
+    ///
+    /// **A starting guess, and tuning it is one edit here** - the same promise §6.4 makes
+    /// about the weights. Mild is a nuisance; bad turns the field or the paddle against
+    /// you for a while; disastrous is the handful that can end a run on their own.
+    static let powerUpSeverity: [Int: PowerUpSeverity] = [
+        3: .mild,   // Fast Ball
+        5: .mild,   // Shrink Paddle
+        9: .mild,   // -100 Points
+        11: .mild,  // -1000 Points
+        13: .mild,  // Reset Multiplier
+        16: .mild,  // Hide Bricks
+        23: .mild,  // Quicksand
+        27: .mild,  // Shrink Ball
+        36: .disastrous, // Inert Paddle - a paddle that will not move is the run on a timer
+        37: .bad,   // Flipped Angle
+        38: .disastrous, // Reversed Controls - muscle memory turned against you
+        44: .bad,   // Infill
+        45: .bad,   // Descent
+        48: .mild,  // Lock - the timers freeze, which mostly just delays
+        51: .bad,   // Randomised Bounce
+        54: .bad,   // Drift Right
+        55: .bad,   // Convex Paddle
+        56: .bad,   // Concave Paddle
+        57: .bad,   // Wavy Paddle
+        58: .disastrous, // Jagged Paddle - "stops being something you can read at all"
+        59: .disastrous, // Split Paddle - holes in the floor
+        60: .bad,   // Mirror Paddle
+        63: .bad,   // Drift Left
+    ]
+
     /// This run's multiplier on each power-up's authored weight, one per index.
     ///
     /// **Bounded, and that is the whole design of it.** James: "Rarity for items can be
@@ -193,6 +272,8 @@ struct EndlessIIProgression: Codable, Equatable {
             phaseOrder: EndlessIIPhase.allCases.shuffled(),
             openingSetRows: Int.random(in: openingSetRowRange),
             openingPhases: Int.random(in: openingPhaseRange),
+            brickBadFromHeight: Int.random(in: brickBadRange),
+            brickDisastrousFromHeight: Int.random(in: brickDisastrousRange),
             rarityTweak: (0..<powerUps).map { _ in Double.random(in: rarityTweakRange) })
     }
 

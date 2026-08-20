@@ -84,11 +84,17 @@ extension GameScene {
     func endlessIIPowerUpForBrick() -> Int? {
         let candidates = powerUpProbArray.indices.filter {
             powerUpProbArray[$0] > 0 && powerUpCanAppear($0)
+                && endlessIIProgression.brickMayHold($0, at: endlessHeight)
         }
         // The same weights *and* the same eligibility the falling ones go through. A brick
         // holding Show Bricks in a field with nothing hidden in it is a brick that does
         // nothing when you break it - and one holding Backstop while a Backstop is already out
-        // is worse, because it looks like it did something
+        // is worse, because it looks like it did something.
+        //
+        // Plus the kindness gate (round 202): early bricks hold good and mildly annoying
+        // power-ups only, the bad ones join at this run's own height and the disastrous ones
+        // higher still - a falling drop can be dodged, a brick's gift goes off in your hand.
+        // The *drop* path deliberately does not read this gate
         guard candidates.isEmpty == false else { return nil }
 
         let total = candidates.reduce(0) { $0 + powerUpProbArray[$1] }

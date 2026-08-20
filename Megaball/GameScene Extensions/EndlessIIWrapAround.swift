@@ -298,8 +298,9 @@ extension GameScene {
         }
         guard overshoot > 0.5 else { return }
         paddleIsAgainstTheWall = true
-        lightHaptic.impactOccurred(intensity: 0.4)
-        // Softer than a full light tap (round 200: "paddle wall hit haptics should be
-        // softer") - the wall is scenery, not an event
+        lightHaptic.impactOccurred(intensity: 0.7)
+        // Round 200 asked for softer than a full light tap and round 202 found 0.4 too
+        // light to feel at all - 0.7 is the split. The hysteresis is what actually fixed
+        // the annoyance; the intensity just has to be present without being an event
     }
 }
