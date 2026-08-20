@@ -372,6 +372,120 @@ final class BallPathTests: XCTestCase {
                            + "alarm teaches the reader to ignore the real one")
     }
 
+    // MARK: - Gravity (round 205)
+
+    private let limit: CGFloat = 500
+
+    /// James, round 200: "it works quite strangely because I've tried to prevent the ball
+    /// moving too fast, too slow, getting stuck." The band is the answer to all three.
+    func testGravityCannotRunTheBallAwayHoweverLongItFalls() {
+        var velocity = CGVector(dx: 0, dy: -10)
+        for _ in 0..<600 {
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60.0,
+                                          speedLimit: limit)
+        }
+        let speed = hypot(velocity.dx, velocity.dy)
+        XCTAssertLessThanOrEqual(speed, limit*BallGravity.fastestShare + 0.001,
+                                 "ten seconds of unopposed fall used to be unbounded")
+    }
+
+    func testGravityCannotStallTheBallAtTheTopOfItsArc() {
+        // Climbing slowly, pulled against: the old version let this reach zero and hang
+        var velocity = CGVector(dx: 30, dy: 200)
+        for _ in 0..<120 {
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60.0,
+                                          speedLimit: limit)
+        }
+        let speed = hypot(velocity.dx, velocity.dy)
+        XCTAssertGreaterThanOrEqual(speed, limit*BallGravity.slowestShare - 0.001)
+    }
+
+    /// The band must not flatten the arc into a constant-speed ball, or it stops reading as
+    /// gravity at all - the whole point of keeping the pull.
+    func testTheArcIsStillAnArc() {
+        var velocity = CGVector(dx: limit*0.7, dy: limit*0.7)
+        // Launched at the run's own speed, which is what the ball is travelling at when
+        // gravity is collected - a test that starts below the band measures the band
+        var slowest = CGFloat.greatestFiniteMagnitude
+        var fastest: CGFloat = 0
+        for _ in 0..<90 {
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60.0,
+                                          speedLimit: limit)
+            let speed = hypot(velocity.dx, velocity.dy)
+            slowest = min(slowest, speed)
+            fastest = max(fastest, speed)
+        }
+        XCTAssertGreaterThan(fastest/slowest, 1.3,
+                             "a ball that rises and falls at one speed is not falling")
+    }
+
+    func testTheBallStillTurnsOverAtTheTop() {
+        // **The hang the first draft of this redesign had.** Scaling a too-slow vector up
+        // multiplies its climb back in, so a ball near the floor climbs for ever. The floor
+        // is made up horizontally now, and gravity owns the vertical outright
+        var velocity = CGVector(dx: 40, dy: 150)
+        for _ in 0..<120 {
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60.0,
+                                          speedLimit: limit)
+        }
+        XCTAssertLessThan(velocity.dy, 0, "what goes up")
+    }
+
+    /// The ramp, which replaced a hard switch four ball-widths above the paddle.
+    func testThePullFadesInOverThePaddleRatherThanSwitchingOn() {
+        let paddleY: CGFloat = 0
+        let size: CGFloat = 10
+        let atPaddle = BallGravity.pullShare(ballY: 0, paddleY: paddleY, ballSize: size)
+        let justAbove = BallGravity.pullShare(ballY: 15, paddleY: paddleY, ballSize: size)
+        let wellAbove = BallGravity.pullShare(ballY: 400, paddleY: paddleY, ballSize: size)
+
+        XCTAssertEqual(atPaddle, 0, "no pull at the floor")
+        XCTAssertGreaterThan(justAbove, 0, "and no cliff either - it ramps")
+        XCTAssertLessThan(justAbove, 1)
+        XCTAssertEqual(wellAbove, 1, "full strength up the field")
+    }
+
+    func testABallBelowThePaddleIsNotPulledFurtherDown() {
+        XCTAssertEqual(BallGravity.pullShare(ballY: -50, paddleY: 0, ballSize: 10), 0)
+    }
+
+    /// The handback: gravity holds the ball anywhere in a 0.6-1.4 band, and the rest of the
+    /// game runs at exactly one speed. Handing it straight over would jump.
+    func testTheHandbackRestoresTheRunsOwnSpeedWithoutTurningTheBall() {
+        let slow = CGVector(dx: 90, dy: -120)
+        let handed = BallGravity.handedBack(slow, speedLimit: limit)
+
+        XCTAssertEqual(hypot(handed.dx, handed.dy), limit, accuracy: 0.001)
+        XCTAssertEqual(atan2(handed.dy, handed.dx), atan2(slow.dy, slow.dx), accuracy: 0.0001,
+                       "the same heading - only the speed is restored")
+    }
+
+    func testTheFloorNeverGivesBackTheClimbGravityTook() {
+        // The rule the hang broke, stated directly: whatever the band does to the speed, the
+        // vertical component may only ever be reduced by a downward pull
+        var velocity = CGVector(dx: 20, dy: 120)
+        for _ in 0..<40 {
+            let before = velocity.dy
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60.0,
+                                          speedLimit: limit)
+            XCTAssertLessThan(velocity.dy, before, "the pull is never undone")
+        }
+    }
+
+    func testAFastBallIsSlowedWithoutBeingTurned() {
+        // The ceiling *is* symmetrical - scaling down keeps the arc's shape
+        let fast = CGVector(dx: 600, dy: -900)
+        let held = BallGravity.heldInBand(fast, speedLimit: limit)
+        XCTAssertEqual(hypot(held.dx, held.dy), limit*BallGravity.fastestShare, accuracy: 0.001)
+        XCTAssertEqual(atan2(held.dy, held.dx), atan2(fast.dy, fast.dx), accuracy: 0.0001)
+    }
+
+    func testAStoppedBallIsLeftAloneRatherThanDividedByZero() {
+        let still = CGVector(dx: 0, dy: 0)
+        XCTAssertEqual(BallGravity.handedBack(still, speedLimit: limit), still)
+        XCTAssertEqual(BallGravity.heldInBand(still, speedLimit: limit), still)
+    }
+
     /// The portal drift turns a vector the way the unit circle says it should.
     func testRotationTurnsAVectorCounterclockwise() {
         let turned = rotated(CGVector(dx: 0, dy: 100), byDegrees: 90)

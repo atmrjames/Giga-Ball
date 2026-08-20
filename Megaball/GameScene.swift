@@ -2355,6 +2355,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didSimulatePhysics() {
+        applyBallGravity(frameDelta)
         applyEndlessIIBallSpin(endlessIIPaddleFrameDelta)
         applyEndlessIIBallHandover()
         applyEndlessIIPaddlePhysics()
@@ -2538,15 +2539,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 			breakHorizontalRuns()
 		
-			if gravityActivated {
-				if ball.position.y < paddle.position.y + ballSize*4 {
-					ball.physicsBody?.affectedByGravity = false
-				} else {
-					ball.physicsBody?.affectedByGravity = true
-					// Stop the ball being effected by gravity near the paddle
-				}
-			}
-			// Sets the ball's gravity control
+			// The gravity power-up used to toggle the engine's own pull on and off here, at a
+			// hard line four ball-widths above the paddle. It is applied by hand from
+			// `didSimulatePhysics` now, fading in over the paddle rather than switching -
+			// see `BallGravity` and `applyBallGravity` (round 205)
 			
 			if ball.physicsBody!.velocity.dx == 0 && ball.physicsBody!.velocity.dy == 0 && ballIsOnPaddle == false {
 				ballSpeedZeroTracker+=1
@@ -3123,12 +3119,57 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUpLimit = 2
 	}
 	
+	/// Pulls every ball in play down, once a frame, while the Gravity power-up runs.
+	///
+	/// From `didSimulatePhysics`, which is the only place a velocity written by this scene
+	/// survives the step (§8.6). See `BallGravity` for why the pull is applied here at all
+	/// rather than handed to the engine.
+	///
+	/// **Every ball, not just the first.** Gravity drops in Endless Mayhem too, where the
+	/// old engine-flag version pulled only `ball` and left a Multi-Ball's extras floating
+	/// serenely through the same field - two sets of physics on one screen, which is the
+	/// opposite of predictable.
+	///
+	/// A ball waiting on the paddle is left alone: it is not in flight, and pulling it would
+	/// fight the code that holds it there.
+	func applyBallGravity(_ delta: TimeInterval) {
+		guard gravityActivated, gameState.currentState is Playing, isPaused == false else {
+			return
+		}
+		for subject in endlessIIBallsInPlay {
+			guard subject.parent != nil, let body = subject.physicsBody else { continue }
+			guard subject !== ball || ballIsOnPaddle == false else { continue }
+			guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { continue }
+			// A held ball rides the paddle - the sticky catch owns where it is
+
+			let share = BallGravity.pullShare(ballY: subject.position.y,
+											  paddleY: paddle.position.y,
+											  ballSize: subject.size.height)
+			body.velocity = BallGravity.pulled(body.velocity, share: share,
+											   delta: delta, speedLimit: ballSpeedLimit)
+		}
+		if gravityActivated { crookedBallNote("gravity pull") }
+		// Named rather than silent: the tripwire has always listed gravity as a standing
+		// excuse, so nothing under it was ever reported. A note that says *which* writer
+		// moved the ball is what round 201's speed wire needs to be useful here
+	}
+
 	func deactivateGravity() {
 		gravityDeactivate = false
 		gravityIcon.texture = iconGravityDisabledTexture
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
 		ball.physicsBody!.affectedByGravity = false
 		gravityActivated = false
+
+		guard gameState.currentState is Playing, ballIsOnPaddle == false else { return }
+		for subject in endlessIIBallsInPlay {
+			guard let body = subject.physicsBody else { continue }
+			body.velocity = BallGravity.handedBack(body.velocity, speedLimit: ballSpeedLimit)
+		}
+		// **The handback** (round 205): the same heading at exactly the run's own speed. The
+		// band gravity holds the ball in runs from 0.6 to 1.4 of that, so a ball handed
+		// straight back to `ballSpeedControl` would jump to the limit in one frame - a lurch
+		// at the least interesting moment. One deliberate write instead
 	}
 	
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil, struckBy: SKSpriteNode? = nil) {
@@ -4582,21 +4623,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gravityIcon.texture = self.iconGravityTexture
 			gravityIconBar.isHidden = false
 			// Show power-up icon timer
-			physicsWorld.gravity = CGVector(dx: 0, dy: -1.5)
-			ball.physicsBody!.affectedByGravity = true
 			gravityActivated = true
 			gravityDeactivate = false
+			// Neither `physicsWorld.gravity` nor the body's `affectedByGravity` is touched
+			// any more: the pull is this scene's own, applied per frame (round 205)
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[7]+=1
 			// Power up set
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
-				if self.ballIsOnPaddle {
-					self.deactivateGravity()
-				} else {
-					self.gravityDeactivate = true
-				}
+				self.deactivateGravity()
+				// **At zero, always** (round 205). The deferral this used to do was copied
+				// from Giga-Ball, whose reason was solidity - a ball turning solid inside a
+				// brick. Gravity never changes what the ball is made of, so it had no such
+				// reason, and waiting for a contact meant the pull outliving its own bar by
+				// however long the next paddle touch took. `deactivateGravity` hands the
+				// ball back at exactly the run's speed, so ending mid-arc is smooth
 				self.gravityIconBar.isHidden = true
 				// Hide power-up icons
 			}
@@ -7864,18 +7907,15 @@ laserTimer?.invalidate()
 						
 					case "gravityTimer":
 						gravityIcon.texture = self.iconGravityTexture
-						physicsWorld.gravity = CGVector(dx: 0, dy: -1.5)
-						ball.physicsBody!.affectedByGravity = true
+						// No world gravity and no engine flag: the pull is applied per frame
+						// (round 205), exactly as on the collect path
 						gravityActivated = true
 						gravityDeactivate = false
 
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
-							if self.ballIsOnPaddle {
-								self.deactivateGravity()
-							} else {
-								self.gravityDeactivate = true
-							}
+							self.deactivateGravity()
+							// At zero, like the collect path (round 205)
 							self.gravityIconBar.isHidden = true
 						}
 						gravityIconBar.run(SKAction.scaleX(to: scale, duration: 0.00), completion: {
@@ -8304,8 +8344,10 @@ laserTimer?.invalidate()
 		}
 		// Restart game, unpause all nodes
 		
-		ball.physicsBody!.affectedByGravity = true
-		// Enusre the ball is affected by gravity
+		ball.physicsBody!.affectedByGravity = false
+		// **False, and this was the trap round 204's map flagged.** The engine's gravity is
+		// never used now - the power-up applies its own - so a body left flagged would be
+		// waiting for any future code that set `physicsWorld.gravity` for some other reason
 		
 		if killBall {
 			numberOfLives+=1

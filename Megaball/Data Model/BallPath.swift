@@ -23,6 +23,9 @@
 //
 
 import CoreGraphics
+import Foundation
+// Foundation for `TimeInterval`, which `BallGravity` measures its frames in - CoreGraphics
+// alone was enough until a per-frame writer moved in here
 
 enum BallPath {
 
@@ -364,6 +367,122 @@ struct BallLoopDetector {
         return xq &* 73_856_093 ^ yq &* 19_349_663 ^ hq &* 83_492_791
         // Deterministic mixing rather than Hasher, which reseeds per launch - a saved
         // comparison must not depend on which run of the app produced it
+    }
+}
+
+/// The Gravity power-up's arithmetic, apart from the scene so it can be reasoned about and
+/// tested without one.
+///
+/// **Round 204 mapped what was there and round 205 replaced it, on James's approval.** The
+/// old version handed the ball to the engine - `physicsWorld.gravity` at (0, -1.5) and the
+/// body's own `affectedByGravity` - and then spent its life fighting what came back: the
+/// speed renormaliser that holds the rest of the game to one constant speed was switched
+/// *off* entirely while gravity ran, and the angle corrections were skipped above a hard
+/// line four ball-widths over the paddle. So the ball was free-range in most of the field -
+/// genuinely accelerating without bound on the way down, genuinely dying on the way up - and
+/// then got snapped straight the instant it crossed back into the band. That is the "too
+/// fast, too slow, getting stuck" James kept patching, and it is why it read as strange:
+/// two different physics, with a cliff between them.
+///
+/// The pull is applied by hand now, every frame, from `didSimulatePhysics`. Three things
+/// follow from that, and they are the whole design:
+///
+/// - **The speed is held in a band rather than not held at all.** An arc reads as gravity
+///   because the ball is faster at the bottom than the top, not because it is unbounded, so
+///   a band gives the same shape with none of the runaway.
+/// - **The pull fades in over the paddle instead of switching on at a line.** A cliff is a
+///   discontinuity the hand can feel; a ramp is just gravity being weaker near the floor.
+/// - **The world's gravity stays at zero and the ball's `affectedByGravity` stays false.**
+///   Nothing else in the scene can be caught by a global that is never turned on - which
+///   also disarms the restart path that unconditionally set the flag back to true.
+enum BallGravity {
+
+    /// How hard the ball is pulled, in points per second per second.
+    ///
+    /// 225, which is exactly what the engine was applying: SpriteKit measures gravity in
+    /// metres and lays 150 points to the metre, so the old (0, -1.5) vector was 225pt/s².
+    /// Carried over deliberately - the redesign is about predictability, and changing the
+    /// strength in the same breath would make it impossible to tell which change did what.
+    static let acceleration: CGFloat = 225
+
+    /// The slowest and fastest the ball may travel under gravity, as shares of the run's own
+    /// speed limit.
+    ///
+    /// A little over two to one between them, which is enough for the rise and fall to be
+    /// plainly visible and far short of the ball outrunning the paddle or hanging still.
+    static let slowestShare: CGFloat = 0.6
+    static let fastestShare: CGFloat = 1.4
+
+    /// How far above the paddle the pull reaches full strength, in ball widths.
+    ///
+    /// Six, where the old hard switch sat at four. The extra reach is the ramp: full gravity
+    /// arrives at about the height the cliff used to be, and everything below it is a fade
+    /// rather than a step.
+    static let falloffBallWidths: CGFloat = 6
+
+    /// How much of the pull applies at this height above the paddle, from 0 to 1.
+    static func pullShare(ballY: CGFloat, paddleY: CGFloat, ballSize: CGFloat) -> CGFloat {
+        let reach = max(1, ballSize*falloffBallWidths)
+        let above = ballY - paddleY
+        guard above > 0 else { return 0 }
+        return min(1, above/reach)
+    }
+
+    /// The velocity after one frame of pull, held inside the band.
+    ///
+    /// The pull is added first and the band applied second, so the *direction* is always
+    /// gravity's answer and only the magnitude is disciplined - a ball at the top of its arc
+    /// still turns over, it simply is not allowed to stop while doing it.
+    static func pulled(_ velocity: CGVector, share: CGFloat, delta: TimeInterval,
+                       speedLimit: CGFloat) -> CGVector {
+        guard delta > 0, speedLimit > 0 else { return velocity }
+        let pulled = CGVector(dx: velocity.dx,
+                              dy: velocity.dy - acceleration*share*CGFloat(delta))
+        return heldInBand(pulled, speedLimit: speedLimit)
+    }
+
+    /// A velocity brought inside the band.
+    ///
+    /// **The ceiling and the floor are not symmetrical, and that asymmetry is the whole
+    /// trick.** Too fast is fixed by scaling the vector down: the direction is untouched and
+    /// the arc keeps its shape. Too slow cannot be fixed the same way, because scaling *up*
+    /// multiplies the vertical component too - it hands back the climb gravity just took
+    /// away, and a ball at the top of its arc simply keeps climbing. That is the hang this
+    /// power-up has always had, and the first draft of this redesign reproduced it exactly;
+    /// a test caught it before it shipped.
+    ///
+    /// So the floor is made up **horizontally**. Gravity owns the vertical outright and the
+    /// shortfall is added across, which reads as the ball arcing over and drifting rather
+    /// than hanging - and means the pull can never be undone by the thing meant to keep the
+    /// ball moving.
+    static func heldInBand(_ velocity: CGVector, speedLimit: CGFloat) -> CGVector {
+        let speed = hypot(velocity.dx, velocity.dy)
+        guard speed > 0, speedLimit > 0 else { return velocity }
+
+        let ceiling = speedLimit*fastestShare
+        if speed > ceiling {
+            let scale = ceiling/speed
+            return CGVector(dx: velocity.dx*scale, dy: velocity.dy*scale)
+        }
+
+        let floor = speedLimit*slowestShare
+        guard speed < floor else { return velocity }
+        let wantedDX = (floor*floor - velocity.dy*velocity.dy).squareRoot()
+        guard wantedDX.isFinite, wantedDX > abs(velocity.dx) else { return velocity }
+        // Not finite when the fall alone already beats the floor, which means there is
+        // nothing to make up - and never *reducing* the horizontal speed, because the floor
+        // is a minimum rather than a target
+        let side: CGFloat = velocity.dx < 0 ? -1 : 1
+        return CGVector(dx: side*wantedDX, dy: velocity.dy)
+    }
+
+    /// The velocity gravity hands back when it ends: the same heading at exactly the run's
+    /// own speed, so the ball rejoins the game's one constant speed without a lurch.
+    static func handedBack(_ velocity: CGVector, speedLimit: CGFloat) -> CGVector {
+        let speed = hypot(velocity.dx, velocity.dy)
+        guard speed > 0, speedLimit > 0 else { return velocity }
+        let scale = speedLimit/speed
+        return CGVector(dx: velocity.dx*scale, dy: velocity.dy*scale)
     }
 }
 
