@@ -135,7 +135,8 @@ extension GameScene {
             }
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
-                marker.position = CGPoint(x: landing.x,
+                marker.position = CGPoint(x: endlessIISettledLandingX(landing.x, for: marker,
+                                                                     delta: delta),
                                           y: paddle.position.y + paddleHeight*1.2)
                 markerIndex += 1
             }
@@ -279,6 +280,53 @@ extension GameScene {
             travelled += length
         }
         return index
+    }
+
+    /// How much of the gap to a freshly predicted landing the marker closes in a sixtieth of
+    /// a second.
+    ///
+    /// Low enough to swallow the shimmer, high enough that the marker is still telling the
+    /// truth about where the ball is going rather than about where it was going.
+    static let endlessIILandingFollowPerSixtieth: CGFloat = 0.18
+
+    /// Beyond this, the prediction has genuinely changed course and the marker jumps.
+    ///
+    /// A ball's landing point moves for two quite different reasons, and they want opposite
+    /// treatment. Frame to frame it wanders by a fraction of a point, because the prediction is
+    /// re-walked from a position that has moved a little - that is the shimmer. When the ball
+    /// actually bounces, or a brick in its way is destroyed, the landing moves by a large
+    /// distance all at once, and easing across the field would draw a marker sliding to a place
+    /// the ball is not going yet. One cell is comfortably above the first and far below the
+    /// second.
+    var endlessIILandingSnapDistance: CGFloat { max(brickWidth, ballSize*2) }
+
+    /// The marker's x, eased rather than snapped.
+    ///
+    /// James, round 209: "landing marker icon can look a bit jittery as the ball's landing
+    /// position slightly adjusts. Can we make this movement smoother or have a moving average
+    /// position so it doesn't update so frequently by such small amounts."
+    ///
+    /// A moving average would lag by however long the window is; easing toward the prediction
+    /// costs the same smoothing without a fixed delay, and settles rather than trailing. Time
+    /// based, not per frame, so it behaves the same at 60 and 120 - the mistake Ball Steering
+    /// made and the same round found.
+    ///
+    /// A marker being placed for the first time has nowhere to ease from, so it is put where
+    /// it belongs: easing from a node's birth position drags it in from the middle of the
+    /// scene, which is a much worse jitter than the one being fixed.
+    func endlessIISettledLandingX(_ wanted: CGFloat, for marker: SKNode,
+                                  delta: TimeInterval) -> CGFloat {
+        guard let placed = marker.userData?["placed"] as? Bool, placed, delta > 0 else {
+            if marker.userData == nil { marker.userData = NSMutableDictionary() }
+            marker.userData?["placed"] = true
+            return wanted
+        }
+        guard abs(wanted - marker.position.x) < endlessIILandingSnapDistance else {
+            return wanted
+        }
+        let share = 1 - pow(1 - GameScene.endlessIILandingFollowPerSixtieth,
+                            CGFloat(delta)*60)
+        return marker.position.x + (wanted - marker.position.x)*share
     }
 
     /// The landing marker for the nth ball, made when first needed.

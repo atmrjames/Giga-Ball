@@ -77,3 +77,47 @@ final class AimHoldControlTests: XCTestCase {
         XCTAssertGreaterThan(AimHoldControl.tapSlop, 0)
     }
 }
+
+/// What lifting the finger means while a ball is being aimed.
+///
+/// James, round 209: "Aimed sticky is broken. The ball isn't going where the arrow is aimed,
+/// the game scene then gets stuck paused but the ball is moving, the ball can go below the
+/// paddle and vibrate around."
+///
+/// One fall-through causes all three. The release rule answered a yes/no question - does this
+/// tap fire? - and `touchesEnded` read "no" as "not mine", letting the touch reach the
+/// ordinary paddle release. That launched the held ball at the angle for wherever it was
+/// sitting on the paddle, ignoring the arrow, and returned without ending the freeze the catch
+/// had put the world into: hence a moving ball in a stopped field, passing through a paddle
+/// that was still held.
+///
+/// Reachable since round 172 stopped the aim drag carrying the paddle. Before that, dragging
+/// moved the paddle and set `paddleMoved`, which the ordinary release checks - so the change
+/// that made aiming feel right is the one that took the guard off the door.
+final class AimReleaseTests: XCTestCase {
+
+    func testATapWhileAimingFires() {
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true), .aimedLaunch)
+        XCTAssertEqual(AimHoldControl.release(travelled: AimHoldControl.tapSlop, aiming: true),
+                       .aimedLaunch)
+    }
+
+    /// The one that was missing: a release after an adjustment is not a launch **and is not
+    /// somebody else's touch either**. It does nothing at all.
+    func testAReleaseAfterAnAdjustmentDoesNothingRatherThanFallingThrough() {
+        XCTAssertEqual(AimHoldControl.release(travelled: AimHoldControl.tapSlop + 1,
+                                              aiming: true), .keepAiming)
+        XCTAssertEqual(AimHoldControl.release(travelled: 400, aiming: true), .keepAiming)
+    }
+
+    func testWithNothingBeingAimedTheTouchBelongsToWhateverElseWantedIt() {
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: false), .notAiming)
+        XCTAssertEqual(AimHoldControl.release(travelled: 400, aiming: false), .notAiming)
+    }
+
+    /// A drag out and back has still moved, so it is still an adjustment - the same reason
+    /// `launches` measures total travel rather than the distance from where the touch began.
+    func testAFingerThatGoesOutAndComesBackIsStillAnAdjustment() {
+        XCTAssertEqual(AimHoldControl.release(travelled: 260, aiming: true), .keepAiming)
+    }
+}

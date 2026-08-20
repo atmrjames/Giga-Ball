@@ -65,6 +65,41 @@ enum AimHoldControl {
         travelled <= slop
     }
 
+    /// What lifting the finger should do.
+    ///
+    /// **Three outcomes, not two**, and the third is the one that went missing. `launches`
+    /// answers a yes/no question, and the caller read "no" as "this touch is not mine" and let
+    /// it fall through to the ordinary paddle release - which launched the ball at the angle
+    /// for where it happened to be sitting, ignoring the arrow entirely, and returned without
+    /// ever ending the freeze the catch had put the world into.
+    ///
+    /// James, round 209: "Aimed sticky is broken. The ball isn't going where the arrow is
+    /// aimed, the game scene then gets stuck paused but the ball is moving, the ball can go
+    /// below the paddle and vibrate around." All three of those are that one fall-through.
+    ///
+    /// It has been reachable since round 172 stopped the aim drag carrying the paddle: before
+    /// that, dragging moved the paddle and set `paddleMoved`, and the ordinary release checks
+    /// that flag - so the very change that made aiming feel right removed the thing that had
+    /// been guarding the door.
+    static func release(travelled: CGFloat, aiming: Bool,
+                        slop: CGFloat = tapSlop) -> Release {
+        guard aiming else { return .notAiming }
+        return launches(travelled: travelled, slop: slop) ? .aimedLaunch : .keepAiming
+    }
+
+    /// The three things a release can mean while Aimed Sticky is holding a ball.
+    enum Release {
+        /// A tap: fire the held ball along the arrow.
+        case aimedLaunch
+        /// The end of an adjustment: the ball stays put and keeps the angle it was given.
+        /// **Nothing else may have this touch** - the aim owns the launch while it runs
+        /// (§5.4's launchControl group), so a release it declines is a release that does
+        /// nothing at all, not one that falls through to the paddle.
+        case keepAiming
+        /// Nothing is being aimed; the touch belongs to whatever else wanted it.
+        case notAiming
+    }
+
     /// How far a finger may wander and still be a tap.
     ///
     /// A touch never travels zero: fingers roll, and the paddle-speed multiplier means a

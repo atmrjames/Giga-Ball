@@ -102,7 +102,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
         settingsTableView.delegate = self
         settingsTableView.dataSource = self
-        settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
+        settingsTableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: SettingsTableViewCell.reuseIdentifier)
         watchTouchesOnSettingsTable()
         settingsTableView.separatorStyle = .none
         settingsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
@@ -196,7 +196,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
                     
-            let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: SettingsTableViewCell.reuseIdentifier, for: indexPath) as! SettingsTableViewCell
             cell.applyGlass()
         
             settingsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
@@ -207,10 +207,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // (play-test round 15)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.isHidden = false
-            cell.accessoryView = nil
-            // Cleared on every row for the same reason the swipe-info button above is: a
-            // recycled cell carries whatever the last row put on it, which is how one info
-            // button became one on nearly every row (play-test round 15)
             
             switch settingRow(for: indexPath) {
 
@@ -277,11 +273,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 }
-                cell.accessoryView = musicArrowButton()
-                // **The arrow opens the track list** (James, round 207). The row keeps its
-                // own tap, which is still the master switch - the arrow is a second answer to
-                // a row that now has two, the way the settings list already reads a tick as
-                // separate from the row it sits on
+                addRowChevron(to: cell, action: #selector(musicArrowTapped))
+                // **The arrow opens the track list** (James, round 207). The row keeps its own
+                // tap, which is still the master switch - the chevron beside the name is the
+                // door, exactly as it is on Paddle Speed
             case 4:
             // Haptics
 //                if screenSize == .Pad || screenSize == .SE {
@@ -326,7 +321,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.setIcon(UIImage(named: PaddleSpeed.iconName(for: speed))!, recolour: true)
                 cell.settingState.text = PaddleSpeed.label(speed)
                 cell.setStateColour(SettingsViewController.paddleSpeedColour(for: speed))
-                addPaddleSpeedTryButton(to: cell)
+                addRowChevron(to: cell, action: #selector(paddleSpeedTryTapped))
                 // The row cycles the setting as it always did (James, round 126); the
                 // chevron beside the name is what opens the screen to feel it on
                 // The row shows the number and opens the screen that lets it be felt
@@ -453,13 +448,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         ])
     }
 
-    /// The chevron on the Paddle Speed row: the door to the try-out screen.
+    /// The chevron beside a row's name: the door to the screen behind it.
     ///
     /// Shares the information button's tag and guards deliberately - one row can carry one
     /// of these, and everything that makes the button survivable inside a cell (the 56pt
     /// target, the touch-down stamp, `selectionCameFromInfoButton`) is machinery that only
-    /// works if there is exactly one of them to find.
-    func addPaddleSpeedTryButton(to cell: SettingsTableViewCell) {
+    /// works if there is exactly one of them *per row* to find.
+    ///
+    /// **Two rows carry one now**: Paddle Speed, and Music since round 209. The Music row's
+    /// first build hung the arrow off the cell's `accessoryView`, which is outside the glass
+    /// card - so that one row's card was shorter than every other row's and the arrow floated
+    /// in the margin beside it. Inside the card, beside the name, is where this app puts a
+    /// door, and it only took looking at it to see that.
+    func addRowChevron(to cell: SettingsTableViewCell, action: Selector) {
         let chevron = UIButton(type: .system)
         chevron.tag = Self.swipeInfoTag
         chevron.setImage(UIImage(systemName: "chevron.forward.circle",
@@ -469,7 +470,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             ? SettingsTableViewCell.glassForeground.withAlphaComponent(0.7)
             : #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
         chevron.translatesAutoresizingMaskIntoConstraints = false
-        chevron.addTarget(self, action: #selector(paddleSpeedTryTapped), for: .touchUpInside)
+        chevron.addTarget(self, action: action, for: .touchUpInside)
         chevron.addTarget(self, action: #selector(swipeInfoTouchedDown), for: .touchDown)
         cell.contentView.addSubview(chevron)
         cell.contentView.bringSubviewToFront(chevron)
@@ -591,6 +592,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 defaults.set(soundsSetting, forKey: "soundsSetting")
             case 3:
             // Music
+                if infoWasJustTapped { break }
+                if selectionCameFromInfoButton(tableView, at: indexPath) {
+                    musicArrowTapped()
+                    break
+                }
+                // A press inside the chevron opens the track list; a press anywhere else on
+                // the row is still the master switch. The same pair of guards Paddle Speed
+                // and the swipe-up row use, for the same reason: a touch just off the glyph
+                // reaches the row underneath
                 musicSetting = !musicSetting
 //                soundsSetting = musicSetting
                 defaults.set(musicSetting, forKey: "musicSetting")
@@ -723,22 +733,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                        green: 0.6 + (0 - 0.6)*along,
                        blue: 0.6 + (0.2352941176 - 0.6)*along,
                        alpha: 1)
-    }
-
-    /// The arrow on the Music row, which opens the track list.
-    ///
-    /// A button rather than `accessoryType = .disclosureIndicator`, because the row already
-    /// has a tap of its own - the master switch - and a plain chevron is decoration that does
-    /// not take touches. This one does, so the row's two answers are two targets.
-    func musicArrowButton() -> UIButton {
-        let arrow = UIButton(type: .system)
-        arrow.setImage(UIImage(systemName: "chevron.right",
-                               withConfiguration: UIImage.SymbolConfiguration(
-                                pointSize: 14, weight: .semibold)), for: .normal)
-        arrow.tintColor = UIColor(white: 1, alpha: 0.55)
-        arrow.frame = CGRect(x: 0, y: 0, width: 34, height: 34)
-        arrow.addTarget(self, action: #selector(musicArrowTapped), for: .touchUpInside)
-        return arrow
     }
 
     @objc func musicArrowTapped() {

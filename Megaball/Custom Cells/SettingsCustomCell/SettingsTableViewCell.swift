@@ -9,6 +9,16 @@
 import UIKit
 
 class SettingsTableViewCell: UITableViewCell {
+
+    /// The identifier baked into `SettingsTableViewCell.xib`.
+    ///
+    /// **A nib carries its own reuse identifier, and registering it under a different name
+    /// crashes on the first dequeue** - "cell reuse indentifier in nib (customSettingCell)
+    /// does not match the identifier used to register the nib". Round 209's music screen was
+    /// the second place to register this nib and picked a name that read better; the crash was
+    /// immediate and total, and only opening the screen found it. It lives here now so the
+    /// next screen to use this cell cannot pick a third.
+    static let reuseIdentifier = "customSettingCell"
     
     @IBOutlet var settingDescription: UILabel!
     @IBOutlet var settingState: UILabel!

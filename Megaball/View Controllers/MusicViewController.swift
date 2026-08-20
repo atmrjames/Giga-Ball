@@ -20,7 +20,7 @@ import AVFoundation
 /// iPad pause screen's 414pt box came from. `PaddleSpeedViewController` is the precedent: a
 /// menu screen that is its own layout, opened the same way as every other.
 final class MusicViewController: UIViewController, UITableViewDelegate, UITableViewDataSource,
-                                 MenuNavigable {
+                                 UIGestureRecognizerDelegate, MenuNavigable {
 
     let defaults = UserDefaults.standard
     private var hapticsSetting = true
@@ -82,7 +82,7 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
         let hint = UILabel()
         hint.translatesAutoresizingMaskIntoConstraints = false
-        hint.text = "Tap a track to hear it. Tick the ones to play during a game."
+        hint.text = "Play a track to hear it. Tick the ones to play during a game."
         hint.font = .systemFont(ofSize: 13)
         hint.textColor = UIColor(white: 1, alpha: 0.55)
         hint.numberOfLines = 0
@@ -96,9 +96,15 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         tableView.separatorStyle = .none
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.rowHeight = 60
+        tableView.rowHeight = SettingsTableViewCell.glassRowHeight
+        watchTouches()
+        // **A button inside this cell does not get its own touch.** The glass card sits over
+        // the content and swallows it, which is why the settings list decides what was pressed
+        // from *where the finger landed* rather than from a button's own action - see
+        // `SettingsViewController.selectionCameFromInfoButton`. The first build of this screen
+        // used two plain buttons and neither of them ever fired; only pressing them found it.
         tableView.register(UINib(nibName: "SettingsTableViewCell", bundle: nil),
-                           forCellReuseIdentifier: "settingsCell")
+                           forCellReuseIdentifier: SettingsTableViewCell.reuseIdentifier)
         // The settings screen's own cell, so a row here is the same object as a row there -
         // it already carries the icon, the label, the state text and the tick
         view.addSubview(tableView)
@@ -150,21 +156,34 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "settingsCell",
-                                                 for: indexPath) as! SettingsTableViewCell
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: SettingsTableViewCell.reuseIdentifier,
+            for: indexPath) as! SettingsTableViewCell
+        cell.applyGlass()
+        // The settings list's own card, so a row here is the same object as a row there
         let track = MusicTrack.allCases[indexPath.row]
 
         cell.settingDescription.text = track.name
         cell.centreLabel.text = ""
-        cell.setIcon(UIImage(named: previewing == track ? "iconMusic" : "iconMusicOff")!,
-                     recolour: true)
-        // The icon is the preview's own state: which row is making the noise right now
+        cell.setIcon(UIImage(named: "iconMusic")!, recolour: true)
+        cell.accessoryView = nil
+        for tag in [Self.playTag, Self.tickTag] {
+            cell.contentView.viewWithTag(tag)?.removeFromSuperview()
+        }
+        // Cleared on every row, not only where they are added: a recycled cell carries
+        // whatever the last row put on it, which is how one information button became one on
+        // nearly every row (play-test round 15)
+
+        addPlayButton(to: cell, row: indexPath.row, playing: previewing == track)
 
         if track.isChoosable {
-            let on = MusicSelection.isEnabled(track)
-            cell.settingState.text = on ? "on" : "off"
-            cell.setStateColour(on ? #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-                                   : #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
+            cell.settingState.text = ""
+            // **The tick is the state.** Saying "on" as well put the word behind the tick,
+            // which is where the row's state label lives - two answers to one question, one
+            // of them half hidden by the other. Every other settings row uses the word
+            // because it has nothing else; this one has the thing itself
+            addTickButton(to: cell, row: indexPath.row,
+                          on: MusicSelection.isEnabled(track))
         } else {
             cell.settingState.text = "menu"
             cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
@@ -172,40 +191,124 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
             // should find it where the music lives - but it is the menu's, not a run's, so it
             // says what it is instead of offering a tick that would silence the main menu
         }
-        cell.accessoryView = track.isChoosable ? tickButton(for: indexPath.row) : nil
-        // The tick is its own control, so the row has two answers that cannot be confused:
-        // anywhere on the row previews, the tick chooses. A single tap doing both would mean
-        // a player auditioning the tracks silently rewrites what a run plays
         return cell
     }
 
-    /// The tick beside a row, drawn from whether that track is in the rotation.
-    private func tickButton(for row: Int) -> UIButton {
-        let track = MusicTrack.allCases[row]
-        let on = MusicSelection.isEnabled(track)
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: on ? "checkmark.circle.fill" : "circle",
-                                withConfiguration: UIImage.SymbolConfiguration(
-                                    pointSize: 22, weight: .semibold)), for: .normal)
-        button.tintColor = on ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-                              : UIColor(white: 1, alpha: 0.4)
-        button.frame = CGRect(x: 0, y: 0, width: 34, height: 34)
-        button.tag = row
-        button.addTarget(self, action: #selector(tickTapped(_:)), for: .touchUpInside)
-        return button
+    private static let playTag = 8901
+    private static let tickTag = 8902
+
+    /// The play glyph beside a track's name.
+    ///
+    /// Placed exactly where the settings list puts a door - just past the end of the written
+    /// name - so the two screens read the same way.
+    private func addPlayButton(to cell: SettingsTableViewCell, row: Int, playing: Bool) {
+        let play = UIButton(type: .system)
+        play.tag = Self.playTag
+        play.setImage(UIImage(systemName: playing ? "stop.circle" : "play.circle",
+                              withConfiguration: UIImage.SymbolConfiguration(
+                                  pointSize: 20, weight: .regular)), for: .normal)
+        play.tintColor = SettingsTableViewCell.glassForeground.withAlphaComponent(playing ? 1 : 0.7)
+        play.translatesAutoresizingMaskIntoConstraints = false
+        play.isUserInteractionEnabled = false
+        // Drawn, not pressed: the glass swallows its touch, so the row's selection and this
+        // button's frame are what decide - see `watchTouches`
+        cell.contentView.addSubview(play)
+        cell.contentView.bringSubviewToFront(play)
+
+        let title = cell.settingDescription.text ?? ""
+        let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
+        let written = (title as NSString).size(withAttributes: [.font: font]).width
+
+        NSLayoutConstraint.activate([
+            play.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
+                                          constant: written + 2),
+            play.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
+            play.widthAnchor.constraint(equalToConstant: 56),
+            play.heightAnchor.constraint(equalToConstant: 56),
+            // 56, not Apple's 44: the settings list found 44 still too easy to miss inside a
+            // cell (play-test round 21), and the glyph is unchanged - it simply catches more
+        ])
     }
 
-    @objc private func tickTapped(_ sender: UIButton) {
-        guard MusicTrack.allCases.indices.contains(sender.tag) else { return }
-        toggle(MusicTrack.allCases[sender.tag])
+    /// The tick at the end of a track's row: whether a run may play it.
+    private func addTickButton(to cell: SettingsTableViewCell, row: Int, on: Bool) {
+        let tick = UIButton(type: .system)
+        tick.tag = Self.tickTag
+        tick.setImage(UIImage(systemName: on ? "checkmark.circle.fill" : "circle",
+                              withConfiguration: UIImage.SymbolConfiguration(
+                                  pointSize: 22, weight: .semibold)), for: .normal)
+        tick.tintColor = on ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+                            : SettingsTableViewCell.glassForeground.withAlphaComponent(0.45)
+        tick.translatesAutoresizingMaskIntoConstraints = false
+        tick.isUserInteractionEnabled = false
+        cell.contentView.addSubview(tick)
+        cell.contentView.bringSubviewToFront(tick)
+
+        NSLayoutConstraint.activate([
+            tick.trailingAnchor.constraint(equalTo: cell.settingState.trailingAnchor,
+                                           constant: 14),
+            tick.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            tick.widthAnchor.constraint(equalToConstant: 56),
+            tick.heightAnchor.constraint(equalToConstant: 56),
+        ])
     }
 
-    /// A tap plays the track. The tick is the accessory beside it.
+    /// Where the last touch on the list landed, in the list's own coordinates.
+    private var lastTouch: CGPoint = .init(x: -1, y: -1)
+
+    /// Records every touch without taking any of them.
+    ///
+    /// A zero-duration long press fires the moment a finger lands. **All four flags matter**:
+    /// a recognised gesture blocks every other recogniser on the same view by default, which
+    /// includes the table's own pan - and that is what stopped the settings list scrolling for
+    /// eighteen rounds (rounds 78 to 96). `cancelsTouchesInView` false keeps taps working,
+    /// which is exactly what hid the cause back then, because a tap never needs the pan. The
+    /// delegate below is the part that actually fixes it: recognise *alongside* everything
+    /// else, and record only.
+    private func watchTouches() {
+        let watcher = UILongPressGestureRecognizer(target: self,
+                                                   action: #selector(listTouched(_:)))
+        watcher.minimumPressDuration = 0
+        watcher.cancelsTouchesInView = false
+        watcher.delaysTouchesBegan = false
+        watcher.delaysTouchesEnded = false
+        watcher.delegate = self
+        tableView.addGestureRecognizer(watcher)
+    }
+
+    @objc private func listTouched(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        lastTouch = gesture.location(in: tableView)
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        true
+    }
+
+    /// Which of the row's two controls the finger was inside, if either.
+    private func controlHit(_ tag: Int, at indexPath: IndexPath) -> Bool {
+        guard let cell = tableView.cellForRow(at: indexPath) as? SettingsTableViewCell,
+              let control = cell.contentView.viewWithTag(tag) else { return false }
+        return control.convert(control.bounds, to: tableView).contains(lastTouch)
+    }
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let track = MusicTrack.allCases[indexPath.row]
-        if previewing == track { stopPreview() } else { startPreview(track) }
-        tableView.reloadData()
+
+        if controlHit(Self.playTag, at: indexPath) {
+            if previewing == track { stopPreview() } else { startPreview(track) }
+            tableView.reloadData()
+            return
+        }
+        if controlHit(Self.tickTag, at: indexPath) {
+            toggle(track)
+            return
+        }
+        // A press on the rest of the row does nothing. Both of this row's answers are
+        // deliberate ones, and guessing which was meant is how a player auditioning the
+        // tracks silently rewrites what a run plays
     }
 
     // MARK: - Choosing

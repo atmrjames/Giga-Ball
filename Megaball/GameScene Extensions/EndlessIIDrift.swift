@@ -35,12 +35,28 @@ extension GameScene {
     /// How long the field drifts for.
     static let endlessIIDriftDuration: TimeInterval = 10
 
-    /// How fast it slides, in cells a second.
+    /// How often the field moves over by one column.
     ///
-    /// Slow. The point is that a shot has to lead its target by a little, not that the field
-    /// is a moving walkway - at half a cell a second a brick has moved most of its own width
-    /// by the time a ball crosses the field and back.
-    static let endlessIIDriftSpeed: CGFloat = 0.45
+    /// **A column at a time, not a slide** (James, round 209: "Drift shouldn't move sideways
+    /// smoothly, it should go one column at a time, similar to how the bricks descend in
+    /// endless mode"). The old version moved every brick a fraction of a cell every frame,
+    /// which meant the field spent nearly all of its time *between* columns - and the grid is
+    /// how the generator, the crush, the neighbour rules and a Spinning brick's clearance all
+    /// speak (§8.6, in the other axis). Stepping puts the field back on the grid at the end of
+    /// every step and leaves it there until the next one, so the thing the player is reading
+    /// and the thing the code is reasoning about are the same thing far more of the time.
+    ///
+    /// 2.2 seconds is the old speed of 0.45 cells a second, kept: this round changes how the
+    /// field moves, not how far it gets, so what James is judging is the one thing that
+    /// changed.
+    static let endlessIIDriftColumnSeconds: TimeInterval = 2.2
+
+    /// How long the move itself takes, once it starts.
+    ///
+    /// The descent's own shape: a definite move and then a rest, rather than a crawl. Short
+    /// enough to read as a step, long enough that the field is seen going rather than found
+    /// to have arrived.
+    static let endlessIIDriftSlideSeconds: TimeInterval = 0.28
 
     /// Starts (or extends) the slide, in the direction the collected power-up names.
     ///
@@ -66,7 +82,29 @@ extension GameScene {
             return
         }
 
-        let step = CGFloat(endlessIIDriftDirection)*GameScene.endlessIIDriftSpeed*brickWidth*CGFloat(delta)
+        endlessIIDriftPhase += delta
+
+        var travelled: CGFloat = 0
+        if endlessIIDriftMoved < brickWidth {
+            let rate = brickWidth/CGFloat(GameScene.endlessIIDriftSlideSeconds)
+            travelled = min(rate*CGFloat(delta), brickWidth - endlessIIDriftMoved)
+            endlessIIDriftMoved += travelled
+        }
+        // Clamped against what is left of the column rather than simply added, so the step
+        // covers exactly one cell however the frames fall - a step that overshot by a rounding
+        // error every time would walk the whole field off the grid over a ten-second drift
+
+        if endlessIIDriftPhase >= GameScene.endlessIIDriftColumnSeconds {
+            endlessIIDriftPhase -= GameScene.endlessIIDriftColumnSeconds
+            endlessIIDriftMoved = 0
+            // Subtracted rather than zeroed, so a long frame does not throw away the overshoot
+            // and let the cadence wander - the lesson Descent learned in round 172
+        }
+
+        guard travelled != 0 else { return }
+        // Between steps the field is still, and still exactly on its columns
+
+        let step = CGFloat(endlessIIDriftDirection)*travelled
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard self.endlessIIStaysPut(node) == false else { return }
@@ -96,6 +134,8 @@ extension GameScene {
     /// Puts every brick back on a column centre and forgets the direction.
     func endEndlessIIDrift() {
         endlessIIDriftDirection = 0
+        endlessIIDriftPhase = 0
+        endlessIIDriftMoved = 0
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             node.position.x = self.endlessIIColumnCentre(nearest: node.position.x)
         }

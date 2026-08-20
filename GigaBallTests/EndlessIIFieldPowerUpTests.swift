@@ -1114,21 +1114,55 @@ final class RandomisedBounceTests: XCTestCase {
     }
 
     /// Round 201: two Drifts, one per direction, sharing a clock.
+    ///
+    /// Driven in frame-sized ticks rather than one long one, because round 209 made the field
+    /// move a **column at a time**: a step covers exactly one cell and then waits, so a single
+    /// two-second tick asks for a distance the power-up will no longer travel in one go. That
+    /// is the change, not a regression - and driving it the way `update` does is what the test
+    /// should have been doing anyway.
+    private func driftFor(_ seconds: TimeInterval, in scene: GameScene) {
+        let frame = 1.0/60
+        for _ in 0..<Int(seconds/frame) { scene.tickEndlessIIDrift(frame) }
+    }
+
     func testEachDriftSlidesItsOwnWayAndTheOtherOneReversesIt() {
         let scene = driftScene()
         let brick = brick(in: scene, x: 0, y: 200)
 
         scene.endlessIICollectDrift(direction: -1)
-        scene.tickEndlessIIDrift(1.0)
+        driftFor(1.0, in: scene)
         XCTAssertLessThan(brick.position.x, 0, "Drift Left slides the field leftward")
 
         scene.endlessIICollectDrift(direction: 1)
         let wasRunning = scene.endlessIIDriftClock.isRunning
-        scene.tickEndlessIIDrift(2.0)
+        driftFor(5.0, in: scene)
         XCTAssertTrue(wasRunning, "one clock - the second collection joins it")
         XCTAssertGreaterThan(brick.position.x, 0,
                              "collecting the other one mid-drift reverses the slide - a "
                              + "dial, not two coats of the same paint")
+    }
+
+    /// The point of the change: between steps the field is exactly on its columns, where the
+    /// generator, the crush and the neighbour rules all expect to find it.
+    ///
+    /// Started *on* a column centre, because that is the claim - a step moves the field by
+    /// exactly one cell, so a field that was on the grid is still on it. The first draft of
+    /// this test put the brick at x = 0, which is a column *edge* on a field with an even
+    /// number of columns, and then asked why the brick was not on a centre: it had never been
+    /// on one, and the drift had faithfully preserved the offset it was given.
+    func testTheFieldRestsOnAColumnCentreBetweenSteps() {
+        let scene = driftScene()
+        let brick = brick(in: scene, x: 0, y: 200)
+        brick.position.x = scene.endlessIIColumnCentre(nearest: 0)
+        let started = brick.position.x
+        scene.endlessIICollectDrift(direction: 1)
+
+        driftFor(2.0, in: scene)
+        // A full column covered, and the rest of the interval spent still
+        XCTAssertEqual(brick.position.x, scene.endlessIIColumnCentre(nearest: brick.position.x),
+                       accuracy: 0.001, "a step lands on a column and waits there")
+        XCTAssertEqual(brick.position.x - started, scene.brickWidth, accuracy: 0.001,
+                       "exactly one cell, not a fraction of one and not two")
     }
 
     func testItGoesRoundTheSideRatherThanLosingTheField() {

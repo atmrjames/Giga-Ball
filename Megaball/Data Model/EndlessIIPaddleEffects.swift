@@ -143,9 +143,11 @@ enum EndlessIIPaddleEffects {
                                leftWall: CGFloat, rightWall: CGFloat,
                                radius: CGFloat,
                                paddleSpeed: CGFloat = 0,
-                               fieldWidth: CGFloat = 0) -> CGFloat {
-        let wanted = x + (paddleX + steeringLead(paddleSpeed: paddleSpeed,
-                                                 fieldWidth: fieldWidth) - x)*steeringFollow
+                               fieldWidth: CGFloat = 0,
+                               delta: TimeInterval = 1.0/60) -> CGFloat {
+        let gap = paddleX + steeringLead(paddleSpeed: paddleSpeed,
+                                         fieldWidth: fieldWidth) - x
+        let wanted = x + gap*steeringFollow(delta: delta)
         return max(leftWall + radius, min(rightWall - radius, wanted))
     }
 
@@ -179,12 +181,28 @@ enum EndlessIIPaddleEffects {
     /// The furthest the lead may reach, as a share of the field's width.
     static let steeringLeadCap: CGFloat = 0.3
 
-    /// How much of the gap to the paddle a steered ball closes each frame.
+    /// How much of the gap to the paddle a steered ball closes in one sixtieth of a second.
     ///
     /// The inertia, in one number. High enough that the ball answers the paddle at once,
     /// low enough that it arrives rather than teleports - and low enough that a bounce off
     /// a brick visibly throws it off course before it is gathered back in.
-    static let steeringFollow: CGFloat = 0.16
+    static let steeringFollowPerSixtieth: CGFloat = 0.16
+
+    /// The share of the gap closed by a frame of this length.
+    ///
+    /// **Measured in time, not in frames** (James, round 209: "the ball steering power up now
+    /// feels way too sensitive, the ball seems to have no moments of its own").
+    ///
+    /// It was a flat share taken once per frame, and the scene asks for 120 frames a second.
+    /// So on a ProMotion phone the pull was applied twice as often as the number was tuned
+    /// for: the ball closed about 30% of the gap in the time it was meant to close 16%, which
+    /// is a ball glued to the paddle rather than drawn to it. Compounding it over the frame's
+    /// own length gives the same journey at any frame rate - 0.16 at 60, about 0.084 at 120,
+    /// and the same feel on both.
+    static func steeringFollow(delta: TimeInterval) -> CGFloat {
+        guard delta > 0 else { return 0 }
+        return 1 - pow(1 - steeringFollowPerSixtieth, CGFloat(delta)*60)
+    }
 
     /// How much of a steered ball's sideways speed survives each frame.
     ///
@@ -193,13 +211,24 @@ enum EndlessIIPaddleEffects {
     /// frame, which is what would otherwise make a steered ball jitter. What is taken out
     /// sideways is put back vertically by `steeredVelocity`, so the ball keeps its pace -
     /// a steered ball is not a slower ball.
-    static let steeringVelocityDamping: CGFloat = 0.82
+    static let steeringVelocityDampingPerSixtieth: CGFloat = 0.82
+
+    /// How much of that sideways speed survives a frame of this length.
+    ///
+    /// The other half of the frame-rate bug above, and the half that answers "no momentum of
+    /// its own" most directly: taken once per frame, a ball at 120fps lost its own line twice
+    /// as fast as one at 60. Same compounding, same reason.
+    static func steeringVelocityDamping(delta: TimeInterval) -> CGFloat {
+        guard delta > 0 else { return 1 }
+        return pow(steeringVelocityDampingPerSixtieth, CGFloat(delta)*60)
+    }
 
     /// A steered ball's velocity after this frame's damping: less sideways, the same speed.
-    static func steeredVelocity(_ velocity: CGVector) -> CGVector {
+    static func steeredVelocity(_ velocity: CGVector,
+                                delta: TimeInterval = 1.0/60) -> CGVector {
         let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
         guard speed > 0 else { return velocity }
-        let dx = velocity.dx*steeringVelocityDamping
+        let dx = velocity.dx*steeringVelocityDamping(delta: delta)
         let upward: CGFloat = velocity.dy >= 0 ? 1 : -1
         let dy = upward*max(0, speed*speed - dx*dx).squareRoot()
         return CGVector(dx: dx, dy: dy)

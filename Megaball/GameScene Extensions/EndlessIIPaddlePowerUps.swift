@@ -580,13 +580,15 @@ extension GameScene {
                 paddleX: paddle.position.x, from: subject.position.x,
                 leftWall: -gameWidth/2, rightWall: gameWidth/2,
                 radius: subject.size.width/2,
-                paddleSpeed: endlessIIPaddleSpeed, fieldWidth: gameWidth)
+                paddleSpeed: endlessIIPaddleSpeed, fieldWidth: gameWidth,
+                delta: endlessIIPaddleFrameDelta)
             // The paddle's speed leads the target, which is what lets a swept paddle carry the
             // ball out to the columns beside the walls - see `steeringLead` (round 184). The
             // speed is the same per-frame sample Ball Spin takes, for the same reason
 
             if let body = subject.physicsBody {
-                body.velocity = EndlessIIPaddleEffects.steeredVelocity(body.velocity)
+                body.velocity = EndlessIIPaddleEffects.steeredVelocity(
+                    body.velocity, delta: endlessIIPaddleFrameDelta)
             }
             // The ball is drawn to the paddle's column and its sideways momentum bleeds
             // away into vertical, so it forgets the trajectory it arrived on. Bricks and

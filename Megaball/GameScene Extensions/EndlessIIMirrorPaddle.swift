@@ -34,6 +34,7 @@
 //
 
 import SpriteKit
+import CoreImage
 
 extension GameScene {
 
@@ -124,21 +125,61 @@ extension GameScene {
     /// texture again, black, mostly transparent, a little larger and a few points low, as a
     /// child of the paddle so it follows every move for free. A negative child z draws it
     /// behind the paddle's own pixels and still in front of the mirror.
+    /// How far the shadow reaches past every edge of the paddle, in points.
+    static let endlessIIPaddleShadowSpread: CGFloat = 9
+
+    /// How soft it is.
+    static let endlessIIPaddleShadowBlur: Double = 7
+
+    static let endlessIIPaddleShadowAlpha: CGFloat = 0.3
+
+    /// A soft dark spread under the paddle, so the white paddle reads against the white
+    /// mirror behind it.
+    ///
+    /// **Centred and blurred, not offset and hard** (James, round 209: "drop shadow on the
+    /// paddle with mirror paddle active is too harsh. It should be centred on the paddle with
+    /// some span and blur so it appears on all edges of the paddle and is soft and subtle").
+    /// Round 200 built it as a second copy of the paddle's own picture, a little larger and
+    /// pushed down - which draws a hard black lip under the bottom edge and nothing at all
+    /// along the top, so it read as a duplicate paddle rather than as a shadow.
+    ///
+    /// An `SKEffectNode` with a gaussian blur is the only way to get a soft edge here: the art
+    /// is a black copy of the paddle grown by `endlessIIPaddleShadowSpread` on every side, and
+    /// the blur turns that margin into the falloff. **Rasterised**, so the blur is computed
+    /// once and not every frame - the paddle moves constantly, and a live filter under it is a
+    /// full-screen effect running at 120fps for a piece of scenery.
+    ///
+    /// Rasterising is also why the paddle's width is remembered: a cached bitmap does not
+    /// follow Expand or Shrink, so a resize has to rebuild rather than restretch. The tick
+    /// calls this every frame and it returns immediately unless the width has actually moved.
     func showEndlessIIPaddleShadow() {
-        guard paddle.childNode(withName: GameScene.endlessIIPaddleShadowName) == nil else {
-            return
+        let name = GameScene.endlessIIPaddleShadowName
+        if let existing = paddle.childNode(withName: name) {
+            let builtFor = existing.userData?["builtForWidth"] as? CGFloat ?? 0
+            guard abs(builtFor - paddle.size.width) > 0.5 else { return }
+            existing.removeFromParent()
         }
-        let shadow = SKSpriteNode(texture: paddle.texture,
-                                  size: CGSize(width: paddle.size.width*1.06,
-                                               height: paddle.size.height*1.25))
-        shadow.name = GameScene.endlessIIPaddleShadowName
-        shadow.color = .black
-        shadow.colorBlendFactor = 1
-        shadow.alpha = 0.35
-        shadow.position = CGPoint(x: 0, y: -paddle.size.height*0.3)
-        shadow.zPosition = -0.05
-        shadow.centerRect = endlessIIPaddleDressCenterRect
+
+        let spread = GameScene.endlessIIPaddleShadowSpread
+        let art = SKSpriteNode(texture: paddle.texture,
+                               size: CGSize(width: paddle.size.width + spread*2,
+                                            height: paddle.size.height + spread*2))
+        art.color = .black
+        art.colorBlendFactor = 1
+        art.centerRect = endlessIIPaddleDressCenterRect
         // The paddle's own current nine-slice, like the bar and the mirror (round 201)
+
+        let shadow = SKEffectNode()
+        shadow.name = name
+        shadow.filter = CIFilter(name: "CIGaussianBlur",
+                                 parameters: [kCIInputRadiusKey: GameScene.endlessIIPaddleShadowBlur])
+        shadow.shouldRasterize = true
+        shadow.alpha = GameScene.endlessIIPaddleShadowAlpha
+        shadow.position = .zero
+        // Centred on the paddle, so the spread is even on all four edges
+        shadow.zPosition = -0.05
+        shadow.userData = ["builtForWidth": paddle.size.width]
+        shadow.addChild(art)
         paddle.addChild(shadow)
     }
 
@@ -155,6 +196,9 @@ extension GameScene {
         body.categoryBitMask = CollisionTypes.mirrorPaddleCategory.rawValue
         body.collisionBitMask = CollisionTypes.ballCategory.rawValue
         body.contactTestBitMask = CollisionTypes.ballCategory.rawValue
+            | CollisionTypes.powerUpCategory.rawValue
+        // **It collects drops as well as returning balls** (James, round 209). Contact only,
+        // not collision: a drop should be taken, not bounced off
         return body
     }
 
@@ -200,6 +244,11 @@ extension GameScene {
             // Expand and Shrink write the paddle's width directly, and a mirror that kept the
             // width it was born with would be a different paddle from the one it mirrors
         }
+        showEndlessIIPaddleShadow()
+        // Rebuilt only when the paddle's width has actually moved - the shadow is a rasterised
+        // blur, so a cached bitmap cannot be stretched by Expand or Shrink the way the mirror's
+        // sprite can. It returns immediately on every other frame
+
         mirror.texture = endlessIIMirrorPaddleDress
         mirror.color = GameScene.endlessIIMirrorPaddleColour
         mirror.colorBlendFactor = 1

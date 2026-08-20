@@ -250,6 +250,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIDriftClock = EndlessIIClock()
 	/// Which way it is sliding: -1, 0 for not drifting, or 1.
 	var endlessIIDriftDirection: Int = 0
+	var endlessIIDriftPhase: TimeInterval = 0
+	var endlessIIDriftMoved: CGFloat = 0
+	// Where the field is within its current column-step: how long since the step began, and
+	// how much of the column it has covered. Drift moves a column at a time now (round 209),
+	// so it needs to know both
 	/// Double Paddle: while this runs the paddle is in two halves with a hole between them.
 	var endlessIIDoublePaddleClock = EndlessIIClock()
 	/// The paddle width the split was last cut from, so a paddle that is resized is re-cut.
@@ -2019,13 +2024,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // it. The pause after losing a ball is there to be felt, but a player who does not
         // want it should not have to spend the skip and the launch on the same tap
 
+        let aimedRelease = AimHoldControl.release(travelled: endlessIIAimTravel,
+                                                  aiming: endlessIIAimHold)
+        endlessIIAimTravel = 0
+        // Cleared either way, or the tap that follows an adjustment would still be carrying
+        // the adjustment's travel
+
         if touchBeganWhilstPlaying, gameState.currentState is Playing,
-           AimHoldControl.launches(travelled: endlessIIAimTravel), endlessIIAimLaunch() {
+           aimedRelease == .aimedLaunch, endlessIIAimLaunch() {
             touchBeganWhilstPlaying = false
-            endlessIIAimTravel = 0
             return
         }
-        endlessIIAimTravel = 0
+
+        if aimedRelease == .keepAiming {
+            touchBeganWhilstPlaying = false
+            return
+        }
+        // **A release the aim declines goes no further** (James, round 209: "aimed sticky is
+        // broken - the ball isn't going where the arrow is aimed, the game scene then gets
+        // stuck paused but the ball is moving"). It used to fall through to the ordinary
+        // paddle release below, which launched the held ball at the angle for wherever it was
+        // sitting - the arrow ignored - and returned without ending the freeze the catch had
+        // put the world into, so the shot flew through a paddle and a field that were still
+        // held. Reachable since round 172 stopped the aim drag carrying the paddle: before
+        // that a drag set `paddleMoved`, and the release below checks it
         // Aimed Sticky owns the launch while it runs (§5.4's launchControl group), but only
         // a *tap* takes it. A release that fired would mean a player who dragged the paddle
         // to line the shot up had already taken it by the time they let go, so there would
@@ -2338,6 +2360,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
     
+    /// Takes a falling power-up, whichever surface caught it.
+    ///
+    /// Shared by the paddle's contact and the Mirror Paddle's, so the two cannot drift apart.
+    ///
+    /// `zPosition` is how a drop remembers it has already been collected: a power-up touching
+    /// a paddle at two points in one frame is rare and real, and without the flag it would be
+    /// applied twice. The node is fetched defensively for the same reason the Cluster contact
+    /// is - by the second contact of a pair, the first may already have taken the node away.
+    func collectPowerUpDrop(_ node: SKNode?) {
+        guard let powerUpNode = node, let powerUpBody = powerUpNode.physicsBody else { return }
+        guard powerUpNode.zPosition == 2 else { return }
+        powerUpNode.removeAllActions()
+        powerUpNode.zPosition = 1
+        powerUpBody.collisionBitMask = 0
+        powerUpBody.contactTestBitMask = 0
+        applyPowerUp(node: powerUpNode)
+    }
+
     /// Removes any brick that was destroyed but never finished leaving.
     ///
     /// `removeBrick` hides a brick, leaves its body solid for two frames so the bounce it is
@@ -2982,25 +3022,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // ammunition, not a run ball, so it costs nothing on the way out
             
             if firstBody.categoryBitMask == CollisionTypes.paddleCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue {
-
-				guard let powerUpNode = secondBody.node,
-					  let powerUpBody = powerUpNode.physicsBody else { return }
-				// The same nil-node rule as the Cluster fix above: a power-up in contact
-				// with the paddle at two points in one frame is rare and real, and the
-				// second contact's node can already be gone
-				if powerUpNode.zPosition == 2 {
-					powerUpNode.removeAllActions()
-					powerUpNode.zPosition = 1
-					powerUpBody.collisionBitMask = 0
-					powerUpBody.contactTestBitMask = 0
-					applyPowerUp(node: powerUpNode)
-				} else {
-					return
-				}
-				// Use zPosition to track if power-up has aleady been collected to prevent double hits
-				
+				collectPowerUpDrop(secondBody.node)
             }
             // Power-up hits Paddle
+
+			if firstBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.mirrorPaddleCategory.rawValue {
+				collectPowerUpDrop(firstBody.node)
+			}
+			// **Power-up hits the Mirror Paddle** (James, round 209: "mirror paddle should be
+			// able to collect power ups just like the main paddle"). The pair arrives the
+			// other way round because the contact is sorted by category and the mirror's is
+			// the larger number - which is exactly the sort of thing that makes a second copy
+			// of this branch wrong the first time it is edited, hence the shared collector.
+			//
+			// This is the mirror's *only* answer to something landing on it. Every power-up
+			// that responds to a paddle contact - Aimed Sticky, Portal Paddle, Magnetism -
+			// still stays out of it (see `mirrorPaddleCategory`), because a ball caught on a
+			// paddle the player is not touching is a ball nobody can launch. Catching a drop
+			// is different: nothing is held afterwards
 			
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
 				ballLostAnimation(firstBody.node as? SKSpriteNode)
@@ -4108,8 +4147,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUp.physicsBody!.mass = 0
         powerUp.name = PowerUpCategoryName
         powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
-		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
-		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
+		powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
+		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
+		// The mirror catches drops too (round 209) - it needs the bit on both sides of the
+		// contact, and the drop is where the two creation sites for one are
         powerUp.zPosition = 2
 		
         addChild(powerUp)

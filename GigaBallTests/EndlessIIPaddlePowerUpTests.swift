@@ -232,6 +232,51 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
                        "a steered ball is not a slower ball")
     }
 
+    /// James, round 209: "the ball steering power up now feels way too sensitive, the ball
+    /// seems to have no moments of its own."
+    ///
+    /// Both halves of the steering were a flat share taken **once per frame**, and the scene
+    /// asks for 120 frames a second - so on a ProMotion phone the pull was applied twice as
+    /// often as the numbers were tuned for, and the ball's own sideways line was bled away
+    /// twice as fast. What the player felt was the frame rate, not the design.
+    ///
+    /// These pin the property that makes the two the same power-up: the same journey over the
+    /// same *time*, whatever the frame rate delivering it.
+    func testSteeringPullsTheSameAmountAtSixtyAndOneHundredAndTwenty() {
+        let atSixty = EndlessIIPaddleEffects.steeringFollow(delta: 1.0/60)
+        let atOneTwenty = EndlessIIPaddleEffects.steeringFollow(delta: 1.0/120)
+
+        // Two 120fps frames must land where one 60fps frame does
+        let twoFast = 1 - (1 - atOneTwenty)*(1 - atOneTwenty)
+        XCTAssertEqual(twoFast, atSixty, accuracy: 0.0001)
+        XCTAssertLessThan(atOneTwenty, atSixty, "a shorter frame moves the ball less")
+    }
+
+    func testTheSidewaysBleedIsTheSameOverTheSameTime() {
+        let atSixty = EndlessIIPaddleEffects.steeringVelocityDamping(delta: 1.0/60)
+        let atOneTwenty = EndlessIIPaddleEffects.steeringVelocityDamping(delta: 1.0/120)
+        XCTAssertEqual(atOneTwenty*atOneTwenty, atSixty, accuracy: 0.0001)
+        XCTAssertGreaterThan(atOneTwenty, atSixty,
+                             "a shorter frame keeps more of the ball's own line")
+    }
+
+    /// The sixtieth-of-a-second numbers are the ones round 15 tuned by hand, so a frame of
+    /// exactly that length must still behave exactly as it did.
+    func testAFrameOfASixtiethIsUnchangedFromTheTunedNumbers() {
+        XCTAssertEqual(EndlessIIPaddleEffects.steeringFollow(delta: 1.0/60),
+                       EndlessIIPaddleEffects.steeringFollowPerSixtieth, accuracy: 0.0001)
+        XCTAssertEqual(EndlessIIPaddleEffects.steeringVelocityDamping(delta: 1.0/60),
+                       EndlessIIPaddleEffects.steeringVelocityDampingPerSixtieth,
+                       accuracy: 0.0001)
+    }
+
+    /// A frame with no time in it moves nothing, rather than snapping the ball to the paddle.
+    func testAFrameWithNoTimeInItSteersNothing() {
+        XCTAssertEqual(EndlessIIPaddleEffects.steeringFollow(delta: 0), 0)
+        XCTAssertEqual(EndlessIIPaddleEffects.steeredTowards(
+            paddleX: 100, from: 0, leftWall: -200, rightWall: 200, radius: 5, delta: 0), 0)
+    }
+
     func testSteeringKeepsTheBallGoingTheWayItWasVertically() {
         let falling = EndlessIIPaddleEffects.steeredVelocity(CGVector(dx: -200, dy: -400))
         XCTAssertLessThan(falling.dy, 0, "a falling ball keeps falling")
