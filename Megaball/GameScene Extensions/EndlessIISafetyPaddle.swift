@@ -120,15 +120,7 @@ extension GameScene {
         bar.zPosition = 2
         bar.alpha = 0
 
-        let body = SKPhysicsBody(rectangleOf: size)
-        body.isDynamic = false
-        body.affectedByGravity = false
-        body.friction = 0
-        body.restitution = 1
-        body.categoryBitMask = CollisionTypes.safetyPaddleCategory.rawValue
-        body.collisionBitMask = CollisionTypes.ballCategory.rawValue
-        body.contactTestBitMask = CollisionTypes.ballCategory.rawValue
-        bar.physicsBody = body
+        bar.physicsBody = endlessIISafetyPaddleBody(size: size)
         addChild(bar)
 
         bar.run(.fadeIn(withDuration: 0.15))
@@ -183,13 +175,40 @@ extension GameScene {
         if body.contactTestBitMask != contact { body.contactTestBitMask = contact }
     }
 
+    /// The bar's body, rebuilt whenever its size changes - the mirror's own pattern.
+    func endlessIISafetyPaddleBody(size: CGSize) -> SKPhysicsBody {
+        let body = SKPhysicsBody(rectangleOf: size)
+        body.isDynamic = false
+        body.affectedByGravity = false
+        body.friction = 0
+        body.restitution = 1
+        body.categoryBitMask = CollisionTypes.safetyPaddleCategory.rawValue
+        body.collisionBitMask = CollisionTypes.ballCategory.rawValue
+        body.contactTestBitMask = CollisionTypes.ballCategory.rawValue
+        return body
+    }
+
     /// Takes it away, whenever the clock is not running.
     ///
     /// Called every frame rather than scheduled, because a clock can end in more ways than
     /// by running out: a Wipe ends it, and a run ending resets it.
     func tickEndlessIISafetyPaddle() {
-        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName) else { return }
-        guard endlessIISafetyPaddleClock.isRunning == false else { return }
+        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return }
+        guard endlessIISafetyPaddleClock.isRunning == false else {
+            if bar.size.width != paddle.size.width,
+               paddle.size.width > 0, paddle.size.height > 0 {
+                bar.size = CGSize(width: paddle.size.width, height: paddle.size.height)
+                bar.centerRect = endlessIIPaddleDressCenterRect
+                bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
+            }
+            // **The paddle's twin follows the paddle** (round 203, the first cell of the
+            // parity matrix James asked for): Expand and Shrink write the paddle's width
+            // directly, and a bar that kept its birth width was the same object at a
+            // different size - the mirror learned this in round 180, and the nine-slice
+            // has to be re-copied with it or the fresh width stretches the old state
+            return
+        }
         bar.name = nil
         // Renamed first, so a second tick before the fade finishes does not queue a second
         // removal on the same node

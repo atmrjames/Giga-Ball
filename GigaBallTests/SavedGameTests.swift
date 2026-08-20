@@ -905,6 +905,56 @@ final class SavedMayhemFieldTests: XCTestCase {
                        "an older save keeps the behaviour it always had")
     }
 
+    // MARK: - Giga-Ball ends at zero (round 203)
+
+    /// Round 200: "when the timer ends, they remain active until the next paddle hit. The
+    /// idea for this was to prevent the ball getting stuck inside a brick... come up with
+    /// something that allows them to end when their timer runs out but prevents any
+    /// potential issues."
+    ///
+    /// The something: ask the stuck question directly. The deferral only survives while a
+    /// ball is inside a brick's footprint, and the tick ends the power-up the frame it
+    /// comes clear.
+    func testADeferredGigaBallEndsTheFrameTheBallComesClear() {
+        let scene = mayhem()
+        scene.gigaBallDeactivate = true
+        let brick = brick(in: scene, x: 0, y: 0)
+        brick.size = CGSize(width: 60, height: 20)
+        scene.ball.position = CGPoint(x: 0, y: 0)
+        scene.ball.size = CGSize(width: 10, height: 10)
+
+        scene.tickDeferredBallPowerUpEnds()
+        XCTAssertTrue(scene.gigaBallDeactivate,
+                      "inside the brick, so ending now would trap the ball - the one case "
+                      + "the old next-paddle-hit rule existed for")
+
+        scene.ball.position = CGPoint(x: 0, y: 300)
+        scene.tickDeferredBallPowerUpEnds()
+        XCTAssertFalse(scene.gigaBallDeactivate,
+                       "clear of the field, so the power-up ends now - not at the next "
+                       + "paddle hit, a whole climb away")
+    }
+
+    func testTheOverlapQuestionSeesEveryBallInPlay() {
+        // A giga extra ball inside a brick when solidity returns is just as stuck as the
+        // first one - Mayhem's multi-ball has to hold the deferral too
+        let scene = mayhem()
+        scene.gigaBallDeactivate = true
+        let brick = brick(in: scene, x: 0, y: 0)
+        brick.size = CGSize(width: 60, height: 20)
+        scene.ball.position = CGPoint(x: 0, y: 300)
+        scene.ball.size = CGSize(width: 10, height: 10)
+
+        let extra = SKSpriteNode()
+        extra.size = CGSize(width: 10, height: 10)
+        extra.position = CGPoint(x: 10, y: 0)
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls = [extra]
+
+        scene.tickDeferredBallPowerUpEnds()
+        XCTAssertTrue(scene.gigaBallDeactivate, "the extra ball is still inside the brick")
+    }
+
     func testAnOlderSaveStillTakesTheCellPath() {
         // Widening, not a migration: a save written before round 150 has no rich field, and
         // must still load exactly as it always did

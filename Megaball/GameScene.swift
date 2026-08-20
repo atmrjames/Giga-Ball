@@ -2465,6 +2465,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		frameDelta = lastFrameTime == 0 ? 0 : max(0, currentTime - lastFrameTime)
 		lastFrameTime = currentTime
 		tickDailyTimeTrial(frameDelta)
+		tickDeferredBallPowerUpEnds()
 		// Measured once, for everything that needs to know what a frame is worth - the sticky
 		// catch's lookahead first of all, which was a fixed sixtieth and looked two frames
 		// ahead on a 120Hz screen
@@ -3072,6 +3073,47 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 	
+	/// Whether any ball in play is currently inside a brick's footprint.
+	///
+	/// The question the Giga-Ball end has to ask (round 203): the deferral existed to stop
+	/// the ball turning solid *inside* a brick, and this asks exactly that instead of
+	/// waiting for the next paddle or wall contact - which could be a whole climb away,
+	/// with the ball staying giga through every brick on the route.
+	///
+	/// Frame intersection rather than physics contact, because a giga ball passes *through*
+	/// bricks - the engine reports no overlap for a body that does not collide. Padded by a
+	/// point so "just clear" does not round to "inside". O(bricks), and only ever asked at
+	/// the moment a timer ends and on the few frames a deferral survives.
+	func anyBallOverlapsABrick() -> Bool {
+		var overlapping = false
+		for subject in endlessIIBallsInPlay {
+			let reach = subject.frame.insetBy(dx: -1, dy: -1)
+			enumerateChildNodes(withName: BrickCategoryName) { node, stop in
+				if node.frame.intersects(reach) {
+					overlapping = true
+					stop.pointee = true
+				}
+			}
+			if overlapping { break }
+		}
+		return overlapping
+	}
+
+	/// Ends a Giga-Ball whose time is up, the moment every ball is clear of the field.
+	///
+	/// From `update`, every frame, in every mode - the flag is only ever true for the frame
+	/// or two it takes a ball to leave the brick it was passing through when the clock hit
+	/// zero. **This is the round-203 redesign James asked for**: the power-up used to stay
+	/// active until the next paddle, wall or backstop contact, which on a long climb meant
+	/// seconds of free Giga-Ball after the bar emptied. It ends at zero now, deferred only
+	/// while ending would trap a ball inside a brick - the one situation the old rule
+	/// existed to prevent, asked directly instead of approximated with a contact.
+	func tickDeferredBallPowerUpEnds() {
+		guard gigaBallDeactivate else { return }
+		guard anyBallOverlapsABrick() == false else { return }
+		deactivateGigaBall()
+	}
+
 	func deactivateGigaBall() {
 		gigaBallDeactivate = false
 		gigaBallIcon.texture = iconGigaBallDisabledTexture
@@ -4793,10 +4835,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let timer: Double = 10 * multiplier
             let waitDuration = SKAction.wait(forDuration: timer)
             let completionBlock = SKAction.run {
-				if self.ballIsOnPaddle {
+				if self.ballIsOnPaddle || self.anyBallOverlapsABrick() == false {
 					self.deactivateGigaBall()
 				} else {
 					self.gigaBallDeactivate = true
+					// Only while ending would trap a ball inside a brick - and then
+					// `tickDeferredBallPowerUpEnds` ends it the frame the ball comes
+					// clear, not at the next paddle hit (round 203)
 				}
 				self.gigaBallIconBar.isHidden = true
 				// Hide power-up icons
@@ -7892,7 +7937,7 @@ laserTimer?.invalidate()
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
 							if self.ball.texture == self.gigaBallTexture {
-								if self.ballIsOnPaddle {
+								if self.ballIsOnPaddle || self.anyBallOverlapsABrick() == false {
 									self.deactivateGigaBall()
 								} else {
 									self.gigaBallDeactivate = true
