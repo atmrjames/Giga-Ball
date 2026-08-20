@@ -324,6 +324,36 @@ extension GameScene {
         return true
     }
 
+    /// **A sticky catch delivers the aim it already paid for, when the ball leaves.**
+    ///
+    /// James, round 207: "sticky paddle overrides auto aim, so the ball doesn't hit the aimed
+    /// brick. This is wrong. The ball should hit the aimed brick."
+    ///
+    /// The aim is asked at the end of the bounce, after every catch has returned - which is
+    /// right, because a catch is the paddle deciding not to bounce at all. But the *turn* is
+    /// spent on the contact, by `endlessIISpendPaddleTurns`, before anything decides what the
+    /// paddle does with it. So a sticky catch was buying a turn of Auto-Aim and throwing it
+    /// away, and the launch that followed left at the plain angle for where the ball happened
+    /// to be sitting. The marker even kept drawing on the target the whole time it was held,
+    /// promising a shot that was never going to be taken.
+    ///
+    /// This is the same bargain Portal Paddle and Sticky Paddle already struck twice (rounds
+    /// 128 and 150): **the two speak in sequence rather than one cancelling the other.** The
+    /// catch wins the contact - a held ball is held - and the aim owns the launch.
+    ///
+    /// Owed rather than merely running, so the aim is delivered exactly when it was paid for.
+    /// The first launch of a life spends no turn and so takes no aim, which is the same answer
+    /// the ordinary bounce gives: an aim costs a paddle contact, and the first launch is not
+    /// one.
+    ///
+    /// **Aimed Sticky is deliberately not routed through here.** Its launch is its own path
+    /// (`endlessIIAimLaunch`), and a power-up whose whole purpose is letting the player choose
+    /// the shot must not have the choice taken back off them by the automatic one.
+    func endlessIIAimTheStickyLaunch(_ launched: SKSpriteNode) {
+        guard gameMode == .endlessII, endlessIIAutoAimOwedTurn else { return }
+        _ = endlessIIApplyAutoAim(to: launched)
+    }
+
     // MARK: - The hooks the scene asks
 
     /// One paddle contact happened: every running paddle power-up spends a turn.

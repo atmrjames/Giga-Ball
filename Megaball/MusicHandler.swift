@@ -56,19 +56,19 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         }
         // Check if music setting is on
 
-        let titleTheme = Bundle.main.url(forResource: "Giga-Ball - Title Theme - Loop", withExtension: "mp3")
-        
-        let theEspace = Bundle.main.url(forResource: "Giga-Ball - The Escape - Loop", withExtension: "mp3")
-        let theRebound = Bundle.main.url(forResource: "Giga-Ball - The Rebound - Loop", withExtension: "mp3")
-        let theStrategy = Bundle.main.url(forResource: "Giga-Ball - The Strategy - Loop", withExtension: "mp3")
-        let gameMusicArray = [theEspace, theRebound, theStrategy]
-        // Set up tracks
-        
-        var selectedTrackURL = gameMusicArray.randomElement()!
+        let selectedTrackURL: URL?
         if sender == "Menu" {
-            selectedTrackURL = titleTheme
+            selectedTrackURL = MusicTrack.titleTheme.url
+            // The menu has one theme and always has. It is outside the player's rotation for
+            // that reason - see `MusicTrack.gameTracks`
+        } else {
+            guard let drawn = MusicSelection.drawATrack() else { return }
+            selectedTrackURL = drawn.url
+            // **Only the tracks the player left ticked** (James, round 207). Nothing to draw
+            // from means the music setting is off in all but name, so there is nothing to
+            // play - the settings screen turns the switch off at the same moment, so the two
+            // never disagree
         }
-        // Only play title theme in main menu
         
         configureSession(.soloAmbient, activate: true) { [weak self] in
             guard let self = self, let trackURL = selectedTrackURL else { return }

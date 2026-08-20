@@ -564,6 +564,76 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                        "the bounce leaves toward the marked brick")
     }
 
+    /// James, round 207: "sticky paddle overrides auto aim, so the ball doesn't hit the aimed
+    /// brick. This is wrong. The ball should hit the aimed brick."
+    ///
+    /// The turn is spent on the contact, before the paddle decides whether to bounce or catch.
+    /// A catch then returned before the aim was ever asked, so the turn was paid and thrown
+    /// away and the ball left at the plain angle for where it was sitting.
+    func testAStickyCatchDeliversTheAutoAimTurnItPaidFor() {
+        let scene = fieldScene()
+        scene.ballSpeedLimit = 100
+        let target = brick(in: scene, x: 60, y: 120)
+        scene.ball.position = .zero
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.endlessIICollectAutoAim()
+
+        scene.endlessIISpendPaddleTurns()
+        // The contact. The catch happens here and no bounce angle is chosen - the ball is
+        // simply held, which is what made the turn disappear
+
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 100)
+        // The plain launch the release computes from where the ball sits on the paddle
+        scene.endlessIIAimTheStickyLaunch(scene.ball)
+
+        let leave = scene.ball.physicsBody!.velocity
+        let heading = atan2(Double(leave.dy), Double(leave.dx))
+        let wanted = atan2(Double(target.position.y - scene.ball.position.y),
+                           Double(target.position.x - scene.ball.position.x))
+        XCTAssertEqual(heading, wanted, accuracy: 0.001,
+                       "the held ball still leaves at the angle it was sitting at")
+    }
+
+    /// And it is the *turn* that buys the aim, not the clock merely running: the first launch
+    /// of a life follows no paddle contact, spends nothing, and so takes the shot the player
+    /// aimed by placing the paddle - the same answer an ordinary bounce gives.
+    func testALaunchThatPaidNoTurnIsLeftAlone() {
+        let scene = fieldScene()
+        scene.ballSpeedLimit = 100
+        brick(in: scene, x: 60, y: 120)
+        scene.ball.position = .zero
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.endlessIICollectAutoAim()
+        // Running, but no contact has been made - nothing is owed
+
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 100)
+        scene.endlessIIAimTheStickyLaunch(scene.ball)
+
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dx, 0, accuracy: 0.001)
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dy, 100, accuracy: 0.001)
+    }
+
+    /// The turn is delivered once. A second release in the same breath - a Multi-Ball queue
+    /// emptying on consecutive taps - must not keep aiming off one paid contact.
+    func testTheOwedAimIsSpentByTheLaunchThatTakesIt() {
+        let scene = fieldScene()
+        scene.ballSpeedLimit = 100
+        brick(in: scene, x: 60, y: 120)
+        scene.ball.position = .zero
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.endlessIICollectAutoAim()
+        scene.endlessIISpendPaddleTurns()
+
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 100)
+        scene.endlessIIAimTheStickyLaunch(scene.ball)
+        XCTAssertFalse(scene.endlessIIAutoAimOwedTurn, "the turn was delivered")
+
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 100)
+        scene.endlessIIAimTheStickyLaunch(scene.ball)
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dx, 0, accuracy: 0.001,
+                       "a second release off one paid contact takes no aim")
+    }
+
     func testAutoAimOnlyFiresWithTheClock() {
         let scene = fieldScene()
         scene.ballSpeedLimit = 100

@@ -1442,7 +1442,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			screenBlockArray[index].physicsBody!.friction = 0.0
 			screenBlockArray[index].physicsBody!.affectedByGravity = false
 			screenBlockArray[index].physicsBody!.isDynamic = false
-			screenBlockArray[index].zPosition = 1
+			screenBlockArray[index].zPosition = GameScene.screenMaskPlane
 			screenBlockArray[index].physicsBody!.categoryBitMask = CollisionTypes.screenBlockCategory.rawValue
 			screenBlockArray[index].physicsBody!.collisionBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
 			screenBlockArray[index].physicsBody!.contactTestBitMask = CollisionTypes.ballCategory.rawValue | CollisionTypes.laserCategory.rawValue
@@ -1458,6 +1458,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		bottomScreenBlock.physicsBody!.isDynamic = true
 		bottomScreenBlock.physicsBody!.pinned = true
 		bottomScreenBlock.zPosition = 1
+		// **Left in the field's own plane, unlike the other three.** A lost ball falls past the
+		// paddle and out through this strip, and it is meant to be watched going: putting the
+		// strip in front of it would swallow the ball at the moment the player is reading what
+		// happened. Nothing lifts a brick down here either - the lower limit clears them well
+		// above it - so the tie that bit the top strip has nothing to bite with
 		
 		bottomScreenBlock.physicsBody!.categoryBitMask = CollisionTypes.bottomScreenBlockCategory.rawValue
 		bottomScreenBlock.physicsBody!.collisionBitMask = 0
@@ -1497,7 +1502,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButton.zPosition = 10
         pauseButton.isUserInteractionEnabled = false
 		
-		powerUpTray.zPosition = 2
+		powerUpTray.zPosition = GameScene.hudTrayPlane
 		powerUpTray.texture = nil
 		powerUpTray.color = .clear
 		powerUpTray.setScale(1)
@@ -1624,20 +1629,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Centred in the tray. The old offset upward left room for the bar beneath
 			// each icon - the ring took the bar's place, and icons still sitting high
 			// read as skewed (play-test round 6)
-			iconArray[index].zPosition = 3
+			iconArray[index].zPosition = GameScene.hudIconPlane
 			iconArray[index].name = PowerIconCategoryName
 			iconEmptyTimerArray[index].size.width = iconSize
 			iconEmptyTimerArray[index].size.height = iconSize/6.67
 			iconEmptyTimerArray[index].texture = powerUpIconBarEmpty
 			iconEmptyTimerArray[index].position.x = iconArray[index].position.x - iconEmptyTimerArray[index].size.width/2
 			iconEmptyTimerArray[index].position.y = iconArray[index].position.y - iconSize/2 - iconEmptyTimerArray[index].size.height/2 - labelSpacing/2
-			iconEmptyTimerArray[index].zPosition = 3
+			iconEmptyTimerArray[index].zPosition = GameScene.hudIconPlane
 			iconTimerArray[index].size.width = iconEmptyTimerArray[index].size.width
 			iconTimerArray[index].size.height = iconEmptyTimerArray[index].size.height
 			iconTimerArray[index].texture = powerUpIconBarFull
 			iconTimerArray[index].position.x = iconEmptyTimerArray[index].position.x
 			iconTimerArray[index].position.y = iconEmptyTimerArray[index].position.y
-			iconTimerArray[index].zPosition = 4
+			iconTimerArray[index].zPosition = GameScene.hudTimerPlane
 			iconTimerArray[index].isHidden = true
 			iconTimerArray[index].centerRect = CGRect(x: 2.0/25.0, y: 0.0/2.5, width: 21.0/25.0, height: 2.5/2.5)
 			iconTimerArray[index].scale(to:CGSize(width: iconEmptyTimerArray[index].size.width, height: iconEmptyTimerArray[index].size.height))
@@ -1652,7 +1657,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Centred in the space between the pause button and the top of the play area, rather
 		// than hung off the button and left to reach wherever it reaches. Whatever slack
 		// there is now sits evenly above and below it instead of all above
-		powerUpRings.zPosition = 3
+		powerUpRings.zPosition = GameScene.hudIconPlane
 		powerUpRings.isHidden = gameMode != .endlessII
 		if powerUpRings.parent == nil { addChild(powerUpRings) }
 
@@ -1672,7 +1677,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// as a ring. The bars keep running underneath as the signal the rings read
 
 		trayRings.build(over: iconArray, iconSize: iconSize)
-		trayRings.zPosition = 4
+		trayRings.zPosition = GameScene.hudTimerPlane
 		trayRings.isHidden = gameMode == .endlessII
 		if trayRings.parent == nil { addChild(trayRings) }
 		// The old modes' tray, wearing the ring (James's design - same tray, same order,
@@ -2313,6 +2318,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ball.physicsBody!.velocity = CGVector(dx: dxLaunch, dy: dyLaunch)
             // Launches ball
         }
+		
+		endlessIIAimTheStickyLaunch(ball)
+		// After the launch angle, and after the portal if one took it - the aim owns where a
+		// sticky release goes, because the catch is what spent the turn (see that method)
 		
 		if soundsSetting {
 			self.run(ballReleaseSound)
@@ -5748,6 +5757,30 @@ laserTimer?.invalidate()
 	// used for them.
 	static let playRatio = GameSceneLayout.playRatio
 	static let hudUnits = GameSceneLayout.hudUnits
+
+	/// **Where the frame around the play area sits, and the HUD on top of it.**
+	///
+	/// A brick is at zPosition 1 and everything a brick wears - its glyph, its ring, a
+	/// power-up brick's icon - is a *child* of it, so the tallest thing the field can draw
+	/// reaches an effective 5. The strips that frame the play area were being flattened to 1
+	/// as well, by the loop that gives them their physics bodies: a tie, and SpriteKit breaks
+	/// a tie by which node was added first. The strips come from `GameScene.sks` and bricks
+	/// are added long after it loads, so the bricks won every time.
+	///
+	/// That was invisible for years because nothing put a brick in a strip - until Clear And
+	/// Retreat lifted the whole field two rows and parked the top two *inside* the HUD, where
+	/// they drew straight over the bar that was supposed to be hiding them (James, round 207:
+	/// "with clear and retreat I can see bricks in the power up HUD area. These should be out
+	/// of view"). The scene file had it right all along at 7; the loop overwrote it.
+	///
+	/// The HUD has to clear the strip in turn, or the strip would hide the thing it frames.
+	/// The three planes below keep the HUD's own order exactly as it was - tray under icons
+	/// under timers - and stay clear of the labels, the pause button and the aim marker at 9
+	/// and 10, which sit above everything and always have.
+	static let screenMaskPlane: CGFloat = 6
+	static let hudTrayPlane: CGFloat = 6.1
+	static let hudIconPlane: CGFloat = 6.2
+	static let hudTimerPlane: CGFloat = 6.3
 	/// The same bar in Endless 2.0, which does not carry the eight-slot tray.
 	///
 	/// The rings show only what is running, and carry their timers around the icons rather

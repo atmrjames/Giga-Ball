@@ -120,6 +120,9 @@ extension GameScene {
                                                dy: sin(angle)*Double(ballSpeedLimit))
         endlessIIReleasedFromPaddle(extra)
         spendStickyPaddleCatch()
+        endlessIIAimTheStickyLaunch(extra)
+        // A held extra leaves by the same bargain as the first ball: its catch spent the
+        // Auto-Aim turn, so its launch is the shot that turn bought
 
         if soundsSetting { run(ballReleaseSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }

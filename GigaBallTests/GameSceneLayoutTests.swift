@@ -96,3 +96,51 @@ final class GameSceneLayoutTests: XCTestCase {
         XCTAssertEqual(layout.playHeight, 0)
     }
 }
+
+/// Which plane each part of the scene draws in.
+///
+/// James, round 207, with a screenshot: "with clear and retreat I can see bricks in the power
+/// up HUD area. These should be out of view."
+///
+/// The strip across the top of the screen is opaque and exists to be the thing bricks go
+/// behind, but the loop that gives the three strips their physics bodies also set their
+/// zPosition to 1 - the same plane bricks are created in, in all five places that create one.
+/// SpriteKit breaks a tie by which node was added first, and the strips come from the scene
+/// file while bricks are added during play, so the bricks were always in front. Nothing put a
+/// brick in the strip until Clear And Retreat lifted the field two rows, which is why it took
+/// this long to see.
+///
+/// These are ordering facts rather than geometry, so they are checked as arithmetic: the
+/// numbers themselves can move, and what must not is which side of which the planes are on.
+final class ScenePlaneTests: XCTestCase {
+
+    /// The tallest thing the field can draw: a brick at 1 wearing a child at 4 - a power-up
+    /// brick's icon (`EndlessIIPowerUpBricks`), the deepest of them. A child's zPosition is
+    /// relative to its parent, so what the strip has to clear is the sum, not the brick.
+    private let tallestThingInTheField: CGFloat = 1 + 4
+
+    func testTheScreenMaskCoversEverythingTheFieldCanDraw() {
+        XCTAssertGreaterThan(GameScene.screenMaskPlane, tallestThingInTheField,
+                             "a lifted brick draws over the strip that is meant to hide it")
+    }
+
+    func testTheHudClearsTheMaskThatWouldOtherwiseCoverIt() {
+        for plane in [GameScene.hudTrayPlane, GameScene.hudIconPlane, GameScene.hudTimerPlane] {
+            XCTAssertGreaterThan(plane, GameScene.screenMaskPlane,
+                                 "the strip is opaque - the HUD has to be in front of it")
+        }
+    }
+
+    func testTheHudKeepsItsOwnOrder() {
+        // Tray behind icons behind timer bars, which is what it was at 2, 3 and 4
+        XCTAssertLessThan(GameScene.hudTrayPlane, GameScene.hudIconPlane)
+        XCTAssertLessThan(GameScene.hudIconPlane, GameScene.hudTimerPlane)
+    }
+
+    func testNothingReachesTheLabelsAndTheAimMarker() {
+        // The pause button, the score, the lives and the aim marker sit at 9 and 10 and have
+        // always been in front of everything. The score and the pause button share the strip
+        // with the HUD, so this is the one that would show if a plane were raised too far
+        XCTAssertLessThan(GameScene.hudTimerPlane, 9)
+    }
+}
