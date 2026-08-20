@@ -4038,15 +4038,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// says on the briefing card, so the zone is nearly always all-hidden and the flash
 		// fires on every landing. Explaining the fog to a player who chose the fog is not an
 		// explanation, it is the twist being handed back
+		// **And nothing else the player can see and hit, anywhere on the field** (James,
+		// round 210: "invisible bricks flashed on a paddle hit when there was one on the
+		// bottom row and one further up in a higher row. Problem is, there were other
+		// destructible bricks visible").
+		//
+		// The zone rule alone asks "is the descent being held up by something invisible",
+		// which is true rather more often than the flash is *wanted*. What the flash is for is
+		// narrower: a field that looks empty and is not descending reads as a broken game, and
+		// the flash is the clue that there is still something down there to hit. With bricks
+		// visible elsewhere the field plainly is not empty, nothing looks broken, and a flash
+		// is just the mode giving away hidden bricks for free.
 		var hidden = 0
 		var visible = 0
+		var visibleAnywhere = 0
 		enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-			guard let sprite = node as? SKSpriteNode,
-			      self.brickHasReachedTheBottomZone(sprite),
+			guard let sprite = node as? SKSpriteNode else { return }
+
+			if sprite.isHidden == false, self.brickCanBeDestroyed(sprite) {
+				visibleAnywhere += 1
+			}
+			// Anywhere on the field, not only in the zone - see below
+
+			guard self.brickHasReachedTheBottomZone(sprite),
 			      sprite.endlessIIIsAnchored == false else { return }
 			if sprite.isHidden { hidden += 1 } else { visible += 1 }
 		}
-		return hidden > 0 && visible == 0
+		return hidden > 0 && visible == 0 && visibleAnywhere == 0
+	}
+
+	/// Whether a brick is one the player could clear if they could see it.
+	///
+	/// Indestructible bricks are excluded because they can never be the thing the player is
+	/// being asked to go and hit.
+	func brickCanBeDestroyed(_ sprite: SKSpriteNode) -> Bool {
+		sprite.texture != brickIndestructible1Texture
+			&& sprite.texture != brickIndestructible2Texture
 	}
 
 	func invisibleBrickFlash() {
@@ -4076,14 +4103,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// flashed the mode's ordinary hidden bricks on and straight off again. In Mayhem a
 		// hidden brick only matters when it stalls the descent, and the zone rule above is
 		// exactly that question
+			let mayhemZoneOnly = gameMode == .endlessII
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
-				if sprite.isHidden,
-				   sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture {
-					sprite.alpha = 0.75
-					sprite.isHidden = false
-					self.invisibleBrickFlashRevealed.append(sprite)
-				}
+				guard sprite.isHidden,
+				      sprite.texture == self.brickNormalTexture
+				        || sprite.texture == self.brickInvisibleTexture else { return }
+				if mayhemZoneOnly, self.brickHasReachedTheBottomZone(sprite) == false { return }
+				// **Only the brick on the bottom row** (James, round 210: "only the brick in
+				// the bottom row should flash in this instance"). The flash answers one
+				// question - what is holding the field up - and a hidden brick five rows above
+				// is not the answer. Showing it as well hands the player information the mode
+				// meant to keep, and makes the real clue harder to pick out of the two.
+				//
+				// Classic still reveals the lot, because there the question is the opposite:
+				// every brick left is invisible, and all of them are what remains to be hit
+				sprite.alpha = 0.75
+				sprite.isHidden = false
+				self.invisibleBrickFlashRevealed.append(sprite)
 			}
 			// Flash bricks on - **only the hidden ones, and remembered by name** (James, round
 			// 177: "all of a sudden all the bricks flashed when the ball hit the paddle and

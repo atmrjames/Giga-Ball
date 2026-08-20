@@ -43,8 +43,35 @@ final class EndlessIIBrickTests: XCTestCase {
     func testAHiddenBrickAloneInTheBottomZoneAsksForTheFlash() {
         let scene = zoneScene()
         zoneBrick(on: scene, y: 0, hidden: true)
+
+        XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden)
+    }
+
+    /// James, round 210: "invisible bricks flashed on a paddle hit when there was one on the
+    /// bottom row and one further up in a higher row. Problem is, there were other
+    /// destructible bricks visible."
+    ///
+    /// The zone question alone - is the descent held up by something invisible - is true far
+    /// more often than the flash is wanted. What the flash is *for* is narrower: a field that
+    /// looks empty and will not descend reads as a broken game, and the flash says there is
+    /// still something down there. With bricks visible elsewhere nothing looks broken, and the
+    /// flash is only giving hidden bricks away.
+    func testAVisibleBrickAnywhereElseMeansTheFieldDoesNotLookBroken() {
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 0, hidden: true)
         zoneBrick(on: scene, y: 200, hidden: false)
-        // Something visible higher up, so Classic's own rule would say nothing
+
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
+                       "the player can see there is still a field - nothing needs explaining")
+    }
+
+    /// An Indestructible in view is not a brick the player could go and hit, so it can never
+    /// be the thing they are being pointed at, and it does not make the field look playable.
+    func testAnIndestructibleInViewDoesNotCallOffTheFlash() {
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 0, hidden: true)
+        let wall = zoneBrick(on: scene, y: 200, hidden: false)
+        wall.texture = scene.brickIndestructible1Texture
 
         XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden)
     }
@@ -117,7 +144,15 @@ final class EndlessIIBrickTests: XCTestCase {
     func testTheFlashGivesBackOnlyWhatItBorrowed() {
         let scene = zoneScene()
         let lurker = zoneBrick(on: scene, y: 0, hidden: true)
-        let field = (1...5).map { zoneBrick(on: scene, y: CGFloat(200 + 20*$0), hidden: false) }
+        let field = (1...5).map { index -> SKSpriteNode in
+            let wall = zoneBrick(on: scene, y: CGFloat(200 + 20*index), hidden: false)
+            wall.texture = scene.brickIndestructible1Texture
+            return wall
+        }
+        // Indestructible walls, since round 210: a *destructible* brick in view calls the
+        // flash off altogether now, and what this test is about is the off-phase not taking
+        // bricks it never revealed. Walls are also what really is left in view when a hidden
+        // brick is the last thing holding the field up
 
         scene.invisibleBrickFlash()
         XCTAssertFalse(lurker.isHidden, "the lurker is what the flash is for")
@@ -187,10 +222,26 @@ final class EndlessIIBrickTests: XCTestCase {
         // Scoping Classic's rule out of Mayhem must not take the round-173 feature with it
         let scene = zoneScene()
         let lurker = zoneBrick(on: scene, y: 0, hidden: true)
-        zoneBrick(on: scene, y: 300, hidden: false)
+        let wall = zoneBrick(on: scene, y: 300, hidden: false)
+        wall.texture = scene.brickIndestructible1Texture
+        // A wall in view, not a brick: since round 210 anything the player could actually go
+        // and hit calls the flash off, because then the field does not look broken
 
         scene.invisibleBrickFlash()
         XCTAssertFalse(lurker.isHidden)
+    }
+
+    /// And the lurker is the *only* thing the flash shows (James, round 210: "only the brick
+    /// in the bottom row should flash in this instance"). A hidden brick further up is not
+    /// what is holding the field, so showing it hands away information for nothing.
+    func testOnlyTheBottomRowBrickFlashes() {
+        let scene = zoneScene()
+        let lurker = zoneBrick(on: scene, y: 0, hidden: true)
+        let higherUp = zoneBrick(on: scene, y: 300, hidden: true)
+
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(lurker.isHidden, "the one holding the field up is shown")
+        XCTAssertTrue(higherUp.isHidden, "the one further up is not the answer")
     }
 
     func testOverlappingFlashesStillPutEveryBrickBack() {

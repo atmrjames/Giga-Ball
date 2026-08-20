@@ -74,8 +74,11 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
     private func buildLayout() {
         let title = UILabel()
         title.translatesAutoresizingMaskIntoConstraints = false
-        title.text = "M U S I C"
-        title.font = .boldSystemFont(ofSize: 28)
+        title.text = "MUSIC"
+        title.font = UIFont(name: "HelveticaNeue-Bold", size: 40) ?? .boldSystemFont(ofSize: 40)
+        // The same face and size every other menu screen's title wears (James, round 210:
+        // "for the title, use the same font and style as other menu view screens") -
+        // `PaddleSpeedViewController` is the one that already sets it in code
         title.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         title.textAlignment = .center
         view.addSubview(title)
@@ -109,6 +112,20 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         // it already carries the icon, the label, the state text and the tick
         view.addSubview(tableView)
 
+        let credit = UILabel()
+        credit.translatesAutoresizingMaskIntoConstraints = false
+        credit.text = "Music by Brendan Lawton"
+        credit.font = .systemFont(ofSize: 13)
+        credit.textColor = UIColor(white: 1, alpha: 0.55)
+        credit.textAlignment = .center
+        credit.isUserInteractionEnabled = true
+        credit.addGestureRecognizer(UITapGestureRecognizer(target: self,
+                                                           action: #selector(creditTapped)))
+        view.addSubview(credit)
+        // The same line the splash screen carries, where the music lives (James, round 210),
+        // and a tap opens the same SoundCloud set the information screen links to - one URL,
+        // in `soundCloudSet`, rather than the address written down twice
+
         let close = UIButton(type: .system)
         closeButton = close
         close.translatesAutoresizingMaskIntoConstraints = false
@@ -134,9 +151,17 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
             hint.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
 
             tableView.topAnchor.constraint(equalTo: hint.bottomAnchor, constant: 20),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            tableView.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -20),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            // **No inset of its own** (James, round 210: "make the cells the same size, shape,
+            // width as other table views. They seem too narrow"). The card is drawn by
+            // `applyGlass` inside the cell and already carries the margin every settings row
+            // has; insetting the table as well was that margin applied twice
+            tableView.bottomAnchor.constraint(equalTo: credit.topAnchor, constant: -12),
+
+            credit.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -18),
+            credit.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            credit.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
 
             close.leadingAnchor.constraint(equalTo: view.leadingAnchor,
                                            constant: UIViewController.menuButtonWideInset),
@@ -245,8 +270,10 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         cell.contentView.bringSubviewToFront(tick)
 
         NSLayoutConstraint.activate([
-            tick.trailingAnchor.constraint(equalTo: cell.settingState.trailingAnchor,
-                                           constant: 14),
+            tick.centerXAnchor.constraint(equalTo: cell.settingState.centerXAnchor),
+            // Centred on the row's state position rather than hung off its trailing edge
+            // (James, round 210: "centre the checkmark within the cell") - that is where every
+            // other settings row puts its answer, so the column reads straight down the list
             tick.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
             tick.widthAnchor.constraint(equalToConstant: 56),
             tick.heightAnchor.constraint(equalToConstant: 56),
@@ -367,6 +394,16 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         if defaults.bool(forKey: "musicSetting") { MusicHandler.sharedHelper.resumeMusic() }
         // Only if the music is still on - the player may have turned the last track off while
         // a preview was running, and resuming then would be the setting undoing itself
+    }
+
+    /// The album the information screen links to, named once.
+    static let soundCloudSet =
+        "https://soundcloud.com/user-371123791/sets/giga-ball-original-sound-track?ref=clipboard&p=i&c=1"
+
+    @objc private func creditTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        guard let url = URL(string: MusicViewController.soundCloudSet) else { return }
+        UIApplication.shared.open(url)
     }
 
     // MARK: - Navigation

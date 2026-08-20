@@ -229,7 +229,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 UIApplication.shared.open(mail)
             }
         case .soundCloud:
-            if let purchaseSoundTrackURL = URL(string: "https://soundcloud.com/user-371123791/sets/giga-ball-original-sound-track?ref=clipboard&p=i&c=1") {
+            if let purchaseSoundTrackURL = URL(string: MusicViewController.soundCloudSet) {
+            // One address, named on the screen the music lives on (round 210)
                 UIApplication.shared.open(purchaseSoundTrackURL)
             }
         case .rate:
