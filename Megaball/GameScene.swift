@@ -5819,9 +5819,24 @@ laserTimer?.invalidate()
 	/// under timers - and stay clear of the labels, the pause button and the aim marker at 9
 	/// and 10, which sit above everything and always have.
 	static let screenMaskPlane: CGFloat = 6
-	static let hudTrayPlane: CGFloat = 6.1
-	static let hudIconPlane: CGFloat = 6.2
-	static let hudTimerPlane: CGFloat = 6.3
+
+	/// **How far below its own plane the HUD reaches.**
+	///
+	/// `PowerUpRingHUD` draws its capsule as a child at `zPosition = -1`, so the ring bar's
+	/// container sits a whole plane *below* the node that owns it. Round 207 raised the HUD
+	/// without accounting for that and put the container under the mask: in Endless Mayhem the
+	/// bar simply vanished and the top of the screen went flat purple (James, round 210: "the
+	/// power-up HUD container in Endless Mayhem has disappeared").
+	///
+	/// It is easy to miss because the *rings* were still fine - only the thing behind them was
+	/// gone, and with no power-up running there are no rings to notice were still there. The
+	/// round-207 check looked at a Mayhem field with nothing running and read an empty strip as
+	/// correct.
+	static let hudLowestChildOffset: CGFloat = -1
+
+	static let hudTrayPlane: CGFloat = 7.1
+	static let hudIconPlane: CGFloat = 7.2
+	static let hudTimerPlane: CGFloat = 7.3
 	/// The same bar in Endless 2.0, which does not carry the eight-slot tray.
 	///
 	/// The rings show only what is running, and carry their timers around the icons rather

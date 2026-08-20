@@ -60,6 +60,9 @@ final class PowerUpRingHUD: SKNode {
     private var order: [String] = []
 
     private let container = SKShapeNode()
+
+    /// The capsule behind the rings, for tests that need to know it is really there.
+    var containerForTesting: SKShapeNode { container }
     private var containerSlots: CGFloat = 0
 
     var iconSize: CGFloat = 30

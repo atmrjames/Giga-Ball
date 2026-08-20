@@ -131,10 +131,45 @@ final class ScenePlaneTests: XCTestCase {
         }
     }
 
+    /// James, round 210: "the power-up HUD container in Endless Mayhem has disappeared. The
+    /// area above the game view is now just solid purple."
+    ///
+    /// The ring bar's capsule is a child at `zPosition = -1`, so it sits a whole plane below
+    /// the node that owns it - and round 207 raised the HUD without counting that, leaving the
+    /// container under the mask. The rings themselves were never affected, which is why an
+    /// empty Mayhem strip looked right: with nothing running there are no rings to notice were
+    /// still there. What the HUD's *deepest* part clears is the thing to assert.
+    func testEvenTheDeepestPartOfTheHudClearsTheMask() {
+        for plane in [GameScene.hudTrayPlane, GameScene.hudIconPlane, GameScene.hudTimerPlane] {
+            XCTAssertGreaterThan(plane + GameScene.hudLowestChildOffset,
+                                 GameScene.screenMaskPlane,
+                                 "a HUD child drawn behind its own parent falls under the strip")
+        }
+    }
+
     func testTheHudKeepsItsOwnOrder() {
         // Tray behind icons behind timer bars, which is what it was at 2, 3 and 4
         XCTAssertLessThan(GameScene.hudTrayPlane, GameScene.hudIconPlane)
         XCTAssertLessThan(GameScene.hudIconPlane, GameScene.hudTimerPlane)
+    }
+
+    /// An empty bar still has to be drawn: "the container never narrows past this, so an empty
+    /// one still reads as the place power-ups appear rather than as nothing at all."
+    func testTheMayhemBarIsDrawnEvenWithNothingRunning() {
+        let hud = PowerUpRingHUD()
+        hud.iconSize = 30
+        hud.spacing = 12
+        hud.update(with: [])
+        XCTAssertNotNil(hud.containerForTesting.path,
+                        "an empty Mayhem HUD draws no bar at all")
+    }
+
+    /// And the bar is drawn *behind* the node that owns it, which is exactly why round 207's
+    /// raise buried it under the mask. The constant the planes leave room for has to keep
+    /// matching the real child, or the headroom is arithmetic about nothing.
+    func testTheBarSitsBehindTheRingsByTheAmountThePlanesAllowFor() {
+        XCTAssertEqual(PowerUpRingHUD().containerForTesting.zPosition,
+                       GameScene.hudLowestChildOffset)
     }
 
     func testNothingReachesTheLabelsAndTheAimMarker() {
@@ -144,3 +179,4 @@ final class ScenePlaneTests: XCTestCase {
         XCTAssertLessThan(GameScene.hudTimerPlane, 9)
     }
 }
+
