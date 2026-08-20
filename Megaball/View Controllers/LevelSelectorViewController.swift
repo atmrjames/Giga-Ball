@@ -276,7 +276,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
     
     func collectionViewLayout() {
-        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, LevelStatsViewController.playButtonSize, MainMenuCollectionViewCell.smallButtonSize])
+        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, MainMenuCollectionViewCell.largeButtonSize, MainMenuCollectionViewCell.smallButtonSize])
         // One arrangement for every screen (play-test round 128) - see layoutMenuButtonRow
     }
     // Set the spacing between collection view cells
@@ -285,8 +285,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         indexPath.row == 1
-            ? CGSize(width: LevelStatsViewController.playButtonSize,
-                     height: LevelStatsViewController.playButtonSize)
+            ? CGSize(width: MainMenuCollectionViewCell.largeButtonSize,
+                     height: MainMenuCollectionViewCell.largeButtonSize)
             : CGSize(width: 50, height: 50)
     }
     
@@ -305,7 +305,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.setButton("ButtonClose")
         case 1:
             cell.setButton("ButtonPlay", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
-            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
+            cell.widthConstraint.constant = MainMenuCollectionViewCell.largeButtonSize
             // Big and centred, like every other screen (play-test round 4): the button
             // that starts the pack is the one worth the room
         case 2:

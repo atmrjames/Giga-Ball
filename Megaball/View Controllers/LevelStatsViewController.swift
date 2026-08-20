@@ -110,22 +110,19 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
     
     func collectionViewLayout() {
-        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, LevelStatsViewController.playButtonSize, MainMenuCollectionViewCell.smallButtonSize])
+        layoutMenuButtonRow(backButtonCollectionView, sizes: [MainMenuCollectionViewCell.smallButtonSize, MainMenuCollectionViewCell.largeButtonSize, MainMenuCollectionViewCell.smallButtonSize])
         // One arrangement for every screen (play-test round 128) - see layoutMenuButtonRow
     }
     // Set the spacing between collection view cells
-
-    /// The pause menu's play button size, which play-testing asked this screen to match -
-    /// the button that starts the run should be the biggest thing on the row.
-    static let playButtonSize: CGFloat = 75
 
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         indexPath.row == 1
-            ? CGSize(width: LevelStatsViewController.playButtonSize,
-                     height: LevelStatsViewController.playButtonSize)
-            : CGSize(width: 50, height: 50)
+            ? CGSize(width: MainMenuCollectionViewCell.largeButtonSize,
+                     height: MainMenuCollectionViewCell.largeButtonSize)
+            : CGSize(width: MainMenuCollectionViewCell.smallButtonSize,
+                     height: MainMenuCollectionViewCell.smallButtonSize)
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -146,7 +143,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             cell.setButton("ButtonClose")
         case 1:
             cell.setButton("ButtonPlay", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
-            cell.widthConstraint.constant = LevelStatsViewController.playButtonSize
+            cell.widthConstraint.constant = MainMenuCollectionViewCell.largeButtonSize
             // The big play button belongs in the middle - X left, leaderboard right, the
             // same order the pause menu reads in
         case 2:

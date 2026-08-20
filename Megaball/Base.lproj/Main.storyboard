@@ -1491,7 +1491,7 @@ U N L O C K E D</string>
                                 <constraints>
                                     <constraint firstItem="Inf-bt-001" firstAttribute="top" secondItem="NJ2-8t-agb" secondAttribute="top" constant="20" id="Inf-bt-c03"/>
                                     <constraint firstItem="Inf-bt-001" firstAttribute="leading" secondItem="NJ2-8t-agb" secondAttribute="leading" constant="20" id="Inf-bt-c04"/>
-                                    <constraint firstItem="IXj-WE-ltT" firstAttribute="leading" secondItem="NJ2-8t-agb" secondAttribute="leading" constant="42.5" id="4rV-lj-I0w"/>
+                                    <constraint firstItem="IXj-WE-ltT" firstAttribute="leading" secondItem="NJ2-8t-agb" secondAttribute="leading" id="4rV-lj-I0w"/>
                                     <constraint firstItem="4kO-MJ-8e5" firstAttribute="centerX" secondItem="NJ2-8t-agb" secondAttribute="centerX" id="DZz-hN-Bcp"/>
                                     <constraint firstAttribute="bottom" secondItem="IXj-WE-ltT" secondAttribute="bottom" constant="20" id="IXF-gQ-MZX"/>
                                     <constraint firstItem="IXj-WE-ltT" firstAttribute="centerX" secondItem="NJ2-8t-agb" secondAttribute="centerX" id="cTl-2O-X5T"/>

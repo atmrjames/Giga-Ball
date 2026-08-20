@@ -392,9 +392,50 @@ final class MenuButtonRowTests: XCTestCase {
         XCTAssertFalse(picture.carriesReturnToGameButton)
     }
 
+    /// The pause row came through the shared arrangement in round 206, and what it must not
+    /// lose in the move is where its outer icons land.
+    ///
+    /// It used to get there its own way: three 75pt boxes holding 50pt icons, so the icon
+    /// carried 12.5pt of padding, so the row started 12.5pt further out than every other
+    /// screen's - `pauseButtonRowInset`, 42.5, written a second time as the storyboard's
+    /// leading constraint because a storyboard cannot read a constant. The boxes are 50pt now,
+    /// that leading is 0, and the shared helper owns the inset outright. Two different routes,
+    /// and this pins that they arrive at the same place: 55pt, the one number the whole app
+    /// promises about where a thumb lands.
+    func testThePauseRowsOuterIconsLandOnTheSharedInset() {
+        let storyboardLeading: CGFloat = 0
+        let screenWidth: CGFloat = 393
+        let sizes = [MainMenuCollectionViewCell.smallButtonSize,
+                     MainMenuCollectionViewCell.largeButtonSize,
+                     MainMenuCollectionViewCell.smallButtonSize]
+        let layout = laidOutRow(width: screenWidth - storyboardLeading*2,
+                                leading: storyboardLeading, sizes: sizes)
+
+        XCTAssertEqual(storyboardLeading + layout.sectionInset.left,
+                       UIViewController.menuButtonRowInset, accuracy: 0.001,
+                       "the pause screen's close button has wandered off the shared inset")
+        XCTAssertEqual(layout.sectionInset.left, layout.sectionInset.right, accuracy: 0.001)
+    }
+
+    /// And the centre one stays on the row's centre, which is the other half of what
+    /// `layoutMenuButtonRow` promises - the pause screen's play button is the thing the other
+    /// two are drawn in to group around, so it being off-centre would be visible immediately.
+    func testThePauseRowsPlayButtonSitsOnTheRowsCentre() {
+        let leading: CGFloat = 0
+        let width: CGFloat = 393
+        let sizes = [MainMenuCollectionViewCell.smallButtonSize,
+                     MainMenuCollectionViewCell.largeButtonSize,
+                     MainMenuCollectionViewCell.smallButtonSize]
+        let layout = laidOutRow(width: width, leading: leading, sizes: sizes)
+
+        let playStarts = layout.sectionInset.left + sizes[0] + layout.minimumInteritemSpacing
+        let playCentre = playStarts + sizes[1]/2
+        XCTAssertEqual(playCentre, width/2, accuracy: 0.001)
+    }
+
     func testARowWithABigButtonDrawsTheSmallOnesIn() {
         var withPlay = sizes
-        withPlay[1] = LevelStatsViewController.playButtonSize
+        withPlay[1] = MainMenuCollectionViewCell.largeButtonSize
         let layout = laidOutRow(width: 362, leading: 0, sizes: withPlay)
         XCTAssertEqual(layout.sectionInset.left, UIViewController.menuButtonRowInset,
                        accuracy: 0.001)

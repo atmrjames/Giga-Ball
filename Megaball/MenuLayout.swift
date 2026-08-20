@@ -140,13 +140,19 @@ extension UIViewController {
     /// is in it. The rest of the width is shared evenly, so the middle of three always lands
     /// on the row's centre.
     ///
-    /// **Two rows do not come through here yet**: the main menu and the in-game pause row
-    /// build their own layouts, and both size their collection view by assigning to
-    /// `frame.size.width` - which autolayout overwrites on the next pass, so widening them in
-    /// code moves nothing (tried and measured, round 157). Reaching 55pt on those two means
-    /// changing the storyboard's width constraint, and the pause row additionally needs
-    /// per-cell sizing: its three cells are 75pt boxes holding 50pt icons, so its outer icon
-    /// carries 12.5pt of padding the other rows have not got. That is why it sits at 63pt.
+    /// **One row does not come through here**: the main menu's, which builds its own layout
+    /// and sizes its collection view by assigning to `frame.size.width` - which autolayout
+    /// overwrites on the next pass, so widening it in code moves nothing (tried and measured,
+    /// round 157). Reaching 55pt there means changing the storyboard's width constraint. The
+    /// main menu is exempt from the shared arrangement anyway (round 128): its information and
+    /// settings buttons sit where James wants them, which is not where this method would put
+    /// them.
+    ///
+    /// The **pause row** was the second of that pair until round 206. Both of its reasons had
+    /// expired: round 191 removed its hand-set width when that turned out to be half of what
+    /// pinned the iPad's pause screen into a 414pt box, and its outer cells are 50pt boxes now
+    /// rather than 75pt boxes holding 50pt icons, so there is no padding left for its inset to
+    /// correct for. It sat at 63pt while both were true.
     func layoutMenuButtonRow(_ row: UICollectionView, sizes: [CGFloat]) {
         guard sizes.isEmpty == false else { return }
         let layout = UICollectionViewFlowLayout()

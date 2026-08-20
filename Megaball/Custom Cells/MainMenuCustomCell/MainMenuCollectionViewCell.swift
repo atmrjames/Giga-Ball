@@ -87,6 +87,18 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     /// twenty call sites, so the next opinion about it is one edit.
     static let smallButtonSize: CGFloat = 50
 
+    /// How wide the one large round button on a row is.
+    ///
+    /// The centre of a three-button row, where a row has one: the pause screen's play, the
+    /// level list's play, the game-over screen's replay-or-home. `layoutMenuButtonRow` reads
+    /// a size larger than `smallButtonSize` as "this row has something to group around" and
+    /// picks the narrow arrangement, so the two numbers are only meaningful next to each
+    /// other - which is why they now sit next to each other. It lived on
+    /// `LevelStatsViewController` until round 206, and the level selector, the pause screen
+    /// and the game-over screen all reached across into that class to ask a screen they have
+    /// nothing else to do with how big their own button should be.
+    static let largeButtonSize: CGFloat = 75
+
     func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
         guard isGlass == false else { return }
         iconImage.image = UIImage(named: named)

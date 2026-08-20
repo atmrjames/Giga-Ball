@@ -9,7 +9,8 @@
 import UIKit
 import GameKit
 
-class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, MenuNavigationPresenter {
+class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
+                                UICollectionViewDelegateFlowLayout, UICollectionViewDataSource, MenuNavigationPresenter {
     
     var levelNumber: Int = 0
     var numberOfLevels: Int = 0
@@ -763,41 +764,45 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
         dailySummaryLabel.attributedText = summary
     }
 
-    /// Where this row's collection view starts, so its 50pt icons land on the same
-    /// `menuButtonRowInset` every other screen's do.
-    ///
-    /// Half a cell's padding further out: 75pt boxes around 50pt icons leave 12.5pt each
-    /// side. Kept beside the layout that uses it and matched by the storyboard's leading
-    /// constraint - the one number that has to be written twice, because a storyboard cannot
-    /// read a constant.
-    static var pauseButtonRowInset: CGFloat {
-        UIViewController.menuButtonRowInset - (75 - MainMenuCollectionViewCell.smallButtonSize)/2
-    }
-
     func collectionViewLayout() {
-        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-
-        let rowWidth = containterView.bounds.width - PauseMenuViewController.pauseButtonRowInset*2
-        // **The container's own width, whatever it has turned out to be** (round 191). This
-        // used to *set* that width by hand - the view's, clamped to 414 - which was invisible
-        // on a phone, where every width is at or under 414, and pinned the whole screen into a
-        // 414pt box on an iPad. It was one half of the pair; the other was a size-class
-        // variation in the storyboard that excluded the container's leading and bottom
-        // constraints on anything not compact-width, so the hand-set frame stuck. Both are
-        // gone: the constraints size the box and this reads what they decided.
+        layoutMenuButtonRow(buttonCollectionView,
+                            sizes: [MainMenuCollectionViewCell.smallButtonSize,
+                                    MainMenuCollectionViewCell.largeButtonSize,
+                                    MainMenuCollectionViewCell.smallButtonSize])
+        // **The one arrangement, at last** (round 126's last loose end, closed in round 206).
+        // This row and the main menu's were the two that built their own layouts, and the
+        // reason given was that both sized their collection view by assigning to
+        // `frame.size.width` - which autolayout overwrites on the next pass. Round 191 took
+        // that assignment out of here to unpin the iPad's pause screen from a 414pt box, and
+        // with it went the reason this row could not come through the shared helper.
         //
-        // The row starts 12.5pt further out than every other screen's on purpose: its cells
-        // are 75pt boxes holding 50pt icons, so the icon carries half the difference as
-        // padding - and it is the *icon* that has to land on `menuButtonRowInset`, because
-        // that is the thing a thumb aims at
-
-        layout.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-        layout.itemSize = CGSize(width: 75, height: 75)
-        let spacing = (rowWidth-(75*3))/2
-        layout.minimumInteritemSpacing = spacing
-        layout.minimumLineSpacing = spacing
-        buttonCollectionView!.collectionViewLayout = layout
+        // The second reason was the cells: three 75pt boxes holding 50pt icons, so the outer
+        // *icon* carried 12.5pt of padding no other row's did, and the row's storyboard
+        // leading was 42.5 rather than 0 to cancel it - the one number that had to be written
+        // twice, because a storyboard cannot read a constant. The outer cells are 50pt boxes
+        // now, like every other screen's, so the box edge and the icon edge are the same edge
+        // and there is nothing left to cancel. That leading is 0 in the storyboard and this
+        // method owns the inset outright.
+        //
+        // Which also fixes what the compensation was quietly doing on an iPad. There the
+        // helper's `max(0, target - fromScreen)` is already 0 - the row starts well past 55pt
+        // from the screen - so nothing absorbed the 42.5 and the pause row sat that much
+        // further inside the content column than every other screen's. It sits on the column's
+        // edge now, which is where round 181 found the rest of them.
     }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        let side = indexPath.row == 1
+            ? MainMenuCollectionViewCell.largeButtonSize
+            : MainMenuCollectionViewCell.smallButtonSize
+        return CGSize(width: side, height: side)
+    }
+    // The centre is the large one on both faces of this screen - the pause screen's play and
+    // the game-over screen's replay-or-home - which is what tells the shared layout to draw
+    // the outer two in to the narrow inset rather than out to the wide one
+
     // Set the spacing between collection view cells
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -806,9 +811,6 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "iconCell", for: indexPath) as! MainMenuCollectionViewCell
-        
-        cell.frame.size.height = 75
-        cell.frame.size.width = cell.frame.size.height
         
         // A game over reads the same in every mode (play-test round 10): the replay on
         // the left, the big Home in the centre - the way the mode menus centre their big
@@ -827,17 +829,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate, UICol
             }
             cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         case 1:
-            cell.widthConstraint.constant = 75
+            cell.widthConstraint.constant = MainMenuCollectionViewCell.largeButtonSize
             if self.sender == "Pause" {
                 cell.setButton("ButtonPlay.png", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
-                // 75pt here, so the same glyph size and the same rim as the return-to-game
+                // The large size here, so the same glyph size and the same rim as the return-to-game
                 // play on the menus - two buttons that do the same thing should not be two
                 // different materials
             } else {
                 cell.setButton(endlessGameOver ? "ButtonRestart" : "ButtonHome",
                                pointSize: MainMenuCollectionViewCell.bigGlyphPointSize,
                                rimmed: true)
-                // The game-over screen's centre button is 75pt like the pause screen's play,
+                // The game-over screen's centre button is the large size like the pause screen's play,
                 // and was drawing a 20pt glyph on it - a small mark adrift in a big disc
                 // (play-test round 85). It is also that screen's positive action, replay or
                 // home, so the same `rimmed` flag gives it the lime the play buttons wear
