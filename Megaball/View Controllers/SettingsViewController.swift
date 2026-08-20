@@ -207,6 +207,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // (play-test round 15)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.isHidden = false
+            cell.accessoryView = nil
+            // Cleared on every row for the same reason the swipe-info button above is: a
+            // recycled cell carries whatever the last row put on it, which is how one info
+            // button became one on nearly every row (play-test round 15)
             
             switch settingRow(for: indexPath) {
 
@@ -273,6 +277,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     cell.settingState.text = "off"
                     cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
                 }
+                cell.accessoryView = musicArrowButton()
+                // **The arrow opens the track list** (James, round 207). The row keeps its
+                // own tap, which is still the master switch - the arrow is a second answer to
+                // a row that now has two, the way the settings list already reads a tick as
+                // separate from the row it sits on
             case 4:
             // Haptics
 //                if screenSize == .Pad || screenSize == .SE {
@@ -585,6 +594,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 musicSetting = !musicSetting
 //                soundsSetting = musicSetting
                 defaults.set(musicSetting, forKey: "musicSetting")
+                if musicSetting { MusicSelection.selectAll() }
+                // **Switching the music on ticks every track** (James, round 207: "if the
+                // music setting is set to on, all tracks are selected by default"). Without
+                // it, a player who turned the music off by unticking the last track would
+                // switch it back on to silence - the switch would say on, the rotation would
+                // still be empty, and nothing on this screen would explain why
 //                defaults.set(soundsSetting, forKey: "soundsSetting")
                 if musicSetting {
                     if musicPausedBool {
@@ -708,6 +723,44 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                        green: 0.6 + (0 - 0.6)*along,
                        blue: 0.6 + (0.2352941176 - 0.6)*along,
                        alpha: 1)
+    }
+
+    /// The arrow on the Music row, which opens the track list.
+    ///
+    /// A button rather than `accessoryType = .disclosureIndicator`, because the row already
+    /// has a tap of its own - the master switch - and a plain chevron is decoration that does
+    /// not take touches. This one does, so the row's two answers are two targets.
+    func musicArrowButton() -> UIButton {
+        let arrow = UIButton(type: .system)
+        arrow.setImage(UIImage(systemName: "chevron.right",
+                               withConfiguration: UIImage.SymbolConfiguration(
+                                pointSize: 14, weight: .semibold)), for: .normal)
+        arrow.tintColor = UIColor(white: 1, alpha: 0.55)
+        arrow.frame = CGRect(x: 0, y: 0, width: 34, height: 34)
+        arrow.addTarget(self, action: #selector(musicArrowTapped), for: .touchUpInside)
+        return arrow
+    }
+
+    @objc func musicArrowTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        hideAnimate()
+        moveToMusic()
+    }
+
+    func moveToMusic() {
+        let musicView = MusicViewController()
+        musicView.onChange = { [weak self] in
+            self?.musicSetting = self?.defaults.bool(forKey: "musicSetting") ?? true
+            self?.settingsTableView.reloadData()
+            // The screen can turn the master switch off by unticking the last track, so the
+            // row behind it has to be told rather than left showing "on" over silence
+        }
+        addChild(musicView)
+        musicView.view.frame = view.frame
+        view.addSubview(musicView.view)
+        musicView.didMove(toParent: self)
+        musicView.showAnimate()
+        // Opened the way every menu screen opens one (see moveToPaddleSpeed)
     }
 
     func moveToPaddleSpeed() {
