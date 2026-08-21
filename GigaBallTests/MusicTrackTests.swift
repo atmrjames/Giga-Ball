@@ -94,6 +94,26 @@ final class MusicTrackTests: XCTestCase {
 
     /// Nonsense in the store reads as "nothing is off", which is the safe direction: the
     /// player hears their music rather than silence they cannot explain.
+    /// The crossfade has to make exactly the same choice `playMusic` does, or the menu could
+    /// fade into a track the player turned off. Both ask `trackURL(for:)`, and this pins what
+    /// that answers: the menu's own theme for the menu, and only ticked tracks otherwise.
+    func testTheMenuAlwaysGetsItsOwnThemeAndARunNeverDoes() {
+        XCTAssertEqual(MusicTrack.titleTheme.url, MusicTrack.titleTheme.url)
+        for _ in 0..<50 {
+            guard let drawn = MusicSelection.drawATrack(in: store) else { continue }
+            XCTAssertNotEqual(drawn, .titleTheme, "the menu's theme is not in a run's rotation")
+        }
+    }
+
+    /// And with every track off there is nothing to fade *to*, so the crossfade must decline
+    /// rather than fade the current track out into silence.
+    func testWithEveryTrackOffThereIsNothingToFadeTo() {
+        for track in MusicTrack.gameTracks {
+            MusicSelection.set(track, enabled: false, in: store)
+        }
+        XCTAssertNil(MusicSelection.drawATrack(in: store))
+    }
+
     func testRubbishInTheStoreLeavesEveryTrackPlaying() {
         store.set(42, forKey: MusicSelection.defaultsKey)
         XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.gameTracks)

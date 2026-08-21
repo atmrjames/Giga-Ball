@@ -653,9 +653,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // Read before it is cleared - which mode menu to return to depends on it.
         // Back in the menus, the daily is over - whatever happens next is not it
         refreshView()
-        MusicHandler.sharedHelper.stopMusic()
         if musicSetting {
-            MusicHandler.sharedHelper.playMusic(sender: "Menu")
+            MusicHandler.sharedHelper.crossfadeMusic(sender: "Menu")
+            // The way back is the same journey (round 210): the run's track fades down as the
+            // title theme comes up, rather than the game going silent at the moment the menu
+            // appears. With the music off there is nothing playing and nothing to stop
+        } else {
+            MusicHandler.sharedHelper.stopMusic()
         }
         returnToModeMenu(playedDaily: playedDaily,
                          packNumber: notification.userInfo?["packNumber"] as? Int ?? 0)

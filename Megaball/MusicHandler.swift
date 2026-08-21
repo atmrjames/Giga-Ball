@@ -49,6 +49,72 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         // Ambient by default so other apps' audio keeps playing when the game's music is off
     }
 
+    /// How long one track takes to become another.
+    ///
+    /// James, round 210: "when the music goes from the main menu to a game, it abruptly
+    /// changes. Can we make this transition smoother using fade out / fade in, or some
+    /// crossover mixing of the tracks?"
+    ///
+    /// Long enough to be a mix rather than a cut, short enough that the game has not started
+    /// before the menu's theme has finished leaving.
+    static let crossfadeDuration: TimeInterval = 1.4
+
+    /// Which track a caller is asking for.
+    ///
+    /// The menu has one theme and always has; everything else draws from the tracks the player
+    /// left ticked (`MusicSelection`). Nil means the rotation is empty, which is the music
+    /// being off in all but name - so nothing plays and nothing fades.
+    private func trackURL(for sender: String?) -> URL? {
+        sender == "Menu" ? MusicTrack.titleTheme.url : MusicSelection.drawATrack()?.url
+    }
+
+    private var wantedVolume: Float { gameInProgress ? gameVolumeSet : menuVolumeSet }
+
+    /// Fades the current track out while the next one fades in.
+    ///
+    /// Both players run for the length of the fade, which is what makes it a crossover rather
+    /// than a gap: `AVAudioPlayer.setVolume(_:fadeDuration:)` does the ramp itself, so nothing
+    /// here has to run a timer against the audio thread. The outgoing player is captured by
+    /// the closure that stops it, so it stays alive exactly as long as it is still audible.
+    ///
+    /// With nothing playing there is nothing to fade from, so this is an ordinary start.
+    func crossfadeMusic(sender: String? = "") {
+        userSettings()
+        guard musicSetting else { return }
+        guard let outgoing = player, outgoing.isPlaying else {
+            playMusic(sender: sender)
+            return
+        }
+        guard let trackURL = trackURL(for: sender) else { return }
+
+        let duration = MusicHandler.crossfadeDuration
+        let target = wantedVolume
+
+        configureSession(.soloAmbient, activate: true) { [weak self] in
+            guard let self = self else { return }
+            do {
+                let incoming = try AVAudioPlayer(contentsOf: trackURL)
+                incoming.delegate = self
+                incoming.numberOfLoops = -1
+                incoming.volume = 0
+                incoming.prepareToPlay()
+                incoming.play()
+                incoming.setVolume(target, fadeDuration: duration)
+                outgoing.setVolume(0, fadeDuration: duration)
+                DispatchQueue.main.async {
+                    self.player = incoming
+                    DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                        outgoing.stop()
+                        // Stopped only once it is silent. Stopping it now is the hard cut
+                        // this method exists to remove
+                    }
+                }
+            } catch let error {
+                Log.audio.error("Crossfade failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
     func playMusic(sender: String? = "") {
         userSettings()
         if musicSetting == false {
@@ -56,22 +122,14 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         }
         // Check if music setting is on
 
-        let selectedTrackURL: URL?
-        if sender == "Menu" {
-            selectedTrackURL = MusicTrack.titleTheme.url
-            // The menu has one theme and always has. It is outside the player's rotation for
-            // that reason - see `MusicTrack.gameTracks`
-        } else {
-            guard let drawn = MusicSelection.drawATrack() else { return }
-            selectedTrackURL = drawn.url
-            // **Only the tracks the player left ticked** (James, round 207). Nothing to draw
-            // from means the music setting is off in all but name, so there is nothing to
-            // play - the settings screen turns the switch off at the same moment, so the two
-            // never disagree
-        }
+        guard let selectedTrackURL = trackURL(for: sender) else { return }
+        // **Only the tracks the player left ticked** (round 207), and the menu's own theme for
+        // the menu - both decided in one place now, because the crossfade has to make exactly
+        // the same choice this does
         
         configureSession(.soloAmbient, activate: true) { [weak self] in
-            guard let self = self, let trackURL = selectedTrackURL else { return }
+            guard let self = self else { return }
+            let trackURL = selectedTrackURL
             do {
                 let player = try AVAudioPlayer(contentsOf: trackURL)
                 player.delegate = self

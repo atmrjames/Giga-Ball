@@ -2404,6 +2404,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didSimulatePhysics() {
+        guard endlessIIAimHold == false else {
+            sweepDyingBricks()
+            return
+        }
+        // **The aim hold freezes the world here too** (James, round 210: "the game does get
+        // very jittery whilst this power-up is active").
+        //
+        // `update`'s Mayhem branch already stands its ticks down while a ball is being aimed,
+        // and pins their last-tick clocks so nothing leaps the frozen seconds on release. This
+        // method was left running, and it is where every writer that moves a ball lives:
+        // gravity pulling on a stopped ball, steering and magnetism dragging one across the
+        // field, the spin bending it. Writing `position` on a paused node still moves it -
+        // `isPaused` stops actions and simulation, not property writes - so the held ball was
+        // being shoved about by three effects while the aim was trying to hold it still, and
+        // the primary ball drifted in a field that had stopped.
+        //
+        // It is worse than it looks for gravity: `frameDelta` is a real frame delta, not the
+        // pinned one, so a two-second hold was a hundred and twenty frames of downward pull
+        // added to a ball that was standing still - all of it waiting to be spent the moment
+        // the shot left.
+        //
+        // The sweep stays: taking away a brick that finished dying costs nothing and stops
+        // them piling up behind a long aim.
         applyBallGravity(frameDelta)
         applyEndlessIIBallSpin(endlessIIPaddleFrameDelta)
         applyEndlessIIBallHandover()
@@ -2593,7 +2616,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// `didSimulatePhysics` now, fading in over the paddle rather than switching -
 			// see `BallGravity` and `applyBallGravity` (round 205)
 			
-			if ball.physicsBody!.velocity.dx == 0 && ball.physicsBody!.velocity.dy == 0 && ballIsOnPaddle == false {
+			if endlessIIAimHold {
+				ballSpeedZeroTracker = 0
+			}
+			// **A frozen ball is not a stuck ball** (round 210). The aim hold zeroes every
+			// ball's velocity, so with Multi-Ball - the aim holding an extra while the primary
+			// is still in flight - the primary reads as stopped with `ballIsOnPaddle` false,
+			// and fifty frames later the recovery below teleported it onto the paddle. Fifty
+			// frames is under half a second at 120, so an ordinary aim was long enough.
+			else if ball.physicsBody!.velocity.dx == 0 && ball.physicsBody!.velocity.dy == 0 && ballIsOnPaddle == false {
 				ballSpeedZeroTracker+=1
 				if ballSpeedZeroTracker >= 50 {
 					ballSpeedZeroTracker = 0

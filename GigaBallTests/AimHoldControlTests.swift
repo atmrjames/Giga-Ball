@@ -121,3 +121,44 @@ final class AimReleaseTests: XCTestCase {
         XCTAssertEqual(AimHoldControl.release(travelled: 260, aiming: true), .keepAiming)
     }
 }
+
+/// What a freeze costs when a writer is left running through it.
+///
+/// James, round 210: "the game does get very jittery whilst this power-up is active."
+///
+/// `update`'s Mayhem branch stands its ticks down while a ball is being aimed, and pins their
+/// last-tick clocks so nothing leaps the frozen seconds on release. `didSimulatePhysics` was
+/// left running, and that is where every writer that *moves a ball* lives - gravity, steering,
+/// magnetism, the spin. Writing `position` on a paused node still moves it (`isPaused` stops
+/// actions and simulation, not property writes), so the held ball was being shoved about by
+/// three effects while the aim tried to hold it still.
+///
+/// Gravity is the one that can be shown in arithmetic rather than by eye, because its pull
+/// accumulates: this is what a two-second aim was quietly storing up behind a ball that
+/// appeared to be standing still, all of it waiting to be spent the moment the shot left.
+final class AimHoldFreezeTests: XCTestCase {
+
+    func testTwoSecondsOfPullOnAStoppedBallIsAnAbsurdSpeed() {
+        let speedLimit: CGFloat = 400
+        var velocity = CGVector(dx: 0, dy: 0)
+        for _ in 0..<120 {
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60,
+                                          speedLimit: speedLimit)
+        }
+        XCTAssertLessThan(velocity.dy, -speedLimit,
+                          "a hold long enough to aim stored up more than the run's own speed")
+    }
+
+    /// And the band is what stops it being unbounded - which is also why the symptom was
+    /// jitter and a lurch rather than the ball vanishing downward.
+    func testTheBandKeepsEvenThatWithinReach() {
+        let speedLimit: CGFloat = 400
+        var velocity = CGVector(dx: 0, dy: 0)
+        for _ in 0..<600 {
+            velocity = BallGravity.pulled(velocity, share: 1, delta: 1.0/60,
+                                          speedLimit: speedLimit)
+        }
+        let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
+        XCTAssertLessThanOrEqual(speed, speedLimit*BallGravity.fastestShare + 0.001)
+    }
+}

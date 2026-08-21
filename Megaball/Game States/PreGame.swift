@@ -25,8 +25,11 @@ class PreGame: GKState {
         // Add slight delay when moving in from main menu
         scene.self.run(wait, completion: {
             if self.scene.musicSetting {
-                MusicHandler.sharedHelper.stopMusic()
-                MusicHandler.sharedHelper.playMusic(sender: "PreGame")
+                MusicHandler.sharedHelper.crossfadeMusic(sender: "PreGame")
+                // **Mixed, not cut** (James, round 210: "when the music goes from the main menu
+                // to a game, it abruptly changes"). This was a stop followed immediately by a
+                // start, which is the title theme ending mid-bar and a game track beginning at
+                // full volume in the same instant
             }
             self.scene.gameState.enter(Playing.self)
         })
