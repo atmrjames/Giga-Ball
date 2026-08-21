@@ -1641,7 +1641,9 @@ final class EndlessIIBallSpinTests: XCTestCase {
     func testAPaddleHitWhileItRunsGripsTheBall() {
         let scene = mayhem()
         scene.endlessIICollectBallSpin()
-        scene.endlessIIPaddleSpeed = 800
+        scene.endlessIIPaddleGripSpeed = 800
+        // The grip reads its own short-memory sample since round 214, so that a swipe
+        // followed by a steady hand still curves the ball - see `tickEndlessIIPaddleTravel`
 
         scene.endlessIIGripBall(scene.ball)
         XCTAssertNotNil(scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)])
@@ -1649,7 +1651,9 @@ final class EndlessIIBallSpinTests: XCTestCase {
 
     func testNothingIsGrippedWithoutThePowerUp() {
         let scene = mayhem()
-        scene.endlessIIPaddleSpeed = 800
+        scene.endlessIIPaddleGripSpeed = 800
+        // The grip reads its own short-memory sample since round 214, so that a swipe
+        // followed by a steady hand still curves the ball - see `tickEndlessIIPaddleTravel`
         scene.endlessIIGripBall(scene.ball)
         XCTAssertTrue(scene.endlessIIBallSpinRates.isEmpty)
     }
@@ -1659,7 +1663,9 @@ final class EndlessIIBallSpinTests: XCTestCase {
         // §12.0's "conflicts with the paddle group", in the one place it actually bites
         let scene = mayhem()
         scene.endlessIICollectBallSpin()
-        scene.endlessIIPaddleSpeed = 800
+        scene.endlessIIPaddleGripSpeed = 800
+        // The grip reads its own short-memory sample since round 214, so that a swipe
+        // followed by a steady hand still curves the ball - see `tickEndlessIIPaddleTravel`
         scene.endlessIIHeldBalls.append(scene.ball)
 
         scene.endlessIIGripBall(scene.ball)
@@ -1901,5 +1907,69 @@ final class ShapedPaddleBounceTests: XCTestCase {
     func testTheRetiredShapeHasNoArtAndSoOwnsNothing() {
         let scene = shaped()
         XCTAssertNil(scene.endlessIIPaddleShapeTextureName(.jagged))
+    }
+}
+
+/// What the paddle's grip reads at the moment of contact.
+///
+/// James, round 214: "ball spin doesn't seem to do anything."
+///
+/// The grip is sampled on the frame the ball lands, and a frame at 120fps is eight
+/// milliseconds of finger. A player swipes the paddle across and then holds it steady to meet
+/// the ball - so the instantaneous speed at impact is very often zero, and a power-up that only
+/// works if you happen to still be moving on that exact frame reads as one that does nothing.
+final class PaddleGripMemoryTests: XCTestCase {
+
+    private func moving() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    /// The flick survives the pause before the bounce.
+    func testAFlickIsStillRememberedAMomentAfterTheFingerStops() {
+        let scene = moving()
+        scene.endlessIIPaddleLastX = 0
+        scene.paddle.position.x = 0
+
+        scene.paddle.position.x = 10
+        scene.tickEndlessIIPaddleTravel(1.0/120)          // a real flick
+        let flick = scene.endlessIIPaddleGripSpeed
+        XCTAssertGreaterThan(flick, EndlessIIBallSpin.gripThreshold)
+
+        for _ in 0..<6 { scene.tickEndlessIIPaddleTravel(1.0/120) }   // held still, 50ms
+        XCTAssertGreaterThan(scene.endlessIIPaddleGripSpeed,
+                             EndlessIIBallSpin.gripThreshold,
+                             "the flick was forgotten before the ball could arrive")
+        XCTAssertLessThan(scene.endlessIIPaddleGripSpeed, flick, "and it is fading, not held")
+    }
+
+    /// But not for long: this bridges a swipe to a bounce, it does not give the paddle a
+    /// memory. A paddle parked for half a second grips nothing.
+    func testAPaddleLeftAloneStopsGripping() {
+        let scene = moving()
+        scene.endlessIIPaddleLastX = 0
+        scene.paddle.position.x = 10
+        scene.tickEndlessIIPaddleTravel(1.0/120)
+
+        for _ in 0..<60 { scene.tickEndlessIIPaddleTravel(1.0/120) }  // half a second
+        XCTAssertLessThan(abs(scene.endlessIIPaddleGripSpeed),
+                          EndlessIIBallSpin.gripThreshold)
+    }
+
+    /// A flick the other way is a new flick, not a continuation - so the ball curves the way
+    /// the paddle is going now, which is the whole promise of the power-up.
+    func testAFlickTheOtherWayIsTakenImmediately() {
+        let scene = moving()
+        scene.endlessIIPaddleLastX = 0
+        scene.paddle.position.x = 10
+        scene.tickEndlessIIPaddleTravel(1.0/120)
+        XCTAssertGreaterThan(scene.endlessIIPaddleGripSpeed, 0)
+
+        scene.paddle.position.x = 9
+        scene.tickEndlessIIPaddleTravel(1.0/120)
+        XCTAssertLessThan(scene.endlessIIPaddleGripSpeed, 0,
+                          "the paddle is going the other way")
     }
 }

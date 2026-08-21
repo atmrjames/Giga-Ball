@@ -202,7 +202,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         tallyTotalFrom = max(0, totalScore - levelScore - levelScoreBonus)
 
         levelScoreLabel.text = "0"
-        speedBonusLabel.text = "+0"
+        speedBonusLabel.text = "0"
         totalScoreLabel.text = String(tallyTotalFrom)
         tapLabel.isHidden = true
 
@@ -227,7 +227,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
         let reading = ScoreTally.reading(at: elapsed, of: tallyValues)
         levelScoreLabel.text = String(reading.level)
-        speedBonusLabel.text = "+\(reading.bonus)"
+        speedBonusLabel.text = String(reading.bonus)
         totalScoreLabel.text = String(reading.total)
 
         let tick = ScoreTally.tick(at: elapsed)
@@ -252,7 +252,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         tallyLink?.invalidate()
         tallyLink = nil
         levelScoreLabel.text = String(levelScore)
-        speedBonusLabel.text = "+\(levelScoreBonus)"
+        speedBonusLabel.text = String(levelScoreBonus)
         totalScoreLabel.text = String(totalScore)
         tapLabel.isHidden = false
     }
@@ -345,7 +345,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         totalScoreLabel.text = String(totalScore)
         levelNumberCorrected = levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1
         numberOfPackLevels = LevelPackSetup().numberOfLevels[packNumber]
-        speedBonusLabel.text = "+\(levelScoreBonus)"
+        speedBonusLabel.text = String(levelScoreBonus)
         levelScoreLabel.text = String(levelScore)
         if levelNumber == 0 {
             packNameLabel.text = ""

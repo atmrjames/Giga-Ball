@@ -1558,7 +1558,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
     private func showBreakdown(_ reading: ScoreTally.Reading) {
         scoreLabel.text = String(reading.level)
-        highscoreLabel.text = "+\(reading.bonus)"
+        highscoreLabel.text = String(reading.bonus)
         dailyTotalLabel.text = String(reading.total)
     }
 

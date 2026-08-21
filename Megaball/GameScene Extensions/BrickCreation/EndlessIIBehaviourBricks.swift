@@ -473,8 +473,32 @@ extension GameScene {
     ///
     /// Ordinary, and never another Spawner, so what it leaves behind is something the player
     /// can clear rather than something that keeps growing.
+    /// How long a Spawner waits before it may fill its neighbours again.
+    ///
+    /// **A ball can rattle against an Indestructible Spawner** (James, round 214: "a spawned
+    /// indestructible brick should have a cooling off period after spawning new bricks so the
+    /// ball can't become trapped by continuously spawning bricks. Perhaps a second or 2").
+    ///
+    /// A destructible Spawner fires once, on the way out. An indestructible one never leaves,
+    /// so it fires on *contact* instead - which is what makes it something that keeps working
+    /// rather than something that happens once. The failure mode is the same property seen
+    /// from the other side: a ball bouncing between it and a neighbour hits it several times a
+    /// second, and each hit refills the cells around it, so the ball builds its own cell wall
+    /// and is sealed in by the thing it is hitting.
+    static let endlessIISpawnCoolOff: TimeInterval = 1.5
+
     func endlessIISpawn(around brick: SKSpriteNode) {
         guard gameMode == .endlessII else { return }
+
+        let now = CACurrentMediaTime()
+        let last = brick.userData?["endlessIILastSpawn"] as? CFTimeInterval
+        if let last, now - last < GameScene.endlessIISpawnCoolOff { return }
+        if brick.userData == nil { brick.userData = NSMutableDictionary() }
+        brick.userData?["endlessIILastSpawn"] = now
+        // Stamped on the brick rather than kept on the scene: each Spawner cools off on its
+        // own, so two of them in a field do not share one timer and silence each other.
+        // Stamped *before* the work, so a spawn that fills nothing still starts the clock -
+        // a brick surrounded by full cells is exactly the one being hit repeatedly
 
         let occupied = endlessIIOccupancy()
         let geometry = endlessIIGeometry

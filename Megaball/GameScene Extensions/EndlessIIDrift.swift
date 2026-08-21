@@ -53,10 +53,12 @@ extension GameScene {
 
     /// How long the move itself takes, once it starts.
     ///
-    /// The descent's own shape: a definite move and then a rest, rather than a crawl. Short
-    /// enough to read as a step, long enough that the field is seen going rather than found
-    /// to have arrived.
-    static let endlessIIDriftSlideSeconds: TimeInterval = 0.28
+    /// **The descent's own number** (James, round 214: "Drift to use same animation speed and
+    /// haptics and endless mode brick row descent"). `moveEndlessModeRowDown` covers a whole
+    /// row in 0.05 seconds - a snap rather than a glide - and round 209's first pass at
+    /// stepping picked 0.28 by eye, which read as a slide with pauses in it rather than as the
+    /// field moving the way the field moves.
+    static let endlessIIDriftSlideSeconds: TimeInterval = 0.05
 
     /// Starts (or extends) the slide, in the direction the collected power-up names.
     ///
@@ -97,6 +99,9 @@ extension GameScene {
         if endlessIIDriftPhase >= GameScene.endlessIIDriftColumnSeconds {
             endlessIIDriftPhase -= GameScene.endlessIIDriftColumnSeconds
             endlessIIDriftMoved = 0
+            if hapticsSetting { lightHaptic.impactOccurred() }
+            // The descent's own tap, on the step rather than on the frames between: a row
+            // arriving and a column moving are the same event to a thumb
             // Subtracted rather than zeroed, so a long frame does not throw away the overshoot
             // and let the cadence wander - the lesson Descent learned in round 172
         }

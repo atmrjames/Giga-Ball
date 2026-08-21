@@ -81,7 +81,19 @@ final class PowerUpRingHUD: SKNode {
     /// at fourteen per cent in, three points thick and with a halo three times that, which
     /// covered most of the icon it was supposed to be timing. It sits close to the edge now
     /// and the glow is a suggestion rather than a light source.
-    private static let ringInset: CGFloat = 0.05
+    static let ringInset: CGFloat = 0.05
+
+    /// Where a timer ring sits around an icon of this size, for both HUDs.
+    ///
+    /// **One rule since round 214** (James: "for the power up HUD progress bars, for endless
+    /// mayhem mode, the ring is inside the graphic, for classic mode and endless mode, the
+    /// ring is outside the graphic. Can we make it so it is aligned with how the endless
+    /// mayhem is now"). The old modes' tray drew its ring just outside the icon's edge, on the
+    /// reasoning that its icons are art rather than padded badges - true when it was written,
+    /// and no longer the point: the two HUDs are the same instrument and were reading as two.
+    static func ringRadius(iconSize: CGFloat) -> CGFloat {
+        iconSize/2 - iconSize*ringInset
+    }
     private static let ringWidth: CGFloat = 2
     private static let padding: CGFloat = 8
     private static let appearDuration: TimeInterval = 0.2
@@ -333,9 +345,8 @@ final class PowerUpTrayRings: SKNode {
     func build(over icons: [SKSpriteNode], iconSize: CGFloat) {
         removeAllChildren()
         slots = []
-        radius = iconSize/2 + PowerUpTrayRings.ringWidth
-        // Just outside the icon's edge: the tray icons are art, not padded badges like
-        // Mayhem's, and a ring drawn inside them sat across the artwork
+        radius = PowerUpRingHUD.ringRadius(iconSize: iconSize)
+        // Mayhem's own rule, shared rather than copied (round 214)
 
         for icon in icons {
             let holder = SKNode()

@@ -241,12 +241,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// underside on the line. Nil and zero whenever the paddle is its ordinary self.
 	var endlessIIPaddleShapeArtName: String?
 	var endlessIIPaddleShapeLift: CGFloat = 0
+
+	/// The width the shaped body was last traced at, so Expand and Shrink can be noticed.
+	var endlessIIPaddleShapeBodyWidth: CGFloat = 0
 	var endlessIIPaddleSurfaceClock = EndlessIIClock()
 	/// Mirror Paddle: a second paddle level with the first, holding the mirrored x (§12.0).
 	var endlessIIMirrorPaddleClock = EndlessIIClock()
 	var endlessIIBallSpinClock = EndlessIIClock()
 	/// How fast the paddle is travelling, sampled once a frame - see EndlessIIBallSpin
 	var endlessIIPaddleSpeed: CGFloat = 0
+
+	/// The same movement with a very short memory, for Ball Spin's grip only - see
+	/// `tickEndlessIIPaddleTravel` for why the two are not one number.
+	var endlessIIPaddleGripSpeed: CGFloat = 0
 	var endlessIIPaddleLastX: CGFloat = 0
 	/// The turn rate each gripped ball is still carrying, keyed by ball
 	var endlessIIBallSpinRates: [ObjectIdentifier: CGFloat] = [:]
@@ -5902,6 +5909,15 @@ laserTimer?.invalidate()
 	/// The three planes below keep the HUD's own order exactly as it was - tray under icons
 	/// under timers - and stay clear of the labels, the pause button and the aim marker at 9
 	/// and 10, which sit above everything and always have.
+	/// **Temporary, for round 214's play test.** The three shaped paddles are rare - weight 3
+	/// against a table of sixty-four - so meeting one takes a long run, and James asked for them
+	/// raised while he judges how the new shape-driven bounce feels.
+	///
+	/// **Put this back to 3 before release.** It is one number in one place for exactly that
+	/// reason: a play-test weight left in is a rare power-up that quietly became common, which
+	/// is the sort of thing nobody notices until the balance is wrong for everybody.
+	static let shapedPaddlePlayTestWeight = 30
+
 	static let screenMaskPlane: CGFloat = 6
 
 	/// **How far below its own plane the HUD reaches.**

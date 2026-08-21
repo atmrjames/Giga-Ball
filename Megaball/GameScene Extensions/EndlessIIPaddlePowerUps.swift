@@ -133,8 +133,16 @@ extension GameScene {
             endlessIIPaddleShapeTextureName($0)
         } : nil
 
-        guard wanted != endlessIIPaddleShapeArtName else { return }
-        // Every frame, and does nothing on almost all of them
+        let width = paddle.size.width
+        guard wanted != endlessIIPaddleShapeArtName
+                || (wanted != nil && abs(width - endlessIIPaddleShapeBodyWidth) > 0.5)
+        else { return }
+        // Every frame, and does nothing on almost all of them - but a *resize* counts as a
+        // change too (James, round 214: "how do the paddle shapes deal with the expand and
+        // shrink power-ups?"). Expand and Shrink write `paddle.size.width` directly, and the
+        // body is traced from the picture at a given size: without this the sprite grew and
+        // the body it bounces off did not, so a wider domed paddle had a narrower dome inside
+        // it that the ball passed straight through at the ends
 
         endlessIIPaddleShapeArtName = wanted
         paddle.position.y -= endlessIIPaddleShapeLift
@@ -147,7 +155,17 @@ extension GameScene {
             : paddleHeight*(texture.size().height/max(1, paddleTexture.size().height))
 
         paddle.texture = texture
-        paddle.size = CGSize(width: paddle.size.width, height: grown)
+        paddle.size = CGSize(width: width, height: grown)
+        endlessIIPaddleShapeBodyWidth = width
+
+        if wanted != nil {
+            paddle.centerRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+            // **A shaped paddle is stretched whole, not nine-sliced.** `paddleCapRect` is
+            // written in the *plain* art's unit coordinates - 80 wide with 10pt caps - and a
+            // shaped picture is a different size, so those fractions would protect the wrong
+            // strips of it. Stretching the whole texture is also the honest reading of what a
+            // wider shape is: a wider dome, not a dome with flat pieces let into its ends
+        }
         endlessIIPaddleShapeLift = (grown - paddleHeight)/2
         paddle.position.y += endlessIIPaddleShapeLift
 

@@ -52,6 +52,13 @@ enum EndlessIIBallSpin {
     /// whole flight would make the ball unaimable rather than interesting.
     static let decayPerSecond: CGFloat = 0.25
 
+    /// How much of a paddle flick the *grip* still remembers a second later.
+    ///
+    /// Tiny, because this bridges the gap between a swipe and a bounce rather than giving the
+    /// paddle a memory: half of it survives a tenth of a second, and by half a second an
+    /// ordinary flick is already under `gripThreshold`.
+    static let gripMemoryPerSecond: CGFloat = 0.001
+
     /// The turn rate a paddle moving at this speed grips the ball with.
     ///
     /// Signed: the ball curves the way the paddle was travelling, which is what "as if there
@@ -107,6 +114,29 @@ extension GameScene {
         let moved = paddle.position.x - endlessIIPaddleLastX
         endlessIIPaddleLastX = paddle.position.x
         endlessIIPaddleSpeed = moved/CGFloat(delta)
+
+        let fade = pow(EndlessIIBallSpin.gripMemoryPerSecond, CGFloat(delta))
+        let faded = endlessIIPaddleGripSpeed*fade
+        endlessIIPaddleGripSpeed =
+            abs(endlessIIPaddleSpeed) >= abs(faded)
+                || (endlessIIPaddleSpeed < 0) != (faded < 0)
+            ? endlessIIPaddleSpeed : faded
+        // **The grip reads the recent flick; everything else reads this frame** (James, round
+        // 214: "ball spin doesn't seem to do anything").
+        //
+        // `endlessIIPaddleSpeed` stays exactly what it was - the distance covered since the
+        // last frame, and zero the moment the finger stops. That is deliberate and tested: a
+        // paddle let go of must not read as holding its last flick, because Ball Steering
+        // leads its target by this and would keep pulling.
+        //
+        // But the *grip* is sampled on the one frame the ball lands, and a frame at 120fps is
+        // eight milliseconds of finger. A player swipes the paddle across and then holds it
+        // steady to meet the ball, so at the moment of contact the instantaneous speed is very
+        // often zero - and a power-up that only works if you happen to still be moving on that
+        // exact frame reads as one that does nothing. This keeps the larger of now and a moment
+        // ago, and is gone within a few tenths, which is long enough to bridge a swipe to a
+        // bounce and far too short to be a memory. A flick the other way is taken at once,
+        // because that is a new flick rather than a continuation.
     }
 
     /// Grips a ball that has just come off the paddle.
@@ -118,7 +148,7 @@ extension GameScene {
     func endlessIIGripBall(_ subject: SKSpriteNode) {
         guard endlessIIBallSpinIsRunning else { return }
         guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return }
-        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: endlessIIPaddleSpeed)
+        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: endlessIIPaddleGripSpeed)
         guard rate != 0 else { return }
         endlessIIBallSpinRates[ObjectIdentifier(subject)] = rate
     }
@@ -166,6 +196,7 @@ extension GameScene {
         endlessIIBallSpinClock.reset()
         endlessIIBallSpinRates.removeAll()
         endlessIIPaddleSpeed = 0
+        endlessIIPaddleGripSpeed = 0
         endlessIIPaddleLastX = paddle.position.x
     }
 }

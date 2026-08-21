@@ -84,8 +84,13 @@ final class DailyCardView: UIView {
         stack.spacing = 12
         stack.alignment = .fill
         stack.translatesAutoresizingMaskIntoConstraints = false
-        [modeLabel, levelImageView, levelLabel, twistsStack]
+        [levelImageView, modeLabel, levelLabel, twistsStack]
             .forEach { stack.addArrangedSubview($0) }
+        // **Icon above the mode's name** (James, round 214: "in the daily challenge container
+        // which has the details for today's game, the game mode icon is below the game mode
+        // title, which now mis-matches against the menu views"). The card was built before the
+        // menus were turned round in rounds 210 and 211, and it is the same header in
+        // miniature - so it reads the same way up
         stack.setCustomSpacing(18, after: levelLabel)
         detailsCard.addSubview(stack)
         // Tighter at the top than it was: the mode's name, its picture and the level's
