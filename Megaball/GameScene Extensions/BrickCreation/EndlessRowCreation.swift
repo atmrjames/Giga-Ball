@@ -73,7 +73,9 @@ extension GameScene {
         powerUpProbArray[55] = gameMode == .endlessII ? 3 : 0 // Convex Paddle - rare, bad
         powerUpProbArray[56] = gameMode == .endlessII ? 3 : 0 // Concave Paddle - rare, bad
         powerUpProbArray[57] = gameMode == .endlessII ? 3 : 0 // Wavy Paddle - rare, bad
-        powerUpProbArray[58] = gameMode == .endlessII ? 3 : 0 // Jagged Paddle - rare, bad
+        powerUpProbArray[58] = 0 // Jagged Paddle - retired (round 213), never offered.
+        // The slot stays because the stats arrays are read by index and a player's years of
+        // counts and unlocks sit behind it - see `PowerUpAvailability.retired`
         powerUpProbArray[59] = gameMode == .endlessII ? 4 : 0 // Double Paddle - uncommon, bad
         powerUpProbArray[60] = gameMode == .endlessII ? 4 : 0 // Mirror Paddle - uncommon, good
         powerUpProbArray[63] = gameMode == .endlessII ? 5 : 0 // Drift Left - uncommon, bad:

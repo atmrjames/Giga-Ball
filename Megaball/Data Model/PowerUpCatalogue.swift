@@ -27,6 +27,20 @@ enum PowerUpAvailability {
     case allModes
     /// Endless 2.0 only.
     case endlessII
+    /// **Withdrawn from play, but not from the file.**
+    ///
+    /// A power-up's index is its identity everywhere it is stored: `powerupsCollected`,
+    /// `powerupsGenerated` and `powerUpUnlockedArray` are sixty-four-entry arrays saved to
+    /// disk and synced to iCloud, and read by position. Deleting an entry would shift every
+    /// one after it, so a player's Double Paddle count would silently become their Jagged
+    /// count and their unlock flags would slide with it - which is the second thing
+    /// `CLAUDE.md` says never bends.
+    ///
+    /// So a retired power-up keeps its slot and stops being offered. From the player's side it
+    /// is gone; from the file's side nothing moved. Removing one for real would need a
+    /// migration that remaps every stored array on load, and that is a deliberate piece of
+    /// work rather than a side effect of taking a power-up out.
+    case retired
 }
 
 /// How often a power-up is eligible to drop, relative to the others.
@@ -268,7 +282,7 @@ enum PowerUpCatalogue {
         PowerUp(id: "wavyPaddle", name: "Wavy Paddle", availability: .endlessII,
                 rarity: .rare, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
-        PowerUp(id: "jaggedPaddle", name: "Jagged Paddle", availability: .endlessII,
+        PowerUp(id: "jaggedPaddle", name: "Jagged Paddle", availability: .retired,
                 rarity: .rare, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
         // The four shaped faces. One at a time - a paddle cannot be domed and dished at
@@ -370,7 +384,12 @@ enum PowerUpCatalogue {
 
     /// The power-ups a mode offers at all, before the state of the game is considered.
     static func available(in mode: PowerUpAvailability) -> [PowerUp] {
-        all.filter { $0.availability == .allModes || $0.availability == mode }
+        all.filter {
+            guard $0.availability != .retired else { return false }
+            return $0.availability == .allModes || $0.availability == mode
+        }
+        // A retired power-up is offered by no mode, including the one it used to belong to -
+        // asking for `.retired` explicitly still gets nothing back, which is the point
     }
 
     /// What may drop right now.

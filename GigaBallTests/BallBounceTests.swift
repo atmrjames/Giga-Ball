@@ -319,16 +319,32 @@ final class PaddleBounceTests: XCTestCase {
         scene.powerUpProbArray = Array(repeating: 0, count: setup.powerUpNameArray.count)
         scene.applyEndlessRowPowerUpWeights()
 
+        var offerable = 0
         for surface in PaddleBounce.Surface.allCases {
             guard let index = setup.powerUpNameArray.firstIndex(of: surface.displayName) else {
                 return XCTFail("\(surface) is not in the name array")
             }
+            let entry = PowerUpCatalogue.all.first { $0.name == surface.displayName }
+            guard entry?.availability != .retired else {
+                XCTAssertEqual(scene.powerUpProbArray[index], 0,
+                               "\(surface) is retired but can still drop, which is the "
+                               + "difference between withdrawn and merely very rare")
+                continue
+            }
+            // **A retired face keeps its slot and its formula, and stops being offered**
+            // (round 213). The slot has to stay because the stored arrays are read by index;
+            // what changes is that nobody meets it. So the rule flips for these: not "must be
+            // droppable" but "must not be"
+            offerable += 1
             XCTAssertGreaterThan(scene.powerUpProbArray[index], 0,
                                  "\(surface) never drops in Mayhem")
-            XCTAssertEqual(setup.powerUpMultiplierArray[index], "-0.1", "all four are bad")
+            XCTAssertEqual(setup.powerUpMultiplierArray[index], "-0.1", "the shapes are bad")
             XCTAssertTrue(PowerUpCatalogue.all.contains { $0.name == surface.displayName },
                           "\(surface) is not in the catalogue")
         }
+        XCTAssertGreaterThan(offerable, 0,
+                             "every shaped face is retired - the power-up exists in the enum "
+                             + "and nowhere a player can reach it")
     }
 
     func testThePracticeFieldBouncesTheWayTheGameDoes() {

@@ -42,7 +42,11 @@ final class PowerUpCatalogueTests: XCTestCase {
 
     func testEndlessIIOffersBothItsOwnAndTheExistingOnes() {
         let offered = PowerUpCatalogue.available(in: .endlessII)
-        XCTAssertEqual(offered.count, PowerUpCatalogue.all.count)
+        let retired = PowerUpCatalogue.all.filter { $0.availability == .retired }
+        XCTAssertEqual(offered.count, PowerUpCatalogue.all.count - retired.count)
+        // Everything except what has been withdrawn (round 213). Counted rather than
+        // hard-coded, so retiring a second one does not need this line edited - and so the
+        // number still has to be *right*, which a `lessThanOrEqual` would not have asked
     }
 
     func testCompleteLevelAndExtraBallDoNotDropInEndlessII() {
@@ -458,5 +462,44 @@ final class HudIconArtTests: XCTestCase {
             XCTAssertNotNil(UIImage(named: name + "Disabled"),
                             "\(name) has no disabled twin")
         }
+    }
+}
+
+/// A power-up withdrawn from play without being taken out of the file.
+///
+/// James, round 213: "the jagged one can be removed." Removing it for real is the one thing
+/// that cannot be done casually here: a power-up's index *is* its identity in
+/// `powerupsCollected`, `powerupsGenerated` and `powerUpUnlockedArray`, which are sixty-four
+/// entries long, read by position, saved to disk and synced to iCloud. Deleting index 58 would
+/// slide every entry after it - a player's Double Paddle count becoming their Jagged count -
+/// which is the second thing CLAUDE.md says never bends.
+///
+/// So it is retired: gone from play, still in the file.
+final class RetiredPowerUpTests: XCTestCase {
+
+    func testJaggedIsOfferedByNoModeAtAll() {
+        for mode in [PowerUpAvailability.allModes, .endlessII, .retired] {
+            let offered = PowerUpCatalogue.available(in: mode)
+            XCTAssertFalse(offered.contains { $0.id == "jaggedPaddle" },
+                           "a retired power-up was still on offer in \(mode)")
+        }
+    }
+
+    func testItCanNeverBeDrawn() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.applyEndlessRowPowerUpWeights()
+        XCTAssertEqual(scene.powerUpProbArray[58], 0,
+                       "Jagged still has a drop weight, so it is rare rather than retired - "
+                       + "and from the outside those look identical")
+    }
+
+    /// **The slot stays.** This is the half that protects the player's file, and it is the
+    /// half that would be quietly undone by somebody "tidying up" the arrays later.
+    func testTheSlotItLeavesBehindIsStillThere() {
+        let setup = LevelPackSetup()
+        XCTAssertEqual(setup.powerUpNameArray[58], "Jagged Paddle")
+        XCTAssertEqual(TotalStats().powerupsCollected.count, setup.powerUpNameArray.count,
+                       "the stored arrays and the names have to stay the same length")
     }
 }
