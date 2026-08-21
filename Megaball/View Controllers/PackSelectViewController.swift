@@ -118,18 +118,36 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         container.addSubview(logo)
 
         gridTop.isActive = false
+
+        let titleTop = container.constraints.first {
+            ($0.firstItem === titleLabel && $0.firstAttribute == .top)
+                || ($0.secondItem === titleLabel && $0.secondAttribute == .top)
+        }
+        let titleTopInset = titleTop?.constant ?? 20
+        titleTop?.isActive = false
+        // **The icon goes above the name** (James, round 210: "I do think the icons and titles
+        // should be swapped, with the icon at the top, then using the classic mode menu view
+        // style where the icon shrinks when the page is scrolled"). The title's own top
+        // constraint is the storyboard's, so it is found and stood down rather than fought -
+        // the same move `setupRunHistory` makes on the endless menus. Its inset is reused as
+        // the logo's, so the block starts exactly where the title used to.
+
         let width = logo.widthAnchor.constraint(equalToConstant: PackSelectViewController.logoRestSize)
         logoWidth = width
         modeLogo = logo
         NSLayoutConstraint.activate([
-            logo.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            logo.topAnchor.constraint(equalTo: container.topAnchor, constant: titleTopInset),
             logo.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             width,
             logo.heightAnchor.constraint(equalTo: logo.widthAnchor),
-            packCollectionView.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 26),
+            titleLabel.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 4),
+            packCollectionView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor,
+                                                    constant: 26),
         ])
-        // More air under the logo than beside the title (play-test round 36), and the logo
-        // gives that air back when it is needed: see scrollViewDidScroll
+        // More air under the name than beside it (play-test round 36), and the logo gives that
+        // air back when it is needed: see scrollViewDidScroll. The name now travels up with
+        // the logo as it collapses, because it hangs from the logo's bottom - which is what
+        // makes the whole header shrink rather than just the picture inside it
     }
 
     private weak var modeLogo: UIImageView?
