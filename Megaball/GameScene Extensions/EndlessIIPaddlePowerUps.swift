@@ -701,14 +701,14 @@ extension GameScene {
 
     func endlessIIPaddleRingEntries() -> [PowerUpRingHUD.Entry] {
         let clocks: [(String, EndlessIIClock, UIImage)] = [
-            ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.aimedSticky),
+            ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.hud("AimedStickyIcon", PowerUpIcon.aimedSticky)),
             ("endlessIIMagnetism", endlessIIMagnetismClock, PowerUpIcon.magnetism),
             ("endlessIIPortalPaddle", endlessIIPortalPaddleClock, PowerUpIcon.portalPaddle),
-            ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.paddleHalo),
+            ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.hud("PaddleHaloIcon", PowerUpIcon.paddleHalo)),
             ("endlessIIBallSteering", endlessIIBallSteeringClock, PowerUpIcon.ballSteering),
-            ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.inertPaddle),
-            ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.flippedAngle),
-            ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.reversedControls),
+            ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.hud("InertPaddleIcon", PowerUpIcon.inertPaddle)),
+            ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.hud("FlippedAngleIcon", PowerUpIcon.flippedAngle)),
+            ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.hud("ReversedControlsIcon", PowerUpIcon.reversedControls)),
             ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
              PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),

@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "PowerUpWedgeRightPaddle.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "PowerUpWedgeRightPaddle@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "PowerUpWedgeRightPaddle@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

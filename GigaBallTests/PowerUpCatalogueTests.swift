@@ -439,7 +439,9 @@ final class HudIconArtTests: XCTestCase {
                          "DriftIcon", "DriftLeftIcon", "SafetyPaddleIcon",
                          "GhostBallIcon", "RandomBounceIcon",
                          "DoublePaddleIcon", "MirrorPaddleIcon",
-                         "LandingMarkerIcon"]
+                         "LandingMarkerIcon",
+                         "AimedStickyIcon", "PaddleHaloIcon", "InertPaddleIcon",
+                         "FlippedAngleIcon", "ReversedControlsIcon", "DescentIcon"]
 
     func testEveryHudIconNameFindsItsArtwork() {
         for name in wired {
