@@ -84,6 +84,17 @@ extension UIViewController {
     /// round 126: the classic pack screen's "should match the size on the endless mode menu
     /// views"). The endless screens set it at 190 when a run list is under it, and this is
     /// that number, in one place, so the set stays a set.
+    /// The face every menu screen's title wears.
+    ///
+    /// The storyboard sets it on each scene's own label; these are the numbers, for the
+    /// screens built in code. Round 212 found `PaddleSpeedViewController` wearing Helvetica
+    /// Neue Bold at 40 instead, and the music screen had copied it - which is how a face
+    /// nobody chose ends up on two screens.
+    static var menuTitleFont: UIFont { .systemFont(ofSize: 35, weight: .black) }
+
+    /// The near-white the About screen's credits are written in.
+    static let menuCreditColour = UIColor(white: 0.8706, alpha: 1)
+
     /// The air between a menu's icon and the name under it.
     ///
     /// Ten rather than four (James, round 211: "maybe a tiny bit more space between the big

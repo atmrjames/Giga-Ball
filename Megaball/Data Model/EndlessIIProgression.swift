@@ -162,6 +162,14 @@ struct EndlessIIProgression: Codable, Equatable {
     /// power-ups mean. There is a test on exactly that.
     var rarityTweak: [Double] = []
 
+    /// How far into the gap after an introduction this run's density steps land, as a share
+    /// of the gap. Rolled per run, so no two runs thicken on the same metres.
+    var densityLagShare: Double = EndlessIIProgression.densityLagRange.lowerBound
+
+    /// How big each density step is, relative to the others. Normalised when used, so these
+    /// change where a run does its thickening without changing where it ends up.
+    var densityStepTweak: [Double] = []
+
     /// How many styles start in play. Two is a run that opens nearly plain; five is one that
     /// opens busy and has less left to introduce.
     static let openingStyleRange = 2...5
@@ -177,6 +185,14 @@ struct EndlessIIProgression: Codable, Equatable {
 
     /// The most and least a run may weight a power-up by.
     static let rarityTweakRange = 0.78...1.30
+
+    /// Where in the gap a density step may land. Never at the introduction itself - the new
+    /// thing is meant to be seen before the field changes around it - and never so late that
+    /// it collides with the next one.
+    static let densityLagRange = 0.35...0.7
+
+    /// How much one step may differ from another.
+    static let densityStepRange = 0.6...1.5
 
     static let openingSetRowRange = 2...5
     static let openingPhaseRange = 3...6
@@ -274,7 +290,11 @@ struct EndlessIIProgression: Codable, Equatable {
             openingPhases: Int.random(in: openingPhaseRange),
             brickBadFromHeight: Int.random(in: brickBadRange),
             brickDisastrousFromHeight: Int.random(in: brickDisastrousRange),
-            rarityTweak: (0..<powerUps).map { _ in Double.random(in: rarityTweakRange) })
+            rarityTweak: (0..<powerUps).map { _ in Double.random(in: rarityTweakRange) },
+            densityLagShare: Double.random(in: densityLagRange),
+            densityStepTweak: (0..<styles.count).map { _ in
+                Double.random(in: densityStepRange)
+            })
     }
 
     /// Metres between one power-up being introduced and the next.
@@ -556,6 +576,29 @@ extension EndlessIIProgression {
     static let cappedDensity = 0.42
     static let densityCapMetres = 500
 
+    /// **Density rises in steps, and each step follows a new thing rather than accompanying
+    /// it** (James, round 212: "Density should increase with height in general, but new
+    /// things should come first. So new things added -> increase density -> new things added
+    /// -> increase density, and so on. Of course there should be randomised aspects to how
+    /// dense, when it is increased, how it overlaps and interweaves with new items being
+    /// added").
+    ///
+    /// It was a straight line from the opening to the cap, keyed to height alone. That climbs
+    /// *through* every introduction, so the metre a new brick first appears is also a metre
+    /// the field is fractionally fuller than the one before - the new thing arrives into a
+    /// field that is already changing, which is the opposite of showing it to the player.
+    ///
+    /// Now the style schedule is the spine. Each introduction opens a gap; the density step
+    /// lands part-way along that gap, so the new style is seen in the field it arrived in and
+    /// the field thickens once the player has met it. The steps carry the whole ramp between
+    /// them, so a run that introduces things quickly also thickens quickly - which is the
+    /// coupling that was missing, and the reason this is keyed to the schedule rather than to
+    /// a second ramp that happens to look similar.
+    ///
+    /// Three things are rolled per run: where in each gap the step lands (`densityLagShare`),
+    /// how big each individual step is (`densityStepTweak`), and - already - how far apart the
+    /// introductions themselves are. So two runs at the same height are rarely as full as each
+    /// other, and neither is ever fuller than `cappedDensity` allows.
     func density(at height: Int, phase: EndlessIIPhase = .standard) -> Double {
         let base: Double
         if height <= 0 {
@@ -563,13 +606,59 @@ extension EndlessIIProgression {
         } else if height >= EndlessIIProgression.densityCapMetres {
             base = EndlessIIProgression.cappedDensity
         } else {
-            let progress = Double(height)/Double(EndlessIIProgression.densityCapMetres)
-            base = EndlessIIProgression.openingDensity
-                + (EndlessIIProgression.cappedDensity - EndlessIIProgression.openingDensity)*progress
+            let opening = EndlessIIProgression.openingDensity
+            let reach = EndlessIIProgression.cappedDensity - opening
+            base = opening + reach*densityProgress(at: height)
         }
         return min(0.6, base*phase.densityFactor)
         // Capped again after the phase multiplies it, so a dense phase deep in a run cannot
         // put up a solid wall
+    }
+
+    /// How far along the climb from opening to cap this height stands, as steps rather than a
+    /// slope.
+    ///
+    /// Each landed step contributes its own share, and the shares are the per-run tweaks
+    /// normalised - so the tweaks change *where the thickening happens*, never where it ends
+    /// up. A run whose early steps are large is one that fills fast and then settles; one
+    /// whose late steps are large stays open and then closes in. Both arrive at the cap.
+    func densityProgress(at height: Int) -> Double {
+        let steps = densityStepHeights()
+        guard steps.isEmpty == false else {
+            return Double(height)/Double(EndlessIIProgression.densityCapMetres)
+        }
+        let landed = steps.prefix { $0 <= height }.count
+        guard landed > 0 else { return 0 }
+
+        let weights = (0..<steps.count).map { densityStepWeight($0) }
+        let total = weights.reduce(0, +)
+        guard total > 0 else { return Double(landed)/Double(steps.count) }
+        return min(1, weights.prefix(landed).reduce(0, +)/total)
+    }
+
+    /// The height each density step lands at: part-way along the gap after an introduction.
+    func densityStepHeights() -> [Int] {
+        let cap = EndlessIIProgression.densityCapMetres
+        var heights: [Int] = []
+        for place in 0..<introductionOrder.count {
+            let style = introductionOrder[place]
+            let arrives = introductionHeight(of: style)
+            guard arrives > 0, arrives < cap else { continue }
+            let next = place + 1 < introductionOrder.count
+                ? introductionHeight(of: introductionOrder[place + 1])
+                : cap
+            let gap = max(1, next - arrives)
+            let step = arrives + Int((Double(gap)*densityLagShare).rounded())
+            // **After the introduction, never with it.** A share of the gap rather than a
+            // fixed number of metres, so a run with tight spacing does not have its steps
+            // land past the next new thing
+            heights.append(min(cap, max(arrives + 1, step)))
+        }
+        return heights.sorted()
+    }
+
+    private func densityStepWeight(_ index: Int) -> Double {
+        densityStepTweak.indices.contains(index) ? densityStepTweak[index] : 1
     }
 
     /// The most rows in a row that may arrive with nothing in them.

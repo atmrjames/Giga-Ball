@@ -75,10 +75,14 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         let title = UILabel()
         title.translatesAutoresizingMaskIntoConstraints = false
         title.text = "MUSIC"
-        title.font = UIFont(name: "HelveticaNeue-Bold", size: 40) ?? .boldSystemFont(ofSize: 40)
-        // The same face and size every other menu screen's title wears (James, round 210:
-        // "for the title, use the same font and style as other menu view screens") -
-        // `PaddleSpeedViewController` is the one that already sets it in code
+        title.font = UIViewController.menuTitleFont
+        title.adjustsFontSizeToFitWidth = true
+        title.minimumScaleFactor = 0.5
+        // **The storyboard's own title face** (James, round 212: "title header font and style
+        // needs to match other views"). Round 210 copied `PaddleSpeedViewController`, which
+        // turned out to be the odd one out - it wears Helvetica Neue Bold at 40 where every
+        // storyboard title is the system face, black weight, at 35. Both code-built screens
+        // read the number from one place now, so the next screen cannot pick a third
         title.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         title.textAlignment = .center
         view.addSubview(title)
@@ -115,8 +119,11 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         let credit = UILabel()
         credit.translatesAutoresizingMaskIntoConstraints = false
         credit.text = "Music by Brendan Lawton"
-        credit.font = .systemFont(ofSize: 13)
-        credit.textColor = UIColor(white: 1, alpha: 0.55)
+        credit.font = .systemFont(ofSize: 17, weight: .semibold)
+        credit.textColor = UIViewController.menuCreditColour
+        // The About view's own line, to the point (James, round 212: "music by Brendan Lawton
+        // should take on the same style that it has on the about view") - semibold 17 in the
+        // near-white the credits wear there, rather than the small grey aside this had
         credit.textAlignment = .center
         credit.isUserInteractionEnabled = true
         credit.addGestureRecognizer(UITapGestureRecognizer(target: self,
@@ -274,7 +281,12 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
             // Centred on the row's state position rather than hung off its trailing edge
             // (James, round 210: "centre the checkmark within the cell") - that is where every
             // other settings row puts its answer, so the column reads straight down the list
-            tick.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+            tick.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
+            // Centred on the name, not on `contentView` (James, round 212: "the checkmarks
+            // should be vertically centred in the cells"). The glass card does not fill the
+            // row - it is inset, and not evenly - so the row's centre is a little below the
+            // card's. The name is centred *in the card*, which is what the eye reads as the
+            // middle, and it is the anchor the play glyph beside it already uses
             tick.widthAnchor.constraint(equalToConstant: 56),
             tick.heightAnchor.constraint(equalToConstant: 56),
         ])

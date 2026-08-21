@@ -241,7 +241,10 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         let title = UILabel()
         title.translatesAutoresizingMaskIntoConstraints = false
         title.text = "PADDLE SPEED"
-        title.font = UIFont(name: "HelveticaNeue-Bold", size: 40) ?? .boldSystemFont(ofSize: 40)
+        title.font = UIViewController.menuTitleFont
+        // The storyboard's face, like every other title (round 212). This screen had been
+        // wearing Helvetica Neue Bold at 40 since it was built, which is why the music screen
+        // copied it and why James could see the two did not match the rest
         title.adjustsFontSizeToFitWidth = true
         title.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         title.textAlignment = .center

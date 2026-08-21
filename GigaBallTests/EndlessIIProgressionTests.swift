@@ -762,3 +762,84 @@ extension EndlessIIProgressionTests {
         XCTAssertEqual(withPowerUps.powerUpWeightScale(for: 999, at: 0), 1, accuracy: 0.0001)
     }
 }
+
+/// Density rising in steps behind the introductions.
+///
+/// James, round 212: "Density should increase with height in general, but new things should
+/// come first. So new things added -> increase density -> new things added -> increase
+/// density, and so on. Of course there should be randomised aspects to how dense, when it is
+/// increased, how it overlaps and interweaves with new items being added."
+///
+/// The two halves of that are the thing to pin: the ordering (a new style is met before the
+/// field thickens around it) and the coupling (a run that introduces quickly also thickens
+/// quickly), with the randomness never carrying either of them away.
+final class EndlessIIDensityStepTests: XCTestCase {
+
+    func testDensityStillStartsThinAndReachesItsCap() {
+        let run = EndlessIIProgression.make()
+        XCTAssertEqual(run.density(at: 0), EndlessIIProgression.firstScreenDensity,
+                       accuracy: 0.0001)
+        XCTAssertEqual(run.density(at: EndlessIIProgression.densityCapMetres),
+                       EndlessIIProgression.cappedDensity, accuracy: 0.0001)
+        XCTAssertEqual(run.density(at: 4000), EndlessIIProgression.cappedDensity,
+                       accuracy: 0.0001, "past the cap what changes is what the bricks are")
+    }
+
+    func testItNeverGoesBackwards() {
+        for _ in 0..<20 {
+            let run = EndlessIIProgression.make()
+            var last = 0.0
+            for height in stride(from: 0, through: 600, by: 1) {
+                let now = run.density(at: height)
+                XCTAssertGreaterThanOrEqual(now, last - 0.0001,
+                                            "the field thinned out at \(height)m")
+                last = now
+            }
+        }
+    }
+
+    /// **The new thing comes first.** At the metre a style is introduced, the field must be no
+    /// fuller than it was the metre before - the style arrives into the field it was drawn
+    /// for, and the thickening follows once the player has met it.
+    func testAStyleIsMetBeforeTheFieldThickensAroundIt() {
+        for _ in 0..<20 {
+            let run = EndlessIIProgression.make()
+            let steps = Set(run.densityStepHeights())
+            for style in run.introductionOrder {
+                let arrives = run.introductionHeight(of: style)
+                guard arrives > 0, arrives < EndlessIIProgression.densityCapMetres else { continue }
+                XCTAssertFalse(steps.contains(arrives),
+                               "density stepped on the very metre \(style) arrived")
+            }
+        }
+    }
+
+    /// **The coupling.** A run that introduces its styles quickly should also do its
+    /// thickening early - that is what "keyed to the schedule" buys over a second ramp that
+    /// merely looks similar.
+    func testAQuickerRunThickensEarlier() {
+        var quick = EndlessIIProgression.make()
+        quick.styleSpacing = EndlessIIProgression.styleSpacingRange.lowerBound
+        var slow = quick
+        slow.styleSpacing = EndlessIIProgression.styleSpacingRange.upperBound
+
+        let atHalfway = EndlessIIProgression.densityCapMetres/2
+        XCTAssertGreaterThan(quick.density(at: atHalfway), slow.density(at: atHalfway),
+                             "the run meeting more new things is not the fuller one")
+    }
+
+    /// The randomness moves where a run does its thickening, never where it ends up.
+    func testTheTweaksNeverChangeWhereARunFinishes() {
+        for _ in 0..<20 {
+            let run = EndlessIIProgression.make()
+            XCTAssertEqual(run.densityProgress(at: EndlessIIProgression.densityCapMetres), 1,
+                           accuracy: 0.0001)
+        }
+    }
+
+    func testTwoRunsAreRarelyAsFullAsEachOther() {
+        let runs = (0..<12).map { _ in EndlessIIProgression.make() }
+        let readings = Set(runs.map { String(format: "%.4f", $0.density(at: 200)) })
+        XCTAssertGreaterThan(readings.count, 1, "every run thickens on the same metres")
+    }
+}
