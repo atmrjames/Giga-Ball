@@ -301,10 +301,16 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             modeIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
                                           constant: 16),
             modeIcon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            modeIcon.widthAnchor.constraint(equalToConstant: 48),
-            modeIcon.heightAnchor.constraint(equalToConstant: 48),
+            modeIcon.widthAnchor.constraint(
+                equalToConstant: UIViewController.menuModeLogoSize),
+            modeIcon.heightAnchor.constraint(
+                equalToConstant: UIViewController.menuModeLogoSize),
+            // The mode logo's own size (James, round 211: "Daily Challenge should be made the
+            // same"). It was 48 - a badge beside a title rather than the artwork above one -
+            // and this screen is the fourth of a set of four
 
-            title.topAnchor.constraint(equalTo: modeIcon.bottomAnchor, constant: 6),
+            title.topAnchor.constraint(equalTo: modeIcon.bottomAnchor,
+                                       constant: UIViewController.menuHeaderIconGap),
             title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
 

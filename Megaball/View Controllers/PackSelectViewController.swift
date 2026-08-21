@@ -140,7 +140,8 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             logo.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             width,
             logo.heightAnchor.constraint(equalTo: logo.widthAnchor),
-            titleLabel.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 4),
+            titleLabel.topAnchor.constraint(equalTo: logo.bottomAnchor,
+                                            constant: UIViewController.menuHeaderIconGap),
             packCollectionView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor,
                                                     constant: 26),
         ])

@@ -84,6 +84,13 @@ extension UIViewController {
     /// round 126: the classic pack screen's "should match the size on the endless mode menu
     /// views"). The endless screens set it at 190 when a run list is under it, and this is
     /// that number, in one place, so the set stays a set.
+    /// The air between a menu's icon and the name under it.
+    ///
+    /// Ten rather than four (James, round 211: "maybe a tiny bit more space between the big
+    /// icon and game mode header"). The icons carry a glow that reaches a little past their
+    /// own edge, so four points of layout read as almost none.
+    static let menuHeaderIconGap: CGFloat = 10
+
     static let menuModeLogoSize: CGFloat = 190
 
     /// What that logo shrinks to when a list scrolls up under it.
@@ -190,7 +197,8 @@ extension UIViewController {
 
         NSLayoutConstraint.activate([
             icon.topAnchor.constraint(equalTo: container.topAnchor, constant: titleInset),
-            title.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 4),
+            title.topAnchor.constraint(equalTo: icon.bottomAnchor,
+                                       constant: UIViewController.menuHeaderIconGap),
         ])
         return titleInset
     }
