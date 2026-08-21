@@ -272,19 +272,56 @@ final class DailyChallengeTests: XCTestCase {
 
     // MARK: - Exact-output pins
 
+    /// **The written-down values, not the generator compared with itself.**
+    ///
+    /// The contract: if any of these change, an app update just changed what day it is for
+    /// every player who installed it. Never update these expectations without a new generator
+    /// version and an activation date (§2.1) - that is what they exist to catch.
+    ///
+    /// Round 212 found they caught nothing. Every assertion compared
+    /// `challenge(forKey:)` against `challenge(forKey:)`, which is true however the generator
+    /// behaves - rewrite SplitMix64, reorder the draws, change the mode split, and it still
+    /// passed. The one test standing between the app and silently handing every player a
+    /// different Tuesday was asserting that a function equals itself.
+    ///
+    /// These are the real values, read out of the generator as it stands today.
     func testKnownDatesPinTheirChallengesForEver() {
-        // The contract: if any of these change, an app update just changed what day it is
-        // for every player who installed it. Never update these expectations without a new
-        // generator version and an activation date (§2.1) - that is what they exist to catch
         let ninth = DailyChallengeGenerator.challenge(forKey: "2026-08-09")
-        let tenth = DailyChallengeGenerator.challenge(forKey: "2026-08-10")
-        let eleventh = DailyChallengeGenerator.challenge(forKey: "2026-08-11")
+        XCTAssertEqual(ninth.mode, .classic)
+        XCTAssertEqual(ninth.classicLevel, 105)
+        XCTAssertEqual(ninth.twists, [.drought, .oneLife])
 
-        XCTAssertEqual(ninth.mode, DailyChallengeGenerator.challenge(forKey: "2026-08-09").mode)
-        XCTAssertEqual([ninth, tenth, eleventh],
-                       [DailyChallengeGenerator.challenge(forKey: "2026-08-09"),
-                        DailyChallengeGenerator.challenge(forKey: "2026-08-10"),
-                        DailyChallengeGenerator.challenge(forKey: "2026-08-11")])
+        let tenth = DailyChallengeGenerator.challenge(forKey: "2026-08-10")
+        XCTAssertEqual(tenth.mode, .classic)
+        XCTAssertEqual(tenth.classicLevel, 30)
+        XCTAssertEqual(tenth.twists, [])
+
+        let eleventh = DailyChallengeGenerator.challenge(forKey: "2026-08-11")
+        XCTAssertEqual(eleventh.mode, .classic)
+        XCTAssertEqual(eleventh.classicLevel, 81)
+        XCTAssertEqual(eleventh.twists, [.oneLife])
+
+        // A date well past every activation key in the table, so the no-repeats rule and the
+        // full pool are both exercised rather than just the opening weeks
+        let newYear = DailyChallengeGenerator.challenge(forKey: "2027-01-01")
+        XCTAssertEqual(newYear.mode, .endlessII)
+        XCTAssertNil(newYear.classicLevel)
+        XCTAssertEqual(newYear.twists, [])
+    }
+
+    /// And the seed itself, which is the other half of the contract: the same date has to
+    /// produce the same number before it can produce the same day.
+    func testTheSeedIsTheDateReadableByEye() {
+        XCTAssertEqual(DailyDay.seed(forKey: "2026-08-09"), 20260809)
+        XCTAssertEqual(DailyDay.seed(forKey: "2027-01-01"), 20270101)
+    }
+
+    /// The generator's own output, pinned. If SplitMix64 is ever replaced, every date in
+    /// history changes with it - this says so in one line rather than through four challenges.
+    func testTheRandomStreamItselfIsFrozen() {
+        var stream = DailySeededGenerator(seed: 20260809)
+        XCTAssertEqual(stream.next(), 9622454287769650425)
+        XCTAssertEqual(stream.next(), 11729602898445087034)
     }
 
     // MARK: - Attempts, records and boards (phase 3)
