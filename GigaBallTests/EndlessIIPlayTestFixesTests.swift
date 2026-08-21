@@ -14,13 +14,28 @@ import SpriteKit
 /// "The power-up brick appeared, but the power-up was not applied when the brick was hit."
 final class EndlessIIPowerUpBrickTriggerTests: XCTestCase {
 
-    func testABrickUsesTheSceneUsesTheSameTextureTheSwitchCompares() {
+    /// **This reports as skipped, because on a bare scene it cannot run** (round 212's audit).
+    ///
+    /// It used to open `guard scene.powerUpTextureArray.isEmpty == false else { return }` and
+    /// go green. The array is filled in `didMove(to:)`, which needs a presented `SKView`, so
+    /// on a bare scene it is empty and the guard returned before a single assertion - a test
+    /// whose own comment calls its subject "the whole bug" had never once looked at it, and
+    /// said so in green every time.
+    ///
+    /// Skipping is the honest report. `XCTSkip` makes the gap visible in the run rather than
+    /// hiding it behind a pass, and the day the array is available on a bare scene the body
+    /// below starts running on its own. Until then this is what the file header already says
+    /// about `powerUpTextureArray`: checking it is a play-test job, because a power-up that
+    /// falls wearing nothing is visible the first time it drops.
+    func testABrickUsesTheSceneUsesTheSameTextureTheSwitchCompares() throws {
         // The whole bug. `applyPowerUp` decides what to do by comparing the sprite's texture
         // against the ones the scene holds, and a texture built from the same image is a
         // different texture - so the brick broke, was counted, and did nothing at all
         let scene = GameScene()
         scene.gameMode = .endlessII
-        guard scene.powerUpTextureArray.isEmpty == false else { return }
+
+        try XCTSkipIf(scene.powerUpTextureArray.isEmpty,
+                      "a bare scene has no textures - see this test's note")
 
         for index in scene.powerUpTextureArray.indices {
             XCTAssertTrue(scene.endlessIIPowerUpTexture(index) === scene.powerUpTextureArray[index],

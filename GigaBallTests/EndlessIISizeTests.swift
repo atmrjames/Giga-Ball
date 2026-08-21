@@ -156,12 +156,17 @@ extension EndlessIISizeTests {
     func testAPairIsAlwaysDiagonal() {
         // Two side by side would be an oddly-shaped brick; two on a diagonal leave a route
         // through the cell, which is the point of having them.
+        var pairs = 0
         for _ in 0..<200 {
             let layout = GameScene.endlessIITinyLayout()
             guard layout.count == 2 else { continue }
+            pairs += 1
             XCTAssertNotEqual(layout[0].x, layout[1].x)
             XCTAssertNotEqual(layout[0].y, layout[1].y)
         }
+        XCTAssertGreaterThan(pairs, 0,
+                             "two hundred layouts and not one pair - the rule this is about "
+                             + "never came up, so nothing was checked")
     }
 
     func testTheFullSetIsTheCommonCase() {

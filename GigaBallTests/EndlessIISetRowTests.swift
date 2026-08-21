@@ -62,16 +62,21 @@ final class EndlessIISetRowTests: XCTestCase {
     /// that descends past with nothing to earn from it - the ball rattles off it and the row
     /// is a tax on time.
     func testAnyMostlyIndestructiblePatternHasSomethingWorthHavingInIt() {
+        var checked = 0
         for pattern in EndlessIISetRow.all {
             let cells = pattern.rows.flatMap { Array($0) }.filter { $0 != "." }
             let walls = cells.filter { $0 == "I" || $0 == "i" }.count
             guard walls*2 > cells.count else { continue }
+            checked += 1
 
             let worthHaving = cells.contains { $0 == "N" || $0 == "M" || $0 == "?" }
             XCTAssertTrue(worthHaving,
                           "\(pattern.name) is mostly indestructible with nothing in it - a "
                           + "wall that just flies by")
         }
+        XCTAssertGreaterThan(checked, 0,
+                             "no pattern is mostly indestructible, so this checked nothing - "
+                             + "the mazes are exactly what it was written for")
     }
 
     func testTheMazesAreGatedByHowHeavyTheyAre() {

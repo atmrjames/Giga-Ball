@@ -98,11 +98,15 @@ final class MusicTrackTests: XCTestCase {
     /// fade into a track the player turned off. Both ask `trackURL(for:)`, and this pins what
     /// that answers: the menu's own theme for the menu, and only ticked tracks otherwise.
     func testTheMenuAlwaysGetsItsOwnThemeAndARunNeverDoes() {
-        XCTAssertEqual(MusicTrack.titleTheme.url, MusicTrack.titleTheme.url)
+        XCTAssertNotNil(MusicTrack.titleTheme.url, "the menu's theme has to exist to be used")
+        // Was `titleTheme.url == titleTheme.url`, which is true of anything (round 212's audit)
+        var drawn = 0
         for _ in 0..<50 {
-            guard let drawn = MusicSelection.drawATrack(in: store) else { continue }
-            XCTAssertNotEqual(drawn, .titleTheme, "the menu's theme is not in a run's rotation")
+            guard let track = MusicSelection.drawATrack(in: store) else { continue }
+            drawn += 1
+            XCTAssertNotEqual(track, .titleTheme, "the menu's theme is not in a run's rotation")
         }
+        XCTAssertGreaterThan(drawn, 0, "fifty draws and nothing came out")
     }
 
     /// And with every track off there is nothing to fade *to*, so the crossfade must decline
