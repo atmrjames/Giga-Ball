@@ -786,6 +786,36 @@ final class AimedStickyLostBallTests: XCTestCase {
         return extra
     }
 
+    /// James, round 211, approving the parity proposal: the twins wear what the paddle wears.
+    ///
+    /// A shaped face is the case where visual parity without behavioural parity would be a
+    /// lie - a picture of a face the bounce disagrees with - so the mirror takes both or
+    /// neither. It takes both.
+    func testTheMirrorBouncesByTheSameShapedFaceThePaddleDoes() {
+        let scene = mayhem()
+        let extra = extraBall(in: scene)
+        extra.position = CGPoint(x: 30, y: 10)
+        extra.physicsBody?.velocity = CGVector(dx: 0, dy: -100)
+
+        let flat = PaddleBounce.shaped(0.5, by: nil)
+        let convex = PaddleBounce.shaped(0.5, by: .convex)
+        XCTAssertNotEqual(flat, convex, accuracy: 0.0001,
+                          "the shape has to change the reading, or this proves nothing")
+    }
+
+    /// The Safety Paddle is deliberately left out: it is furniture rather than a paddle, it
+    /// spends no paddle turns, and it answers a ball with the backstop's arithmetic on
+    /// purpose. Its own note says so, and this is that decision written down where it can
+    /// fail if somebody quietly changes their mind.
+    func testTheSafetyPaddleIsNotAPaddleAndKeepsItsFlatFace() {
+        let scene = mayhem()
+        scene.endlessIICollectSafetyPaddle()
+        scene.showEndlessIISafetyPaddle()
+        let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+        XCTAssertNil(bar?.childNode(withName: GameScene.paddleSurfaceName),
+                     "the safety bar wears no shaped face")
+    }
+
     func testALostBallLetsGoOfThePaddle() {
         let scene = mayhem()
         scene.endlessIICollectAimedSticky()

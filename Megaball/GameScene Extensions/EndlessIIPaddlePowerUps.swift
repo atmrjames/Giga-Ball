@@ -104,12 +104,32 @@ extension GameScene {
     /// same `shaped` call, sampled across the width - so the drawing cannot promise a face
     /// the bounce does not give.
     func showEndlessIIPaddleSurface() {
-        paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
+        drawEndlessIIPaddleSurface(on: paddle)
+        if let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName)
+            as? SKSpriteNode {
+            drawEndlessIIPaddleSurface(on: mirror)
+        }
+        // **The mirror wears the face too** (round 211, James's parity call). It is a full
+        // bounce surface that computes its angle from the same `PaddleBounce` call the paddle
+        // does, so a shape it showed but did not give would be the one kind of parity worth
+        // refusing - a picture of a face the bounce disagrees with. The Safety Paddle stays
+        // flat and unmarked: it is furniture rather than a paddle, spends no paddle turns,
+        // and answers a ball with the backstop's arithmetic on purpose
+    }
+
+    /// Draws the shape over a surface's top, so the face can be read rather than guessed.
+    ///
+    /// A curve along the top edge, in the harmful pink these power-ups wear, redrawn whenever
+    /// the surface changes size. It is a picture of the very function the bounce uses - the
+    /// same `shaped` call, sampled across the width - so the drawing cannot promise a face
+    /// the bounce does not give.
+    private func drawEndlessIIPaddleSurface(on host: SKSpriteNode) {
+        host.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
         guard let surface = endlessIIPaddleSurface, endlessIIPaddleSurfaceClock.isRunning
         else { return }
 
-        let width = paddle.size.width
-        let height = paddle.size.height
+        let width = host.size.width
+        let height = host.size.height
         let path = CGMutablePath()
         let samples = 48
         for step in 0...samples {
@@ -130,7 +150,7 @@ extension GameScene {
         profile.lineWidth = max(2, height*0.22)
         profile.lineCap = .round
         profile.zPosition = 1
-        paddle.addChild(profile)
+        host.addChild(profile)
     }
 
     static let paddleSurfaceName = "endlessIIPaddleSurface"
@@ -142,6 +162,10 @@ extension GameScene {
         if endlessIIPaddleSurfaceClock.isRunning == false {
             endlessIIPaddleSurface = nil
             paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
+            childNode(withName: GameScene.endlessIIMirrorPaddleName)?
+                .childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
+            // The mirror's copy goes with it, or a mirror outliving the shape keeps showing
+            // a face neither surface has any more
         }
     }
 

@@ -282,13 +282,20 @@ extension GameScene {
         let collision = PaddleBounce.collision(ballX: subject.position.x,
                                                paddleX: mirror.position.x,
                                                paddleWidth: mirror.size.width)
+        let clamped = min(max(collision, -1), 1)
         body.velocity = PaddleBounce.velocity(arriving: arriving,
-                                              collision: min(max(collision, -1), 1),
+                                              collision: PaddleBounce.shaped(
+                                                  clamped, by: endlessIIPaddleSurface),
                                               adjustmentK: PaddleBounce.adjustmentK,
                                               influence: 1,
                                               minimumDeg: PaddleBounce.minimumDeg,
                                               speed: hypot(arriving.dx, arriving.dy))
         // Clamped rather than refused past the ends: the engine only reports a contact where
-        // the bodies actually met, so a fraction outside the face is the corner of it
+        // the bodies actually met, so a fraction outside the face is the corner of it.
+        //
+        // **Shaped like the paddle** (round 211): with a convex or jagged face running, the
+        // mirror gives the same bounce the real paddle would - and shows the same curve. The
+        // twin follows the paddle, and a bounce surface that looked shaped and answered flat
+        // would be the one parity worth refusing
     }
 }
