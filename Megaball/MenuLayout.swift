@@ -130,6 +130,71 @@ extension UIViewController {
     /// centre reads as a button that has been moved rather than placed.
     static let menuButtonWideInset: CGFloat = 24
 
+    /// Puts a menu's icon above its title, and hands anything that hung from the icon down to
+    /// the title instead.
+    ///
+    /// James, round 210: "I do think the icons and titles should be swapped, with the icon at
+    /// the top, then using the classic mode menu view style where the icon shrinks when the
+    /// page is scrolled before the content scrolls. We can have this same setup across all the
+    /// game mode menu views."
+    ///
+    /// These headers are storyboard scenes, so the order is a set of constraints rather than a
+    /// stack view to reorder. Three things have to happen and only the third is easy to
+    /// forget: the title stops hanging from the top, the icon takes its place, and **everything
+    /// that hung from the icon's bottom now hangs from the title's** - otherwise the title
+    /// lands on top of the content that used to sit below the icon.
+    ///
+    /// The rehang is done by rebuilding each affected constraint rather than by editing one:
+    /// `NSLayoutConstraint` is immutable in every part that matters, so the only way to change
+    /// what it points at is to make another and stand the first one down.
+    ///
+    /// - Returns: the constant the title's top constraint was using, so the caller can give
+    ///   the icon the same inset and leave the block starting exactly where it did.
+    @discardableResult
+    func swapMenuHeader(icon: UIView, title: UIView, in container: UIView) -> CGFloat {
+        var titleInset: CGFloat = 20
+
+        for constraint in container.constraints {
+            let titleFromTop = (constraint.firstItem === title && constraint.firstAttribute == .top)
+                || (constraint.secondItem === title && constraint.secondAttribute == .top)
+            if titleFromTop, constraint.firstItem !== icon, constraint.secondItem !== icon {
+                titleInset = abs(constraint.constant)
+                constraint.isActive = false
+                continue
+            }
+
+            let hangsFromTheIcon = constraint.secondItem === icon
+                && constraint.secondAttribute == .bottom
+                && constraint.firstItem !== title
+            guard hangsFromTheIcon, let first = constraint.firstItem else { continue }
+
+            constraint.isActive = false
+            let moved = NSLayoutConstraint(item: first,
+                                           attribute: constraint.firstAttribute,
+                                           relatedBy: constraint.relation,
+                                           toItem: title,
+                                           attribute: .bottom,
+                                           multiplier: constraint.multiplier,
+                                           constant: constraint.constant)
+            moved.priority = constraint.priority
+            moved.isActive = true
+        }
+
+        for constraint in container.constraints
+        where (constraint.firstItem === icon && constraint.secondItem === title)
+            || (constraint.firstItem === title && constraint.secondItem === icon) {
+            constraint.isActive = false
+        }
+        // Whatever held the two together in the old order goes, so the new pair below is the
+        // only thing saying which is above which
+
+        NSLayoutConstraint.activate([
+            icon.topAnchor.constraint(equalTo: container.topAnchor, constant: titleInset),
+            title.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 4),
+        ])
+        return titleInset
+    }
+
     /// Lays a screen's button row out the shared way.
     ///
     /// - Parameter sizes: each button's width, in the order they appear. The row is always

@@ -158,15 +158,13 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     // three mode menus are a set, and this one was wearing a logo less than half the size
     // of its siblings'
 
-    /// How far the logo has been collapsed, in points, out of `logoTravel`.
-    ///
-    /// Kept here rather than read off the scroll offset, which is the whole of round 165's
-    /// change: the drag spends itself on the logo first and only reaches the packs once the
-    /// logo is small.
-    private var logoCollapsed: CGFloat = 0
+    /// The collapse, shared with every other menu that wears a mode logo since round 210.
+    private var header = MenuHeaderCollapse(restSize: logoRestSize,
+                                            scrolledSize: logoScrolledSize)
 
     /// The height the logo has to give: full size down to the size it wears when scrolled.
-    static var logoTravel: CGFloat { logoRestSize - logoScrolledSize }
+    static var logoTravel: CGFloat { UIViewController.menuModeLogoSize
+                                     - UIViewController.menuModeLogoScrolledSize }
 
     /// The logo trades its size for the grid's room as the packs scroll up (play-test round
     /// 36), and **the packs do not move until it has finished** (James, round 165: "the packs
@@ -187,25 +185,17 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         guard scrollView == packCollectionView, logoWidth != nil else { return }
 
         let top = -scrollView.adjustedContentInset.top
-        let tried = scrollView.contentOffset.y - top
-        let travel = PackSelectViewController.logoTravel
-
-        if tried > 0, logoCollapsed < travel {
-            logoCollapsed = min(travel, logoCollapsed + tried)
+        if header.absorb(tried: scrollView.contentOffset.y - top) {
             scrollView.contentOffset.y = top
-            // Held at the top: the drag is collapsing the logo, not scrolling the packs
-        } else if tried < 0, logoCollapsed > 0 {
-            logoCollapsed = max(0, logoCollapsed + tried)
-            scrollView.contentOffset.y = top
-            // And back up again, so a pull downwards grows the logo before it bounces the list
+            // Held at the top while the header is still taking the drag - see the rule itself
         }
         applyLogoCollapse()
     }
 
     /// Sets the logo to whatever `logoCollapsed` says, and lets the grid have the difference.
     private func applyLogoCollapse() {
-        logoWidth?.constant = PackSelectViewController.logoRestSize - logoCollapsed
-        (packCollectionView as? ContentAwareCollectionView)?.keepsTakingDrags = logoCollapsed > 0
+        logoWidth?.constant = header.size
+        (packCollectionView as? ContentAwareCollectionView)?.keepsTakingDrags = header.isCollapsing
         // While the logo is down, the grid keeps listening even though everything now fits -
         // the room that made it fit is the logo's, and it has to be givable back
     }

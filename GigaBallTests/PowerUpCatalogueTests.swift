@@ -425,3 +425,36 @@ final class InGameRecentsTests: XCTestCase {
         XCTAssertFalse(setup.isEndlessIIPowerUp(-1))
     }
 }
+
+/// The round art the ring HUD wears.
+///
+/// James delivered these in round 210. `PowerUpIcon.hud(_:_:)` falls back to the drawn badge
+/// when a name is missing, which is exactly what makes it safe to wire a name before the art
+/// exists - and exactly what makes a typo invisible: a misspelt name looks identical to a
+/// power-up that never had round art. So the names are checked against the catalogue.
+final class HudIconArtTests: XCTestCase {
+
+    /// Every name the ring asks for, and whether the art is expected to be there.
+    private let wired = ["WreckingBallIcon", "AuraIcon", "ClearAndRetreatIcon",
+                         "DriftIcon", "DriftLeftIcon", "SafetyPaddleIcon",
+                         "GhostBallIcon", "RandomBounceIcon",
+                         "DoublePaddleIcon", "MirrorPaddleIcon",
+                         "LandingMarkerIcon"]
+
+    func testEveryHudIconNameFindsItsArtwork() {
+        for name in wired {
+            XCTAssertNotNil(UIImage(named: name),
+                            "\(name) is wired to the ring but there is no such image - which "
+                            + "looks exactly like a power-up that never had round art")
+        }
+    }
+
+    /// The tray's greyed-out state is a second file, and one without the other is a power-up
+    /// that lights up and never dims.
+    func testTheDisabledTwinIsThereToo() {
+        for name in wired where UIImage(named: name) != nil {
+            XCTAssertNotNil(UIImage(named: name + "Disabled"),
+                            "\(name) has no disabled twin")
+        }
+    }
+}

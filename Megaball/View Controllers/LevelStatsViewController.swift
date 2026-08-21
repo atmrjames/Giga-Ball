@@ -373,7 +373,22 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         }
     }
     
+    private var headerSwapped = false
+
+    /// **The icon goes above the name** (James, round 210), the way the Classic menu wears it.
+    ///
+    /// Done here rather than in `setupRunHistory`, which only runs once a mode has a run to
+    /// list: a Classic level's stats screen has no run history and still wants its header the
+    /// right way up. Once only, because `updateLabels` runs again every time the screen is
+    /// returned to and the swap is not idempotent - it would hang the title off its own bottom.
+    private func swapHeaderIfNeeded() {
+        guard headerSwapped == false else { return }
+        headerSwapped = true
+        swapMenuHeader(icon: levelImageView, title: levelNameLabel, in: levelStatsView)
+    }
+
     func updateLabels() {
+        swapHeaderIfNeeded()
         levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber!].uppercased()
         levelNameLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
         // The mode's title glows like the wordmark does (play-test round 14)
@@ -442,14 +457,19 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 .contains(constraint.firstAttribute)
             if involves && horizontal { constraint.isActive = false }
         }
+        let width = levelImageView.widthAnchor.constraint(
+            equalToConstant: UIViewController.menuModeLogoSize)
+        logoWidth = width
         NSLayoutConstraint.activate([
             levelImageView.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
-            levelImageView.widthAnchor.constraint(
-                equalToConstant: UIViewController.menuModeLogoSize),
+            width,
         ])
         // The logo was pinned wall to wall and sized by its 1:1 aspect. Cutting it loose
         // horizontally and giving it a width leaves the aspect doing the height, and the
-        // labels below follow it up because they were pinned to its bottom all along
+        // labels below follow it up because they were pinned to its bottom all along.
+        // The width is kept, because it is what the collapse writes to
+
+
 
         let sort = UIButton(type: .system)
         sort.translatesAutoresizingMaskIntoConstraints = false
@@ -459,7 +479,9 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         sort.addTarget(self, action: #selector(toggleRunHistorySort), for: .touchUpInside)
         levelStatsView.addSubview(sort)
         NSLayoutConstraint.activate([
-            sort.topAnchor.constraint(equalTo: levelImageView.bottomAnchor, constant: 18),
+            sort.topAnchor.constraint(equalTo: levelNameLabel.bottomAnchor, constant: 18),
+            // The name, not the icon: since round 210 the name is the bottom of the header, so
+            // the run list hangs from it and travels up with the whole block as it collapses
             sort.leadingAnchor.constraint(equalTo: levelStatsView.leadingAnchor,
                                           constant: 44),
         ])
@@ -518,6 +540,26 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         // ContentAwareTableView rather than a plain table (play-test request): when the
         // list has more runs than fit, the content fades at whichever edge continues,
         // and the extra clearance keeps the fade from crowding the buttons below
+    }
+
+    private var logoWidth: NSLayoutConstraint?
+    private var header = MenuHeaderCollapse(
+        restSize: UIViewController.menuModeLogoSize,
+        scrolledSize: UIViewController.menuModeLogoScrolledSize)
+
+    /// The run list trades the logo's size for its own room, exactly as the pack grid does -
+    /// the drag is spent on the header first and the runs do not move until it is done
+    /// (round 165's rule, in `MenuHeaderCollapse`).
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === runHistoryTable, logoWidth != nil else { return }
+        let top = -scrollView.adjustedContentInset.top
+        if header.absorb(tried: scrollView.contentOffset.y - top) {
+            scrollView.contentOffset.y = top
+        }
+        logoWidth?.constant = header.size
+        // No `keepsTakingDrags` here, unlike the pack grid: `ContentAwareTableView` leaves
+        // scrolling and bouncing on always, deliberately, so it is already taking every drag
+        // (six rounds of "settings will not scroll" are why)
     }
 
     /// Flips between the two orders a run list can answer for: when, and how high.

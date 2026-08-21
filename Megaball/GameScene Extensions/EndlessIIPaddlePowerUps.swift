@@ -688,8 +688,12 @@ extension GameScene {
             ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
              PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),
-            ("endlessIIDoublePaddle", endlessIIDoublePaddleClock, PowerUpIcon.doublePaddle),
-            ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock, PowerUpIcon.mirrorPaddle),
+            ("endlessIIDoublePaddle", endlessIIDoublePaddleClock,
+             PowerUpIcon.hud("DoublePaddleIcon", PowerUpIcon.doublePaddle)),
+            ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock,
+             PowerUpIcon.hud("MirrorPaddleIcon", PowerUpIcon.mirrorPaddle)),
+            // Round art for the ring, drawn rather than derived (round 210's delivery). The
+            // badge stays as the fallback, so a build without it looks exactly as it did
             ("endlessIIBallSpin", endlessIIBallSpinClock, PowerUpIcon.ballSpin),
         ]
         return clocks.compactMap { id, clock, icon in

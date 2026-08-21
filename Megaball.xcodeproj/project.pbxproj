@@ -55,6 +55,7 @@
 		000000001AF1800000000002 /* BallPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000001 /* BallPath.swift */; };
 		000000001AF1810000000002 /* MusicTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1810000000001 /* MusicTrack.swift */; };
 		000000001AF1820000000002 /* ScoreTally.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1820000000001 /* ScoreTally.swift */; };
+		000000001AF1830000000002 /* MenuHeaderCollapse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1830000000001 /* MenuHeaderCollapse.swift */; };
 		000000001AF1800000000004 /* BallPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000003 /* BallPathTests.swift */; };
 		000000001AF1C00000001301 /* AimHoldControlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1C00000001300 /* AimHoldControlTests.swift */; };
 		1AF170000000009F /* PowerUpEligibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009E /* PowerUpEligibility.swift */; };
@@ -411,6 +412,7 @@
 		000000001AF1800000000001 /* BallPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallPath.swift; sourceTree = "<group>"; };
 		000000001AF1810000000001 /* MusicTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicTrack.swift; sourceTree = "<group>"; };
 		000000001AF1820000000001 /* ScoreTally.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreTally.swift; sourceTree = "<group>"; };
+		000000001AF1830000000001 /* MenuHeaderCollapse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuHeaderCollapse.swift; sourceTree = "<group>"; };
 		000000001AF1800000000003 /* BallPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallPathTests.swift; sourceTree = "<group>"; };
 		000000001AF1C00000001300 /* AimHoldControlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AimHoldControlTests.swift; sourceTree = "<group>"; };
 		1AF170000000009E /* PowerUpEligibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerUpEligibility.swift; sourceTree = "<group>"; };
@@ -1325,6 +1327,7 @@
 				000000001AF1800000000001 /* BallPath.swift */,
 				000000001AF1810000000001 /* MusicTrack.swift */,
 				000000001AF1820000000001 /* ScoreTally.swift */,
+				000000001AF1830000000001 /* MenuHeaderCollapse.swift */,
 				1AF17000000000A0 /* EndlessIIClusters.swift */,
 				1AF1700000000090 /* EndlessIIBalls.swift */,
 				1AF1700000000068 /* BrickTypeCatalogue.swift */,
@@ -1643,6 +1646,7 @@
 				000000001AF1800000000002 /* BallPath.swift in Sources */,
 				000000001AF1810000000002 /* MusicTrack.swift in Sources */,
 				000000001AF1820000000002 /* ScoreTally.swift in Sources */,
+				000000001AF1830000000002 /* MenuHeaderCollapse.swift in Sources */,
 				1AF1700000000091 /* EndlessIIBalls.swift in Sources */,
 				1AF170000000006D /* BrickTypesViewController.swift in Sources */,
 				1AF170000000006B /* BrickTypeIcons.swift in Sources */,

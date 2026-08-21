@@ -749,18 +749,25 @@ extension GameScene {
          ("endlessIIDescent", endlessIIDescentClock, PowerUpIcon.descent),
          ("endlessIIWrapAround", endlessIIWrapAroundClock, PowerUpIcon.wrapAround),
          ("endlessIIRandomisedBounce", endlessIIRandomisedBounceClock,
-          PowerUpIcon.randomisedBounce),
-         ("endlessIIGhostBall", endlessIIGhostBallClock, PowerUpIcon.ghostBall),
+          PowerUpIcon.hud("RandomBounceIcon", PowerUpIcon.randomisedBounce)),
+         ("endlessIIGhostBall", endlessIIGhostBallClock,
+          PowerUpIcon.hud("GhostBallIcon", PowerUpIcon.ghostBall)),
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
           PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat)),
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
-          PowerUpIcon.safetyPaddle),
+          PowerUpIcon.hud("SafetyPaddleIcon", PowerUpIcon.safetyPaddle)),
          ("endlessIIDrift", endlessIIDriftClock,
           endlessIIDriftDirection < 0
-              ? PowerUpIcon.mirrored(PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))
+              ? PowerUpIcon.hud("DriftLeftIcon",
+                                PowerUpIcon.mirrored(PowerUpIcon.hud("DriftIcon",
+                                                                     PowerUpIcon.drift)))
               : PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))]
-        // The ring shows which way the field is sliding: the same art, mirrored for a
-        // leftward drift, exactly as the falling capsule's own icon is (round 201)
+        // The ring shows which way the field is sliding. **Drawn art for the leftward one
+        // now** (James, round 210's delivery): it was the rightward icon flipped, which is
+        // the right answer while there is only one picture and the wrong one as soon as
+        // there are two - a mirrored image is mirrored in every part, including any part
+        // that was never meant to read backwards. The mirror stays as the fallback, so a
+        // build without the new art looks exactly as it did
     }
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {

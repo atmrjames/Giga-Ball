@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "SafetyPaddleIconDisabled.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "SafetyPaddleIconDisabled@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "SafetyPaddleIconDisabled@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}
