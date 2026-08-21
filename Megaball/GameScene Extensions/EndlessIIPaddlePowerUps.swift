@@ -97,6 +97,114 @@ extension GameScene {
         showEndlessIIPaddleSurface()
     }
 
+    // MARK: - The shape the ball actually meets
+
+    /// The art for a shape, or nil where James has not drawn one yet.
+    ///
+    /// The theme is ignored for now: the first set is the classic paddle's, and James asked
+    /// for it to stand in for every theme until the rest are drawn. When they arrive this
+    /// becomes the theme's own prefix instead of `regular`.
+    func endlessIIPaddleShapeTextureName(_ surface: PaddleBounce.Surface) -> String? {
+        switch surface {
+        case .convex: return "regularPaddleConvex"
+        case .concave: return "regularPaddleConcave"
+        case .wavy: return "regularPaddleWave"
+        case .jagged: return nil
+            // Retired (round 213). No art was drawn for it and none will be
+        }
+    }
+
+    /// Puts the shaped art on the paddle and rebuilds its body to match, or takes both away.
+    ///
+    /// **The body is the picture** (James, round 213: "the paddle physics body should match
+    /// the shape of the new paddle textures... when these paddles are enabled, the ball
+    /// physics is determined by the shape of the paddle, not the ball angle calculations").
+    /// The paddle's body has always been built with `SKPhysicsBody(texture:size:)`, which
+    /// traces the artwork's own silhouette - so swapping the texture and rebuilding is all it
+    /// takes for the engine to start bouncing the ball off a dome or a dish.
+    ///
+    /// **The bottom stays put.** The shapes are drawn at the paddle's width and their own
+    /// height - a convex face is half as tall again - so the sprite grows and the node rises
+    /// by half the growth, which leaves the underside exactly on the line it was on. The body
+    /// is centred on the node, so it moves with the art rather than away from it.
+    func refreshEndlessIIPaddleShapeArt() {
+        let running = endlessIIPaddleSurfaceClock.isRunning
+        let wanted = running ? endlessIIPaddleSurface.flatMap {
+            endlessIIPaddleShapeTextureName($0)
+        } : nil
+
+        guard wanted != endlessIIPaddleShapeArtName else { return }
+        // Every frame, and does nothing on almost all of them
+
+        endlessIIPaddleShapeArtName = wanted
+        paddle.position.y -= endlessIIPaddleShapeLift
+        endlessIIPaddleShapeLift = 0
+        // Whatever the last shape raised the paddle by is given back first, so the shapes
+        // cannot stack their lifts on top of each other
+
+        let texture = wanted.map { SKTexture(imageNamed: $0) } ?? paddleTexture
+        let grown = wanted == nil ? paddleHeight
+            : paddleHeight*(texture.size().height/max(1, paddleTexture.size().height))
+
+        paddle.texture = texture
+        paddle.size = CGSize(width: paddle.size.width, height: grown)
+        endlessIIPaddleShapeLift = (grown - paddleHeight)/2
+        paddle.position.y += endlessIIPaddleShapeLift
+
+        rebuildEndlessIIPaddleBody()
+    }
+
+    /// Traces the paddle's current picture, and keeps everything the old body was carrying.
+    func rebuildEndlessIIPaddleBody() {
+        guard let texture = paddle.texture, let old = paddle.physicsBody else { return }
+        let body = SKPhysicsBody(texture: texture, size: paddle.size)
+            ?? SKPhysicsBody(rectangleOf: paddle.size)
+        body.allowsRotation = false
+        body.friction = 0
+        body.affectedByGravity = false
+        body.isDynamic = true
+        body.pinned = old.pinned
+        body.restitution = old.restitution
+        body.linearDamping = old.linearDamping
+        body.categoryBitMask = old.categoryBitMask
+        body.collisionBitMask = old.collisionBitMask
+        body.contactTestBitMask = old.contactTestBitMask
+        paddle.physicsBody = body
+        // Copied off the old one rather than written out again: the paddle's masks are set in
+        // one place at setup and a second copy here would be wrong the first time they change
+    }
+
+    /// Whether the shape - rather than the angle formula - is deciding this bounce.
+    var endlessIIShapeOwnsTheBounce: Bool {
+        endlessIIPaddleSurfaceClock.isRunning && endlessIIPaddleShapeArtName != nil
+    }
+
+    /// Tidies up what the engine's reflection off a shaped face gave, without replacing it.
+    ///
+    /// The engine has already bounced the ball off the silhouette by the time a contact is
+    /// reported (§8.6), so the *direction* here is the shape's answer and is left alone. Two
+    /// things still have to hold, because they are true of every paddle bounce in the game and
+    /// nothing about a shape changes them: the ball leaves at the run's own speed, and never
+    /// so flat that it runs sideways across the field for seconds at a time.
+    @discardableResult
+    func endlessIIApplyShapedBounce(to subject: SKSpriteNode) -> Bool {
+        guard endlessIIShapeOwnsTheBounce, let body = subject.physicsBody else { return false }
+        let velocity = body.velocity
+        let speed = hypot(velocity.dx, velocity.dy)
+        guard speed > 0 else { return false }
+
+        var angle = atan2(Double(velocity.dy), Double(velocity.dx))
+        let minimum = minAngleDeg*Double.pi/180
+        if angle < 0 { angle = -angle }
+        // Upward, always: a dome can reflect a ball down its own side, and a paddle that
+        // returned the ball *into* the floor would be a shape that loses the run
+        angle = min(max(angle, minimum), Double.pi - minimum)
+
+        body.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
+                                 dy: sin(angle)*Double(ballSpeedLimit))
+        return true
+    }
+
     /// Draws the shape over the paddle's top, so the face can be read rather than guessed.
     ///
     /// A curve along the top edge, in the harmful pink these power-ups wear, redrawn whenever
@@ -158,6 +266,7 @@ extension GameScene {
 
     /// Takes the shape away when its turns run out.
     func refreshEndlessIIPaddleSurface() {
+        refreshEndlessIIPaddleShapeArt()
         guard endlessIIPaddleSurface != nil else { return }
         if endlessIIPaddleSurfaceClock.isRunning == false {
             endlessIIPaddleSurface = nil

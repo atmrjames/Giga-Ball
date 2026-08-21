@@ -236,6 +236,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIDescentAccumulated: TimeInterval = 0
 	/// The shape of the paddle's top, while one of the four shaped faces runs (§12.0).
 	var endlessIIPaddleSurface: PaddleBounce.Surface?
+
+	/// Which shaped picture the paddle is wearing, and how far it was raised to keep its
+	/// underside on the line. Nil and zero whenever the paddle is its ordinary self.
+	var endlessIIPaddleShapeArtName: String?
+	var endlessIIPaddleShapeLift: CGFloat = 0
 	var endlessIIPaddleSurfaceClock = EndlessIIClock()
 	/// Mirror Paddle: a second paddle level with the first, holding the mirrored x (§12.0).
 	var endlessIIMirrorPaddleClock = EndlessIIClock()
@@ -4016,6 +4021,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// than `minAngleDeg` - which is what stops the edges returning a ball that runs
 			// along the field sideways
 		}
+
+		if isOnPaddle == false, endlessIIApplyShapedBounce(to: ball) {
+			endlessIIGripBall(subject)
+			invisibleBrickFlash()
+			return
+		}
+		// **The shape decides, not the formula** (James, round 213). With a shaped face on,
+		// the engine has already reflected the ball off the silhouette, and that reflection is
+		// the answer - so the angle calculation above and the control below are both skipped
+		// rather than layered on top of it. The spin and the flash still run, because neither
+		// is about where the ball is going
 
 		if isOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
 		// Only control the ball's angle if it in the centre of the paddle

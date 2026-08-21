@@ -1827,3 +1827,79 @@ final class EndlessIIRound184Tests: XCTestCase {
         XCTAssertEqual(bar.colorBlendFactor, 1, accuracy: 0.001)
     }
 }
+
+/// The bounce a shaped paddle gives.
+///
+/// James, round 213: "when these paddles are enabled, the ball physics is determined by the
+/// shape of the paddle, not the ball angle calculations."
+///
+/// So the engine's reflection off the silhouette is the answer, and the angle formula is
+/// skipped rather than layered on top. Two things still hold, because they are true of every
+/// paddle bounce and nothing about a shape changes them: the ball leaves at the run's own
+/// speed, and never flat enough to run sideways across the field.
+final class ShapedPaddleBounceTests: XCTestCase {
+
+    private func shaped() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSpeedLimit = 400
+        scene.minAngleDeg = 20
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleConvex"
+        return scene
+    }
+
+    func testTheShapeOnlyOwnsTheBounceWhileItIsRunning() {
+        let scene = shaped()
+        XCTAssertTrue(scene.endlessIIShapeOwnsTheBounce)
+
+        scene.endlessIIPaddleSurfaceClock.reset()
+        XCTAssertFalse(scene.endlessIIShapeOwnsTheBounce)
+        XCTAssertFalse(scene.endlessIIApplyShapedBounce(to: scene.ball),
+                       "with no shape running the ordinary bounce has to be left alone")
+    }
+
+    /// The direction is the shape's, so a reflection off the side of a dome is kept as a
+    /// steep shot - it is only the speed that is set.
+    func testTheReflectionIsKeptAndOnlyTheSpeedIsSet() {
+        let scene = shaped()
+        scene.ball.physicsBody?.velocity = CGVector(dx: 30, dy: 40)   // speed 50, well off pace
+        XCTAssertTrue(scene.endlessIIApplyShapedBounce(to: scene.ball))
+
+        let out = scene.ball.physicsBody!.velocity
+        XCTAssertEqual(hypot(out.dx, out.dy), scene.ballSpeedLimit, accuracy: 0.001)
+        XCTAssertEqual(atan2(Double(out.dy), Double(out.dx)),
+                       atan2(40, 30), accuracy: 0.001, "the shape's own answer, kept")
+    }
+
+    /// **A dome can reflect a ball down its own side.** A paddle that returned the ball into
+    /// the floor would be a shape that loses the run rather than one that makes it harder.
+    func testABallReflectedDownwardsIsSentBackUp() {
+        let scene = shaped()
+        scene.ball.physicsBody?.velocity = CGVector(dx: 200, dy: -300)
+        scene.endlessIIApplyShapedBounce(to: scene.ball)
+        XCTAssertGreaterThan(scene.ball.physicsBody!.velocity.dy, 0)
+    }
+
+    func testItIsNeverFlatEnoughToRunSideways() {
+        let scene = shaped()
+        for dx in [-400.0, -50, -1, 1, 50, 400] as [CGFloat] {
+            scene.ball.physicsBody?.velocity = CGVector(dx: dx, dy: 0.5)
+            scene.endlessIIApplyShapedBounce(to: scene.ball)
+            let out = scene.ball.physicsBody!.velocity
+            let degrees = abs(atan2(Double(out.dy), Double(out.dx))*180/Double.pi)
+            XCTAssertGreaterThanOrEqual(degrees, scene.minAngleDeg - 0.001, "dx \(dx)")
+            XCTAssertLessThanOrEqual(degrees, 180 - scene.minAngleDeg + 0.001, "dx \(dx)")
+        }
+    }
+
+    /// The retired shape has no art, so it can never take the bounce - the one case where
+    /// "no picture" has to mean "no physics" rather than falling back to something.
+    func testTheRetiredShapeHasNoArtAndSoOwnsNothing() {
+        let scene = shaped()
+        XCTAssertNil(scene.endlessIIPaddleShapeTextureName(.jagged))
+    }
+}
