@@ -46,7 +46,7 @@ enum CollisionTypes: UInt32 {
 
 protocol GameViewControllerDelegate: AnyObject {
 	func moveToMainMenu()
-	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int, livesRemaining: Int)
+	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int, livesRemaining: Int, levelScore: Int, levelTimerBonus: Int)
 	func showConfirm(_ confirm: GigaBallConfirm)
 	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
 	var selectedLevel: Int? { get set }
@@ -6344,7 +6344,10 @@ laserTimer?.invalidate()
 			// Hide UI
 		}
 				
-		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore, livesRemaining: numberOfLives)
+		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore, livesRemaining: numberOfLives, levelScore: levelScore, levelTimerBonus: levelTimerBonus)
+		// The two halves of a completed level's score, so a daily's Complete screen can show
+		// the same breakdown a pack's end does (round 210). Passed always and used where it
+		// applies, rather than the screen reaching back into the scene for them
 		// Pass over highscore data to pause menu
 		
 		if firstPause && sender == "Pause" {

@@ -49,6 +49,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     
     @IBOutlet var backgroundView: UIView!
     @IBOutlet var containterView: UIView!
+    let dailyTotalTitle = UILabel()
+    let dailyTotalLabel = UILabel()
+
+    /// The two halves of a completed level's score, for the daily's breakdown (round 210).
+    var levelScore: Int = 0
+    var levelTimerBonus: Int = 0
+
+    /// Whether this screen should count out the breakdown rather than one figure.
+    ///
+    /// **A finished daily on a single level, and nothing else.** James: "single levels on
+    /// daily challenge need a time bonus on the complete screen at the end of the player
+    /// finished the level. It should be broken down like the end of a pack in classic mode."
+    /// A daily that ended in a game over has no time bonus to show - the level was not
+    /// finished - and an endless daily has a height rather than a level score.
+    var showsDailyBreakdown: Bool {
+        isDailyChallenge && sender == "Complete" && levelTimerBonus > 0
+    }
+
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet var scoreLabelTitle: UILabel!
     @IBOutlet weak var highscoreLabel: UILabel!
@@ -65,6 +83,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     let signedOutLabel = UILabel()
     private var livesUnderHighscore: NSLayoutConstraint!
     private var livesUnderScore: NSLayoutConstraint!
+    private var livesUnderDailyTotal: NSLayoutConstraint!
     private var statsUnderTheResult: NSLayoutConstraint!
     private var statsWellUnderTheResult: NSLayoutConstraint!
     private weak var activePowerUpHUD: PausedPowerUpHUD?
@@ -431,6 +450,26 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // argument every time; the margins around it are what should bend, and below they do
         containterView.addSubview(resultLabel)
 
+        dailyTotalTitle.translatesAutoresizingMaskIntoConstraints = false
+        dailyTotalTitle.textAlignment = .center
+        dailyTotalTitle.font = highscoreLabelTitle.font
+        dailyTotalTitle.textColor = highscoreLabelTitle.textColor
+        dailyTotalTitle.isHidden = true
+        containterView.addSubview(dailyTotalTitle)
+
+        dailyTotalLabel.translatesAutoresizingMaskIntoConstraints = false
+        dailyTotalLabel.textAlignment = .center
+        dailyTotalLabel.font = highscoreLabel.font
+        dailyTotalLabel.textColor = highscoreLabel.textColor
+        dailyTotalLabel.isHidden = true
+        containterView.addSubview(dailyTotalLabel)
+        // **The third row, and only the third.** The daily's Complete screen already has two
+        // rows sitting where they are needed: the score row, and the high-score row - which a
+        // daily blanks, because "the level's campaign high score belongs to the campaign".
+        // So the breakdown borrows those two for Level Score and Time Bonus and adds one row
+        // for the total, rather than building three and arguing with a layout that has been
+        // crushed once already (round 160)
+
         signedOutLabel.translatesAutoresizingMaskIntoConstraints = false
         signedOutLabel.textAlignment = .center
         signedOutLabel.numberOfLines = 0
@@ -454,6 +493,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // Switched on with the stats themselves: the result line and the stats block are
         // both in the lower half now, and only a screen showing both needs them kept apart
 
+        livesUnderDailyTotal = livesLabel.topAnchor.constraint(
+            equalTo: dailyTotalLabel.bottomAnchor, constant: 6)
+        // A third place for the lives line to hang from, for the same reason there were two:
+        // a label with no text still holds its place, so it has to hang off whatever is
+        // actually the bottom of the block above it
+
         livesUnderHighscore = livesLabel.topAnchor.constraint(
             equalTo: highscoreLabel.bottomAnchor, constant: 6)
         livesUnderScore = livesLabel.topAnchor.constraint(
@@ -464,6 +509,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // score it belongs to (play-test round 16's screenshot)
 
         NSLayoutConstraint.activate([
+            dailyTotalTitle.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            dailyTotalTitle.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
+                                                 constant: 8),
+            dailyTotalLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            dailyTotalLabel.topAnchor.constraint(equalTo: dailyTotalTitle.bottomAnchor),
+
             signedOutLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
                                                     resultLabel.bottomAnchor,
@@ -536,8 +587,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     func updateLivesLabel() {
         // The daily leaves the high score blank, so the lives line follows the score
         // itself there and the "Best" block everywhere else
+        livesUnderDailyTotal.isActive = showsDailyBreakdown
         livesUnderHighscore.isActive = !isDailyChallenge
-        livesUnderScore.isActive = isDailyChallenge
+        livesUnderScore.isActive = isDailyChallenge && showsDailyBreakdown == false
+        // Three now: the breakdown fills the high-score row and adds a total under it, so on
+        // a finished daily the lives line hangs from the bottom of that instead
 
         guard sender == "Pause" else {
             livesLabel.isHidden = true
@@ -1141,10 +1195,25 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 }
             }
 
-            scoreLabelTitle.text = "Score"
-            scoreLabel.text = String(score)
-            if sender != "Pause" {
-                startTally(to: score, suffix: "")
+            if showsDailyBreakdown {
+                scoreLabelTitle.text = "Level Score"
+                dailyTotalTitle.isHidden = false
+                dailyTotalLabel.isHidden = false
+                dailyTotalTitle.text = "Total Score"
+                startDailyBreakdownTally()
+                // **The breakdown a pack's end gives** (James, round 210: "single levels on
+                // daily challenge need a time bonus on the complete screen... broken down like
+                // the end of a pack in classic mode - level score, time bonus and total score,
+                // using the same tally animation"). The time bonus was already in the posted
+                // score; what was missing was the player being shown where it came from
+            } else {
+                scoreLabelTitle.text = "Score"
+                scoreLabel.text = String(score)
+                dailyTotalTitle.isHidden = true
+                dailyTotalLabel.isHidden = true
+                if sender != "Pause" {
+                    startTally(to: score, suffix: "")
+                }
             }
             // Every ending, not only Single Level Mode (play-test round 16: "the game over
             // screen should tally like the other screens do"). A pack's total was held back
@@ -1153,7 +1222,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // or the pack is complete. Mid-run counting stays where it belongs, on the
             // level summary between levels
 
-            if isDailyChallenge {
+            if showsDailyBreakdown {
+                highscoreLabelTitle.text = "Time Bonus"
+                // The row a daily leaves empty is exactly the row the breakdown needs, and it
+                // is already sitting under the score where the second line belongs
+            } else if isDailyChallenge {
                 highscoreLabelTitle.text = ""
                 highscoreLabel.text = ""
                 // The level's campaign high score belongs to the campaign - a daily on
@@ -1435,6 +1508,60 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     ///
     /// The number is the whole result of an endless run, and arriving at it is worth more
     /// than being handed it. Short, because this sits between one run and the next.
+    // MARK: - The daily's breakdown
+
+    private var breakdownLink: CADisplayLink?
+    private var breakdownStartedAt: CFTimeInterval = 0
+    private var breakdownLastTick = -1
+    private var hasRunBreakdownTally = false
+
+    private var breakdownValues: ScoreTally.Values {
+        ScoreTally.Values(level: levelScore, bonus: levelTimerBonus,
+                          from: max(0, score - levelScore - levelTimerBonus), to: score)
+    }
+
+    /// Counts the three numbers out, by the same rule and the same curve the between-levels
+    /// screen uses - `ScoreTally` owns both, so the two screens cannot drift apart.
+    private func startDailyBreakdownTally() {
+        guard hasRunBreakdownTally == false else {
+            showBreakdown(ScoreTally.reading(at: ScoreTally.duration, of: breakdownValues))
+            return
+        }
+        // Once per screen, for the reason `startTally` is: `updateLabels` runs again every
+        // time this menu is returned to, and each of those was starting the count over
+        hasRunBreakdownTally = true
+
+        showBreakdown(ScoreTally.reading(at: 0, of: breakdownValues))
+        breakdownStartedAt = CACurrentMediaTime()
+        breakdownLastTick = -1
+        let link = CADisplayLink(target: self, selector: #selector(stepDailyBreakdownTally))
+        link.add(to: .main, forMode: .common)
+        breakdownLink = link
+    }
+
+    @objc private func stepDailyBreakdownTally() {
+        let elapsed = CACurrentMediaTime() - breakdownStartedAt
+        guard elapsed < ScoreTally.duration else {
+            showBreakdown(ScoreTally.reading(at: ScoreTally.duration, of: breakdownValues))
+            breakdownLink?.invalidate()
+            breakdownLink = nil
+            return
+        }
+        showBreakdown(ScoreTally.reading(at: elapsed, of: breakdownValues))
+
+        let tick = ScoreTally.tick(at: elapsed)
+        if tick != breakdownLastTick {
+            breakdownLastTick = tick
+            if hapticsSetting { interfaceHaptic.impactOccurred(intensity: 0.5) }
+        }
+    }
+
+    private func showBreakdown(_ reading: ScoreTally.Reading) {
+        scoreLabel.text = String(reading.level)
+        highscoreLabel.text = "+\(reading.bonus)"
+        dailyTotalLabel.text = String(reading.total)
+    }
+
     private func startTally(to target: Int, suffix: String) {
         guard target > 0 else { return }
         guard hasRunHeightTally == false else { return }

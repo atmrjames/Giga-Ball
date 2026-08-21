@@ -1521,3 +1521,72 @@ final class DailyNoRepeatsTests: XCTestCase {
                        "a different mode is a different day whatever else matches")
     }
 }
+
+/// The count-up at the end of a level, shared by the between-levels screen and the daily's
+/// Complete screen.
+///
+/// James, round 210: "single levels on daily challenge need a time bonus on the complete
+/// screen at the end of the player finished the level. It should be broken down like the end
+/// of a pack in classic mode - level score, time bonus and total score, using the same tally
+/// animation."
+///
+/// "The same tally animation" is the requirement that makes this worth a type rather than a
+/// second copy: the two screens keep their own labels, because they sit in quite different
+/// layouts, and share exactly the part a player would notice diverging.
+final class ScoreTallyTests: XCTestCase {
+
+    private let values = ScoreTally.Values(level: 800, bonus: 250, from: 1000, to: 2050)
+
+    func testItStartsAtNothingAndEndsAtEverything() {
+        XCTAssertEqual(ScoreTally.reading(at: 0, of: values),
+                       ScoreTally.Reading(level: 0, bonus: 0, total: 1000))
+        XCTAssertEqual(ScoreTally.reading(at: ScoreTally.duration, of: values),
+                       ScoreTally.Reading(level: 800, bonus: 250, total: 2050))
+    }
+
+    /// The three counts happen one after another, not together.
+    func testEachNumberWaitsItsTurn() {
+        let duringLevel = ScoreTally.reading(at: ScoreTally.levelDuration/2, of: values)
+        XCTAssertGreaterThan(duringLevel.level, 0)
+        XCTAssertEqual(duringLevel.bonus, 0, "the bonus has not started")
+        XCTAssertEqual(duringLevel.total, 1000, "nor the total")
+
+        let duringBonus = ScoreTally.reading(at: ScoreTally.bonusStart + 0.01, of: values)
+        XCTAssertEqual(duringBonus.level, 800, "the level score is finished and stays")
+        XCTAssertGreaterThan(duringBonus.bonus, 0)
+        XCTAssertEqual(duringBonus.total, 1000)
+
+        let duringTotal = ScoreTally.reading(at: ScoreTally.totalStart + 0.01, of: values)
+        XCTAssertEqual(duringTotal.level, 800)
+        XCTAssertEqual(duringTotal.bonus, 250, "and so does the bonus")
+        XCTAssertGreaterThan(duringTotal.total, 1000)
+    }
+
+    /// **Nothing runs backwards.** The numbers used to drain back to zero once the total had
+    /// taken them, which read as though the level had been worth nothing - you finished a
+    /// level and the figure beside it was 0.
+    func testNoNumberEverGoesDown() {
+        var last = ScoreTally.reading(at: 0, of: values)
+        for step in stride(from: 0.0, through: ScoreTally.duration, by: 0.01) {
+            let now = ScoreTally.reading(at: step, of: values)
+            XCTAssertGreaterThanOrEqual(now.level, last.level)
+            XCTAssertGreaterThanOrEqual(now.bonus, last.bonus)
+            XCTAssertGreaterThanOrEqual(now.total, last.total)
+            last = now
+        }
+    }
+
+    /// A daily on a single level has no earlier total to build on, so the count starts from
+    /// nothing and the three numbers add up exactly.
+    func testASingleLevelDailyAddsUp() {
+        let daily = ScoreTally.Values(level: 800, bonus: 250, from: 0, to: 1050)
+        let end = ScoreTally.reading(at: ScoreTally.duration, of: daily)
+        XCTAssertEqual(end.level + end.bonus, end.total)
+    }
+
+    func testTheHapticTicksAreSpreadAcrossTheWholeCount() {
+        XCTAssertEqual(ScoreTally.tick(at: 0), 0)
+        XCTAssertEqual(ScoreTally.tick(at: ScoreTally.duration*0.99),
+                       ScoreTally.hapticTicks - 1)
+    }
+}

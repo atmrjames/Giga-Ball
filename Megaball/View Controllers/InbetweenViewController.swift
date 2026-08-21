@@ -185,13 +185,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// Short on purpose: this sits between finishing a level and playing the next one, so
     /// it should read as a flourish rather than something to sit through. A tap finishes
     /// it early.
-    private let tallyLevelDuration: CFTimeInterval = 0.28
-    private let tallyBonusDuration: CFTimeInterval = 0.22
-    private let tallyTotalDuration: CFTimeInterval = 0.36
-    private var tallyBonusStart: CFTimeInterval { tallyLevelDuration }
-    private var tallyTotalStart: CFTimeInterval { tallyBonusStart + tallyBonusDuration }
-    private var tallyDuration: CFTimeInterval { tallyTotalStart + tallyTotalDuration }
-    private let tallyHapticTicks = 10
+    /// The timings and the arithmetic live in `ScoreTally` since round 210, because the
+    /// daily's Complete screen counts the same three numbers and two copies of a curve are two
+    /// curves the first time either is touched. The labels stay here: the two screens sit in
+    /// quite different layouts.
 
     private var isTallying: Bool { tallyLink != nil }
 
@@ -216,47 +213,30 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         tallyLink = link
     }
 
+    private var tallyValues: ScoreTally.Values {
+        ScoreTally.Values(level: levelScore, bonus: levelScoreBonus,
+                          from: tallyTotalFrom, to: totalScore)
+    }
+
     @objc private func stepScoreTally() {
         let elapsed = CACurrentMediaTime() - tallyStartedAt
-        guard elapsed < tallyDuration else {
+        guard elapsed < ScoreTally.duration else {
             finishScoreTally()
             return
         }
 
-        // Ease out, so each number decelerates into its value rather than stopping dead.
-        // Whatever a phase has not reached yet reads zero, and whatever it has finished
-        // stays at its full value - the sequence is the point, so nothing runs backwards.
-        if elapsed < tallyBonusStart {
-            let eased = easeOut(elapsed / tallyLevelDuration)
-            levelScoreLabel.text = String(scaled(levelScore, by: eased))
-            speedBonusLabel.text = "+0"
-            totalScoreLabel.text = String(tallyTotalFrom)
-        } else if elapsed < tallyTotalStart {
-            let eased = easeOut((elapsed - tallyBonusStart) / tallyBonusDuration)
-            levelScoreLabel.text = String(levelScore)
-            speedBonusLabel.text = "+\(scaled(levelScoreBonus, by: eased))"
-            totalScoreLabel.text = String(tallyTotalFrom)
-        } else {
-            let eased = easeOut((elapsed - tallyTotalStart) / tallyTotalDuration)
-            levelScoreLabel.text = String(levelScore)
-            speedBonusLabel.text = "+\(levelScoreBonus)"
-            let gained = totalScore - tallyTotalFrom
-            totalScoreLabel.text = String(tallyTotalFrom + scaled(gained, by: eased))
-        }
+        let reading = ScoreTally.reading(at: elapsed, of: tallyValues)
+        levelScoreLabel.text = String(reading.level)
+        speedBonusLabel.text = "+\(reading.bonus)"
+        totalScoreLabel.text = String(reading.total)
 
-        let tick = Int(elapsed / tallyDuration * Double(tallyHapticTicks))
+        let tick = ScoreTally.tick(at: elapsed)
         if tick != tallyLastTick {
             tallyLastTick = tick
             if hapticsSetting {
                 interfaceHaptic.impactOccurred(intensity: 0.5)
             }
         }
-    }
-
-    private func easeOut(_ t: Double) -> Double { 1 - pow(1 - t, 3) }
-
-    private func scaled(_ value: Int, by fraction: Double) -> Int {
-        Int((Double(value) * fraction).rounded())
     }
 
     /// Snaps the numbers to their final values. Returns whether there was anything to
