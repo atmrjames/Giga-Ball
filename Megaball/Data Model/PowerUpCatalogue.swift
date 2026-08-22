@@ -181,7 +181,7 @@ enum PowerUpCatalogue {
                 isTimed: false, stacking: .repeats),
         PowerUp(id: "slowBall", name: "Slow Ball", rarity: .common, valence: .beneficial,
                 isTimed: true, stacking: .stepsAlongAxis),
-        PowerUp(id: "fastBall", name: "Fast Ball", rarity: .common, valence: .harmful,
+        PowerUp(id: "fastBall", name: "Increase Ball Speed", rarity: .common, valence: .harmful,
                 isTimed: true, stacking: .stepsAlongAxis),
         PowerUp(id: "expandPaddle", name: "Expand Paddle", rarity: .common, valence: .beneficial,
                 isTimed: true, stacking: .stepsAlongAxis),
@@ -238,9 +238,9 @@ enum PowerUpCatalogue {
     // MARK: - Endless 2.0
 
     static let endlessII: [PowerUp] = [
-        PowerUp(id: "descent", name: "Descent", availability: .endlessII,
+        PowerUp(id: "descent", name: "Brick Descent", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
-        PowerUp(id: "trajectoryLine", name: "Trajectory Line", availability: .endlessII,
+        PowerUp(id: "trajectoryLine", name: "Ball Trajectory", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
         PowerUp(id: "aimedSticky", name: "Aimed Sticky", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, conflict: .launchControl,
@@ -260,7 +260,7 @@ enum PowerUpCatalogue {
                 isEligible: { $0.active.contains("lock") }),
         PowerUp(id: "laserBeam", name: "Laser Beam", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: false, stacking: .repeats),
-        PowerUp(id: "portalPaddle", name: "Portal Paddle", availability: .endlessII,
+        PowerUp(id: "portalPaddle", name: "Portal", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "wrapAround", name: "Wrap-Around", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
@@ -269,9 +269,9 @@ enum PowerUpCatalogue {
         PowerUp(id: "wreckingBall", name: "Wrecking Ball", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, conflict: .ballHitBehaviour,
                 isTimed: true, stacking: .extendsDuration),
-        PowerUp(id: "aura", name: "Aura", availability: .endlessII,
+        PowerUp(id: "aura", name: "Ball Aura", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
-        PowerUp(id: "randomisedBounce", name: "Randomised Bounce", availability: .endlessII,
+        PowerUp(id: "randomisedBounce", name: "Random Bounce", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "convexPaddle", name: "Convex Paddle", availability: .endlessII,
                 rarity: .rare, valence: .harmful, isTimed: true,
@@ -279,7 +279,7 @@ enum PowerUpCatalogue {
         PowerUp(id: "concavePaddle", name: "Concave Paddle", availability: .endlessII,
                 rarity: .rare, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
-        PowerUp(id: "wavyPaddle", name: "Wave Paddle", availability: .endlessII,
+        PowerUp(id: "wavyPaddle", name: "Wavy Paddle", availability: .endlessII,
                 rarity: .rare, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
         PowerUp(id: "jaggedPaddle", name: "Jagged Paddle", availability: .retired,
@@ -347,7 +347,7 @@ enum PowerUpCatalogue {
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "inertPaddle", name: "Inert Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
-        PowerUp(id: "flippedAngle", name: "Flipped Angle", availability: .endlessII,
+        PowerUp(id: "flippedAngle", name: "Flipped Bounce Angle", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "multiBall", name: "Multi-Ball", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: false, stacking: .addsAnother,
@@ -355,19 +355,19 @@ enum PowerUpCatalogue {
                 isEligible: { $0.ballsInPlay < PowerUpContext.maximumBalls }),
         PowerUp(id: "wipe", name: "Wipe", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: false, stacking: .repeats),
-        PowerUp(id: "paddleHalo", name: "Paddle Halo", availability: .endlessII,
+        PowerUp(id: "paddleHalo", name: "Halo", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsAndDeepens),
-        PowerUp(id: "reversedControls", name: "Reversed Controls", availability: .endlessII,
+        PowerUp(id: "reversedControls", name: "Reversed Paddle Control", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
-        PowerUp(id: "ballSteering", name: "Ball Steering", availability: .endlessII,
+        PowerUp(id: "ballSteering", name: "Ball Control", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
-        PowerUp(id: "clearAndRetreat", name: "Retreat", availability: .endlessII,
+        PowerUp(id: "clearAndRetreat", name: "Brick Retreat", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true,
                 stacking: .extendsDuration),
         // Timed since round 136. Instant, the retreat it clears was taken straight back by
         // the cadence, which exists to close exactly that gap - so the power-up's own effect
         // undid itself in under a second
-        PowerUp(id: "cull", name: "Cull", availability: .endlessII,
+        PowerUp(id: "cull", name: "Brick Cull", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: false, stacking: .repeats),
         // Destroys half the remaining bricks at random. Rare because it is the largest single
         // thing a power-up does to the field, and instant because there is nothing left to run
@@ -381,7 +381,7 @@ enum PowerUpCatalogue {
         // Sticky owns the *launch* from a held ball and Auto-Aim redirects an ordinary
         // *bounce*, and the scene lets both run. Declaring a conflict here that the game does
         // not enforce is how this file drifted from the game in the first place
-        PowerUp(id: "infill", name: "Infill", availability: .endlessII,
+        PowerUp(id: "infill", name: "Brick Infill", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: false, stacking: .repeats),
     ]
 

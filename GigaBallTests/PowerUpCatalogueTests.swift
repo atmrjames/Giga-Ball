@@ -409,7 +409,7 @@ final class InGameRecentsTests: XCTestCase {
         let setup = LevelPackSetup()
 
         // The ones a player would otherwise go hunting for in a Classic pack
-        for name in ["Portal Paddle", "Wrecking Ball", "Cull", "Auto-Aim", "Lock", "Key"] {
+        for name in ["Portal", "Wrecking Ball", "Brick Cull", "Auto-Aim", "Lock", "Key"] {
             let index = setup.powerUpNameArray.firstIndex(of: name)
             XCTAssertNotNil(index, name)
             XCTAssertTrue(setup.isEndlessIIPowerUp(index ?? 0), name)

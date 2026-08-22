@@ -24,19 +24,27 @@ import SpriteKit
 
 extension GameScene {
 
+    /// How long one collection of a *timed* power-up lasts, anywhere in Endless Mayhem.
+    ///
+    /// **Ten seconds, everywhere** (James, round 218's workbook). Retreat was eight, the Lock
+    /// and Randomised Bounce fifteen, Ghost Ball and the Safety Paddle twelve, each set by its
+    /// own play-test round and none of them any longer readable as a decision. One number is
+    /// something a player can learn; six is something they have to look up.
     static let endlessIIPaddlePowerUpDuration: TimeInterval = 10
 
-    /// How many paddle hits one collection of a paddle power-up lasts.
+    /// How many paddle hits one collection of a turn-based power-up lasts.
     ///
-    /// The whole batch is turn-based rather than timed - like the sticky paddle, which is
-    /// the request play-testing made in as many words. A power-up you spend by using reads
-    /// differently from one that evaporates while the ball is away at the top of the field.
+    /// Most of the paddle batch is turn-based rather than timed - like the sticky paddle,
+    /// which is the request play-testing made in as many words. A power-up you spend by using
+    /// reads differently from one that evaporates while the ball is away at the top of the
+    /// field. The three exceptions are the ones that act *between* bounces: Ball Steering,
+    /// Magnetism and the Paddle Halo, which are measured in seconds for the same reason.
     static let endlessIIPaddlePowerUpTurns: TimeInterval = 5
 
     // MARK: - Collection
 
     func endlessIICollectAimedSticky() {
-        endlessIIAimedStickyClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIAimedStickyClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
         endlessIIInertPaddleClock.reset()
         endlessIIFlippedAngleClock.reset()
         // **Aimed Sticky cancels the angle-benders, and they cancel it** (James's rule,
@@ -61,17 +69,22 @@ extension GameScene {
     }
 
     func endlessIICollectMagnetism() {
-        endlessIIMagnetismClock.collect(GameScene.endlessIIPaddlePowerUpTurns,
+        endlessIIMagnetismClock.collect(GameScene.endlessIIPaddlePowerUpDuration,
                                         deepestLevel: EndlessIIPaddleEffects.magnetismStrength.count - 1)
+        // **Timed, from round 218's workbook.** It pulls the ball for the whole of its flight
+        // rather than acting at a contact, so seconds are the unit that matches what it does -
+        // the same argument that moved Ball Steering off turns in round 15
     }
 
     func endlessIICollectPortalPaddle() {
-        endlessIIPortalPaddleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIPortalPaddleClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
     }
 
     func endlessIICollectPaddleHalo() {
-        endlessIIPaddleHaloClock.collect(GameScene.endlessIIPaddlePowerUpTurns,
+        endlessIIPaddleHaloClock.collect(GameScene.endlessIIPaddlePowerUpDuration,
                                          deepestLevel: EndlessIIPaddleEffects.haloReach.count - 1)
+        // **Timed too** (round 218). The glow eats whatever the field brings over it, which is
+        // something it does continuously and nothing to do with a bounce
     }
 
     func endlessIICollectBallSteering() {
@@ -93,7 +106,7 @@ extension GameScene {
     /// it, and Auto-Aim still overrides it, because the aim replaces the angle afterwards.
     func endlessIICollectPaddleSurface(_ surface: PaddleBounce.Surface) {
         endlessIIPaddleSurface = surface
-        endlessIIPaddleSurfaceClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIPaddleSurfaceClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
         endlessIIPaddleSurfaceClock.level = surface.savedCode
         // **The clock carries which shape**, in the magnitude field it has never had a use
         // for. Every clock already saves a magnitude, so a resumed run comes back wearing the
@@ -310,7 +323,7 @@ extension GameScene {
     }
 
     func endlessIICollectInertPaddle() {
-        endlessIIInertPaddleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIInertPaddleClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
         endlessIIFlippedAngleClock.reset()
         endlessIICancelAimedSticky()
         // Most recent wins across the whole angle group: Inert replaces Flipped as well as
@@ -319,17 +332,17 @@ extension GameScene {
     }
 
     func endlessIICollectFlippedAngle() {
-        endlessIIFlippedAngleClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIFlippedAngleClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
         endlessIIInertPaddleClock.reset()
         endlessIICancelAimedSticky()
     }
 
     func endlessIICollectReversedControls() {
-        endlessIIReversedControlsClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIReversedControlsClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
     }
 
     func endlessIICollectAutoAim() {
-        endlessIIAutoAimClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIAutoAimClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
     }
 
     /// The power-ups a free shot should not be spent on - the bad ones, by the same
@@ -534,12 +547,10 @@ extension GameScene {
         // contact, and a clock expired by its own last turn must still deliver it
 
         endlessIIAimedStickyClock.spendTurn()
-        endlessIIMagnetismClock.spendTurn()
         endlessIIPortalPaddleClock.spendTurn()
-        endlessIIPaddleHaloClock.spendTurn()
         endlessIIInertPaddleClock.spendTurn()
-        // Ball Steering is not here: it runs on time now, and spending it a turn as well
-        // would end it twice as fast as its ring says
+        // Ball Steering, Magnetism and Paddle Halo are not here: all three run on time now,
+        // and spending them a turn as well would end them twice as fast as their rings say
         endlessIIFlippedAngleClock.spendTurn()
         endlessIIReversedControlsClock.spendTurn()
         endlessIIAutoAimClock.spendTurn()
@@ -550,6 +561,7 @@ extension GameScene {
         // On hits since round 180 (James: "it doesn't ever end. This should be based on
         // paddle hits, not timed") - both had been 12-second clocks that no loop ran down
         endlessIISpendLandingTurn()
+        endlessIISpendTrajectoryTurn()
     }
 
     /// What multiplies the paddle's angular influence on a bounce - see `paddleHit`.
@@ -677,10 +689,13 @@ extension GameScene {
         tickEndlessIIPaddleDressing()
         if gameState.currentState is Playing && isPaused == false {
             endlessIIBallSteeringClock.run(down: endlessIIClockDelta)
+            endlessIIMagnetismClock.run(down: endlessIIClockDelta)
+            endlessIIPaddleHaloClock.run(down: endlessIIClockDelta)
         }
         // The rest of the batch counts paddle hits, spent in `endlessIISpendPaddleTurns`.
-        // Ball Steering is the exception: it acts continuously rather than on contact, so
-        // it runs on the clock (play-test round 15)
+        // These three are the exceptions: they act continuously rather than on contact, so
+        // they run on the clock (play-test round 15 for Ball Steering, round 218's workbook
+        // for the other two)
 
         if endlessIIPaddleHaloClock.isRunning == false {
             endlessIIPaddleHaloNode?.removeFromParent()
@@ -869,9 +884,16 @@ extension GameScene {
             guard clock.isRunning else { return nil }
             return PowerUpRingHUD.Entry(id: id, texture: SKTexture(image: icon),
                                         remaining: clock.fraction,
-                                        segments: Int(clock.total))
+                                        segments: clock.countsTurns ? Int(clock.total) : nil)
             // Segmented like the sticky paddle's ring: five marks say "five turns" where a
-            // smooth arc only says "most of it"
+            // smooth arc only says "most of it".
+            //
+            // **Only where the clock counts turns.** It used to mark every ring with its
+            // total, so Ball Steering - timed since round 15 - wore ten marks for ten
+            // seconds, and round 218 would have given Magnetism and the halo the same. A ring
+            // fed a fraction that moves smoothly must not be drawn in steps, and one fed a
+            // fraction that only moves in steps must be: that is round 215's landing marker,
+            // in the other direction
         }
     }
 
@@ -955,15 +977,49 @@ extension GameScene {
             // surfaces it is about to bounce off
         case "endlessIIBallSpin":
             endlessIIBallSpinClock.restore(remaining: remaining, total: total, level: 0)
-            endlessIIBallSpinClock.countsTurns = true
-            // The turn flag is not in the save - what marks a restored clock as counting
-            // turns is this line, the way `collect(turns:)` marks a fresh one. The curve
-            // itself is deliberately *not* restored: it is spent within a second of the
-            // bounce that earned it, and a resumed ball has not just been bounced
+            // The curve itself is deliberately *not* restored: it is spent within a second of
+            // the bounce that earned it, and a resumed ball has not just been bounced
         default:
             return false
         }
+        markEndlessIIRestoredTurns(key: key)
         return true
+    }
+
+    /// Which of this batch's clocks are measured in paddle hits.
+    ///
+    /// The three that are not are the ones that act between bounces: Ball Steering since
+    /// round 15, Magnetism and the Paddle Halo since round 218's workbook. Everything else in
+    /// the batch is spent by a contact.
+    static let endlessIIPaddleTurnClockKeys: Set<String> = [
+        "endlessIIAimedSticky", "endlessIIPortalPaddle", "endlessIIInertPaddle",
+        "endlessIIFlippedAngle", "endlessIIReversedControls", "endlessIIAutoAim",
+        "endlessIIPaddleSurface", "endlessIIDoublePaddle", "endlessIIMirrorPaddle",
+        "endlessIIBallSpin",
+    ]
+
+    /// Puts the turn flag back on a restored clock.
+    ///
+    /// **The flag is not in the save**, so a restored clock has to be told what it is, the way
+    /// `collect(turns:)` tells a fresh one. Ball Spin was doing this alone since round 180 and
+    /// the rest were quietly coming back as seconds clocks: harmless while nothing read the
+    /// flag, and not harmless from round 218, where the ring draws its five marks only for a
+    /// clock that says it counts hits. A resumed run would have worn smooth rings.
+    private func markEndlessIIRestoredTurns(key: String) {
+        guard GameScene.endlessIIPaddleTurnClockKeys.contains(key) else { return }
+        switch key {
+        case "endlessIIAimedSticky": endlessIIAimedStickyClock.countsTurns = true
+        case "endlessIIPortalPaddle": endlessIIPortalPaddleClock.countsTurns = true
+        case "endlessIIInertPaddle": endlessIIInertPaddleClock.countsTurns = true
+        case "endlessIIFlippedAngle": endlessIIFlippedAngleClock.countsTurns = true
+        case "endlessIIReversedControls": endlessIIReversedControlsClock.countsTurns = true
+        case "endlessIIAutoAim": endlessIIAutoAimClock.countsTurns = true
+        case "endlessIIPaddleSurface": endlessIIPaddleSurfaceClock.countsTurns = true
+        case "endlessIIDoublePaddle": endlessIIDoublePaddleClock.countsTurns = true
+        case "endlessIIMirrorPaddle": endlessIIMirrorPaddleClock.countsTurns = true
+        case "endlessIIBallSpin": endlessIIBallSpinClock.countsTurns = true
+        default: break
+        }
     }
 
     /// Ends the whole batch. For the life ending and the field resetting.

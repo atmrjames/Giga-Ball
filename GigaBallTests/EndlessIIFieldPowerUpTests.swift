@@ -1742,7 +1742,7 @@ final class RandomisedBounceTests: XCTestCase {
     /// the trap this project keeps writing down (§8.6).
     func testTheFiftySecondPowerUpIsInEveryListThatDefinesOne() {
         let setup = LevelPackSetup()
-        let index = setup.powerUpNameArray.firstIndex(of: "Randomised Bounce")
+        let index = setup.powerUpNameArray.firstIndex(of: "Random Bounce")
         XCTAssertNotNil(index)
         guard let index else { return }
 

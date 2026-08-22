@@ -351,13 +351,13 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         // "Make paddle power-ups turn based not time based - like sticky paddle - 5 turns
         // each." The contact is the turn, whatever the paddle then does with it
         let scene = paddleScene()
-        scene.endlessIICollectMagnetism()
+        scene.endlessIICollectInertPaddle()
         scene.endlessIICollectReversedControls()
-        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+        XCTAssertEqual(scene.endlessIIInertPaddleClock.remaining,
                        GameScene.endlessIIPaddlePowerUpTurns)
 
         scene.endlessIISpendPaddleTurns()
-        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+        XCTAssertEqual(scene.endlessIIInertPaddleClock.remaining,
                        GameScene.endlessIIPaddlePowerUpTurns - 1)
         XCTAssertEqual(scene.endlessIIReversedControlsClock.remaining,
                        GameScene.endlessIIPaddlePowerUpTurns - 1)
@@ -365,7 +365,30 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) {
             scene.endlessIISpendPaddleTurns()
         }
-        XCTAssertFalse(scene.endlessIIMagnetismClock.isRunning, "five turns and it is gone")
+        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning, "five turns and it is gone")
+    }
+
+    /// The three that act between bounces are measured in seconds, not in bounces.
+    ///
+    /// Ball Steering since round 15, Magnetism and Paddle Halo since round 218's workbook.
+    /// All three do their work while the ball is nowhere near the paddle, and a contact is
+    /// the wrong thing to bill them for: counting hits ended them in the middle of using them.
+    func testTheContinuousPaddlePowerUpsAreNotSpentByAContact() {
+        let scene = paddleScene()
+        scene.endlessIICollectMagnetism()
+        scene.endlessIICollectPaddleHalo()
+        scene.endlessIICollectBallSteering()
+
+        scene.endlessIISpendPaddleTurns()
+
+        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpDuration, accuracy: 0.001,
+                       "Magnetism was billed for a bounce")
+        XCTAssertEqual(scene.endlessIIPaddleHaloClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpDuration, accuracy: 0.001,
+                       "the halo was billed for a bounce")
+        XCTAssertEqual(scene.endlessIIBallSteeringClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpDuration, accuracy: 0.001)
     }
 
     /// James, round 169: "all of a sudden, the other ball appeared on the middle of the
@@ -428,18 +451,30 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
 
     func testTheRingShowsTheTurnsAsSegments() {
         let scene = paddleScene()
-        scene.endlessIICollectPaddleHalo()
+        scene.endlessIICollectInertPaddle()
         let entry = scene.endlessIIPaddleRingEntries().first
         XCTAssertEqual(entry?.segments, Int(GameScene.endlessIIPaddlePowerUpTurns),
                        "five marks say five turns, the way the sticky paddle's ring does")
     }
 
+    /// And a ring measured in seconds draws no marks at all.
+    ///
+    /// A segmented ring fed a fraction that moves smoothly reads as broken, and a smooth ring
+    /// fed one that only moves in steps reads as segmented (round 215's landing marker). The
+    /// two have to agree, so the marks follow the clock rather than the power-up's batch.
+    func testATimedPaddlePowerUpsRingIsNotSegmented() {
+        let scene = paddleScene()
+        scene.endlessIICollectPaddleHalo()
+        let entry = scene.endlessIIPaddleRingEntries().first
+        XCTAssertNil(entry?.segments, "the halo runs on seconds now, so it has no turns to mark")
+    }
+
     func testOtherModesSpendNothing() {
         let scene = paddleScene()
-        scene.endlessIICollectMagnetism()
+        scene.endlessIICollectInertPaddle()
         scene.gameMode = .classic
         scene.endlessIISpendPaddleTurns()
-        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining,
+        XCTAssertEqual(scene.endlessIIInertPaddleClock.remaining,
                        GameScene.endlessIIPaddlePowerUpTurns)
     }
 
@@ -1811,7 +1846,7 @@ final class EndlessIIBallSpinTests: XCTestCase {
         let setup = LevelPackSetup()
         XCTAssertEqual(setup.powerUpNameArray[62], "Ball Spin")
         XCTAssertEqual(setup.powerUpMultiplierArray[62], "+0.1")
-        XCTAssertEqual(setup.powerUpTimerArray[62], "5 hits")
+        XCTAssertEqual(setup.powerUpTimerArray[62], "5 paddle hits")
     }
 }
 
@@ -2155,18 +2190,28 @@ final class ShapedPaddleSurvivesAResumeTests: XCTestCase {
     }
 
     /// Every shape survives being saved and put back.
+    ///
+    /// Two scenes for the whole loop rather than two per shape. A `GameScene` is not a cheap
+    /// object to build and twelve of them in one test case was enough to have the host
+    /// relaunch mid-test on a busy machine - a failure with no assertion behind it, which is
+    /// the most confusing kind to be handed.
     func testEveryShapeComesBackFromTheSave() {
+        let saved = GameScene()
+        saved.gameMode = .endlessII
+        let resumed = GameScene()
+        resumed.gameMode = .endlessII
+
         for surface in PaddleBounce.Surface.allCases {
-            let saved = GameScene()
-            saved.gameMode = .endlessII
+            saved.endlessIIPaddleSurfaceClock.reset()
+            saved.endlessIIPaddleSurface = nil
             saved.endlessIICollectPaddleSurface(surface)
             guard let entry = saved.endlessIIPaddleClockSaveEntries()
                 .first(where: { $0.key == "endlessIIPaddleSurface" }) else {
                     return XCTFail("a running shape was not in the save at all")
             }
 
-            let resumed = GameScene()
-            resumed.gameMode = .endlessII
+            resumed.endlessIIPaddleSurfaceClock.reset()
+            resumed.endlessIIPaddleSurface = nil
             resumed.endlessIIRestorePaddleClock(key: entry.key, remaining: entry.remaining,
                                                 total: entry.total, magnitude: entry.magnitude)
             XCTAssertEqual(resumed.endlessIIPaddleSurface, surface,

@@ -105,7 +105,7 @@ enum PaddleBounce {
             switch self {
             case .convex: return "Convex Paddle"
             case .concave: return "Concave Paddle"
-            case .wavy: return "Wave Paddle"
+            case .wavy: return "Wavy Paddle"
             case .jagged: return "Jagged Paddle"
             case .wedgeLeft: return "Wedge Left Paddle"
             case .wedgeRight: return "Wedge Right Paddle"

@@ -67,7 +67,7 @@ extension GameScene {
     /// this mode the descent is where height - the score - comes from. The player is
     /// trading tempo for room, and eight seconds is enough room to be worth the trade
     /// without the run standing still long enough to notice.
-    static let endlessIIClearAndRetreatDuration: TimeInterval = 8
+    static let endlessIIClearAndRetreatDuration = GameScene.endlessIIPaddlePowerUpDuration
 
     /// How long the field takes to give up its two rows - and to take them back, in seconds.
     ///
@@ -397,7 +397,10 @@ extension GameScene {
 
     /// A Lock lands. Extends, like every other timed power-up.
     func endlessIICollectLock() {
-        endlessIILockClock.collect(GameScene.endlessIILockDuration)
+        endlessIILockClock.hold()
+        // **No timer** (James, round 218). It ran fifteen seconds and then let go by itself,
+        // which made the Key a convenience rather than the answer. Held, the Key is the only
+        // way out and a Lock is a thing that happens *to* you until you undo it
     }
 
     /// A Key lands, and the Lock ends.
@@ -407,8 +410,6 @@ extension GameScene {
     func endlessIITurnKey() {
         endlessIILockClock = EndlessIIClock()
     }
-
-    static let endlessIILockDuration: TimeInterval = 15
 
     /// Whether the timed power-ups are frozen.
     var endlessIILocked: Bool { endlessIILockClock.isRunning }
@@ -799,10 +800,6 @@ extension GameScene {
     func tickEndlessIIFieldPowerUps() {
         guard gameMode == .endlessII else { return }
         if gameState.currentState is Playing && isPaused == false {
-            endlessIILockClock.run(down: endlessIIPaddleFrameDelta)
-            // The Lock's own clock is the one thing a Lock does not freeze - it has to be
-            // able to end by itself, or a run without a Key never gets its timers back
-
             endlessIIWreckingBallClock.run(down: endlessIIClockDelta)
             endlessIIAuraClock.run(down: endlessIIClockDelta)
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
@@ -841,7 +838,7 @@ extension GameScene {
     /// frame, with its own jitter, which is the vibrating and glitching. Proportional, it
     /// cannot: ten per cent of a shallow angle is a shallow nudge, so the ball never lands
     /// where the escape hatch has to save it.
-    static let endlessIIRandomisedBounceDuration: TimeInterval = 15
+    static let endlessIIRandomisedBounceDuration = GameScene.endlessIIPaddlePowerUpDuration
     static let endlessIIRandomisedBounceSpread: Double = 0.10
 
     /// Starts or extends Randomised Bounce (§5.4: timed, extends its own duration).
@@ -879,7 +876,7 @@ extension GameScene {
 
     // MARK: - Ghost Ball
 
-    static let endlessIIGhostBallDuration: TimeInterval = 12
+    static let endlessIIGhostBallDuration = GameScene.endlessIIPaddlePowerUpDuration
 
     func endlessIICollectGhostBall() {
         endlessIIGhostBallClock.collect(GameScene.endlessIIGhostBallDuration)

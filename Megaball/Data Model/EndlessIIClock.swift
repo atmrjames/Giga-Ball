@@ -56,6 +56,22 @@ struct EndlessIIClock: Equatable {
         total = remaining
     }
 
+    /// A collection that never runs out on its own.
+    ///
+    /// The Lock, and only the Lock (James, round 218: "Lock shouldn't have a timer. It is only
+    /// stopped by Key"). A held clock reads as running for ever and its ring reads as full,
+    /// which is the honest picture: there is no time left on it to show, because time is not
+    /// what ends it.
+    ///
+    /// Held rather than given an enormous duration, because a duration is something the ring
+    /// would draw down and something a Lock-freezes-everything rule would have to remember to
+    /// leave alone. A full ring that never moves says "until a Key" without a word.
+    mutating func hold() {
+        remaining = 1
+        total = 1
+        countsTurns = false
+    }
+
     /// A collection lands, measured in turns rather than seconds.
     mutating func collect(turns: Int, deepestLevel: Int = 0) {
         collect(TimeInterval(turns), deepestLevel: deepestLevel)

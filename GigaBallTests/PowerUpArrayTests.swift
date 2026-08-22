@@ -192,30 +192,30 @@ final class PowerUpArtworkTests: XCTestCase {
     /// the exist ones, many new."
     private let drawn: [(String, UIImage)] = [
         ("Aimed Sticky", PowerUpIcon.aimedSticky),
-        ("Aura", PowerUpIcon.aura),
+        ("Ball Aura", PowerUpIcon.aura),
         ("Auto Aim", PowerUpIcon.autoAim),
-        ("Ball Steering", PowerUpIcon.ballSteering),
+        ("Ball Control", PowerUpIcon.ballSteering),
         ("Clear And Retreat", PowerUpIcon.clearAndRetreat),
         ("Cluster", PowerUpIcon.cluster),
-        ("Cull", PowerUpIcon.cull),
-        ("Descent", PowerUpIcon.descent),
+        ("Brick Cull", PowerUpIcon.cull),
+        ("Brick Descent", PowerUpIcon.descent),
         ("Double Paddle", PowerUpIcon.doublePaddle),
         ("Drift", PowerUpIcon.drift),
-        ("Flipped Angle", PowerUpIcon.flippedAngle),
+        ("Flipped Bounce Angle", PowerUpIcon.flippedAngle),
         ("Ghost Ball", PowerUpIcon.ghostBall),
         ("Inert Paddle", PowerUpIcon.inertPaddle),
-        ("Infill", PowerUpIcon.infill),
+        ("Brick Infill", PowerUpIcon.infill),
         ("Key", PowerUpIcon.key),
         ("Landing Marker", PowerUpIcon.landingMarker),
         ("Laser Beam", PowerUpIcon.laserBeam),
         ("Magnetism", PowerUpIcon.magnetism),
         ("Mirror Paddle", PowerUpIcon.mirrorPaddle),
         ("Multi-Ball", PowerUpIcon.multiBall),
-        ("Paddle Halo", PowerUpIcon.paddleHalo),
-        ("Randomised Bounce", PowerUpIcon.randomisedBounce),
-        ("Reversed Controls", PowerUpIcon.reversedControls),
+        ("Halo", PowerUpIcon.paddleHalo),
+        ("Random Bounce", PowerUpIcon.randomisedBounce),
+        ("Reversed Paddle Control", PowerUpIcon.reversedControls),
         ("Safety Paddle", PowerUpIcon.safetyPaddle),
-        ("Trajectory Line", PowerUpIcon.trajectoryLine),
+        ("Ball Trajectory", PowerUpIcon.trajectoryLine),
         ("Wipe", PowerUpIcon.wipe),
         ("Wrecking Ball", PowerUpIcon.wreckingBall),
     ]
@@ -231,7 +231,7 @@ final class PowerUpArtworkTests: XCTestCase {
     func testTheOnesWithNoArtworkYetStillDrawThemselves() {
         // The other half of the same rule: §8.5 still lists these, and they must keep looking
         // like something until it does arrive
-        for (name, icon) in [("Portal Paddle", PowerUpIcon.portalPaddle),
+        for (name, icon) in [("Portal", PowerUpIcon.portalPaddle),
                              ("Wrap Around", PowerUpIcon.wrapAround),
                              ("Ball Spin", PowerUpIcon.ballSpin)] {
             XCTAssertEqual(icon.size, PowerUpIcon.canvas, name)
@@ -289,5 +289,87 @@ final class RetiredPowerUpsAreNotListedTests: XCTestCase {
         let setup = LevelPackSetup()
         XCTAssertEqual(setup.powerUpCorrectOrderArray.sorted(),
                        Array(setup.powerUpNameArray.indices))
+    }
+}
+
+/// What the reference page tells a player a power-up lasts.
+///
+/// Round 218 took the names, descriptions and durations from James's workbook
+/// (Giga-Ball 2026.xlsx, Power-Up Details). The durations became uniform there: ten seconds
+/// for anything timed, five paddle hits for anything spent by a bounce, and the workbook
+/// exposed four places where the page was simply telling players the wrong thing.
+final class PowerUpDurationTextTests: XCTestCase {
+
+    private let setup = LevelPackSetup()
+
+    private func index(_ name: String) -> Int {
+        setup.powerUpNameArray.firstIndex(of: name) ?? -1
+    }
+
+    /// Every duration the page prints is one of the four the game has.
+    func testThePageOnlySpeaksOfDurationsTheGameHas() {
+        let allowed: Set<String> = ["", "10s", "5 paddle hits", "1 backstop hit", "Until a Key"]
+        let retired = setup.retiredPowerUpIndices
+        for (i, timer) in setup.powerUpTimerArray.enumerated() where retired.contains(i) == false {
+            XCTAssertTrue(allowed.contains(timer),
+                          "\(setup.powerUpNameArray[i]) says it lasts \(timer)")
+        }
+        // Retired slots are skipped rather than rewritten: nothing prints them, and their
+        // entries are the file's furniture rather than the game's copy (round 217)
+    }
+
+    /// And "10s" is the number the code actually uses.
+    func testTenSecondsIsTheDurationTheCodeRunsOn() {
+        XCTAssertEqual(GameScene.endlessIIPaddlePowerUpDuration, 10)
+        XCTAssertEqual(GameScene.endlessIIPaddlePowerUpTurns, 5)
+        XCTAssertEqual(GameScene.endlessIIClearAndRetreatDuration,
+                       GameScene.endlessIIPaddlePowerUpDuration)
+        XCTAssertEqual(GameScene.endlessIIRandomisedBounceDuration,
+                       GameScene.endlessIIPaddlePowerUpDuration)
+        XCTAssertEqual(GameScene.endlessIIGhostBallDuration,
+                       GameScene.endlessIIPaddlePowerUpDuration)
+        XCTAssertEqual(GameScene.endlessIISafetyPaddleDuration,
+                       GameScene.endlessIIPaddlePowerUpDuration)
+    }
+
+    /// The four the page had wrong, named one at a time so a regression says which.
+    ///
+    /// Landing Marker was printed as ten seconds and has counted paddle hits since round 215.
+    /// Ball Control was printed as five hits and has run on seconds since round 15. Retreat
+    /// and Backstop printed nothing at all, one of them an eight-second power-up and the other
+    /// the one power-up in the game measured in saves.
+    func testTheFourTheReferencePageHadWrong() {
+        XCTAssertEqual(setup.powerUpTimerArray[index("Landing Marker")], "5 paddle hits")
+        XCTAssertEqual(setup.powerUpTimerArray[index("Ball Control")], "10s")
+        XCTAssertEqual(setup.powerUpTimerArray[index("Brick Retreat")], "10s")
+        XCTAssertEqual(setup.powerUpTimerArray[index("Backstop")], "1 backstop hit")
+    }
+
+    /// A Lock is ended by a Key and by nothing else, so it prints no time at all.
+    func testTheLockPrintsNoTime() {
+        XCTAssertEqual(setup.powerUpTimerArray[index("Lock")], "Until a Key")
+        XCTAssertEqual(setup.powerUpMultiplierArray[index("Lock")], "",
+                       "a Lock is worth no multiplier")
+        XCTAssertEqual(setup.powerUpMultiplierArray[index("Key")], "")
+    }
+
+    /// The three that act between bounces are timed, and the page says so.
+    func testTheContinuousThreeArePrintedInSeconds() {
+        for name in ["Ball Control", "Magnetism", "Halo"] {
+            XCTAssertEqual(setup.powerUpTimerArray[index(name)], "10s", name)
+        }
+    }
+
+    /// Nothing anywhere still carries a name the workbook renamed.
+    func testNoRenamedNameSurvives() {
+        let gone = ["Fast Ball", "Trajectory Line", "Portal Paddle", "Paddle Halo",
+                    "Ball Steering", "Flipped Angle", "Reversed Controls", "Cull", "Retreat",
+                    "Aura", "Infill", "Descent", "Randomised Bounce", "Wave Paddle"]
+        for name in gone {
+            XCTAssertFalse(setup.powerUpNameArray.contains(name),
+                           "\(name) is still the name in the array")
+            XCTAssertNil(PowerUpCatalogue.powerUp(named: name),
+                         "\(name) is still the name in the catalogue")
+        }
     }
 }

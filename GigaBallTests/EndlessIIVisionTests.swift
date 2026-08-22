@@ -27,7 +27,7 @@ final class EndlessIIVisionTests: XCTestCase {
     func testCollectingStartsTheClock() {
         let scene = visionScene()
         scene.endlessIICollectTrajectoryLine()
-        XCTAssertEqual(scene.endlessIITrajectoryRemaining, GameScene.endlessIIVisionDuration)
+        XCTAssertEqual(scene.endlessIITrajectoryRemaining, GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func testASecondCollectionExtendsRatherThanRestarts() {
@@ -37,7 +37,7 @@ final class EndlessIIVisionTests: XCTestCase {
         scene.endlessIICollectTrajectoryLine()
 
         XCTAssertEqual(scene.endlessIITrajectoryRemaining,
-                       4 + GameScene.endlessIIVisionDuration)
+                       4 + GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func testAThirdCollectionLengthensTheLine() {
@@ -82,7 +82,7 @@ final class EndlessIIVisionTests: XCTestCase {
 
         scene.tickEndlessIIVision(10)
         scene.tickEndlessIIVision(20)
-        XCTAssertEqual(scene.endlessIITrajectoryRemaining, GameScene.endlessIIVisionDuration)
+        XCTAssertEqual(scene.endlessIITrajectoryRemaining, GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func testExpiryTakesTheDrawingWithIt() {

@@ -32,7 +32,7 @@ extension GameScene {
     /// Longer than the field batch's clocks, because the value of this one is that you can
     /// plan around it: a surface you cannot rely on for a few shots is a surprise rather
     /// than a tool.
-    static let endlessIISafetyPaddleDuration: TimeInterval = 12
+    static let endlessIISafetyPaddleDuration = GameScene.endlessIIPaddlePowerUpDuration
 
     /// How much of the field it used to span, before round 184.
     ///

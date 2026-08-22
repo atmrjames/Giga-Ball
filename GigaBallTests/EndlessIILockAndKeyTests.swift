@@ -48,34 +48,35 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIAuraClock.remaining, 9, accuracy: 0.001)
     }
 
-    func testTheLocksOwnClockIsNotFrozenByItself() {
-        // Or a run without a Key never gets its timers back
+    /// James, round 218: "Lock shouldn't have a timer. It is only stopped by Key."
+    ///
+    /// It ran fifteen seconds and let go by itself, which made the Key a convenience rather
+    /// than the answer to anything. A held Lock does not run down at all.
+    func testALockDoesNotEndByItself() {
         let scene = mayhem()
         scene.endlessIICollectLock()
-        let before = scene.endlessIILockClock.remaining
 
-        scene.endlessIILockClock.run(down: 1)
-        XCTAssertLessThan(scene.endlessIILockClock.remaining, before)
+        for _ in 0..<600 { scene.tickEndlessIIFieldPowerUps() }
+        XCTAssertTrue(scene.endlessIILocked, "the Lock let go without a Key")
+        XCTAssertEqual(scene.endlessIIClockDelta, 0, "and the freeze went with it")
     }
 
-    func testALockEndsByItself() {
+    /// Its ring is full, always: there is no time left on it to draw, because time is not
+    /// what ends it.
+    func testALockedRingReadsAsFull() {
         let scene = mayhem()
         scene.endlessIICollectLock()
-        scene.endlessIILockClock.run(down: GameScene.endlessIILockDuration + 1)
-
-        XCTAssertFalse(scene.endlessIILocked)
-        XCTAssertEqual(scene.endlessIIClockDelta, scene.endlessIIPaddleFrameDelta)
+        XCTAssertEqual(scene.endlessIILockClock.fraction, 1, accuracy: 0.001)
     }
 
-    func testASecondLockExtendsRatherThanRestarts() {
-        // §5.4's default for every timed power-up
+    /// A second Lock while one is running changes nothing - there is nothing to extend.
+    func testASecondLockChangesNothing() {
         let scene = mayhem()
         scene.endlessIICollectLock()
-        scene.endlessIILockClock.run(down: 5)
+        let held = scene.endlessIILockClock
         scene.endlessIICollectLock()
 
-        XCTAssertEqual(scene.endlessIILockClock.remaining,
-                       GameScene.endlessIILockDuration*2 - 5, accuracy: 0.001)
+        XCTAssertEqual(scene.endlessIILockClock, held)
     }
 
     // MARK: - The Key
@@ -254,7 +255,7 @@ final class EndlessIILockAndKeyTests: XCTestCase {
         scene.endlessIIWipe()
 
         XCTAssertTrue(scene.endlessIILocked, "a Wipe is not a Key")
-        XCTAssertEqual(scene.endlessIILockClock.remaining, GameScene.endlessIILockDuration)
+        XCTAssertEqual(scene.endlessIILockClock.fraction, 1, accuracy: 0.001)
     }
 
     /// And the freeze survives with it: a player who wipes while locked is still locked, and

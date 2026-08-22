@@ -22,9 +22,6 @@ import SpriteKit
 
 extension GameScene {
 
-    /// How long one collection lasts, matching the game's other timed power-ups.
-    static let endlessIIVisionDuration: TimeInterval = 10
-
     /// How far the Trajectory Line draws, in ball radii, by stacking level.
     ///
     /// A second collection extends the clock; a third lengthens the line (§5.4). The lengths
@@ -34,15 +31,26 @@ extension GameScene {
 
     // MARK: - Collection
 
-    /// Starts or extends the Trajectory Line.
+    /// Starts or extends the Ball Trajectory - in paddle hits, like the Landing Marker.
+    ///
+    /// **Both vision power-ups count hits** (round 218's workbook). They answer the same
+    /// question about the same bounce, and one of them measured in seconds while the other
+    /// measured in bounces meant two rings counting differently side by side.
     func endlessIICollectTrajectoryLine() {
         if endlessIITrajectoryRemaining > 0 {
             endlessIITrajectoryLevel = min(endlessIITrajectoryLevel + 1,
                                            GameScene.endlessIITrajectoryReach.count - 1)
             // Already running: this collection extends, and past that it lengthens
         }
-        endlessIITrajectoryRemaining += GameScene.endlessIIVisionDuration
+        endlessIITrajectoryRemaining += GameScene.endlessIIPaddlePowerUpTurns
         endlessIITrajectoryTotal = endlessIITrajectoryRemaining
+    }
+
+    /// A paddle contact spends a Ball Trajectory turn. Called from the shared spend.
+    func endlessIISpendTrajectoryTurn() {
+        guard endlessIITrajectoryRemaining > 0 else { return }
+        endlessIITrajectoryRemaining = max(0, endlessIITrajectoryRemaining - 1)
+        if endlessIITrajectoryRemaining == 0 { endlessIITrajectoryTotal = 0 }
     }
 
     /// Starts or extends the Landing Marker - in paddle hits, not seconds, like the rest
@@ -72,14 +80,14 @@ extension GameScene {
 
         let delta = endlessIIVisionLastTick == 0 ? 0 : min(currentTime - endlessIIVisionLastTick, 0.5)
         endlessIIVisionLastTick = currentTime
-        // Capped, so a pause or a background does not swallow the whole duration in one frame
-
-        let running = gameState.currentState is Playing && isPaused == false
-        if running {
-            endlessIITrajectoryRemaining = max(0, endlessIITrajectoryRemaining - delta)
-        }
-        // The trajectory's clock runs on time; the landing marker's runs on paddle hits
-        // (endlessIISpendLandingTurn) - pausing freezes both, each in its own way
+        // Capped, so a pause or a background cannot hand the marker's easing a whole second
+        // of movement in one frame.
+        //
+        // **Neither clock is measured in it any more** (round 218's workbook): the Ball
+        // Trajectory and the Landing Marker both count paddle hits now, spent in
+        // `endlessIISpendTrajectoryTurn` and `endlessIISpendLandingTurn`. The delta is still
+        // what the marker's smoothing moves by, which is a frame's worth of easing rather
+        // than a power-up's worth of time
 
         guard endlessIITrajectoryRemaining > 0 || endlessIILandingRemaining > 0 else {
             endlessIIClearVision()
@@ -403,7 +411,7 @@ extension GameScene {
                 id: "endlessIITrajectory",
                 texture: SKTexture(image: PowerUpIcon.trajectoryLine),
                 remaining: CGFloat(endlessIITrajectoryRemaining/endlessIITrajectoryTotal),
-                segments: nil))
+                segments: Int(endlessIITrajectoryTotal)))
         }
         if endlessIILandingRemaining > 0, endlessIILandingTotal > 0 {
             entries.append(PowerUpRingHUD.Entry(
@@ -418,8 +426,8 @@ extension GameScene {
             //
             // It was passing nil, which draws one continuous arc - and an arc fed a fraction
             // that only moves in steps looks segmented without being segmented, which is
-            // precisely what he saw. The trajectory above keeps nil and should: its clock runs
-            // on time, so its ring really is continuous.
+            // precisely what he saw. The trajectory above is marked the same way from round
+            // 218, where it stopped running on time and started counting hits too.
         }
         return entries
     }
