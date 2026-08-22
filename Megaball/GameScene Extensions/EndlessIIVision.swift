@@ -24,7 +24,7 @@ extension GameScene {
 
     /// How far the Trajectory Line draws, in ball radii, by stacking level.
     ///
-    /// A second collection extends the clock; a third lengthens the line (§5.4). The lengths
+    /// A second collection refills the clock; a third lengthens the line. The lengths
     /// are generous because the line also stops at the first brick - deep fields cut it short
     /// on their own, so the limit mostly shows on an empty screen.
     static let endlessIITrajectoryReach: [CGFloat] = [40, 80]
@@ -42,8 +42,9 @@ extension GameScene {
                                            GameScene.endlessIITrajectoryReach.count - 1)
             // Already running: this collection extends, and past that it lengthens
         }
-        endlessIITrajectoryRemaining += GameScene.endlessIIPaddlePowerUpTurns
+        endlessIITrajectoryRemaining = GameScene.endlessIIPaddlePowerUpTurns
         endlessIITrajectoryTotal = endlessIITrajectoryRemaining
+        // Reset, not extended, like every other clock in the mode since round 220
     }
 
     /// A paddle contact spends a Ball Trajectory turn. Called from the shared spend.
@@ -56,7 +57,7 @@ extension GameScene {
     /// Starts or extends the Landing Marker - in paddle hits, not seconds, like the rest
     /// of the paddle-facing power-ups after the turn-based revision.
     func endlessIICollectLandingMarker() {
-        endlessIILandingRemaining += GameScene.endlessIIPaddlePowerUpTurns
+        endlessIILandingRemaining = GameScene.endlessIIPaddlePowerUpTurns
         endlessIILandingTotal = endlessIILandingRemaining
     }
 

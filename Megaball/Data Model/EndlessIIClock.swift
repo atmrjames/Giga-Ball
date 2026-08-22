@@ -11,9 +11,11 @@
 //  these as loose properties; the paddle batch would have grown sixteen more, which is the
 //  point at which the shape becomes a type.
 //
-//  The rules are §5.4's defaults, held in one place: a second collection extends the duration
-//  rather than restarting it, and where a magnitude makes sense a further collection deepens
-//  it, one step at a time, never past the table that defines the steps.
+//  The rules are held in one place: a second collection restarts the duration rather than
+//  adding to it, and where a magnitude makes sense a further collection deepens it, one step
+//  at a time, never past the table that defines the steps. §5.4's original default was to
+//  extend; round 220's interaction matrix says reset, everywhere, and stacking is expressed
+//  as depth instead.
 //
 
 import CoreGraphics
@@ -46,14 +48,26 @@ struct EndlessIIClock: Equatable {
 
     /// A collection lands.
     ///
-    /// Extends if already running; the deepening step only happens on a collection that
-    /// found it running, so the first collection is always the base effect.
+    /// **The clock starts again rather than being added to** (James, round 220's interaction
+    /// matrix, which says "duration is reset" for every power-up collected on top of itself).
+    /// §5.4's original default was to extend, and extending is what made a run that met three
+    /// Drifts in a row spend half a minute sliding sideways: the collections compounded, and
+    /// a power-up whose *length* stacks is a different power-up from one whose strength does.
+    /// Resetting keeps a collection worth having - the clock is full again - without letting
+    /// the good ones run away or the bad ones become a sentence.
+    ///
+    /// The deepening step still only happens on a collection that found it running, so the
+    /// first collection is always the base effect and stacking is expressed as depth, which is
+    /// the axis the matrix does describe ("further ball speed decrease, duration is reset").
+    ///
+    /// This is also how the original twenty-eight have always behaved: they cancel their own
+    /// timer action and schedule a fresh one, which is a reset written out longhand.
     mutating func collect(_ duration: TimeInterval, deepestLevel: Int = 0) {
         if isRunning {
             level = min(level + 1, deepestLevel)
         }
-        remaining += duration
-        total = remaining
+        remaining = duration
+        total = duration
     }
 
     /// A collection that never runs out on its own.

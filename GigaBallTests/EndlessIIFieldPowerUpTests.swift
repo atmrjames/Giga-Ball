@@ -1613,18 +1613,24 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertEqual(bar?.physicsBody?.isDynamic, false, "the field moves; it does not")
     }
 
-    func testASecondCollectionLengthensItRatherThanStackingTwo() {
+    /// A second collection refills it rather than building a second bar.
+    ///
+    /// It used to check the clock had grown; from round 220 a second collection resets it, so
+    /// what matters is that one bar stands with a full clock rather than two standing at once.
+    func testASecondCollectionRefillsItRatherThanStackingTwo() {
         let scene = safetyScene()
         scene.endlessIICollectSafetyPaddle()
-        let first = scene.endlessIISafetyPaddleClock.remaining
+        scene.endlessIISafetyPaddleClock.run(down: 5)
         scene.endlessIICollectSafetyPaddle()
 
-        XCTAssertGreaterThan(scene.endlessIISafetyPaddleClock.remaining, first)
+        XCTAssertEqual(scene.endlessIISafetyPaddleClock.remaining,
+                       GameScene.endlessIISafetyPaddleDuration, accuracy: 0.001,
+                       "the clock did not start again")
         var found = 0
         scene.enumerateChildNodes(withName: GameScene.endlessIISafetyPaddleName) { _, _ in
             found += 1
         }
-        XCTAssertEqual(found, 1, "longer, not thicker")
+        XCTAssertEqual(found, 1, "full again, not thicker")
     }
 
     func testItIsNeverStranded() {

@@ -23,14 +23,22 @@ final class EndlessIIClockTests: XCTestCase {
         XCTAssertEqual(clock.fraction, 1)
     }
 
-    func testASecondCollectionExtendsAndTheRingReadsFull() {
+    /// A second collection starts the clock again rather than adding to it.
+    ///
+    /// **Inverted in round 220**, where James's interaction matrix says "duration is reset"
+    /// for every power-up collected on top of itself. It used to read fourteen here: four
+    /// seconds left plus ten. Extending is what let three Drifts in a row spend half a minute
+    /// sliding the field sideways, and a power-up whose *length* stacks is a different
+    /// power-up from one whose strength does. The ring reads full either way, which is the
+    /// half of the old test that was always right.
+    func testASecondCollectionResetsAndTheRingReadsFull() {
         var clock = EndlessIIClock()
         clock.collect(10)
         clock.run(down: 6)
         clock.collect(10)
 
-        XCTAssertEqual(clock.remaining, 14)
-        XCTAssertEqual(clock.fraction, 1, "topped up is full, not fourteen tenths")
+        XCTAssertEqual(clock.remaining, 10, "the second collection was added rather than reset")
+        XCTAssertEqual(clock.fraction, 1, "topped up is full")
     }
 
     func testDeepeningOnlyHappensOnACollectionThatFoundItRunning() {
@@ -1475,18 +1483,24 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         XCTAssertNotNil(mirror(scene)?.physicsBody, "and the body is rebuilt to match")
     }
 
-    func testASecondCollectionLengthensItRatherThanStackingTwo() {
+    /// A second collection refills it rather than standing a second mirror.
+    ///
+    /// It used to check the clock had grown; from round 220 a second collection resets it, so
+    /// what matters here is that the *field* is unchanged - one mirror, with a full clock.
+    /// That was always the half of this test worth having.
+    func testASecondCollectionRefillsItRatherThanStackingTwo() {
         let scene = mayhem()
         scene.endlessIICollectMirrorPaddle()
-        let first = scene.endlessIIMirrorPaddleClock.remaining
+        scene.endlessIIMirrorPaddleClock.spendTurn()
         scene.endlessIICollectMirrorPaddle()
 
-        XCTAssertGreaterThan(scene.endlessIIMirrorPaddleClock.remaining, first)
+        XCTAssertEqual(scene.endlessIIMirrorPaddleClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpTurns, "the turns did not come back")
         var found = 0
         scene.enumerateChildNodes(withName: GameScene.endlessIIMirrorPaddleName) { _, _ in
             found += 1
         }
-        XCTAssertEqual(found, 1, "longer, not two of them")
+        XCTAssertEqual(found, 1, "full again, not two of them")
     }
 
     func testItIsNeverStranded() {

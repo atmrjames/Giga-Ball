@@ -90,7 +90,7 @@ extension GameScene {
 
     /// Puts the surface on the field, or leaves the one already there alone.
     ///
-    /// A second collection extends the clock rather than building a second paddle - which is
+    /// A second collection refills the clock rather than building a second paddle - which is
     /// what `extendsDuration` means in the catalogue, and what a player collecting two of
     /// them expects: longer, not thicker.
     func showEndlessIISafetyPaddle() {

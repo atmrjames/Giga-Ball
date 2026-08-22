@@ -30,18 +30,23 @@ final class EndlessIIVisionTests: XCTestCase {
         XCTAssertEqual(scene.endlessIITrajectoryRemaining, GameScene.endlessIIPaddlePowerUpTurns)
     }
 
-    func testASecondCollectionExtendsRatherThanRestarts() {
+    /// A second collection starts it again rather than adding to what is left.
+    ///
+    /// The other way round until round 220, where the matrix says "duration is reset" for
+    /// every power-up collected on top of itself.
+    func testASecondCollectionRestartsRatherThanExtends() {
         let scene = visionScene()
         scene.endlessIICollectTrajectoryLine()
         scene.endlessIITrajectoryRemaining = 4
         scene.endlessIICollectTrajectoryLine()
 
         XCTAssertEqual(scene.endlessIITrajectoryRemaining,
-                       4 + GameScene.endlessIIPaddlePowerUpTurns)
+                       GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func testAThirdCollectionLengthensTheLine() {
-        // §5.4: extends, then lengthens
+        // Resets, then lengthens: the clock starts again every time and the *reach* is what
+        // stacking buys, which is the axis the matrix describes
         let scene = visionScene()
         scene.endlessIICollectTrajectoryLine()
         XCTAssertEqual(scene.endlessIITrajectoryLevel, 0, "first collection is base length")
@@ -55,13 +60,15 @@ final class EndlessIIVisionTests: XCTestCase {
                        "the reach table is the whole ladder - it never runs off the end")
     }
 
-    func testTheLandingMarkerExtendsToo() {
-        // In paddle hits now, not seconds - the play test moved it to the turn-based batch
+    func testTheLandingMarkerRestartsToo() {
+        // In paddle hits, not seconds - the play test moved it to the turn-based batch - and
+        // reset rather than extended since round 220, like everything else in the mode
         let scene = visionScene()
         scene.endlessIICollectLandingMarker()
+        scene.endlessIISpendLandingTurn()
         scene.endlessIICollectLandingMarker()
         XCTAssertEqual(scene.endlessIILandingRemaining,
-                       GameScene.endlessIIPaddlePowerUpTurns*2)
+                       GameScene.endlessIIPaddlePowerUpTurns)
     }
 
     func testTheLandingMarkerSpendsOnPaddleHits() {
