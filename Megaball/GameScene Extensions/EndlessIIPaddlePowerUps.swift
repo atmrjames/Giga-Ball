@@ -109,6 +109,8 @@ extension GameScene {
         case .convex: return "regularPaddleConvex"
         case .concave: return "regularPaddleConcave"
         case .wavy: return "regularPaddleWave"
+        case .wedgeLeft: return "regularPaddleWedgeLeft"
+        case .wedgeRight: return "regularPaddleWedgeRight"
         case .jagged: return nil
             // Retired (round 213). No art was drawn for it and none will be
         }

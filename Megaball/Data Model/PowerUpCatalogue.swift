@@ -279,7 +279,7 @@ enum PowerUpCatalogue {
         PowerUp(id: "concavePaddle", name: "Concave Paddle", availability: .endlessII,
                 rarity: .rare, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
-        PowerUp(id: "wavyPaddle", name: "Wavy Paddle", availability: .endlessII,
+        PowerUp(id: "wavyPaddle", name: "Wave Paddle", availability: .endlessII,
                 rarity: .rare, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
         PowerUp(id: "jaggedPaddle", name: "Jagged Paddle", availability: .retired,
@@ -322,6 +322,15 @@ enum PowerUpCatalogue {
         PowerUp(id: "drift", name: "Drift Right", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),
+        PowerUp(id: "wedgeLeftPaddle", name: "Wedge Left Paddle", availability: .endlessII,
+                rarity: .rare, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        PowerUp(id: "wedgeRightPaddle", name: "Wedge Right Paddle", availability: .endlessII,
+                rarity: .rare, valence: .harmful, isTimed: true,
+                stacking: .extendsDuration),
+        // The two sloped faces (round 214). One shape at a time, like the others - a paddle
+        // cannot tilt both ways at once, so the later collection replaces the earlier
+
         PowerUp(id: "driftLeft", name: "Drift Left", availability: .endlessII,
                 rarity: .uncommon, valence: .harmful, isTimed: true,
                 stacking: .extendsDuration),

@@ -80,6 +80,8 @@ extension GameScene {
         powerUpProbArray[60] = gameMode == .endlessII ? 4 : 0 // Mirror Paddle - uncommon, good
         powerUpProbArray[63] = gameMode == .endlessII ? 5 : 0 // Drift Left - uncommon, bad:
         // the mirror of 54, at the same weight, so neither direction is the common one
+        powerUpProbArray[64] = gameMode == .endlessII ? GameScene.shapedPaddlePlayTestWeight : 0 // Wedge Left - rare, bad
+        powerUpProbArray[65] = gameMode == .endlessII ? GameScene.shapedPaddlePlayTestWeight : 0 // Wedge Right - rare, bad
         powerUpProbArray[62] = gameMode == .endlessII ? 4 : 0 // Ball Spin - uncommon, good:
         // it makes a shot the player chose curve the way they threw it, which is a skill
         // being rewarded rather than a effect being handed out

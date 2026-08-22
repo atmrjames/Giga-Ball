@@ -469,7 +469,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Setup game metrics
 	
 	var powerUpProbFactor: Int = 0
-	var powerUpProbArray: [Int] = Array(repeating: 0, count: 64)
+	var powerUpProbArray: [Int] = Array(repeating: 0,
+	                                    count: LevelPackSetup().powerUpNameArray.count)
+	// Sized from the list that names them rather than counted by hand: a table one short is a
+	// power-up that can never be drawn, which from the outside looks exactly like one that is
+	// simply very rare (§8.6). Round 214 added two and this was the array that noticed
 	// One weight per power-up, in power-up order - sized by count so a new power-up cannot
 	// leave it one short, which is exactly the mistake a literal this long invites
 	var powerUpProbSum: Int = 0
@@ -1050,6 +1054,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpCluster = SKTexture(image: PowerUpIcon.cluster)
 	let powerUpBallSpin = SKTexture(image: PowerUpIcon.ballSpin)
 	let powerUpDriftLeft = SKTexture(image: PowerUpIcon.driftLeft)
+	let powerUpWedgeLeftPaddle = SKTexture(image: PowerUpIcon.wedgeLeftPaddle)
+	let powerUpWedgeRightPaddle = SKTexture(image: PowerUpIcon.wedgeRightPaddle)
 	/// How often Multi-Ball is offered, relative to the rest of the table.
 	///
 	/// Uncommon (§5.4). It is not rules-changing, but it is the one power-up that changes how
@@ -1241,7 +1247,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin, powerUpDriftLeft]
+		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin, powerUpDriftLeft, powerUpWedgeLeftPaddle, powerUpWedgeRightPaddle]
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -5457,6 +5463,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endlessIICollectDrift(direction: -1)
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[63] += 1
+
+		case powerUpWedgeLeftPaddle:
+		// 64 - Wedge Left Paddle. Bad
+			endlessIICollectPaddleSurface(.wedgeLeft)
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[64] += 1
+
+		case powerUpWedgeRightPaddle:
+		// 65 - Wedge Right Paddle. Bad
+			endlessIICollectPaddleSurface(.wedgeRight)
+			powerUpMultiplierScore = -0.1
+			totalStatsArray[0].powerupsCollected[65] += 1
 
 		case powerUpMultiBall:
 		// Multi-Ball

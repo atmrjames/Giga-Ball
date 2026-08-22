@@ -234,11 +234,23 @@ final class PaddleBounceTests: XCTestCase {
     // §12.0, James's idea from the fourth play test: convex, concave, wavy and jagged paddle
     // tops, all bad, each making the outgoing angle harder to predict.
 
+    /// **The wedges are the exception, and they are the exception on purpose.**
+    ///
+    /// The rule was: odd, f(-x) = -f(x), so no shape favours a side - "a paddle with a bias is
+    /// a paddle that is wrong rather than one that is tricky", which is why Jagged was rebuilt
+    /// out of a triangle wave in the first place.
+    ///
+    /// James asked for Wedge Left and Wedge Right in round 213, and a wedge is *nothing but* a
+    /// bias - a face tilted one way so the middle no longer returns the ball straight up. That
+    /// is a deliberate change to the rule rather than a shape that slipped through it, so the
+    /// wedges are named here rather than the check being weakened for everything.
+    ///
+    /// What still holds for them is the half that keeps a shaped face playable: the range. A
+    /// wedge may not send the ball anywhere a flat paddle could not.
     func testEveryShapeIsEvenHandedAndStaysInRange() {
-        // Odd - f(-x) = -f(x) - so no shape favours a side. A paddle with a bias is a paddle
-        // that is wrong rather than one that is tricky. And inside -1...1, so a shaped face
-        // can never send a ball flatter than a flat one could
-        for surface in PaddleBounce.Surface.allCases {
+        let wedges: Set<PaddleBounce.Surface> = [.wedgeLeft, .wedgeRight]
+
+        for surface in PaddleBounce.Surface.allCases where wedges.contains(surface) == false {
             for step in stride(from: 0.05, through: 1.0, by: 0.05) {
                 let right = PaddleBounce.shaped(step, by: surface)
                 let left = PaddleBounce.shaped(-step, by: surface)
@@ -248,6 +260,16 @@ final class PaddleBounceTests: XCTestCase {
             XCTAssertEqual(PaddleBounce.shaped(0, by: surface), 0, accuracy: 0.0001,
                            "\(surface): the middle is still the middle")
         }
+
+        for surface in wedges {
+            for step in stride(from: -1.0, through: 1.0, by: 0.05) {
+                XCTAssertLessThanOrEqual(abs(PaddleBounce.shaped(step, by: surface)), 1.0001,
+                                         "\(surface) at \(step)")
+            }
+        }
+        XCTAssertEqual(PaddleBounce.shaped(0, by: .wedgeLeft),
+                       -PaddleBounce.shaped(0, by: .wedgeRight), accuracy: 0.0001,
+                       "the two wedges have to be each other's mirror, or one is the harder")
     }
 
     func testNoShapeMeansNoChange() {

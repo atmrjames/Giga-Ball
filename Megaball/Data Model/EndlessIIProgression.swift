@@ -150,6 +150,8 @@ struct EndlessIIProgression: Codable, Equatable {
         59: .disastrous, // Split Paddle - holes in the floor
         60: .bad,   // Mirror Paddle
         63: .bad,   // Drift Left
+        64: .bad,   // Wedge Left Paddle
+        65: .bad,   // Wedge Right Paddle
     ]
 
     /// This run's multiplier on each power-up's authored weight, one per index.

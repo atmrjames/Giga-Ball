@@ -94,13 +94,21 @@ enum PaddleBounce {
         /// the range. The least predictable of the four, and the only one that is
         /// *un*readable rather than merely harder to read.
         case jagged
+        /// Sloped one way: the whole face tilts, so every landing sends the ball leftward,
+        /// harder the further out it lands. Unlike the others it has no symmetry at all -
+        /// which is the point of having two of them.
+        case wedgeLeft
+        /// The same slope, mirrored.
+        case wedgeRight
 
         var displayName: String {
             switch self {
             case .convex: return "Convex Paddle"
             case .concave: return "Concave Paddle"
-            case .wavy: return "Wavy Paddle"
+            case .wavy: return "Wave Paddle"
             case .jagged: return "Jagged Paddle"
+            case .wedgeLeft: return "Wedge Left Paddle"
+            case .wedgeRight: return "Wedge Right Paddle"
             }
         }
     }
@@ -135,6 +143,21 @@ enum PaddleBounce {
             // face. The first attempt built it out of flat facets and a sawtooth, which was
             // neither odd nor continuous - it favoured one side and jumped at every seam,
             // and a paddle with a bias is a paddle that is wrong rather than tricky
+        case .wedgeLeft:
+            return min(max(clamped*0.6 - 0.4, -1), 1)
+        case .wedgeRight:
+            return min(max(clamped*0.6 + 0.4, -1), 1)
+            // **A bias on purpose**, which is the one thing every other face here avoids. The
+            // whole slope tilts, so the middle of the paddle no longer returns the ball
+            // straight up and the player has to aim from somewhere other than under the ball.
+            // Kept shallow - a shift of four tenths on a face that runs from -1 to 1 - because
+            // a wedge steep enough to be obvious is a paddle that can only send the ball one
+            // way, and these still have to be playable rather than merely survivable.
+            //
+            // These two are the fallback: with the shaped art in play the *silhouette* decides
+            // the bounce (round 213) and this function is not consulted. It matters where the
+            // art has not been drawn for a theme yet, and it is what the reference page's
+            // profile drawing samples, so it still has to describe the same face.
         }
     }
 }

@@ -648,16 +648,21 @@ class LevelPackSetup {
         PowerUpIcon.mirrorPaddle,
         PowerUpIcon.cluster,
         PowerUpIcon.ballSpin,
-        PowerUpIcon.driftLeft
+        PowerUpIcon.driftLeft,
+        PowerUpIcon.wedgeLeftPaddle,
+        PowerUpIcon.wedgeRightPaddle
     ]
     // Multi-Ball is drawn rather than an asset. §8.5 has the icons down as still to make, and
     // a placeholder that matches the set is worth more during design than a slot with the
     // wrong picture in it - see PowerUpIcon
     
-    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,63,55,56,57,58,59,60,61,62]
+    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,63,55,56,64,65,57,58,59,60,61,62]
+    // 64 and 65 (the wedges) display beside 55, 56 and 57 (the other shaped faces), so the
+    // reference page shows the five shapes together. 58 (Jagged) stays in the list because
+    // this is a permutation of every index - retired is not removed (round 213)
     // 63 (Drift Left) displays beside 54 (Drift Right): the reference page should show the
     // pair as a pair
-    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     // Multi-Ball is last in the list and belongs to no pack. It is not unlocked by finishing
     // one - it exists only in Endless 2.0, which every player already has
     
@@ -719,13 +724,15 @@ class LevelPackSetup {
         "Drift Right",
         "Convex Paddle",
         "Concave Paddle",
-        "Wavy Paddle",
+        "Wave Paddle",
         "Jagged Paddle",
         "Split Paddle",
         "Mirror Paddle",
         "Cluster",
         "Ball Spin",
-        "Drift Left"
+        "Drift Left",
+        "Wedge Left Paddle",
+        "Wedge Right Paddle"
     ]
     
     let powerUpUnlockedDescriptionArray: [String] = [
@@ -762,10 +769,10 @@ class LevelPackSetup {
         "", // Landing Marker - never locked
         "", "", "", "", "", "", "", "", // The paddle batch - Endless 2.0's own, never locked
         "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" // The field batch and
+        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" // The field batch and
         // after - the same, Lock, Key, Wipe, Randomised Bounce, Ghost Ball, Safety Paddle,
         // Drift Right, the four shaped paddle faces, Split Paddle, Mirror Paddle, Cluster,
-        // Ball Spin and Drift Left
+        // Ball Spin, Drift Left and the two wedges
     ]
     
     let powerUpHiddenUnlockedDescriptionArray: [String] = [
@@ -802,10 +809,10 @@ class LevelPackSetup {
         "", // Landing Marker - never locked
         "", "", "", "", "", "", "", "", // The paddle batch - Endless 2.0's own, never locked
         "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" // The field batch and
+        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" // The field batch and
         // after - the same, Lock, Key, Wipe, Randomised Bounce, Ghost Ball, Safety Paddle,
         // Drift Right, the four shaped paddle faces, Split Paddle, Mirror Paddle, Cluster,
-        // Ball Spin and Drift Left
+        // Ball Spin, Drift Left and the two wedges
     ]
     
     let powerUpDescriptionArray: [String] = [
@@ -872,7 +879,9 @@ class LevelPackSetup {
         "A second paddle stands level with yours and holds the mirrored side: you go left, it goes right",
         "A burst of tiny balls flies up from the paddle, each striking one brick and vanishing",
         "The paddle grips the ball as it bounces, and the ball leaves on a curve",
-        "The whole field slides right to left for a time"
+        "The whole field slides right to left for a time",
+        "The paddle tilts left, so every bounce is sent that way",
+        "The paddle tilts right, so every bounce is sent that way"
     ]
     
     let powerUpMultiplierArray: [String] = [
@@ -939,6 +948,8 @@ class LevelPackSetup {
         "+0.1",
         "+0.1",
         "+0.1",
+        "-0.1",
+        "-0.1",
         "-0.1"
     ]
     
@@ -1010,7 +1021,9 @@ class LevelPackSetup {
         "5 hits",
         "",
         "5 hits",
-        "10s"
+        "10s",
+        "5 hits",
+        "5 hits"
     ]
     
     let achievementsNameArray: [String] = [

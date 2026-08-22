@@ -517,10 +517,21 @@ enum PowerUpIcon {
         }
     }
 
-    static let convexPaddle = paddleSurface(.convex)
-    static let concavePaddle = paddleSurface(.concave)
-    static let wavyPaddle = paddleSurface(.wavy)
+    static let convexPaddle = drawnOrNamed("PowerUpConvexPaddle", .convex)
+    static let concavePaddle = drawnOrNamed("PowerUpConcavePaddle", .concave)
+    static let wavyPaddle = drawnOrNamed("PowerUpWavePaddle", .wavy)
     static let jaggedPaddle = paddleSurface(.jagged)
+    static let wedgeLeftPaddle = drawnOrNamed("PowerUpWedgeLeftPaddle", .wedgeLeft)
+    static let wedgeRightPaddle = drawnOrNamed("PowerUpWedgeRightPaddle", .wedgeRight)
+
+    /// James's badge if it exists, and the drawn profile if it does not.
+    ///
+    /// The same bargain `artwork` makes for every other power-up, said for the shaped faces:
+    /// the drawing is built from `PaddleBounce.shaped`, so a face with no art still shows the
+    /// curve it actually gives rather than a blank.
+    static func drawnOrNamed(_ named: String, _ surface: PaddleBounce.Surface) -> UIImage {
+        UIImage(named: named) ?? paddleSurface(surface)
+    }
 
     /// Two paddle halves with a ball falling between them.
     ///
