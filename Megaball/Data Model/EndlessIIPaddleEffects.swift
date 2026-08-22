@@ -290,6 +290,21 @@ enum EndlessIIPaddleEffects {
             .map { $0 }
     }
 
+    /// Which paddle a magnetised ball is pulled toward.
+    ///
+    /// **The nearer of the two** (James, round 225's matrix: "ball is magnetised to the
+    /// closest paddle and not to the other"). Two magnets pulling one ball is a ball pulled to
+    /// the point between them, which is the one place neither paddle is.
+    ///
+    /// Ties go to the real paddle, which is the one the player is steering: with the ball
+    /// exactly between them the choice is arbitrary, and an arbitrary choice should be the one
+    /// the player can do something about.
+    static func magnetisedTowards(ballX: CGFloat, paddleX: CGFloat,
+                                  mirrorX: CGFloat?) -> CGFloat {
+        guard let mirrorX else { return paddleX }
+        return abs(mirrorX - ballX) < abs(paddleX - ballX) ? mirrorX : paddleX
+    }
+
     // MARK: - Aimed Sticky
 
     /// The launch angle a finger has chosen, in radians.

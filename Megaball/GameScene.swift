@@ -6979,8 +6979,36 @@ laserTimer?.invalidate()
 				laser.removeFromParent()
 			})
 			// Define laser movement
+
+			endlessIIFireMirrorLaser(matching: laser)
 		}
     }
+
+	/// The twin fires on the same beat, from its own mirrored edge.
+	///
+	/// James, round 225's matrix: "mirrored paddle gets lasers". Copied from the laser that has
+	/// just been built rather than built again, so everything the paddle's own laser is - its
+	/// texture, its theme, whether Giga-Ball has made it pass through bricks - is what the
+	/// twin's is too, and nothing here has to be told when any of that changes.
+	///
+	/// The offset is mirrored along with the position. The twin holds the mirrored side of the
+	/// field, so a laser leaving the paddle's left edge leaves the twin's right, which is what
+	/// makes the pair read as one paddle and its reflection rather than as two paddles.
+	func endlessIIFireMirrorLaser(matching laser: SKSpriteNode) {
+		guard gameMode == .endlessII else { return }
+		guard let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName)
+				as? SKSpriteNode else { return }
+		guard let twin = laser.copy() as? SKSpriteNode else { return }
+
+		twin.position = CGPoint(x: mirror.position.x - (laser.position.x - paddle.position.x),
+								y: mirror.position.y + paddleLaser.size.height/2 + laser.size.height/2)
+		addChild(twin)
+		twin.run(.moveBy(x: 0, y: frame.height, duration: 2), completion: {
+			twin.removeFromParent()
+		})
+		// Not counted in `lasersFired` and no second sound: one beat is one shot as far as the
+		// player's statistics and ears are concerned, however many barrels it left from
+	}
     
     @objc func pauseNotificationKeyReceived() {
 

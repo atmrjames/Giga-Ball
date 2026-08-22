@@ -330,9 +330,17 @@ extension GameScene {
                                               collision: PaddleBounce.shaped(
                                                   clamped, by: endlessIIPaddleSurface),
                                               adjustmentK: PaddleBounce.adjustmentK,
-                                              influence: 1,
+                                              influence: endlessIIPaddleAngleInfluence,
                                               minimumDeg: PaddleBounce.minimumDeg,
                                               speed: hypot(arriving.dx, arriving.dy))
+        _ = endlessIIApplyAutoAim(to: subject)
+        endlessIIGripBall(subject)
+        // **The twin answers to the paddle's own power-ups** (round 225's matrix: the mirror
+        // also becomes inert, also has the bounce angle flipped, and a ball is directed at the
+        // aimed brick "regardless of the paddle it bounces off"). The influence used to be a
+        // hard 1 here, which made the mirror the one surface in the mode an Inert Paddle could
+        // not reach - and a power-up that switches off half the paddles is a power-up that
+        // reads as broken. The aim and the grip follow the paddle's own order
         // Clamped rather than refused past the ends: the engine only reports a contact where
         // the bodies actually met, so a fraction outside the face is the corner of it.
         //

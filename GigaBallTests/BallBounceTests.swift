@@ -452,3 +452,32 @@ final class PaddleBounceTests: XCTestCase {
         XCTAssertLessThan(layout.paddleCentreAboveScreenBottom, layout.screen.height/3)
     }
 }
+
+/// Which paddle a magnetised ball is drawn to while a Mirror Paddle stands.
+///
+/// James, round 225's matrix: "ball is magnetised to the closest paddle and not to the other."
+/// Two magnets pulling one ball is a ball pulled to the point between them, which is the one
+/// place neither paddle is.
+final class MagnetismChoosesAPaddleTests: XCTestCase {
+
+    func testWithNoMirrorItIsAlwaysTheRealPaddle() {
+        XCTAssertEqual(EndlessIIPaddleEffects.magnetisedTowards(ballX: 90, paddleX: -50,
+                                                                mirrorX: nil), -50)
+    }
+
+    func testTheNearerOfTheTwoPulls() {
+        XCTAssertEqual(EndlessIIPaddleEffects.magnetisedTowards(ballX: 90, paddleX: -50,
+                                                                mirrorX: 50), 50)
+        XCTAssertEqual(EndlessIIPaddleEffects.magnetisedTowards(ballX: -90, paddleX: -50,
+                                                                mirrorX: 50), -50)
+    }
+
+    /// A tie goes to the paddle the player is steering.
+    ///
+    /// With the ball exactly between them the choice is arbitrary, and an arbitrary choice
+    /// should be the one the player can do something about.
+    func testATieGoesToTheRealPaddle() {
+        XCTAssertEqual(EndlessIIPaddleEffects.magnetisedTowards(ballX: 0, paddleX: -50,
+                                                                mirrorX: 50), -50)
+    }
+}

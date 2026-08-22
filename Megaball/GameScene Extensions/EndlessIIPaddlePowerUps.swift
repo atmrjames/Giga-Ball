@@ -731,13 +731,23 @@ extension GameScene {
         // (play test: it started drawing the ball in far too early) - the magnet is a
         // landing aid, not a tractor beam through the field
 
+        let mirrorX = (childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode)
+            .map { $0.position.x }
+        // Which of the two pulls is `EndlessIIPaddleEffects.magnetisedTowards`, where the
+        // reasoning lives and where it can be tested - this tick runs from
+        // `didSimulatePhysics` behind a playing guard, which is no place for a decision
+
         for subject in endlessIIBallsInPlay {
             guard subject.parent != nil, let body = subject.physicsBody else { continue }
             guard subject !== ball || ballIsOnPaddle == false else { continue }
             guard subject.position.y < pullCeiling else { continue }
+
+            let pullX = EndlessIIPaddleEffects.magnetisedTowards(ballX: subject.position.x,
+                                                                 paddleX: paddle.position.x,
+                                                                 mirrorX: mirrorX)
             body.velocity = EndlessIIPaddleEffects.magnetised(
                 velocity: body.velocity, ballAt: subject.position,
-                paddleAt: CGPoint(x: paddle.position.x, y: paddle.position.y),
+                paddleAt: CGPoint(x: pullX, y: paddle.position.y),
                 paddleHalfWidth: paddle.size.width/2,
                 strength: strength, delta: delta)
             // The whole span is the magnet now (round 200) - the arithmetic aims at the

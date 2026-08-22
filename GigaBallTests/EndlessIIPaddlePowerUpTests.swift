@@ -1418,6 +1418,75 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
                      "the shape expired and the twin kept its silhouette")
     }
 
+    /// The twin answers to the paddle's own power-ups.
+    ///
+    /// Round 225's matrix: the mirror "also becomes inert" and "also has the bounce angle
+    /// flipped". Its influence was a hard 1, which made it the one surface in the mode an
+    /// Inert Paddle could not reach - and a power-up that switches off half the paddles reads
+    /// as broken rather than as half-working.
+    func testAnInertPaddleFlattensTheMirrorToo() {
+        let scene = mayhem()
+        scene.angleAdjustmentK = 45
+        scene.minAngleDeg = 20
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+
+        func outgoing(landingAt x: CGFloat) -> CGFloat {
+            scene.ball.position = CGPoint(x: mirror.position.x + x, y: mirror.position.y + 8)
+            scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
+            scene.endlessIIMirrorPaddleHit(scene.ball)
+            return scene.ball.physicsBody?.velocity.dx ?? 0
+        }
+
+        XCTAssertNotEqual(outgoing(landingAt: -40), outgoing(landingAt: 40), accuracy: 1,
+                          "where the ball lands on the twin should bend its bounce")
+
+        scene.endlessIICollectInertPaddle()
+        XCTAssertEqual(outgoing(landingAt: -40), outgoing(landingAt: 40), accuracy: 1,
+                       "an Inert Paddle should reach the twin as well")
+    }
+
+    /// The twin fires on the same beat, from its own mirrored edge.
+    ///
+    /// Round 225's matrix: "mirrored paddle gets lasers". Copied from the laser just built
+    /// rather than built again, so its texture, its theme and whether a Giga-Ball has made it
+    /// pass through bricks are all the paddle's laser's, and nothing here has to be told when
+    /// any of that changes.
+    func testTheMirrorFiresOnTheSameBeat() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+
+        let laser = SKSpriteNode(color: .white, size: CGSize(width: 4, height: 20))
+        laser.name = LaserCategoryName
+        laser.position = CGPoint(x: scene.paddle.position.x - 40, y: scene.paddle.position.y)
+        scene.endlessIIFireMirrorLaser(matching: laser)
+
+        var twins: [SKNode] = []
+        scene.enumerateChildNodes(withName: LaserCategoryName) { node, _ in
+            if node !== laser { twins.append(node) }
+        }
+        XCTAssertEqual(twins.count, 1, "the twin did not fire")
+        XCTAssertEqual(twins.first?.position.x ?? 0, mirror.position.x + 40, accuracy: 0.01,
+                       "a shot leaving the paddle's left edge leaves the twin's right")
+    }
+
+    /// And nothing fires when no mirror is standing.
+    func testNoMirrorMeansNoSecondShot() {
+        let scene = mayhem()
+        let laser = SKSpriteNode(color: .white, size: CGSize(width: 4, height: 20))
+        laser.name = LaserCategoryName
+        laser.position = CGPoint(x: -40, y: -300)
+        scene.addChild(laser)
+        scene.endlessIIFireMirrorLaser(matching: laser)
+
+        var found = 0
+        scene.enumerateChildNodes(withName: LaserCategoryName) { _, _ in found += 1 }
+        XCTAssertEqual(found, 1, "a shot with no twin to fire from fired twice")
+    }
+
     func testTheMirrorEndsOnPaddleHitsNow() {
         // The old twelve seconds were in the Lock's freeze list but in no run-down loop -
         // collected once, the mirror simply never left and its ring never moved
