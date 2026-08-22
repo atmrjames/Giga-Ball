@@ -488,7 +488,7 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
-    /// The four shaped paddle faces, each drawn as the profile it gives the paddle.
+    /// A shaped paddle face, drawn as the profile it gives the paddle.
     ///
     /// Drawn from `PaddleBounce.shaped` itself rather than by hand, so a picture cannot
     /// promise a face the bounce does not give - the same rule the brick faces follow.

@@ -94,7 +94,16 @@ final class CatalogueDumpTests: XCTestCase {
             XCTAssertFalse((entry["description"] as? String ?? "").isEmpty,
                            "\(entry["name"] ?? "") has no description for the reference page "
                            + "or the workbook")
+            XCTAssertFalse((entry["valence"] as? String ?? "").isEmpty,
+                           "\(entry["name"] ?? "") is in the game's arrays but not in "
+                           + "`PowerUpCatalogue` under that name")
         }
+        // **The join is by name, and a rename breaks it silently.** Every row above looks up
+        // its catalogue entry by the name the game's own array holds, so a power-up renamed in
+        // one place and not the other simply comes out with empty valence, rarity and
+        // stacking - a workbook column that is blank rather than a test that fails. Two
+        // renames have gone through since this was written (Wavy Paddle became Wave, Clear And
+        // Retreat became Retreat), which is exactly the move that breaks it.
 
         guard let path = ProcessInfo.processInfo.environment["GIGABALL_DUMP"] else { return }
         let data = try JSONSerialization.data(withJSONObject: dump,

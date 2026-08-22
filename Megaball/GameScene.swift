@@ -242,7 +242,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAuraHitBricks: Set<ObjectIdentifier> = []
 	var endlessIIDescentClock = EndlessIIClock()
 	var endlessIIDescentAccumulated: TimeInterval = 0
-	/// The shape of the paddle's top, while one of the four shaped faces runs (§12.0).
+	/// The shape of the paddle's top, while one of the shaped faces runs (§12.0).
 	var endlessIIPaddleSurface: PaddleBounce.Surface?
 
 	/// Which shaped picture the paddle is wearing, and how far it was raised to keep its
@@ -1709,7 +1709,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		iconEmptyTimerArray.forEach { $0.alpha = 0 }
 		iconTimerArray.forEach { $0.alpha = 0 }
-		// Endless 2.0 shows only what is running, as rings - forty-six power-ups will not
+		// Endless 2.0 shows only what is running, as rings - its own power-ups will not
 		// fit a fixed row of eight. The old modes keep the row of eight and lose only the
 		// bars: invisible in every mode now, because everywhere the timer shows it shows
 		// as a ring. The bars keep running underneath as the signal the rings read
@@ -5920,7 +5920,7 @@ laserTimer?.invalidate()
 	static let hudUnits = GameSceneLayout.hudUnits
 
 	/// **Temporary, for round 214's play test.** The three shaped paddles are rare - weight 3
-	/// against a table of sixty-four - so meeting one takes a long run, and James asked for them
+	/// against a whole table of weights - so meeting one takes a long run, and James asked for them
 	/// raised while he judges how the new shape-driven bounce feels.
 	///
 	/// **Put this back to 3 before release.** It is one number in one place for exactly that

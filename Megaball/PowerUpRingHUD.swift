@@ -8,7 +8,7 @@
 //
 //  The existing tray shows a fixed row of eight, including power-ups that are not running
 //  and ones the player has not unlocked, each with a bar underneath. That reads well
-//  enough at eight. Endless 2.0 has forty-six, so a fixed row is not an option and most
+//  enough at eight. Endless 2.0 has dozens, so a fixed row is not an option and most
 //  of it would be empty most of the time.
 //
 //  This reads the state rather than being told about it. Every timed power-up already

@@ -30,8 +30,8 @@ enum PowerUpAvailability {
     /// **Withdrawn from play, but not from the file.**
     ///
     /// A power-up's index is its identity everywhere it is stored: `powerupsCollected`,
-    /// `powerupsGenerated` and `powerUpUnlockedArray` are sixty-four-entry arrays saved to
-    /// disk and synced to iCloud, and read by position. Deleting an entry would shift every
+    /// `powerupsGenerated` and `powerUpUnlockedArray` are arrays as long as the catalogue,
+    /// saved to disk and synced to iCloud, and read by position. Deleting an entry would shift every
     /// one after it, so a player's Double Paddle count would silently become their Jagged
     /// count and their unlock flags would slide with it - which is the second thing
     /// `CLAUDE.md` says never bends.
