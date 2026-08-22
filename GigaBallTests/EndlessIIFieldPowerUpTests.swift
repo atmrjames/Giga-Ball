@@ -1320,8 +1320,8 @@ final class RandomisedBounceTests: XCTestCase {
     private func settleRetreat(_ scene: GameScene, file: StaticString = #filePath,
                                line: UInt = #line) -> Int {
         for frames in 0..<600 {
-            if scene.endlessIIRetreatFloorHasSettled { return frames }
-            scene.tickEndlessIIRetreatFloor(1.0/60.0)
+            if scene.endlessIIFieldShiftHasSettled { return frames }
+            scene.tickEndlessIIFieldShift(1.0/60.0)
         }
         XCTFail("the retreat's lift never settled", file: file, line: line)
         return -1
@@ -1366,7 +1366,7 @@ final class RandomisedBounceTests: XCTestCase {
 
         XCTAssertEqual(scene.finalBrickRowHeight, floor, accuracy: 0.001,
                        "or the run would keep the room for ever, which is a different power-up")
-        XCTAssertEqual(scene.endlessIIRetreatFloorLift, 0)
+        XCTAssertEqual(scene.endlessIIFieldShift, 0)
     }
 
     /// James, round 177, answering round 172's open question: "I think it's ok if the top 2
@@ -1481,7 +1481,7 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertEqual(survivor.position.y, 120, accuracy: 0.001,
                        "the clear is instant; the lift is not")
 
-        scene.tickEndlessIIRetreatFloor(1.0/60.0)
+        scene.tickEndlessIIFieldShift(1.0/60.0)
         let afterOneFrame = survivor.position.y
         XCTAssertGreaterThan(afterOneFrame, 120, "it has started")
         XCTAssertLessThan(afterOneFrame, 120 + 2*scene.brickHeight,
@@ -1511,8 +1511,8 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIFieldIsHeld, "held by the clock, as it always was")
 
         scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
-        scene.tickEndlessIIRetreatFloor(1.0/60.0)
-        XCTAssertFalse(scene.endlessIIRetreatFloorHasSettled)
+        scene.tickEndlessIIFieldShift(1.0/60.0)
+        XCTAssertFalse(scene.endlessIIFieldShiftHasSettled)
         XCTAssertTrue(scene.endlessIIFieldIsHeld,
                       "the clock has stopped but the field is still coming down, and a row "
                       + "read off a brick between rows is the trap of §8.6")
@@ -1535,8 +1535,8 @@ final class RandomisedBounceTests: XCTestCase {
         let survivor = brick(in: scene, x: 0, y: 120)
 
         scene.endlessIICollectClearAndRetreat()
-        scene.tickEndlessIIRetreatFloor(1.0/120.0)
-        XCTAssertFalse(scene.endlessIIRetreatFloorHasSettled, "caught in the middle of it")
+        scene.tickEndlessIIFieldShift(1.0/120.0)
+        XCTAssertFalse(scene.endlessIIFieldShiftHasSettled, "caught in the middle of it")
         XCTAssertEqual(scene.endlessIICanonicalRestingY(survivor.position.y), 120,
                        accuracy: 0.001)
     }
@@ -2047,5 +2047,166 @@ final class EndlessIIWreckingBallLookTests: XCTestCase {
                                 "theme \(theme) has no wrecking art")
             }
         }
+    }
+}
+
+/// Quicksand in Endless Mayhem: Retreat's opposite number.
+///
+/// James, round 218: "Quicksand as 2 different versions. The one in Classic Mode is
+/// persistent. The bricks move down and stay there. In the Endless modes... it should be
+/// temporary. The bricks move down for some time, then move back. The opposite of Retreat. It
+/// should show up as the same power-up in the information view and use the same icons."
+///
+/// One slot, two behaviours, which is what makes the information view show one entry without
+/// anything having to be told to hide the other.
+final class EndlessIIQuicksandTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickHeight = 20
+        scene.brickWidth = 40
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    private func brick(_ scene: GameScene, y: CGFloat) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        node.name = BrickCategoryName
+        node.position = CGPoint(x: 0, y: y)
+        scene.addChild(node)
+        return node
+    }
+
+    /// The field steps two rows toward the paddle, and the line it dies on comes with it.
+    func testTheFieldStepsTowardThePaddle() {
+        let scene = mayhem()
+        let node = brick(scene, y: 100)
+        let floor = scene.finalBrickRowHeight
+
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+
+        let step = CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight
+        XCTAssertEqual(node.position.y, 100 - step, accuracy: 0.01,
+                       "the bricks did not come down")
+        XCTAssertEqual(scene.finalBrickRowHeight, floor - step, accuracy: 0.01,
+                       "the line the field dies on stayed where it was")
+    }
+
+    /// And steps back when the clock ends, which is the half that makes it temporary.
+    func testTheFieldGoesBackWhenItEnds() {
+        let scene = mayhem()
+        let node = brick(scene, y: 100)
+
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+        scene.endlessIIQuicksandClock.reset()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+
+        XCTAssertEqual(node.position.y, 100, accuracy: 0.01, "the field never came back up")
+        XCTAssertEqual(scene.endlessIIFieldShift, 0, accuracy: 0.01)
+    }
+
+    /// A Retreat and a Quicksand together leave the field where it was.
+    ///
+    /// The matrix's own answer for that pair, and it costs nothing: the two are one number
+    /// counted in opposite directions rather than two effects that have to know about each
+    /// other.
+    func testARetreatAndAQuicksandCancel() {
+        let scene = mayhem()
+        let node = brick(scene, y: 100)
+
+        scene.endlessIICollectClearAndRetreat()
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+
+        XCTAssertEqual(node.position.y, 100, accuracy: 0.01, "the two did not cancel")
+    }
+
+    /// The field is held while it runs, the way it is held for a Retreat.
+    func testTheFieldIsHeldWhileItRuns() {
+        let scene = mayhem()
+        scene.endlessIICollectQuicksand()
+        XCTAssertTrue(scene.endlessIIFieldIsHeld)
+    }
+
+    /// It does not drop on top of itself.
+    func testItIsNotOfferedWhileOneIsAlreadyRunning() {
+        let scene = mayhem()
+        XCTAssertTrue(scene.powerUpCanAppear(23))
+        scene.endlessIICollectQuicksand()
+        XCTAssertFalse(scene.powerUpCanAppear(23))
+    }
+
+    /// Classic's Quicksand is untouched: no clock, and the old permanent move.
+    func testClassicsQuicksandIsNotThisOne() {
+        let scene = mayhem()
+        scene.gameMode = .classic
+        scene.endlessIICollectQuicksand()
+        XCTAssertFalse(scene.endlessIIQuicksandClock.isRunning,
+                       "Classic collected the endless version")
+    }
+
+    /// It is in the one table, so it is in the ring, the save and the Wipe.
+    func testItIsInTheTableThatFeedsTheRingTheSaveAndTheWipe() {
+        let scene = mayhem()
+        scene.endlessIICollectQuicksand()
+
+        XCTAssertTrue(scene.endlessIIFieldRingEntries().contains { $0.id == "endlessIIQuicksand" })
+        XCTAssertTrue(scene.endlessIIFieldClockSaveEntries().contains { $0.key == "endlessIIQuicksand" })
+        XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(\.endlessIIQuicksandClock))
+        XCTAssertTrue(GameScene.endlessIITimedClockPaths.contains(\.endlessIIQuicksandClock),
+                      "a Lock has to freeze it")
+
+        scene.endlessIIRestoreFieldClock(key: "endlessIIQuicksand", remaining: 4,
+                                         total: 10, magnitude: 0)
+        XCTAssertTrue(scene.endlessIIQuicksandClock.isRunning, "a resumed run lost it")
+    }
+}
+
+/// Where the Paddle Halo sits while the field is somewhere else.
+///
+/// James, round 218, on the matrix's "halo moves in line with bricks": "I mean that the halo
+/// tracks the field's vertical shift."
+final class PaddleHaloFollowsTheFieldTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickHeight = 20
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.position = CGPoint(x: 40, y: -300)
+        return scene
+    }
+
+    func testItSitsAtThePaddleWithTheFieldWhereItStarted() {
+        let scene = mayhem()
+        XCTAssertEqual(scene.endlessIIPaddleHaloCentre.y, -300, accuracy: 0.01)
+        XCTAssertEqual(scene.endlessIIPaddleHaloCentre.x, 0, accuracy: 0.01,
+                       "it stands at the centre of the field, not on the paddle (round 184)")
+    }
+
+    /// A Retreat lifts every brick two rows away, and the glow goes with them - or it would
+    /// reach two rows less of the field for as long as the retreat ran.
+    func testItRisesWithARetreat() {
+        let scene = mayhem()
+        scene.endlessIICollectClearAndRetreat()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+
+        XCTAssertEqual(scene.endlessIIPaddleHaloCentre.y,
+                       -300 + CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
+                       accuracy: 0.01)
+    }
+
+    func testItFallsWithAQuicksand() {
+        let scene = mayhem()
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+
+        XCTAssertEqual(scene.endlessIIPaddleHaloCentre.y,
+                       -300 - CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
+                       accuracy: 0.01)
     }
 }

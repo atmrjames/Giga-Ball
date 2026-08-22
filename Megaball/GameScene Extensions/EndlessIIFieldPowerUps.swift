@@ -80,7 +80,7 @@ extension GameScene {
     /// Short enough that the eight seconds of held field are still the power-up, long enough
     /// that the movement is legible - and the same on the way back down, where the rows
     /// hidden behind the HUD come back into view rather than appearing there.
-    static let endlessIIRetreatLiftSeconds: TimeInterval = 0.35
+    static let endlessIIFieldShiftSeconds: TimeInterval = 0.35
 
     /// Lifts the whole field two rows and holds it there (§5.4).
     ///
@@ -148,22 +148,22 @@ extension GameScene {
     /// the save writes rows with the lift subtracted (`endlessIICanonicalRestingY`), the lift
     /// variable starts a fresh scene at zero, and the first tick of a restored running clock
     /// lifts everything once - never twice.
-    func tickEndlessIIRetreatFloor(_ frameDelta: TimeInterval = 0) {
+    func tickEndlessIIFieldShift(_ frameDelta: TimeInterval = 0) {
         guard gameMode == .endlessII else { return }
-        let wanted = endlessIIRetreatFloorWanted
-        let room = wanted - endlessIIRetreatFloorLift
+        let wanted = endlessIIFieldShiftWanted
+        let room = wanted - endlessIIFieldShift
         guard abs(room) > 0.01 else { return }
 
         let travel = CGFloat(GameScene.endlessIIRetreatRows)*brickHeight
-            / CGFloat(GameScene.endlessIIRetreatLiftSeconds)*CGFloat(max(0, frameDelta))
+            / CGFloat(GameScene.endlessIIFieldShiftSeconds)*CGFloat(max(0, frameDelta))
         let delta = room > 0 ? min(room, travel) : max(room, -travel)
         guard delta != 0 else { return }
         // A frame with no time in it moves nothing rather than snapping: the collect path
         // calls the tick with no delta, and the movement is the following frames' work
 
         finalBrickRowHeight += delta
-        endlessIIRetreatFloorLift += delta
-        if abs(wanted - endlessIIRetreatFloorLift) < 0.01 { endlessIIRetreatFloorLift = wanted }
+        endlessIIFieldShift += delta
+        if abs(wanted - endlessIIFieldShift) < 0.01 { endlessIIFieldShift = wanted }
         // Landed exactly, so the lift a save subtracts is a whole number of rows and the
         // arithmetic that decides the field is settled has nothing left to be unsure about
         showEndlessIILowerLimit()
@@ -179,11 +179,35 @@ extension GameScene {
         // themselves are simply two further from the paddle until the clock ends
     }
 
-    /// Where the field's two borrowed rows should be right now: up while the clock runs,
-    /// back down once it has stopped.
-    var endlessIIRetreatFloorWanted: CGFloat {
-        endlessIIClearAndRetreatClock.isRunning
-            ? CGFloat(GameScene.endlessIIRetreatRows)*brickHeight : 0
+    /// Where the field's borrowed rows should be right now.
+    ///
+    /// Up two while a Retreat runs, down two while a Quicksand does, and back where it started
+    /// once neither is. **The two cancel when both run**, which is the matrix's answer for
+    /// that pair and costs nothing here: they are one number counted in opposite directions,
+    /// rather than two effects that have to be told about each other.
+    var endlessIIFieldShiftWanted: CGFloat {
+        var rows = 0
+        if endlessIIClearAndRetreatClock.isRunning { rows += GameScene.endlessIIRetreatRows }
+        if endlessIIQuicksandClock.isRunning { rows -= GameScene.endlessIIRetreatRows }
+        return CGFloat(rows)*brickHeight
+    }
+
+    /// Quicksand, in Endless Mayhem: the field steps two rows toward the paddle and holds.
+    ///
+    /// Retreat's opposite in every part. The lower limit comes down with the bricks, so the
+    /// field's relationship to the line it dies on is unchanged and what the player loses is
+    /// *room*: the same two rows Retreat gives them, taken away for as long as it runs. When
+    /// the clock ends the field steps back up.
+    ///
+    /// Classic's Quicksand is a different animal and stays one - it moves the bricks down and
+    /// leaves them there, which is a permanent loss in a mode where the field does not descend
+    /// on its own. Here the field descends anyway, so a permanent step down would be a power
+    /// -up that only cost the player a few seconds of the descent it was going to make itself.
+    func endlessIICollectQuicksand() {
+        guard gameMode == .endlessII else { return }
+        endlessIIQuicksandClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        if hapticsSetting { heavyHaptic.impactOccurred() }
+        if soundsSetting { run(endlessRowDownSound) }
     }
 
     /// Whether the field has finished moving to where the retreat wants it.
@@ -192,8 +216,8 @@ extension GameScene {
     /// `position.y` is its row (§8.6), and mid-glide every brick is between two. Nothing may
     /// read a row off the field until it has landed - so the descent, the generator and the
     /// bottom-zone check all stand down for the third of a second at each end.
-    var endlessIIRetreatFloorHasSettled: Bool {
-        abs(endlessIIRetreatFloorWanted - endlessIIRetreatFloorLift) <= 0.01
+    var endlessIIFieldShiftHasSettled: Bool {
+        abs(endlessIIFieldShiftWanted - endlessIIFieldShift) <= 0.01
     }
 
     /// The row a brick belongs on with the retreat's temporary lift taken back off.
@@ -204,7 +228,7 @@ extension GameScene {
     /// restore applies the lift to the restored field; a save that kept the lifted positions
     /// would be lifted a second time.
     func endlessIICanonicalRestingY(_ restingY: CGFloat) -> CGFloat {
-        restingY - endlessIIRetreatFloorLift
+        restingY - endlessIIFieldShift
     }
 
     // MARK: - Laser Beam
@@ -461,7 +485,7 @@ extension GameScene {
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
         \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
-        \.endlessIIDriftClock,
+        \.endlessIIDriftClock, \.endlessIIQuicksandClock,
     ]
     // Double Paddle and Mirror Paddle left this list in round 180: they were designed as
     // 12-second clocks but were never in any run-down loop, so both ran for ever (James:
@@ -723,6 +747,10 @@ extension GameScene {
           PowerUpIcon.hud("GhostBallIcon", PowerUpIcon.ghostBall)),
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
           PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat)),
+         ("endlessIIQuicksand", endlessIIQuicksandClock,
+          UIImage(named: "PowerUpBricksDown") ?? PowerUpIcon.clearAndRetreat),
+         // Classic's Quicksand badge, because it is Classic's Quicksand: the same power-up
+         // wearing the same picture, doing a temporary version of the same thing (round 218)
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
           PowerUpIcon.hud("SafetyPaddleIcon", PowerUpIcon.safetyPaddle)),
          ("endlessIIDrift", endlessIIDriftClock,
@@ -779,6 +807,8 @@ extension GameScene {
             endlessIIGhostBallClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIClearAndRetreat":
             endlessIIClearAndRetreatClock.restore(remaining: remaining, total: total, level: 0)
+        case "endlessIIQuicksand":
+            endlessIIQuicksandClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIDrift":
             endlessIIDriftClock.restore(remaining: remaining, total: total, level: 0)
             if endlessIIDriftDirection == 0 { endlessIIDriftDirection = 1 }
@@ -805,6 +835,7 @@ extension GameScene {
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
             endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)
+            endlessIIQuicksandClock.run(down: endlessIIClockDelta)
             endlessIISafetyPaddleClock.run(down: endlessIIClockDelta)
             endlessIIDriftClock.run(down: endlessIIClockDelta)
             tickEndlessIIGhostBall()
@@ -812,7 +843,7 @@ extension GameScene {
             tickEndlessIIDescent()
         }
         tickEndlessIIAura()
-        tickEndlessIIRetreatFloor(endlessIIPaddleFrameDelta)
+        tickEndlessIIFieldShift(endlessIIPaddleFrameDelta)
         // Outside the Playing guard, like the Aura's: the floor has to come back down after a
         // clock that ended while the game was paused
         refreshEndlessIIWreckingBall()

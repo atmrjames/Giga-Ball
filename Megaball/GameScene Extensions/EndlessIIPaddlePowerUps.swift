@@ -791,8 +791,19 @@ extension GameScene {
     /// bricks it reaches are the ones that come to *it*, so the value is in what the field
     /// happens to bring over the middle rather than in how fast a thumb moves.
     var endlessIIPaddleHaloCentre: CGPoint {
-        CGPoint(x: 0, y: paddle.position.y)
+        CGPoint(x: 0, y: paddle.position.y + endlessIIFieldShift)
     }
+    // **It travels with the field** (James, round 218: the matrix's "halo moves in line with
+    // bricks", against both Retreat and Quicksand). The glow is anchored to the paddle's
+    // height, and a Retreat lifts every brick two rows away from it - so a halo that stayed
+    // put would reach two rows less of the field for as long as the retreat ran, and a
+    // Quicksand would hand it two rows more. Following the shift means it eats the same *rows*
+    // whatever the field is doing, which is the only reading under which "how far it reaches"
+    // is a property of the power-up rather than of what else is running.
+    //
+    // Worth knowing: during a Quicksand the centre is two rows *below* the paddle. The glow
+    // is a semicircle drawn upward from its centre, so it still covers the field above it -
+    // it is the same two rows of bricks either way, which is the point
 
     private func tickEndlessIIPaddleHalo() {
         guard endlessIIPaddleHaloClock.isRunning else { return }

@@ -228,6 +228,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	var endlessIILockClock = EndlessIIClock()
 
+	/// Quicksand, in the endless modes: the field drops two rows and is held there.
+	///
+	/// The same slot as Classic's Quicksand and the same icon, because it is the same power-up
+	/// (James, round 218: "Quicksand as 2 different versions... It should show up as the same
+	/// power-up in the information view and use the same icons"). Only what it does differs:
+	/// Classic moves the bricks down and leaves them there, and here it is temporary, which is
+	/// what makes it Retreat's opposite number rather than a slower way to lose.
+	var endlessIIQuicksandClock = EndlessIIClock()
+
 	/// Paddle hits on the ball currently in play, reset when it is lost. Feeds
 	/// `TotalStats.bestBallHits`, which is the one figure the totals cannot reconstruct.
 	var hitsOnThisBall: Int = 0
@@ -912,7 +921,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// undoing are one subtraction and cannot drift: a clock that ends while the game is paused
 	/// still has its lift taken off by the next tick, and a run resumed mid-retreat lifts once
 	/// from a floor the setup has just recomputed.
-	var endlessIIRetreatFloorLift: CGFloat = 0
+	var endlessIIFieldShift: CGFloat = 0
 	var endlessHeight: Int = 0
 	var endlessMoveInProgress: Bool = false
 	var paddleIsAgainstTheWall = false
@@ -3711,7 +3720,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFieldIsHeld: Bool {
 		endlessIIAimHold || endlessIIAimedStickyOwedTurn
 			|| endlessIIClearAndRetreatClock.isRunning
-			|| (gameMode == .endlessII && endlessIIRetreatFloorHasSettled == false)
+			|| endlessIIQuicksandClock.isRunning
+			|| (gameMode == .endlessII && endlessIIFieldShiftHasSettled == false)
 	}
 
 	func moveEndlessModeRowDown() {
@@ -5146,11 +5156,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		case powerUpBricksDown:
 		// Move all bricks down
-			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-				let brickSprite = node as! SKSpriteNode
-				let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height*2, duration: 0.5)
-				moveBricksDown.timingMode = .easeInEaseOut
-				node.run(moveBricksDown)
+			if gameMode == .endlessII {
+				endlessIICollectQuicksand()
+				// **Temporary here, permanent in Classic** (James, round 218). One power-up
+				// with two behaviours rather than two power-ups: the field steps two rows
+				// toward the paddle, is held there, and steps back - the exact inverse of
+				// Retreat, which is why the two cancel when they run together
+			} else {
+				enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
+					let brickSprite = node as! SKSpriteNode
+					let moveBricksDown = SKAction.moveBy(x: 0, y: -brickSprite.size.height*2, duration: 0.5)
+					moveBricksDown.timingMode = .easeInEaseOut
+					node.run(moveBricksDown)
+				}
 			}
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[23]+=1

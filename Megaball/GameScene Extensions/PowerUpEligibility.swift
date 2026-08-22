@@ -99,8 +99,20 @@ extension GameScene {
             } >= 3
 
         case 23:
-            // Quicksand. Not with the field already at the bottom, and not in endless mode,
-            // where the field comes down by itself
+            // Quicksand. Two power-ups in one slot since round 218, so two answers.
+            //
+            // In Endless Mayhem it is the temporary one: the field steps two rows toward the
+            // paddle and back, so it needs nothing to be at the bottom of - only that one is
+            // not already running, since a second collection of a field shift while the first
+            // is mid-glide is a field being asked to be in two places.
+            //
+            // Anywhere else it is Classic's, which moves the bricks down for good: not with
+            // the field already at the bottom, and not in the original Endless, where the
+            // field comes down by itself and a permanent step would be buying the player's
+            // own descent back off them
+            if gameMode == .endlessII {
+                return endlessIIQuicksandClock.isRunning == false
+            }
             return endlessMode == false && bricksAreAtTheBottom == false
 
         case 24:

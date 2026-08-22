@@ -37,6 +37,11 @@ extension GameScene {
 
     func applyEndlessRowPowerUpWeights() {
         powerUpProbArray[7] = 7 // Gravity
+        powerUpProbArray[23] = gameMode == .endlessII ? 5 : 0 // Quicksand - uncommon
+        // **Mayhem only.** The base endless table zeroes it, because Classic's Quicksand is a
+        // permanent step down and the field here descends anyway. The version this weight
+        // turns on is the temporary one built in round 218; the original Endless keeps neither,
+        // pending the field-shift machinery it does not have
         powerUpProbArray[18] = 5 // Reset Multi-Hit Bricks
         powerUpProbArray[19] = 5 // Remove Indestructible Bricks
         powerUpProbArray[21] = 3 // Undestructi-Ball
