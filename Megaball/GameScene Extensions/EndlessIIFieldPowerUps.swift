@@ -456,6 +456,10 @@ extension GameScene {
     /// power-up that did not drop.
     var endlessIILockMayDrop: Bool {
         guard gameMode == .endlessII, endlessIILocked == false else { return false }
+        if endlessIIClassicTimerRunning { return true }
+        // The old timers count as something to freeze from round 221. A field with nothing but
+        // a Giga-Ball running was a field a Lock declined to drop on, though a Lock is now
+        // exactly what that player wants
         return endlessIITimedClocks.contains {
             $0.outlastsALockDrop(lead: GameScene.endlessIILockLead)
         }
@@ -517,6 +521,82 @@ extension GameScene {
             \.endlessIIDoublePaddleClock, \.endlessIIMirrorPaddleClock,
             \.endlessIIBallSpinClock,
         ]
+
+    // MARK: - The original twenty-eight, under a Lock
+
+    /// Every timed power-up from the original twenty-eight, and the actions that time it.
+    ///
+    /// **A Lock freezes these too** (James, round 221's interaction matrix, which lists Slow
+    /// ball, Increase ball speed, Expand paddle, Shrink paddle, Hide bricks, Gravity field,
+    /// Giga-ball, Inert ball, Lasers, Expand ball and Shrink ball beside Lock and Key). Until
+    /// now a Lock froze Endless Mayhem's own clocks and left these running, so a player who
+    /// locked a field full of power-ups watched half of them expire anyway.
+    ///
+    /// These do not run on `EndlessIIClock`. Each is an `SKAction` sequence on the scene - a
+    /// wait, then a block that puts everything back - with two more actions animating the icon
+    /// and its bar. Freezing them is setting the speed of those three to zero, which is what
+    /// an `SKAction` means by frozen: the wait stops counting and the bar stops draining, so
+    /// the bar goes on saying how much would be left.
+    ///
+    /// Written out once here rather than looked up at three call sites. The pairs share their
+    /// icon and bar keys, because they share their icon: a paddle cannot be expanded and
+    /// shrunk at once, so there is one paddle-size timer whichever of the two started it.
+    var endlessIIClassicTimers: [(key: String, timers: [(node: SKNode, key: String)])] {
+        [("powerUpDecreaseBallSpeed",
+          [(ballSpeedIcon, "powerUpDecreaseBallSpeedTimer"), (ballSpeedIconBar, "ballSpeedTimer")]),
+         ("powerUpIncreaseBallSpeed",
+          [(ballSpeedIcon, "powerUpDecreaseBallSpeedTimer"), (ballSpeedIconBar, "ballSpeedTimer")]),
+         ("powerUpIncreasePaddleSize",
+          [(paddleSizeIcon, "powerUpPaddleSizeTimer"), (paddleSizeIconBar, "paddleSizeTimer")]),
+         ("powerUpDecreasePaddleSize",
+          [(paddleSizeIcon, "powerUpPaddleSizeTimer"), (paddleSizeIconBar, "paddleSizeTimer")]),
+         ("powerUpGravityBall",
+          [(gravityIcon, "powerUpGravityTimer"), (gravityIconBar, "gravityTimer")]),
+         ("powerUpInvisibleBricks",
+          [(hiddenBricksIcon, "powerUpHiddenBricksTimer"),
+           (hiddenBricksIconBar, "invisibleBricksTimer")]),
+         ("powerUpGigaBall",
+          [(gigaBallIcon, "powerUpGigaBallTimer"), (gigaBallIconBar, "gigaBallTimer")]),
+         ("powerUpUndestructiBall",
+          [(gigaBallIcon, "powerUpGigaBallTimer"), (gigaBallIconBar, "gigaBallTimer")]),
+         ("powerUpLasers",
+          [(lasersIcon, "powerUpLaserTimer"), (lasersIconBar, "laserTimer")]),
+         ("powerUpIncreaseBallSize",
+          [(ballSizeIcon, "powerUpBallSizeTimer"), (ballSizeIconBar, "ballSizeTimer")]),
+         ("powerUpDecreaseBallSize",
+          [(ballSizeIcon, "powerUpBallSizeTimer"), (ballSizeIconBar, "ballSizeTimer")])]
+    }
+
+    /// Whether any of the original twenty-eight's timers is running right now.
+    ///
+    /// Asked of the actions rather than of a flag, because the actions are the only record
+    /// these power-ups keep of being on - `inertBallRunning` has said so since round 148 and
+    /// this is the same reading, generalised.
+    var endlessIIClassicTimerRunning: Bool {
+        endlessIIClassicTimers.contains { action(forKey: $0.key) != nil }
+    }
+
+    /// Holds the old timers where they are, or lets them run again.
+    ///
+    /// **Written every frame rather than at each end of a Lock**, and that is the point rather
+    /// than laziness: a power-up collected *during* a Lock starts a fresh action at full speed,
+    /// and a freeze applied only when the Lock landed would miss it. Rewriting a speed that is
+    /// already right costs nothing and cannot be forgotten.
+    func endlessIIHoldClassicTimers(_ frozen: Bool) {
+        guard gameMode == .endlessII else { return }
+        let speed: CGFloat = frozen ? 0 : 1
+        for (key, timers) in endlessIIClassicTimers {
+            if let running = action(forKey: key), running.speed != speed { running.speed = speed }
+            for (node, timerKey) in timers {
+                if let running = node.action(forKey: timerKey), running.speed != speed {
+                    running.speed = speed
+                }
+            }
+        }
+        // The lasers keep firing while frozen, and should: they fire from a `Timer` rather
+        // than from this action, and a Lasers that never runs out is exactly what a Lock is
+        // for. All that stops is the countdown to its ending
+    }
 
     // MARK: - Wipe
 
@@ -829,6 +909,11 @@ extension GameScene {
     /// Runs the batch's clocks. From `update`, beside the paddle batch's tick.
     func tickEndlessIIFieldPowerUps() {
         guard gameMode == .endlessII else { return }
+        endlessIIHoldClassicTimers(endlessIILocked)
+        // **Outside the playing guard below, deliberately.** The original twenty-eight's
+        // timers freeze with the rest from round 221, and a freeze is a state rather than a
+        // step: it has to be true whether or not the frame is one the clocks count. A pause
+        // taken inside a Lock would otherwise hand every old timer its speed back.
         if gameState.currentState is Playing && isPaused == false {
             endlessIIWreckingBallClock.run(down: endlessIIClockDelta)
             endlessIIAuraClock.run(down: endlessIIClockDelta)

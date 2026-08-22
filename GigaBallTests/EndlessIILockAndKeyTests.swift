@@ -340,3 +340,107 @@ final class EndlessIILockAndKeyTests: XCTestCase {
                       "the original Endless has years of leaderboards and no Wipe in it")
     }
 }
+
+/// What a Lock does to the original twenty-eight's timers.
+///
+/// James's interaction matrix (round 221) lists Slow ball, Increase ball speed, Expand paddle,
+/// Shrink paddle, Hide bricks, Sticky paddle, Gravity field, Giga-ball, Inert ball, Lasers,
+/// Expand ball, Shrink ball and Backstop beside Lock and Key, along with Mayhem's own. Until
+/// now a Lock froze Mayhem's clocks and left these running, so a player who locked a field full
+/// of power-ups watched half of them expire anyway.
+///
+/// These are `SKAction` sequences on the scene rather than `EndlessIIClock`s, so freezing them
+/// means setting the speed of the action and of the two that animate its icon to zero.
+final class LockFreezesTheOldTimersTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// Stands in for a classic power-up's timer: the same shape, on the same key.
+    private func startTimer(_ scene: GameScene, key: String) {
+        scene.run(.sequence([.wait(forDuration: 10), .run {}]), withKey: key)
+    }
+
+    func testEveryOldTimerIsInTheTable() {
+        let scene = mayhem()
+        let keys = scene.endlessIIClassicTimers.map(\.key)
+        for expected in ["powerUpDecreaseBallSpeed", "powerUpIncreaseBallSpeed",
+                         "powerUpIncreasePaddleSize", "powerUpDecreasePaddleSize",
+                         "powerUpGravityBall", "powerUpInvisibleBricks", "powerUpGigaBall",
+                         "powerUpUndestructiBall", "powerUpLasers",
+                         "powerUpIncreaseBallSize", "powerUpDecreaseBallSize"] {
+            XCTAssertTrue(keys.contains(expected), "\(expected) is not frozen by a Lock")
+        }
+    }
+
+    /// A locked timer stops counting, and starts again when the Key is turned.
+    func testALockStopsAnOldTimerAndAKeyStartsItAgain() {
+        let scene = mayhem()
+        startTimer(scene, key: "powerUpGigaBall")
+
+        scene.endlessIICollectLock()
+        scene.tickEndlessIIFieldPowerUps()
+        XCTAssertEqual(scene.action(forKey: "powerUpGigaBall")?.speed, 0,
+                       "a Giga-Ball went on counting down inside a Lock")
+
+        scene.endlessIITurnKey()
+        scene.tickEndlessIIFieldPowerUps()
+        XCTAssertEqual(scene.action(forKey: "powerUpGigaBall")?.speed, 1,
+                       "the Key did not start it again")
+    }
+
+    /// And one collected *during* a Lock is frozen too.
+    ///
+    /// The freeze is written every frame rather than at each end of a Lock, which is the only
+    /// way this can be true: a power-up collected while locked starts a fresh action at full
+    /// speed, and nothing tells the Lock it has happened.
+    func testAPowerUpCollectedInsideALockIsFrozenAsWell() {
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+        scene.tickEndlessIIFieldPowerUps()
+
+        startTimer(scene, key: "powerUpLasers")
+        XCTAssertEqual(scene.action(forKey: "powerUpLasers")?.speed, 1, "it starts at full speed")
+
+        scene.tickEndlessIIFieldPowerUps()
+        XCTAssertEqual(scene.action(forKey: "powerUpLasers")?.speed, 0,
+                       "the next frame should have caught it")
+    }
+
+    /// The icon and its bar stop with it, so the bar keeps saying how much would be left.
+    func testTheIconAndItsBarFreezeWithIt() {
+        let scene = mayhem()
+        scene.gigaBallIcon.run(.fadeOut(withDuration: 10), withKey: "powerUpGigaBallTimer")
+        scene.gigaBallIconBar.run(.scaleX(to: 0, duration: 10), withKey: "gigaBallTimer")
+
+        scene.endlessIICollectLock()
+        scene.tickEndlessIIFieldPowerUps()
+
+        XCTAssertEqual(scene.gigaBallIcon.action(forKey: "powerUpGigaBallTimer")?.speed, 0)
+        XCTAssertEqual(scene.gigaBallIconBar.action(forKey: "gigaBallTimer")?.speed, 0)
+    }
+
+    /// A field with nothing but an old power-up running is worth dropping a Lock on.
+    func testALockIsWorthDroppingForAnOldPowerUpAlone() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIILockMayDrop, "nothing is running")
+
+        startTimer(scene, key: "powerUpGigaBall")
+        XCTAssertTrue(scene.endlessIILockMayDrop,
+                      "a Giga-Ball is exactly what a player wants a Lock for")
+    }
+
+    /// Nothing outside Endless Mayhem is touched.
+    func testTheOtherModesAreLeftAlone() {
+        let scene = mayhem()
+        scene.gameMode = .classic
+        startTimer(scene, key: "powerUpGigaBall")
+        scene.endlessIIHoldClassicTimers(true)
+        XCTAssertEqual(scene.action(forKey: "powerUpGigaBall")?.speed, 1,
+                       "Classic has no Lock and must not be frozen by one")
+    }
+}
