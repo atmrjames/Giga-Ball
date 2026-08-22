@@ -1974,3 +1974,41 @@ final class PaddleGripMemoryTests: XCTestCase {
     }
 }
 
+
+/// The laser and sticky art that fits each shape.
+///
+/// James, round 213: "the paddles also come with their own lasers and sticky paddle graphics
+/// to fit the new shapes... the bottom of each paddle shape should line up with the existing
+/// paddle. This is true for the laser and stick paddle textures too."
+final class ShapedPaddleDressingTests: XCTestCase {
+
+    /// Every shape that has a paddle picture has the two overlays to go with it - a shaped
+    /// paddle firing lasers must not wear a flat gun on a domed face.
+    func testEveryDrawnShapeHasItsLaserAndStickyArt() {
+        let scene = GameScene()
+        for surface in PaddleBounce.Surface.allCases {
+            guard let suffix = scene.endlessIIPaddleShapeSuffix(surface) else { continue }
+            XCTAssertNotNil(UIImage(named: "regularPaddle\(suffix)"), "paddle \(surface)")
+            XCTAssertNotNil(UIImage(named: "regularLasers\(suffix)"), "lasers \(surface)")
+            XCTAssertNotNil(UIImage(named: "regularSticky\(suffix)"), "sticky \(surface)")
+        }
+    }
+
+    /// The retired face is the one with no art, and it must stay that way rather than falling
+    /// back to a picture that promises a shape it does not give.
+    func testTheRetiredFaceHasNoDressingEither() {
+        XCTAssertNil(GameScene().endlessIIPaddleShapeSuffix(.jagged))
+    }
+
+    /// **The bottom needs no arithmetic**, and this is the fact that makes that true: both
+    /// overlays are anchored at their own underside in the scene file, so whatever height they
+    /// are given they grow upward from the line they sit on. If somebody ever re-centres them
+    /// the shapes will start floating, and this is what says so.
+    func testTheOverlaysAreAnchoredAtTheirUnderside() {
+        let scene = GameScene(fileNamed: "GameScene")
+        let laser = scene?.childNode(withName: "paddleLaser") as? SKSpriteNode
+        let sticky = scene?.childNode(withName: "paddleSticky") as? SKSpriteNode
+        XCTAssertEqual(laser?.anchorPoint.y, 0, "the laser art hangs from its own bottom")
+        XCTAssertEqual(sticky?.anchorPoint.y, 0, "and so does the sticky face")
+    }
+}

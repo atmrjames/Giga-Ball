@@ -116,6 +116,57 @@ extension GameScene {
         }
     }
 
+    /// The laser and sticky overlays a shape wears, drawn to fit it.
+    func endlessIIPaddleShapeSuffix(_ surface: PaddleBounce.Surface) -> String? {
+        switch surface {
+        case .convex: return "Convex"
+        case .concave: return "Concave"
+        case .wavy: return "Wave"
+        case .wedgeLeft: return "WedgeLeft"
+        case .wedgeRight: return "WedgeRight"
+        case .jagged: return nil
+        }
+    }
+
+    /// Dresses the laser and sticky overlays to match the paddle's shape.
+    ///
+    /// **Their bottoms are already right and need no arithmetic.** Both sprites are anchored
+    /// at (0.5, 0) in the scene file and positioned on the paddle's underside, so they grow
+    /// upward from that line however tall they are - which is exactly what James asked for
+    /// ("the bottom of each paddle shape should line up with the existing paddle... true for
+    /// the laser and sticky paddle textures too"). All that changes is the picture and how
+    /// tall it is.
+    ///
+    /// The height comes from the art rather than from a number: every one of these is drawn at
+    /// the paddle's width, so its height relative to the plain paddle's *is* the proportion it
+    /// should be shown at. That reproduces the existing 1.6 and 1.1 exactly, because those two
+    /// were read off this art in the first place - and it means a shape whose sticky is taller
+    /// than its laser needs nothing said about it here.
+    func refreshEndlessIIPaddleShapeDressing(_ suffix: String?) {
+        let base = paddleTexture.size().height
+        guard base > 0 else { return }
+
+        let laser = suffix.map { SKTexture(imageNamed: "regularLasers\($0)") }
+            ?? laserPaddleTexture
+        let sticky = suffix.map { SKTexture(imageNamed: "regularSticky\($0)") }
+            ?? stickyPaddleTexture
+
+        paddleLaser.texture = laser
+        paddleLaser.size = CGSize(width: paddle.size.width,
+                                  height: ballSize*laser.size().height/base)
+        paddleSticky.texture = sticky
+        paddleSticky.size = CGSize(width: paddle.size.width,
+                                   height: ballSize*sticky.size().height/base)
+
+        if suffix != nil {
+            let whole = CGRect(x: 0, y: 0, width: 1, height: 1)
+            paddleLaser.centerRect = whole
+            paddleSticky.centerRect = whole
+            // Stretched whole, for the paddle's own reason: the cap rects are written in the
+            // plain art's unit coordinates and would protect the wrong strips of a shaped one
+        }
+    }
+
     /// Puts the shaped art on the paddle and rebuilds its body to match, or takes both away.
     ///
     /// **The body is the picture** (James, round 213: "the paddle physics body should match
@@ -183,6 +234,11 @@ extension GameScene {
         }
         endlessIIPaddleShapeLift = (grown - paddleHeight)/2
         paddle.position.y += endlessIIPaddleShapeLift
+
+        refreshEndlessIIPaddleShapeDressing(
+            running ? endlessIIPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) } : nil)
+        // The lasers and the sticky face change with the paddle, or a shaped paddle firing
+        // lasers wears a flat gun on a domed face
 
         rebuildEndlessIIPaddleBody()
     }
