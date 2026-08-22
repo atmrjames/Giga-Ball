@@ -97,42 +97,46 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
     // bricks." So these ask for both halves - two rows gone, and a clock holding the field
     // where they left it.
 
-    func testTheLowestTwoRowsGo() {
+    /// **Nothing is cleared** (James, round 215: "the bottom 2 rows of bricks should remain in
+    /// play, they just move up along with everything else. It looked like they were
+    /// 'cleared'. This power up should really just be called retreat as there is no
+    /// clearing").
+    ///
+    /// These three used to assert the opposite - that the lowest two occupied rows were
+    /// destroyed, that "lowest level" meant levels rather than row heights, and that a row
+    /// meant the whole row rather than one brick. That was round 136's reading of the power-up
+    /// and it is now the wrong one, so what they pin is inverted rather than deleted: the same
+    /// three fields, and every brick still standing afterwards.
+    func testNoBrickIsDestroyedByARetreat() {
         let scene = fieldScene()
         let low = brick(in: scene, x: 0, y: 40)
         let next = brick(in: scene, x: 0, y: 40 + scene.brickHeight)
         let high = brick(in: scene, x: 0, y: 40 + scene.brickHeight*4)
 
         scene.endlessIICollectClearAndRetreat()
-        XCTAssertNil(low.parent, "the lowest occupied row is destroyed")
-        XCTAssertNil(next.parent, "and the one that was lowest after it")
-        XCTAssertNotNil(high.parent, "the rest of the field is untouched")
+        XCTAssertNotNil(low.parent, "the lowest row stays in play")
+        XCTAssertNotNil(next.parent, "and the one above it")
+        XCTAssertNotNil(high.parent)
     }
 
-    func testTheLowestLevelRisesByTwoRowsHoweverFarApartTheyAre() {
+    func testAGapBetweenOccupiedRowsCostsNothingEither() {
         let scene = fieldScene()
         let low = brick(in: scene, x: 0, y: 40)
         let next = brick(in: scene, x: 0, y: 40 + scene.brickHeight*5)
         let high = brick(in: scene, x: 0, y: 40 + scene.brickHeight*9)
-        // Two occupied rows with a gap between them. "Raise the lowest brick level by 2
-        // bricks" is about the lowest *levels*, not about two row heights of field - a
-        // measurement from the bottom brick would have taken the first and missed the second
 
         scene.endlessIICollectClearAndRetreat()
-        XCTAssertNil(low.parent)
-        XCTAssertNil(next.parent)
-        XCTAssertNotNil(high.parent)
+        for standing in [low, next, high] { XCTAssertNotNil(standing.parent) }
     }
 
-    func testTheLowestRowMeansTheWholeRowNotOneBrick() {
+    func testTwoBricksOnOneRowBothStay() {
         let scene = fieldScene()
         let left = brick(in: scene, x: -50, y: 40)
         let right = brick(in: scene, x: 50, y: 44)
-        // Within half a brick of the same centre - the same row, as the descent reads it
 
         scene.endlessIICollectClearAndRetreat()
-        XCTAssertNil(left.parent)
-        XCTAssertNil(right.parent)
+        XCTAssertNotNil(left.parent)
+        XCTAssertNotNil(right.parent)
     }
 
     func testTheRetreatIsTimedAndHoldsTheField() {
@@ -1378,11 +1382,13 @@ final class RandomisedBounceTests: XCTestCase {
         let survivor = brick(in: scene, x: 0, y: 120)
 
         scene.endlessIICollectClearAndRetreat()
-        XCTAssertNil(low.parent)
-        XCTAssertNil(next.parent)
         settleRetreat(scene)
-        XCTAssertEqual(survivor.position.y, 120 + 2*scene.brickHeight, accuracy: 0.001,
-                       "the rows that survive the clear are carried up with the frame")
+        for (standing, was) in [(low, 40.0), (next, 60.0), (survivor, 120.0)] {
+            XCTAssertNotNil(standing.parent, "nothing is cleared any more (round 215)")
+            XCTAssertEqual(standing.position.y, CGFloat(was) + 2*scene.brickHeight,
+                           accuracy: 0.001,
+                           "every row is carried up with the frame, including the lowest two")
+        }
     }
 
     func testTheFieldComesBackDownWhenTheRetreatEnds() {

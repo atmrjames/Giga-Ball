@@ -47,22 +47,31 @@ final class EndlessIIBrickTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden)
     }
 
-    /// James, round 210: "invisible bricks flashed on a paddle hit when there was one on the
-    /// bottom row and one further up in a higher row. Problem is, there were other
-    /// destructible bricks visible."
+    /// James, round 215, narrowing round 210: "an invisible brick on the bottom row should
+    /// flash on paddle hit if there's no other visible bricks on the same row in Endless
+    /// modes."
     ///
-    /// The zone question alone - is the descent held up by something invisible - is true far
-    /// more often than the flash is wanted. What the flash is *for* is narrower: a field that
-    /// looks empty and will not descend reads as a broken game, and the flash says there is
-    /// still something down there. With bricks visible elsewhere nothing looks broken, and the
-    /// flash is only giving hidden bricks away.
-    func testAVisibleBrickAnywhereElseMeansTheFieldDoesNotLookBroken() {
+    /// Round 210 read his earlier note as being about the whole field and required nothing
+    /// visible anywhere. That is far stricter than the thing being explained: what stalls the
+    /// descent is *this row*, so a row of nothing-but-hidden is worth a clue however busy the
+    /// rest of the field looks.
+    func testAVisibleBrickHigherUpDoesNotCallOffTheFlash() {
         let scene = zoneScene()
         zoneBrick(on: scene, y: 0, hidden: true)
         zoneBrick(on: scene, y: 200, hidden: false)
 
-        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
-                       "the player can see there is still a field - nothing needs explaining")
+        XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden,
+                      "the row is still held up by something nobody can see")
+    }
+
+    /// And a visible brick *on the row* is the thing that calls it off, because then there is
+    /// something to hit and nothing to explain.
+    func testAVisibleBrickOnTheSameRowCallsItOff() {
+        let scene = zoneScene()
+        zoneBrick(on: scene, y: 0, hidden: true)
+        zoneBrick(on: scene, y: 0, hidden: false)
+
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden)
     }
 
     /// An Indestructible in view is not a brick the player could go and hit, so it can never

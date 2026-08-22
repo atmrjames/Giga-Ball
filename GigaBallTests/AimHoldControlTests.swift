@@ -28,21 +28,21 @@ final class AimHoldControlTests: XCTestCase {
         XCTAssertEqual(AimHoldControl.intent(touchY: paddleTop - 200, paddleTopY: paddleTop),
                        .paddle, "and the thumb's usual home is below the paddle")
     }
-
-    /// James, round 172: "I think moving the paddle when aimed sticky is active is not good. It
-    /// should just be the arrow angle. Unless sticky paddle is also active, then the paddle
-    /// movement should be allowed too."
+    /// **The paddle may always be carried** (James, round 215: "drag below the paddle moves
+    /// the paddle. Drag above the paddle moves the arrow relative to the drag").
     ///
-    /// So round 33's two-decision control is what *Sticky Paddle underneath* buys, not what
-    /// Aimed Sticky gives on its own. The two tests above describe the paired case and pass
-    /// unchanged, because carrying the paddle is still the default answer for the question
-    /// "may it move" - it is the question that is new.
-    func testWithoutStickyPaddleEveryDragIsTheAim() {
-        for y in [CGFloat(0), paddleTop + 1, paddleTop, paddleTop - 200] {
-            XCTAssertEqual(AimHoldControl.intent(touchY: y, paddleTopY: paddleTop,
-                                                 paddleMayMove: false),
-                           .aim, "at \(y): two decisions on one finger, and the aim is the "
-                           + "one the power-up is for")
+    /// This replaces round 172's rule, which made the paddle immovable while aiming unless
+    /// Sticky Paddle happened to be running too - two decisions on one finger being one too
+    /// many, when the world stopped for the aim. The world does not stop any more, so a paddle
+    /// that cannot be moved is a paddle that cannot answer a field still coming down.
+    func testTheDragBelowCarriesThePaddleWhateverElseIsRunning() {
+        for sticky in [true, false] {
+            XCTAssertEqual(AimHoldControl.intent(touchY: -300, paddleTopY: -280,
+                                                 paddleMayMove: sticky), .paddle,
+                           "below the paddle carries it, sticky \(sticky)")
+            XCTAssertEqual(AimHoldControl.intent(touchY: -200, paddleTopY: -280,
+                                                 paddleMayMove: sticky), .aim,
+                           "above the paddle aims, sticky \(sticky)")
         }
     }
 

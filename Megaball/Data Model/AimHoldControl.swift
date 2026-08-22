@@ -45,10 +45,19 @@ enum AimHoldControl {
     /// drag that also slides the paddle is two decisions on one finger, and the aim is the one
     /// the power-up is for. Sticky Paddle running underneath is what buys the second decision
     /// back: that power-up's whole promise is that the ball comes with the paddle.
+    /// **The paddle may always be carried now** (James, round 215: "drag below the paddle
+    /// moves the paddle. Drag above the paddle moves the arrow relative to the drag. Tap
+    /// releases the ball. The game doesn't pause. It acts more like the existing sticky power
+    /// up").
+    ///
+    /// `paddleMayMove` was round 172's answer to a different complaint - that a drag doing two
+    /// jobs at once was one decision too many for a finger - and it made the paddle immovable
+    /// unless Sticky Paddle happened to be running underneath. With the world no longer
+    /// stopping while a ball is aimed, a paddle that cannot be moved is a paddle that cannot
+    /// answer a field that is still descending. Above aims, on or below carries, always.
     static func intent(touchY: CGFloat, paddleTopY: CGFloat,
                        paddleMayMove: Bool = true) -> Intent {
-        guard paddleMayMove else { return .aim }
-        return touchY > paddleTopY ? .aim : .paddle
+        touchY > paddleTopY ? .aim : .paddle
     }
 
     /// Whether lifting the finger should fire.

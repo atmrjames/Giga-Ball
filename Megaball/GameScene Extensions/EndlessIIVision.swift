@@ -411,7 +411,15 @@ extension GameScene {
                 texture: SKTexture(image: PowerUpIcon.hud("LandingMarkerIcon",
                                                           PowerUpIcon.landingMarker)),
                 remaining: CGFloat(endlessIILandingRemaining/endlessIILandingTotal),
-                segments: nil))
+                segments: Int(endlessIILandingTotal)))
+            // **Segmented, because it counts paddle hits** (James, round 215: "the progress
+            // bar on the HUD icon acted as segmented on a paddle hit, which is right, but
+            // there were no dividing lines between the segments").
+            //
+            // It was passing nil, which draws one continuous arc - and an arc fed a fraction
+            // that only moves in steps looks segmented without being segmented, which is
+            // precisely what he saw. The trajectory above keeps nil and should: its clock runs
+            // on time, so its ring really is continuous.
         }
         return entries
     }

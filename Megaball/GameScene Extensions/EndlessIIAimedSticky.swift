@@ -99,6 +99,19 @@ extension GameScene {
     /// catch stops the world - every ball, brick and laser holds where it is, exactly the
     /// way the pause menu holds them - the drag chooses the angle, and lifting the finger
     /// fires the ball and lets the world go again.
+    /// **The world no longer stops** (James, round 215: "new interaction plan for aimed
+    /// sticky. Drag below the paddle moves the paddle. Drag above the paddle moves the arrow
+    /// relative to the drag. Tap releases the ball. The game doesn't pause. It acts more like
+    /// the existing sticky power up").
+    ///
+    /// Aiming used to freeze every ball, brick and laser the way the pause menu does, so the
+    /// shot could be chosen with everything holding its breath. Three rounds of stutter
+    /// reports came out of that freeze - it stopped the world for the *scene* but not for
+    /// `didSimulatePhysics`, and every writer that moves a ball kept running through it
+    /// (round 210) - and the freeze was never the point. The point is being able to aim. So
+    /// the hold is now only a flag saying a ball is being aimed: the field keeps descending,
+    /// the other balls keep flying, and the aim is something the player does while the game
+    /// carries on, exactly as the ordinary Sticky Paddle does.
     func endlessIIBeginAimHold() {
         guard endlessIIAimHold == false else { return }
 
@@ -110,9 +123,9 @@ extension GameScene {
         // The primary ball may be mid-flight while an extra is caught; its heading has to
         // survive the freeze the same way it survives the pause menu
 
-        endlessIIRecordExtraBallVelocities()
-        pauseAllNodes()
         endlessIIAimHold = true
+        // Nothing is paused and no velocity is recorded: with the world still running there is
+        // nothing to put back, which is also why `endlessIIEndAimHold` has so much less to do
     }
 
     /// Ends a hold that has nothing left to aim.
@@ -138,34 +151,9 @@ extension GameScene {
         guard endlessIIAimHold else { return }
         endlessIIAimHold = false
 
-        for name in [PaddleCategoryName, BallCategoryName, BrickCategoryName,
-                     BrickRemovalCategoryName, LaserCategoryName] {
-            enumerateChildNodes(withName: name) { node, _ in node.isPaused = false }
-        }
-        enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
-            let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 7.5)
-            node.run(move, withKey: "PowerUpDrop")
-        }
-        // The same wake the pause menu's countdown gives - the drops lost their action when
-        // the world froze, so they are set falling again
-
-        if launching !== ball, ballIsOnPaddle == false,
-           endlessIIHeldBalls.contains(where: { $0 === ball }) == false,
-           pauseBallVelocityX != 0 || pauseBallVelocityY != 0 {
-            ball.physicsBody?.velocity = CGVector(dx: pauseBallVelocityX,
-                                                  dy: pauseBallVelocityY)
-            pauseBallVelocityX = 0
-            pauseBallVelocityY = 0
-        }
-        for (index, extra) in endlessIIExtraBalls.enumerated() {
-            guard extra !== launching, extra.parent != nil else { continue }
-            guard endlessIIHeldBalls.contains(where: { $0 === extra }) == false else { continue }
-            guard pauseExtraBallVelocities.indices.contains(index) else { continue }
-            extra.physicsBody?.velocity = pauseExtraBallVelocities[index]
-        }
-        pauseExtraBallVelocities.removeAll()
-        // Everything the freeze stopped is sent on its way - except what the paddle is
-        // still holding, which stays held
+        // **Nothing to wake** since round 215: the aim no longer stops the world, so there is
+        // no paused node to unpause and no stored heading to hand back. What is left of this
+        // method is the flag above, and the launch the caller applies straight after.
 
         directionMarker.isHidden = true
         endlessIIHideExtraDirectionMarkers()

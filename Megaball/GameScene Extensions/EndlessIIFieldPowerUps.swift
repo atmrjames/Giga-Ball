@@ -103,11 +103,20 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
 
         endlessIIClearAndRetreatClock.collect(GameScene.endlessIIClearAndRetreatDuration)
-        endlessIIRaiseTheLowestBrickLevel(by: GameScene.endlessIIRetreatRows)
-        // The clear is instant - the rows are gone the moment the power-up is caught - and
-        // the lift that follows is glided from the tick over the next third of a second.
-        // Safe to be a frame later than the clear because the field is held for the whole
-        // retreat, and held now for the glide at each end of it too
+        // **Nothing is cleared** (James, round 215: "the bottom 2 rows of bricks should remain
+        // in play, they just move up along with everything else. It looked like they were
+        // 'cleared'. This power up should really just be called retreat as there is no
+        // clearing").
+        //
+        // It used to destroy the two lowest rows here and then lift the field. The lift is the
+        // whole power-up on its own: the lower limit and every brick rise together, so the
+        // field's *relationship to the line* is unchanged while the whole of it steps two rows
+        // further from the paddle. The clear was buying nothing the retreat did not already
+        // give, and it was buying it by taking bricks - and their score - off the player.
+        //
+        // It is also most of what made this stutter: destroying two full rows in one frame
+        // runs every one of their removals, roles and counters at once, on the same frame the
+        // glide starts.
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }

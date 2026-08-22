@@ -361,7 +361,7 @@ enum PowerUpCatalogue {
                 rarity: .uncommon, valence: .harmful, isTimed: true, stacking: .extendsDuration),
         PowerUp(id: "ballSteering", name: "Ball Steering", availability: .endlessII,
                 rarity: .rare, valence: .beneficial, isTimed: true, stacking: .extendsDuration),
-        PowerUp(id: "clearAndRetreat", name: "Clear And Retreat", availability: .endlessII,
+        PowerUp(id: "clearAndRetreat", name: "Retreat", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true,
                 stacking: .extendsDuration),
         // Timed since round 136. Instant, the retreat it clears was taken straight back by

@@ -94,7 +94,6 @@ extension GameScene {
     func endlessIICollectPaddleSurface(_ surface: PaddleBounce.Surface) {
         endlessIIPaddleSurface = surface
         endlessIIPaddleSurfaceClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
-        showEndlessIIPaddleSurface()
     }
 
     // MARK: - The shape the ball actually meets
@@ -300,58 +299,7 @@ extension GameScene {
     /// the paddle changes size. It is a picture of the very function the bounce uses - the
     /// same `shaped` call, sampled across the width - so the drawing cannot promise a face
     /// the bounce does not give.
-    func showEndlessIIPaddleSurface() {
-        drawEndlessIIPaddleSurface(on: paddle)
-        if let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName)
-            as? SKSpriteNode {
-            drawEndlessIIPaddleSurface(on: mirror)
-        }
-        // **The mirror wears the face too** (round 211, James's parity call). It is a full
-        // bounce surface that computes its angle from the same `PaddleBounce` call the paddle
-        // does, so a shape it showed but did not give would be the one kind of parity worth
-        // refusing - a picture of a face the bounce disagrees with. The Safety Paddle stays
-        // flat and unmarked: it is furniture rather than a paddle, spends no paddle turns,
-        // and answers a ball with the backstop's arithmetic on purpose
-    }
 
-    /// Draws the shape over a surface's top, so the face can be read rather than guessed.
-    ///
-    /// A curve along the top edge, in the harmful pink these power-ups wear, redrawn whenever
-    /// the surface changes size. It is a picture of the very function the bounce uses - the
-    /// same `shaped` call, sampled across the width - so the drawing cannot promise a face
-    /// the bounce does not give.
-    private func drawEndlessIIPaddleSurface(on host: SKSpriteNode) {
-        host.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
-        guard let surface = endlessIIPaddleSurface, endlessIIPaddleSurfaceClock.isRunning
-        else { return }
-
-        let width = host.size.width
-        let height = host.size.height
-        let path = CGMutablePath()
-        let samples = 48
-        for step in 0...samples {
-            let share = Double(step)/Double(samples)
-            let collision = share*2 - 1
-            let x = CGFloat(collision)*width/2
-            let lift = CGFloat(PaddleBounce.shaped(collision, by: surface) - collision)
-            let y = height/2 + lift*height*0.45
-            // The *difference* the shape makes, drawn as height: a flat paddle would be a
-            // straight line, and every bump is somewhere the angle disagrees with a flat face
-            if step == 0 { path.move(to: CGPoint(x: x, y: y)) }
-            else { path.addLine(to: CGPoint(x: x, y: y)) }
-        }
-
-        let profile = SKShapeNode(path: path)
-        profile.name = GameScene.paddleSurfaceName
-        profile.strokeColor = GameScene.endlessIIPaddleSurfaceColour
-        profile.lineWidth = max(2, height*0.22)
-        profile.lineCap = .round
-        profile.zPosition = 1
-        host.addChild(profile)
-    }
-
-    static let paddleSurfaceName = "endlessIIPaddleSurface"
-    static let endlessIIPaddleSurfaceColour = UIColor(red: 1, green: 0.22, blue: 0.62, alpha: 1)
 
     /// Takes the shape away when its turns run out.
     func refreshEndlessIIPaddleSurface() {
@@ -359,11 +307,8 @@ extension GameScene {
         guard endlessIIPaddleSurface != nil else { return }
         if endlessIIPaddleSurfaceClock.isRunning == false {
             endlessIIPaddleSurface = nil
-            paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
-            childNode(withName: GameScene.endlessIIMirrorPaddleName)?
-                .childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
-            // The mirror's copy goes with it, or a mirror outliving the shape keeps showing
-            // a face neither surface has any more
+            // The picture goes with it in `refreshEndlessIIPaddleShapeArt` above, which puts
+            // the plain paddle back and retraces its body
         }
     }
 
@@ -983,8 +928,7 @@ extension GameScene {
         case "endlessIIPaddleSurface":
             endlessIIPaddleSurfaceClock.restore(remaining: remaining, total: total, level: 0)
             if endlessIIPaddleSurface == nil { endlessIIPaddleSurface = .convex }
-            showEndlessIIPaddleSurface()
-            // Which shape is not saved, and a resumed run comes back domed. Worth a note
+                // Which shape is not saved, and a resumed run comes back domed. Worth a note
             // rather than a fix: the save format is shared with a shipped version, and a
             // fifth field for a fifteen-second power-up is not worth a migration
         case "endlessIIDoublePaddle":
@@ -1030,7 +974,9 @@ extension GameScene {
         // The tick is what takes the mirror off the field, so the reset has to run it -
         // a surface left standing after the life that earned it would change the next one
         endlessIIPaddleSurface = nil
-        paddle.childNode(withName: GameScene.paddleSurfaceName)?.removeFromParent()
+        refreshEndlessIIPaddleShapeArt()
+        // Puts the plain paddle and its body back, rather than leaving a shaped one on a
+        // reset field
         endlessIIPendingPaddlePortals.removeAll()
         endlessIIPaddleHaloNode?.removeFromParent()
         endlessIIPaddleHaloNode = nil

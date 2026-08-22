@@ -615,9 +615,15 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "it left upward")
     }
 
-    func testACatchFreezesTheWorldAndTheLaunchLetsItGo() {
-        // "Can we pause the game whilst the user aims? As soon as they lift their finger
-        // the ball fires and the game continues?" - yes, and this is it
+    /// **The world no longer stops** (James, round 215: "the game doesn't pause. It acts more
+    /// like the existing sticky power up").
+    ///
+    /// This asked for round 33's design - "can we pause the game whilst the user aims? As soon
+    /// as they lift their finger the ball fires and the game continues?" - and that design is
+    /// withdrawn. What survives is the half that was never about freezing: a catch holds the
+    /// ball, and the launch sends it. Everything else on the field is expected to carry on
+    /// exactly as it was, which is what the other ball below now checks.
+    func testACatchHoldsTheBallAndLeavesTheRestOfTheFieldAlone() {
         let scene = paddleScene()
         scene.ballSpeedLimit = 100
         scene.addChild(scene.ball)
@@ -634,13 +640,14 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
         XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
 
-        XCTAssertTrue(scene.endlessIIAimHold, "the world holds its breath")
-        XCTAssertEqual(flying.physicsBody?.velocity.dx, 0, "the other ball froze too")
-        XCTAssertEqual(scene.pauseExtraBallVelocities.first?.dx, 70,
-                       "its heading survives the freeze")
+        XCTAssertTrue(scene.endlessIIAimHold, "a ball is being aimed")
+        XCTAssertEqual(flying.physicsBody?.velocity.dx, 70,
+                       "the other ball carries on - nothing is frozen any more")
+        XCTAssertTrue(scene.pauseExtraBallVelocities.isEmpty,
+                      "and nothing was stored up to hand back")
 
         XCTAssertTrue(scene.endlessIIAimLaunch())
-        XCTAssertFalse(scene.endlessIIAimHold, "lifting the finger lets the world go")
+        XCTAssertFalse(scene.endlessIIAimHold, "the tap has taken the shot")
         XCTAssertEqual(flying.physicsBody?.velocity.dx ?? 0, 70, accuracy: 0.01,
                        "the other ball resumes its flight")
         XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "and the shot flies")
@@ -801,19 +808,6 @@ final class AimedStickyLostBallTests: XCTestCase {
         let convex = PaddleBounce.shaped(0.5, by: .convex)
         XCTAssertNotEqual(flat, convex, accuracy: 0.0001,
                           "the shape has to change the reading, or this proves nothing")
-    }
-
-    /// The Safety Paddle is deliberately left out: it is furniture rather than a paddle, it
-    /// spends no paddle turns, and it answers a ball with the backstop's arithmetic on
-    /// purpose. Its own note says so, and this is that decision written down where it can
-    /// fail if somebody quietly changes their mind.
-    func testTheSafetyPaddleIsNotAPaddleAndKeepsItsFlatFace() {
-        let scene = mayhem()
-        scene.endlessIICollectSafetyPaddle()
-        scene.showEndlessIISafetyPaddle()
-        let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
-        XCTAssertNil(bar?.childNode(withName: GameScene.paddleSurfaceName),
-                     "the safety bar wears no shaped face")
     }
 
     func testALostBallLetsGoOfThePaddle() {

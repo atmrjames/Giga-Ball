@@ -4088,7 +4088,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// answers. At least one hidden brick and nothing visible beside it - a zone with anything
 	/// visible in it explains itself.
 	var endlessIIBottomZoneIsAllHidden: Bool {
-		guard gameMode == .endlessII else { return false }
+		guard gameMode == .endlessII || gameMode == .endless else { return false }
+		// **Both endless modes** (James, round 215: "an invisible brick on the bottom row
+		// should flash on paddle hit if there's no other visible bricks on the same row in
+		// Endless modes"). The original descends too, and a hidden brick stalls it there for
+		// exactly the same unexplained reason - this is the mode's own clarity rather than a
+		// change to how it plays.
+		//
+		// Asked of `gameMode` rather than the `endlessMode` flag beside it: that flag is set
+		// during scene setup, so it is false on a scene that has not been presented and this
+		// rule would quietly answer no for the whole of a test run
 		guard dailyFogIsOn == false else { return false }
 		// **Not on a Fog of War day** (James, round 184: after resuming a fogged Mayhem run,
 		// "hidden bricks are flashing on every paddle bounce even though there are other
@@ -4098,33 +4107,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// says on the briefing card, so the zone is nearly always all-hidden and the flash
 		// fires on every landing. Explaining the fog to a player who chose the fog is not an
 		// explanation, it is the twist being handed back
-		// **And nothing else the player can see and hit, anywhere on the field** (James,
-		// round 210: "invisible bricks flashed on a paddle hit when there was one on the
-		// bottom row and one further up in a higher row. Problem is, there were other
-		// destructible bricks visible").
-		//
-		// The zone rule alone asks "is the descent being held up by something invisible",
-		// which is true rather more often than the flash is *wanted*. What the flash is for is
-		// narrower: a field that looks empty and is not descending reads as a broken game, and
-		// the flash is the clue that there is still something down there to hit. With bricks
-		// visible elsewhere the field plainly is not empty, nothing looks broken, and a flash
-		// is just the mode giving away hidden bricks for free.
+		// **The row, not the field** (James, round 215: "if there's no other visible bricks on
+		// the same row"). Round 210 read his earlier note as being about the whole field and
+		// required nothing visible anywhere, which is far stricter than the thing being
+		// explained: what stalls the descent is *this row*, so a row of nothing-but-hidden is
+		// the case worth a clue however busy the rest of the field looks.
 		var hidden = 0
 		var visible = 0
-		var visibleAnywhere = 0
 		enumerateChildNodes(withName: BrickCategoryName) { node, _ in
 			guard let sprite = node as? SKSpriteNode else { return }
-
-			if sprite.isHidden == false, self.brickCanBeDestroyed(sprite) {
-				visibleAnywhere += 1
-			}
-			// Anywhere on the field, not only in the zone - see below
-
 			guard self.brickHasReachedTheBottomZone(sprite),
 			      sprite.endlessIIIsAnchored == false else { return }
 			if sprite.isHidden { hidden += 1 } else { visible += 1 }
 		}
-		return hidden > 0 && visible == 0 && visibleAnywhere == 0
+		return hidden > 0 && visible == 0
 	}
 
 	/// Whether a brick is one the player could clear if they could see it.
@@ -8549,6 +8545,19 @@ laserTimer?.invalidate()
 			let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 7.5)
 			node.run(move, withKey: "PowerUpDrop")
 		}
+		countBricks()
+		// **The descent has to be asked again after a pause** (James, round 215: "pausing when
+		// the bricks are moving down. On resume, the bricks stop moving down and stay too high
+		// until the next brick hit").
+		//
+		// The field's cadence is not a timer - it is `countBricks`, which steps a row down
+		// whenever the bottom row is empty and no move is running. Everything that normally
+		// calls it is an *event*: a brick destroyed, a row landing. A pause taken mid-step
+		// freezes the move, and on resume the action finishes with nobody left to notice - so
+		// `endlessMoveInProgress` keeps the true it was paused with and the next step is never
+		// asked for. The next brick hit calls `countBricks` and the field remembers itself,
+		// which is exactly the "until" in the report.
+
 		enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
 			node.isPaused = false
 		}
