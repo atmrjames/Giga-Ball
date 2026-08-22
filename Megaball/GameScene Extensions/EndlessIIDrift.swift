@@ -60,16 +60,31 @@ extension GameScene {
     /// field moving the way the field moves.
     static let endlessIIDriftSlideSeconds: TimeInterval = 0.05
 
-    /// Starts (or extends) the slide, in the direction the collected power-up names.
+    /// Starts the slide, in the direction the collected power-up names - or ends one already
+    /// running the other way.
     ///
-    /// **Two Drifts now, one per direction** (James, round 201: "one that moves everything
-    /// left to right and another that moves everything right to left"). The direction used to
-    /// be a coin flip on first collection; it is the power-up's own identity now, which also
-    /// means collecting the *other* one mid-drift reverses the field - the two share one
-    /// clock, so that reversal extends the time as well, and a player holding both has been
-    /// handed a dial rather than two coats of the same paint.
+    /// **Two Drifts, one per direction** (James, round 201: "one that moves everything left to
+    /// right and another that moves everything right to left"). The direction used to be a
+    /// coin flip on first collection; it is the power-up's own identity now.
+    ///
+    /// **The opposite one cancels it** (round 223's matrix: "Drift left x Drift right: cancels
+    /// out). Round 201 made it reverse the field and extend the clock instead - a dial rather
+    /// than two coats of the same paint - which was a good answer to a question the matrix has
+    /// since answered differently, and cancelling is the more honest one: these two are each
+    /// other's opposite the way Expand and Shrink are, and those have cancelled since 2020.
     func endlessIICollectDrift(direction: Int) {
         guard gameMode == .endlessII else { return }
+
+        if endlessIIDriftClock.isRunning, endlessIIDriftDirection != 0,
+           endlessIIDriftDirection != direction {
+            endlessIIDriftClock.reset()
+            return
+            // The tick sees a stopped clock on the next frame and runs `endEndlessIIDrift`,
+            // which is what puts the half-slid column back on its grid. Cancelling by hand
+            // here would leave the field between columns, and a brick between columns is a
+            // brick on no row at all (§8.6)
+        }
+
         endlessIIDriftClock.collect(GameScene.endlessIIDriftDuration)
         endlessIIDriftDirection = direction
     }

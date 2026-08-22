@@ -1129,21 +1129,30 @@ final class RandomisedBounceTests: XCTestCase {
         for _ in 0..<Int(seconds/frame) { scene.tickEndlessIIDrift(frame) }
     }
 
-    func testEachDriftSlidesItsOwnWayAndTheOtherOneReversesIt() {
+    /// Each Drift slides its own way, and the other one ends it.
+    ///
+    /// **Inverted in round 223.** It used to reverse the slide and extend the clock, on round
+    /// 201's reading that a player holding both had been handed a dial rather than two coats
+    /// of the same paint. James's interaction matrix answers the pair differently - "cancels
+    /// out" - which makes them each other's opposite the way Expand and Shrink are, and those
+    /// have cancelled since 2020.
+    func testEachDriftSlidesItsOwnWayAndTheOtherOneCancelsIt() {
         let scene = driftScene()
         let brick = brick(in: scene, x: 0, y: 200)
 
         scene.endlessIICollectDrift(direction: -1)
         driftFor(1.0, in: scene)
         XCTAssertLessThan(brick.position.x, 0, "Drift Left slides the field leftward")
+        let slid = brick.position.x
 
         scene.endlessIICollectDrift(direction: 1)
-        let wasRunning = scene.endlessIIDriftClock.isRunning
+        XCTAssertFalse(scene.endlessIIDriftClock.isRunning, "the two did not cancel")
+
         driftFor(5.0, in: scene)
-        XCTAssertTrue(wasRunning, "one clock - the second collection joins it")
-        XCTAssertGreaterThan(brick.position.x, 0,
-                             "collecting the other one mid-drift reverses the slide - a "
-                             + "dial, not two coats of the same paint")
+        XCTAssertGreaterThanOrEqual(brick.position.x, slid,
+                                    "a cancelled drift went on sliding leftward")
+        XCTAssertLessThanOrEqual(brick.position.x, 0,
+                                 "cancelling turned the field around instead of stopping it")
     }
 
     /// The point of the change: between steps the field is exactly on its columns, where the
@@ -2214,5 +2223,162 @@ final class PaddleHaloFollowsTheFieldTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIPaddleHaloCentre.y,
                        -300 - CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight,
                        accuracy: 0.01)
+    }
+}
+
+/// Which power-ups end which, from the matrix's "most recent power-up overrides".
+///
+/// Fifteen cells of it, and deliberately not the group model `PowerUpCatalogue.conflict` uses:
+/// these are pairs rather than a partition. Inert Ball ends a Giga-Ball, a Wrecking Ball and a
+/// Ball Aura, and those three combine happily with each other. Auto-Aim ends a Portal, and a
+/// Portal runs contentedly beside an Inert Paddle.
+final class EndlessIIExclusionTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// The table, against the matrix, written out in its own terms.
+    func testTheTableIsTheMatrix() {
+        let expected: [(EndlessIIExclusive, EndlessIIExclusive)] = [
+            (.inertBall, .gigaBall), (.wreckingBall, .inertBall), (.ballAura, .inertBall),
+            (.inertPaddle, .aimedSticky), (.flippedAngle, .aimedSticky),
+            (.flippedAngle, .inertPaddle), (.autoAim, .aimedSticky), (.autoAim, .portalPaddle),
+            (.autoAim, .inertPaddle), (.autoAim, .flippedAngle), (.ballSpin, .stickyPaddle),
+            (.ballSpin, .aimedSticky), (.ballSpin, .ballControl), (.ballSpin, .inertPaddle),
+            (.ballSpin, .autoAim),
+        ]
+        XCTAssertEqual(EndlessIIExclusions.pairs.count, expected.count)
+        for (a, b) in expected {
+            XCTAssertTrue(EndlessIIExclusions.pairs.contains { ($0 == a && $1 == b) || ($0 == b && $1 == a) },
+                          "\(a) and \(b) are not named as ending each other")
+        }
+    }
+
+    /// "Most recent overrides" reads both ways, so the lookup has to.
+    func testItReadsBothWaysRound() {
+        XCTAssertTrue(EndlessIIExclusions.ended(byCollecting: .autoAim).contains(.aimedSticky))
+        XCTAssertTrue(EndlessIIExclusions.ended(byCollecting: .aimedSticky).contains(.autoAim))
+    }
+
+    /// The pairs that are *not* there matter as much as the ones that are.
+    func testWhatCombinesIsLeftAlone() {
+        XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .gigaBall).contains(.wreckingBall),
+                       "a wrecking Giga-Ball is the matrix's own answer, not a conflict")
+        XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .gigaBall).contains(.ballAura))
+        XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .portalPaddle).contains(.inertPaddle),
+                       "a Portal and an Inert Paddle agree perfectly")
+        XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .ballSpin).contains(.flippedAngle),
+                       "spin off a flipped angle is simply spin the other way")
+    }
+
+    /// Collecting one ends the other, on the scene.
+    func testCollectingAutoAimEndsTheAimedStickyAndThePortal() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIICollectPortalPaddle()
+        scene.endlessIICollectAutoAim()
+
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
+        XCTAssertFalse(scene.endlessIIPortalPaddleClock.isRunning)
+        XCTAssertTrue(scene.endlessIIAutoAimClock.isRunning)
+    }
+
+    /// And the other way round, which is what "most recent" means.
+    func testCollectingTheAimedStickyEndsTheAutoAim() {
+        let scene = mayhem()
+        scene.endlessIICollectAutoAim()
+        scene.endlessIICollectAimedSticky()
+
+        XCTAssertFalse(scene.endlessIIAutoAimClock.isRunning)
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.isRunning)
+    }
+
+    /// Ball Spin ends everything else that decides where the ball leaves the paddle.
+    func testBallSpinEndsTheOtherAnswersToTheSameQuestion() {
+        let scene = mayhem()
+        scene.endlessIICollectInertPaddle()
+        scene.endlessIICollectBallSteering()
+        scene.endlessIICollectBallSpin()
+
+        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning)
+        XCTAssertFalse(scene.endlessIIBallSteeringClock.isRunning)
+        XCTAssertTrue(scene.endlessIIBallSpinClock.isRunning)
+    }
+
+    /// A Wrecking Ball ends an Inert Ball, which says the opposite of it.
+    func testAWreckingBallEndsAnInertBall() {
+        let scene = mayhem()
+        scene.runClassicPowerUpTimer(key: "powerUpUndestructiBall",
+                                     wait: .wait(forDuration: 10), ending: .run {})
+        scene.endlessIICollectWreckingBall()
+
+        XCTAssertNil(scene.action(forKey: "powerUpUndestructiBall"),
+                     "the ball cannot be unable to break bricks and break every brick at once")
+    }
+
+    /// Nothing outside Endless Mayhem is displaced by any of this.
+    func testTheOtherModesAreLeftAlone() {
+        let scene = mayhem()
+        scene.gameMode = .classic
+        scene.runClassicPowerUpTimer(key: "powerUpUndestructiBall",
+                                     wait: .wait(forDuration: 10), ending: .run {})
+        scene.endlessIIDisplace(byCollecting: .wreckingBall)
+        XCTAssertNotNil(scene.action(forKey: "powerUpUndestructiBall"))
+    }
+}
+
+/// The two Drifts cancel rather than reverse.
+///
+/// Round 201 made collecting the opposite one turn the field around and extend the clock - a
+/// dial rather than two coats of the same paint - which was a good answer to a question round
+/// 223's matrix has since answered differently: "cancels out". These two are each other's
+/// opposite the way Expand and Shrink are, and those have cancelled since 2020.
+final class DriftsCancelTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    func testTheOppositeDriftEndsIt() {
+        let scene = mayhem()
+        scene.endlessIICollectDrift(direction: 1)
+        XCTAssertTrue(scene.endlessIIDriftClock.isRunning)
+
+        scene.endlessIICollectDrift(direction: -1)
+        XCTAssertFalse(scene.endlessIIDriftClock.isRunning, "the two did not cancel")
+    }
+
+    /// The same one again refills it, like every other power-up.
+    func testTheSameDriftRefillsIt() {
+        let scene = mayhem()
+        scene.endlessIICollectDrift(direction: 1)
+        scene.endlessIIDriftClock.run(down: 5)
+        scene.endlessIICollectDrift(direction: 1)
+
+        XCTAssertEqual(scene.endlessIIDriftClock.remaining,
+                       GameScene.endlessIIDriftDuration, accuracy: 0.001)
+        XCTAssertEqual(scene.endlessIIDriftDirection, 1, "it turned around instead")
+    }
+
+    /// A cancelled drift still puts the field back on its grid.
+    ///
+    /// The clock is reset and the tick does the rest, because stopping the slide by hand here
+    /// would leave the field between columns - and a brick between columns is a brick on no
+    /// row at all (§8.6).
+    func testACancelledDriftLeavesTheFieldOnItsGrid() {
+        let scene = mayhem()
+        scene.endlessIICollectDrift(direction: 1)
+        scene.endlessIICollectDrift(direction: -1)
+        scene.tickEndlessIIDrift(1/60)
+
+        XCTAssertEqual(scene.endlessIIDriftDirection, 0, "the drift never finished")
     }
 }

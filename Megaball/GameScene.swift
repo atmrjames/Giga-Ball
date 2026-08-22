@@ -4771,6 +4771,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 		case powerUpStickyPaddle:
         // Sticky paddle
+			endlessIIDisplace(byCollecting: .stickyPaddle)
 			stickyPaddleIcon.texture = self.iconStickyPaddleTexture
 			stickyPaddleIconBar.isHidden = false
 			// Show power-up icon timer
@@ -5028,6 +5029,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         case powerUpGigaBall:
         // giga-ball
+			endlessIIDisplace(byCollecting: .gigaBall)
+			// Before the dress is set below, so an Inert Ball's ending putting the ball back
+			// to normal cannot undo the Giga-Ball look this is about to give it
 			removeAction(forKey: "powerUpGigaBall")
 			removeAction(forKey: "powerUpUndestructiBall")
 			removeAction(forKey: "powerUpGigaBallTimer")
@@ -5068,6 +5072,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         case powerUpUndestructiBall:
         // Undestructi-ball
+			endlessIIDisplace(byCollecting: .inertBall)
+			// A Wrecking Ball or an Aura says the opposite of this one, so collecting it ends
+			// them (round 223's matrix). Giga-Ball is ended by the line below, as it always was
             removeAction(forKey: "powerUpGigaBall")
 			removeAction(forKey: "powerUpUndestructiBall")
 			removeAction(forKey: "powerUpGigaBallTimer")

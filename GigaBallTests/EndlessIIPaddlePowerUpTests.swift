@@ -753,6 +753,10 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
     /// what happens to the ball's angle at the paddle - and the most recent one wins.
     func testCollectingAimedStickyCancelsTheAngleBenders() {
         let scene = GameScene()
+        scene.gameMode = .endlessII
+        // The mode matters from round 223: what ends what is asked of `EndlessIIExclusions`
+        // through `endlessIIDisplace`, which stands down outside Endless Mayhem so that the
+        // classic power-ups two of the pairs reach cannot be displaced in Classic
         scene.endlessIICollectInertPaddle()
         scene.endlessIICollectFlippedAngle()
 
@@ -764,6 +768,7 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
 
     func testCollectingAnAngleBenderCancelsAimedSticky() {
         let scene = GameScene()
+        scene.gameMode = .endlessII
         scene.endlessIICollectAimedSticky()
         scene.endlessIICollectInertPaddle()
         XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)

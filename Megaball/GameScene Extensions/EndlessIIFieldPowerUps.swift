@@ -288,7 +288,10 @@ extension GameScene {
     // MARK: - Wrecking Ball
 
     func endlessIICollectWreckingBall() {
+        endlessIIDisplace(byCollecting: .wreckingBall)
         endlessIIWreckingBallClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        // It ends an Inert Ball, which is the one power-up that says the opposite of it
+        // (round 223's matrix). Giga-Ball and the Aura it runs happily beside
     }
 
     /// Whether this hit destroys whatever it struck, whatever it struck (§5.4).
@@ -304,6 +307,7 @@ extension GameScene {
     // MARK: - Aura
 
     func endlessIICollectAura() {
+        endlessIIDisplace(byCollecting: .ballAura)
         endlessIIAuraClock.collect(GameScene.endlessIIPaddlePowerUpDuration,
                                    deepestLevel: GameScene.endlessIIAuraReach.count - 1)
     }
@@ -522,6 +526,63 @@ extension GameScene {
             \.endlessIIBallSpinClock,
         ]
 
+    // MARK: - What ends what
+
+    /// Ends whatever the power-up just collected cannot run alongside.
+    ///
+    /// The matrix's "most recent power-up overrides", from the one list in
+    /// `EndlessIIExclusions`. Called at the top of each of those power-ups' own collection, so
+    /// the field is already clear by the time it starts.
+    ///
+    /// Two of the pairs reach outside Endless Mayhem's own clocks - Giga-Ball and Inert Ball
+    /// are the original twenty-eight's, run as actions - and they end the way a Wipe ends
+    /// them, by running the block their own wait would have run (round 222).
+    func endlessIIDisplace(byCollecting collected: EndlessIIExclusive) {
+        guard gameMode == .endlessII else { return }
+        for other in EndlessIIExclusions.ended(byCollecting: collected) {
+            endlessIIEnd(other)
+        }
+    }
+
+    /// Ends one power-up now, whichever kind of clock it keeps.
+    private func endlessIIEnd(_ which: EndlessIIExclusive) {
+        switch which {
+        case .gigaBall: endClassicPowerUp(key: "powerUpGigaBall")
+        case .inertBall: endClassicPowerUp(key: "powerUpUndestructiBall")
+        case .wreckingBall: endlessIIWreckingBallClock.reset()
+        case .ballAura: endlessIIAuraClock.reset()
+        case .stickyPaddle:
+            while stickyPaddleCatches > 0 { spendStickyPaddleCatch() }
+            // Spent rather than zeroed: the last catch leaving is what puts the paddle's face
+            // back, releases a ball still sitting on it and clears the icon, and all of that
+            // has to happen whether the catches ran out or were taken away
+        case .aimedSticky: endlessIICancelAimedSticky()
+        case .inertPaddle: endlessIIInertPaddleClock.reset()
+        case .flippedAngle: endlessIIFlippedAngleClock.reset()
+        case .autoAim:
+            endlessIIAutoAimClock.reset()
+            endlessIIAutoAimOwedTurn = false
+        case .ballSpin: endlessIIBallSpinClock.reset()
+        case .portalPaddle:
+            endlessIIPortalPaddleClock.reset()
+            endlessIIPortalPaddleOwedTurn = false
+            // The owed turn goes with it, for the Wipe's reason: a debt is part of the
+            // power-up, and the power-up has been taken away rather than run out
+        case .ballControl: endlessIIBallSteeringClock.reset()
+        }
+    }
+
+    /// One of the original twenty-eight, ended now - its own ending block, run early.
+    func endClassicPowerUp(key: String) {
+        guard let ending = classicPowerUpEndings[key] else { return }
+        removeAction(forKey: key)
+        for (timerKey, timers) in endlessIIClassicTimers where timerKey == key {
+            for (node, name) in timers { node.removeAction(forKey: name) }
+        }
+        classicPowerUpEndings.removeValue(forKey: key)
+        run(ending)
+    }
+
     // MARK: - The original twenty-eight, under a Lock
 
     /// Every timed power-up from the original twenty-eight, and the actions that time it.
@@ -661,13 +722,7 @@ extension GameScene {
     /// decision in the two places the game is oldest, and the other nine were simply not
     /// wiped at all - the matrix asks for all of them (round 222).
     private func wipeClassicTimers() {
-        for (key, timers) in endlessIIClassicTimers {
-            guard let ending = classicPowerUpEndings[key] else { continue }
-            removeAction(forKey: key)
-            for (node, timerKey) in timers { node.removeAction(forKey: timerKey) }
-            classicPowerUpEndings.removeValue(forKey: key)
-            run(ending)
-        }
+        for (key, _) in endlessIIClassicTimers { endClassicPowerUp(key: key) }
     }
 
     /// Whether a Wipe is worth dropping: only while there is something for it to end.

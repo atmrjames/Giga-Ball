@@ -96,7 +96,10 @@ extension GameScene {
 
     func endlessIICollectBallSpin() {
         guard gameMode == .endlessII else { return }
+        endlessIIDisplace(byCollecting: .ballSpin)
         endlessIIBallSpinClock.collect(turns: GameScene.endlessIIBallSpinTurns)
+        // Spin and every other answer to "where does the ball go when it leaves the paddle"
+        // are one question with one answer (round 223's matrix)
     }
 
     var endlessIIBallSpinIsRunning: Bool {

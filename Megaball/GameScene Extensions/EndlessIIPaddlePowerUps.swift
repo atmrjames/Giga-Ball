@@ -44,14 +44,14 @@ extension GameScene {
     // MARK: - Collection
 
     func endlessIICollectAimedSticky() {
+        endlessIIDisplace(byCollecting: .aimedSticky)
         endlessIIAimedStickyClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
-        endlessIIInertPaddleClock.reset()
-        endlessIIFlippedAngleClock.reset()
         // **Aimed Sticky cancels the angle-benders, and they cancel it** (James's rule,
         // round 99): an aimed launch and a paddle that ignores or flips where it was struck
         // are answers to the same question, and running both is one lying about the other.
-        // Most recent wins. Portal Paddle stays compatible with all of them - its rules
-        // apply from the top of the screen, not from the paddle
+        // Most recent wins. Which power-ups that reaches is `EndlessIIExclusions` from round
+        // 223 - the Portal is still compatible, because its rules apply from the top of the
+        // screen rather than from the paddle
     }
 
     /// Cancels Aimed Sticky because an angle-bender was collected over it.
@@ -77,6 +77,7 @@ extension GameScene {
     }
 
     func endlessIICollectPortalPaddle() {
+        endlessIIDisplace(byCollecting: .portalPaddle)
         endlessIIPortalPaddleClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
     }
 
@@ -88,6 +89,7 @@ extension GameScene {
     }
 
     func endlessIICollectBallSteering() {
+        endlessIIDisplace(byCollecting: .ballControl)
         endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
         // Timed, alone in this batch (play-test round 15). Turns are the right unit for a
         // power-up that acts *on* a paddle hit; steering acts continuously between them,
@@ -323,18 +325,17 @@ extension GameScene {
     }
 
     func endlessIICollectInertPaddle() {
+        endlessIIDisplace(byCollecting: .inertPaddle)
         endlessIIInertPaddleClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
-        endlessIIFlippedAngleClock.reset()
-        endlessIICancelAimedSticky()
-        // Most recent wins across the whole angle group: Inert replaces Flipped as well as
-        // Aimed Sticky, or a full flip would hide behind a dead paddle and reappear when it
-        // expired - two bad power-ups queueing up instead of one
+        // Most recent wins, and which power-ups that reaches is `EndlessIIExclusions` rather
+        // than a line here. Inert replaced Flipped and Aimed Sticky by hand from round 60 -
+        // or a full flip would hide behind a dead paddle and reappear when it expired, two bad
+        // power-ups queueing up instead of one - and round 223's matrix says the same and more
     }
 
     func endlessIICollectFlippedAngle() {
+        endlessIIDisplace(byCollecting: .flippedAngle)
         endlessIIFlippedAngleClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
-        endlessIIInertPaddleClock.reset()
-        endlessIICancelAimedSticky()
     }
 
     func endlessIICollectReversedControls() {
@@ -342,6 +343,7 @@ extension GameScene {
     }
 
     func endlessIICollectAutoAim() {
+        endlessIIDisplace(byCollecting: .autoAim)
         endlessIIAutoAimClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
     }
 
