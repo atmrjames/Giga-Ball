@@ -2382,3 +2382,127 @@ final class DriftsCancelTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIDriftDirection, 0, "the drift never finished")
     }
 }
+
+/// The safety paddle becomes a paddle.
+///
+/// James, round 224: "go with the latest definition", against his matrix giving the safety
+/// paddle the paddle's shape, its Inert Paddle, its Flipped Bounce Angle, its Auto-Aim, its
+/// Random Bounce and its Ball Spin.
+///
+/// Round 211 called it furniture and answered with the backstop's arithmetic on purpose: the
+/// ball's own angle, reflected, with nothing about where it landed. Every one of those five
+/// power-ups needs the landing position back to have anything to act on - a Flipped Angle with
+/// no angle to flip does nothing at all on the surface it is standing on.
+final class SafetyPaddleParityTests: XCTestCase {
+
+    private func safetyScene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.ballSize = 10
+        scene.brickHeight = 20
+        scene.paddleWidth = 120
+        scene.angleAdjustmentK = 45
+        scene.minAngleDeg = 20
+        // The two the level setup gives the scene. A bare one has them at zero, and a bounce
+        // with no adjustment to make bends by nothing whatever it is asked
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.endlessIICollectSafetyPaddle()
+        return scene
+    }
+
+    private func bar(_ scene: GameScene) -> SKSpriteNode? {
+        scene.childNode(withName: GameScene.endlessIISafetyPaddleName) as? SKSpriteNode
+    }
+
+    /// It grows with an expanded paddle, which it did not: Expand animates `xScale`.
+    func testItGrowsWithAnExpandedPaddle() {
+        let scene = safetyScene()
+        scene.paddle.xScale = 1.5
+        scene.tickEndlessIISafetyPaddle()
+
+        XCTAssertEqual(bar(scene)?.xScale ?? 0, 1.5, accuracy: 0.001,
+                       "the paddle expanded and its safety net did not")
+    }
+
+    /// It takes the paddle's shape while one is running, and its body is traced from it.
+    func testItWearsTheShapeThePaddleIsWearing() {
+        let scene = safetyScene()
+        scene.endlessIICollectPaddleSurface(.concave)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleConcave"
+        scene.tickEndlessIISafetyPaddle()
+
+        XCTAssertEqual(scene.endlessIISafetyPaddleBodyArt, "regularPaddleConcave",
+                       "a shaped picture over a flat body shows one face and gives another")
+    }
+
+    /// And notices a shape swapped for one exactly as tall.
+    func testItNoticesAWedgeBecomingItsMirror() {
+        let scene = safetyScene()
+        scene.endlessIICollectPaddleSurface(.wedgeLeft)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeLeft"
+        scene.tickEndlessIISafetyPaddle()
+
+        scene.endlessIICollectPaddleSurface(.wedgeRight)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeRight"
+        scene.tickEndlessIISafetyPaddle()
+        XCTAssertEqual(scene.endlessIISafetyPaddleBodyArt, "regularPaddleWedgeRight")
+    }
+
+    /// Back to a rectangle when the shape ends.
+    func testItGoesBackToBeingFlat() {
+        let scene = safetyScene()
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleConvex"
+        scene.tickEndlessIISafetyPaddle()
+
+        scene.endlessIIPaddleSurfaceClock.reset()
+        scene.endlessIIPaddleShapeArtName = nil
+        scene.tickEndlessIISafetyPaddle()
+        XCTAssertNil(scene.endlessIISafetyPaddleBodyArt)
+    }
+
+    /// The angle the bar asks for now depends on where the ball landed on it.
+    ///
+    /// Asked of the arithmetic rather than of the ball, because the bar hands its answer to
+    /// `ballHorizontalControl`, and that stands down unless the scene is in `Playing` - which
+    /// a scene built in a test is not. What is under test is the decision: the bar's bounce is
+    /// `PaddleBounce`'s, taken across the bar's own face, at the paddle's influence.
+    func testWhereTheBallLandsBendsTheBounce() {
+        let scene = safetyScene()
+        let arriving = CGVector(dx: 0, dy: -300)
+
+        func angle(landingAt x: CGFloat) -> Double {
+            PaddleBounce.angleDegrees(
+                arriving: arriving,
+                collision: PaddleBounce.collision(ballX: x, paddleX: 0,
+                                                  paddleWidth: scene.paddle.size.width),
+                adjustmentK: scene.angleAdjustmentK,
+                influence: scene.endlessIIPaddleAngleInfluence,
+                minimumDeg: scene.minAngleDeg)
+        }
+
+        XCTAssertGreaterThan(angle(landingAt: -50), angle(landingAt: 50),
+                             "a landing on the left should leave leftward of one on the right")
+    }
+
+    /// An Inert Paddle takes that back, which is the matrix's own answer for the pair.
+    func testAnInertPaddleFlattensItAgain() {
+        let scene = safetyScene()
+        XCTAssertEqual(scene.endlessIIPaddleAngleInfluence, 1, accuracy: 0.001)
+
+        scene.endlessIICollectInertPaddle()
+        XCTAssertEqual(scene.endlessIIPaddleAngleInfluence, 0, accuracy: 0.001,
+                       "no angle is applied from the ball's position relative to the bar")
+
+        scene.endlessIICollectFlippedAngle()
+        XCTAssertLessThan(scene.endlessIIPaddleAngleInfluence, 0,
+                          "a Flipped Bounce Angle flips the bar's too")
+        // Negative rather than a number: how *far* a flip overshoots is the flip's own
+        // decision (it is 1.8, deliberately more than a mirror), and the claim here is only
+        // that the bar answers to it. Ending the Inert Paddle above is the exclusion doing
+        // its job, so what is being read is the flip alone
+    }
+}

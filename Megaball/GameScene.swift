@@ -278,6 +278,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// each other, so a run that swapped one for the other would keep a body traced from the
 	/// wrong slope while wearing the right picture.
 	var endlessIIMirrorPaddleBodyArt: String?
+
+	/// And the same for the safety bar, which wears the paddle's shape from round 224.
+	var endlessIISafetyPaddleBodyArt: String?
 	var endlessIIBallSpinClock = EndlessIIClock()
 	/// How fast the paddle is travelling, sampled once a frame - see EndlessIIBallSpin
 	var endlessIIPaddleSpeed: CGFloat = 0

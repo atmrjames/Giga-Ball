@@ -127,10 +127,34 @@ extension GameScene {
             // Multi-Ball, only below the cap and only in the mode that has it
             return endlessIICanAddBall
 
+        case 36:
+            // Inert Paddle, not while a shaped face is running
+            return endlessIIShapeOwnsTheBounce == false
+
+        case 55, 56, 57, 64, 65:
+            // The five shaped faces, not while an Inert Paddle is running
+            return endlessIIInertPaddleClock.isRunning == false
+
         default:
             return true
         }
     }
+
+    /// **Why those two refuse to fall on each other** (James, round 224's matrix: "do not fall
+    /// when other power-up is active - the paddle is already inert when shaped").
+    ///
+    /// Round 213 said no conflict rule was needed between a shape and the paddle group,
+    /// because Inert Paddle set the angle influence to zero and nothing the shape said was
+    /// heard. That was true while a shape was a formula. It stopped being true in the same
+    /// round, when the shape became a traced physics body: the engine reflects the ball off
+    /// the silhouette before the contact is even reported, and setting an influence to zero
+    /// afterwards changes nothing at all.
+    ///
+    /// So an Inert Paddle collected under a shape is a bad power-up that does *nothing*, and a
+    /// shape collected under an Inert Paddle is a bad power-up whose whole effect the player
+    /// cannot see coming. Neither is worth dropping. Refusing to offer them is the honest fix,
+    /// and the alternative - having one end the other - would be two bad power-ups where the
+    /// player only ever collected one.
 
     /// How many bricks on the field answer to this.
     ///

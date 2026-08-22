@@ -176,8 +176,23 @@ extension GameScene {
     }
 
     /// The bar's body, rebuilt whenever its size changes - the mirror's own pattern.
+    /// The bar's body: a rectangle, or the shape's own silhouette while one is running.
+    ///
+    /// Traced only while a shape owns the bounce, for the mirror's reason (round 216): a plain
+    /// bar has been a rectangle since it was built and bounces predictably because of it, and
+    /// tracing the ordinary paddle picture would change how it plays for no reason anybody
+    /// asked for. With a shape running the trace *is* the parity - "safety paddle is shaped to
+    /// match the paddle's geometry" is the matrix's own wording, and a shaped picture over a
+    /// flat body would show one face and give another.
     func endlessIISafetyPaddleBody(size: CGSize) -> SKPhysicsBody {
-        let body = SKPhysicsBody(rectangleOf: size)
+        endlessIISafetyPaddleBodyArt = endlessIIShapeOwnsTheBounce
+            ? endlessIIPaddleShapeArtName : nil
+        let body: SKPhysicsBody
+        if endlessIIShapeOwnsTheBounce, let art = endlessIISafetyPaddleDress {
+            body = SKPhysicsBody(texture: art, size: size)
+        } else {
+            body = SKPhysicsBody(rectangleOf: size)
+        }
         body.isDynamic = false
         body.affectedByGravity = false
         body.friction = 0
@@ -196,11 +211,28 @@ extension GameScene {
         guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
                 as? SKSpriteNode else { return }
         guard endlessIISafetyPaddleClock.isRunning == false else {
-            if bar.size.width != paddle.size.width,
+            let wantedArt = endlessIIShapeOwnsTheBounce ? endlessIIPaddleShapeArtName : nil
+            if bar.size != paddle.size || wantedArt != endlessIISafetyPaddleBodyArt,
                paddle.size.width > 0, paddle.size.height > 0 {
                 bar.size = CGSize(width: paddle.size.width, height: paddle.size.height)
-                bar.centerRect = endlessIIPaddleDressCenterRect
+                bar.texture = endlessIISafetyPaddleDress
+                bar.color = GameScene.endlessIIHaloColour
+                bar.colorBlendFactor = 1
+                bar.centerRect = wantedArt == nil ? endlessIIPaddleDressCenterRect
+                                                  : CGRect(x: 0, y: 0, width: 1, height: 1)
                 bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
+                // **Re-dressed as well as resized** (round 224). It took the paddle's picture
+                // once, at birth, so a shape collected while the bar stood left it wearing the
+                // plain face. The tint has to be written back with the texture, for the
+                // mirror's reason: a texture write leaves whatever colour the sprite carries.
+                // A shaped picture stretches whole rather than nine-sliced, because
+                // `paddleCapRect` is in the plain art's unit coordinates
+            }
+            if bar.xScale != paddle.xScale || bar.yScale != paddle.yScale {
+                bar.xScale = paddle.xScale
+                bar.yScale = paddle.yScale
+                // Expand and Shrink animate `xScale` and never touch `size`, so the check
+                // above never fired for them - the same miss the mirror had until round 216
             }
             // **The paddle's twin follows the paddle** (round 203, the first cell of the
             // parity matrix James asked for): Expand and Shrink write the paddle's width
@@ -235,12 +267,42 @@ extension GameScene {
         if soundsSetting { run(ballPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
 
-        let xSpeed = body.velocity.dx
-        let ySpeed = abs(body.velocity.dy)
-        var angleDeg = Double(atan2(Double(ySpeed), Double(xSpeed)))/Double.pi*180
-        let minimum = minAngleDeg*2
-        if angleDeg < minimum { angleDeg = minimum }
-        if angleDeg > 180 - minimum { angleDeg = 180 - minimum }
+        if endlessIIApplyShapedBounce(to: subject) {
+            endlessIIGripBall(subject)
+            return
+        }
+        // The shape decides, exactly as it does on the paddle and on the mirror: the engine
+        // has already reflected the ball off the traced silhouette, and that reflection is the
+        // answer rather than something to layer a formula on top of
+
+        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return }
+        let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity ?? body.velocity
+        let collision = PaddleBounce.collision(ballX: subject.position.x,
+                                               paddleX: bar.position.x,
+                                               paddleWidth: bar.size.width)
+        let angleDeg = PaddleBounce.angleDegrees(
+            arriving: arriving,
+            collision: PaddleBounce.shaped(min(max(collision, -1), 1), by: endlessIIPaddleSurface),
+            adjustmentK: angleAdjustmentK,
+            influence: endlessIIPaddleAngleInfluence,
+            minimumDeg: minAngleDeg)
         ballHorizontalControl(angleDegInput: angleDeg, for: subject)
+        _ = endlessIIApplyAutoAim(to: subject)
+        endlessIIGripBall(subject)
+        // **It is a paddle now** (James, round 224: "go with the latest definition", against
+        // his matrix giving the safety paddle the paddle's shape, its Inert Paddle, its
+        // Flipped Bounce Angle, its Auto-Aim, its Random Bounce and its Ball Spin).
+        //
+        // Round 211 called it furniture and answered with the backstop's arithmetic on
+        // purpose, which is what the first three lines of this used to be: the ball's own
+        // angle, reflected, with nothing about where it landed. Every one of those five
+        // power-ups needs the position back to have anything to act on - a Flipped Angle with
+        // no angle to flip is a power-up that does nothing on the surface it is standing on.
+        //
+        // The sequence is the paddle's own, in the paddle's own order, so the two cannot drift:
+        // the bend, then the control, then the aim, then the grip. Randomised Bounce needs no
+        // line of its own because `ballHorizontalControl` has applied it to every corrected
+        // bounce in the game since round 125 - paddle, wall, brick, backstop and this.
     }
 }
