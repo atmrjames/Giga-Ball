@@ -1973,3 +1973,4 @@ final class PaddleGripMemoryTests: XCTestCase {
                           "the paddle is going the other way")
     }
 }
+

@@ -137,6 +137,19 @@ extension GameScene {
         guard wanted != endlessIIPaddleShapeArtName
                 || (wanted != nil && abs(width - endlessIIPaddleShapeBodyWidth) > 0.5)
         else { return }
+        // **`paddle.size.width`, and Expand does not change it.** Expand and Shrink animate
+        // `paddle.xScale` instead - they never touch the size - so this watches a number that
+        // only Split Paddle and the setup move. That is deliberate but *unverified*: whether a
+        // traced body follows its node's scale in the simulation is not something a unit test
+        // here can answer (`SKPhysicsBody.area` is a construction-time value and does not
+        // change with scale, which proves nothing either way), and the whole game has always
+        // depended on the answer being yes - the plain paddle's body is traced once at setup
+        // and Expand has scaled it ever since.
+        //
+        // So this is left watching the size, on the same assumption the rest of the paddle
+        // makes. If an expanded paddle turns out not to bounce the ball at its extreme ends,
+        // that is the assumption failing, it fails for every paddle rather than only the
+        // shaped ones, and the fix is to retrace on scale here and at setup both.
         // Every frame, and does nothing on almost all of them - but a *resize* counts as a
         // change too (James, round 214: "how do the paddle shapes deal with the expand and
         // shrink power-ups?"). Expand and Shrink write `paddle.size.width` directly, and the
