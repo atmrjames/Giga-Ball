@@ -163,6 +163,53 @@ final class GameCenterHandler: NSObject {
         }
     }
     
+    /// The players immediately above the local player on the Mayhem height board.
+    ///
+    /// For the lines Endless Mayhem draws behind its field (`EndlessIIRivals`). Two calls: the
+    /// local player's rank, then the handful of places above it - the board cannot be asked
+    /// "who is just above me" in one go, and asking for the top of the board instead would
+    /// return either an unreachable number or, on a board this young, one already behind.
+    ///
+    /// Answers with an empty list rather than an error for every ordinary reason it can fail -
+    /// not signed in, no board, nobody above, the network away. Nothing here is worth telling
+    /// the player about: the lines are a decoration on a run that plays identically without
+    /// them, and a run interrupted to explain their absence would be the worse outcome.
+    func loadEndlessIIRivals(completion: @escaping ([EndlessIIRival]) -> Void) {
+        guard GKLocalPlayer.local.isAuthenticated else { completion([]); return }
+        let id = GameMode.endlessIIBestHeightLeaderboard
+
+        GKLeaderboard.loadLeaderboards(IDs: [id]) { boards, _ in
+            guard let board = boards?.first else {
+                DispatchQueue.main.async { completion([]) }
+                return
+            }
+            board.loadEntries(for: .global, timeScope: .allTime,
+                              range: NSRange(location: 1, length: 1)) { localEntry, _, _, _ in
+                let rank = localEntry?.rank ?? 0
+                let above = max(1, rank - EndlessIIRivals.mostLines)
+                let length = rank > 1 ? min(EndlessIIRivals.mostLines, rank - 1)
+                                      : EndlessIIRivals.mostLines
+                // Unranked - a player who has never posted a height - is given the *bottom* of
+                // the board instead, which is the nearest thing to "just above you" that
+                // exists for somebody who is not on it yet. `rank` of zero falls through to
+                // the first places, and on a board with three entries those are the three
+                // there are
+
+                board.loadEntries(for: .global, timeScope: .allTime,
+                                  range: NSRange(location: above, length: length)) {
+                    _, entries, _, _ in
+                    let rivals = (entries ?? [])
+                        .filter { $0.player.gamePlayerID != GKLocalPlayer.local.gamePlayerID }
+                        .map { EndlessIIRival(name: $0.player.displayName, height: $0.score) }
+                    // The local player can appear in a global range that spans their own
+                    // place, and a line saying "you, 412m" beside the BEST line saying the
+                    // same is one line too many
+                    DispatchQueue.main.async { completion(rivals) }
+                }
+            }
+        }
+    }
+
     func loadData() {
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
             do {

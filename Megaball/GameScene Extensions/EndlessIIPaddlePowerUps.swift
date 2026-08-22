@@ -94,6 +94,11 @@ extension GameScene {
     func endlessIICollectPaddleSurface(_ surface: PaddleBounce.Surface) {
         endlessIIPaddleSurface = surface
         endlessIIPaddleSurfaceClock.collect(GameScene.endlessIIPaddlePowerUpTurns)
+        endlessIIPaddleSurfaceClock.level = surface.savedCode
+        // **The clock carries which shape**, in the magnitude field it has never had a use
+        // for. Every clock already saves a magnitude, so a resumed run comes back wearing the
+        // face it was paused in without the save format growing a field - which is what the
+        // note here used to say was not worth doing
     }
 
     // MARK: - The shape the ball actually meets
@@ -292,14 +297,6 @@ extension GameScene {
                                  dy: sin(angle)*Double(ballSpeedLimit))
         return true
     }
-
-    /// Draws the shape over the paddle's top, so the face can be read rather than guessed.
-    ///
-    /// A curve along the top edge, in the harmful pink these power-ups wear, redrawn whenever
-    /// the paddle changes size. It is a picture of the very function the bounce uses - the
-    /// same `shaped` call, sampled across the width - so the drawing cannot promise a face
-    /// the bounce does not give.
-
 
     /// Takes the shape away when its turns run out.
     func refreshEndlessIIPaddleSurface() {
@@ -815,7 +812,7 @@ extension GameScene {
         }
         halo.position = endlessIIPaddleHaloCentre
 
-        var destroyed = false
+        var caught: [SKSpriteNode] = []
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }
             guard brick.endlessIIRole != .portal else { return }
@@ -825,14 +822,19 @@ extension GameScene {
             guard EndlessIIPaddleEffects.haloTouches(brick: brick.frame,
                                                      paddleAt: self.endlessIIPaddleHaloCentre,
                                                      reach: reach) else { return }
-            self.endlessIIBrickDestroyed(brick)
-            self.endlessIIDestroy(brick)
-            destroyed = true
-            // The same pair a crushed brick goes through: the roles react - an Exploding
-            // brick caught by the glow still explodes - and then it is gone, scored, with
-            // no power-up roll. A glow that showered power-ups would be a farm
+            caught.append(brick)
         }
-        if destroyed {
+
+        let bites = EndlessIIPaddleEffects.haloBites(heights: caught.map { $0.position.y })
+        // **A few at a time, lowest first** (James, round 215: "paddle halo causes game to
+        // become stuttery"). `EndlessIIPaddleEffects.haloBites` owns the choice and says why;
+        // what matters here is that a whole row descending into the glow no longer runs eleven
+        // destructions, their reactions and their cascades inside a single frame
+        for index in bites {
+            endlessIIBrickDestroyed(caught[index])
+            endlessIIDestroy(caught[index])
+        }
+        if bites.isEmpty == false {
             countBricks()
             if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
         }
@@ -926,11 +928,21 @@ extension GameScene {
         case "endlessIIAutoAim":
             endlessIIAutoAimClock.restore(remaining: remaining, total: total, level: 0)
         case "endlessIIPaddleSurface":
-            endlessIIPaddleSurfaceClock.restore(remaining: remaining, total: total, level: 0)
-            if endlessIIPaddleSurface == nil { endlessIIPaddleSurface = .convex }
-                // Which shape is not saved, and a resumed run comes back domed. Worth a note
-            // rather than a fix: the save format is shared with a shipped version, and a
-            // fifth field for a fifteen-second power-up is not worth a migration
+            endlessIIPaddleSurfaceClock.restore(remaining: remaining, total: total,
+                                                level: magnitude,
+                                                deepestLevel: PaddleBounce.Surface.highestSavedCode)
+            endlessIIPaddleSurface = PaddleBounce.Surface(savedCode: magnitude) ?? .convex
+            // **The shape comes back**, read out of the magnitude the save has always carried
+            // (`savedCode` says why the numbers are written down rather than counted). Convex
+            // is the fallback for a run paused by a build that saved no shape at all: it is
+            // the first of them, and a resumed run wearing the wrong hard face is better than
+            // one wearing none while its clock still counts down.
+            //
+            // Not dressed here, unlike Double Paddle and the mirror beneath it: those two put
+            // a node on the field, and this one retraces the paddle's physics body from the
+            // artwork. `refreshEndlessIIPaddleShapeArt` runs at the top of every paddle tick
+            // and picks it up on the first frame - which is before any bounce, because the
+            // tick runs in `update` and the ball is still on the paddle when a run resumes
         case "endlessIIDoublePaddle":
             endlessIIDoublePaddleClock.restore(remaining: remaining, total: total, level: 0)
             refreshEndlessIIDoublePaddle()

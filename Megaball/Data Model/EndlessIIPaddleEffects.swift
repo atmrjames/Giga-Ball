@@ -263,6 +263,33 @@ enum EndlessIIPaddleEffects {
         return dx*dx + dy*dy <= reach*reach
     }
 
+    /// How many bricks the glow eats in one frame.
+    ///
+    /// **A few at a time** (James, round 215: "paddle halo causes game to become stuttery").
+    /// The glow destroyed every brick it touched on the same frame. That is one or two while
+    /// it erodes a field it already overlaps, and eleven at once the moment a whole row
+    /// descends into it - each running its role's reaction, its removal action, its scoring
+    /// and its counters, with an Exploding brick in the burst taking its neighbours too. The
+    /// same one-frame pile-up that made Retreat stutter when it cleared two rows.
+    ///
+    /// At a hundred and twenty frames a second, two a frame still clears a row in well under
+    /// a tenth of a second, so nothing about how the halo feels changes.
+    static let haloBitesPerFrame = 2
+
+    /// Which of the bricks the glow is touching it eats this frame, lowest first.
+    ///
+    /// Returns positions into `heights`, so the caller keeps hold of its own bricks. Lowest
+    /// first so the glow erodes upward from the paddle rather than picking bricks in whatever
+    /// order the scene graph happens to hold them - the order was invisible while every
+    /// touched brick went at once, and is the whole look of it now that they go a few at a
+    /// time.
+    static func haloBites(heights: [CGFloat], limit: Int = haloBitesPerFrame) -> [Int] {
+        heights.indices
+            .sorted { heights[$0] < heights[$1] }
+            .prefix(max(0, limit))
+            .map { $0 }
+    }
+
     // MARK: - Aimed Sticky
 
     /// The launch angle a finger has chosen, in radians.

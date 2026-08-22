@@ -94,6 +94,10 @@ extension GameScene {
         mirror.name = GameScene.endlessIIMirrorPaddleName
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
+        mirror.xScale = paddle.xScale
+        mirror.yScale = paddle.yScale
+        // Born already matching, so a mirror collected while Expand is running does not
+        // appear small and then jump on its first tick
         mirror.zPosition = paddle.zPosition - 0.1
         mirror.color = GameScene.endlessIIMirrorPaddleColour
         mirror.colorBlendFactor = 1
@@ -187,8 +191,23 @@ extension GameScene {
         paddle.childNode(withName: GameScene.endlessIIPaddleShadowName)?.removeFromParent()
     }
 
+    /// The twin's body: a rectangle, or the shape's own silhouette while one is running.
+    ///
+    /// **Traced only while a shape owns the bounce**, not always. A plain mirror has been a
+    /// rectangle since round 180 and bounces predictably because of it; tracing the ordinary
+    /// paddle picture would change how the twin plays for no reason anybody asked for. With a
+    /// shape running the trace *is* the parity - the real paddle's dome is a traced silhouette
+    /// (round 213), so a flat mirror wearing a domed picture would show one face and give
+    /// another, which is the one parity round 211 said was worth refusing.
     func endlessIIMirrorPaddleBody(size: CGSize) -> SKPhysicsBody {
-        let body = SKPhysicsBody(rectangleOf: size)
+        endlessIIMirrorPaddleBodyArt = endlessIIShapeOwnsTheBounce
+            ? endlessIIPaddleShapeArtName : nil
+        let body: SKPhysicsBody
+        if endlessIIShapeOwnsTheBounce, let art = endlessIIMirrorPaddleDress {
+            body = SKPhysicsBody(texture: art, size: size)
+        } else {
+            body = SKPhysicsBody(rectangleOf: size)
+        }
         body.isDynamic = false
         body.affectedByGravity = false
         body.friction = 0
@@ -235,14 +254,29 @@ extension GameScene {
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
 
-        if mirror.size != paddle.size, paddle.size.width > 0, paddle.size.height > 0 {
+        let wantedArt = endlessIIShapeOwnsTheBounce ? endlessIIPaddleShapeArtName : nil
+        if mirror.size != paddle.size || wantedArt != endlessIIMirrorPaddleBodyArt,
+           paddle.size.width > 0, paddle.size.height > 0 {
             mirror.size = paddle.size
             mirror.centerRect = endlessIIPaddleDressCenterRect
             // The paddle switches its nine-slice on when a resize stretches it; its twin
             // switches with it or the two wear the same picture differently (round 201)
             mirror.physicsBody = endlessIIMirrorPaddleBody(size: paddle.size)
-            // Expand and Shrink write the paddle's width directly, and a mirror that kept the
+            // Split Paddle writes the paddle's width directly, and a mirror that kept the
             // width it was born with would be a different paddle from the one it mirrors
+        }
+
+        if mirror.xScale != paddle.xScale || mirror.yScale != paddle.yScale {
+            mirror.xScale = paddle.xScale
+            mirror.yScale = paddle.yScale
+            // **Expand and Shrink do not write the width at all** - they animate `xScale`, and
+            // have since long before any of this, so the check above never fired for them and
+            // the twin of an expanded paddle stayed the width it was born at. Copied as a
+            // scale rather than folded into the size on purpose: the real paddle is *scaled*,
+            // so its rounded ends stretch with it, and a mirror that grew by resizing would
+            // hold its ends square while the paddle beside it did not. The body follows the
+            // node's scale, which is the same thing the paddle's own body has relied on for
+            // six years
         }
         showEndlessIIPaddleShadow()
         // Rebuilt only when the paddle's width has actually moved - the shadow is a rasterised
@@ -278,6 +312,15 @@ extension GameScene {
         if soundsSetting { run(ballPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
 
+        if endlessIIApplyShapedBounce(to: subject) { return }
+        // **The shape decides here too, exactly as it does on the paddle** (round 213). The
+        // engine has already reflected the ball off the mirror's traced silhouette by the time
+        // this contact is reported, and that reflection *is* the answer - so the formula below
+        // stands down rather than being layered on top of it. Round 211 gave the mirror the
+        // shaped face through `PaddleBounce.shaped`, which was right until the shapes stopped
+        // being formulas: left alone, the twin would have gone on giving the old curve while
+        // the paddle beside it gave the artwork's
+
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity ?? body.velocity
         let collision = PaddleBounce.collision(ballX: subject.position.x,
                                                paddleX: mirror.position.x,
@@ -293,9 +336,12 @@ extension GameScene {
         // Clamped rather than refused past the ends: the engine only reports a contact where
         // the bodies actually met, so a fraction outside the face is the corner of it.
         //
-        // **Shaped like the paddle** (round 211): with a convex or jagged face running, the
-        // mirror gives the same bounce the real paddle would - and shows the same curve. The
-        // twin follows the paddle, and a bounce surface that looked shaped and answered flat
-        // would be the one parity worth refusing
+        // **Shaped like the paddle** (round 211): with a shaped face running, the mirror gives
+        // the same bounce the real paddle would - and shows the same curve. The twin follows
+        // the paddle, and a bounce surface that looked shaped and answered flat would be the
+        // one parity worth refusing.
+        //
+        // `shaped` is reached only by a face with no artwork, which is the same fallback the
+        // paddle keeps in `paddleHit` - the two answer a shape the same way at every step
     }
 }

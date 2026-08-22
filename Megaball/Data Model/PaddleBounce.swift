@@ -111,6 +111,36 @@ enum PaddleBounce {
             case .wedgeRight: return "Wedge Right Paddle"
             }
         }
+
+        /// **The number this shape is written down as. These are on disk - never move one.**
+        ///
+        /// A paused run saves the shape it is wearing, and it comes back from a file written
+        /// by whatever build the player paused in. Spelled out rather than taken from
+        /// `allCases`, because `allCases` follows the order the cases happen to be declared
+        /// in, and a tidy-up that groups the two wedges together would silently turn every
+        /// saved Wave into a Jagged.
+        ///
+        /// Zero is deliberately not used: a clock's magnitude defaults to zero, so a shape
+        /// starting at one means "no shape recorded" and "convex" cannot be confused.
+        var savedCode: Int {
+            switch self {
+            case .convex: return 1
+            case .concave: return 2
+            case .wavy: return 3
+            case .jagged: return 4
+            case .wedgeLeft: return 5
+            case .wedgeRight: return 6
+            }
+        }
+
+        init?(savedCode: Int) {
+            guard let match = Surface.allCases.first(where: { $0.savedCode == savedCode })
+            else { return nil }
+            self = match
+        }
+
+        /// The largest code a save can legitimately hold, for the clamp on the way back in.
+        static var highestSavedCode: Int { allCases.map(\.savedCode).max() ?? 0 }
     }
 
     /// Where the ball *behaves* as though it landed, given the shape of the face.

@@ -50,7 +50,11 @@ extension GameScene {
         let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
         let isBest = best > 0 && arriving == best
         let isHundred = arriving % GameScene.endlessIIMarkerSpacing == 0
-        guard isBest || isHundred else { return }
+        let rival = isBest ? nil : endlessIIRivalLines.first { $0.height == arriving }
+        guard isBest || isHundred || rival != nil else { return }
+        // A rival never displaces the player's own best: the two are only ever on the same row
+        // if somebody's board score matches it exactly, and of the two the personal best is
+        // the one worth reading
 
         let marker = SKNode()
         marker.name = GameScene.endlessIIMarkerName
@@ -69,8 +73,24 @@ extension GameScene {
         // row generated for the marker, so bricks on neighbouring rows cannot cover them
         addChild(marker)
 
-        let colour = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.3)
-        let text = isBest ? "BEST \(best)m" : "\(arriving)m"
+        let colour: UIColor
+        if isBest {
+            colour = brickGreenGigaball
+        } else if rival != nil {
+            colour = GameScene.endlessIIRivalMarkerColour
+        } else {
+            colour = UIColor(white: 1, alpha: 0.3)
+        }
+        let text: String
+        if isBest {
+            text = "BEST \(best)m"
+        } else if let rival {
+            text = EndlessIIRivals.label(for: rival)
+        } else {
+            text = "\(arriving)m"
+        }
+        // A rival's line carries their name, which is the whole of it - "412m" on its own is
+        // what a hundred-metre line says, and the reason to look up at this one is *who*
 
         // Both ends. A marker spends its whole life behind the field, and a label at one edge
         // is a label a brick can sit on top of - two of them makes it far more likely that
@@ -105,10 +125,11 @@ extension GameScene {
         _ = gap
         // The line no longer breaks around the labels - it runs the full width at the
         // row's bottom edge and the labels float above it, so nothing fights
+        let highlighted = isBest || rival != nil
         for line in [middle, leftStub, rightStub] {
-            line.fillColor = isBest ? brickGreenGigaball : UIColor(white: 1, alpha: 0.16)
+            line.fillColor = highlighted ? colour : UIColor(white: 1, alpha: 0.16)
             line.strokeColor = .clear
-            line.alpha = isBest ? 0.5 : 1
+            line.alpha = highlighted ? 0.5 : 1
             marker.addChild(line)
         }
     }
@@ -148,8 +169,19 @@ extension GameScene {
 
         if arriving % GameScene.endlessIIMarkerSpacing == 0 { return true }
         let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
-        return best > 0 && arriving == best
+        if best > 0 && arriving == best { return true }
+        return endlessIIRivalLines.contains { $0.height == arriving }
+        // A rival's row is generated empty for the same reason a best's is: the name is the
+        // thing worth reading on that row, and a row of bricks drawn over it hides most of it
     }
+
+    /// The colour a rival's line wears.
+    ///
+    /// Not the Giga-Ball lime, which is the player's own best and has to stay theirs, and not
+    /// the plain white of a hundred-metre line, which would make a name look like furniture.
+    /// A cool blue reads as somebody else at a glance, and at the marker's alpha it is dim
+    /// enough to stay behind the field where every marker belongs.
+    static let endlessIIRivalMarkerColour = #colorLiteral(red: 0.4392156863, green: 0.7098039216, blue: 1, alpha: 1)
 
     /// Draws the line the field dies on.
     ///
@@ -212,6 +244,7 @@ extension GameScene {
         showEndlessIILowerLimit()
         setupEndlessIIBackdrop()
         guard gameMode == .endlessII else { return }
+        loadEndlessIIRivalLines()
 
         for row in 0..<numberOfBrickRows {
             let height = numberOfBrickRows - 1 - row
@@ -669,5 +702,35 @@ extension GameScene {
     func endlessIIRowCentre(nearest y: CGFloat) -> CGFloat {
         let rows = ((yBrickOffsetEndless - y)/brickHeight).rounded()
         return yBrickOffsetEndless - brickHeight*rows
+    }
+}
+
+extension GameScene {
+
+    /// Asks the board who is just above this player, for the lines drawn behind the field.
+    ///
+    /// Fire and forget, at the start of a run. The answer arrives whenever it arrives - a
+    /// second or two into the run, or never - and nothing waits for it: the first rival line
+    /// is a whole field's descent above the paddle at the earliest, so an answer that is late
+    /// is simply an answer in time. A run that gets no answer at all plays exactly as it did
+    /// before this existed, which is what makes it safe to ask for on every run.
+    ///
+    /// The filtering is `EndlessIIRivals.lines`, which is where the rules live and where they
+    /// are tested. This is the wire.
+    func loadEndlessIIRivalLines() {
+        endlessIIRivalLines = []
+        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
+        GameCenterHandler.helper.loadEndlessIIRivals { [weak self] rivals in
+            guard let self else { return }
+            self.endlessIIRivalLines = EndlessIIRivals.lines(
+                from: rivals, playerBest: best,
+                startingAt: self.endlessHeight + GameScene.endlessIIMarkerLead)
+            // Measured from where the run has got to by the time the answer lands, plus the
+            // field's depth. Not from zero: a rival already below the paddle is a line that
+            // would be created behind the player and never seen. And not from the height
+            // either - a marker is created a whole field early so it can descend into place,
+            // so a rival inside that lead has already missed its row, and keeping it would
+            // hold a row empty for a line that is never drawn
+        }
     }
 }

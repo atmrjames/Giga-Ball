@@ -1291,6 +1291,85 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         XCTAssertEqual(mirror(scene)?.color, GameScene.endlessIIMirrorPaddleColour)
     }
 
+    /// An expanded paddle's twin expands with it.
+    ///
+    /// The tick watched `paddle.size` and rebuilt the mirror when it moved - but Expand and
+    /// Shrink animate `paddle.xScale` and never touch the size, so for those two the check
+    /// never fired and the mirror stayed the width it was born at. The one power-up in the
+    /// game whose whole job is to be the paddle was the width of a paddle that was not there.
+    func testTheMirrorGrowsWithAnExpandedPaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.paddle.xScale = 1.6
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertEqual(mirror(scene)?.xScale ?? 0, scene.paddle.xScale, accuracy: 0.001,
+                       "the paddle expanded and its twin did not")
+    }
+
+    /// And one collected part-way through an Expand arrives the right size.
+    func testAMirrorCollectedDuringAnExpandArrivesExpanded() {
+        let scene = mayhem()
+        scene.paddle.xScale = 0.7
+        scene.endlessIICollectMirrorPaddle()
+
+        XCTAssertEqual(mirror(scene)?.xScale ?? 0, 0.7, accuracy: 0.001,
+                       "it appeared at the wrong size and would have jumped on its first tick")
+    }
+
+    /// The twin's body is traced from the shape it is wearing.
+    ///
+    /// Round 211 gave the mirror the shaped face, and it was right until round 213 stopped the
+    /// shapes being formulas: from then on the paddle's dome was a traced silhouette and the
+    /// mirror was a rectangle wearing a picture of one. It showed a shape and gave a flat
+    /// bounce, which is the exact parity round 211 said was worth refusing.
+    func testTheMirrorTracesTheShapeItIsWearing() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleConvex"
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleConvex",
+                       "the twin kept a flat body under a shaped picture")
+    }
+
+    /// And it notices a shape being swapped for one exactly as tall.
+    ///
+    /// The rebuild used to be gated on the size moving. The two wedges are the same height as
+    /// each other, so swapping one for the other changes the slope the ball meets and nothing
+    /// the size check can see - a mirror sloped the wrong way, which on a surface whose whole
+    /// job is to be the opposite of the paddle is the worst possible thing to get wrong.
+    func testTheMirrorNoticesAWedgeBecomingItsMirror() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPaddleSurface(.wedgeLeft)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeLeft"
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeLeft")
+
+        scene.endlessIICollectPaddleSurface(.wedgeRight)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeRight"
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeRight",
+                       "the twin was still sloped the old way")
+    }
+
+    /// With no shape running it goes back to being a rectangle.
+    func testAPlainMirrorIsNotTraced() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPaddleSurface(.concave)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleConcave"
+        scene.tickEndlessIIMirrorPaddle()
+
+        scene.endlessIIPaddleSurfaceClock.reset()
+        scene.endlessIIPaddleShapeArtName = nil
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertNil(scene.endlessIIMirrorPaddleBodyArt,
+                     "the shape expired and the twin kept its silhouette")
+    }
+
     func testTheMirrorEndsOnPaddleHitsNow() {
         // The old twelve seconds were in the Lock's freeze list but in no run-down loop -
         // collected once, the mirror simply never left and its ring never moved
@@ -2004,5 +2083,106 @@ final class ShapedPaddleDressingTests: XCTestCase {
         let sticky = scene?.childNode(withName: "paddleSticky") as? SKSpriteNode
         XCTAssertEqual(laser?.anchorPoint.y, 0, "the laser art hangs from its own bottom")
         XCTAssertEqual(sticky?.anchorPoint.y, 0, "and so does the sticky face")
+    }
+}
+
+/// What the Paddle Halo does in a single frame.
+///
+/// James, round 215: "paddle halo causes game to become stuttery."
+///
+/// The glow destroyed every brick it touched on the same frame. That is one or two while it
+/// erodes a field it already overlaps, and eleven at once the moment a whole row descends into
+/// it - each running its role's reaction, its removal action, its scoring and its counters,
+/// with an Exploding brick in the burst taking its neighbours too. The same one-frame pile-up
+/// that made Retreat stutter when it cleared two rows.
+final class PaddleHaloBiteTests: XCTestCase {
+
+    /// A whole row arriving inside the glow is eaten over several frames, not in one.
+    func testARowArrivingInTheGlowIsNotEatenInOneFrame() {
+        let row = (0..<11).map { _ in CGFloat(-190) }
+        XCTAssertEqual(EndlessIIPaddleEffects.haloBites(heights: row).count,
+                       EndlessIIPaddleEffects.haloBitesPerFrame,
+                       "the whole row went on one frame")
+    }
+
+    /// And it does keep eating - a cap that stopped it working would be worse than the stutter.
+    func testItTakesABiteWheneverThereIsAnythingToBite() {
+        for count in 1...11 {
+            let bites = EndlessIIPaddleEffects.haloBites(heights: Array(repeating: 0, count: count))
+            XCTAssertEqual(bites.count, min(count, EndlessIIPaddleEffects.haloBitesPerFrame),
+                           "the glow went hungry with \(count) bricks in reach")
+            XCTAssertEqual(Set(bites).count, bites.count, "it bit the same brick twice")
+        }
+    }
+
+    /// Nothing in reach, nothing eaten.
+    func testAnEmptyGlowEatsNothing() {
+        XCTAssertTrue(EndlessIIPaddleEffects.haloBites(heights: []).isEmpty)
+    }
+
+    /// It erodes upward from the paddle rather than in scene-graph order.
+    func testItEatsTheLowestBricksFirst() {
+        let heights: [CGFloat] = [40, -190, 120, -170, 0]
+        XCTAssertEqual(EndlessIIPaddleEffects.haloBites(heights: heights, limit: 3), [1, 3, 4],
+                       "the glow ate downward, or in whatever order the field arrived in")
+    }
+}
+
+/// A paused run comes back wearing the face it was paused in.
+///
+/// It used to come back domed, whatever it had been: which shape was running was the one part
+/// of the paddle batch the save did not carry, on the grounds that the format is shared with a
+/// shipped version and a fifteen-second power-up did not justify a migration. It does not need
+/// one - every clock already saves a magnitude, and this clock has never had a use for it.
+final class ShapedPaddleSurvivesAResumeTests: XCTestCase {
+
+    /// The codes are written down, so they have to be distinct and they have to round-trip.
+    func testEveryShapeIsWrittenDownUnderItsOwnNumber() {
+        let codes = PaddleBounce.Surface.allCases.map(\.savedCode)
+        XCTAssertEqual(Set(codes).count, codes.count, "two shapes share a saved code")
+        XCTAssertFalse(codes.contains(0), "zero means *no shape recorded* and cannot be a shape")
+        for surface in PaddleBounce.Surface.allCases {
+            XCTAssertEqual(PaddleBounce.Surface(savedCode: surface.savedCode), surface,
+                           "\(surface) did not come back as itself")
+        }
+    }
+
+    /// A file can say anything. A number that is not a shape is not one.
+    func testANumberThatIsNoShapeIsRefused() {
+        XCTAssertNil(PaddleBounce.Surface(savedCode: 0))
+        XCTAssertNil(PaddleBounce.Surface(savedCode: PaddleBounce.Surface.highestSavedCode + 1))
+        XCTAssertNil(PaddleBounce.Surface(savedCode: -3))
+    }
+
+    /// Every shape survives being saved and put back.
+    func testEveryShapeComesBackFromTheSave() {
+        for surface in PaddleBounce.Surface.allCases {
+            let saved = GameScene()
+            saved.gameMode = .endlessII
+            saved.endlessIICollectPaddleSurface(surface)
+            guard let entry = saved.endlessIIPaddleClockSaveEntries()
+                .first(where: { $0.key == "endlessIIPaddleSurface" }) else {
+                    return XCTFail("a running shape was not in the save at all")
+            }
+
+            let resumed = GameScene()
+            resumed.gameMode = .endlessII
+            resumed.endlessIIRestorePaddleClock(key: entry.key, remaining: entry.remaining,
+                                                total: entry.total, magnitude: entry.magnitude)
+            XCTAssertEqual(resumed.endlessIIPaddleSurface, surface,
+                           "a run paused wearing \(surface) resumed wearing something else")
+            XCTAssertTrue(resumed.endlessIIPaddleSurfaceClock.isRunning,
+                          "the shape came back but its turns did not")
+        }
+    }
+
+    /// A save from a build that recorded no shape still resumes, wearing the first of them.
+    func testASaveWithNoShapeRecordedComesBackDomed() {
+        let resumed = GameScene()
+        resumed.gameMode = .endlessII
+        resumed.endlessIIRestorePaddleClock(key: "endlessIIPaddleSurface", remaining: 5,
+                                            total: 5, magnitude: 0)
+        XCTAssertEqual(resumed.endlessIIPaddleSurface, .convex,
+                       "an older save left the paddle with a running clock and no face")
     }
 }

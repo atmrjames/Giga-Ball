@@ -128,6 +128,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIITopExitStrip: SKSpriteNode?
 	var endlessIIPullLines: [SKShapeNode] = []
 	var endlessIILowerLimitLine: SKSpriteNode?
+
+	/// The other players' heights this run draws lines at (`EndlessIIRivals`).
+	///
+	/// Loaded once when a Mayhem run is set up and never refreshed mid-run: a line that moved
+	/// while the field descended toward it would be a target that ran away, and the board does
+	/// not change fast enough for the difference to be worth anything. Empty whenever the player
+	/// is not signed in, which is the ordinary case rather than a failure.
+	var endlessIIRivalLines: [EndlessIIRival] = []
 	var endlessIIAutoAimClock = EndlessIIClock()
 	/// Whether the contact being handled still owns its power-up's effect, per turn-based
 	/// paddle power-up whose effect lands *after* the turns are spent. Spending the last
@@ -247,6 +255,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleSurfaceClock = EndlessIIClock()
 	/// Mirror Paddle: a second paddle level with the first, holding the mirrored x (§12.0).
 	var endlessIIMirrorPaddleClock = EndlessIIClock()
+
+	/// Which shaped picture the mirror's body was last traced from.
+	///
+	/// The size is not enough to notice a change by: the two wedges are the same height as
+	/// each other, so a run that swapped one for the other would keep a body traced from the
+	/// wrong slope while wearing the right picture.
+	var endlessIIMirrorPaddleBodyArt: String?
 	var endlessIIBallSpinClock = EndlessIIClock()
 	/// How fast the paddle is travelling, sampled once a frame - see EndlessIIBallSpin
 	var endlessIIPaddleSpeed: CGFloat = 0
@@ -5904,6 +5919,15 @@ laserTimer?.invalidate()
 	static let playRatio = GameSceneLayout.playRatio
 	static let hudUnits = GameSceneLayout.hudUnits
 
+	/// **Temporary, for round 214's play test.** The three shaped paddles are rare - weight 3
+	/// against a table of sixty-four - so meeting one takes a long run, and James asked for them
+	/// raised while he judges how the new shape-driven bounce feels.
+	///
+	/// **Put this back to 3 before release.** It is one number in one place for exactly that
+	/// reason: a play-test weight left in is a rare power-up that quietly became common, which
+	/// is the sort of thing nobody notices until the balance is wrong for everybody.
+	static let shapedPaddlePlayTestWeight = 30
+
 	/// **Where the frame around the play area sits, and the HUD on top of it.**
 	///
 	/// A brick is at zPosition 1 and everything a brick wears - its glyph, its ring, a
@@ -5923,15 +5947,6 @@ laserTimer?.invalidate()
 	/// The three planes below keep the HUD's own order exactly as it was - tray under icons
 	/// under timers - and stay clear of the labels, the pause button and the aim marker at 9
 	/// and 10, which sit above everything and always have.
-	/// **Temporary, for round 214's play test.** The three shaped paddles are rare - weight 3
-	/// against a table of sixty-four - so meeting one takes a long run, and James asked for them
-	/// raised while he judges how the new shape-driven bounce feels.
-	///
-	/// **Put this back to 3 before release.** It is one number in one place for exactly that
-	/// reason: a play-test weight left in is a rare power-up that quietly became common, which
-	/// is the sort of thing nobody notices until the balance is wrong for everybody.
-	static let shapedPaddlePlayTestWeight = 30
-
 	static let screenMaskPlane: CGFloat = 6
 
 	/// **How far below its own plane the HUD reaches.**

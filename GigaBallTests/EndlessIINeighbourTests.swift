@@ -375,3 +375,68 @@ final class EndlessIINeighbourTests: XCTestCase {
                              "it used to run on to the bottom of the screen")
     }
 }
+
+/// Which other players get a line behind the field.
+///
+/// The last item in §12.0's backlog, unblocked when the Endless Mayhem boards were approved on
+/// 21 August 2026. The board itself cannot be tested - it needs other people to have played -
+/// so everything that can be decided without it is decided here, in `EndlessIIRivals`, and the
+/// scene does no arithmetic of its own.
+final class EndlessIIRivalLineTests: XCTestCase {
+
+    private let board = [EndlessIIRival(name: "Alex", height: 412),
+                         EndlessIIRival(name: "Sam", height: 380),
+                         EndlessIIRival(name: "Jo", height: 640),
+                         EndlessIIRival(name: "Kit", height: 455)]
+
+    /// Nearest first, so the lines that arrive are the ones about to be reached.
+    func testTheNearestRivalsAboveAreTheOnesDrawn() {
+        let lines = EndlessIIRivals.lines(from: board, playerBest: 300)
+        XCTAssertEqual(lines.map(\.name), ["Sam", "Alex", "Kit"])
+        XCTAssertEqual(lines.count, EndlessIIRivals.mostLines,
+                       "the backdrop is furniture, not a scoreboard")
+    }
+
+    /// A rival already below the run is a line that would be created behind the player.
+    func testARivalBelowWhereTheRunHasGotToIsDropped() {
+        let lines = EndlessIIRivals.lines(from: board, playerBest: 0, startingAt: 450)
+        XCTAssertEqual(lines.map(\.name), ["Kit", "Jo"])
+    }
+
+    /// The player's own best keeps its row - it is the more useful of the two.
+    func testARivalStandingOnThePlayersBestDoesNotTakeItsRow() {
+        let lines = EndlessIIRivals.lines(from: board, playerBest: 412)
+        XCTAssertFalse(lines.contains { $0.height == 412 },
+                       "a rival drew over the BEST line")
+        XCTAssertEqual(lines.map(\.name), ["Sam", "Kit", "Jo"])
+    }
+
+    /// Two players on one height share a line, and the higher-ranked keeps it.
+    func testTwoPlayersOnOneHeightDoNotStackTwoLabels() {
+        let tied = [EndlessIIRival(name: "First", height: 500),
+                    EndlessIIRival(name: "Second", height: 500)]
+        XCTAssertEqual(EndlessIIRivals.lines(from: tied, playerBest: 0).map(\.name), ["First"])
+    }
+
+    /// Nobody above, nothing drawn - the ordinary case for a player at the top or signed out.
+    func testAnEmptyBoardDrawsNothing() {
+        XCTAssertTrue(EndlessIIRivals.lines(from: [], playerBest: 900).isEmpty)
+        XCTAssertTrue(EndlessIIRivals.lines(from: board, playerBest: 0, startingAt: 9000).isEmpty)
+    }
+
+    /// The label is the name and the height, and the name cannot run under the bricks.
+    func testALongNameIsTrimmedRatherThanLeftToRunUnderTheField() {
+        let long = EndlessIIRival(name: "A Very Long Display Name Indeed", height: 412)
+        let label = EndlessIIRivals.label(for: long)
+        XCTAssertTrue(label.hasSuffix("412m"))
+        XCTAssertTrue(label.hasPrefix("A VERY LONG DIS"), "trimmed from the wrong end")
+        XCTAssertLessThanOrEqual(label.count, EndlessIIRivals.longestName + 6,
+                                 "the label would reach into the field")
+    }
+
+    /// A player with no display name at all still gets a readable line.
+    func testANamelessRivalStillReadsAsAHeight() {
+        XCTAssertEqual(EndlessIIRivals.label(for: EndlessIIRival(name: "  ", height: 412)),
+                       "412m")
+    }
+}
