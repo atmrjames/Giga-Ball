@@ -232,13 +232,18 @@ enum PowerUpIcon {
         }
     }
 
-    /// Clear And Retreat: the bottom row going, the field moving up.
+    /// Retreat: the line the field is defending, and the field moving away from it.
+    ///
+    /// It was drawn as a row going, back when the power-up cleared one. Round 215 took the
+    /// clear away and the drawing needed no redrawing: the same horizontal line reads as the
+    /// lower limit, which is the thing the arrow is retreating from. Only what it is *called*
+    /// here was wrong. A fallback in any case - James's badge is used where it exists.
     static let clearAndRetreat: UIImage = artwork("PowerUpClearAndRetreat") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.2, y: rect.maxY - rect.height*0.22))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.2, y: rect.maxY - rect.height*0.22))
         context.strokePath()
-        // The row on its way out
+        // The lower limit, which the field is stepping away from
 
         let tip = CGPoint(x: rect.midX, y: rect.minY + rect.height*0.2)
         context.move(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height*0.36))

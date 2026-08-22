@@ -8,8 +8,8 @@
 //  Laser Beam burns one column per ball, and Infill (the bad one) fills empty cells with new
 //  bricks. Four run on clocks: Wrecking Ball makes every hit lethal while still bouncing,
 //  Aura destroys what the glow around each ball touches, Descent drives the field's own
-//  one-row step on a timer, and Clear And Retreat takes the lowest two rows and then holds
-//  the field where it left it - which is the half of it that used to be missing.
+//  one-row step on a timer, and Retreat lifts the whole field two rows and then holds it
+//  there - which is the half of it that used to be missing.
 //
 //  Wrap-Around is the eighth, and it is deliberately not here yet: it asks the side walls
 //  to stop being walls - for the paddle and Moving bricks and explosions too - and that is
@@ -60,7 +60,7 @@ extension GameScene {
     /// How many rows the lowest brick level rises by. Two, James's number (round 136).
     static let endlessIIRetreatRows = 2
 
-    /// How long the field is held where the clear left it.
+    /// How long the field is held where the lift left it.
     ///
     /// Longer than Descent's six, because this is the answer to that; shorter than the
     /// paddle batch's ten, because a held field is a field that is not descending, and in
@@ -82,23 +82,20 @@ extension GameScene {
     /// hidden behind the HUD come back into view rather than appearing there.
     static let endlessIIRetreatLiftSeconds: TimeInterval = 0.35
 
-    /// Raises the lowest brick level by two rows and holds the field there (§5.4).
+    /// Lifts the whole field two rows and holds it there (§5.4).
     ///
     /// **It used to be instant, and instant was the bug** (play-test round 126: "should be
     /// timed"). It cleared the lowest row, lifted everything a row, and then the cadence -
     /// which exists to close exactly the gap it had just made - took both back inside a
     /// second. The retreat the name promises never lasted long enough to be seen, let alone
-    /// played around.
+    /// played around. So it comes with a clock: while that clock runs the field is held - no
+    /// cadence, no Descent, no new rows - and when it ends the field comes back down into the
+    /// room that was made, so the height it is worth is deferred rather than lost.
     ///
-    /// So the clear is now two rows deep rather than one, and it comes with a clock. While
-    /// that clock runs the field is held: no cadence, no Descent, no new rows. When it ends
-    /// the field comes back down into the room that was made, so the height those two rows
-    /// are worth is deferred rather than lost.
-    ///
-    /// Nothing is lifted any more. The old version pushed every brick up a row to make the
-    /// retreat visible, which meant deciding what happens to a brick pushed off the top; the
-    /// lowest level rises here by the two lowest rows being destroyed, which is what the
-    /// power-up says it does and needs no such rule.
+    /// **And it takes nothing** (round 215). Two rounds ran it as a clear *and* a lift, which
+    /// was one answer too many: the lower limit and every brick rise together, so the lift
+    /// alone already puts the whole field two rows further from the paddle, and the clear was
+    /// buying nothing while taking bricks - and their score - off the player.
     func endlessIICollectClearAndRetreat() {
         guard gameMode == .endlessII else { return }
 
@@ -208,45 +205,6 @@ extension GameScene {
     /// would be lifted a second time.
     func endlessIICanonicalRestingY(_ restingY: CGFloat) -> CGFloat {
         restingY - endlessIIRetreatFloorLift
-    }
-
-    /// Destroys the lowest occupied rows, one row at a time from the bottom.
-    ///
-    /// A row at a time rather than "everything within two row heights of the lowest brick",
-    /// because the two are not the same field: the lowest bricks can be a single brick with
-    /// a gap above them, and the player asked for the lowest *level* to rise by two, not for
-    /// two row heights of whatever happens to be down there. So the lowest occupied row goes,
-    /// then whatever the lowest occupied row is after that.
-    ///
-    /// Portals and power-up bricks are spared, as they are by a Cull: one is indestructible
-    /// to everything and the other is spent by being hit rather than eaten silently. A row
-    /// holding nothing else is still counted as cleared - it has had everything taken from it
-    /// that this may take.
-    func endlessIIRaiseTheLowestBrickLevel(by rows: Int) {
-        for _ in 0..<rows {
-            var lowestY: CGFloat = .greatestFiniteMagnitude
-            enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-                guard node.parent != nil else { return }
-                lowestY = min(lowestY, node.position.y)
-            }
-            guard lowestY < .greatestFiniteMagnitude else { return }
-            // The lowest row is anything on that row's centre - a brick's position.y is its
-            // row, which is the one fact all of Endless 2.0 bends around
-
-            var cleared = false
-            enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-                guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }
-                guard abs(brick.position.y - lowestY) < self.brickHeight/2 else { return }
-                guard brick.endlessIIRole != .portal,
-                      brick.endlessIIPowerUpIndex == nil else { return }
-                self.endlessIIBrickDestroyed(brick)
-                self.endlessIIDestroy(brick)
-                cleared = true
-            }
-            guard cleared else { return }
-            // A row of nothing but portals cannot be taken, and going round again would
-            // find the same row and take nothing again
-        }
     }
 
     // MARK: - Laser Beam

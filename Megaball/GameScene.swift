@@ -290,7 +290,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIDoublePaddleDress: SKTexture?
 	/// Safety Paddle: while this runs a second paddle stands under the lowest bricks (§5.4).
 	var endlessIISafetyPaddleClock = EndlessIIClock()
-	/// Clear And Retreat: while this runs the field holds where the clear left it (§5.4).
+	/// Retreat: while this runs the field holds where the lift left it (§5.4).
 	var endlessIIClearAndRetreatClock = EndlessIIClock()
     var brick = SKSpriteNode()
     var life = SKSpriteNode()
