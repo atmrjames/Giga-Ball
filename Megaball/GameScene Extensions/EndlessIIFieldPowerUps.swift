@@ -567,6 +567,30 @@ extension GameScene {
           [(ballSizeIcon, "powerUpBallSizeTimer"), (ballSizeIconBar, "ballSizeTimer")])]
     }
 
+    /// Schedules the ending of one of the original twenty-eight's timed power-ups.
+    ///
+    /// Every one of them was written the same way: a wait, then a block that puts everything
+    /// back, run on the scene under a name. This is that, plus one thing - the ending block is
+    /// **kept**, under the same name, so that something else can run it early.
+    ///
+    /// That is the whole of what a Wipe needed. Ending a power-up before its time means doing
+    /// exactly what its own ending does, and the only two the Wipe could reach before this
+    /// (Gravity and Inert Ball) got there by a second copy of that block written out by hand -
+    /// two copies of a decision, which is wrong the first time the decision changes. Here the
+    /// Wipe runs the very same `SKAction` the wait would have run.
+    ///
+    /// Used by the collection paths and by the resume paths both, which is also how the two
+    /// stopped being able to disagree about what ending a power-up means.
+    func runClassicPowerUpTimer(key: String, wait: SKAction, ending: SKAction) {
+        classicPowerUpEndings[key] = ending
+        let forget = SKAction.run { [weak self] in
+            self?.classicPowerUpEndings.removeValue(forKey: key)
+        }
+        run(.sequence([wait, ending, forget]), withKey: key)
+        // Forgotten after it fires, so `classicPowerUpEndings` says what is *running* rather
+        // than what has ever run - which is what the Wipe reads to know there is anything to do
+    }
+
     /// Whether any of the original twenty-eight's timers is running right now.
     ///
     /// Asked of the actions rather than of a flag, because the actions are the only record
@@ -622,8 +646,28 @@ extension GameScene {
         // turn already under way is honoured. A Wipe is not the clock running out - it is the
         // power-up being taken away, and the debt goes with it
 
-        wipeGravity()
-        wipeInertBall()
+        wipeClassicTimers()
+    }
+
+    /// Every one of the original twenty-eight's timed power-ups, ended now.
+    ///
+    /// Each one's own ending block, run early - the same `SKAction` its wait would have run,
+    /// kept by `runClassicPowerUpTimer` for exactly this. The action and the two animating its
+    /// icon go first, or the ending would fire a second time later and hide an icon bar that a
+    /// power-up collected since might be using.
+    ///
+    /// **This replaces `wipeGravity` and `wipeInertBall`**, which did the same job for two of
+    /// the eleven by writing out what their ending blocks do. That was a second copy of a
+    /// decision in the two places the game is oldest, and the other nine were simply not
+    /// wiped at all - the matrix asks for all of them (round 222).
+    private func wipeClassicTimers() {
+        for (key, timers) in endlessIIClassicTimers {
+            guard let ending = classicPowerUpEndings[key] else { continue }
+            removeAction(forKey: key)
+            for (node, timerKey) in timers { node.removeAction(forKey: timerKey) }
+            classicPowerUpEndings.removeValue(forKey: key)
+            run(ending)
+        }
     }
 
     /// Whether a Wipe is worth dropping: only while there is something for it to end.
@@ -636,39 +680,12 @@ extension GameScene {
         if GameScene.endlessIIWipeableClockPaths.contains(where: { self[keyPath: $0].isRunning }) {
             return true
         }
-        return gravityActivated || inertBallRunning
-    }
-
-    /// Gravity, ended early.
-    ///
-    /// Its timer is an `SKAction` on the scene, so the action has to go as well as the effect -
-    /// left running it would fire its own ending later and hide an icon bar that a power-up
-    /// collected since might be using.
-    private func wipeGravity() {
-        guard gravityActivated || action(forKey: "powerUpGravityBall") != nil else { return }
-        removeAction(forKey: "powerUpGravityBall")
-        gravityIcon.removeAction(forKey: "powerUpGravityTimer")
-        gravityIconBar.removeAction(forKey: "gravityTimer")
-        deactivateGravity()
-        gravityIconBar.isHidden = true
+        return endlessIIClassicTimerRunning
     }
 
     /// Whether Undestructi-Ball is running. It has no flag of its own - its expiry is an
     /// action on the scene, so the action's presence is the flag.
     var inertBallRunning: Bool { action(forKey: "powerUpUndestructiBall") != nil }
-
-    /// Undestructi-Ball, ended early. Everything its own expiry block does, done now.
-    private func wipeInertBall() {
-        guard inertBallRunning else { return }
-        removeAction(forKey: "powerUpUndestructiBall")
-        gigaBallIcon.removeAction(forKey: "powerUpGigaBallTimer")
-        gigaBallIconBar.removeAction(forKey: "gigaBallTimer")
-        ballDress = .normal
-        ball.texture = ballTexture
-        ballPhysicsBodySet()
-        gigaBallIcon.texture = iconGigaBallDisabledTexture
-        gigaBallIconBar.isHidden = true
-    }
 
     // MARK: - Infill
 

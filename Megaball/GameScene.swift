@@ -237,6 +237,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// what makes it Retreat's opposite number rather than a slower way to lose.
 	var endlessIIQuicksandClock = EndlessIIClock()
 
+	/// How each of the original twenty-eight's running timed power-ups ends itself.
+	///
+	/// Keyed by the action name the scene runs it under, and held only while it is running.
+	/// A Wipe reads this to end a power-up early by running the very block its own wait would
+	/// have run, rather than by a second copy of what that block does (round 222).
+	var classicPowerUpEndings: [String: SKAction] = [:]
+
 	/// Paddle hits on the ball currently in play, reset when it is lost. Feeds
 	/// `TotalStats.bestBallHits`, which is the one figure the totals cannot reconstruct.
 	var hitsOnThisBall: Int = 0
@@ -4507,10 +4514,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSpeedIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.ballSpeedIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "ballSpeedTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			ballSpeedIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpDecreaseBallSpeedTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpDecreaseBallSpeed")
+            runClassicPowerUpTimer(key: "powerUpDecreaseBallSpeed", wait: waitDuration, ending: completionBlock)
             // Power up reverted
             
         case powerUpIncreaseBallSpeed:
@@ -4552,10 +4558,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSpeedIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.ballSpeedIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "ballSpeedTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			ballSpeedIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpDecreaseBallSpeedTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpIncreaseBallSpeed")
+            runClassicPowerUpTimer(key: "powerUpIncreaseBallSpeed", wait: waitDuration, ending: completionBlock)
             // Power up reverted
 			
 		case powerUpIncreasePaddleSize:
@@ -4657,10 +4662,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.paddleSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "paddleSizeTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			paddleSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpPaddleSizeTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpIncreasePaddleSize")
+            runClassicPowerUpTimer(key: "powerUpIncreasePaddleSize", wait: waitDuration, ending: completionBlock)
             // Power up reverted
 			
 		case powerUpDecreasePaddleSize:
@@ -4760,10 +4764,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleSizeIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.paddleSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "paddleSizeTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			paddleSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpPaddleSizeTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpDecreasePaddleSize")
+            runClassicPowerUpTimer(key: "powerUpDecreasePaddleSize", wait: waitDuration, ending: completionBlock)
             // Power up reverted
 			
 		case powerUpStickyPaddle:
@@ -4814,10 +4817,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gravityIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.gravityIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "gravityTimer")
 			})
-			let sequence = SKAction.sequence([waitDuration, completionBlock])
 			gravityIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGravityTimer")
 			// Setup timer animation
-			self.run(sequence, withKey: "powerUpGravityBall")
+			runClassicPowerUpTimer(key: "powerUpGravityBall", wait: waitDuration, ending: completionBlock)
 			// Power up reverted
 			
 		case powerUpPointsBonusSmall:
@@ -4956,10 +4958,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			hiddenBricksIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.hiddenBricksIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "invisibleBricksTimer")
 			})
-			let sequence = SKAction.sequence([waitDuration, completionBlock])
 			hiddenBricksIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpHiddenBricksTimer")
 			// Setup timer animation
-			self.run(sequence, withKey: "powerUpInvisibleBricks")
+			runClassicPowerUpTimer(key: "powerUpInvisibleBricks", wait: waitDuration, ending: completionBlock)
 			// Power up reverted
 			
 		case powerUpMultiHitToNormalBricks:
@@ -5060,10 +5061,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gigaBallIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.gigaBallIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "gigaBallTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			gigaBallIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGigaBallTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpGigaBall")
+            runClassicPowerUpTimer(key: "powerUpGigaBall", wait: waitDuration, ending: completionBlock)
             // Power up reverted
             
         case powerUpUndestructiBall:
@@ -5097,10 +5097,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			gigaBallIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.gigaBallIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "gigaBallTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			gigaBallIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGigaBallTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpUndestructiBall")
+            runClassicPowerUpTimer(key: "powerUpUndestructiBall", wait: waitDuration, ending: completionBlock)
             // Power up reverted
 
         case powerUpLasers:
@@ -5148,10 +5147,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			lasersIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.lasersIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "laserTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			lasersIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpLaserTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpLasers")
+            runClassicPowerUpTimer(key: "powerUpLasers", wait: waitDuration, ending: completionBlock)
             // Power up reverted - lasers will fire for 10s
 		
 		case powerUpBricksDown:
@@ -5277,10 +5275,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSizeIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.ballSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "ballSizeTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			ballSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpBallSizeTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpIncreaseBallSize")
+            runClassicPowerUpTimer(key: "powerUpIncreaseBallSize", wait: waitDuration, ending: completionBlock)
             // Power up reverted
             
 		case powerUpTrajectoryLine:
@@ -5573,10 +5570,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSizeIconBar.run(SKAction.scaleX(to: 1.0, duration: 0.05), completion: {
 				self.ballSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: timer), withKey: "ballSizeTimer")
 			})
-            let sequence = SKAction.sequence([waitDuration, completionBlock])
 			ballSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpBallSizeTimer")
 			// Setup timer animation
-            self.run(sequence, withKey: "powerUpDecreaseBallSize")
+            runClassicPowerUpTimer(key: "powerUpDecreaseBallSize", wait: waitDuration, ending: completionBlock)
             // Power up reverted
 		
         default:
@@ -8071,9 +8067,8 @@ laserTimer?.invalidate()
 							self.ballSpeedIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "ballSpeedTimer")
 						})
 						ballSpeedIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						ballSpeedIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpDecreaseBallSpeedTimer")
-						self.run(sequence, withKey: "powerUpDecreaseBallSpeed")
+						runClassicPowerUpTimer(key: "powerUpDecreaseBallSpeed", wait: waitDuration, ending: completionBlock)
 						
 					case "paddleSizeTimer":
 						// The retro paddle art is a wider asset than the default one, so
@@ -8140,9 +8135,8 @@ laserTimer?.invalidate()
 							self.paddleSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "paddleSizeTimer")
 						})
 						paddleSizeIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						paddleSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpPaddleSizeTimer")
-						self.run(sequence, withKey: "powerUpIncreasePaddleSize")
+						runClassicPowerUpTimer(key: "powerUpIncreasePaddleSize", wait: waitDuration, ending: completionBlock)
 						
 					case "gravityTimer":
 						gravityIcon.texture = self.iconGravityTexture
@@ -8161,9 +8155,8 @@ laserTimer?.invalidate()
 							self.gravityIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "gravityTimer")
 						})
 						gravityIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						gravityIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGravityTimer")
-						self.run(sequence, withKey: "powerUpGravityBall")
+						runClassicPowerUpTimer(key: "powerUpGravityBall", wait: waitDuration, ending: completionBlock)
 						
 					case "invisibleBricksTimer":
 						hiddenBricksIcon.texture = self.iconHiddenBlocksTexture
@@ -8191,9 +8184,8 @@ laserTimer?.invalidate()
 							self.hiddenBricksIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "invisibleBricksTimer")
 						})
 						hiddenBricksIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						hiddenBricksIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpHiddenBricksTimer")
-						self.run(sequence, withKey: "powerUpInvisibleBricks")
+						runClassicPowerUpTimer(key: "powerUpInvisibleBricks", wait: waitDuration, ending: completionBlock)
 						
 					case "gigaBallTimer":
 						gigaBallDeactivate = false
@@ -8235,9 +8227,8 @@ laserTimer?.invalidate()
 							self.gigaBallIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "gigaBallTimer")
 						})
 						gigaBallIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						gigaBallIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGigaBallTimer")
-						self.run(sequence, withKey: "powerUpGigaBall")
+						runClassicPowerUpTimer(key: "powerUpGigaBall", wait: waitDuration, ending: completionBlock)
 						
 					case "laserTimer":
 						lasersIcon.texture = self.iconLasersTexture
@@ -8270,9 +8261,8 @@ laserTimer?.invalidate()
 							self.lasersIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "laserTimer")
 						})
 						lasersIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						lasersIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpLaserTimer")
-						self.run(sequence, withKey: "powerUpLasers")
+						runClassicPowerUpTimer(key: "powerUpLasers", wait: waitDuration, ending: completionBlock)
 						
 					case "ballSizeTimer":
 						ballSizeIconBar.isHidden = false
@@ -8313,9 +8303,8 @@ laserTimer?.invalidate()
 							self.ballSizeIconBar.run(SKAction.scaleX(to: 0.0, duration: remainingTime), withKey: "ballSizeTimer")
 						})
 						ballSizeIconBar.isHidden = false
-						let sequence = SKAction.sequence([waitDuration, completionBlock])
 						ballSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpBallSizeTimer")
-						self.run(sequence, withKey: "powerUpIncreaseBallSize")
+						runClassicPowerUpTimer(key: "powerUpIncreaseBallSize", wait: waitDuration, ending: completionBlock)
 						
 					case "stickyPaddle":
 						stickyPaddleCatches = savedGame.activePowerUpMagnitudes[i]

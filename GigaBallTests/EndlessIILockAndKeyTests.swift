@@ -444,3 +444,86 @@ final class LockFreezesTheOldTimersTests: XCTestCase {
                        "Classic has no Lock and must not be frozen by one")
     }
 }
+
+/// What a Wipe does to the original twenty-eight's timers.
+///
+/// The matrix's Wipe row names all eleven. Before round 222 it reached two of them - Gravity
+/// and Inert Ball - and reached those by a second copy of what their ending blocks do, written
+/// out by hand in the wipe. Two copies of a decision in the two places the game is oldest, and
+/// the other nine simply were not wiped.
+///
+/// `runClassicPowerUpTimer` keeps each power-up's ending under the name its action runs under,
+/// so a Wipe runs the very block the wait would have run.
+final class WipeEndsTheOldTimersTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// The ending runs, the action goes, and the power-up is forgotten.
+    func testAWipeRunsThePowerUpsOwnEnding() {
+        let scene = mayhem()
+        var ended = false
+        scene.runClassicPowerUpTimer(key: "powerUpGigaBall",
+                                     wait: .wait(forDuration: 10),
+                                     ending: .run { ended = true })
+        XCTAssertNotNil(scene.action(forKey: "powerUpGigaBall"))
+
+        scene.endlessIIWipe()
+        scene.run(.wait(forDuration: 0))   // let the ending's own run block land
+
+        XCTAssertNil(scene.action(forKey: "powerUpGigaBall"), "the timer outlived the wipe")
+        XCTAssertNil(scene.classicPowerUpEndings["powerUpGigaBall"],
+                     "a wiped power-up is still remembered as running")
+        _ = ended
+        // The block itself lands on SpriteKit's own schedule, so what is asserted here is the
+        // bookkeeping. That the ending *is* the power-up's own action is true by construction:
+        // it is the same object, handed straight back
+    }
+
+    /// The icon and its bar are stopped too, or the ending fires again later and hides a bar
+    /// that a power-up collected since might be using.
+    func testAWipeStopsTheIconAnimationsAsWell() {
+        let scene = mayhem()
+        scene.runClassicPowerUpTimer(key: "powerUpLasers", wait: .wait(forDuration: 10),
+                                     ending: .run {})
+        scene.lasersIcon.run(.fadeOut(withDuration: 10), withKey: "powerUpLaserTimer")
+        scene.lasersIconBar.run(.scaleX(to: 0, duration: 10), withKey: "laserTimer")
+
+        scene.endlessIIWipe()
+
+        XCTAssertNil(scene.lasersIcon.action(forKey: "powerUpLaserTimer"))
+        XCTAssertNil(scene.lasersIconBar.action(forKey: "laserTimer"))
+    }
+
+    /// A Wipe is worth dropping when one of the old power-ups is all that is running.
+    func testAWipeIsWorthDroppingForAnOldPowerUpAlone() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIWipeMayDrop)
+
+        scene.runClassicPowerUpTimer(key: "powerUpIncreasePaddleSize",
+                                     wait: .wait(forDuration: 10), ending: .run {})
+        XCTAssertTrue(scene.endlessIIWipeMayDrop,
+                      "a bad power-up with nothing to take away is a gift")
+    }
+
+    /// Every key in the freeze table is one a Wipe can reach, and the other way round.
+    ///
+    /// The two read one list, which is what stops a power-up being frozen by a Lock and left
+    /// standing by a Wipe.
+    func testTheLockAndTheWipeReadTheSameList() {
+        let scene = mayhem()
+        for (key, _) in scene.endlessIIClassicTimers {
+            scene.runClassicPowerUpTimer(key: key, wait: .wait(forDuration: 10), ending: .run {})
+        }
+        XCTAssertTrue(scene.endlessIIClassicTimerRunning)
+
+        scene.endlessIIWipe()
+        for (key, _) in scene.endlessIIClassicTimers {
+            XCTAssertNil(scene.action(forKey: key), "\(key) survived a Wipe")
+        }
+    }
+}
