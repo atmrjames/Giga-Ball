@@ -387,6 +387,15 @@ enum PowerUpCatalogue {
 
     // MARK: - Questions
 
+    /// The entry a power-up name belongs to, or nil where the catalogue does not know it.
+    ///
+    /// The join between the game's index-keyed arrays and this table is the name, because the
+    /// arrays have no ids in them. Written once here rather than at each call site, so that
+    /// when the two are finally reconciled there is one place that knows how they meet.
+    static func powerUp(named name: String) -> PowerUp? {
+        all.first { $0.name == name }
+    }
+
     static func powerUp(id: String) -> PowerUp? {
         all.first { $0.id == id }
     }

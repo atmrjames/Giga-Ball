@@ -657,6 +657,28 @@ class LevelPackSetup {
     // wrong picture in it - see PowerUpIcon
     
     let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,63,55,56,64,65,57,58,59,60,61,62]
+
+    /// The order the reference page lists power-ups in, with the retired ones left out.
+    ///
+    /// **Derived rather than a second list** (James, round 217: "remove jagged paddle from the
+    /// power-ups list"). `powerUpCorrectOrderArray` above has to stay a complete permutation
+    /// of every index - a display order that quietly dropped one would hide a power-up nobody
+    /// meant to hide, and a test says so - so the omission belongs here, where it is the
+    /// catalogue's `.retired` doing the omitting. Retire another and this follows on its own.
+    var powerUpReferenceOrder: [Int] {
+        powerUpCorrectOrderArray.filter { retiredPowerUpIndices.contains($0) == false }
+    }
+
+    /// The slots that are kept for the file's sake and are no longer part of the game.
+    ///
+    /// Nothing may be counted, listed or offered by these indices. The arrays keep their
+    /// length - that is the whole point of retiring rather than deleting - so every place that
+    /// walks them has to know which entries are furniture.
+    var retiredPowerUpIndices: Set<Int> {
+        Set(powerUpNameArray.indices.filter {
+            PowerUpCatalogue.powerUp(named: powerUpNameArray[$0])?.availability == .retired
+        })
+    }
     // 64 and 65 (the wedges) display beside 55, 56 and 57 (the other shaped faces), so the
     // reference page shows the five shapes together. 58 (Jagged) stays in the list because
     // this is a permutation of every index - retired is not removed (round 213)

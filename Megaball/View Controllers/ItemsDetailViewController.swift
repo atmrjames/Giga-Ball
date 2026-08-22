@@ -68,12 +68,16 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// The standard section's rows, with everything the Recent section already lists
     /// taken out (play-test round 7): one list per power-up, not the same one twice.
     var standardPowerUpRows: [Int] {
-        let setup = LevelPackSetup()
+        let order = LevelPackSetup().powerUpReferenceOrder
         return InGameRecents.standardRows(
-            rowCount: totalStatsArray[0].powerUpUnlockedArray.count,
+            rowCount: order.count,
             recents: showsRecentsSection ? InGameRecents.shared.powerUpIndices : [],
-            powerUpIndex: { setup.powerUpCorrectOrderArray[$0] })
+            powerUpIndex: { order[$0] })
     }
+    // **The reference order, not the raw one, and its own count** (round 217). The rows used
+    // to be counted off `powerUpUnlockedArray`, which is one entry per power-up including the
+    // retired ones - so a page that leaves one out has to take its length from the list it is
+    // actually showing, or the last row indexes past the end of it.
 
     /// Whether the power-up reference splits itself by mode.
     ///
@@ -92,7 +96,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// like "does not exist".
     var powerUpIndicesByMode: (everyMode: [Int], mayhem: [Int]) {
         let setup = LevelPackSetup()
-        let indices = standardPowerUpRows.map { setup.powerUpCorrectOrderArray[$0] }
+        let indices = standardPowerUpRows.map { setup.powerUpReferenceOrder[$0] }
         return (indices.filter { setup.isEndlessIIPowerUp($0) == false },
                 indices.filter { setup.isEndlessIIPowerUp($0) })
     }
@@ -111,7 +115,8 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         let rows = standardPowerUpRows
         let row = rows.indices.contains(indexPath.row) ? rows[indexPath.row] : indexPath.row
-        return LevelPackSetup().powerUpCorrectOrderArray[row]
+        let order = LevelPackSetup().powerUpReferenceOrder
+        return order.indices.contains(row) ? order[row] : 0
     }
 
     /// Whether this row is in the Recent section, which is the only place the

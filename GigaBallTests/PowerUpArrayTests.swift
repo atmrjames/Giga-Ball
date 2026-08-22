@@ -245,3 +245,49 @@ final class PowerUpArtworkTests: XCTestCase {
         }
     }
 }
+
+/// What a retired power-up is allowed to be part of.
+///
+/// James, round 217: "remove jagged paddle from the power-ups list." Round 213 retired it -
+/// no mode offers it and its drop weight is zero - but retiring only stopped it being *given*.
+/// It was still a square on the reference page and still a slot in "Items unlocked", so from
+/// the player's side it was a power-up that existed and could never be had.
+final class RetiredPowerUpsAreNotListedTests: XCTestCase {
+
+    func testTheRetiredSlotsAreFoundThroughTheCatalogue() {
+        let setup = LevelPackSetup()
+        let jagged = setup.powerUpNameArray.firstIndex(of: "Jagged Paddle")
+        XCTAssertNotNil(jagged, "the slot has to stay, or every later index shifts")
+        XCTAssertEqual(setup.retiredPowerUpIndices, Set([jagged].compactMap { $0 }),
+                       "the retired set is not what the catalogue says it is")
+    }
+
+    /// The reference page lists every power-up except the retired ones, once each.
+    func testTheReferenceOrderIsTheDisplayOrderMinusTheRetired() {
+        let setup = LevelPackSetup()
+        let order = setup.powerUpReferenceOrder
+
+        XCTAssertEqual(order.count,
+                       setup.powerUpNameArray.count - setup.retiredPowerUpIndices.count,
+                       "the page shows a different number of squares than it has power-ups")
+        XCTAssertEqual(Set(order).count, order.count, "a power-up is listed twice")
+        for index in setup.retiredPowerUpIndices {
+            XCTAssertFalse(order.contains(index),
+                           "\(setup.powerUpNameArray[index]) is still on the reference page")
+        }
+        XCTAssertEqual(order, setup.powerUpCorrectOrderArray
+                                .filter { setup.retiredPowerUpIndices.contains($0) == false },
+                       "the order of what is left has moved")
+    }
+
+    /// The raw display order still names every power-up, retired ones included.
+    ///
+    /// The two lists do different jobs and both matter: the raw one is the guard against a
+    /// power-up being dropped from the game's own bookkeeping by accident, and the reference
+    /// one is what a reader sees. Deriving the second from the first is what keeps them honest.
+    func testTheRawDisplayOrderStillCoversEveryIndex() {
+        let setup = LevelPackSetup()
+        XCTAssertEqual(setup.powerUpCorrectOrderArray.sorted(),
+                       Array(setup.powerUpNameArray.indices))
+    }
+}

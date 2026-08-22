@@ -139,11 +139,18 @@ enum StatsPage {
             rows.append(Row(label: "Lasers hit", value: grouped(stats.lasersHit), icon: "scope"))
         }
 
+        let retired = LevelPackSetup().retiredPowerUpIndices
+        let powerUpSlots = stats.powerUpUnlockedArray.indices
+            .filter { retired.contains($0) == false }
+        // **A retired power-up is not an item to unlock** (round 217). Its slot stays in the
+        // array for the file's sake, and counting it made "Items unlocked" a fraction nobody
+        // could ever fill - and, for a player who met Jagged before it was retired, one that
+        // counted something the game no longer has
         let unlockedItems = stats.appIconUnlockedArray.filter { $0 }.count
-            + stats.powerUpUnlockedArray.filter { $0 }.count
+            + powerUpSlots.filter { stats.powerUpUnlockedArray[$0] }.count
             + stats.themeUnlockedArray.filter { $0 }.count
         let allItems = stats.appIconUnlockedArray.count
-            + stats.powerUpUnlockedArray.count
+            + powerUpSlots.count
             + stats.themeUnlockedArray.count
         rows.append(Row(label: "Items unlocked", value: fraction(unlockedItems, allItems), icon: "lock.open.fill"))
         rows.append(Row(label: "Achievements completed",
