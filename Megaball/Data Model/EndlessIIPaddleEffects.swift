@@ -323,6 +323,34 @@ enum EndlessIIPaddleEffects {
         return straight - clamped*maximum
     }
 
+    /// The angle the arrow points at, given where the finger is and where the ball is.
+    ///
+    /// **The arrow points at the finger** (James, round 232: "aimed sticky arrow should move
+    /// relative to touch and drag gesture", and "a tap above the paddle moves the arrow to the
+    /// tap position"). Both notes are the same rule said twice: the shot goes where you are
+    /// touching, whether you got there by tapping or by dragging.
+    ///
+    /// That replaces round 10's answer, which mapped the finger's x across the screen onto a
+    /// fixed arc. It was absolute, which was the half round 10 got right, but the arc had no
+    /// relationship to where the ball actually was - aiming at a brick meant learning the
+    /// mapping rather than pointing at the brick.
+    ///
+    /// **Never flat and never downward.** The clamp is the same `minimum` every bounce in the
+    /// game is held to: a ball launched along the paddle's own line runs sideways until
+    /// something stops it, and one launched below it is a ball thrown away.
+    static func aimedAngle(at finger: CGPoint, from ball: CGPoint,
+                           minimum: Double) -> Double {
+        let dx = Double(finger.x - ball.x)
+        let dy = Double(finger.y - ball.y)
+        guard dx != 0 || dy != 0 else { return Double.pi/2 }
+
+        let angle = atan2(dy, dx)
+        return max(minimum, min(Double.pi - minimum, angle))
+        // atan2 gives the whole circle; the clamp folds everything at or below the horizontal
+        // onto the shallowest shot the game allows, so a finger dragged under the ball still
+        // aims somewhere sensible rather than snapping to the far side
+    }
+
     /// The angle a ball leaves the paddle at, given where it lands and how it arrives.
     ///
     /// The same rule `paddleHit` applies: the reflection, bent by up to `adjustment` degrees

@@ -632,16 +632,19 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
         scene.endlessIIAimedCatch(scene.ball, isExtra: false)
 
-        XCTAssertTrue(scene.endlessIIAimMoved(to: 150), "the moving finger is the aim")
+        XCTAssertTrue(scene.endlessIIAimMoved(to: CGPoint(x: 150, y: 200)),
+                      "the moving finger is the aim")
         let target = scene.endlessIIAimTarget!
         let swung = scene.endlessIIAimAngle(for: target)
         XCTAssertLessThan(swung, .pi/2,
-                          "a finger on the right of the screen aims right of straight up")
+                          "a finger to the right of the ball aims right of straight up")
+        // Given a height as well as an x from round 232: the arrow points *at* the finger
+        // now, so a touch level with the ball is a direction the clamp has to fold away
     }
 
     func testNothingIsConsumedWhenNothingIsAimed() {
         let scene = paddleScene()
-        XCTAssertFalse(scene.endlessIIAimMoved(to: 30))
+        XCTAssertFalse(scene.endlessIIAimMoved(to: CGPoint(x: 30, y: 0)))
         XCTAssertFalse(scene.endlessIIAimLaunch())
     }
 
@@ -885,11 +888,11 @@ final class AimedStickyLostBallTests: XCTestCase {
         scene.endlessIICollectAimedSticky()
         _ = extraBall(in: scene)
         scene.endlessIIFirstBallWasCaught()
-        XCTAssertTrue(scene.endlessIIAimMoved(to: 40), "while aiming, the aim owns the touch")
+        XCTAssertTrue(scene.endlessIIAimMoved(to: CGPoint(x: 40, y: 0)), "while aiming, the aim owns the touch")
 
         _ = scene.endlessIIBallWasLost(scene.ball)
 
-        XCTAssertFalse(scene.endlessIIAimMoved(to: 40),
+        XCTAssertFalse(scene.endlessIIAimMoved(to: CGPoint(x: 40, y: 0)),
                        "and once there is nothing to aim, the touch belongs to the paddle")
     }
 
@@ -915,12 +918,12 @@ final class AimedStickyLostBallTests: XCTestCase {
     func testTheAimDeclinesATouchWhenThereIsNothingToAim() {
         let scene = mayhem()
         scene.endlessIICollectAimedSticky()
-        XCTAssertFalse(scene.endlessIIAimMoved(to: 40),
+        XCTAssertFalse(scene.endlessIIAimMoved(to: CGPoint(x: 40, y: 0)),
                        "nothing caught yet, so the touch belongs to the paddle")
 
         _ = extraBall(in: scene)
         scene.endlessIIFirstBallWasCaught()
-        XCTAssertTrue(scene.endlessIIAimMoved(to: 40), "and once there is, the aim takes it")
+        XCTAssertTrue(scene.endlessIIAimMoved(to: CGPoint(x: 40, y: 0)), "and once there is, the aim takes it")
     }
 
     func testAHoldWithNothingLeftToAimEndsItself() {
@@ -2478,5 +2481,79 @@ final class ShapedPaddleHudIconTests: XCTestCase {
         guard let art = UIImage(named: "ConcavePaddleIcon") else { return XCTFail("no art") }
         XCTAssertEqual(entry?.texture.size().width ?? 0, art.size.width, accuracy: 1,
                        "the ring is still drawing the profile rather than the picture")
+    }
+}
+
+/// Where a held ball rests once the paddle has a shape.
+///
+/// James, round 232: "with an aimed sticky and a shaped paddle, the ball was sliding about on
+/// the paddle. The ball should remain fixed on the paddle."
+///
+/// The resting height was worked out once at setup, from the plain paddle. A shaped paddle is
+/// taller and sits higher, so the ball was placed inside the new silhouette - and a body the
+/// engine finds inside another body is one it shoves out, every frame, in whatever direction
+/// the overlap suggests. The sliding was not the hold failing; it was the hold putting the
+/// ball somewhere the physics refused to leave it.
+final class HeldBallRestsOnTheShapeTests: XCTestCase {
+
+    private func shapedScene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.paddleHeight = 12
+        scene.paddleWidth = 120
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.addChild(scene.ball)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.ballStartingPositionY = scene.paddle.position.y + 12/2 + 10/2 + 1
+        return scene
+    }
+
+    /// A shaped paddle lifts the ball's resting height with it.
+    func testTheRestingHeightFollowsAShape() {
+        let scene = shapedScene()
+        let flat = scene.ballStartingPositionY
+
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.refreshEndlessIIPaddleShapeArt()
+
+        XCTAssertGreaterThan(scene.ballStartingPositionY, flat,
+                             "a convex paddle is taller, so the ball rests higher")
+        XCTAssertEqual(scene.ballStartingPositionY,
+                       scene.paddle.position.y + scene.paddle.size.height/2
+                           + scene.ball.size.height/2 + 1,
+                       accuracy: 0.001,
+                       "the ball should sit on the paddle it is actually standing on")
+    }
+
+    /// And it is never inside the paddle, which is the whole complaint.
+    func testTheBallIsNeverInsideThePaddle() {
+        for surface in PaddleBounce.Surface.allCases where surface != .jagged {
+            let scene = shapedScene()
+            scene.endlessIICollectPaddleSurface(surface)
+            scene.refreshEndlessIIPaddleShapeArt()
+
+            let paddleTop = scene.paddle.position.y + scene.paddle.size.height/2
+            let ballBottom = scene.ballStartingPositionY - scene.ball.size.height/2
+            XCTAssertGreaterThanOrEqual(ballBottom, paddleTop,
+                                        "\(surface) leaves the ball inside its own silhouette")
+        }
+    }
+
+    /// The height comes back when the shape ends.
+    func testItComesBackWhenTheShapeEnds() {
+        let scene = shapedScene()
+        let flat = scene.ballStartingPositionY
+
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.refreshEndlessIIPaddleShapeArt()
+        scene.endlessIIPaddleSurfaceClock.reset()
+        scene.endlessIIPaddleSurface = nil
+        scene.refreshEndlessIIPaddleShapeArt()
+
+        XCTAssertEqual(scene.ballStartingPositionY, flat, accuracy: 0.001,
+                       "the plain paddle got the shaped paddle's resting height")
     }
 }

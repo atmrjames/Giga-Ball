@@ -173,9 +173,13 @@ extension GameScene {
     func endlessIIAimAngle(for target: SKSpriteNode) -> Double {
         if endlessIIAimTouched {
             return EndlessIIPaddleEffects.aimedAngle(
-                fingerFraction: Double(endlessIIAimTouchX/(gameWidth/2)),
-                straight: straightLaunchAngleRad,
-                maximum: maxLaunchAngleRad)
+                at: CGPoint(x: endlessIIAimTouchX, y: endlessIIAimTouchY),
+                from: target.position,
+                minimum: minLaunchAngleRad)
+            // **The arrow points at the finger** (round 232). Round 10's version mapped the
+            // finger's x across the screen onto a fixed arc: absolute, which was right, but
+            // with no relationship to where the ball was - so aiming at a brick meant learning
+            // the mapping rather than pointing at the brick
         }
         let fallback = straightLaunchAngleRad + minLaunchAngleRad
         return endlessIIAimDefaultAngles[ObjectIdentifier(target)] ?? fallback
@@ -186,9 +190,10 @@ extension GameScene {
     /// A moving finger while a ball is being aimed *is* the aim - absolute, so where the
     /// thumb sits on the screen is where the arrow points. Returns whether it took the
     /// touch - the caller skips moving the paddle while aiming.
-    func endlessIIAimMoved(to x: CGFloat) -> Bool {
+    func endlessIIAimMoved(to point: CGPoint) -> Bool {
         guard endlessIIAimTarget != nil else { return false }
-        endlessIIAimTouchX = x
+        endlessIIAimTouchX = point.x
+        endlessIIAimTouchY = point.y
         endlessIIAimTouched = true
         return true
     }

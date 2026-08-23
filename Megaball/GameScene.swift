@@ -163,6 +163,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Where the aiming finger is, and whether it has moved yet - the aim is the finger's
 	/// absolute position once it moves, the default bounce until then.
 	var endlessIIAimTouchX: CGFloat = 0
+	/// And its height, since round 232: the arrow points at the finger rather than mapping
+	/// its x onto an arc, so the aim needs both halves of where the touch is.
+	var endlessIIAimTouchY: CGFloat = 0
 	var endlessIIAimTouched = false
 	/// Whether the current hold is the owed last turn of an expired clock - the catch
 	/// that spent the final turn still gets its arrow and its launch.
@@ -1949,7 +1952,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				                         paddleTopY: paddle.position.y + paddle.size.height/2,
 				                         paddleMayMove: stickyPaddleCatches != 0)
 					== .aim,
-				   endlessIIAimMoved(to: touchLocation.x) {
+				   endlessIIAimMoved(to: touchLocation) {
 					return
 				}
 				// **Only swallowed if the aim actually took it** (James, round 185: "aimed
@@ -2079,8 +2082,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // it. The pause after losing a ball is there to be felt, but a player who does not
         // want it should not have to spend the skip and the launch on the same tap
 
-        let aimedRelease = AimHoldControl.release(travelled: endlessIIAimTravel,
-                                                  aiming: endlessIIAimHold)
+        let lift = touches.first?.location(in: self)
+        let aimedRelease = AimHoldControl.release(
+            travelled: endlessIIAimTravel,
+            aiming: endlessIIAimHold,
+            intent: AimHoldControl.intent(touchY: lift?.y ?? paddle.position.y,
+                                          paddleTopY: paddle.position.y + paddle.size.height/2,
+                                          paddleMayMove: stickyPaddleCatches != 0))
+        if aimedRelease == .keepAiming, endlessIIAimTarget != nil, let lift {
+            _ = endlessIIAimMoved(to: lift)
+        }
+        // A missing touch is read as being on the paddle, which is the launching half: a
+        // release the system could not place should behave the way every release did before
+        // round 232 rather than silently doing nothing
+        // A tap above the paddle points the arrow where it landed (round 232). The release is
+        // where that has to happen: a tap is only known to be a tap once the finger has gone
+        // without travelling, and until then it might have been the start of a paddle drag
         endlessIIAimTravel = 0
         // Cleared either way, or the tap that follows an adjustment would still be carrying
         // the adjustment's travel

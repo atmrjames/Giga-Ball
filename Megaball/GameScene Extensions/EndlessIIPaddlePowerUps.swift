@@ -284,6 +284,22 @@ extension GameScene {
         endlessIIPaddleShapeLift = (grown - paddleHeight)/2
         paddle.position.y += endlessIIPaddleShapeLift
 
+        ballStartingPositionY = paddle.position.y + paddle.size.height/2
+            + ball.size.height/2 + 1
+        // **Where a held ball rests has to follow the shape** (James, round 232: "with an
+        // aimed sticky and a shaped paddle, the ball was sliding about on the paddle. The ball
+        // should remain fixed on the paddle").
+        //
+        // It was worked out once at setup, from the plain paddle's height. A shaped paddle is
+        // taller and sits higher, so a ball placed at the old height was inside the new
+        // silhouette - and a body the engine finds inside another body is one it shoves out,
+        // every frame, in whatever direction the overlap suggests. That is the sliding: not
+        // the hold failing, but the hold placing the ball somewhere the physics refused to
+        // leave it.
+        //
+        // Read off the live paddle rather than recomputed from constants, so it is right for
+        // whatever is on the paddle - a shape, a resize, or neither
+
         refreshEndlessIIPaddleShapeDressing(
             running ? endlessIIPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) } : nil)
         // The lasers and the sticky face change with the paddle, or a shaped paddle firing

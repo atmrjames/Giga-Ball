@@ -162,3 +162,75 @@ final class AimHoldFreezeTests: XCTestCase {
         XCTAssertLessThanOrEqual(speed, speedLimit*BallGravity.fastestShare + 0.001)
     }
 }
+
+/// Where the arrow points, and which tap fires.
+///
+/// James, round 232: "aimed sticky arrow should move relative to touch and drag gesture. Its
+/// angle should be limited so it can go to horizontal or below" and "a tap above the paddle
+/// moves the arrow to the tap position. A tap below the paddle launches the ball."
+final class AimedArrowPointsAtTheFingerTests: XCTestCase {
+
+    private let minimum = 20*Double.pi/180
+
+    private func degrees(_ radians: Double) -> Double { radians*180/Double.pi }
+
+    /// The arrow points at the finger, which is both of his notes said once.
+    func testItPointsWhereTheFingerIs() {
+        let ball = CGPoint(x: 0, y: -300)
+
+        let up = EndlessIIPaddleEffects.aimedAngle(at: CGPoint(x: 0, y: 100), from: ball,
+                                                   minimum: minimum)
+        XCTAssertEqual(degrees(up), 90, accuracy: 0.5, "straight above is straight up")
+
+        let left = EndlessIIPaddleEffects.aimedAngle(at: CGPoint(x: -200, y: -100), from: ball,
+                                                     minimum: minimum)
+        let right = EndlessIIPaddleEffects.aimedAngle(at: CGPoint(x: 200, y: -100), from: ball,
+                                                      minimum: minimum)
+        XCTAssertGreaterThan(degrees(left), 90, "a finger to the left aims left")
+        XCTAssertLessThan(degrees(right), 90, "a finger to the right aims right")
+    }
+
+    /// Never flat and never downward, however far under the ball the finger goes.
+    func testItIsNeverFlatOrDownward() {
+        let ball = CGPoint(x: 0, y: 0)
+        for x in stride(from: -400.0, through: 400.0, by: 50) {
+            for y in [-400.0, -50.0, 0.0] {
+                let angle = EndlessIIPaddleEffects.aimedAngle(
+                    at: CGPoint(x: x, y: y), from: ball, minimum: minimum)
+                XCTAssertGreaterThanOrEqual(degrees(angle), degrees(minimum) - 0.001,
+                                            "a shot at \(x), \(y) runs along the paddle line")
+                XCTAssertLessThanOrEqual(degrees(angle), 180 - degrees(minimum) + 0.001)
+            }
+        }
+    }
+
+    /// A finger exactly on the ball is not a direction, and must not be read as one.
+    func testAFingerOnTheBallAimsStraightUp() {
+        let angle = EndlessIIPaddleEffects.aimedAngle(at: .zero, from: .zero, minimum: minimum)
+        XCTAssertEqual(degrees(angle), 90, accuracy: 0.001)
+    }
+
+    // MARK: - Which tap fires
+
+    /// A tap below the paddle launches; a tap above it does not.
+    func testOnlyATapBelowThePaddleFires() {
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true, intent: .paddle),
+                       .aimedLaunch)
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true, intent: .aim),
+                       .keepAiming, "a tap above the paddle points the arrow, it does not fire")
+    }
+
+    /// A drag never fires, wherever it ends.
+    func testADragNeverFires() {
+        for intent in [AimHoldControl.Intent.aim, .paddle] {
+            XCTAssertEqual(AimHoldControl.release(travelled: 200, aiming: true, intent: intent),
+                           .keepAiming)
+        }
+    }
+
+    /// And with no ball held, the release is nobody's business but the paddle's.
+    func testWithNoBallHeldItIsNotAiming() {
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: false, intent: .paddle),
+                       .notAiming)
+    }
+}

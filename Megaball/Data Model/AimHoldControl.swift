@@ -90,10 +90,19 @@ enum AimHoldControl {
     /// that, dragging moved the paddle and set `paddleMoved`, and the ordinary release checks
     /// that flag - so the very change that made aiming feel right removed the thing that had
     /// been guarding the door.
-    static func release(travelled: CGFloat, aiming: Bool,
+    static func release(travelled: CGFloat, aiming: Bool, intent: Intent = .paddle,
                         slop: CGFloat = tapSlop) -> Release {
         guard aiming else { return .notAiming }
-        return launches(travelled: travelled, slop: slop) ? .aimedLaunch : .keepAiming
+        guard launches(travelled: travelled, slop: slop) else { return .keepAiming }
+        return intent == .paddle ? .aimedLaunch : .keepAiming
+        // **Where the tap was decides what it means** (James, round 232: "a tap above the
+        // paddle moves the arrow to the tap position. A tap below the paddle launches the
+        // ball"). A tap used to fire wherever it landed, which made the two things a player
+        // wants to do with a held ball - point it, and then shoot it - the same gesture, so
+        // every attempt to adjust the aim took the shot instead.
+        //
+        // Split by the same line that already divides aiming from carrying the paddle, so
+        // there is one boundary on screen rather than two: above it points, below it fires.
     }
 
     /// The three things a release can mean while Aimed Sticky is holding a ball.
