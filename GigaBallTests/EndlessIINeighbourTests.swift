@@ -387,6 +387,79 @@ final class EndlessIINeighbourTests: XCTestCase {
         XCTAssertEqual(brick.endlessIIVulnerableSide, .top)
     }
 
+    // MARK: - A Fixed brick has teeth
+
+    /// A falling brick is destroyed by the anchor it lands on.
+    ///
+    /// "A Fixed brick destroys any brick that runs into it, so an anchor becomes a hazard to
+    /// the field rather than only to the player" (the 2026 brick workbook). The descent's own
+    /// crush rule already did this for rows coming down; a Gravity brick falls under its own
+    /// power and simply came to rest on top of one.
+    ///
+    /// It lands first and dies on arrival rather than vanishing in mid-air: the brick has to be
+    /// seen to run into the anchor, or a faller stopping short and disappearing reads as a
+    /// brick that failed rather than as one that was struck.
+    func testAFallingBrickIsDestroyedByTheAnchorItLandsOn() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+
+        let anchor = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        anchor.endlessIIIsAnchored = true
+        let faller = addBrick(scene, at: CGPoint(x: 0, y: 200 + cell.height*3), size: cell)
+        faller.endlessIIRole = .gravity
+
+        scene.settleEndlessIIGravityBricks()
+        guard let fall = scene.endlessIIFallers[ObjectIdentifier(faller)] else {
+            return XCTFail("it should be falling at all")
+        }
+        XCTAssertTrue(fall.crushes, "it is falling onto an anchor and does not survive it")
+        XCTAssertEqual(fall.targetY, 200 + cell.height, accuracy: 0.5,
+                       "and it stops on top of the anchor rather than inside it")
+
+        scene.tickEndlessIIRoles(1)
+        XCTAssertNil(faller.parent, "the anchor destroyed it")
+        XCTAssertNotNil(anchor.parent, "and outlived it, which is what being fixed means")
+    }
+
+    /// One landing on an ordinary brick still just lands on it.
+    func testAFallingBrickRestsOnAnOrdinaryBrick() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+
+        addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        let faller = addBrick(scene, at: CGPoint(x: 0, y: 200 + cell.height*3), size: cell)
+        faller.endlessIIRole = .gravity
+
+        scene.settleEndlessIIGravityBricks()
+        XCTAssertEqual(scene.endlessIIFallers[ObjectIdentifier(faller)]?.crushes, false)
+
+        scene.tickEndlessIIRoles(1)
+        XCTAssertNotNil(faller.parent)
+        XCTAssertEqual(faller.position.y, 200 + cell.height, accuracy: 0.5)
+    }
+
+    /// And one already resting on an anchor is destroyed where it stands.
+    ///
+    /// It has nowhere to fall to, so the "did it move?" guard used to send it away untouched -
+    /// which would have left every faller that came to rest on a Fixed brick before this round
+    /// sitting there for ever.
+    func testABrickAlreadyRestingOnAnAnchorIsDestroyedAnyway() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+
+        let anchor = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        anchor.endlessIIIsAnchored = true
+        let resting = addBrick(scene, at: CGPoint(x: 0, y: 200 + cell.height), size: cell)
+        resting.endlessIIRole = .gravity
+
+        scene.settleEndlessIIGravityBricks()
+        scene.tickEndlessIIRoles(1)
+        XCTAssertNil(resting.parent)
+    }
+
     /// An Indestructible brick, for the tests above.
     @discardableResult
     private func wall(_ scene: GameScene, at point: CGPoint) -> SKSpriteNode {

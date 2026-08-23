@@ -135,22 +135,38 @@ extension GameScene {
             .filter { $0.endlessIIRole == .gravity }
             .sorted { endlessIICell(of: $0).row > endlessIICell(of: $1).row }
 
+        let anchored = endlessIIAnchoredCells()
+
         for brick in falling {
             let from = endlessIICell(of: brick)
             var to = from
+            var landsOnAnAnchor = false
             while to.row < lowestRow {
                 let below = EndlessIICell(column: to.column, row: to.row + 1)
-                guard endlessIICellBlocks(below, fill: fill) == false else { break }
+                guard endlessIICellBlocks(below, fill: fill) == false else {
+                    landsOnAnAnchor = anchored.contains(below)
+                    break
+                }
                 to = below
             }
-            guard to != from else { continue }
+            guard to != from || landsOnAnAnchor else { continue }
+            // **A brick already resting on an anchor is destroyed where it stands.** It has
+            // nowhere to fall to, so the guard used to send it away untouched - and a faller
+            // that came to rest on a Fixed brick before this round was built stays there for
+            // ever otherwise
 
             fill[from] = 0
-            fill[to] = 1
+            if landsOnAnAnchor == false { fill[to] = 1 }
             // Kept in step so a stack of them lands in order rather than each one falling
-            // through the space the one before it just claimed
+            // through the space the one before it just claimed. A brick about to be destroyed
+            // claims nothing: the next faller down the column may have the cell
             endlessIIFallers[ObjectIdentifier(brick)] =
-                EndlessIIFall(brick: brick, targetY: geometry.centre(of: to).y)
+                EndlessIIFall(brick: brick, targetY: geometry.centre(of: to).y,
+                              crushes: landsOnAnAnchor)
+            // **A Fixed brick destroys what falls onto it** (the 2026 brick workbook). It
+            // lands first and is destroyed on arrival rather than vanishing in mid-air: the
+            // brick has to be seen to run into the anchor, or a faller stopping short and
+            // disappearing reads as a brick that failed rather than as one that was struck
         }
     }
 
@@ -216,7 +232,13 @@ extension GameScene {
         // by the one beside it, not by the one above it
 
         for other in endlessIIBricks() where other !== brick {
-            let theirs = other.frame
+            guard other.endlessIIIsAnchored == false else { continue }
+            // **An anchor is not a wall, it is a hazard** (the 2026 brick workbook: a Fixed
+            // brick destroys what runs into it). Left in this list it would have turned the
+            // wanderer round a hair's breadth short, which is the opposite of running into
+            // something. Ignored here, the brick walks in and `endlessIIResolveAnchorOverlaps`
+            // destroys it on the frame it arrives
+            let theirs = endlessIIFieldRect(of: other)
             guard theirs.maxY - mine.minY > overlap, mine.maxY - theirs.minY > overlap else {
                 continue
             }
@@ -555,10 +577,17 @@ extension GameScene {
         return reserved
     }
 
-    /// Fills the empty cells around a destroyed Spawner with ordinary bricks.
+    /// Fills some of the empty cells around a destroyed Spawner with ordinary bricks.
     ///
     /// Ordinary, and never another Spawner, so what it leaves behind is something the player
     /// can clear rather than something that keeps growing.
+    ///
+    /// **Some, not all** (James, on the 2026 brick workbook: "spawner bricks when hit create
+    /// between 1 and 8 bricks in the adjacent cells. This number and the position of the new
+    /// bricks around the spawner should be randomised"). It used to fill every cell it could
+    /// reach, which made it the most predictable brick in the mode: a Spawner in the open
+    /// always produced the same ring, and one against a wall always produced the same half of
+    /// one. What it leaves behind is now a shape the player has to read.
     /// How long a Spawner waits before it may fill its neighbours again.
     ///
     /// **A ball can rattle against an Indestructible Spawner** (James, round 214: "a spawned
@@ -572,6 +601,30 @@ extension GameScene {
     /// second, and each hit refills the cells around it, so the ball builds its own cell wall
     /// and is sealed in by the thing it is hitting.
     static let endlessIISpawnCoolOff: TimeInterval = 1.5
+
+    /// Which of a Spawner's empty neighbours get bricks this time.
+    ///
+    /// Between one and eight, the count and the positions both drawn fresh (James, on the
+    /// brick workbook). Eight is the ceiling because eight is all a cell has; the real cap is
+    /// how many of them are empty, and a Spawner with one empty neighbour fills it every time
+    /// rather than sometimes doing nothing - a hit that visibly produces nothing reads as a
+    /// brick that failed rather than as one that rolled low.
+    ///
+    /// A pure function taking its own dice, because the scene it is called from cannot be
+    /// stood up in a test and "sometimes fewer than all of them" is exactly the kind of
+    /// statement that is true of the code and false of the game.
+    static func endlessIISpawnChoice(from room: [EndlessIICell],
+                                     count: (Int) -> Int = { Int.random(in: 1...$0) },
+                                     order: ([EndlessIICell]) -> [EndlessIICell] = {
+                                         $0.shuffled()
+                                     }) -> [EndlessIICell] {
+        guard room.isEmpty == false else { return [] }
+        let wanted = min(max(count(min(room.count, 8)), 1), room.count)
+        return Array(order(room).prefix(wanted))
+        // Shuffled before it is trimmed, so *which* cells are filled is drawn as well as how
+        // many. Taking the first n of the neighbour list in its natural order would have given
+        // a count that varied and a shape that never did
+    }
 
     func endlessIISpawn(around brick: SKSpriteNode) {
         guard gameMode == .endlessII else { return }
@@ -592,17 +645,20 @@ extension GameScene {
         let reserved = endlessIISpinnerClearanceCells()
         var made = 0
 
-        for cell in EndlessIIFieldGeometry.neighbours(of: endlessIICell(of: brick)) {
-            guard geometry.isInsideWidth(cell) else { continue }
-            guard cell.row >= 0 && cell.row <= lowestRow else { continue }
-            guard occupied[cell]?.isEmpty != false else { continue }
+        let room = EndlessIIFieldGeometry.neighbours(of: endlessIICell(of: brick)).filter { cell in
+            guard geometry.isInsideWidth(cell) else { return false }
+            guard cell.row >= 0 && cell.row <= lowestRow else { return false }
+            guard occupied[cell]?.isEmpty != false else { return false }
             // Anything at all in the cell, not just a brick that fills it. A cell holding one
             // Tiny brick is not somewhere a whole new brick can go
-            guard reserved.contains(cell) == false else { continue }
+            guard reserved.contains(cell) == false else { return false }
             // A spinning brick sweeps a circle wider than its own cell, and the generator
             // leaves that room empty. Filling it later put a new brick inside the arc of one
             // already turning, and the two passed through each other
+            return true
+        }
 
+        for cell in GameScene.endlessIISpawnChoice(from: room) {
             let spawned = SKSpriteNode(texture: brickNormalTexture)
             spawned.color = brickWhite
             spawned.colorBlendFactor = 1.0
@@ -712,17 +768,25 @@ extension GameScene {
         guard gameMode == .endlessII, anchored.isEmpty == false else { return false }
         guard node.endlessIIIsAnchored == false else { return false }
 
-        guard let sprite = node as? SKSpriteNode, sprite.size.width > brickWidth*1.5
-                || sprite.size.height > brickHeight*1.5 else {
+        guard let sprite = node as? SKSpriteNode else {
             let cell = endlessIIGeometry.cell(at: node.position)
             return anchored.contains(EndlessIICell(column: cell.column, row: cell.row + 1))
         }
+        let size = endlessIIFieldSize(of: sprite)
+        guard size.width > brickWidth*1.5 || size.height > brickHeight*1.5 else {
+            let cell = endlessIIGeometry.cell(at: node.position)
+            return anchored.contains(EndlessIICell(column: cell.column, row: cell.row + 1))
+        }
+        // The room the brick fills, not its sprite's. A shaped brick is always one ordinary
+        // cell, so this asks the same question of it either way - but its sprite is a third of
+        // a cell, and a test written against the sprite would have answered "not oversized"
+        // for the wrong reason and gone on being right by luck (`endlessIIFieldSize`)
 
         // An oversized brick descends onto an anchor with any part of its body, not just
         // the cell its node sits in - a Big brick slid straight past a Fixed brick under
         // its other half (play test). Every column the frame covers is asked, against
         // the row below the frame's lowest occupied row.
-        let frame = sprite.frame
+        let frame = endlessIIFieldRect(of: sprite)
         let inset = brickWidth*0.25
         let left = endlessIIGeometry.cell(at: CGPoint(x: frame.minX + inset,
                                                       y: node.position.y)).column
@@ -758,21 +822,23 @@ extension GameScene {
         var anchors: [CGRect] = []
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard node.endlessIIIsAnchored, let sprite = node as? SKSpriteNode else { return }
-            anchors.append(sprite.frame)
+            anchors.append(self.endlessIIFieldRect(of: sprite))
         }
         guard anchors.isEmpty == false else { return }
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let sprite = node as? SKSpriteNode, sprite.parent != nil,
                   sprite.endlessIIIsAnchored == false else { return }
-            guard sprite.size.width > self.brickWidth*1.5
-                    || sprite.size.height > self.brickHeight*1.5 else { return }
-            // Oversized only. An ordinary brick occupies one cell and the generator does not
-            // put two in a cell, so an overlap there would be a different bug with a different
-            // answer - and destroying an ordinary brick on a near miss is a brick the player
-            // was owed
-            let frame = sprite.frame.insetBy(dx: self.brickWidth*0.25,
-                                             dy: self.brickHeight*0.25)
+            let frame = self.endlessIIFieldRect(of: sprite)
+                .insetBy(dx: self.brickWidth*0.25, dy: self.brickHeight*0.25)
+            // **Any brick, not only an oversized one** (the 2026 brick workbook: a Fixed brick
+            // "destroys any brick that runs into it"). It was restricted to Big bricks because
+            // they were the only ones that could end up sharing a cell - the generator never
+            // puts two ordinary bricks in one, and destroying a brick on a near miss is a
+            // brick the player was owed. A Moving brick can now walk into an anchor, so the
+            // restriction stopped being true; the *inset* is what keeps the near miss safe,
+            // and it always did the real work. Two bricks in touching cells inset by a quarter
+            // of a cell each leave half a cell of daylight between them
             guard anchors.contains(where: { $0.intersects(frame) }) else { return }
 
             self.endlessIIBrickDestroyed(sprite)
@@ -1201,6 +1267,12 @@ extension GameScene {
             if fall.brick.position.y - step <= fall.targetY {
                 fall.brick.position.y = fall.targetY
                 endlessIIFallers[key] = nil
+                if fall.crushes {
+                    endlessIIBrickDestroyed(fall.brick)
+                    endlessIIDestroy(fall.brick)
+                    // The ordinary destroy path, so it scores, rolls a power-up and counts
+                    // itself exactly as the descent's own crush does
+                }
             } else {
                 fall.brick.position.y -= step
             }
@@ -1220,6 +1292,8 @@ extension GameScene {
 struct EndlessIIFall {
     let brick: SKSpriteNode
     let targetY: CGFloat
+    /// Whether it is falling onto a Fixed brick, and so is destroyed the moment it arrives.
+    var crushes: Bool = false
 }
 
 /// A Moving brick and the way it is currently heading.

@@ -127,9 +127,41 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
             return EndlessIIStyle.refusedByAFace.contains(isFace ? other : self) == false
         }
 
+        if self == .portal || other == .portal {
+            return EndlessIIStyle.takenByAPortal.contains(self == .portal ? other : self)
+        }
+
         let pair: Set<EndlessIIStyle> = [self, other]
         return EndlessIIStyle.incompatiblePairs.contains(pair) == false
     }
+
+    /// The whole of what a Portal will share a brick with, named rather than refused.
+    ///
+    /// James, on the brick workbook's Portal row: "figure out what actions portal is
+    /// compatible with and allow those. Disallow the others." Stated as what it *takes*
+    /// because that is the shorter list and the honest one - a Portal is the most particular
+    /// brick in the mode, and seven scattered refusals read as seven separate arguments rather
+    /// than as the two it actually has:
+    ///
+    /// **It is struck, never damaged.** So everything that answers damage has nothing to
+    /// attach to. Directional describes which side destroys it; Fixed anchors on the hit that
+    /// hurts; Exploding and Spawner fire on destruction, and on a brick that is never
+    /// destroyed they fire on every hit instead - a doorway that clears or refills its own
+    /// neighbourhood each time you use it, which is two big things per hit and one too many to
+    /// follow. Flashing goes for the same reason from the other end: a Portal is never *not*
+    /// solid.
+    ///
+    /// **Its mouth is a fixed target, or it cannot be aimed at.** That rules out Moving, which
+    /// wanders, and Breathing, which changes size and vanishes altogether at the bottom of a
+    /// breath. It does not rule out Gravity - a faller comes to rest and is a fixed target
+    /// again - and it does not rule out Spinning, which never leaves its cell and whose angle
+    /// nothing reads, since a Portal absorbs the ball rather than bouncing it.
+    ///
+    /// A shaped face is refused by `refusedByAFace` from the other side, for the same reason
+    /// Spinning is allowed and for the opposite outcome: the angle a slope gives is an answer
+    /// to a bounce that never happens, and a brick that *shows* an answer it does not give is
+    /// worse than one that shows nothing.
+    static let takenByAPortal: Set<EndlessIIStyle> = [.rounded, .spinning, .gravity]
 
     /// What a shaped face cannot share a brick with, and why - stated as a rule rather than
     /// as thirty pairs, because it is one rule.
@@ -176,21 +208,13 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
         // The workbook's seven new refusals. Every one is a pair where one style answers a
         // question in *cells* and the other has left the cell grid behind - which is the same
         // objection `[.spinning, .moving]` has always made, applied consistently
-        [.portal, .flashing],       // a Portal is never not solid
-        [.portal, .directional],    // nor ever damaged
-        [.portal, .exploding],      // one big thing per hit, or nobody can follow it
-        [.portal, .spawner],
         [.fixed, .moving],       // one says stay put, the other says do not
         [.fixed, .gravity],      // the same argument
-        [.fixed, .portal],       // a Portal is never damaged, so it never anchors
+        // Every Portal pair used to be listed here. They are `takenByAPortal` now, which says
+        // the same thing in one direction instead of seven
         [.breathing, .spinning], // both redraw the brick's own geometry every frame
         [.breathing, .rounded],  // Rounded's drawn face is built once, at one size
         [.breathing, .moving],   // the room a mover looks for is measured in whole cells
-        [.breathing, .portal],   // a Portal's mouth is a fixed target or it cannot be aimed at
-        [.moving, .portal],      // and a mouth that wanders is not a fixed target either
-        // Gravity and Spinning stay allowed with a Portal, on the same test: a faller comes to
-        // rest and is a fixed target again, and a spinner never leaves its cell - a Portal is
-        // struck rather than bounced off, so the angle its turning presents does not matter
     ]
 }
 

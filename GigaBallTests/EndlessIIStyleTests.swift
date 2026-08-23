@@ -287,6 +287,95 @@ extension EndlessIIStyleTests {
         XCTAssertNotNil(big.parent, "an anchored brick stopped where it was struck")
     }
 
+    /// An ordinary brick that ends up inside an anchor is destroyed too.
+    ///
+    /// "A Fixed brick destroys any brick that runs into it" (the 2026 brick workbook). The
+    /// sweep was restricted to Big bricks, because they were the only ones that could end up
+    /// sharing a cell - the generator never puts two ordinary bricks in one. A Moving brick can
+    /// walk into an anchor now, so that stopped being true.
+    func testAnAnchorDestroysAnOrdinaryBrickThatRunsIntoIt() {
+        let scene = overlapScene()
+        let anchor = brick(on: scene, at: 0, wide: false, anchored: true)
+        let walker = brick(on: scene, at: 8, wide: false)
+        // A fifth of a cell in - which is a brick that has walked into it, not one beside it
+
+        scene.endlessIIResolveAnchorOverlaps()
+        XCTAssertNil(walker.parent, "an anchor is a hazard, not a wall")
+        XCTAssertNotNil(anchor.parent)
+    }
+
+    /// And a near miss is still a near miss.
+    ///
+    /// The inset is what does that work, and it always did - it is why the Big-brick-only
+    /// restriction could be lifted safely. Two bricks in touching cells, each inset by a
+    /// quarter of a cell, leave half a cell of daylight between them.
+    func testAnAnchorLeavesTheOrdinaryBrickInTheNextCellAlone() {
+        let scene = overlapScene()
+        brick(on: scene, at: 0, wide: false, anchored: true)
+        let neighbour = brick(on: scene, at: scene.brickWidth, wide: false)
+
+        scene.endlessIIResolveAnchorOverlaps()
+        XCTAssertNotNil(neighbour.parent, "a brick the player was owed")
+    }
+
+    /// A Moving brick no longer treats an anchor as a wall to turn round at.
+    ///
+    /// Which is the whole of how it comes to run into one: left in the list of things that
+    /// stop a wanderer, an anchor would have turned it round a hair's breadth short - the
+    /// opposite of running into something.
+    func testAWandererIsNotStoppedByAnAnchor() {
+        let scene = overlapScene()
+        scene.gameWidth = 440
+        scene.numberOfBrickColumns = 11
+        let wanderer = brick(on: scene, at: 0, wide: false)
+        let anchor = brick(on: scene, at: scene.brickWidth, wide: false, anchored: true)
+
+        let stopped = scene.endlessIIWanderLimits(for: wanderer)
+        XCTAssertEqual(stopped.right, scene.gameWidth/2 - scene.brickWidth/2, accuracy: 0.5,
+                       "the anchor should not be a wall")
+
+        anchor.endlessIIIsAnchored = false
+        let blocked = scene.endlessIIWanderLimits(for: wanderer)
+        XCTAssertLessThan(blocked.right, stopped.right,
+                          "and an ordinary brick still is one, or this test proves nothing")
+    }
+
+    // MARK: - What a Spawner draws
+
+    func testASpawnerFillsBetweenOneAndAllOfItsEmptyNeighbours() {
+        // "Spawner bricks when hit create between 1 and 8 bricks in the adjacent cells. This
+        // number and the position of the new bricks around the spawner should be randomised"
+        // (James, on the 2026 brick workbook). It used to fill every cell it could reach,
+        // which made it the most predictable brick in the mode
+        let room = (0..<8).map { EndlessIICell(column: $0, row: 0) }
+
+        XCTAssertEqual(GameScene.endlessIISpawnChoice(from: room, count: { _ in 3 },
+                                                      order: { $0 }).count, 3)
+        XCTAssertEqual(GameScene.endlessIISpawnChoice(from: room, count: { _ in 8 },
+                                                      order: { $0 }).count, 8)
+    }
+
+    func testASpawnerAlwaysMakesAtLeastOne() {
+        // A hit that visibly produces nothing reads as a brick that failed rather than as one
+        // that rolled low - so the floor is one, and the ceiling is however many cells are
+        // actually free rather than eight
+        let one = [EndlessIICell(column: 0, row: 0)]
+        XCTAssertEqual(GameScene.endlessIISpawnChoice(from: one, count: { _ in 8 }).count, 1)
+        XCTAssertEqual(GameScene.endlessIISpawnChoice(from: one, count: { _ in 0 }).count, 1)
+        XCTAssertTrue(GameScene.endlessIISpawnChoice(from: [], count: { _ in 4 }).isEmpty,
+                      "and a Spawner with nowhere to put anything puts nothing")
+    }
+
+    func testASpawnerDrawsWhichCellsAsWellAsHowMany() {
+        // Trimmed after the shuffle, not before. Taking the first n of the neighbour list in
+        // its natural order would have given a count that varied and a shape that never did
+        let room = (0..<8).map { EndlessIICell(column: $0, row: 0) }
+        let picked = GameScene.endlessIISpawnChoice(from: room, count: { _ in 2 },
+                                                    order: { $0.reversed() })
+        XCTAssertEqual(picked, [EndlessIICell(column: 7, row: 0),
+                                EndlessIICell(column: 6, row: 0)])
+    }
+
     func testAnAnchorFlagTravelsWithItsBrick() {
         let brick = SKSpriteNode()
         XCTAssertFalse(brick.endlessIIIsAnchored)
