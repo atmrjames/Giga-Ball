@@ -500,3 +500,86 @@ final class PowerUpReferencePageTests: XCTestCase {
         }
     }
 }
+
+/// The power-ups reference page, built and laid out the way the Information screen builds it.
+///
+/// James, round 227: "the power-up info crashes when I tap the power-up cell from the
+/// information view, so I never see the list of power-ups."
+///
+/// Round 226's tests walked the page's *data* and found nothing, because the data was never
+/// the problem: they called the lookups without ever building a cell, installing a heading or
+/// running a layout pass. This drives the real view controller out of the real storyboard,
+/// with the same two properties the Information screen sets, and lets it lay itself out.
+final class PowerUpReferencePageLaysOutTests: XCTestCase {
+
+    private func page(from origin: String) -> ItemsDetailViewController {
+        let storyboard = UIStoryboard(name: "Main", bundle: Bundle(for: GameScene.self))
+        let page = storyboard.instantiateViewController(withIdentifier: "itemsDetailView")
+            as! ItemsDetailViewController
+        page.senderID = 2
+        page.navigatedFrom = origin
+        return page
+    }
+
+    private func layOut(_ page: ItemsDetailViewController) {
+        page.loadViewIfNeeded()
+        page.view.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        page.viewWillAppear(false)
+        page.view.setNeedsLayout()
+        page.view.layoutIfNeeded()
+
+        buildEverySquare(page)
+    }
+
+    /// Asks the page for every square it says it has.
+    ///
+    /// Laying the view out is not enough on its own: a collection view only builds the cells
+    /// that would be on screen, so a page that crashes on its fortieth square lays out
+    /// perfectly well in a test. This asks for all of them, which is what scrolling does.
+    private func buildEverySquare(_ page: ItemsDetailViewController) {
+        guard let grid = page.view.subviewsOfType(UICollectionView.self).first else {
+            return XCTFail("the page built no grid")
+        }
+        let sections = page.numberOfSections(in: grid)
+        for section in 0..<sections {
+            for row in 0..<page.collectionView(grid, numberOfItemsInSection: section) {
+                _ = page.collectionView(grid, cellForItemAt: IndexPath(row: row, section: section))
+            }
+        }
+    }
+
+    /// From the Information screen, where the page splits itself by mode.
+    func testItBuildsFromTheInformationScreen() {
+        let page = page(from: "MainMenu")
+        layOut(page)
+        XCTAssertTrue(page.showsModeSections)
+    }
+
+    /// With every power-up still locked, which is the branch that prints a sentence instead
+    /// of a name and reads two more arrays to do it.
+    func testItBuildsWithEverythingLocked() {
+        let page = page(from: "MainMenu")
+        page.loadViewIfNeeded()
+        var locked = TotalStats()
+        locked.powerUpUnlockedArray = locked.powerUpUnlockedArray.map { _ in false }
+        locked.levelPackUnlockedArray = locked.levelPackUnlockedArray.map { _ in false }
+        page.totalStatsArray = [locked]
+        layOut(page)
+    }
+
+    /// And from the pause menu, where it leads with this run's recents instead.
+    func testItBuildsFromThePauseMenu() {
+        InGameRecents.shared.collectedPowerUp(3)
+        let page = page(from: "PauseMenu")
+        layOut(page)
+        XCTAssertTrue(page.showsRecentsSection)
+    }
+}
+
+
+extension UIView {
+    /// Every descendant of a kind, for a test that needs the view a screen built for itself.
+    func subviewsOfType<T: UIView>(_ kind: T.Type) -> [T] {
+        subviews.flatMap { ($0 as? T).map { [$0] } ?? [] } + subviews.flatMap { $0.subviewsOfType(kind) }
+    }
+}
