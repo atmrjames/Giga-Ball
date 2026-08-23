@@ -2,7 +2,7 @@
 //  EndlessIIFaces.swift
 //  Megaball
 //
-//  Bricks that are not rectangles: Convex, Concave and Wedge (§12.0's "new brick
+//  Bricks that are not rectangles: Convex, Concave, Wedge and Diamond (§12.0's "new brick
 //  geometries").
 //
 //  Every brick in the game since 2020 has been a rectangle, so every bounce off the field
@@ -11,11 +11,12 @@
 //  the ball somewhere a rectangle never could. That is why these are styles rather than
 //  behaviours - the axis for "what a brick does beyond being hit" (§4.0) already exists.
 //
-//  Three shapes, chosen because each answers a hit differently:
+//  Four shapes, chosen because each answers a hit differently:
 //
 //      Convex   a dome. Off-centre hits are thrown wider than they arrived - it scatters
 //      Concave  a notch. Hits near an edge are turned inward - it collects
 //      Wedge    a right triangle. Everything reaching the slope leaves the same way
+//      Diamond  a rhombus. No flat face at all, so nothing leaves the way it came
 //
 //  Two things make this harder than it looks, and both live in this file so the rest of the
 //  scene never learns about them.
@@ -49,12 +50,15 @@ import SpriteKit
 /// round-trips.
 enum EndlessIIFace: String, CaseIterable {
     case convex, concave, wedge
+    /// A rhombus - every face angled, none of them square (the 2026 brick workbook).
+    case diamond
 
     var style: EndlessIIStyle {
         switch self {
         case .convex: return .convex
         case .concave: return .concave
         case .wedge: return .wedge
+        case .diamond: return .diamond
         }
     }
 }
@@ -91,7 +95,7 @@ enum EndlessIIFaceGeometry {
                            mirrored: Bool = false, flipped: Bool = false) -> [CGPath] {
         let w = size.width, h = size.height
         switch face {
-        case .convex, .wedge:
+        case .convex, .wedge, .diamond:
             return [silhouette(face, size: size, mirrored: mirrored, flipped: flipped)]
         case .concave:
             let notch = h*concaveNotch
@@ -128,6 +132,12 @@ enum EndlessIIFaceGeometry {
         case .wedge:
             rect = CGRect(x: w*0.05, y: -h*0.45, width: w*0.40, height: h*0.40)
             // Tucked into the corner beneath the slope
+        case .diamond:
+            rect = CGRect(x: -w*0.25, y: -h*0.20, width: w*0.50, height: h*0.40)
+            // A rhombus admits a rectangle wherever `a/(w/2) + b/(h/2) <= 1` holds for its
+            // half-width and half-height: this one comes to 0.9, which leaves a tenth of the
+            // way to the edge in hand. Centred, because the shape is - it is the one face
+            // here that is symmetrical in both axes at once
         }
         return rect.offsetBy(dx: mirrored ? -rect.midX*2 : 0,
                              dy: flipped ? -rect.midY*2 : 0)
@@ -156,6 +166,14 @@ enum EndlessIIFaceGeometry {
         case .wedge:
             shape = [CGPoint(x: -w/2, y: -h/2), CGPoint(x: w/2, y: -h/2),
                      CGPoint(x: w/2, y: h/2)]
+        case .diamond:
+            shape = [CGPoint(x: 0, y: -h/2), CGPoint(x: w/2, y: 0),
+                     CGPoint(x: 0, y: h/2), CGPoint(x: -w/2, y: 0)]
+            // Corner to corner, so there is no flat anywhere on it. Every other face here
+            // keeps at least one square edge - the dome and the notch stand on a flat base,
+            // the wedge on two - and a brick with none is the one shape that answers a hit
+            // from *any* direction with a slope. Its own reflection in both axes, so the
+            // mirroring and flipping above pass through it unchanged
         }
         return reflected(shape, mirrored: mirrored, flipped: flipped)
     }

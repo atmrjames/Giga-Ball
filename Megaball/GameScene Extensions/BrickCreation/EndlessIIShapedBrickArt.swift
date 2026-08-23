@@ -164,7 +164,7 @@ extension GameScene {
     static func shapedArt(for face: EndlessIIFace) -> ShapedBrickArt? {
         switch face {
         case .wedge: return .wedge
-        case .convex, .concave: return nil
+        case .convex, .concave, .diamond: return nil
         }
     }
 }

@@ -93,6 +93,56 @@ final class EndlessIIFaceTests: XCTestCase {
                        accuracy: 0.001, "a mirrored wedge points the other way")
     }
 
+    /// The Diamond has no flat face - which is the whole of what it is.
+    ///
+    /// Every other shape here keeps at least one square edge: the dome and the notch stand
+    /// on a flat base, the wedge on two. A ball meeting one of those square-on comes back the
+    /// way it came. The Diamond is the one that never gives that, from any side, and it stops
+    /// being that the moment an edge lines up with an axis - which a tidy-up of the corners
+    /// could do without looking like it had changed anything.
+    func testTheDiamondHasNoFlatEdge() {
+        let corners = EndlessIIFaceGeometry.corners(.diamond, size: cell)
+        XCTAssertEqual(corners.count, 4)
+        for index in corners.indices {
+            let a = corners[index]
+            let b = corners[(index + 1) % corners.count]
+            XCTAssertGreaterThan(abs(b.x - a.x), 0.001, "a vertical edge at \(a) - \(b)")
+            XCTAssertGreaterThan(abs(b.y - a.y), 0.001, "a horizontal edge at \(a) - \(b)")
+        }
+    }
+
+    /// And it is its own reflection, both ways, so turning one over changes nothing.
+    ///
+    /// `makeFace` rolls a flip for every shape and a mirror for the Wedge, and this is what
+    /// makes that harmless here rather than something the Diamond needs excluding from.
+    func testTheDiamondIsItsOwnReflection() {
+        let plain = cornerSet(.diamond)
+        for (mirrored, flipped) in [(true, false), (false, true), (true, true)] {
+            XCTAssertEqual(cornerSet(.diamond, mirrored: mirrored, flipped: flipped), plain,
+                           "mirrored:\(mirrored) flipped:\(flipped)")
+        }
+    }
+
+    /// A face's corners as a set, ignoring which one the path starts at and which way it
+    /// winds.
+    ///
+    /// Both of those change under a reflection and neither is part of the shape: one
+    /// reflection reverses the winding on purpose, so a polygon body reads the path the right
+    /// way out. Zero is normalised because negating it gives `-0.0`, which is a different
+    /// string and the same point.
+    private func cornerSet(_ face: EndlessIIFace,
+                           mirrored: Bool = false, flipped: Bool = false) -> Set<String> {
+        Set(EndlessIIFaceGeometry.corners(face, size: cell, mirrored: mirrored,
+                                          flipped: flipped)
+            .map { "\($0.x + 0),\($0.y + 0)" })
+    }
+
+    /// It is a single convex piece, like the dome and the wedge and unlike the notch.
+    func testTheDiamondNeedsOnlyOneBodyPiece() {
+        XCTAssertEqual(EndlessIIFaceGeometry.bodyPieces(.diamond, size: cell).count, 1,
+                       "a rhombus is convex; splitting it would be work for nothing")
+    }
+
     func testTheFaceAndStyleNamesAreOneToOne() {
         // The one place the two vocabularies meet. A face that lost its style would be a
         // shape the reference page, the recents and the compatibility grid never mention

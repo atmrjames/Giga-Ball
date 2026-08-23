@@ -124,6 +124,7 @@ enum BrickTypeCatalogue {
         case .convex: return "Convex"
         case .concave: return "Concave"
         case .wedge: return "Wedge"
+        case .diamond: return "Diamond"
         }
     }
 
@@ -132,12 +133,13 @@ enum BrickTypeCatalogue {
     /// The ones that only change how a brick looks or bounces first, then the ones that change
     /// what the field does. A player reading down the page meets the small ideas before the
     /// large ones, which is also the order a run introduces them in.
-    static let styleOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge,
+    static let styleOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge, .diamond,
                                                .spinning, .flashing, .breathing, .fixed,
                                                .gravity, .moving, .directional,
                                                .exploding, .spawner, .portal]
-    // The three shapes sit with Rounded, because they are the same idea carried further:
-    // the brick is not a rectangle, and the bounce says so
+    // The four shapes sit with Rounded, because they are the same idea carried further:
+    // the brick is not a rectangle, and the bounce says so. Diamond comes last of them, as
+    // the furthest carried - the only one with no flat face left at all
 
     private static func description(of style: EndlessIIStyle) -> String {
         switch style {
@@ -169,6 +171,8 @@ enum BrickTypeCatalogue {
             return "A dish. The notch in its face turns hits near either edge back toward the middle rather than away, which makes it the one brick that gathers a shot instead of spreading it - and a pair of them facing each other is a corridor."
         case .wedge:
             return "A right triangle: three sides, one of them a slope. Everything that reaches the slope leaves the same way, whatever angle it arrived at, so a Wedge is the closest the field comes to a brick you can aim with. Which way it points is decided when it is built."
+        case .diamond:
+            return "Turned on its corner, so there is no flat face anywhere on it. Every other brick in the field gives something back the way it came if you hit it square; a Diamond never does, whichever side the ball arrives from. The one to leave alone when the ball is where you want it."
         }
     }
 
@@ -231,7 +235,7 @@ enum BrickTypeCatalogue {
             // Both the room it looks for and the position it measures from assume a brick
             // sitting in exactly one cell
             return "Tiny and Normal"
-        case .convex, .concave, .wedge:
+        case .convex, .concave, .wedge, .diamond:
             // The silhouette is built from the brick's own size and drawn about its node,
             // which only holds for a brick that is one ordinary cell sitting centred
             return "Normal"

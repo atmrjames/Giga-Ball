@@ -486,7 +486,7 @@ extension GameScene {
             && abs(brick.anchorPoint.y - 0.5) < 0.01
         switch style {
         case .rounded: return centred
-        case .convex, .concave, .wedge:
+        case .convex, .concave, .wedge, .diamond:
             // The same demand Rounded makes, plus one of its own: a shaped face is built
             // from the brick's own size, so it has to be a brick of ordinary size sitting
             // centred on its node. A Big brick's sprite hangs off its node and a Tiny one
@@ -548,7 +548,8 @@ extension GameScene {
     /// Called after the row's arrival animation has been set up, because that animation
     /// resets the colour blend on every normal brick and would undo the tinting here.
     func applyEndlessIIBehaviours(to bricks: [SKNode]) {
-        applyEndlessIIStyles([.rounded, .flashing, .breathing, .convex, .concave, .wedge],
+        applyEndlessIIStyles([.rounded, .flashing, .breathing,
+                              .convex, .concave, .wedge, .diamond],
                              to: bricks)
         // The shapes go in the appearance pool beside Rounded, which is the pool for
         // "changes how the brick answers a hit" - and a style has to be in a pool to
@@ -610,7 +611,7 @@ extension GameScene {
         case .spawner: makeSpawner(brick)
         case .portal: makePortal(brick)
         case .fixed: makeFixed(brick)
-        case .convex, .concave, .wedge:
+        case .convex, .concave, .wedge, .diamond:
             if let face = style.face { makeFace(face, on: brick) }
         }
     }

@@ -152,13 +152,14 @@ final class BrickTypeCatalogueTests: XCTestCase {
     }
 
     func testTheStackingLineIsSaidWhicheverWayIsShorter() {
-        // Rounded rewrites the brick's outline, so its only argument is with the three
-        // styles that do the same - and naming those three is shorter than naming the nine
-        // it takes
+        // Rounded rewrites the brick's outline, so its only argument is with the styles that
+        // do the same - and naming those is shorter than naming the nine it takes
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .rounded),
-                       "Any but Convex, Concave, Wedge, Breathing")
+                       "Any but Convex, Concave, Wedge, Diamond, Breathing")
         // Breathing since round 142: a face drawn once at the brick's size does not follow a
-        // brick that then changes size
+        // brick that then changes size. Diamond since round 234, and it is the fourth shape
+        // rather than a new kind of exclusion - which is what this line is here to show: a
+        // shape added to the enum lands in this sentence without anybody writing it down
 
         // Spinning refuses the shapes and three others now, which is enough of the list that
         // naming what it *takes* became the shorter sentence - which is the whole point of

@@ -135,7 +135,7 @@ enum BrickTypeIcons {
         case .fixed: return GameScene.fixedBrickColour
         case .flashing: return #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         case .breathing: return GameScene.breathingBrickColour
-        case .rounded, .spinning, .convex, .concave, .wedge: return standardColour
+        case .rounded, .spinning, .convex, .concave, .wedge, .diamond: return standardColour
         }
     }
     // The six field-changing roles keep the scene's own constants. Rounded and Spinning are
@@ -155,14 +155,16 @@ enum BrickTypeIcons {
             artwork(shapedArtwork("BrickNormal", .wedge))?.tinted(tint).draw(in: frame)
             return
 
-        case .convex, .concave:
-            // No drawn art for these two yet (§8.5), so they keep the approximation: an
+        case .convex, .concave, .diamond:
+            // No drawn art for these three yet (§8.5), so they keep the approximation: an
             // ordinary brick clipped to the very path the game builds the body and the outline
             // from, so the picture cannot drift from the shape. `EndlessIIFaceGeometry` draws
             // in scene coordinates (y up) about the shape's own centre, which is what the
             // transform below undoes.
             //
-            // The day that art lands, these join the case above and this branch goes
+            // The day that art lands, these join the case above and this branch goes.
+            // Diamond needs it least: its silhouette is four straight edges, so the clipped
+            // approximation is the shape rather than a flat-sided guess at a curve
             guard let face = style.face else { return }
             context.saveGState()
             context.translateBy(x: frame.midX, y: frame.midY)

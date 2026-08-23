@@ -43,9 +43,9 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     case gravity, moving, directional, exploding, spawner, portal
     /// Anchors itself where it is when first struck (§4.11a).
     case fixed
-    /// The shaped faces (§12.0's brick geometries) - a dome, a notch and a right triangle.
-    /// They change where the ball goes and nothing else about the brick.
-    case convex, concave, wedge
+    /// The shaped faces (§12.0's brick geometries) - a dome, a notch, a right triangle and
+    /// a rhombus. They change where the ball goes and nothing else about the brick.
+    case convex, concave, wedge, diamond
 
     /// The shape this style is, if it is one. See EndlessIIFaces.
     var face: EndlessIIFace? {
@@ -53,6 +53,7 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
         case .convex: return .convex
         case .concave: return .concave
         case .wedge: return .wedge
+        case .diamond: return .diamond
         default: return nil
         }
     }
@@ -93,7 +94,7 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
             // It needs a first hit to anchor it and a second to destroy it, so a behaviour
             // that never takes damage would leave it as an ordinary brick that never fixes
             return behaviour != .indestructibleAlways
-        case .convex, .concave, .wedge:
+        case .convex, .concave, .wedge, .diamond:
             // Any behaviour but Invisible. An invisible brick is not drawn until it is
             // struck, so a shaped one would be answering hits with a slope nobody can see -
             // and the whole appeal of a shaped brick is aiming off it deliberately
