@@ -68,7 +68,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// The standard section's rows, with everything the Recent section already lists
     /// taken out (play-test round 7): one list per power-up, not the same one twice.
     var standardPowerUpRows: [Int] {
-        let order = LevelPackSetup().powerUpReferenceOrder
+        let order = LevelPackSetup.referenceOrder
         return InGameRecents.standardRows(
             rowCount: order.count,
             recents: showsRecentsSection ? InGameRecents.shared.powerUpIndices : [],
@@ -96,7 +96,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// like "does not exist".
     var powerUpIndicesByMode: (everyMode: [Int], mayhem: [Int]) {
         let setup = LevelPackSetup()
-        let indices = standardPowerUpRows.map { setup.powerUpReferenceOrder[$0] }
+        let indices = standardPowerUpRows.map { LevelPackSetup.referenceOrder[$0] }
         return (indices.filter { setup.isEndlessIIPowerUp($0) == false },
                 indices.filter { setup.isEndlessIIPowerUp($0) })
     }
@@ -115,7 +115,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         let rows = standardPowerUpRows
         let row = rows.indices.contains(indexPath.row) ? rows[indexPath.row] : indexPath.row
-        let order = LevelPackSetup().powerUpReferenceOrder
+        let order = LevelPackSetup.referenceOrder
         return order.indices.contains(row) ? order[row] : 0
     }
 

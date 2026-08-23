@@ -373,3 +373,130 @@ final class PowerUpDurationTextTests: XCTestCase {
         }
     }
 }
+
+/// The power-ups reference page's lists are worked out once, not per cell.
+///
+/// James, round 226: "power-ups info screen is crashing." Round 217 wrote
+/// `powerUpReferenceOrder` as an ordinary computed property that asked for
+/// `retiredPowerUpIndices` *inside its own filter* - so the set was rebuilt for each of
+/// sixty-six entries, and building it scans every name against a catalogue that answers by
+/// walking its own sixty-six. A quarter of a million string comparisons for one call, and the
+/// page asks from its row count, from every cell and again from every cell's lookup.
+///
+/// A watchdog kill is what that looks like from the outside, which is why the report says
+/// crash rather than slow.
+final class ReferenceOrderIsCheapTests: XCTestCase {
+
+    /// A hundred thousand lookups, which is more than a layout pass asks for.
+    ///
+    /// A tripwire for the shape coming back rather than a benchmark. Worked out once, this is
+    /// a hundred thousand array reads and takes no measurable time; worked out per call, it
+    /// was a quarter of a million string comparisons *each*, and the page asks from its row
+    /// count, from every cell, and again from every cell's lookup.
+    ///
+    /// Asked of the shared list rather than through a fresh `LevelPackSetup`, deliberately:
+    /// building one of those allocates sixty-six images, which is its own cost and would drown
+    /// the thing under test.
+    func testAskingForTheReferenceOrderAHundredThousandTimesIsInstant() {
+        let started = Date()
+        var total = 0
+        for _ in 0..<100_000 { total += LevelPackSetup.referenceOrder.count }
+        XCTAssertGreaterThan(total, 0)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 2,
+                          "the reference order is being worked out again on every call")
+    }
+
+    /// And the shared list is the same list the instance property gives.
+    func testTheSharedListAndTheInstanceOneAgree() {
+        XCTAssertEqual(LevelPackSetup.referenceOrder, LevelPackSetup().powerUpReferenceOrder)
+    }
+}
+
+/// Every square the power-ups reference page can draw, drawn.
+///
+/// James, round 226: "power-ups info screen is crashing." The page reads a dozen arrays by a
+/// power-up's index and two more by the row's, and one of them being a different length from
+/// the rest is an out-of-range crash rather than a wrong label. This walks every index path
+/// the page will ever be asked for, in each of the three arrangements it uses, and touches
+/// what a cell touches.
+final class PowerUpReferencePageTests: XCTestCase {
+
+    private func page(recents: Bool) -> ItemsDetailViewController {
+        let page = ItemsDetailViewController()
+        page.senderID = 2
+        page.navigatedFrom = recents ? "PauseMenu" : "MainMenu"
+        return page
+    }
+
+    private func walk(_ page: ItemsDetailViewController, file: StaticString = #filePath,
+                      line: UInt = #line) {
+        let setup = LevelPackSetup()
+        let sections = page.showsRecentsSection || page.showsModeSections ? 2 : 1
+        for section in 0..<sections {
+            let count = page.collectionView(UICollectionView(frame: .zero,
+                                                             collectionViewLayout: UICollectionViewFlowLayout()),
+                                            numberOfItemsInSection: section)
+            _ = count
+        }
+        // The counts come from the grid; what a cell then reads is below, over every row the
+        // page could hand out - deliberately more than the count, because the question is
+        // whether any of these arrays is short, not whether the count is right
+
+        for row in 0..<setup.powerUpNameArray.count {
+            for section in 0..<sections {
+                let index = page.powerUpIndex(at: IndexPath(row: row, section: section))
+                XCTAssertTrue(setup.powerUpNameArray.indices.contains(index),
+                              "row \(row) of section \(section) asked for power-up \(index)",
+                              file: file, line: line)
+                _ = setup.powerUpNameArray[index]
+                _ = setup.powerUpDescriptionArray[index]
+                _ = setup.powerUpMultiplierArray[index]
+                _ = setup.powerUpTimerArray[index]
+                _ = setup.powerUpImageArray[index]
+                _ = setup.powerUpUnlockedDescriptionArray[index]
+                _ = setup.powerUpHiddenUnlockedDescriptionArray[index]
+                _ = setup.powerUpPackOrderArray[index]
+                _ = page.totalStatsArray[0].powerUpUnlockedArray[index]
+                _ = page.totalStatsArray[0].powerupsCollected[index]
+                _ = page.totalStatsArray[0].powerupsGenerated[index]
+            }
+        }
+    }
+
+    /// From the menus, where the page splits itself by mode.
+    func testEverySquareFromTheMenus() {
+        let page = page(recents: false)
+        page.totalStatsArray = [TotalStats()]
+        XCTAssertTrue(page.showsModeSections)
+        walk(page)
+    }
+
+    /// From the pause menu, where the split is what this run has seen.
+    func testEverySquareFromThePauseMenu() {
+        InGameRecents.shared.collectedPowerUp(3)
+        InGameRecents.shared.collectedPowerUp(40)
+        let page = page(recents: true)
+        page.totalStatsArray = [TotalStats()]
+        XCTAssertTrue(page.showsRecentsSection)
+        walk(page)
+    }
+
+    /// And with a player's file written before the last two power-ups existed.
+    ///
+    /// The arrays are padded on load, and this is the check that the padding is what the page
+    /// relies on rather than luck: a file from an older build is exactly what James is playing
+    /// with and a fresh simulator is not.
+    func testEverySquareWithAnOlderPlayersFile() {
+        var older = TotalStats()
+        older.powerupsCollected = Array(older.powerupsCollected.dropLast(2))
+        older.powerupsGenerated = Array(older.powerupsGenerated.dropLast(2))
+        older.powerUpUnlockedArray = Array(older.powerUpUnlockedArray.dropLast(2))
+        older.makeStoredArraysConsistent()
+
+        for recents in [false, true] {
+            let page = page(recents: recents)
+            page.totalStatsArray = [older]
+            walk(page)
+        }
+    }
+}

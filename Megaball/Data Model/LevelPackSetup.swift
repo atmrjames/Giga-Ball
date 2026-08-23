@@ -665,20 +665,40 @@ class LevelPackSetup {
     /// of every index - a display order that quietly dropped one would hide a power-up nobody
     /// meant to hide, and a test says so - so the omission belongs here, where it is the
     /// catalogue's `.retired` doing the omitting. Retire another and this follows on its own.
-    var powerUpReferenceOrder: [Int] {
-        powerUpCorrectOrderArray.filter { retiredPowerUpIndices.contains($0) == false }
-    }
+    var powerUpReferenceOrder: [Int] { LevelPackSetup.referenceOrder }
 
     /// The slots that are kept for the file's sake and are no longer part of the game.
     ///
     /// Nothing may be counted, listed or offered by these indices. The arrays keep their
     /// length - that is the whole point of retiring rather than deleting - so every place that
     /// walks them has to know which entries are furniture.
-    var retiredPowerUpIndices: Set<Int> {
-        Set(powerUpNameArray.indices.filter {
-            PowerUpCatalogue.powerUp(named: powerUpNameArray[$0])?.availability == .retired
+    var retiredPowerUpIndices: Set<Int> { LevelPackSetup.retiredIndices }
+
+    /// **Worked out once for the whole process, and that is not an optimisation.**
+    ///
+    /// Round 217 wrote these as ordinary computed properties, which read innocently and were
+    /// not: `powerUpReferenceOrder` asked for `retiredPowerUpIndices` *inside its own filter*,
+    /// so the set was rebuilt for each of sixty-six entries, and building it scans every name
+    /// against a catalogue that answers by walking its own sixty-six. That is a quarter of a
+    /// million string comparisons for one call - and the power-ups page calls it from its row
+    /// count, from every cell, and again from every cell's lookup, each time through a freshly
+    /// constructed `LevelPackSetup`. James's report was "power-ups info screen is crashing";
+    /// a watchdog kill is what that looks like from the outside.
+    ///
+    /// Both answers depend on nothing but the arrays declared above, which are constants, so
+    /// there is nothing for a per-instance answer to be right about that a shared one is not.
+    private static let retiredIndices: Set<Int> = {
+        let setup = LevelPackSetup()
+        return Set(setup.powerUpNameArray.indices.filter {
+            PowerUpCatalogue.powerUp(named: setup.powerUpNameArray[$0])?.availability == .retired
         })
-    }
+    }()
+
+    static let referenceOrder: [Int] = {
+        let setup = LevelPackSetup()
+        let retired = LevelPackSetup.retiredIndices
+        return setup.powerUpCorrectOrderArray.filter { retired.contains($0) == false }
+    }()
     // 64 and 65 (the wedges) display beside 55, 56 and 57 (the other shaped faces), so the
     // reference page shows the five shapes together. 58 (Jagged) stays in the list because
     // this is a permutation of every index - retired is not removed (round 213)
