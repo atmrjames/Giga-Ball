@@ -104,6 +104,17 @@ extension UIViewController {
 
     static let menuModeLogoSize: CGFloat = 190
 
+    /// The mode's icon on the two screens the *game* shows: the level intro and the pause
+    /// and game-over screen.
+    ///
+    /// James, round 233: "make the game mode logos bigger on the level splash screen
+    /// animations and pause screens." They were 56 and 42, set separately, and the smaller of
+    /// the two sat under a wordmark and a heading and read as a bullet point rather than as
+    /// the thing naming what you are playing. One number for both now, because they are the
+    /// same badge doing the same job on two screens a player sees seconds apart - and a menu
+    /// wears the same artwork at 190, so there is a long way to grow before it is large.
+    static let inGameModeIconSize: CGFloat = 84
+
     /// What that logo shrinks to when a list scrolls up under it.
     ///
     /// The pack grid is what the screen is for, and at rest the logo takes a third of it.

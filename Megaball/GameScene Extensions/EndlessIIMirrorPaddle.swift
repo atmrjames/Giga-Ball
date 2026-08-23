@@ -191,7 +191,7 @@ extension GameScene {
         paddle.childNode(withName: GameScene.endlessIIPaddleShadowName)?.removeFromParent()
     }
 
-    /// The twin's body: a rectangle, or the shape's own silhouette while one is running.
+    /// The twin's body: a rectangle, or the reflected shape's silhouette while one is running.
     ///
     /// **Traced only while a shape owns the bounce**, not always. A plain mirror has been a
     /// rectangle since round 180 and bounces predictably because of it; tracing the ordinary
@@ -200,8 +200,7 @@ extension GameScene {
     /// (round 213), so a flat mirror wearing a domed picture would show one face and give
     /// another, which is the one parity round 211 said was worth refusing.
     func endlessIIMirrorPaddleBody(size: CGSize) -> SKPhysicsBody {
-        endlessIIMirrorPaddleBodyArt = endlessIIShapeOwnsTheBounce
-            ? endlessIIPaddleShapeArtName : nil
+        endlessIIMirrorPaddleBodyArt = endlessIIMirrorPaddleShapeArtName
         let body: SKPhysicsBody
         if endlessIIShapeOwnsTheBounce, let art = endlessIIMirrorPaddleDress {
             body = SKPhysicsBody(texture: art, size: size)
@@ -221,12 +220,35 @@ extension GameScene {
         return body
     }
 
-    /// The picture the mirror wears: the paddle's, wherever the paddle is keeping it.
+    /// The shape the twin wears: the paddle's, reflected.
+    ///
+    /// Nil when no shape is running, which is every ordinary paddle in the mode.
+    var endlessIIMirrorPaddleSurface: PaddleBounce.Surface? {
+        endlessIIPaddleSurfaceClock.isRunning ? endlessIIPaddleSurface?.mirrored : nil
+    }
+
+    /// The artwork name for that reflected shape, or nil where the shape is not owning the
+    /// bounce - the same question `endlessIIPaddleShapeArtName` answers for the real paddle.
+    var endlessIIMirrorPaddleShapeArtName: String? {
+        guard endlessIIShapeOwnsTheBounce, let mirrored = endlessIIMirrorPaddleSurface
+        else { return nil }
+        return endlessIIPaddleShapeTextureName(mirrored)
+    }
+
+    /// The picture the mirror wears: the paddle's, wherever the paddle is keeping it - or the
+    /// reflection of the paddle's shape, while one is running.
     ///
     /// The Retro theme draws its paddle on `paddleRetroTexture` rather than on the paddle
     /// sprite, so asking the sprite would dress the mirror as a plain bar next to a paddle
     /// that is anything but. Round 166 learned this the hard way on Double Paddle.
+    ///
+    /// **The reflection is read off the shape rather than off the paddle's sprite** (James,
+    /// round 233). Copying the sprite gave a wedge-left paddle a wedge-left twin, which is a
+    /// duplicate and not a mirror. Because the body below is traced from whatever this
+    /// returns, naming the mirrored picture here is the whole of the change: the twin bounces
+    /// the ball off the reflected face without anything else being told about it.
     var endlessIIMirrorPaddleDress: SKTexture? {
+        if let art = endlessIIMirrorPaddleShapeArtName { return SKTexture(imageNamed: art) }
         if paddleTexture == retroPaddle, let art = paddleRetroTexture.texture { return art }
         return paddle.texture ?? paddleTexture
     }
@@ -254,7 +276,7 @@ extension GameScene {
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
 
-        let wantedArt = endlessIIShapeOwnsTheBounce ? endlessIIPaddleShapeArtName : nil
+        let wantedArt = endlessIIMirrorPaddleShapeArtName
         if mirror.size != paddle.size || wantedArt != endlessIIMirrorPaddleBodyArt,
            paddle.size.width > 0, paddle.size.height > 0 {
             mirror.size = paddle.size
@@ -328,7 +350,7 @@ extension GameScene {
         let clamped = min(max(collision, -1), 1)
         body.velocity = PaddleBounce.velocity(arriving: arriving,
                                               collision: PaddleBounce.shaped(
-                                                  clamped, by: endlessIIPaddleSurface),
+                                                  clamped, by: endlessIIMirrorPaddleSurface),
                                               adjustmentK: PaddleBounce.adjustmentK,
                                               influence: endlessIIPaddleAngleInfluence,
                                               minimumDeg: PaddleBounce.minimumDeg,

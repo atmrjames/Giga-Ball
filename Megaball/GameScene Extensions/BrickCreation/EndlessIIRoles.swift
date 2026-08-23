@@ -184,7 +184,7 @@ enum EndlessIIRole: String {
 }
 
 /// Which face of a Directional brick can be hurt.
-enum EndlessIISide: String {
+enum EndlessIISide: String, CaseIterable {
     case top, bottom, left, right
 }
 

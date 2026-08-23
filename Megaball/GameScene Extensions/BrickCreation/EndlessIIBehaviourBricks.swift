@@ -40,6 +40,9 @@ extension GameScene {
     static let portalYellowColour = UIColor(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
 
     private static let glyphName = "endlessIIGlyph"
+    /// The Directional brick's bright bar, named apart from the other glyphs so it can be
+    /// replaced on its own when the brick is re-pointed.
+    static let directionalEdgeName = "endlessIIDirectionalEdge"
     /// How fast a Gravity brick falls and a Moving brick wanders, in cells per second.
     private static let gravityFallSpeed: CGFloat = 6
     private static let movingSpeed: CGFloat = 1.1
@@ -236,26 +239,43 @@ extension GameScene {
         // a brick that only takes damage from above or below is something a player can solve
         // by waiting for the right pass. Left and right ask for a specific angle, which is a
         // much harder shot - so they stay rare until a run is well underway.
-        var sides: [EndlessIISide] = endlessHeight >= GameScene.endlessIISideFacingFrom
+        let preferred: [EndlessIISide] = endlessHeight >= GameScene.endlessIISideFacingFrom
             || Int.random(in: 1...100) <= GameScene.endlessIISideFacingEarlyChance
             ? [.top, .bottom, .left, .right]
             : [.top, .bottom]
 
-        let reachable = sides.filter { endlessIISideIsReachable($0, from: brick) }
-        if reachable.isEmpty == false { sides = reachable }
-        // A vulnerable side facing an Indestructible neighbour is a brick that cannot be
-        // destroyed at all, which is not a hard brick but a broken one. If every side is
-        // blocked the brick stays as it is rather than becoming an accidental wall
-
+        let open = endlessIIOpenSides(from: brick)
         let side: EndlessIISide = brick.endlessIIVulnerableSide
-            ?? sides.randomElement() ?? .bottom
+            ?? preferred.filter(open.contains).randomElement()
+            ?? open.randomElement()
+            ?? .bottom
         // A side the brick already carries is kept. That is how a resumed run comes back with
         // the same face open (round 174): the restore writes the saved side before applying the
         // role, and rolling here would throw it away - the same bargain `makeFace` makes with
-        // a shaped brick's orientation
+        // a shaped brick's orientation.
+        //
+        // Otherwise the depth's own sides are preferred, and **a brick whose depth sides are
+        // all blocked reaches past them to any open side at all** rather than settling for a
+        // blocked one (James, round 233: a directional brick "shouldn't have its open face
+        // next to an indestructible brick"). This used to keep the depth pool whenever none of
+        // it was reachable, which meant a brick with an Indestructible above and another below
+        // was handed one of those two faces and could never be destroyed - a brick with its
+        // one soft side pressed against a wall, when it had a perfectly good side going spare.
+        // An early left-facing brick is rarer than the depth ramp intends; an impossible brick
+        // is worse than rare.
+        //
+        // `.bottom` is the last resort and is never reached from the generator: nothing with
+        // no open side at all is offered the role (see `endlessIICanTake`). It is here for the
+        // restore path, which applies the role to whatever the save says was directional
         brick.endlessIIRole = .directional
         brick.endlessIIVulnerableSide = side
         tint(brick, GameScene.directionalBrickColour)
+        endlessIIDrawVulnerableEdge(on: brick, side: side)
+    }
+
+    /// Draws the bright bar that says which face is soft, replacing any bar already there.
+    func endlessIIDrawVulnerableEdge(on brick: SKSpriteNode, side: EndlessIISide) {
+        brick.childNode(withName: GameScene.directionalEdgeName)?.removeFromParent()
 
         let width = brick.size.width
         let height = brick.size.height
@@ -273,13 +293,67 @@ extension GameScene {
         }
 
         let bar = SKShapeNode(rect: edge)
-        bar.name = GameScene.glyphName
+        bar.name = GameScene.directionalEdgeName
         bar.fillColor = brickWhite
         bar.strokeColor = .clear
         bar.zPosition = 1
         bar.position = CGPoint(x: (0.5 - brick.anchorPoint.x)*width,
                                y: (0.5 - brick.anchorPoint.y)*height)
         brick.addChild(bar)
+        // Named for itself rather than sharing the general glyph name, so re-pointing a brick
+        // can take away the old bar and leave every other decoration on it alone. The sweep
+        // below is the only caller that needs that, and it needs it exactly
+    }
+
+    /// Every face of this brick the ball could actually reach.
+    ///
+    /// Empty means the brick is walled in: an Indestructible neighbour or the field's edge on
+    /// all four sides.
+    func endlessIIOpenSides(from brick: SKSpriteNode) -> [EndlessIISide] {
+        endlessIIOpenSides(from: brick, in: endlessIIOccupancy())
+    }
+
+    /// The same, against a field that has already been read.
+    func endlessIIOpenSides(from brick: SKSpriteNode,
+                            in occupancy: [EndlessIICell: [SKSpriteNode]]) -> [EndlessIISide] {
+        EndlessIISide.allCases.filter { endlessIISideIsReachable($0, from: brick, in: occupancy) }
+    }
+
+    /// Turns any Directional brick whose soft face has since been blocked to face a side the
+    /// ball can still reach.
+    ///
+    /// James, round 233: a directional brick should not "have its open face next to an
+    /// indestructible brick" or "be penned in by them". Refusing the role at generation
+    /// (`endlessIICanTake`) only answers the bricks that were already surrounded when they
+    /// arrived, and in this mode almost none of them are: **the field descends and rows are
+    /// generated above it**, so a brick with an open top face is offered that face over an
+    /// empty cell and an Indestructible brick is lowered into it a moment later. The check at
+    /// birth cannot see a row that does not exist yet.
+    ///
+    /// So the rule is enforced again after each new row, where the block actually happens. A
+    /// brick that has become impossible is turned rather than removed - it keeps its type, its
+    /// colour and its place, and only the bright bar moves - and one with nowhere left to turn
+    /// is left as it is, because the field is descending and its neighbours will not be there
+    /// for long.
+    ///
+    /// Re-pointing a brick the player has been aiming at is a real cost, and it is the smaller
+    /// one: the alternative is a brick that cannot be destroyed at all, sitting in a field
+    /// that has to be cleared.
+    func endlessIIRepointBlockedDirectionals() {
+        guard gameMode == .endlessII else { return }
+        let occupancy = endlessIIOccupancy()
+        // Read once and asked of every brick, rather than rebuilt for each of the four sides
+        // of each of them
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode,
+                  brick.endlessIIRole == .directional,
+                  let side = brick.endlessIIVulnerableSide,
+                  self.endlessIISideIsReachable(side, from: brick, in: occupancy) == false,
+                  let open = self.endlessIIOpenSides(from: brick, in: occupancy).randomElement()
+            else { return }
+            brick.endlessIIVulnerableSide = open
+            self.endlessIIDrawVulnerableEdge(on: brick, side: open)
+        }
     }
 
     /// Whether the ball could actually reach a given face of a brick.
@@ -288,6 +362,16 @@ extension GameScene {
     /// and much less predictable - the field changes constantly, and a brick that was fair
     /// when it arrived should not have to stay fair for ever.
     func endlessIISideIsReachable(_ side: EndlessIISide, from brick: SKSpriteNode) -> Bool {
+        endlessIISideIsReachable(side, from: brick, in: endlessIIOccupancy())
+    }
+
+    /// The same question against a field that has already been read.
+    ///
+    /// `endlessIIOccupancy()` walks every brick in the scene to build its map, so asking four
+    /// sides of a dozen bricks the short way is fifty of those walks. The sweep below reads
+    /// the field once and asks with this.
+    func endlessIISideIsReachable(_ side: EndlessIISide, from brick: SKSpriteNode,
+                                  in occupancy: [EndlessIICell: [SKSpriteNode]]) -> Bool {
         let cell = endlessIICell(of: brick)
 
         // A wall is not something the ball can get behind. A brick in the outermost column
@@ -303,7 +387,7 @@ extension GameScene {
         case .left: beyond = EndlessIICell(column: cell.column - 1, row: cell.row)
         case .right: beyond = EndlessIICell(column: cell.column + 1, row: cell.row)
         }
-        let neighbours = endlessIIOccupancy()[beyond] ?? []
+        let neighbours = occupancy[beyond] ?? []
         return neighbours.allSatisfy { $0.texture != brickIndestructible1Texture
                                     && $0.texture != brickIndestructible2Texture }
         // Every brick in the cell, not whichever one answered for it. A vulnerable side facing

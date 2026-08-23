@@ -463,9 +463,14 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
     func testTheRingShowsTheTurnsAsSegments() {
         let scene = paddleScene()
         scene.endlessIICollectInertPaddle()
-        let entry = scene.endlessIIPaddleRingEntries().first
+        let entry = scene.endlessIIPaddleRingEntries()
+            .first { $0.id == "endlessIIInertPaddle" }
         XCTAssertEqual(entry?.segments, Int(GameScene.endlessIIPaddlePowerUpTurns),
                        "five marks say five turns, the way the sticky paddle's ring does")
+        // Asked for by name rather than taken as the first entry. `first` is whichever clock
+        // comes earliest in the ring's own order, so a second clock running for any reason
+        // makes this test measure a different power-up and report the answer as this one's -
+        // which it did once, in a full-suite run that has not repeated
     }
 
     /// And a ring measured in seconds draws no marks at all.
@@ -476,7 +481,9 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
     func testATimedPaddlePowerUpsRingIsNotSegmented() {
         let scene = paddleScene()
         scene.endlessIICollectPaddleHalo()
-        let entry = scene.endlessIIPaddleRingEntries().first
+        let entry = scene.endlessIIPaddleRingEntries()
+            .first { $0.id == "endlessIIPaddleHalo" }
+        XCTAssertNotNil(entry, "the halo's own ring, not whichever one happens to be first")
         XCTAssertNil(entry?.segments, "the halo runs on seconds now, so it has no turns to mark")
     }
 
@@ -1408,13 +1415,64 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         scene.endlessIICollectPaddleSurface(.wedgeLeft)
         scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeLeft"
         scene.tickEndlessIIMirrorPaddle()
-        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeLeft")
+        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeRight")
 
         scene.endlessIICollectPaddleSurface(.wedgeRight)
         scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeRight"
         scene.tickEndlessIIMirrorPaddle()
-        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeRight",
+        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeLeft",
                        "the twin was still sloped the old way")
+    }
+
+    /// A wedge-left paddle gets a wedge-right twin, in the picture and in the body both.
+    ///
+    /// "The mirror paddle should be a mirror of the original paddle, that includes the
+    /// paddle's shape. e.g. if the original paddle is wedge left, the mirror paddle should be
+    /// wedge right" (James, round 233). The twin wore the paddle's own picture, which for the
+    /// one pair of faces that is not symmetrical made it a copy rather than a reflection: two
+    /// paddles sloping the same way, on the surface whose whole job is to be the opposite one.
+    func testTheMirrorWearsTheReflectionOfAWedge() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPaddleSurface(.wedgeLeft)
+        scene.endlessIIPaddleShapeArtName = "regularPaddleWedgeLeft"
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertEqual(scene.endlessIIMirrorPaddleSurface, .wedgeRight,
+                       "the twin sloped the same way as the paddle")
+        XCTAssertEqual(scene.endlessIIMirrorPaddleShapeArtName, "regularPaddleWedgeRight")
+        XCTAssertEqual(scene.endlessIIMirrorPaddleBodyArt, "regularPaddleWedgeRight",
+                       "the picture was reflected and the body it bounces off was not")
+    }
+
+    /// A symmetrical face is its own reflection, so the twin wears exactly what the paddle has.
+    ///
+    /// Worth pinning: the cheap way to mirror a sprite is a negative `xScale`, and it would
+    /// have looked right on every shape here while leaving the traced body's handedness up to
+    /// the engine. Naming the reflected artwork instead means a face with no drawn opposite -
+    /// which is all four of these - keeps the picture it already had rather than an undefined
+    /// one.
+    func testASymmetricalShapeIsItsOwnReflection() {
+        for surface in [PaddleBounce.Surface.convex, .concave, .wavy, .jagged] {
+            XCTAssertEqual(surface.mirrored, surface,
+                           "\(surface.displayName) was swapped for a face nobody has drawn")
+        }
+        XCTAssertEqual(PaddleBounce.Surface.wedgeLeft.mirrored, .wedgeRight)
+        XCTAssertEqual(PaddleBounce.Surface.wedgeRight.mirrored, .wedgeLeft)
+    }
+
+    /// And the formula fallback is reflected too, for a face whose art is missing.
+    ///
+    /// The two wedges are the one pair `PaddleBounce.shaped` gives genuinely different answers
+    /// for - every other face is odd, so its reflection is itself - and the fallback is what
+    /// answers when a theme has no shaped artwork. A mirror that traced the reflection but
+    /// calculated the original would slope one way in the picture and the other in the bounce.
+    func testTheFallbackFormulaIsReflectedAsWell() {
+        XCTAssertEqual(PaddleBounce.shaped(0, by: .wedgeLeft.mirrored),
+                       PaddleBounce.shaped(0, by: .wedgeRight), accuracy: 0.0001)
+        XCTAssertNotEqual(PaddleBounce.shaped(0, by: .wedgeLeft),
+                          PaddleBounce.shaped(0, by: .wedgeRight),
+                          "the two wedges stopped being opposites and this test proves nothing")
     }
 
     /// With no shape running it goes back to being a rectangle.

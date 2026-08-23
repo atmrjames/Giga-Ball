@@ -824,6 +824,11 @@ extension GameScene {
         applyEndlessIIRoles(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend
 
+        endlessIIRepointBlockedDirectionals()
+        // And the whole field, not just this row: a new row is what blocks the face of a
+        // Directional brick in the row beneath it, and neither of the lines above can see a
+        // brick they did not make
+
         if hapticsSetting {
             lightHaptic.impactOccurred()
         }

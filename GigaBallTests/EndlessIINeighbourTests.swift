@@ -305,6 +305,96 @@ final class EndlessIINeighbourTests: XCTestCase {
         XCTAssertTrue(scene.endlessIISideIsReachable(.right, from: middle))
     }
 
+    /// A brick with Indestructibles above and below faces sideways rather than into one.
+    func testASandwichedBrickReachesPastItsDepthSidesForAnOpenOne() {
+        // "Directional bricks shouldn't have their open face next to an indestructible brick"
+        // (James, round 233). Top and bottom are the only faces a shallow run offers, and the
+        // old code kept that pool whenever none of it was reachable - so a brick with an
+        // Indestructible above it and another below it was given one of those two anyway and
+        // could never be destroyed, with both side faces standing open
+        let scene = makeScene()
+        let middle = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        wall(scene, at: CGPoint(x: 0, y: 200 + cell.height))
+        wall(scene, at: CGPoint(x: 0, y: 200 - cell.height))
+
+        XCTAssertEqual(Set(scene.endlessIIOpenSides(from: middle)), Set([.left, .right]))
+
+        scene.gameMode = .endlessII
+        scene.endlessHeight = 1
+        // Shallow, so the depth pool is top and bottom only - the case that used to break
+        for _ in 0..<20 {
+            let brick = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+            scene.makeDirectional(brick)
+            XCTAssertTrue([.left, .right].contains(brick.endlessIIVulnerableSide),
+                          "the soft face was pressed against an Indestructible brick")
+            brick.removeFromParent()
+        }
+    }
+
+    /// And one walled in on all four sides is not offered the role at all.
+    func testAPennedInBrickIsNotMadeDirectional() {
+        // "Directional bricks shouldn't ... be penned in by them." A brick with no reachable
+        // face is not a hard brick, it is a second Indestructible one wearing a bright bar
+        // that promises otherwise
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        let middle = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        for offset in [CGPoint(x: 0, y: cell.height), CGPoint(x: 0, y: -cell.height),
+                       CGPoint(x: cell.width, y: 0), CGPoint(x: -cell.width, y: 0)] {
+            wall(scene, at: CGPoint(x: offset.x, y: 200 + offset.y))
+        }
+
+        XCTAssertTrue(scene.endlessIIOpenSides(from: middle).isEmpty)
+        XCTAssertFalse(scene.endlessIICanTake(.directional, middle),
+                       "a brick with nowhere to be hit from was still given a soft face")
+    }
+
+    /// A face blocked by a row that arrived later is turned to one that is not.
+    func testANewRowTurnsADirectionalBrickThatItBlocked() {
+        // The check at birth cannot answer this one: the field descends and rows are generated
+        // above it, so a brick is offered its top face over an empty cell and an Indestructible
+        // brick is lowered into that cell afterwards. Enforced again where the block happens
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        let brick = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        brick.endlessIIRole = .directional
+        brick.endlessIIVulnerableSide = .top
+        scene.endlessIIDrawVulnerableEdge(on: brick, side: .top)
+
+        wall(scene, at: CGPoint(x: 0, y: 200 + cell.height))
+        scene.endlessIIRepointBlockedDirectionals()
+
+        XCTAssertNotEqual(brick.endlessIIVulnerableSide, .top,
+                          "the brick kept a face nothing can reach any more")
+        XCTAssertTrue(scene.endlessIISideIsReachable(brick.endlessIIVulnerableSide ?? .top,
+                                                     from: brick))
+        XCTAssertNotNil(brick.childNode(withName: GameScene.directionalEdgeName),
+                        "the bar has to move with the face, or the brick lies about itself")
+    }
+
+    /// A face that is still open is left exactly where it was.
+    func testTheSweepLeavesAReadableBrickAlone() {
+        // Re-pointing a brick the player has been aiming at is a real cost, so it happens only
+        // to bricks that have become impossible - never as a tidy-up
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        let brick = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        brick.endlessIIRole = .directional
+        brick.endlessIIVulnerableSide = .top
+        wall(scene, at: CGPoint(x: 0, y: 200 - cell.height))
+
+        scene.endlessIIRepointBlockedDirectionals()
+        XCTAssertEqual(brick.endlessIIVulnerableSide, .top)
+    }
+
+    /// An Indestructible brick, for the tests above.
+    @discardableResult
+    private func wall(_ scene: GameScene, at point: CGPoint) -> SKSpriteNode {
+        let brick = addBrick(scene, at: point, size: cell)
+        brick.texture = scene.brickIndestructible1Texture
+        return brick
+    }
+
     // MARK: - Density
 
     func testEmptyRowsAreNotAllowedToRunOn() {

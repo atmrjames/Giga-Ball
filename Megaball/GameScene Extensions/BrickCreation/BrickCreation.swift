@@ -101,6 +101,9 @@ extension GameScene {
             applyEndlessIISizes(to: &brickBuildArray)
             applyEndlessIIBehaviours(to: brickBuildArray)
             applyEndlessIIRoles(to: brickBuildArray)
+            endlessIIRepointBlockedDirectionals()
+            // The starting field is built a row at a time as well, so a Directional brick in
+            // it can be blocked by the row that arrives above it just as one mid-run can
         }
         // Endless 2.0 only, and after the animation above, which resets the colour blend.
         // Sizes here means Tiny only - Big is built by the row generator, which is the only

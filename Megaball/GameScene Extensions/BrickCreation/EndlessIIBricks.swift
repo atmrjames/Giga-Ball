@@ -518,6 +518,15 @@ extension GameScene {
             return endlessIISpinners.contains {
                 $0.brick.parent != nil && endlessIICell(of: $0.brick).column == column
             } == false
+        case .directional:
+            // **Never a brick with no way in** (James, round 233: a directional brick should
+            // not "be penned in" by Indestructible bricks). A soft face needs somewhere the
+            // ball can reach it from, and a brick walled in on all four sides has nowhere at
+            // all - so it stays the plain brick it already is rather than becoming a second
+            // Indestructible that looks destructible. The role is declined here rather than
+            // fudged in `makeDirectional`, because a brick that cannot carry a style should
+            // not carry it: refusing leaves the brick free to draw a different one
+            return endlessIIOpenSides(from: brick).isEmpty == false
         case .moving:
             // Both work out where they may go by looking at a neighbouring cell, and both
             // measure from the node's position. On a Big brick neither holds: the cell to

@@ -460,8 +460,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             icon.centerXAnchor.constraint(equalTo: packNameLabel.centerXAnchor),
             icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor, constant: -6),
             // Close under the icon (play-test round 12: "nearer the title")
-            icon.widthAnchor.constraint(equalToConstant: 56),
-            icon.heightAnchor.constraint(equalToConstant: 56),
+            icon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
+            icon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
         ])
         modeIconView = icon
     }

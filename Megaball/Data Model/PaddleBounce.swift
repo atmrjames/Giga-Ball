@@ -141,6 +141,26 @@ enum PaddleBounce {
 
         /// The largest code a save can legitimately hold, for the clamp on the way back in.
         static var highestSavedCode: Int { allCases.map(\.savedCode).max() ?? 0 }
+
+        /// This face seen in a mirror.
+        ///
+        /// James, round 233: "the mirror paddle should be a mirror of the original paddle,
+        /// that includes the paddle's shape. e.g. if the original paddle is wedge left, the
+        /// mirror paddle should be wedge right."
+        ///
+        /// Only the wedges change, and that is not a shortcut. Convex and concave are
+        /// symmetrical about their middle, so each one *is* its own reflection and swapping it
+        /// for anything else would be wrong rather than economical. Wave and Jagged are not
+        /// symmetrical, and their reflections were never drawn - a mirrored Wave would need a
+        /// sixth picture and a seventh case for a face nobody has asked to see - so they wear
+        /// themselves, which is what the mirror did for every shape until this round.
+        var mirrored: Surface {
+            switch self {
+            case .wedgeLeft: return .wedgeRight
+            case .wedgeRight: return .wedgeLeft
+            case .convex, .concave, .wavy, .jagged: return self
+            }
+        }
     }
 
     /// Where the ball *behaves* as though it landed, given the shape of the face.
