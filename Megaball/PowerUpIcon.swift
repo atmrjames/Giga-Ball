@@ -925,6 +925,31 @@ enum PowerUpIcon {
                             width: rect.width*0.20, height: rect.height*0.18))
     }
 
+    /// Always On: a switch held down - a rounded track with the pip at one end, which is the
+    /// shape every interface in the world uses for "this stays on".
+    static let twistAlwaysOn: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let height = rect.height*0.30
+        let track = CGRect(x: rect.midX - rect.width*0.28, y: rect.midY - height/2,
+                           width: rect.width*0.56, height: height)
+        context.addPath(CGPath(roundedRect: track, cornerWidth: height/2,
+                               cornerHeight: height/2, transform: nil))
+        context.strokePath()
+        dot(context, at: CGPoint(x: track.maxX - height/2, y: rect.midY), radius: height*0.3)
+    }
+
+    /// Landslide: three chevrons pointing down, which is a field on its way to you.
+    static let twistLandslide: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        for step in 0..<3 {
+            let y = rect.minY + rect.height*(0.26 + 0.20*CGFloat(step))
+            context.move(to: CGPoint(x: rect.midX - rect.width*0.20, y: y))
+            context.addLine(to: CGPoint(x: rect.midX, y: y + rect.height*0.14))
+            context.addLine(to: CGPoint(x: rect.midX + rect.width*0.20, y: y))
+            context.strokePath()
+        }
+    }
+
     /// Time Trial: a stopwatch - a circle, a stem, and a hand pointing near the top because
     /// the time on this clock is nearly up from the moment it starts.
     static let twistTimeTrial: UIImage = badge(twist) { context, rect in
@@ -1090,6 +1115,8 @@ extension DailyTwist {
         case .mayhemBricks: return PowerUpIcon.twistMayhemBricks
         case .monochromatic: return PowerUpIcon.twistMonochromatic
         case .dailyTheme: return PowerUpIcon.twistTheme
+        case .alwaysOn: return PowerUpIcon.twistAlwaysOn
+        case .landslide: return PowerUpIcon.twistLandslide
         }
     }
 

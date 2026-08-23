@@ -1877,3 +1877,216 @@ final class DailyLookAndNeutralTests: XCTestCase {
         XCTAssertEqual(noGood[wipe], 5, "Wipe should fall on both")
     }
 }
+
+/// Always On: one power-up standing all day.
+///
+/// The workbook: "permanent power-up should be randomly selected from the available timed or
+/// paddle hit based power-ups", disallowing "anything that contradicts the always on power-up
+/// / the always on power-up itself", with "the HUD power-up icon should show, but with no
+/// progression bar".
+final class DailyAlwaysOnTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func scene(_ mode: GameMode, key: String = "2026-11-15") -> GameScene {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: key, mode: mode, classicLevel: mode == .classic ? 1 : nil,
+            twists: [.alwaysOn])
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// Only power-ups that can last are drawn. An instant has nothing to be permanently on
+    /// *about* - it happens and it is over.
+    func testOnlyLastingPowerUpsAreDrawn() {
+        let setup = LevelPackSetup()
+        for day in 1...28 {
+            let key = String(format: "2026-11-%02d", day)
+            for mode in [GameMode.classic, .endless, .endlessII] {
+                guard let drawn = DailyTwist.alwaysOnPowerUp(forKey: key, mode: mode) else {
+                    return XCTFail("\(key) in \(mode.name) drew nothing at all")
+                }
+                let timer = setup.powerUpTimerArray[drawn]
+                XCTAssertTrue(timer == "10s" || timer == "5 paddle hits",
+                              "\(setup.powerUpNameArray[drawn]) lasts \"\(timer)\"")
+            }
+        }
+    }
+
+    /// The daily's own bans come first, so a permanent Lock is never drawn.
+    func testTheDailysBannedPowerUpsAreNeverDrawn() {
+        for day in 1...28 {
+            let key = String(format: "2026-11-%02d", day)
+            for mode in [GameMode.classic, .endless, .endlessII] {
+                let drawn = DailyTwist.alwaysOnPowerUp(forKey: key, mode: mode)
+                XCTAssertFalse(DailyTwist.bannedFromDailies.contains(drawn ?? -1),
+                               "\(key) drew one the daily bans")
+            }
+        }
+    }
+
+    /// Mayhem's own power-ups are not drawn outside Mayhem.
+    func testAClassicDayDrawsAClassicPowerUp() {
+        let setup = LevelPackSetup()
+        for day in 1...28 {
+            let key = String(format: "2026-11-%02d", day)
+            guard let drawn = DailyTwist.alwaysOnPowerUp(forKey: key, mode: .classic) else {
+                return XCTFail("nothing drawn")
+            }
+            XCTAssertFalse(setup.isEndlessIIPowerUp(drawn),
+                           "\(setup.powerUpNameArray[drawn]) does not exist in Classic")
+        }
+    }
+
+    /// The same day draws the same power-up, everywhere, always.
+    func testTheDrawIsTheSameEveryTime() {
+        for day in 1...14 {
+            let key = String(format: "2026-11-%02d", day)
+            XCTAssertEqual(DailyTwist.alwaysOnPowerUp(forKey: key, mode: .endlessII),
+                           DailyTwist.alwaysOnPowerUp(forKey: key, mode: .endlessII))
+        }
+    }
+
+    /// Neither the standing power-up nor anything that would end it falls.
+    func testTheStandingPowerUpAndItsRivalsDoNotDrop() {
+        let scene = scene(.endlessII)
+        guard let standing = scene.dailyAlwaysOnPowerUp else { return XCTFail("no draw") }
+        scene.powerUpProbArray = Array(repeating: 5,
+                                       count: LevelPackSetup().powerUpNameArray.count)
+        scene.applyDailyEconomyTwists()
+
+        XCTAssertEqual(scene.powerUpProbArray[standing], 0,
+                       "catching the one already on is a drop that does nothing")
+        for rival in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing) {
+            XCTAssertEqual(scene.powerUpProbArray[rival], 0,
+                           "\(LevelPackSetup().powerUpNameArray[rival]) would end the day's twist")
+        }
+    }
+
+    /// The bridge from named power-ups to indices finds them, which is the half that would
+    /// fail silently if a rename ever broke it.
+    func testTheExclusionBridgeResolvesEveryName() {
+        let names = LevelPackSetup().powerUpNameArray
+        for exclusive in EndlessIIExclusive.allCases {
+            XCTAssertTrue(names.contains(exclusive.powerUpName),
+                          "\(exclusive) is written down as \"\(exclusive.powerUpName)\", "
+                          + "which is not a power-up")
+        }
+    }
+
+    /// An ordinary day has nothing standing.
+    func testAnOrdinaryDayHasNothingStanding() {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-11-15", mode: .endlessII, classicLevel: nil, twists: [.fogOfWar])
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        XCTAssertNil(scene.dailyAlwaysOnPowerUp)
+    }
+}
+
+/// Landslide: the field comes down in Classic, on a daily only.
+final class DailyLandslideTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    /// Classic alone. The endless modes have a field that comes down at them already, and a
+    /// twist promising a landslide that delivers the mode's own cadence did nothing.
+    func testItIsAClassicTwist() {
+        XCTAssertTrue(DailyTwist.landslide.applies(to: .classic))
+        XCTAssertFalse(DailyTwist.landslide.applies(to: .endless))
+        XCTAssertFalse(DailyTwist.landslide.applies(to: .endlessII))
+    }
+
+    /// It shares a category with nothing, because the matrix allows it beside everything.
+    func testItSharesItsCategoryWithNothing() {
+        let others = DailyTwist.allCases.filter {
+            $0 != .landslide && $0.category == DailyTwist.landslide.category
+        }
+        XCTAssertTrue(others.isEmpty, "Landslide would now refuse to appear beside \(others)")
+    }
+
+    private func landslideScene() -> GameScene {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-11-15", mode: .classic, classicLevel: 1, twists: [.landslide])
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.brickHeight = 20
+        scene.minPaddleGap = 40
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        return scene
+    }
+
+    @discardableResult
+    private func brick(_ scene: GameScene, y: CGFloat) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        node.name = BrickCategoryName
+        node.position = CGPoint(x: 0, y: y)
+        scene.addChild(node)
+        return node
+    }
+
+    /// Quicksand does not fall on a Landslide day: on a day whose whole twist is the field
+    /// moving down, it cannot be told from the weather.
+    func testQuicksandDoesNotFallOnALandslideDay() {
+        let scene = landslideScene()
+        scene.powerUpProbArray = Array(repeating: 5,
+                                       count: LevelPackSetup().powerUpNameArray.count)
+        scene.applyDailyEconomyTwists()
+        XCTAssertEqual(scene.powerUpProbArray[23], 0)
+    }
+
+    /// It steps on its own cadence rather than every frame.
+    func testItStepsOnItsOwnCadence() {
+        let step = GameScene.dailyLandslideStep
+        XCTAssertFalse(GameScene.landslideIsDue(now: 1, lastStep: 0),
+                       "a first frame is a baseline, not a step")
+        XCTAssertFalse(GameScene.landslideIsDue(now: 100 + step - 0.1, lastStep: 100),
+                       "a second is not a step - the field would be gone in ten")
+        XCTAssertTrue(GameScene.landslideIsDue(now: 100 + step, lastStep: 100))
+    }
+
+    /// Slower than Mayhem's own cadence, because Classic's levels are built to be cleared
+    /// from a standing start rather than defended.
+    func testItIsSlowerThanMayhemsOwnDescent() {
+        XCTAssertGreaterThan(GameScene.dailyLandslideStep, GameScene.endlessIIDescentStep)
+    }
+
+    /// It stops rather than pushing bricks through the paddle.
+    ///
+    /// Classic has no lower limit and no way to lose to a field, so a landslide that kept
+    /// going would put bricks inside the paddle, and one that ended the run on arrival would
+    /// be inventing a way to lose that this mode has never had. It comes down to a paddle's
+    /// gap and stays there.
+    func testItStopsWhenTheFieldHasNowhereLeftToGo() {
+        let scene = landslideScene()
+        let low = brick(scene, y: scene.paddle.position.y + 10)
+        XCTAssertTrue(scene.bricksAreAtTheBottom)
+
+        let before = low.position.y
+        scene.tickDailyLandslide(0)
+        scene.tickDailyLandslide(GameScene.dailyLandslideStep + 1)
+        XCTAssertEqual(low.position.y, before, accuracy: 0.001,
+                       "the field pushed a brick further into the paddle")
+    }
+
+    /// And a day without the twist never moves anything.
+    func testAnOrdinaryDayDoesNotSlide() {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-11-15", mode: .classic, classicLevel: 1, twists: [])
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        XCTAssertFalse(scene.dailyLandslide)
+    }
+}

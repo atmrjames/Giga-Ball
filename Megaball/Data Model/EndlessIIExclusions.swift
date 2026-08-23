@@ -79,3 +79,53 @@ enum EndlessIIExclusions {
         }
     }
 }
+
+import SpriteKit
+
+extension GameScene {
+
+    /// The power-up indices that collecting this index would end.
+    ///
+    /// The bridge between `EndlessIIExclusions`, which speaks in named power-ups, and the
+    /// drop tables, which speak in indices. Built from the name array so a rename cannot
+    /// silently empty it, and returning nothing for a power-up that ends nothing - which is
+    /// most of them, and the reason this reads as short.
+    static func endlessIIExclusiveIndicesEnded(byCollecting index: Int) -> [Int] {
+        let names = LevelPackSetup().powerUpNameArray
+        guard names.indices.contains(index),
+              let collected = EndlessIIExclusive(powerUpName: names[index]) else { return [] }
+        return EndlessIIExclusions.ended(byCollecting: collected)
+            .compactMap { ended in names.firstIndex(of: ended.powerUpName) }
+    }
+}
+
+extension EndlessIIExclusive {
+
+    /// The name this power-up carries in `LevelPackSetup.powerUpNameArray`.
+    ///
+    /// Written out rather than derived from the case name: the two have drifted once already
+    /// (Ball Steering became Ball Control in round 218 while the case stayed `ballControl`),
+    /// and a mapping that guesses is a mapping that is quietly empty the next time they drift.
+    var powerUpName: String {
+        switch self {
+        case .gigaBall: return "Giga-Ball"
+        case .inertBall: return "Inert Ball"
+        case .wreckingBall: return "Wrecking Ball"
+        case .ballAura: return "Ball Aura"
+        case .stickyPaddle: return "Sticky Paddle"
+        case .aimedSticky: return "Aimed Sticky"
+        case .inertPaddle: return "Inert Paddle"
+        case .flippedAngle: return "Flipped Bounce Angle"
+        case .autoAim: return "Auto-Aim"
+        case .ballSpin: return "Ball Spin"
+        case .portalPaddle: return "Portal"
+        case .ballControl: return "Ball Control"
+        }
+    }
+
+    init?(powerUpName: String) {
+        guard let match = EndlessIIExclusive.allCases
+            .first(where: { $0.powerUpName == powerUpName }) else { return nil }
+        self = match
+    }
+}

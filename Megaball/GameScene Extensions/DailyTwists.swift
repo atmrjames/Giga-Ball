@@ -229,6 +229,28 @@ extension GameScene {
         // Wipe could fall on neither. The workbook says it plainly - No Bad News disallows the
         // -0.1 chips, No Good News disallows the +0.1 chips - and a power-up with no chip is
         // disallowed by neither
+        if session.has(.landslide) {
+            powerUpProbArray[23] = 0  // Quicksand
+            // The workbook's own disallowed list. Quicksand moves the field down and leaves it
+            // there, which on a day whose whole twist is the field moving down is a power-up
+            // that cannot be told from the weather
+        }
+
+        if let standing = dailyAlwaysOnPowerUp {
+            powerUpProbArray[standing] = 0
+            for other in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing) {
+                if powerUpProbArray.indices.contains(other) { powerUpProbArray[other] = 0 }
+            }
+            // **Neither the standing power-up nor anything that would end it** (the workbook's
+            // own disallowed list: "anything that contradicts the always on power-up / the
+            // always on power-up itself"). Catching the one that is already on is a drop that
+            // does nothing, and catching one that ends it is the day's twist being taken away
+            // by a drop roll - which is the same objection Fog of War has to Show Bricks.
+            //
+            // What contradicts what is `EndlessIIExclusions`, from round 223, so this list is
+            // the one the game already plays by rather than a second opinion about it
+        }
+
         if session.has(.powerShower) {
             powerUpProbFactor = 3
             // The drop roll is one-in-factor per destroyed brick, so smaller is rainier
@@ -261,6 +283,94 @@ extension GameScene {
                                                   themeCount: LevelPackSetup().themeNameArray.count)
         }
         return nil
+    }
+
+    /// The power-up that is on all day, or nil on a day that is not an Always On day.
+    var dailyAlwaysOnPowerUp: Int? {
+        guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active,
+              challenge.twists.contains(.alwaysOn) else { return nil }
+        return DailyTwist.alwaysOnPowerUp(forKey: challenge.dateKey, mode: challenge.mode)
+    }
+
+    /// Puts the day's standing power-up back the moment it stops.
+    ///
+    /// **Re-collected rather than made unending**, which is the whole reason this is three
+    /// lines instead of forty. Every one of the lasting power-ups already knows how to start
+    /// itself, in the one switch that has mapped a power-up to its effect since 2020; teaching
+    /// forty of them a second, permanent mode would be forty chances to teach one of them
+    /// wrongly. Asking "is it still running, and if not, collect it again" reuses the mapping
+    /// that is already right.
+    ///
+    /// What is running is `activeRecentPowerUpIndices`, which is the same question the pause
+    /// screen asks and answers for both halves of the game - the old tray bars and Mayhem's
+    /// own clocks.
+    func tickDailyAlwaysOn() {
+        guard let index = dailyAlwaysOnPowerUp else { return }
+        guard gameState.currentState is Playing, isPaused == false else { return }
+        guard activeRecentPowerUpIndices().contains(index) == false else { return }
+        guard powerUpTextureArray.indices.contains(index) else { return }
+
+        let carrier = SKSpriteNode(texture: powerUpTextureArray[index])
+        applyPowerUp(node: carrier, silently: true)
+        // Through a carrier sprite because the switch reads a texture, which is the identity
+        // every collection in the game is decided by. Silently, because nothing here is a
+        // catch: no sound, no haptic, no statistic, and nothing taken off the count of
+        // power-ups on screen - the player caught this one once, this morning, by opening the
+        // day
+    }
+
+    /// How long a Landslide waits between rows.
+    ///
+    /// Slower than Mayhem's own cadence on purpose. Classic's levels are built to be cleared
+    /// from a standing start, not defended, so a field arriving at the pace Mayhem's does
+    /// would end most levels before they could be read.
+    static let dailyLandslideStep: TimeInterval = 6
+
+    /// Whether enough has passed for the field to take another step.
+    ///
+    /// Pure, and tested as such: the tick that asks it stands down unless the scene is in
+    /// `Playing`, which a scene built in a test is not - so the cadence would otherwise be the
+    /// one part of this that nothing could check.
+    static func landslideIsDue(now: TimeInterval, lastStep: TimeInterval) -> Bool {
+        lastStep != 0 && now - lastStep >= GameScene.dailyLandslideStep
+    }
+
+    /// Whether the day's field is coming down.
+    var dailyLandslide: Bool {
+        isDailyChallenge && DailyChallengeSession.shared.has(.landslide)
+    }
+
+    /// Steps the whole field down one row, every few seconds, until it can go no lower.
+    ///
+    /// **It stops rather than kills.** Mayhem's field descending is pressure, not a death
+    /// rule - its lower limit is where bricks are *destroyed*, and the run still ends by
+    /// losing the ball. Classic has no such line, so a landslide that kept going would push
+    /// bricks through the paddle, and one that ended the run on arrival would be inventing a
+    /// way to lose that this mode has never had. It comes down to a paddle's gap above the
+    /// paddle and stays there: the level is now played in a third of the room, which is the
+    /// whole of the twist and is quite enough of it.
+    ///
+    /// Driven from `update` rather than a repeating action, the way everything in this game
+    /// that moves bricks is: `countBricks` gates on a brick having no actions, and a brick
+    /// carrying a permanent one would stop the field being counted for ever (§8.6).
+    func tickDailyLandslide(_ currentTime: TimeInterval) {
+        guard dailyLandslide, gameState.currentState is Playing, isPaused == false else {
+            dailyLandslideLastStep = currentTime
+            return
+        }
+        if dailyLandslideLastStep == 0 { dailyLandslideLastStep = currentTime }
+        guard GameScene.landslideIsDue(now: currentTime,
+                                       lastStep: dailyLandslideLastStep) else { return }
+        dailyLandslideLastStep = currentTime
+        guard bricksAreAtTheBottom == false else { return }
+
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            node.run(.moveBy(x: 0, y: -self.brickHeight, duration: 0.25))
+        }
+        if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
+        if soundsSetting { run(endlessRowDownSound) }
+        // The same step and the same sound the endless modes use, because it is the same
+        // event: a player who has met one should recognise the other
     }
 
     /// Whether the day takes the pause button away.

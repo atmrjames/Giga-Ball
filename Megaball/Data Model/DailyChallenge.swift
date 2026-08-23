@@ -97,11 +97,13 @@ enum DailyTwist: String, CaseIterable, Codable {
     case timeTrial
     case mayhemBricks
     case monochromatic, dailyTheme
+    case alwaysOn
+    case landslide
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
     enum Category: CaseIterable {
-        case economy, lives, dress, layout, nerve, tempo, look
+        case economy, lives, dress, layout, nerve, tempo, look, standing, field
 
         /// The date this category may first be *drawn* (§2.1), and the reason it exists.
         ///
@@ -118,8 +120,14 @@ enum DailyTwist: String, CaseIterable, Codable {
             case .layout: return "2026-09-01"
             case .nerve: return "2026-10-01"
             case .tempo: return "2026-10-01"
-            case .look: return "2026-11-01"
+            case .look, .standing, .field: return "2026-11-01"
             }
+            // **Three categories of one, and that is the design saying what it means.** A
+            // category is how a day refuses to draw two of a kind, and each of these three
+            // refuses only itself: James's matrix allows Always On, Landslide and the look
+            // twists beside everything except Vanilla, which is not a twist at all. Folding
+            // them into an existing category would forbid pairings he has allowed, and that
+            // is a worse lie than a short list
         }
     }
 
@@ -133,6 +141,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .timeTrial: return .tempo
         case .mayhemBricks: return .dress
         case .monochromatic, .dailyTheme: return .look
+        case .alwaysOn: return .standing
+        case .landslide: return .field
         }
         // **The look category exists for these two** (James, round 229: "ok, they are not
         // possible together then"). Both decide which theme is on screen, and his matrix
@@ -162,6 +172,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .mayhemBricks: return "Mayhem Bricks"
         case .monochromatic: return "Monochromatic"
         case .dailyTheme: return "Theme"
+        case .alwaysOn: return "Always On"
+        case .landslide: return "Landslide"
         }
     }
 
@@ -185,6 +197,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .mayhemBricks: return "The strange bricks are out in force today."
         case .monochromatic: return "All the colour is gone. Classic, and only Classic."
         case .dailyTheme: return "One theme, chosen for you, whatever you usually play in."
+        case .alwaysOn: return "One power-up is on all day, and never runs out."
+        case .landslide: return "The bricks are coming down, and they do not stop."
         }
     }
 
@@ -212,6 +226,11 @@ enum DailyTwist: String, CaseIterable, Codable {
             // day already played would decode into nothing without it
         case .mirrored, .upsideDown, .brickSwap:
             return mode == .classic
+        case .landslide:
+            return mode == .classic
+            // **Classic alone** (the workbook's own column). The endless modes already have a
+            // field that comes down at them, and a twist that promises a landslide and delivers
+            // the mode's own cadence is a twist that did nothing
         case .mayhemBricks:
             return mode == .endlessII
             // §4's table says "Endless modes", and this is narrower on purpose: the original
@@ -250,6 +269,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .noPausing, .timeTrial: return "2026-10-01"
         case .mayhemBricks: return "2026-10-01"
         case .monochromatic, .dailyTheme: return "2026-11-01"
+        case .alwaysOn, .landslide: return "2026-11-01"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date
@@ -332,6 +352,39 @@ enum DailyTwist: String, CaseIterable, Codable {
             return allCases[stream.roll(allCases.count)]
         }
     }
+
+    /// The power-up that is on all day, drawn from the key on its own stream.
+    ///
+    /// **Timed and turn-based only** (the workbook: "permanent power-up should be randomly
+    /// selected from the available timed or paddle hit based power-ups"). An instant has
+    /// nothing to be permanently on *about* - it happens and is over - so the pool is read off
+    /// the duration column, which says "10s" or "5 paddle hits" for exactly the ones that last.
+    ///
+    /// The daily's own bans apply first, and Mayhem's own power-ups are excluded outside
+    /// Mayhem. Returns nil if that leaves nothing, which is the honest answer for a mode with
+    /// no lasting power-ups rather than a crash or an arbitrary pick.
+    static func alwaysOnPowerUp(forKey key: String, mode: GameMode) -> Int? {
+        let setup = LevelPackSetup()
+        let lasting = setup.powerUpTimerArray.indices.filter { index in
+            let timer = setup.powerUpTimerArray[index]
+            guard timer == "10s" || timer == "5 paddle hits" else { return false }
+            guard DailyTwist.bannedFromDailies.contains(index) == false else { return false }
+            guard setup.retiredPowerUpIndices.contains(index) == false else { return false }
+            return mode == .endlessII || setup.isEndlessIIPowerUp(index) == false
+        }
+        guard lasting.isEmpty == false else { return nil }
+
+        var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key) &+ 0x0A5A)
+        return lasting[stream.roll(lasting.count)]
+    }
+
+    /// The power-ups no daily ever offers, whatever its twists say.
+    ///
+    /// From the power-up workbook's Daily column, which James made the overarching rule in
+    /// round 228. Written here as well as applied in `applyDailyEconomyTwists`, because the
+    /// Always On draw has to know before it picks - offering a permanent Lock would be a run
+    /// frozen for the whole day.
+    static let bannedFromDailies: Set<Int> = [1, 48, 49]
 
     /// The theme a Theme day is played in, drawn from the key on its own stream.
     ///

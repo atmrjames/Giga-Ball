@@ -136,6 +136,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// not change fast enough for the difference to be worth anything. Empty whenever the player
 	/// is not signed in, which is the ordinary case rather than a failure.
 	var endlessIIRivalLines: [EndlessIIRival] = []
+
+	/// When a Landslide day last stepped its field down.
+	var dailyLandslideLastStep: TimeInterval = 0
 	var endlessIIAutoAimClock = EndlessIIClock()
 	/// Whether the contact being handled still owns its power-up's effect, per turn-based
 	/// paddle power-up whose effect lands *after* the turns are spent. Spending the last
@@ -2629,6 +2632,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				tickEndlessIIWrapAround()
 			}
 		}
+
+		tickDailyAlwaysOn()
+		tickDailyLandslide(currentTime)
+		// Outside the Mayhem block, because an Always On day can be any mode - the twist puts
+		// a power-up back in Classic exactly as it does in Mayhem
 		
 		if gameState.currentState is Paused {
 			if self.isPaused == false && countdownStarted == false {
@@ -4364,7 +4372,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUpsGeneratedPerLevel+=1
     }
     
-	func applyPowerUp (node: SKNode) {
+	/// Applies a power-up, by the texture the sprite carries.
+	///
+	/// **`silently` is for a collection nobody made** (round 230's Always On twist, which puts
+	/// the day's standing power-up back the moment it stops). Everything skipped below is a
+	/// response to a *catch*: the sound, the haptic, the recents note, the count of power-ups
+	/// on screen, and the little animation of the badge flying up. None of them is true of a
+	/// power-up that has simply not ended, and the statistics in particular would count one
+	/// collection every few seconds all day.
+	func applyPowerUp (node: SKNode, silently: Bool = false) {
 
 		let sprite = node as! SKSpriteNode
 
@@ -4373,7 +4389,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Don't apply the power up if the ball has been lost
 
-		if let texture = sprite.texture,
+		if silently == false,
+		   let texture = sprite.texture,
 		   let index = powerUpTextureArray.firstIndex(of: texture) {
 			InGameRecents.shared.collectedPowerUp(index)
 		}
@@ -4381,16 +4398,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// the one funnel every collection passes through and the texture is the identity
 		// the switch below reads too
 		
-		if hapticsSetting {
+		if hapticsSetting && silently == false {
 			rigidHaptic.impactOccurred()
 		}
 		
-		if soundsSetting {
+		if soundsSetting && silently == false {
 			self.run(powerUpSound)
 		}
 		// Power-up applied sound
 		
-		powerUpsOnScreen-=1
+		if silently == false {
+			powerUpsOnScreen-=1
+		}
 		// Remove the power up from the power-up on screen tracker
 		
 		let scaleUp = SKAction.scale(to: 1.5, duration: 0.01)
@@ -4404,7 +4423,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let powerupSequence = SKAction.sequence([startingGroup, powerupGroup])
 		node.removeAllActions()
 		// Animation setup
-		if sprite.texture == powerUpMystery {
+		if silently {
+			node.removeFromParent()
+		} else if sprite.texture == powerUpMystery {
 			node.removeFromParent()
 		} else {
 			node.run(powerupSequence, completion: {
