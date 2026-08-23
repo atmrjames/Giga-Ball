@@ -178,13 +178,25 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// Which modes the twist can be drawn for.
     func applies(to mode: GameMode) -> Bool {
         switch self {
-        case .oneLife, .loaded:
+        case .oneLife:
             return mode == .classic
             // The endless modes already have exactly one life
         case .spareBalls:
-            return mode == .endless || mode == .endlessII
-            // The generous day for the modes whose baseline is a single ball - James's
-            // suggestion from the first daily play test
+            return true
+            // **Every mode, from round 228's twist workbook**: "two extra balls are
+            // provided", which in Classic means two more than the mode's own rack and in the
+            // endless modes means a rack where there was none. It began as the generous day
+            // for the single-ball modes (James's suggestion from the first daily play test)
+            // and has grown into the one lives twist that gives
+        case .loaded:
+            return false
+            // **Retired** (James, round 228: "extra balls covers loaded"). Five lives in
+            // Classic and three balls in the endless modes were the same idea counted twice,
+            // and Extra Balls says it in a way that means something in every mode.
+            //
+            // The case stays rather than being deleted, for the reason `PowerUpAvailability
+            // .retired` exists: a raw value is what a stored day is written down as, and a
+            // day already played would decode into nothing without it
         case .mirrored, .upsideDown, .brickSwap:
             return mode == .classic
         case .mayhemBricks:
@@ -200,11 +212,11 @@ enum DailyTwist: String, CaseIterable, Codable {
             // would be a different random field rather than a familiar one seen afresh
         case .suddenDeath:
             return false
-            // Parked, on the same play test: in the endless modes it was One Life said
-            // twice, and in Classic (no Multi-Ball there) it is One Life by another name.
-            // It comes back when a twist can put several balls in a Classic level -
-            // Mayhem Rules (§4) - at which point "any ball lost ends the run" means
-            // something One Life does not. The scene keeps its teeth ready either way
+            // **Retired** (James, round 228: "sudden death is replaced by one life"), where
+            // it had only been parked. The reasoning was already written and has not changed:
+            // in the endless modes it was One Life said twice, and in Classic it is One Life
+            // by another name. The scene keeps its teeth, because a hand-built challenge can
+            // still ask for it
         default:
             return true
         }
@@ -229,6 +241,36 @@ enum DailyTwist: String, CaseIterable, Codable {
         // The launch pool activates together; later twists carry later dates. A twist's date
         // keeps it out of an older day's *pool*, and `Category.activationKey` does the same
         // for the category it arrives in - between them, nothing already played changes
+    }
+
+    /// The date this twist stops being *drawn*, and the reason it exists.
+    ///
+    /// **Retiring a twist is adding one backwards** (James, round 228: "once 1.3 is released,
+    /// any changes to Daily Challenge mode cannot corrupt previous days, so we need to make
+    /// sure it's possible to add things and make changes"). Adding was already safe, through
+    /// `activationKey`. Taking one away was not: dropping it from the pool shortens the list
+    /// every past day rolled against, so every date behind the change draws something else.
+    ///
+    /// So a retirement is a date too. Before it the twist is in the pool exactly as it always
+    /// was, and the days that drew it still draw it; from it, the pool is one shorter and the
+    /// days after roll afresh. Set it in the *future* after 1.3 ships, the way an activation
+    /// is set in the future, and nothing a player has played can move.
+    ///
+    /// Loaded and Sudden Death carry a date before the game's first daily, which is the one
+    /// thing that will not be allowed later: it rewrites history, and it is allowed here only
+    /// because there is no history yet (James: "happy to overwrite previous daily challenge
+    /// days as we're not yet released"). The golden-record test caught the change, which is
+    /// what it is for, and its pins were re-taken deliberately rather than quietly.
+    var retirementKey: String {
+        switch self {
+        case .loaded, .suddenDeath: return "2000-01-01"
+        default: return "9999-12-31"
+        }
+    }
+
+    /// Whether this twist may be drawn for a day with this key.
+    func inPool(on key: String, for mode: GameMode) -> Bool {
+        applies(to: mode) && activationKey <= key && key < retirementKey
     }
 
     /// The draw weight within its category.
@@ -427,7 +469,7 @@ enum DailyChallengeGenerator {
             guard categories.isEmpty == false else { break }
             let category = categories.remove(at: stream.roll(categories.count))
             let pool = DailyTwist.allCases.filter {
-                $0.category == category && $0.applies(to: mode) && $0.activationKey <= key
+                $0.category == category && $0.inPool(on: key, for: mode)
             }
             guard pool.isEmpty == false else { continue }
 

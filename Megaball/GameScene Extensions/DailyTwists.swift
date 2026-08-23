@@ -35,13 +35,19 @@ extension GameScene {
         if DailyChallengeSession.shared.has(.oneLife) { return 0 }
         // One ball total: the one on the paddle, an empty rack
         if DailyChallengeSession.shared.has(.loaded) { return 4 }
-        // Five balls total, four of them racked
+        // Five balls total, four of them racked. Retired from the pool in round 228 - Extra
+        // Balls covers it - but a hand-built challenge still means what it says
         if DailyChallengeSession.shared.has(.suddenDeath) { return 0 }
         // Sudden Death in Classic is One Life by another name; in the endless modes it
-        // has its own teeth (see endlessIIBallWasLost's gate). Parked from the pool for
-        // now, but a hand-built challenge still means what it says
-        if DailyChallengeSession.shared.has(.spareBalls) { return 2 }
-        // Three balls total for the endless modes, whose baseline rack is empty
+        // has its own teeth (see endlessIIBallWasLost's gate). Retired in round 228 for
+        // exactly that reason, and still honoured if a challenge asks for it
+        if DailyChallengeSession.shared.has(.spareBalls) {
+            return endlessMode ? 2 : numberOfLives + 2
+        }
+        // **Two more than the mode's own rack** (round 228's workbook: "two extra balls are
+        // provided"). In the endless modes the rack is empty, so two more is a rack of two;
+        // in Classic it is two on top of whatever the level would have given, which is the
+        // only reading under which the same twist means the same thing in both
         return nil
     }
 
@@ -169,6 +175,30 @@ extension GameScene {
         // still builds and falls exactly as Classic's always has - only the power-ups
         // that jump it are stood down. The endless modes excluded all of these already;
         // repeating them here is what makes the rule true of Classic dailies too
+
+        powerUpProbArray[1] = 0   // Lose A Ball
+        powerUpProbArray[48] = 0  // Lock
+        powerUpProbArray[49] = 0  // Key
+        // **The power-up workbook's Daily column is the overarching rule** (James, round
+        // 228). Lose A Ball, Lock and Key are marked as not available in a Daily Challenge,
+        // and the reasons are the board's: losing a ball for free is luck deciding a
+        // leaderboard, and a Lock that only a Key can end is a run that can be frozen for as
+        // long as the day lasts if the Key never falls.
+        //
+        // Written out here for the three that matter today. The rest of that column wants
+        // encoding beside the power-ups themselves rather than listed in this function, which
+        // is queued with the bricks workbook (§12.0)
+
+        if session.has(.fogOfWar) {
+            powerUpProbArray[15] = 0  // Show Bricks
+            powerUpProbArray[16] = 0  // Hide Bricks
+            // **Neither falls on a fogged day** (James, round 226: "don't allow the hide
+            // bricks or show bricks power-ups to fall in Daily Challenges with the fog of war
+            // twist", and the workbook's own disallowed list). Show Bricks would undo the
+            // twist for whoever caught it, which is the day's rules being handed back by a
+            // drop roll; Hide Bricks would hide what is hidden already, which is a power-up
+            // that does nothing at all
+        }
 
         if dailyStartingLives != nil {
             powerUpProbArray[0] = 0  // Get a Life

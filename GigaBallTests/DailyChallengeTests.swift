@@ -129,6 +129,16 @@ final class DailyChallengeTests: XCTestCase {
     /// a new *category* would be drawn by index out of `Category.allCases`, turning every past
     /// `roll(3)` into a `roll(4)` and rewriting days people have played. `Category` carries an
     /// activation date of its own for exactly that reason, and this is the proof.
+    /// **Re-pinned once, in round 228, and deliberately.**
+    ///
+    /// Retiring Loaded shortened Classic's lives pool, so the two days that drew it now draw
+    /// Extra Balls. That is history being rewritten, which is the one thing this test exists
+    /// to prevent - and it was allowed exactly once, before release, on James's word: "happy
+    /// to overwrite previous daily challenge days as we're not yet released."
+    ///
+    /// After 1.3 ships it must never happen again, and it will not have to: `retirementKey`
+    /// takes a date now, so a twist leaving the pool later leaves it from a future day and
+    /// every day behind that draws what it always drew.
     func testTheDaysAlreadyPlayedStillReadExactlyTheSame() {
         let recorded = [
             "2026-08-01|endless|-|",
@@ -137,7 +147,7 @@ final class DailyChallengeTests: XCTestCase {
             "2026-08-04|classic|16|oneLife",
             "2026-08-05|endless|-|fogOfWar",
             "2026-08-06|classic|2|",
-            "2026-08-07|classic|83|loaded",
+            "2026-08-07|classic|83|spareBalls",
             "2026-08-08|endlessII|-|spareBalls,fogOfWar",
             "2026-08-09|classic|105|drought,oneLife",
             "2026-08-10|classic|30|",
@@ -155,7 +165,7 @@ final class DailyChallengeTests: XCTestCase {
             "2026-08-22|endlessII|-|noPowerUps",
             "2026-08-23|classic|55|fogOfWar,noGoodNews",
             "2026-08-24|classic|66|",
-            "2026-08-25|classic|96|loaded",
+            "2026-08-25|classic|96|spareBalls",
             "2026-08-26|endlessII|-|spareBalls,drought",
             "2026-08-27|endless|-|fogOfWar,drought",
             "2026-08-28|classic|96|noPowerUps,fogOfWar",
@@ -1625,5 +1635,137 @@ final class ScoreTallyTests: XCTestCase {
         XCTAssertEqual(ScoreTally.tick(at: 0), 0)
         XCTAssertEqual(ScoreTally.tick(at: ScoreTally.duration*0.99),
                        ScoreTally.hapticTicks - 1)
+    }
+}
+
+/// What round 228's twist workbook changed about the pool and the drop table.
+///
+/// James: "extra balls covers loaded", "sudden death is replaced by one life", and the
+/// power-up workbook's Daily column "should be the overarching rule".
+final class DailyTwistWorkbookTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func scene(_ twists: [DailyTwist], mode: GameMode = .classic) -> GameScene {
+        DailyChallengeSession.shared.active = DailyChallenge(dateKey: "t", mode: mode,
+                                                            classicLevel: mode == .classic ? 1 : nil,
+                                                            twists: twists)
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// Neither retired twist can be drawn for any mode.
+    func testTheRetiredTwistsAreOfferedNowhere() {
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            XCTAssertFalse(DailyTwist.loaded.applies(to: mode),
+                           "Loaded is still in \(mode.name)'s pool")
+            XCTAssertFalse(DailyTwist.suddenDeath.applies(to: mode),
+                           "Sudden Death is still in \(mode.name)'s pool")
+        }
+    }
+
+    /// Their raw values stay, because a stored day is written down as one.
+    func testTheirNamesStillDecode() {
+        XCTAssertEqual(DailyTwist(rawValue: "loaded"), .loaded)
+        XCTAssertEqual(DailyTwist(rawValue: "suddenDeath"), .suddenDeath)
+    }
+
+    /// And a challenge built by hand still means what it says.
+    func testAHandBuiltChallengeStillHonoursThem() {
+        XCTAssertEqual(scene([.loaded]).dailyStartingLives, 4)
+        XCTAssertEqual(scene([.suddenDeath]).dailyStartingLives, 0)
+    }
+
+    /// Extra Balls reaches every mode now, and means two more than the mode's own rack.
+    func testExtraBallsIsTwoMoreThanTheModeWouldGive() {
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            XCTAssertTrue(DailyTwist.spareBalls.applies(to: mode),
+                          "Extra Balls should reach \(mode.name)")
+        }
+
+        let mayhem = scene([.spareBalls], mode: .endlessII)
+        XCTAssertEqual(mayhem.dailyStartingLives, 2, "an empty rack becomes a rack of two")
+
+        let classic = scene([.spareBalls])
+        classic.numberOfLives = 3
+        XCTAssertEqual(classic.dailyStartingLives, 5, "two on top of what the level gave")
+    }
+
+    /// Lose A Ball, Lock and Key never fall on a daily, whatever the twists are.
+    func testTheWorkbooksDailyColumnIsHonoured() {
+        let scene = scene([], mode: .endlessII)
+        scene.powerUpProbArray = Array(repeating: 5, count: LevelPackSetup().powerUpNameArray.count)
+        scene.applyDailyEconomyTwists()
+
+        XCTAssertEqual(scene.powerUpProbArray[1], 0, "Lose A Ball fell on a daily")
+        XCTAssertEqual(scene.powerUpProbArray[48], 0, "Lock fell on a daily")
+        XCTAssertEqual(scene.powerUpProbArray[49], 0, "Key fell on a daily")
+    }
+
+    /// And on a fogged day, neither vision power-up falls.
+    func testFogOfWarTakesShowAndHideBricksOutOfTheTable() {
+        let fogged = scene([.fogOfWar], mode: .endlessII)
+        fogged.powerUpProbArray = Array(repeating: 5, count: LevelPackSetup().powerUpNameArray.count)
+        fogged.applyDailyEconomyTwists()
+        XCTAssertEqual(fogged.powerUpProbArray[15], 0, "Show Bricks undid the twist")
+        XCTAssertEqual(fogged.powerUpProbArray[16], 0, "Hide Bricks hid what was hidden")
+
+        let clear = scene([], mode: .endlessII)
+        clear.powerUpProbArray = Array(repeating: 5, count: LevelPackSetup().powerUpNameArray.count)
+        clear.applyDailyEconomyTwists()
+        XCTAssertEqual(clear.powerUpProbArray[15], 5, "an unfogged day keeps Show Bricks")
+    }
+}
+
+/// Retiring a twist after release must not move a day already played.
+///
+/// James, round 228: "once 1.3 is released, any changes to Daily Challenge mode cannot corrupt
+/// previous days, so we need to make sure it's possible to add things and make changes."
+///
+/// Adding was already safe, through `activationKey`. Taking one away was not: dropping it from
+/// the pool shortens the list every past day rolled against, so every date behind the change
+/// draws something else. A retirement is a date now, for the same reason an activation is.
+final class DailyTwistRetirementTests: XCTestCase {
+
+    private func days(_ range: ClosedRange<Int>) -> [String] {
+        range.map { day in
+            let key = String(format: "2026-11-%02d", day)
+            let challenge = DailyChallengeGenerator.challenge(forKey: key)
+            return "\(key)|\(challenge.mode.name)|\(challenge.twists.map(\.rawValue).sorted().joined(separator: ","))"
+        }
+    }
+
+    /// A twist retired from a future date leaves every earlier day exactly as it was.
+    ///
+    /// Read off the machinery rather than by editing a twist: what is under test is that the
+    /// pool is asked about a *date*, so that a later change cannot reach backwards.
+    func testAFutureRetirementCannotReachBackwards() {
+        for twist in DailyTwist.allCases where twist.retirementKey > "2026-11-30" {
+            XCTAssertTrue(twist.inPool(on: "2026-11-15", for: .classic)
+                            == twist.applies(to: .classic)
+                          || twist.activationKey > "2026-11-15",
+                          "\(twist.rawValue) is in or out of the pool for reasons other than its dates")
+        }
+    }
+
+    /// A retirement date is honoured on the day it names, and not before.
+    func testARetirementTakesEffectOnItsOwnDate() {
+        XCTAssertFalse(DailyTwist.loaded.inPool(on: "2026-11-15", for: .classic),
+                       "a retired twist is still being offered")
+        XCTAssertFalse(DailyTwist.suddenDeath.inPool(on: "2026-11-15", for: .classic))
+
+        XCTAssertTrue(DailyTwist.oneLife.inPool(on: "2026-11-15", for: .classic),
+                      "a living twist was retired by accident")
+    }
+
+    /// And the generator reads the same days twice, which is the property the whole design
+    /// rests on.
+    func testTheSameFortnightReadsTheSameTwice() {
+        XCTAssertEqual(days(1...14), days(1...14))
     }
 }
