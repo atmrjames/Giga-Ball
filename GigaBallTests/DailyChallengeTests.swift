@@ -1769,3 +1769,111 @@ final class DailyTwistRetirementTests: XCTestCase {
         XCTAssertEqual(days(1...14), days(1...14))
     }
 }
+
+/// The two twists that decide how the game looks, and the middle ground the news twists left out.
+///
+/// James, round 229: "ok, they are not possible together then" for Monochromatic and Theme, and
+/// "wipe can stay for daily challenge modes. It can be considered a neutral power-up as it
+/// depends what power-ups are enabled."
+final class DailyLookAndNeutralTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func scene(_ twists: [DailyTwist], key: String = "2026-11-15") -> GameScene {
+        DailyChallengeSession.shared.active = DailyChallenge(dateKey: key, mode: .endlessII,
+                                                            classicLevel: nil, twists: twists)
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    // MARK: - Look
+
+    /// They share a category, which is how this design says "at most one of these".
+    func testTheLookTwistsCannotHappenTogether() {
+        XCTAssertEqual(DailyTwist.monochromatic.category, DailyTwist.dailyTheme.category)
+        XCTAssertNotEqual(DailyTwist.monochromatic.category, DailyTwist.fogOfWar.category,
+                          "a fogged day wearing a drawn theme is a pairing James allows")
+    }
+
+    /// Monochromatic is Classic, and Classic is all three settings.
+    func testMonochromaticForcesClassic() {
+        XCTAssertEqual(scene([.monochromatic]).dailyForcedTheme, 0)
+    }
+
+    /// Theme draws one from the date, never Classic, and the same date always draws the same.
+    func testThemeDrawsOneFromTheDate() {
+        let count = LevelPackSetup().themeNameArray.count
+        for day in 1...28 {
+            let key = String(format: "2026-11-%02d", day)
+            let drawn = DailyTwist.dailyThemeIndex(forKey: key, themeCount: count)
+            XCTAssertGreaterThan(drawn, 0, "\(key) drew Classic, which is Monochromatic's answer")
+            XCTAssertLessThan(drawn, count)
+            XCTAssertEqual(drawn, DailyTwist.dailyThemeIndex(forKey: key, themeCount: count),
+                           "\(key) did not draw the same theme twice")
+        }
+    }
+
+    /// An ordinary day leaves the player's own settings alone.
+    func testAnOrdinaryDayForcesNothing() {
+        XCTAssertNil(scene([]).dailyForcedTheme)
+        XCTAssertNil(scene([.fogOfWar]).dailyForcedTheme)
+    }
+
+    // MARK: - Neutral power-ups
+
+    /// Wipe is neither good nor bad, because which it is depends on the day.
+    func testWipeIsNeutral() {
+        let wipe = LevelPackSetup().powerUpNameArray.firstIndex(of: "Wipe")
+        XCTAssertNotNil(wipe)
+        guard let wipe else { return }
+        XCTAssertTrue(GameScene.endlessIINeutralPowerUps.contains(wipe))
+        XCTAssertFalse(GameScene.endlessIIHarmfulPowerUps.contains(wipe),
+                       "its chip says -0.1, but on a No Good News day it is the kindest thing"
+                       + " on the field")
+        XCTAssertFalse(GameScene.endlessIIBeneficialPowerUps.contains(wipe))
+    }
+
+    /// Mystery gets there on its own, through the blank chip it has always had.
+    func testMysteryIsNeutralWithoutBeingNamed() {
+        let mystery = LevelPackSetup().powerUpNameArray.firstIndex(of: "Mystery")
+        XCTAssertNotNil(mystery)
+        guard let mystery else { return }
+        XCTAssertTrue(GameScene.endlessIINeutralPowerUps.contains(mystery))
+    }
+
+    /// Lose A Ball's blank chip is not neutrality.
+    func testLoseABallIsNotNeutral() {
+        XCTAssertFalse(GameScene.endlessIINeutralPowerUps.contains(1))
+        XCTAssertTrue(GameScene.endlessIIHarmfulPowerUps.contains(1))
+    }
+
+    /// Each news twist bans one side and leaves the middle standing.
+    func testTheNewsTwistsBanOneSideEach() {
+        let names = LevelPackSetup().powerUpNameArray
+        guard let wipe = names.firstIndex(of: "Wipe"),
+              let giga = names.firstIndex(of: "Giga-Ball"),
+              let inert = names.firstIndex(of: "Inert Ball") else { return XCTFail("names") }
+
+        func table(_ twists: [DailyTwist]) -> [Int] {
+            let scene = scene(twists)
+            scene.powerUpProbArray = Array(repeating: 5, count: names.count)
+            scene.applyDailyEconomyTwists()
+            return scene.powerUpProbArray
+        }
+
+        let noBad = table([.noBadNews])
+        XCTAssertEqual(noBad[inert], 0, "a bad power-up fell on a No Bad News day")
+        XCTAssertEqual(noBad[giga], 5)
+        XCTAssertEqual(noBad[wipe], 5, "Wipe should fall on both")
+
+        let noGood = table([.noGoodNews])
+        XCTAssertEqual(noGood[giga], 0, "a good power-up fell on a No Good News day")
+        XCTAssertEqual(noGood[inert], 5)
+        XCTAssertEqual(noGood[wipe], 5, "Wipe should fall on both")
+    }
+}

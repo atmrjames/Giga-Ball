@@ -900,6 +900,31 @@ enum PowerUpIcon {
         // Four short dashes around the corners: the brick is doing something, whatever it is
     }
 
+    /// Monochromatic: the same square twice, one filled and one empty, with no colour to
+    /// tell them apart by. The drawn badges have no colour anyway, which is the joke and also
+    /// the reason this one has to say it with shape.
+    static let twistMonochromatic: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.06)
+        let size = rect.width*0.30
+        context.fill(CGRect(x: rect.midX - size, y: rect.midY - size/2,
+                            width: size, height: size))
+        context.stroke(CGRect(x: rect.midX + rect.width*0.02, y: rect.midY - size/2,
+                              width: size, height: size))
+    }
+
+    /// Theme: a paintbrush, near enough - a handle at an angle with a wider head, which is
+    /// the smallest shape that reads as "somebody chose how this looks".
+    static let twistTheme: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        context.move(to: CGPoint(x: rect.midX - rect.width*0.20,
+                                 y: rect.maxY - rect.height*0.24))
+        context.addLine(to: CGPoint(x: rect.midX + rect.width*0.14,
+                                    y: rect.minY + rect.height*0.30))
+        context.strokePath()
+        context.fill(CGRect(x: rect.midX + rect.width*0.06, y: rect.minY + rect.height*0.18,
+                            width: rect.width*0.20, height: rect.height*0.18))
+    }
+
     /// Time Trial: a stopwatch - a circle, a stem, and a hand pointing near the top because
     /// the time on this clock is nearly up from the moment it starts.
     static let twistTimeTrial: UIImage = badge(twist) { context, rect in
@@ -1063,6 +1088,8 @@ extension DailyTwist {
         case .brickSwap: return PowerUpIcon.twistBrickSwap
         case .timeTrial: return PowerUpIcon.twistTimeTrial
         case .mayhemBricks: return PowerUpIcon.twistMayhemBricks
+        case .monochromatic: return PowerUpIcon.twistMonochromatic
+        case .dailyTheme: return PowerUpIcon.twistTheme
         }
     }
 

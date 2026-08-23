@@ -96,11 +96,12 @@ enum DailyTwist: String, CaseIterable, Codable {
     case noPausing
     case timeTrial
     case mayhemBricks
+    case monochromatic, dailyTheme
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
     enum Category: CaseIterable {
-        case economy, lives, dress, layout, nerve, tempo
+        case economy, lives, dress, layout, nerve, tempo, look
 
         /// The date this category may first be *drawn* (§2.1), and the reason it exists.
         ///
@@ -117,6 +118,7 @@ enum DailyTwist: String, CaseIterable, Codable {
             case .layout: return "2026-09-01"
             case .nerve: return "2026-10-01"
             case .tempo: return "2026-10-01"
+            case .look: return "2026-11-01"
             }
         }
     }
@@ -130,7 +132,14 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .noPausing: return .nerve
         case .timeTrial: return .tempo
         case .mayhemBricks: return .dress
+        case .monochromatic, .dailyTheme: return .look
         }
+        // **The look category exists for these two** (James, round 229: "ok, they are not
+        // possible together then"). Both decide which theme is on screen, and his matrix
+        // marked the pair as allowed, which cannot be right - one says Classic only and the
+        // other picks at random. A category is how this design says "at most one of these",
+        // and they could not join `dress`, because Fog of War lives there and a fogged day
+        // wearing a drawn theme is a pairing he does allow
     }
 
     var displayName: String {
@@ -151,6 +160,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .noPausing: return "No Pausing"
         case .timeTrial: return "Time Trial"
         case .mayhemBricks: return "Mayhem Bricks"
+        case .monochromatic: return "Monochromatic"
+        case .dailyTheme: return "Theme"
         }
     }
 
@@ -172,6 +183,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .noPausing: return "No pausing, and leaving the app ends your attempt."
         case .timeTrial: return "Ninety seconds. The score at the whistle is the score."
         case .mayhemBricks: return "The strange bricks are out in force today."
+        case .monochromatic: return "All the colour is gone. Classic, and only Classic."
+        case .dailyTheme: return "One theme, chosen for you, whatever you usually play in."
         }
     }
 
@@ -236,6 +249,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         // activation forward, and the golden test pins the days behind it
         case .noPausing, .timeTrial: return "2026-10-01"
         case .mayhemBricks: return "2026-10-01"
+        case .monochromatic, .dailyTheme: return "2026-11-01"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date
@@ -317,6 +331,21 @@ enum DailyTwist: String, CaseIterable, Codable {
             var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key) &+ 0xB51C)
             return allCases[stream.roll(allCases.count)]
         }
+    }
+
+    /// The theme a Theme day is played in, drawn from the key on its own stream.
+    ///
+    /// Its own seed offset rather than a roll in `rawChallenge`, for `DailyBrickSwap`'s
+    /// reason: the challenge stream's layout is what keeps every already-played day stable,
+    /// so a twist's private details come from a separate stream keyed off the same date.
+    ///
+    /// Classic is excluded from the draw. It is the theme most players are already in, and a
+    /// twist announcing "one theme, chosen for you" and then handing back the one on screen
+    /// is a twist that did nothing - and it is Monochromatic's whole answer besides.
+    static func dailyThemeIndex(forKey key: String, themeCount: Int) -> Int {
+        guard themeCount > 1 else { return 0 }
+        var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key) &+ 0x7A11)
+        return 1 + stream.roll(themeCount - 1)
     }
 
     /// Whether the day's layout is turned over, and which way. Nil when it is not.

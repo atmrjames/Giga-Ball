@@ -357,7 +357,39 @@ extension GameScene {
         harmful.insert(1)
         // Lose A Ball's multiplier chip is blank - losing the ball speaks for itself - so
         // the derivation misses the single worst thing a free shot could set off
-        return harmful
+        return harmful.subtracting(GameScene.endlessIINeutralPowerUps)
+    }()
+
+    /// The power-ups that are good for the player, by the same reading.
+    static let endlessIIBeneficialPowerUps: Set<Int> = {
+        Set(LevelPackSetup().powerUpMultiplierArray.enumerated()
+            .filter { $0.element == "+0.1" }
+            .map { $0.offset })
+            .subtracting(GameScene.endlessIINeutralPowerUps)
+    }()
+
+    /// The power-ups that are neither, and survive a day that bans one side.
+    ///
+    /// **Wipe is the one that has to be named** (James, round 229: "wipe can stay for daily
+    /// challenge modes. It can be considered a neutral power-up as it depends what power-ups
+    /// are enabled. So it can fall during both no good power-ups and no bad power-ups
+    /// twists"). Its chip says -0.1, because ending everything you have running is usually
+    /// bad - but on a No Good News day everything you have running is *bad*, and a Wipe is
+    /// then the kindest thing on the field. Which side it falls on is a property of the day
+    /// rather than of the power-up, so it belongs on neither.
+    ///
+    /// Mystery arrives here on its own, through the blank chip it has always had: a power-up
+    /// that is "good or bad, we shall see" cannot be banned by a rule about which it is.
+    static let endlessIINeutralPowerUps: Set<Int> = {
+        let names = LevelPackSetup().powerUpNameArray
+        var neutral = Set(LevelPackSetup().powerUpMultiplierArray.enumerated()
+            .filter { $0.element.isEmpty }
+            .map { $0.offset })
+        neutral.remove(1)
+        // Lose A Ball's blank chip is not neutrality, it is the game declining to put a
+        // number on it
+        if let wipe = names.firstIndex(of: "Wipe") { neutral.insert(wipe) }
+        return neutral
     }()
 
     /// The brick an Auto-Aim bounce goes for: the lowest on the field, nearest first among

@@ -213,7 +213,7 @@ extension GameScene {
         }
         if session.has(.noGoodNews) {
             for index in powerUpProbArray.indices
-            where GameScene.endlessIIHarmfulPowerUps.contains(index) == false {
+            where GameScene.endlessIIBeneficialPowerUps.contains(index) {
                 powerUpProbArray[index] = 0
             }
         }
@@ -223,6 +223,12 @@ extension GameScene {
                 powerUpProbArray[index] = 0
             }
         }
+        // **Each bans one side and leaves the middle alone** (round 229). No Good News used to
+        // zero everything that was not *harmful*, which is not the same sentence: it took the
+        // neutral ones down with the good, so a Mystery could not fall on a bad-news day and a
+        // Wipe could fall on neither. The workbook says it plainly - No Bad News disallows the
+        // -0.1 chips, No Good News disallows the +0.1 chips - and a power-up with no chip is
+        // disallowed by neither
         if session.has(.powerShower) {
             powerUpProbFactor = 3
             // The drop roll is one-in-factor per destroyed brick, so smaller is rainier
@@ -235,6 +241,26 @@ extension GameScene {
         // Both callers sum the table just before calling this, so the sum they left
         // behind still counts the entries the day just zeroed. The drop roll re-sums
         // before drawing, but everything else that reads the sum should read the truth
+    }
+
+    /// The theme this run is played in, whatever the player usually plays in.
+    ///
+    /// Nil on an ordinary day, and on every day that is not a daily: the player's own three
+    /// settings stand. Monochromatic forces Classic, Theme draws one from the date.
+    ///
+    /// One question rather than two, because both twists live in the `look` category and a
+    /// day therefore has at most one of them (round 229) - the caller should not have to know
+    /// that, and `userSettings` should not have to ask twice.
+    var dailyForcedTheme: Int? {
+        guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
+            return nil
+        }
+        if challenge.twists.contains(.monochromatic) { return 0 }
+        if challenge.twists.contains(.dailyTheme) {
+            return DailyTwist.dailyThemeIndex(forKey: challenge.dateKey,
+                                                  themeCount: LevelPackSetup().themeNameArray.count)
+        }
+        return nil
     }
 
     /// Whether the day takes the pause button away.

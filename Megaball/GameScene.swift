@@ -6467,6 +6467,18 @@ laserTimer?.invalidate()
 		ballSetting = defaults.integer(forKey: "ballSetting")
         paddleSetting = defaults.integer(forKey: "paddleSetting")
 		brickSetting = defaults.integer(forKey: "brickSetting")
+		if let forced = dailyForcedTheme {
+			ballSetting = forced
+			paddleSetting = forced
+			brickSetting = forced
+		}
+		// **A theme is three settings, and a theme twist owns all three** (round 229).
+		// Monochromatic forces Classic and Theme draws one from the date. Applied here rather
+		// than at each use, because this is the one place the three are read, and a twist that
+		// reached only the paddle would be a half-dressed game rather than a different one.
+		//
+		// The player's own settings are untouched on disk: this is the run being dressed, not
+		// the preference being changed, and the next ordinary game reads what it always did
         appIconSetting = defaults.integer(forKey: "appIconSetting")
 		swipeUpPause = defaults.bool(forKey: "swipeUpPause")
 		gameInProgress = defaults.bool(forKey: "gameInProgress")
