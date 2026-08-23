@@ -30,7 +30,7 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // changes rather than two bricks
         XCTAssertEqual(BrickTypeCatalogue.allBehaviours.count, 5)
         XCTAssertEqual(Set(BrickTypeCatalogue.allBehaviours).count, 5)
-        XCTAssertEqual(BrickTypeCatalogue.section(titled: "Brick Types")?.count, 4)
+        XCTAssertEqual(BrickTypeCatalogue.section(titled: "Classic Brick Types")?.count, 4)
         XCTAssertEqual(BrickTypeCatalogue.section(titled: "Sizes")?.count,
                        BrickSize.allCases.count)
         // Asked for by name rather than by position. The page grew from three sections to
@@ -75,7 +75,10 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // neither
         let sections = BrickTypeCatalogue.sections
         XCTAssertEqual(sections.map(\.title),
-                       ["Brick Types", "Shapes", "Sizes", "Actions", "New Brick Types"])
+                       ["Classic Brick Types", "Endless Mayhem Brick Types",
+                        "Shapes", "Sizes", "Actions"])
+        // The two "what is this brick" headings together at the top (James, round 238) -
+        // everything under them is a modifier of a brick rather than a kind of one
 
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
                        sections.reduce(0) { $0 + $1.entries.count })

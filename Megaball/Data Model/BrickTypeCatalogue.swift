@@ -53,15 +53,19 @@ enum BrickTypeCatalogue {
     /// version of the old one. "Styles" was fourteen entries under one heading covering three
     /// unrelated ideas - what a brick is *shaped* like, what it *does*, and two bricks that
     /// are neither - which is a heading that tells a player nothing about where to look. The
-    /// order follows the workbook down its own page: what a brick is, then what shape, then
-    /// what size, then what it does, then the two that are their own thing.
+    /// order is what a brick *is* first - both kinds of it - and then the three axes that
+    /// modify it: what shape, what size, what it does.
     static var sections: [Section] {
-        [Section(title: "Brick Types", entries: behaviours),
+        [Section(title: "Classic Brick Types", entries: behaviours),
+         Section(title: "Endless Mayhem Brick Types", entries: newBrickTypes),
          Section(title: "Shapes", entries: shapes),
          Section(title: "Sizes", entries: sizes),
-         Section(title: "Actions", entries: actions),
-         Section(title: "New Brick Types", entries: newBrickTypes)]
+         Section(title: "Actions", entries: actions)]
     }
+    // The two "what is this brick" headings sit together at the top (James, round 238), which
+    // is the question a player arrives with. Everything below them is a modifier: what shape
+    // that brick is, what size, what it does. The workbook's own order put the Mayhem bricks
+    // last, and they are not a footnote - they are the other half of the first question
 
     /// One section's entries, by heading. For the tests, which should say which section they
     /// mean rather than counting along the list.
@@ -292,10 +296,11 @@ enum BrickTypeCatalogue {
 
     private static var actions: [Entry] { actionOrder.map(entry(for:)) }
 
-    /// The two bricks that are not a type, a shape, a size or an action - they are themselves.
+    /// The two bricks Endless Mayhem adds, which are not a shape, a size or an action - they
+    /// are types in their own right, and they sit under the classic four for that reason.
     ///
-    /// The workbook's own last table, and it earns the heading: a player who has just been hit
-    /// by one of these is not looking under "what shape was it".
+    /// A player who has just been hit by one of these is asking "what *was* that", which is
+    /// the question the top of the page answers.
     private static var newBrickTypes: [Entry] { [powerUpBrick, entry(for: .portal)] }
 
     private static func entry(for style: EndlessIIStyle) -> Entry {

@@ -16,6 +16,8 @@
 		1AF17000000000B1 /* BackstopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000B0 /* BackstopTests.swift */; };
 		1AF17000000000A3 /* EndlessIIClusterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A2 /* EndlessIIClusterTests.swift */; };
 		1AF17000000000A1 /* EndlessIIClusters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000000A0 /* EndlessIIClusters.swift */; };
+		1AF17000000009C3 /* EndlessIIFormations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000009C2 /* EndlessIIFormations.swift */; };
+		1AF17000000009C1 /* EndlessIIBrickSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000009C0 /* EndlessIIBrickSpec.swift */; };
 		1AF1700000000095 /* EndlessIIBallsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000094 /* EndlessIIBallsTests.swift */; };
 		1AF17000000009B1 /* CatalogueDumpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF17000000009B0 /* CatalogueDumpTests.swift */; };
 		1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000092 /* EndlessIIMultiBall.swift */; };
@@ -99,6 +101,7 @@
 		1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000039 /* TotalStatsConsistencyTests.swift */; };
 		1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000037 /* EndlessIIStyleTests.swift */; };
 		1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000000E3 /* EndlessIIFaceTests.swift */; };
+		1AF10000000009C5 /* EndlessIIBrickSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000009C6 /* EndlessIIBrickSpecTests.swift */; };
 		1AF1700000000034 /* EndlessIIFieldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000035 /* EndlessIIFieldTests.swift */; };
 		1AF1700000000032 /* EndlessIISizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000033 /* EndlessIISizeTests.swift */; };
 		1AF1700000000014 /* StatsSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000013 /* StatsSyncTests.swift */; };
@@ -375,6 +378,8 @@
 		1AF17000000000B0 /* BackstopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackstopTests.swift; sourceTree = "<group>"; };
 		1AF17000000000A2 /* EndlessIIClusterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusterTests.swift; sourceTree = "<group>"; };
 		1AF17000000000A0 /* EndlessIIClusters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIClusters.swift; sourceTree = "<group>"; };
+		1AF17000000009C2 /* EndlessIIFormations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFormations.swift; sourceTree = "<group>"; };
+		1AF17000000009C0 /* EndlessIIBrickSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBrickSpec.swift; sourceTree = "<group>"; };
 		1AF1700000000094 /* EndlessIIBallsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBallsTests.swift; sourceTree = "<group>"; };
 		1AF17000000009B0 /* CatalogueDumpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogueDumpTests.swift; sourceTree = "<group>"; };
 		1AF1700000000092 /* EndlessIIMultiBall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIMultiBall.swift; sourceTree = "<group>"; };
@@ -458,6 +463,7 @@
 		1AF1700000000039 /* TotalStatsConsistencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalStatsConsistencyTests.swift; sourceTree = "<group>"; };
 		1AF1700000000037 /* EndlessIIStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStyleTests.swift; sourceTree = "<group>"; };
 		1AF10000000000E3 /* EndlessIIFaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFaceTests.swift; sourceTree = "<group>"; };
+		1AF10000000009C6 /* EndlessIIBrickSpecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBrickSpecTests.swift; sourceTree = "<group>"; };
 		1AF1700000000035 /* EndlessIIFieldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFieldTests.swift; sourceTree = "<group>"; };
 		1AF1700000000033 /* EndlessIISizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISizeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000013 /* StatsSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSyncTests.swift; sourceTree = "<group>"; };
@@ -787,6 +793,7 @@
 				1AF1700000000039 /* TotalStatsConsistencyTests.swift */,
 				1AF1700000000037 /* EndlessIIStyleTests.swift */,
 				1AF10000000000E3 /* EndlessIIFaceTests.swift */,
+				1AF10000000009C6 /* EndlessIIBrickSpecTests.swift */,
 				1AF1700000000035 /* EndlessIIFieldTests.swift */,
 				1AF1700000000033 /* EndlessIISizeTests.swift */,
 				1AF1700000000013 /* StatsSyncTests.swift */,
@@ -1335,6 +1342,8 @@
 				000000001AF1820000000001 /* ScoreTally.swift */,
 				000000001AF1830000000001 /* MenuHeaderCollapse.swift */,
 				1AF17000000000A0 /* EndlessIIClusters.swift */,
+				1AF17000000009C2 /* EndlessIIFormations.swift */,
+				1AF17000000009C0 /* EndlessIIBrickSpec.swift */,
 				1AF1700000000090 /* EndlessIIBalls.swift */,
 				1AF1700000000068 /* BrickTypeCatalogue.swift */,
 				1AF1700000000062 /* GameSceneLayout.swift */,
@@ -1595,6 +1604,7 @@
 				1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */,
 				1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */,
 				1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */,
+				1AF10000000009C5 /* EndlessIIBrickSpecTests.swift in Sources */,
 				1AF1700000000034 /* EndlessIIFieldTests.swift in Sources */,
 				1AF1700000000032 /* EndlessIISizeTests.swift in Sources */,
 				1AF1700000000014 /* StatsSyncTests.swift in Sources */,
@@ -1614,6 +1624,8 @@
 				1AF17000000000F1 /* EndlessIIPowerUpBricks.swift in Sources */,
 				1AF17000000000C1 /* BrickSeamBounce.swift in Sources */,
 				1AF17000000000A1 /* EndlessIIClusters.swift in Sources */,
+				1AF17000000009C3 /* EndlessIIFormations.swift in Sources */,
+				1AF17000000009C1 /* EndlessIIBrickSpec.swift in Sources */,
 				1AF1700000000093 /* EndlessIIMultiBall.swift in Sources */,
 				1AF170000000009B /* MenuNavigation.swift in Sources */,
 				1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */,

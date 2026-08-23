@@ -45,17 +45,21 @@ struct EndlessIICluster {
     let weight: Int
     /// A scatter draws its rows fresh each time it is placed - see `Scatter`.
     let scatter: Scatter?
+    /// What this cluster's own characters mean, for the shapes that need more than the six
+    /// above (`EndlessIIBrickSpec`). Empty on every cluster written before round 238.
+    let legend: [Character: EndlessIIBrickSpec]
 
     var height: Int { rows.count }
     var width: Int { rows.map(\.count).max() ?? 0 }
 
     init(name: String, rows: [String], minimumHeight: Int, weight: Int = 10,
-         scatter: Scatter? = nil) {
+         scatter: Scatter? = nil, legend: [Character: EndlessIIBrickSpec] = [:]) {
         self.name = name
         self.rows = rows
         self.minimumHeight = minimumHeight
         self.weight = weight
         self.scatter = scatter
+        self.legend = legend
     }
 
     // MARK: - Scatters
@@ -92,8 +96,41 @@ struct EndlessIICluster {
         }
 
         return EndlessIICluster(name: name, rows: grid.map { String($0) },
-                                minimumHeight: minimumHeight, weight: weight)
+                                minimumHeight: minimumHeight, weight: weight, legend: legend)
+        // The legend travels with it: a scatter's *contents* are the designed half, so losing
+        // the key on the way through would be losing the whole design
     }
+
+    /// Authored, validated, and **not yet offered to the generator**.
+    ///
+    /// The builder reads the six shared characters and nothing else - it turns one into a
+    /// texture and stamps `endlessIIStaysPlain` on the brick - so a cluster whose grid uses a
+    /// legend would build as holes where its own characters are. That is worse than not
+    /// existing, so these wait here until the builder is taught to read a spec.
+    ///
+    /// They are in `EndlessIIFormationCatalogue` and therefore fully validated: an authored
+    /// shape that turns out to be impossible should say so now, not in the round that finally
+    /// builds it.
+    static let pendingLegendSupport: [EndlessIICluster] = [
+
+        EndlessIICluster(name: "Millrace", rows: ["WWWWW",
+                                                  ".???.",
+                                                  "wwwww"], minimumHeight: 160, weight: 6,
+                         legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                          mirrored: false, flipped: true),
+                                  "w": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                          mirrored: false, flipped: false)]),
+        // Two rows of wedges with the field's own bricks between them. Both slopes run the
+        // same way, so a ball that gets inside is passed along the channel rather than out of
+        // it - the shape does what a funnel does without being drawn as one, which is the
+        // thing a shape can say and a wall cannot.
+        //
+        // The orientations are named rather than rolled. Every wedge in the game turns over on
+        // a coin (round 154), because a field of them all facing up is a field of flat
+        // undersides - but here the point *is* that they agree, and a coin would have produced
+        // a mixture and no channel at all. That is the first thing a legend buys that the six
+        // characters could not express at all
+    ]
 
     static let all: [EndlessIICluster] = [
 
@@ -204,10 +241,18 @@ struct EndlessIICluster {
         // Multi-hit all the way round something ordinary. Slow to open and quick to finish
 
         EndlessIICluster(name: "Studs", rows: ["i.i.i",
-                                               ".....",
+                                               ".N.N.",
                                                "i.i.i"], minimumHeight: 200, weight: 6),
         // Spaced posts that each take a hit to become permanent. What this leaves behind is
-        // decided by which ones the player chose to hit
+        // decided by which ones the player chose to hit.
+        //
+        // **The two bricks in the middle row are not decoration** (round 238). Studs was six
+        // indestructibles and nothing else, and the catalogue-wide rule caught it the first
+        // time it ran: "mazes of indestructible bricks dotted with normal bricks so they don't
+        // just fly by" (James, round 190). It is the same fault the Comb had and the same fix.
+        // A brick that turns permanent when struck is a decision, but a shape with nothing
+        // breakable in it is still a shape with nothing to earn - so going in there is worth
+        // something now, and the posts are no harder to thread than they were
     ]
 
     /// The ones allowed at this height.

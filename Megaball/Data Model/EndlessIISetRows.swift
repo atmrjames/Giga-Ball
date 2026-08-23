@@ -29,6 +29,18 @@ struct EndlessIISetRow {
     let rows: [String]
     /// The height below which this one does not appear.
     let minimumHeight: Int
+    /// What this pattern's own characters mean, for the shapes that need more than the six
+    /// above (`EndlessIIBrickSpec`). Empty on every pattern written before round 238, which
+    /// is why it has a default: the shared alphabet answers everything they draw with.
+    let legend: [Character: EndlessIIBrickSpec]
+
+    init(name: String, rows: [String], minimumHeight: Int,
+         legend: [Character: EndlessIIBrickSpec] = [:]) {
+        self.name = name
+        self.rows = rows
+        self.minimumHeight = minimumHeight
+        self.legend = legend
+    }
 
     /// How wide the patterns are written for. A field of a different width is padded with
     /// empties rather than being stretched, so a shape stays the shape it was drawn as.
