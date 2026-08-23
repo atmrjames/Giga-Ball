@@ -513,14 +513,25 @@ extension GameScene {
             // shrinking to a quarter of a quarter is a brick nobody can hit
             return centred && isOrdinaryCellSized(brick)
         case .fixed:
-            // Ordinary size only, for the same reason as Gravity: only some quarters of a
-            // Tiny set would ever draw it, and a Big one would wall off two columns at once
-            return isOrdinaryCellSized(brick)
+            // **Any size** (the 2026 brick workbook: "any brick type in any state with any
+            // shape in any orientation and any size can take any motion"). It was ordinary-
+            // sized only on the grounds that a Big one "would wall off two columns at once" -
+            // which is a description of what a Big Fixed brick does rather than a reason it
+            // cannot exist, and the player chose where to put it
+            return true
         case .gravity:
-            // Ordinary size only. A quarter-cell brick falling on its own looks like a piece
-            // of a set coming loose - and it would be, since the four quarters are separate
-            // bricks and only some of them would ever draw the style
-            guard isOrdinaryCellSized(brick) else { return false }
+            // **Any size but Tiny.** A Big one falls by whole rows exactly as an ordinary one
+            // does, now that the fall asks about every cell of its footprint rather than only
+            // the one its node sits in.
+            //
+            // Tiny is the one still refused, and for a reason that is about the *fall* rather
+            // than about taste: a quarter-cell brick sits at quarter-cell granularity and the
+            // fall is answered in whole cells. Four of them share a cell, so "is the space
+            // below free" is a question the occupancy map cannot answer for one - it can only
+            // say how full the cell is. Falling one by a whole row would drop it through its
+            // own siblings. The fix is to measure against frames the way the wander limits
+            // already do, and it is queued in §12.0 rather than guessed at here
+            guard endlessIIFieldSize(of: brick).width > brickWidth*0.75 else { return false }
 
             // And never in a column a spinner is in. A falling brick stops on whatever is
             // below it, and a spinner's cell reads as empty to that check because the spinner
@@ -541,13 +552,14 @@ extension GameScene {
             // not carry it: refusing leaves the brick free to draw a different one
             return endlessIIOpenSides(from: brick).isEmpty == false
         case .moving:
-            // Both work out where they may go by looking at a neighbouring cell, and both
-            // measure from the node's position. On a Big brick neither holds: the cell to
-            // its right is part of itself, and its node sits on its top-left corner rather
-            // than its middle. So a Big Moving brick saw nothing in its way and slid over
-            // its neighbours, hiding them until it moved on again. Restricted to bricks that
-            // occupy exactly one cell until both are taught about footprints
-            return occupiesOneCell(brick)
+            // **Any size.** It was restricted to bricks in exactly one cell because the wander
+            // limits worked in cells - "the cell to its right is part of itself" - and a Big
+            // Moving brick saw nothing in its way and slid over its neighbours. That stopped
+            // being true in round 175, when the limits were rewritten to measure against the
+            // *frames* of the bricks beside it rather than against the cells either side, so a
+            // Tiny brick would stop being blind to its own siblings. A frame is a frame at any
+            // size, and `endlessIIFieldRect` is what asks for it now
+            return true
         default: return true
         }
     }
@@ -608,7 +620,7 @@ extension GameScene {
             var chance = alreadyStyled
                 ? progression.stackChance(at: height)
                 : dailyStyledChance(progression.styleChance(at: height))
-            // A Mayhem Bricks day multiplies the *first* style's chance and leaves stacking
+            // A Extra Mayhem day multiplies the *first* style's chance and leaves stacking
             // alone - the twist is more bricks doing something, not more bricks doing two
             // things at once
             if endlessIIPhaseStyles.isEmpty == false { chance = 85 }

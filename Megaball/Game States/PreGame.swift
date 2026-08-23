@@ -89,7 +89,7 @@ class PreGame: GKState {
 
         if scene.startLevelNumber == 0 {
             scene.numberOfLives = scene.dailyStartingLives ?? 0
-            // The day's word first (Spare Balls racks reserves in an endless daily),
+            // The day's word first (Extra Balls racks reserves in an endless daily),
             // the mode's own empty rack otherwise
         } else {
             scene.numberOfLives = scene.dailyStartingLives ?? 3

@@ -53,7 +53,7 @@ extension GameScene {
 
     /// Whether the rack of reserve balls should stay off the screen for this run.
     ///
-    /// Two cases: an endless daily *without* Spare Balls (the modes' own rule - one ball,
+    /// Two cases: an endless daily *without* Extra Balls (the modes' own rule - one ball,
     /// no counter), and a lives twist that empties the rack (One Life), where an empty
     /// container reading "no lives left" all run would be the twist rubbing it in. The
     /// play test asked for it hidden outright.
@@ -68,7 +68,7 @@ extension GameScene {
     /// The one question the lives-row drawing asks: should the rack be off screen.
     ///
     /// Outside a daily this is the old rule - endless modes have no rack. Inside one,
-    /// the day decides: Spare Balls puts a rack in an endless run, One Life takes the
+    /// the day decides: Extra Balls puts a rack in an endless run, One Life takes the
     /// empty one out of a Classic run.
     var livesRowSuppressed: Bool {
         isDailyChallenge ? dailyLivesRowHidden : endlessMode
@@ -112,7 +112,7 @@ extension GameScene {
             session.forfeitedByLeaving = false
             return
         }
-        // **No Pausing, forfeited** (§4): "backgrounding the app forfeits posting". The score
+        // **No Breaks, forfeited** (§4): "backgrounding the app forfeits posting". The score
         // is kept as practice rather than thrown away - the run was really played - but it is
         // not the attempt any more, and the attempt itself was already spent when play was
         // pressed. Cleared here because a forfeit belongs to the run that earned it and the
@@ -417,7 +417,7 @@ extension GameScene {
     /// **The run carries on.** Ending somebody's game from the outside is worse than not
     /// scoring it, and the twist is about nerve rather than punishment - so the ball stays in
     /// play and what is lost is the posting. Called from the same notification that pauses
-    /// every other run when the app goes to the background: on a No Pausing day that
+    /// every other run when the app goes to the background: on a No Breaks day that
     /// notification cannot be allowed to pause, because the app pausing itself would hand the
     /// player exactly what the twist withholds.
     ///
@@ -481,6 +481,17 @@ extension GameScene {
         isDailyChallenge && DailyChallengeSession.shared.has(.timeTrial)
     }
 
+    /// Whether losing the ball costs a life.
+    ///
+    /// It always did, and on a Time Trial day it should not: the workbook's Details column for
+    /// the twist says "unlimited lives" in as many words. Ninety seconds is the whole of the
+    /// challenge, and a day that took the clock *and* the lives was two limits where the design
+    /// asks for one - a bad start ended the attempt with a minute of it left on the board.
+    ///
+    /// A free function rather than a line inside the ball-loss path, because that path cannot
+    /// be stood up in a test and this is the part worth pinning.
+    static func dailyLifeIsSpent(onTimeTrial timeTrial: Bool) -> Bool { timeTrial == false }
+
     /// Builds the countdown into the HUD: centred, just below the power-up tray.
     ///
     /// **Not centre-top beside the pause button**, which was the first try - that spot reads
@@ -509,7 +520,7 @@ extension GameScene {
     /// **The clock runs while the ball is live**: Playing, not paused, ball off the paddle.
     /// A ball waiting on the paddle does not count down, so the ninety seconds are seconds
     /// of play rather than seconds of hesitation - and a life lost buys the moment of reset
-    /// back. The pause guard matters on the days that can pause; on a No Pausing Time Trial
+    /// back. The pause guard matters on the days that can pause; on a No Breaks Time Trial
     /// there is no pause to hold it.
     func tickDailyTimeTrial(_ delta: TimeInterval) {
         guard dailyTimeTrial, gameoverStatus == false,
@@ -546,7 +557,7 @@ extension GameScene {
         clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
     }
 
-    /// How much more often a brick takes a style on a Mayhem Bricks day.
+    /// How much more often a brick takes a style on a Extra Mayhem day.
     ///
     /// Three, against an opening chance of 4-in-100 ramping to 22: the opening plays like the
     /// mid-game and the mid-game like the depths, without the field ever becoming the wall of

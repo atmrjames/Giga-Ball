@@ -2816,9 +2816,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// so the day repeats its word here
 		
         if numberOfLives > 0 {
-			
-			flyLifeToPaddle()
-			// The spent life travels to the paddle as the replacement ball appears there
+
+            let spendsALife = GameScene.dailyLifeIsSpent(onTimeTrial: dailyTimeTrial)
+			if spendsALife {
+				flyLifeToPaddle()
+				// The spent life travels to the paddle as the replacement ball appears there
+			}
 			
             let fadeOutBall = SKAction.fadeOut(withDuration: 0)
             let scaleDownBall = SKAction.scale(to: 0, duration: 0)
@@ -2832,13 +2835,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ballIsReturning = true
             // A tap during this lands the ball on the paddle rather than launching it
             
-            lifeLossPending = true
+            lifeLossPending = spendsALife
             self.run(SKAction.wait(forDuration: 0.75), completion: {
                 self.livesAwaitingRollIn = false
-                self.numberOfLives = max(0, self.numberOfLives - 1)
+                if spendsALife { self.numberOfLives = max(0, self.numberOfLives - 1) }
                 self.lifeLossPending = false
                 self.refreshLivesRow()
             })
+            // **A Time Trial day spends nothing** (the 2026 twist workbook's Details column
+            // for Time Trial: "unlimited lives"). The clock is the whole of the challenge -
+            // ninety seconds, and what you score inside them - and a day that also took your
+            // lives was two limits where the design asks for one. The ball comes back exactly
+            // as it does on any other day; only the count stays put
             // Unchanged 0.75s before the count drops - other code reads numberOfLives
             // synchronously around here and the timing is load-bearing.
             //
@@ -7066,7 +7074,7 @@ laserTimer?.invalidate()
 			dailyForfeitByLeaving()
 			return
 		}
-		// **The one notification a No Pausing day must not act on.** This is what pauses a run
+		// **The one notification a No Breaks day must not act on.** This is what pauses a run
 		// when the app goes to the background, and pausing here would hand the player exactly
 		// what the twist takes away - switch apps, come back, carry on. The attempt is given up
 		// instead and the run carries on: ending somebody's game from the outside is worse than

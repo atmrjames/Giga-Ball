@@ -139,15 +139,24 @@ extension GameScene {
 
         for brick in falling {
             let from = endlessIICell(of: brick)
+            let span = geometry.footprint(of: endlessIIFieldSize(of: brick))
             var to = from
             var landsOnAnAnchor = false
-            while to.row < lowestRow {
-                let below = EndlessIICell(column: to.column, row: to.row + 1)
-                guard endlessIICellBlocks(below, fill: fill) == false else {
-                    landsOnAnAnchor = anchored.contains(below)
+            while to.row + span.rows - 1 < lowestRow {
+                let under = (0..<span.columns).map {
+                    EndlessIICell(column: to.column + $0, row: to.row + span.rows)
+                }
+                // **The whole width of the brick, and the row under its *lowest* one.** A Big
+                // brick is two cells across and two deep with its node on the top-left of the
+                // footprint, so asking about `row + 1` asks about a cell the brick is standing
+                // in - which is never free, so a Big brick would never have fallen at all -
+                // and asking about one column lets it settle with its other half inside a
+                // neighbour (§8.6, the trap a Big brick sets for anything reading its node)
+                guard under.allSatisfy({ endlessIICellBlocks($0, fill: fill) == false }) else {
+                    landsOnAnAnchor = under.contains { anchored.contains($0) }
                     break
                 }
-                to = below
+                to = EndlessIICell(column: to.column, row: to.row + 1)
             }
             guard to != from || landsOnAnAnchor else { continue }
             // **A brick already resting on an anchor is destroyed where it stands.** It has
@@ -155,8 +164,16 @@ extension GameScene {
             // that came to rest on a Fixed brick before this round was built stays there for
             // ever otherwise
 
-            fill[from] = 0
-            if landsOnAnAnchor == false { fill[to] = 1 }
+            for row in 0..<span.rows {
+                for column in 0..<span.columns {
+                    fill[EndlessIICell(column: from.column + column,
+                                       row: from.row + row)] = 0
+                    if landsOnAnAnchor == false {
+                        fill[EndlessIICell(column: to.column + column,
+                                           row: to.row + row)] = 1
+                    }
+                }
+            }
             // Kept in step so a stack of them lands in order rather than each one falling
             // through the space the one before it just claimed. A brick about to be destroyed
             // claims nothing: the next faller down the column may have the cell
@@ -751,11 +768,23 @@ extension GameScene {
     /// The cells held by anchored bricks, which nothing may descend into.
     func endlessIIAnchoredCells() -> Set<EndlessIICell> {
         var held: Set<EndlessIICell> = []
+        let geometry = endlessIIGeometry
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode, brick.endlessIIIsAnchored else { return }
-            held.insert(self.endlessIICell(of: brick))
+            let origin = self.endlessIICell(of: brick)
+            let span = geometry.footprint(of: self.endlessIIFieldSize(of: brick))
+            for row in 0..<span.rows {
+                for column in 0..<span.columns {
+                    held.insert(EndlessIICell(column: origin.column + column,
+                                              row: origin.row + row))
+                }
+            }
         }
         return held
+        // **Every cell it holds, not just the one its node is in.** A Big brick can be Fixed
+        // since round 237, and an anchor that claimed one of its four cells would have let the
+        // field descend into the other three - which is the trap a Big brick sets for anything
+        // reading its node (§8.6), and the reason `endlessIIOccupancy` has always spanned
     }
 
     /// Whether this brick stays where it is when the field descends.

@@ -152,12 +152,21 @@ enum DailyTwist: String, CaseIterable, Codable {
         // wearing a drawn theme is a pairing he does allow
     }
 
+    /// What the day calls itself, on the card, the pause screen and the reference page.
+    ///
+    /// **These are the twist workbook's names** (James, round 237: "update the in game twist
+    /// names and descriptions from the information in the twist details reference"). Three had
+    /// drifted from it - Extra Balls, Extra Mayhem and No Breaks were built before the
+    /// document existed and are Extra Balls, Extra Mayhem and No Breaks in it. The enum cases
+    /// keep their old spellings on purpose: a case name is a key in the save and in
+    /// `retirementKey`, and renaming one would change which day is which for every day already
+    /// played.
     var displayName: String {
         switch self {
         case .oneLife: return "One Life"
         case .loaded: return "Loaded"
         case .suddenDeath: return "Sudden Death"
-        case .spareBalls: return "Spare Balls"
+        case .spareBalls: return "Extra Balls"
         case .noPowerUps: return "No Power-Ups"
         case .noGoodNews: return "No Good News"
         case .noBadNews: return "No Bad News"
@@ -167,9 +176,9 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .mirrored: return "Mirrored"
         case .upsideDown: return "Upside Down"
         case .brickSwap: return "Brick Swap"
-        case .noPausing: return "No Pausing"
+        case .noPausing: return "No Breaks"
         case .timeTrial: return "Time Trial"
-        case .mayhemBricks: return "Mayhem Bricks"
+        case .mayhemBricks: return "Extra Mayhem"
         case .monochromatic: return "Monochromatic"
         case .dailyTheme: return "Theme"
         case .alwaysOn: return "Always On"
@@ -193,7 +202,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .upsideDown: return "The level is built the wrong way up."
         case .brickSwap: return "The level's bricks are not the types they were."
         case .noPausing: return "No pausing, and leaving the app ends your attempt."
-        case .timeTrial: return "Ninety seconds. The score at the whistle is the score."
+        case .timeTrial: return "Ninety seconds, and lives to spare - lose the ball as often as you like. The score at the whistle is the score."
         case .mayhemBricks: return "The strange bricks are out in force today."
         case .monochromatic: return "All the colour is gone. Classic, and only Classic."
         case .dailyTheme: return "One theme, chosen for you, whatever you usually play in."
@@ -859,7 +868,7 @@ final class DailyChallengeSession {
 
     /// Whether the run in play has forfeited its attempt by leaving the app.
     ///
-    /// The No Pausing twist's second half (§4): "the pause button is disabled for the run.
+    /// The No Breaks twist's second half (§4): "the pause button is disabled for the run.
     /// Backgrounding the app forfeits posting." Taking the pause button away and leaving the
     /// background route open would make the twist a suggestion - the app pauses itself when it
     /// goes to the background, so a player could get exactly what the twist withholds by

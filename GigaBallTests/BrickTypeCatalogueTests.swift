@@ -30,10 +30,12 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // changes rather than two bricks
         XCTAssertEqual(BrickTypeCatalogue.allBehaviours.count, 5)
         XCTAssertEqual(Set(BrickTypeCatalogue.allBehaviours).count, 5)
-        XCTAssertEqual(BrickTypeCatalogue.sections[0].entries.count, 4)
-
-        let sizes = BrickTypeCatalogue.sections.last?.entries.count
-        XCTAssertEqual(sizes, BrickSize.allCases.count)
+        XCTAssertEqual(BrickTypeCatalogue.section(titled: "Brick Types")?.count, 4)
+        XCTAssertEqual(BrickTypeCatalogue.section(titled: "Sizes")?.count,
+                       BrickSize.allCases.count)
+        // Asked for by name rather than by position. The page grew from three sections to
+        // five in round 237 and the sizes stopped being last, which a positional test would
+        // have reported as the sizes having gone missing
     }
 
     func testABrickThatChangesShowsEveryStateItPassesThrough() {
@@ -65,14 +67,43 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertNil(BrickTypeIcons.retroName(for: "BrickIndestructible1"))
     }
 
-    func testTheThreeSectionsAccountForEveryEntry() {
+    func testTheSectionsAccountForEveryEntryExactlyOnce() {
+        // Five headings since round 237, and they are the brick workbook's: "the bricks info
+        // screen should be broken up into more sections - use the brick details reference"
+        // (James). "Styles" had been fourteen entries under one heading covering three
+        // unrelated ideas - what a brick is shaped like, what it does, and two that are
+        // neither
         let sections = BrickTypeCatalogue.sections
-        XCTAssertEqual(sections.count, 3)
+        XCTAssertEqual(sections.map(\.title),
+                       ["Brick Types", "Shapes", "Sizes", "Actions", "New Brick Types"])
+
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
                        sections.reduce(0) { $0 + $1.entries.count })
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
                        4 + EndlessIIStyle.allCases.count + 1 + BrickSize.allCases.count)
         // The extra one is the power-up brick, which is neither a style nor a size
+
+        let names = BrickTypeCatalogue.allEntries.map(\.name)
+        XCTAssertEqual(Set(names).count, names.count, "an entry is listed under two headings")
+    }
+
+    /// Every style reaches exactly one of the three headings that hold styles.
+    ///
+    /// The split is by hand - `shapeOrder` and `actionOrder` are written out, and Portal is
+    /// named on its own - so the way it goes wrong is a style landing in neither list and
+    /// quietly leaving the page. `styleOrder` is built from the three, and the test above
+    /// pins it against `allCases`, so this says the *pieces* do not overlap.
+    func testEveryStyleIsUnderExactlyOneHeading() {
+        let shapes = Set(BrickTypeCatalogue.shapeOrder)
+        let actions = Set(BrickTypeCatalogue.actionOrder)
+        XCTAssertTrue(shapes.isDisjoint(with: actions))
+        XCTAssertFalse(shapes.contains(.portal))
+        XCTAssertFalse(actions.contains(.portal))
+        XCTAssertEqual(shapes.count + actions.count + 1, EndlessIIStyle.allCases.count)
+
+        // And the shapes heading is the shapes: the four faces, plus Rounded, which the
+        // workbook calls a shape and the game has always treated as one
+        XCTAssertEqual(shapes, Set(EndlessIIFace.allCases.map(\.style) + [.rounded]))
     }
 
     func testEveryEntryHasSomethingToSay() {
@@ -167,7 +198,10 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // which a turning brick has left behind) and gave it back the four shapes and
         // Directional, so naming what it *refuses* is now the shorter half
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .spinning),
-                       "Any but Breathing, Fixed, Gravity, Moving, Exploding, Spawner")
+                       "Any but Fixed, Gravity, Moving, Exploding, Spawner")
+        // Breathing left that list in round 237 - the matrix says Spinning and Breathing go
+        // together, and the objection was never quite true: Spinning turns the node and
+        // touches no geometry at all
 
         // A Portal is never damaged and never destroyed, so anything about being destroyed or
         // about being solid has nothing to attach to - and there its exclusions are no shorter

@@ -121,14 +121,16 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     func stacksWith(_ other: EndlessIIStyle) -> Bool {
         guard self != other else { return false }
 
+        if self == .portal || other == .portal {
+            return EndlessIIStyle.takenByAPortal.contains(self == .portal ? other : self)
+        }
+        // Asked before the shapes, because a Portal may wear one and `takenByAPortal` is the
+        // whole of what it takes - two rules answering the same pair is how they drift apart
+
         if isFace || other.isFace {
             guard isFace != other.isFace else { return false }
             // Two shapes are two answers to the same question
             return EndlessIIStyle.refusedByAFace.contains(isFace ? other : self) == false
-        }
-
-        if self == .portal || other == .portal {
-            return EndlessIIStyle.takenByAPortal.contains(self == .portal ? other : self)
         }
 
         let pair: Set<EndlessIIStyle> = [self, other]
@@ -157,11 +159,14 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     /// again - and it does not rule out Spinning, which never leaves its cell and whose angle
     /// nothing reads, since a Portal absorbs the ball rather than bouncing it.
     ///
-    /// A shaped face is refused by `refusedByAFace` from the other side, for the same reason
-    /// Spinning is allowed and for the opposite outcome: the angle a slope gives is an answer
-    /// to a bounce that never happens, and a brick that *shows* an answer it does not give is
-    /// worse than one that shows nothing.
-    static let takenByAPortal: Set<EndlessIIStyle> = [.rounded, .spinning, .gravity]
+    /// Neither of those two arguments touches a *shape*, which is why all four faces are here.
+    static let takenByAPortal: Set<EndlessIIStyle> = [.rounded, .spinning, .gravity,
+                                                     .convex, .concave, .wedge, .diamond]
+    // **The shapes are on the list**, on the workbook rather than on the argument round 235
+    // made against them. "Brick type and state is fixed. Can take on a different shape, size,
+    // action" is what the New Brick Types row says, and it is right where round 235 was wrong:
+    // a shaped Portal is not showing a bounce it will not give, it is a doorway with a
+    // differently shaped mouth, and where the silhouette is decides where the ball goes in
 
     /// What a shaped face cannot share a brick with, and why - stated as a rule rather than
     /// as thirty pairs, because it is one rule.
@@ -185,7 +190,10 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     /// new geometry but one honest answer to "how much room does this brick take up", because
     /// a shaped brick's sprite is a third of a cell and every one of them was asking the
     /// sprite. `endlessIIFieldSize` is that answer.
-    static let refusedByAFace: Set<EndlessIIStyle> = [.rounded, .directional, .portal]
+    static let refusedByAFace: Set<EndlessIIStyle> = [.rounded, .directional]
+    // Portal left this list in round 237: the workbook's New Brick Types row says a Portal
+    // "can take on a different shape, size, action" in as many words, and `takenByAPortal` is
+    // where its answer lives now
 
     static let incompatiblePairs: [Set<EndlessIIStyle>] = [
         [.spinning, .moving],       // both want to say where the brick is
@@ -212,7 +220,11 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
         [.fixed, .gravity],      // the same argument
         // Every Portal pair used to be listed here. They are `takenByAPortal` now, which says
         // the same thing in one direction instead of seven
-        [.breathing, .spinning], // both redraw the brick's own geometry every frame
+        // **Spinning and Breathing go together** - the matrix says Yes, and the objection this
+        // line used to make ("both redraw the brick's own geometry every frame") was never
+        // quite true: Spinning turns the *node* and touches no geometry at all, and a static
+        // body follows its node's rotation on its own. A brick that swells while it turns is
+        // two cheap things at once rather than two expensive ones
         [.breathing, .rounded],  // Rounded's drawn face is built once, at one size
         [.breathing, .moving],   // the room a mover looks for is measured in whole cells
     ]

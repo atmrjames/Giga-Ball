@@ -45,10 +45,28 @@ enum BrickTypeCatalogue {
         let entries: [Entry]
     }
 
+    /// The page's own headings, and they are the 2026 brick workbook's (James, round 237: "the
+    /// bricks info screen should be broken up into more sections - use the brick details
+    /// reference").
+    ///
+    /// Three sections became five, and the split is the workbook's rather than a tidier
+    /// version of the old one. "Styles" was fourteen entries under one heading covering three
+    /// unrelated ideas - what a brick is *shaped* like, what it *does*, and two bricks that
+    /// are neither - which is a heading that tells a player nothing about where to look. The
+    /// order follows the workbook down its own page: what a brick is, then what shape, then
+    /// what size, then what it does, then the two that are their own thing.
     static var sections: [Section] {
-        [Section(title: "Behaviours", entries: behaviours),
-         Section(title: "Styles", entries: styles),
-         Section(title: "Sizes", entries: sizes)]
+        [Section(title: "Brick Types", entries: behaviours),
+         Section(title: "Shapes", entries: shapes),
+         Section(title: "Sizes", entries: sizes),
+         Section(title: "Actions", entries: actions),
+         Section(title: "New Brick Types", entries: newBrickTypes)]
+    }
+
+    /// One section's entries, by heading. For the tests, which should say which section they
+    /// mean rather than counting along the list.
+    static func section(titled title: String) -> [Entry]? {
+        sections.first { $0.title == title }?.entries
     }
 
     /// Every entry in order, which is what the list is indexed by when a row is tapped.
@@ -71,20 +89,39 @@ enum BrickTypeCatalogue {
         }
     }
 
+    /// What each state of a brick does when it is hit - the workbook's Classic Brick States
+    /// table, said on the entry the states belong to rather than as a section of its own.
+    ///
+    /// A separate section would have listed the same four bricks again to say four things
+    /// about them, when the entry already draws every state in a row above the words. The
+    /// count comes off `BrickTypeIcons.states`, which is the list that draws them, so a brick
+    /// that gains a state cannot be described here as having the old number.
+    static func states(of behaviour: EndlessIIBehaviour) -> String {
+        let count = BrickTypeIcons.states(of: behaviour).count
+        switch behaviour {
+        case .standard: return "1 - destroyed when hit"
+        case .multiHit: return "\(count) - each hit steps down to the next, the last destroys it"
+        case .indestructibleOnce, .indestructibleAlways:
+            return "\(count) - the first hit makes the wall, then a hit does nothing"
+        case .invisible: return "\(count) - it appears when struck, then it is Standard"
+        }
+    }
+
     private static var behaviours: [Entry] {
         [
             Entry(name: name(of: .standard),
                   description: "Destroyed by a single hit. It carries a colour, and the colour is what decides its score.",
                   art: .behaviour(.standard),
                   isNew: false,
-                  facts: [Fact(label: "Hits to destroy", value: "1"),
+                  facts: [Fact(label: "States", value: states(of: .standard)),
+                          Fact(label: "Hits to destroy", value: "1"),
                           Fact(label: "Found in", value: "Every mode")]),
 
             Entry(name: name(of: .multiHit),
                   description: "Four stages deep, shown here in the order they arrive. Each hit steps it down to the next, and the fourth destroys it. Clear Multi-Hit drops every one of them to a single hit; Reset Multi-Hit puts them all back.",
                   art: .behaviour(.multiHit),
                   isNew: false,
-                  facts: [Fact(label: "States", value: "4"),
+                  facts: [Fact(label: "States", value: states(of: .multiHit)),
                           Fact(label: "Hits to destroy", value: "4"),
                           Fact(label: "Found in", value: "Every mode")]),
 
@@ -92,7 +129,7 @@ enum BrickTypeCatalogue {
                   description: "Two states, and neither can be broken by the ball. The first hit does not destroy it - it turns it into the second, so the first hit makes the wall rather than breaking it. After that a hit does nothing at all. Cleared only by Zap Indestructible, a Wrecking Ball or an explosion. Giga-Ball passes straight through one and leaves it standing.",
                   art: .behaviour(.indestructibleOnce),
                   isNew: false,
-                  facts: [Fact(label: "States", value: "×1, then ×2"),
+                  facts: [Fact(label: "States", value: states(of: .indestructibleOnce)),
                           Fact(label: "Hits to destroy", value: "Cannot be destroyed"),
                           Fact(label: "Cleared by", value: "Zap, Wrecking Ball, explosions"),
                           Fact(label: "Found in", value: "Every mode")]),
@@ -101,7 +138,8 @@ enum BrickTypeCatalogue {
                   description: "Solid, but not drawn until something strikes it. From the moment it appears it is an ordinary Standard brick. Show Bricks reveals them; Hide Bricks puts them back.",
                   art: .behaviour(.invisible),
                   isNew: false,
-                  facts: [Fact(label: "Hits to destroy", value: "1, after it appears"),
+                  facts: [Fact(label: "States", value: states(of: .invisible)),
+                          Fact(label: "Hits to destroy", value: "1, after it appears"),
                           Fact(label: "Found in", value: "Every mode")])
         ]
     }
@@ -133,13 +171,19 @@ enum BrickTypeCatalogue {
     /// The ones that only change how a brick looks or bounces first, then the ones that change
     /// what the field does. A player reading down the page meets the small ideas before the
     /// large ones, which is also the order a run introduces them in.
-    static let styleOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge, .diamond,
-                                               .spinning, .flashing, .breathing, .fixed,
-                                               .gravity, .moving, .directional,
-                                               .exploding, .spawner, .portal]
-    // The four shapes sit with Rounded, because they are the same idea carried further:
-    // the brick is not a rectangle, and the bounce says so. Diamond comes last of them, as
-    // the furthest carried - the only one with no flat face left at all
+    static let styleOrder: [EndlessIIStyle] = shapeOrder + actionOrder + [.portal]
+
+    /// What a brick is shaped like. Rounded leads, because it is the smallest departure from
+    /// the oblong every brick has been since 2020, and Diamond comes last as the furthest
+    /// carried - the only one with no flat face left at all.
+    static let shapeOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge, .diamond]
+
+    /// What a brick does. The ones that change how it *looks* first, then the ones that change
+    /// where it is, then the ones that change the field around it - which is roughly the order
+    /// a run introduces them in, and the order of increasing consequence.
+    static let actionOrder: [EndlessIIStyle] = [.spinning, .flashing, .breathing, .fixed,
+                                                .gravity, .moving, .directional,
+                                                .exploding, .spawner]
 
     private static func description(of style: EndlessIIStyle) -> String {
         switch style {
@@ -244,17 +288,25 @@ enum BrickTypeCatalogue {
         }
     }
 
-    private static var styles: [Entry] {
-        [powerUpBrick] + styleOrder.map { style in
-            Entry(name: name(of: style),
-                  description: description(of: style),
-                  art: .style(style),
-                  isNew: true,
-                  facts: [Fact(label: "Behaviours", value: behaviours(carrying: style)),
-                          Fact(label: "Sizes", value: sizes(carrying: style)),
-                          Fact(label: "Stacks with", value: styles(stackingWith: style)),
-                          Fact(label: "Found in", value: GameMode.endlessII.name)])
-        }
+    private static var shapes: [Entry] { shapeOrder.map(entry(for:)) }
+
+    private static var actions: [Entry] { actionOrder.map(entry(for:)) }
+
+    /// The two bricks that are not a type, a shape, a size or an action - they are themselves.
+    ///
+    /// The workbook's own last table, and it earns the heading: a player who has just been hit
+    /// by one of these is not looking under "what shape was it".
+    private static var newBrickTypes: [Entry] { [powerUpBrick, entry(for: .portal)] }
+
+    private static func entry(for style: EndlessIIStyle) -> Entry {
+        Entry(name: name(of: style),
+              description: description(of: style),
+              art: .style(style),
+              isNew: true,
+              facts: [Fact(label: "Behaviours", value: behaviours(carrying: style)),
+                      Fact(label: "Sizes", value: sizes(carrying: style)),
+                      Fact(label: "Stacks with", value: styles(stackingWith: style)),
+                      Fact(label: "Found in", value: GameMode.endlessII.name)])
     }
 
     // MARK: - Sizes
@@ -288,9 +340,9 @@ enum BrickTypeCatalogue {
 
     /// The power-up brick, which is its own thing rather than a style or a size.
     ///
-    /// It is in the Styles section because that is where a player looking for "what was that
-    /// brick" will go, and a fourth section holding one entry would be a heading for its own
-    /// sake.
+    /// It sat at the head of the Styles section, because a section holding one entry would
+    /// have been a heading for its own sake. The workbook gives it a second occupant - Portal
+    /// - so it has its own heading now, which is where it always belonged.
     static var powerUpBrick: Entry {
         Entry(name: "Power-Up",
               description: "A power-up built into the field rather than falling out of it. Breaking it sets it off at once - good or bad. It is never cleared by reaching the bottom: it carries on down and out, so a bad one is something to play around rather than something to move the paddle away from. Two cells tall and one wide, which makes it square, and it wears the icon of whatever it is holding.",

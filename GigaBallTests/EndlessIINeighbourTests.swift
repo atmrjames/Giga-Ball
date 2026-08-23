@@ -460,6 +460,103 @@ final class EndlessIINeighbourTests: XCTestCase {
         XCTAssertNil(resting.parent)
     }
 
+    // MARK: - Big and Tiny against the movement actions
+
+    /// A Big brick, built the way the generator builds one: node on a row centre, sprite
+    /// hanging off it (§8.6).
+    private func bigBrick(_ scene: GameScene, atCell origin: EndlessIICell) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: cell.width*2, height: cell.height*2))
+        brick.anchorPoint = CGPoint(x: 0.25, y: 0.75)
+        brick.position = scene.endlessIIGeometry.centre(of: origin)
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        return brick
+    }
+
+    /// A Big Gravity brick falls, and asks about both of the columns it stands in.
+    ///
+    /// It could not take the style at all before: the fall asked whether the cell one row below
+    /// the *node* was free, and for a Big brick that cell is part of the brick itself - never
+    /// free, so it never moved. Asking one column would have been worse than not falling: it
+    /// would have settled with its other half inside a neighbour.
+    func testABigBrickFallsByWholeRowsAndClearsBothColumns() {
+        let scene = fieldScene()
+        let big = bigBrick(scene, atCell: EndlessIICell(column: 4, row: 3))
+        XCTAssertTrue(scene.endlessIICanTake(.gravity, big),
+                      "any size can take any motion (the 2026 brick workbook)")
+        big.endlessIIRole = .gravity
+        // Asked before the role is written on, not after: a brick already wearing a style
+        // cannot be offered it again, so the other order tests nothing
+
+        scene.settleEndlessIIGravityBricks()
+        guard let fall = scene.endlessIIFallers[ObjectIdentifier(big)] else {
+            return XCTFail("a Big brick with nothing under it should fall")
+        }
+        XCTAssertLessThan(fall.targetY, big.position.y)
+    }
+
+    /// And it stops on whatever is under either half of it.
+    func testABigBrickStopsOnABrickUnderItsFarHalf() {
+        let scene = fieldScene()
+        let big = bigBrick(scene, atCell: EndlessIICell(column: 4, row: 3))
+        big.endlessIIRole = .gravity
+
+        // Under the brick's *right* column, three rows down. Its node is in column 4, so a
+        // check that only looked at the node's column would not see this at all
+        let floor = EndlessIICell(column: 5, row: 8)
+        addBrick(scene, at: scene.endlessIIGeometry.centre(of: floor), size: cell)
+
+        scene.settleEndlessIIGravityBricks()
+        let target = scene.endlessIIFallers[ObjectIdentifier(big)]?.targetY
+        XCTAssertEqual(target ?? 0,
+                       scene.endlessIIGeometry.centre(of: EndlessIICell(column: 4, row: 6)).y,
+                       accuracy: 0.5,
+                       "it should come to rest with its lower row on top of the floor")
+    }
+
+    /// An anchored Big brick holds all four of its cells.
+    ///
+    /// A Big brick can be Fixed since round 237. An anchor claiming only the cell its node sits
+    /// in would let the field descend into the other three.
+    func testAnAnchoredBigBrickHoldsEveryCellItFills() {
+        let scene = fieldScene()
+        let big = bigBrick(scene, atCell: EndlessIICell(column: 4, row: 3))
+        big.endlessIIIsAnchored = true
+
+        XCTAssertEqual(scene.endlessIIAnchoredCells(),
+                       [EndlessIICell(column: 4, row: 3), EndlessIICell(column: 5, row: 3),
+                        EndlessIICell(column: 4, row: 4), EndlessIICell(column: 5, row: 4)])
+    }
+
+    /// A Tiny brick is still refused Gravity, and it is the fall that refuses it.
+    ///
+    /// Four of them share a cell, so "is the space below free" is a question the occupancy map
+    /// cannot answer for one - it can only say how full the cell is. Dropping one by a whole
+    /// row would drop it through its own siblings. Queued in §12.0 rather than guessed at.
+    func testATinyBrickIsTheOneSizeGravityStillRefuses() {
+        let scene = fieldScene()
+        let tiny = SKSpriteNode(texture: scene.brickNormalTexture,
+                                size: CGSize(width: cell.width/2, height: cell.height/2))
+        tiny.position = CGPoint(x: 0, y: 200)
+        tiny.name = BrickCategoryName
+        scene.addChild(tiny)
+
+        XCTAssertFalse(scene.endlessIICanTake(.gravity, tiny))
+        XCTAssertTrue(scene.endlessIICanTake(.moving, tiny),
+                      "moving measures against frames, which works at any size")
+        XCTAssertTrue(scene.endlessIICanTake(.fixed, tiny),
+                      "and anchoring one in place asks nothing about its size at all")
+    }
+
+    /// A scene with the field geometry filled in and a Mayhem mode, for the tests above.
+    private func fieldScene() -> GameScene {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
     /// An Indestructible brick, for the tests above.
     @discardableResult
     private func wall(_ scene: GameScene, at point: CGPoint) -> SKSpriteNode {

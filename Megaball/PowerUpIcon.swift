@@ -748,7 +748,7 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
-    /// Spare Balls: the ball in play, and the two racked behind it.
+    /// Extra Balls: the ball in play, and the two racked behind it.
     static let twistSpareBalls: UIImage = badge(twist) { context, rect in
         dot(context, at: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.34),
             radius: rect.width*0.13)
@@ -884,7 +884,7 @@ enum PowerUpIcon {
         // what they are - one category, one per day
     }
 
-    /// Mayhem Bricks: a brick with motion marks - the ordinary rectangle, busier than it
+    /// Extra Mayhem: a brick with motion marks - the ordinary rectangle, busier than it
     /// should be.
     static let twistMayhemBricks: UIImage = badge(twist) { context, rect in
         stroke(context, width: rect.width*0.06)
@@ -986,7 +986,7 @@ enum PowerUpIcon {
         context.strokePath()
     }
 
-    /// No Pausing: the pause glyph with a stroke through it. The one twist whose badge can
+    /// No Breaks: the pause glyph with a stroke through it. The one twist whose badge can
     /// simply be the control it takes away.
     static let twistNoPausing: UIImage = badge(twist) { context, rect in
         stroke(context, width: rect.width*0.06)

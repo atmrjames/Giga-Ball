@@ -94,9 +94,18 @@ extension GameScene {
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
             let origin = geometry.cell(at: node.position)
-            let size = geometry.footprint(of: self.endlessIIFieldSize(of: brick))
-            let share = (brick.size.width*brick.size.height)
+            let occupied = self.endlessIIFieldSize(of: brick)
+            let size = geometry.footprint(of: occupied)
+            let share = (occupied.width*occupied.height)
                 / (cellArea*CGFloat(size.columns*size.rows))
+            // **The room it fills, on both lines.** The share used to be measured off the
+            // sprite, which for a shaped brick is the rectangle tucked inside the silhouette -
+            // about a sixth of a cell by area. So every dome and wedge in the field read as
+            // one-sixth full, well under `endlessIIBlockingFill`, and to anything asking "is
+            // this cell occupied" a shaped brick simply was not there: a Gravity brick fell
+            // through one and a Moving brick slid into one. It has been that way since the
+            // shapes landed and nothing asked, because until round 235 a shape refused every
+            // style that asks
             for row in 0..<size.rows {
                 for column in 0..<size.columns {
                     let cell = EndlessIICell(column: origin.column + column,

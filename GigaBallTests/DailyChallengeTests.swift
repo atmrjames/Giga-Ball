@@ -943,7 +943,7 @@ final class DailyLayoutTwistTests: XCTestCase {
         XCTAssertEqual(flipped.map { $0[1] }.max(), highest)
     }
 
-    // MARK: - Mayhem Bricks (round 198)
+    // MARK: - Extra Mayhem (round 198)
 
     /// §4: "Endless daily uses Mayhem's style pool at elevated rates" - "the variety dial
     /// turned up."
@@ -1086,7 +1086,7 @@ final class DailyLayoutTwistTests: XCTestCase {
     }
 
     func testTimeTrialLandsBesideAnyOtherTwist() {
-        // Its own category, like No Pausing: it contradicts nothing, and a foggy Time Trial
+        // Its own category, like No Breaks: it contradicts nothing, and a foggy Time Trial
         // or a one-life Time Trial is where the pool's variety comes from
         XCTAssertEqual(DailyTwist.timeTrial.category, .tempo)
         for mode in [GameMode.classic, .endless, .endlessII] {
@@ -1479,7 +1479,7 @@ final class DailyNoRepeatsTests: XCTestCase {
         // daily's own line never prints a board best beside
     }
 
-    // MARK: - No Pausing (round 195)
+    // MARK: - No Breaks (round 195)
 
     /// §4's nerve twist: "The pause button is disabled for the run. Backgrounding the app
     /// forfeits posting."
@@ -1539,7 +1539,7 @@ final class DailyNoRepeatsTests: XCTestCase {
     }
 
     func testNoPausingIsItsOwnCategorySoItCanLandWithAnything() {
-        // It contradicts nothing - a day can be No Pausing *and* foggy, or No Pausing with
+        // It contradicts nothing - a day can be No Breaks *and* foggy, or No Breaks with
         // one life, which is where its teeth are
         XCTAssertEqual(DailyTwist.noPausing.category, .nerve)
         XCTAssertTrue(DailyTwist.noPausing.applies(to: .classic))
@@ -2105,5 +2105,65 @@ final class DailyLandslideTests: XCTestCase {
         scene.gameMode = .classic
         scene.totalStatsArray = [TotalStats()]
         XCTAssertFalse(scene.dailyLandslide)
+    }
+}
+
+/// The twists, against the document that names them.
+///
+/// James, round 237: "update the in game twist names and descriptions from the information in
+/// the twist details reference." Three had drifted - Spare Balls, Mayhem Bricks and No Pausing
+/// were built before `Giga-Ball 2026 - Twist Details` existed, and the document calls them
+/// Extra Balls, Extra Mayhem and No Breaks. Written down here because the document is not
+/// something the build can read, so this file is the closest the suite gets to holding it.
+final class TwistNamesMatchTheWorkbookTests: XCTestCase {
+
+    /// The workbook's Twist column, for the twists the game has built.
+    private let workbook: [DailyTwist: String] = [
+        .fogOfWar: "Fog of War", .noBadNews: "No Bad News", .noGoodNews: "No Good News",
+        .noPowerUps: "No Power-Ups", .drought: "Drought", .spareBalls: "Extra Balls",
+        .powerShower: "Power Shower", .oneLife: "One Life", .alwaysOn: "Always On",
+        .upsideDown: "Upside Down", .mirrored: "Mirrored", .brickSwap: "Brick Swap",
+        .mayhemBricks: "Extra Mayhem", .timeTrial: "Time Trial",
+        .monochromatic: "Monochromatic", .dailyTheme: "Theme", .landslide: "Landslide",
+        .noPausing: "No Breaks",
+    ]
+
+    func testEveryTwistIsCalledWhatTheWorkbookCallsIt() {
+        for (twist, name) in workbook {
+            XCTAssertEqual(twist.displayName, name, "\(twist)")
+        }
+    }
+
+    /// And the two that are not in it are the two that were retired.
+    ///
+    /// A twist cannot be deleted - its case name is a key in the save and in `retirementKey`,
+    /// and removing one would change which day is which for every day already played - so
+    /// "not in the workbook" and "retired" have to be the same set or something has gone
+    /// missing rather than been retired.
+    func testTheOnlyTwistsMissingFromTheWorkbookAreTheRetiredOnes() {
+        let missing = Set(DailyTwist.allCases).subtracting(workbook.keys)
+        XCTAssertEqual(missing, [.loaded, .suddenDeath])
+    }
+
+    /// Every twist says something, and says it once.
+    func testEveryTwistHasItsOwnNameAndBlurb() {
+        let names = DailyTwist.allCases.map(\.displayName)
+        XCTAssertEqual(Set(names).count, names.count, "two twists share a name")
+        for twist in DailyTwist.allCases {
+            XCTAssertFalse(twist.blurb.isEmpty, "\(twist)")
+        }
+    }
+
+    /// A Time Trial day does not spend lives, and its blurb says so.
+    ///
+    /// The workbook's Details column asks for "unlimited lives" and the game was taking them:
+    /// ninety seconds *and* three balls is two limits where the design asks for one, and a bad
+    /// start ended the attempt with a minute of it still on the board.
+    func testATimeTrialSpendsNoLives() {
+        XCTAssertFalse(GameScene.dailyLifeIsSpent(onTimeTrial: true))
+        XCTAssertTrue(GameScene.dailyLifeIsSpent(onTimeTrial: false),
+                      "and every other day still spends one")
+        XCTAssertTrue(DailyTwist.timeTrial.blurb.lowercased().contains("lose the ball"),
+                      "a player has to be told, or they will play it as if lives mattered")
     }
 }

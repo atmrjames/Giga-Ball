@@ -325,11 +325,15 @@ extension GameScene {
             InGameRecents.shared.struckBrick(named: BrickTypeCatalogue.name(of: style))
         }
 
-        if brick.size.width > brickWidth*1.5 {
+        let occupied = endlessIIFieldSize(of: brick)
+        if occupied.width > brickWidth*1.5 {
             InGameRecents.shared.struckBrick(named: BrickTypeCatalogue.name(of: .big))
-        } else if brick.size.width < brickWidth*0.75 {
+        } else if occupied.width < brickWidth*0.75 {
             InGameRecents.shared.struckBrick(named: BrickTypeCatalogue.name(of: .tiny))
         }
+        // The room it fills, not its sprite's size. A shaped brick tucks its sprite into a
+        // third of a cell (`endlessIIFieldSize`), so every dome and wedge the player struck
+        // was being written into the recents as a Tiny brick
         // The normal size goes unrecorded on purpose: "you just hit an ordinary-sized
         // brick" identifies nothing
     }
