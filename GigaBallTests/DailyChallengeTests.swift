@@ -2062,22 +2062,39 @@ final class DailyLandslideTests: XCTestCase {
         XCTAssertGreaterThan(GameScene.dailyLandslideStep, GameScene.endlessIIDescentStep)
     }
 
-    /// It stops rather than pushing bricks through the paddle.
+    /// A brick that reaches the bottom comes back at the top.
     ///
-    /// Classic has no lower limit and no way to lose to a field, so a landslide that kept
-    /// going would put bricks inside the paddle, and one that ended the run on arrival would
-    /// be inventing a way to lose that this mode has never had. It comes down to a paddle's
-    /// gap and stays there.
-    func testItStopsWhenTheFieldHasNowhereLeftToGo() {
+    /// James, round 231: "if a brick makes it to the bottom un-hit, it should wrap around back
+    /// to the top. This way the level doesn't end once all the bricks vanish off the bottom."
+    /// The field is a conveyor: it cannot empty itself by falling past the paddle, and the only
+    /// way to clear it is still to hit it.
+    ///
+    /// The tick that moves the field stands down unless the scene is in `Playing`, which a
+    /// scene built in a test is not - so the wrap is asked of the two lines it is drawn
+    /// between, which is where the decision lives.
+    func testTheFloorAndCeilingAreAPaddlesGapAndTheTopRow() {
         let scene = landslideScene()
-        let low = brick(scene, y: scene.paddle.position.y + 10)
-        XCTAssertTrue(scene.bricksAreAtTheBottom)
+        XCTAssertEqual(scene.dailyLandslideFloor,
+                       scene.paddle.position.y + scene.minPaddleGap, accuracy: 0.001,
+                       "the floor is the line the game has always called the bottom")
+        XCTAssertEqual(scene.dailyLandslideCeiling, scene.yBrickOffset, accuracy: 0.001,
+                       "a wrapped brick comes back on the row the grid was built on")
+        XCTAssertGreaterThan(scene.dailyLandslideCeiling, scene.dailyLandslideFloor,
+                             "the field would wrap into itself")
+    }
 
-        let before = low.position.y
-        scene.tickDailyLandslide(0)
-        scene.tickDailyLandslide(GameScene.dailyLandslideStep + 1)
-        XCTAssertEqual(low.position.y, before, accuracy: 0.001,
-                       "the field pushed a brick further into the paddle")
+    /// Which bricks wrap and which step: the row above the floor is the last one that moves.
+    func testOnlyTheBottomRowWraps() {
+        let scene = landslideScene()
+        let floor = scene.dailyLandslideFloor
+
+        let wrapping = brick(scene, y: floor + scene.brickHeight - 1)
+        let stepping = brick(scene, y: floor + scene.brickHeight + 1)
+
+        XCTAssertLessThan(wrapping.position.y - scene.brickHeight, floor,
+                          "this one has nowhere left to go and should come round")
+        XCTAssertGreaterThan(stepping.position.y - scene.brickHeight, floor,
+                             "this one still has a row beneath it")
     }
 
     /// And a day without the twist never moves anything.

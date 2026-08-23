@@ -373,7 +373,10 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) {
             scene.endlessIISpendPaddleTurns()
         }
-        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning, "five turns and it is gone")
+        XCTAssertTrue(scene.endlessIIInertPaddleClock.lingering,
+                      "five turns and it is saying goodbye (round 231)")
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
+        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning, "five turns, a second, gone")
     }
 
     /// The three that act between bounces are measured in seconds, not in bounces.
@@ -437,8 +440,8 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) {
             scene.endlessIISpendPaddleTurns()
         }
-        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning,
-                       "the last landing spends the clock out")
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.countsTurns,
+                       "the last landing spends the turns out - what is left is the goodbye")
 
         XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false),
                       "the turn that expired the clock still catches")
@@ -522,10 +525,13 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         let scene = paddleScene()
         scene.endlessIIPortalPaddleClock.collect(1)
         scene.endlessIISpendPaddleTurns()
-        XCTAssertFalse(scene.endlessIIPortalPaddleClock.isRunning,
-                       "the last turn is spent")
+        XCTAssertFalse(scene.endlessIIPortalPaddleClock.countsTurns,
+                       "the last turn is spent - what is left is round 231's goodbye second")
         XCTAssertTrue(scene.endlessIIPaddlePortalTook(SKSpriteNode(), collision: 0),
                       "and it still swallows")
+
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
+        XCTAssertFalse(scene.endlessIIPortalPaddleClock.isRunning)
     }
 
     func testOtherModesNeverSwallowABall() {
@@ -1087,8 +1093,9 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         for _ in 0..<GameScene.endlessIIDoublePaddleTurns {
             scene.endlessIISpendPaddleTurns()
         }
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
         XCTAssertFalse(scene.endlessIIDoublePaddleClock.isRunning,
-                       "five landings and the paddle is whole again")
+                       "five landings, a second's goodbye, and the paddle is whole again")
     }
 
     private func halves(_ scene: GameScene) -> [SKNode] {
@@ -1184,6 +1191,9 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         for _ in 0..<GameScene.endlessIIDoublePaddleTurns {
             scene.endlessIISpendPaddleTurns()
         }
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
+        // The last landing starts a second's goodbye rather than ending it (round 231), so
+        // the paddle is still split until that second is up
         scene.refreshEndlessIIDoublePaddle()
 
         XCTAssertTrue(halves(scene).isEmpty)
@@ -1256,6 +1266,7 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
         for _ in 0..<GameScene.endlessIIDoublePaddleTurns {
             scene.endlessIISpendPaddleTurns()
         }
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
         scene.refreshEndlessIIDoublePaddle()
 
         XCTAssertEqual(halves(scene).count, 0)
@@ -1497,6 +1508,7 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         for _ in 0..<GameScene.endlessIIMirrorPaddleTurns {
             scene.endlessIISpendPaddleTurns()
         }
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
         XCTAssertFalse(scene.endlessIIMirrorPaddleClock.isRunning)
         scene.tickEndlessIIMirrorPaddle()
         XCTAssertNil(mirror(scene), "and the mirror leaves with its clock")
@@ -1900,6 +1912,11 @@ final class EndlessIIBallSpinTests: XCTestCase {
         for _ in 0..<GameScene.endlessIIBallSpinTurns {
             scene.endlessIISpendPaddleTurns()
         }
+        XCTAssertTrue(scene.endlessIIBallSpinClock.lingering,
+                      "the last turn starts the goodbye rather than ending it (round 231)")
+        XCTAssertFalse(scene.endlessIIBallSpinClock.countsTurns, "no turns left to count")
+
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
         XCTAssertFalse(scene.endlessIIBallSpinClock.isRunning)
     }
 
@@ -2317,5 +2334,149 @@ final class ShapedPaddleSurvivesAResumeTests: XCTestCase {
                                             total: 5, magnitude: 0)
         XCTAssertEqual(resumed.endlessIIPaddleSurface, .convex,
                        "an older save left the paddle with a running clock and no face")
+    }
+}
+
+/// The second a spent turn-based power-up gets before it goes.
+///
+/// James, round 231: "on the last bounce of a paddle hit based power up, wait a second to
+/// remove the power up and HUD icon. Especially the shaped paddles power ups. They look weird
+/// when they immediately change to a normal paddle when the ball bounces."
+final class SpentPowerUpsLingerTests: XCTestCase {
+
+    /// The last turn does not end it, it starts the goodbye.
+    func testTheLastTurnLeavesASecondOnTheClock() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+
+        XCTAssertTrue(clock.isRunning, "the shape snapped back in the frame the ball left it")
+        XCTAssertTrue(clock.lingering)
+        XCTAssertEqual(clock.remaining, EndlessIIClock.lingerSeconds, accuracy: 0.001)
+    }
+
+    /// And it is a second of ordinary time, spent the way every other clock spends one.
+    func testTheGoodbyeRunsOutOnTime() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+
+        clock.run(down: EndlessIIClock.lingerSeconds/2)
+        XCTAssertTrue(clock.isRunning, "half a second is not a second")
+
+        clock.run(down: EndlessIIClock.lingerSeconds)
+        XCTAssertFalse(clock.isRunning, "the goodbye never ended")
+        XCTAssertFalse(clock.lingering)
+    }
+
+    /// A goodbye has to be asked for, and Descent does not ask.
+    ///
+    /// It counts rows rather than paddle hits, and a Descent running a second past its last
+    /// row would not be worth exactly its rows any more - which is a promise §5.4 makes and a
+    /// test holds it to.
+    func testAClockThatAsksForNoGoodbyeSimplyEnds() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn()
+        XCTAssertFalse(clock.isRunning, "it lingered without being asked to")
+        XCTAssertFalse(clock.lingering)
+    }
+
+    /// A turn left is a turn left: the goodbye only starts when the bouncing has run out.
+    func testAClockWithTurnsLeftDoesNotLinger() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 5)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+
+        XCTAssertFalse(clock.lingering)
+        XCTAssertEqual(clock.remaining, 4)
+        XCTAssertTrue(clock.countsTurns)
+    }
+
+    /// Its ring stops being segmented for that second, because it has no turns to mark.
+    func testTheRingStopsCountingTurnsForTheGoodbye() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        XCTAssertFalse(clock.countsTurns,
+                       "a segmented ring fed a smooth fraction reads as broken")
+    }
+
+    /// The scene runs the goodbye down, or the power-up would never end at all.
+    ///
+    /// Turn-based clocks are spent by bouncing and by nothing else, so a clock that has
+    /// swapped its turns for a second needs something to take that second off it.
+    func testTheSceneRunsTheGoodbyeDown() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessIICollectInertPaddle()
+        for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) { scene.endlessIISpendPaddleTurns() }
+        XCTAssertTrue(scene.endlessIIInertPaddleClock.lingering, "it should be saying goodbye")
+
+        scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
+        XCTAssertFalse(scene.endlessIIInertPaddleClock.isRunning,
+                       "nothing was taking the second off it")
+    }
+
+    /// Every turn-based clock is in the list that runs the goodbye down.
+    ///
+    /// A clock left out would keep its shape for ever, which is the one failure this change
+    /// could cause and the one nobody would think to look for.
+    func testEveryTurnClockIsInTheList() {
+        XCTAssertEqual(GameScene.endlessIITurnClockPaths.count,
+                       GameScene.endlessIIPaddleTurnClockKeys.count,
+                       "a turn-based clock is missing from one of the two lists")
+    }
+}
+
+/// The ring shows James's shaped-paddle artwork, not the drawn profile.
+///
+/// Round 231: "shaped paddles aren't using the shaped paddle power up HUD icons yet." The art
+/// arrived in round 213 and the ring went on drawing the profile `PaddleBounce.shaped` traces,
+/// which is a fair picture of the old formula and no picture at all of what the paddle wears.
+final class ShapedPaddleHudIconTests: XCTestCase {
+
+    private func shaped(_ surface: PaddleBounce.Surface) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessIICollectPaddleSurface(surface)
+        return scene
+    }
+
+    /// Each shape names its own icon, and every one of those names is a real asset.
+    ///
+    /// The name is the whole risk here: `hud(_:_:)` falls back to the drawn badge, so a typo
+    /// looks exactly like a shape whose art was never delivered.
+    func testEveryShapeNamesArtThatExists() {
+        for surface in PaddleBounce.Surface.allCases where surface != .jagged {
+            let scene = shaped(surface)
+            let name = scene.endlessIIPaddleShapeIconName
+            XCTAssertNotNil(UIImage(named: name),
+                            "\(surface) asks for \"\(name)\", which is not in the catalogue")
+            XCTAssertNotNil(UIImage(named: name + "Disabled"),
+                            "\(surface)'s disabled twin is missing")
+        }
+    }
+
+    /// The five name five different pictures.
+    func testTheShapesDoNotShareAnIcon() {
+        let names = PaddleBounce.Surface.allCases
+            .filter { $0 != .jagged }
+            .map { shaped($0).endlessIIPaddleShapeIconName }
+        XCTAssertEqual(Set(names).count, names.count, "two shapes wear the same badge")
+    }
+
+    /// And the ring asks for it, rather than for the drawn profile.
+    func testTheRingCarriesTheArtwork() {
+        let scene = shaped(.concave)
+        let entry = scene.endlessIIPaddleRingEntries()
+            .first { $0.id == "endlessIIPaddleSurface" }
+        XCTAssertNotNil(entry, "a running shape is not in the ring at all")
+
+        guard let art = UIImage(named: "ConcavePaddleIcon") else { return XCTFail("no art") }
+        XCTAssertEqual(entry?.texture.size().width ?? 0, art.size.width, accuracy: 1,
+                       "the ring is still drawing the profile rather than the picture")
     }
 }

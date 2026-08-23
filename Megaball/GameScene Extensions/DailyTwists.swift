@@ -340,15 +340,27 @@ extension GameScene {
         isDailyChallenge && DailyChallengeSession.shared.has(.landslide)
     }
 
-    /// Steps the whole field down one row, every few seconds, until it can go no lower.
+    /// The line a Classic brick wraps at, and the row it comes back on.
     ///
-    /// **It stops rather than kills.** Mayhem's field descending is pressure, not a death
-    /// rule - its lower limit is where bricks are *destroyed*, and the run still ends by
-    /// losing the ball. Classic has no such line, so a landslide that kept going would push
-    /// bricks through the paddle, and one that ended the run on arrival would be inventing a
-    /// way to lose that this mode has never had. It comes down to a paddle's gap above the
-    /// paddle and stays there: the level is now played in a third of the room, which is the
-    /// whole of the twist and is quite enough of it.
+    /// The floor is a paddle's own gap above the paddle, which is the same line
+    /// `bricksAreAtTheBottom` has always drawn. The ceiling is the level's top row, where the
+    /// grid was built.
+    var dailyLandslideFloor: CGFloat { paddle.position.y + minPaddleGap }
+    var dailyLandslideCeiling: CGFloat { yBrickOffset }
+
+    /// Steps the whole field down one row every few seconds, for ever.
+    ///
+    /// **A brick that reaches the bottom comes back at the top** (James, round 231: "if a
+    /// brick makes it to the bottom un-hit, it should wrap around back to the top. This way
+    /// the level doesn't end once all the bricks vanish off the bottom"). That is what makes
+    /// this a twist rather than a countdown: the field is a conveyor, the level cannot empty
+    /// itself by falling past the paddle, and the only way to clear it is still to hit it.
+    ///
+    /// It also settles a question Classic has never had to answer. Mayhem's descent is
+    /// pressure rather than a death rule, and Classic has no lower limit to destroy bricks at
+    /// - so a landslide that simply kept going would push bricks through the paddle, and one
+    /// that ended the run on arrival would be inventing a way to lose. Wrapping is neither: the
+    /// field keeps coming, and what it costs the player is room and time.
     ///
     /// Driven from `update` rather than a repeating action, the way everything in this game
     /// that moves bricks is: `countBricks` gates on a brick having no actions, and a brick
@@ -362,10 +374,22 @@ extension GameScene {
         guard GameScene.landslideIsDue(now: currentTime,
                                        lastStep: dailyLandslideLastStep) else { return }
         dailyLandslideLastStep = currentTime
-        guard bricksAreAtTheBottom == false else { return }
 
+        let floor = dailyLandslideFloor
+        let ceiling = dailyLandslideCeiling
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            node.run(.moveBy(x: 0, y: -self.brickHeight, duration: 0.25))
+            guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }
+            if brick.position.y - self.brickHeight < floor {
+                brick.position.y = ceiling
+                brick.alpha = 0
+                brick.run(.fadeIn(withDuration: 0.25))
+                // Written straight up rather than glided, and faded in where it lands: a brick
+                // travelling the height of the field would be a brick between rows for most of
+                // a second, and a brick's `position.y` is its row (§8.6). Appearing is the
+                // honest picture anyway - it has come round, not flown home
+            } else {
+                brick.run(.moveBy(x: 0, y: -self.brickHeight, duration: 0.25))
+            }
         }
         if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
         if soundsSetting { run(endlessRowDownSound) }

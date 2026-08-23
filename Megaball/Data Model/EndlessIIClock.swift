@@ -105,12 +105,46 @@ struct EndlessIIClock: Equatable {
 
     /// A turn was used - for the clocks that count paddle hits rather than seconds,
     /// the way the sticky paddle always has (§5.4, revised in play-testing).
-    mutating func spendTurn() {
+    mutating func spendTurn(thenLingerFor linger: TimeInterval = 0) {
         remaining = max(0, remaining - 1)
-        if remaining == 0, total > 0 {
+        if remaining == 0, total > 0, linger > 0 {
+            countsTurns = false
+            level = 0
+            total = linger
+            remaining = linger
+            lingering = true
+            // **The last turn does not end it, it starts the goodbye** (James, round 231: "on
+            // the last bounce of a paddle hit based power up, wait a second to remove the
+            // power up and HUD icon. Especially the shaped paddles power ups. They look weird
+            // when they immediately change to a normal paddle when the ball bounces").
+            //
+            // A second of ordinary time, spent by `run(down:)` like any other clock, so
+            // everything that reads "is it running" goes on saying yes for that second: the
+            // paddle keeps its shape, the ring keeps its icon, and the effect keeps working.
+            // It stops counting *turns* though, because there are none left to count - which
+            // is also what takes the segment marks off the ring for the last second, and
+            // that is the honest picture of a power-up that has no turns and a little time.
+            //
+            // **Asked for rather than assumed**, and Descent is why. It counts rows, not
+            // paddle hits, and a Descent that ran a second past its last row would not be
+            // worth exactly its rows any more - which is a promise §5.4 makes and a test
+            // holds it to. The goodbye is for the power-ups a player watches change shape.
+        } else if remaining == 0, total > 0 {
             self = EndlessIIClock()
         }
     }
+
+    /// How long a spent turn-based power-up stays before it goes.
+    ///
+    /// One second, which is James's own number. Long enough that a shape does not snap back in
+    /// the same frame the ball leaves it, short enough that nobody plays a bounce on it.
+    static let lingerSeconds: TimeInterval = 1
+
+    /// Whether this clock is running out its goodbye rather than its turns.
+    ///
+    /// Not saved: a run resumed mid-goodbye comes back without it, which is a power-up ending
+    /// a second early after an interruption that took longer than that anyway.
+    var lingering: Bool = false
 
     /// Play advanced by this much.
     mutating func run(down delta: TimeInterval) {

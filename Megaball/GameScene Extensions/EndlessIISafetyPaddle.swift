@@ -218,15 +218,15 @@ extension GameScene {
                 bar.texture = endlessIISafetyPaddleDress
                 bar.color = GameScene.endlessIIHaloColour
                 bar.colorBlendFactor = 1
-                bar.centerRect = wantedArt == nil ? endlessIIPaddleDressCenterRect
-                                                  : CGRect(x: 0, y: 0, width: 1, height: 1)
+                bar.centerRect = endlessIIPaddleDressCenterRect
                 bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
                 // **Re-dressed as well as resized** (round 224). It took the paddle's picture
                 // once, at birth, so a shape collected while the bar stood left it wearing the
                 // plain face. The tint has to be written back with the texture, for the
                 // mirror's reason: a texture write leaves whatever colour the sprite carries.
-                // A shaped picture stretches whole rather than nine-sliced, because
-                // `paddleCapRect` is in the plain art's unit coordinates
+                // The nine-slice is the paddle's own either way - round 231 found that a
+                // shaped picture is the same width as the plain one, so the cap rect protects
+                // the same strip on both
             }
             if bar.xScale != paddle.xScale || bar.yScale != paddle.yScale {
                 bar.xScale = paddle.xScale

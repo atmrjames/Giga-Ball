@@ -135,6 +135,28 @@ extension GameScene {
         }
     }
 
+    /// The ring's picture for the shape that is running.
+    ///
+    /// James, round 231: "shaped paddles aren't using the shaped paddle power up HUD icons
+    /// yet." The art has been in since round 213 and the ring was still drawing the profile
+    /// `PaddleBounce.shaped` traces - which is a fair picture of the old formula and no
+    /// picture at all of the artwork the paddle now wears.
+    ///
+    /// `hud(_:_:)` keeps the drawn one as the fallback, so a shape whose art is missing looks
+    /// exactly as it did rather than showing nothing.
+    var endlessIIPaddleShapeIconName: String {
+        switch endlessIIPaddleSurface {
+        case .convex: return "ConvexPaddleIcon"
+        case .concave: return "ConcavePaddleIcon"
+        case .wavy: return "WavePaddleIcon"
+        case .wedgeLeft: return "WedgeLeftPaddleIcon"
+        case .wedgeRight: return "WedgeRightPaddleIcon"
+        case .jagged, .none: return "ConvexPaddleIcon"
+            // Jagged is retired and has no art; nil is the moment between a shape ending and
+            // the ring noticing. Neither is ever drawn, and both need an answer
+        }
+    }
+
     /// The laser and sticky overlays a shape wears, drawn to fit it.
     func endlessIIPaddleShapeSuffix(_ surface: PaddleBounce.Surface) -> String? {
         switch surface {
@@ -243,14 +265,22 @@ extension GameScene {
         paddle.size = CGSize(width: width, height: grown)
         endlessIIPaddleShapeBodyWidth = width
 
-        if wanted != nil {
-            paddle.centerRect = CGRect(x: 0, y: 0, width: 1, height: 1)
-            // **A shaped paddle is stretched whole, not nine-sliced.** `paddleCapRect` is
-            // written in the *plain* art's unit coordinates - 80 wide with 10pt caps - and a
-            // shaped picture is a different size, so those fractions would protect the wrong
-            // strips of it. Stretching the whole texture is also the honest reading of what a
-            // wider shape is: a wider dome, not a dome with flat pieces let into its ends
-        }
+        // **The nine-slice is left exactly as the paddle's own machinery set it** (James,
+        // round 231: "shaped paddles are distorting when expanded or shrunk").
+        //
+        // Round 214 forced the whole texture to stretch here, on the reasoning that
+        // `paddleCapRect` is written in the plain art's unit coordinates and would protect the
+        // wrong strips of a shaped picture. That reasoning was wrong in the direction that
+        // matters: every shaped paddle is drawn at the *same width* as the plain one - all of
+        // them are 75 across - and the cap rect only slices horizontally, its y already
+        // spanning the full height. So the same fractions protect the same physical strip on
+        // every one of them.
+        //
+        // What was distorting is what the plain paddle used to distort before round 201 fixed
+        // it the same way: the rounded ends, stretched into ovals. The middle still stretches,
+        // which is right for all five shapes - a wider dome is a wider, shallower dome, and a
+        // longer wedge is a longer slope - and `paddleCenterRectZero`/`Plus` decide when,
+        // exactly as they do for a paddle wearing no shape at all.
         endlessIIPaddleShapeLift = (grown - paddleHeight)/2
         paddle.position.y += endlessIIPaddleShapeLift
 
@@ -580,18 +610,18 @@ extension GameScene {
         // Snapshotted before the spend: the effects these buy land later in the same
         // contact, and a clock expired by its own last turn must still deliver it
 
-        endlessIIAimedStickyClock.spendTurn()
-        endlessIIPortalPaddleClock.spendTurn()
-        endlessIIInertPaddleClock.spendTurn()
+        endlessIIAimedStickyClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIPortalPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIInertPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
         // Ball Steering, Magnetism and Paddle Halo are not here: all three run on time now,
         // and spending them a turn as well would end them twice as fast as their rings say
-        endlessIIFlippedAngleClock.spendTurn()
-        endlessIIReversedControlsClock.spendTurn()
-        endlessIIAutoAimClock.spendTurn()
-        endlessIIPaddleSurfaceClock.spendTurn()
-        endlessIIDoublePaddleClock.spendTurn()
-        endlessIIMirrorPaddleClock.spendTurn()
-        endlessIIBallSpinClock.spendTurn()
+        endlessIIFlippedAngleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIReversedControlsClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIAutoAimClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIPaddleSurfaceClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIDoublePaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIMirrorPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        endlessIIBallSpinClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
         // On hits since round 180 (James: "it doesn't ever end. This should be based on
         // paddle hits, not timed") - both had been 12-second clocks that no loop ran down
         endlessIISpendLandingTurn()
@@ -725,6 +755,7 @@ extension GameScene {
             endlessIIBallSteeringClock.run(down: endlessIIClockDelta)
             endlessIIMagnetismClock.run(down: endlessIIClockDelta)
             endlessIIPaddleHaloClock.run(down: endlessIIClockDelta)
+            runEndlessIILingeringClocks(endlessIIClockDelta)
         }
         // The rest of the batch counts paddle hits, spent in `endlessIISpendPaddleTurns`.
         // These three are the exceptions: they act continuously rather than on contact, so
@@ -926,7 +957,8 @@ extension GameScene {
             ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.hud("ReversedControlsIcon", PowerUpIcon.reversedControls)),
             ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
-             PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)),
+             PowerUpIcon.hud(endlessIIPaddleShapeIconName,
+                             PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex))),
             ("endlessIIDoublePaddle", endlessIIDoublePaddleClock,
              PowerUpIcon.hud("DoublePaddleIcon", PowerUpIcon.doublePaddle)),
             ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock,
@@ -1039,6 +1071,31 @@ extension GameScene {
         }
         markEndlessIIRestoredTurns(key: key)
         return true
+    }
+
+    /// Every turn-based clock in the game, as key paths.
+    ///
+    /// The paddle batch plus the two that live elsewhere. Needed as key paths rather than as
+    /// the names `endlessIIPaddleTurnClockKeys` holds, because this list is *written* to: a
+    /// clock spending its last turn keeps going for a second, and something has to run that
+    /// second down.
+    static let endlessIITurnClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] = [
+        \.endlessIIAimedStickyClock, \.endlessIIPortalPaddleClock,
+        \.endlessIIInertPaddleClock, \.endlessIIFlippedAngleClock,
+        \.endlessIIReversedControlsClock, \.endlessIIAutoAimClock,
+        \.endlessIIPaddleSurfaceClock, \.endlessIIDoublePaddleClock,
+        \.endlessIIMirrorPaddleClock, \.endlessIIBallSpinClock,
+    ]
+
+    /// Runs down the second a spent turn-based power-up gets before it goes.
+    ///
+    /// Only the lingering ones, and only on time. A clock with turns left is untouched, which
+    /// is the whole point: turns are spent by bouncing, and seconds only start once the
+    /// bouncing has run out.
+    func runEndlessIILingeringClocks(_ delta: TimeInterval) {
+        for path in GameScene.endlessIITurnClockPaths where self[keyPath: path].lingering {
+            self[keyPath: path].run(down: delta)
+        }
     }
 
     /// Which of this batch's clocks are measured in paddle hits.
