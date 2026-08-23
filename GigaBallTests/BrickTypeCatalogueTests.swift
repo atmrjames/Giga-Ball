@@ -161,11 +161,13 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // rather than a new kind of exclusion - which is what this line is here to show: a
         // shape added to the enum lands in this sentence without anybody writing it down
 
-        // Spinning refuses the shapes and three others now, which is enough of the list that
-        // naming what it *takes* became the shorter sentence - which is the whole point of
-        // the rule this test is about
+        // Spinning went the other way in round 235, and the sentence turned round with it -
+        // which is the whole point of the rule this test is about. The workbook took four
+        // styles off it (Fixed, Gravity, Exploding, Spawner, all of which answer in cells,
+        // which a turning brick has left behind) and gave it back the four shapes and
+        // Directional, so naming what it *refuses* is now the shorter half
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .spinning),
-                       "Rounded, Flashing, Fixed, Gravity, Exploding, Spawner, Portal")
+                       "Any but Breathing, Fixed, Gravity, Moving, Exploding, Spawner")
 
         // A Portal is never damaged and never destroyed, so anything about being destroyed or
         // about being solid has nothing to attach to - and there its exclusions are no shorter

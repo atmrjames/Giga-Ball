@@ -134,25 +134,48 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     /// What a shaped face cannot share a brick with, and why - stated as a rule rather than
     /// as thirty pairs, because it is one rule.
     ///
-    /// A face rebuilds three things at once: the outline that is drawn, the physics body,
-    /// and where the sprite hides. So it cannot live with anything that redraws the outline
-    /// (Rounded), turns the brick (Spinning), decides where it sits (Gravity, Moving,
-    /// Fixed), reads a hit against a rectangle (Directional), or replaces what a hit means
-    /// entirely (Portal). What is left - Flashing, Exploding, Spawner - touches colour,
-    /// alpha and neighbours, none of which the shape cares about.
-    static let refusedByAFace: Set<EndlessIIStyle> = [
-        .rounded, .spinning, .gravity, .moving, .fixed, .directional, .portal, .breathing,
-    ]
-    // Breathing joins them because it rebuilds the body as a rectangle every time it
-    // crosses a size, which is precisely the thing a shaped face owns
+    /// **Shape and action are two axes** (James, on the 2026 brick workbook: "this was always
+    /// the intention, I just didn't have it mapped out until now"). A face used to refuse
+    /// eight styles; it refuses three, and each of the three is a genuine contradiction
+    /// rather than a cost:
+    ///
+    /// - **Rounded** is itself an outline. Two outlines are two answers to one question, the
+    ///   same reason two faces cannot share a brick.
+    /// - **Directional** reads a hit against a rectangle's four sides and draws a bright bar
+    ///   along one of them. On James's call it is refused outright rather than taught about
+    ///   slopes: "directional bricks are always the standard shape".
+    /// - **Portal** replaces what a hit *means*. It is struck rather than damaged, and the
+    ///   angle a shaped face gives is an answer to a bounce that never happens.
+    ///
+    /// The five that left - Spinning, Gravity, Moving, Fixed and Breathing - all turned out to
+    /// be about *where the brick is* rather than what its outline is, and a shaped brick
+    /// answers that with its node exactly as a rectangular one does. What they needed was not
+    /// new geometry but one honest answer to "how much room does this brick take up", because
+    /// a shaped brick's sprite is a third of a cell and every one of them was asking the
+    /// sprite. `endlessIIFieldSize` is that answer.
+    static let refusedByAFace: Set<EndlessIIStyle> = [.rounded, .directional, .portal]
 
     static let incompatiblePairs: [Set<EndlessIIStyle>] = [
         [.spinning, .moving],       // both want to say where the brick is
         [.gravity, .moving],        // the same
-        [.spinning, .directional],  // a vulnerable side has to stay findable
-        [.moving, .directional],    // the same
-        [.flashing, .directional],  // a brick that keeps vanishing cannot also be read
         [.exploding, .spawner],     // opposite answers to the same question
+        // **Spinning and Directional now go together, and Moving and Flashing with it**
+        // (James, on the brick workbook's matrix). All three were refused on the same
+        // reasoning - "a vulnerable side has to stay findable" - and the workbook's answer is
+        // that a soft side which turns, wanders or blinks is a shot you have to *time* rather
+        // than one you cannot take. "Spinning plus Directional should be allowed" was the
+        // instruction, and the other two follow from it: a brick whose open face is harder to
+        // reach is the point of Directional, not a failure of it
+        [.spinning, .fixed],        // one anchors where it stands, the other never stands still
+        [.spinning, .gravity],      // the same argument, falling
+        [.spinning, .exploding],    // a blast measured in cells, thrown from a brick that
+        [.spinning, .spawner],      // is between them - the workbook refuses both
+        [.breathing, .gravity],     // what holds a faller up cannot be a brick that vanishes
+        [.breathing, .spawner],     // nor can what a spawn measures its empty cells against
+        [.moving, .spawner],        // a well that walks fills a different cell each time
+        // The workbook's seven new refusals. Every one is a pair where one style answers a
+        // question in *cells* and the other has left the cell grid behind - which is the same
+        // objection `[.spinning, .moving]` has always made, applied consistently
         [.portal, .flashing],       // a Portal is never not solid
         [.portal, .directional],    // nor ever damaged
         [.portal, .exploding],      // one big thing per hit, or nobody can follow it
@@ -164,6 +187,10 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
         [.breathing, .rounded],  // Rounded's drawn face is built once, at one size
         [.breathing, .moving],   // the room a mover looks for is measured in whole cells
         [.breathing, .portal],   // a Portal's mouth is a fixed target or it cannot be aimed at
+        [.moving, .portal],      // and a mouth that wanders is not a fixed target either
+        // Gravity and Spinning stay allowed with a Portal, on the same test: a faller comes to
+        // rest and is a fixed target again, and a spinner never leaves its cell - a Portal is
+        // struck rather than bounced off, so the angle its turning presents does not matter
     ]
 }
 

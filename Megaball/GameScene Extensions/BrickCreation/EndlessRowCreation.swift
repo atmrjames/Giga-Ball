@@ -820,6 +820,7 @@ extension GameScene {
         // After this row's own probability tweaks, so it damps the figures actually in use
 
         applyEndlessIISizes(to: &brickArray)
+        applyEndlessIIShapes(to: brickArray)
         applyEndlessIIBehaviours(to: brickArray)
         applyEndlessIIRoles(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend

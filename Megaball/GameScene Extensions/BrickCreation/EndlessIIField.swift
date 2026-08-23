@@ -94,7 +94,7 @@ extension GameScene {
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
             let origin = geometry.cell(at: node.position)
-            let size = geometry.footprint(of: brick.size)
+            let size = geometry.footprint(of: self.endlessIIFieldSize(of: brick))
             let share = (brick.size.width*brick.size.height)
                 / (cellArea*CGFloat(size.columns*size.rows))
             for row in 0..<size.rows {

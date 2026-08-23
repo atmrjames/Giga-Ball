@@ -262,7 +262,10 @@ extension GameScene {
     /// so a width assigned straight from `brickWidth` does not read back as `brickWidth` -
     /// a plain `==` here is always false, which silently turns off everything it guards.
     func isOrdinaryCellSized(_ brick: SKSpriteNode) -> Bool {
-        abs(brick.size.width - brickWidth) < 0.5 && abs(brick.size.height - brickHeight) < 0.5
+        let size = endlessIIFieldSize(of: brick)
+        return abs(size.width - brickWidth) < 0.5 && abs(size.height - brickHeight) < 0.5
+        // The field size rather than the sprite's, so a shaped brick is the ordinary cell it
+        // fills rather than the third of one its sprite hides in (`endlessIIFieldSize`)
     }
 
     /// Replaces a brick with the four quarter-cell bricks that fill its cell.

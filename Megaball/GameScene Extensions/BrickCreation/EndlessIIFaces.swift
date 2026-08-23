@@ -235,6 +235,53 @@ extension GameScene {
     /// which of the two a brick is wearing.
     static let brickFaceName = "endlessIIBrickFace"
 
+    /// The room a brick takes up in the field, whatever its sprite has been shrunk to.
+    ///
+    /// **`brick.size` is not the answer for a shaped brick.** `makeFace` tucks the sprite into
+    /// the rectangle the face says is safely inside itself - about a third of a cell - so the
+    /// sprite is a marker of what the brick *is* rather than of how much room it takes. Ask it
+    /// how big a Convex brick is and it says "a Tiny one".
+    ///
+    /// That did not matter while a shape refused every style that asks the question. Round 235
+    /// split shape from action, so Gravity, Moving, Fixed, Spinning and Breathing all now ask
+    /// it of bricks that may be shaped - and each of them would have been told a shaped brick
+    /// was a quarter-cell one sitting off the grid.
+    ///
+    /// Read off the face's own path rather than remembered, so it cannot fall out of step with
+    /// the shape actually drawn - which is `endlessIIFaceCell`'s whole job for the artwork.
+    func endlessIIFieldSize(of brick: SKSpriteNode) -> CGSize {
+        guard let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
+        else { return brick.size }
+        return endlessIIFaceCell(brick, shape: shape)
+    }
+
+    /// The room a brick takes up, as a rectangle in the field's own coordinates.
+    ///
+    /// `brick.frame` for everything that is not shaped - which is what a Big brick needs,
+    /// since its sprite genuinely hangs off its node. A shaped brick's silhouette is centred
+    /// on the node, so its rectangle is the cell around the node rather than the sprite's.
+    func endlessIIFieldRect(of brick: SKSpriteNode) -> CGRect {
+        guard brick.endlessIIFace != nil else { return brick.frame }
+        let size = endlessIIFieldSize(of: brick)
+        return CGRect(x: brick.position.x - size.width/2,
+                      y: brick.position.y - size.height/2,
+                      width: size.width, height: size.height)
+    }
+
+    /// Where the middle of a brick is, in its own coordinates - where anything drawn *on* a
+    /// brick belongs.
+    ///
+    /// Zero for an ordinary brick, and zero again for a shaped one: `makeFace` adds the
+    /// silhouette as a child at the node's origin and moves the *sprite* out of the way, so
+    /// the shape is centred on the node even though the sprite is not. A Big brick is the one
+    /// case that actually travels - its sprite hangs off the node so the node can stay on its
+    /// row centre (§8.6) - and the formula below is for it.
+    func endlessIIBrickCentre(of brick: SKSpriteNode) -> CGPoint {
+        guard brick.endlessIIFace == nil else { return .zero }
+        return CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                       y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+    }
+
     /// Gives a brick a shaped face: a new body, a new outline, and the sprite tucked out of
     /// sight behind it.
     ///
@@ -256,14 +303,7 @@ extension GameScene {
         // Recorded, because a resumed game rebuilds the brick and would otherwise re-roll
         // the orientation - the round-150 lesson, one level further in
 
-        let pieces = EndlessIIFaceGeometry.bodyPieces(face, size: cell, mirrored: mirrored,
-                                                      flipped: flipped)
-            .map { SKPhysicsBody(polygonFrom: $0) }
-        brick.physicsBody = brickBody(pieces.count == 1 ? pieces[0]
-                                                        : SKPhysicsBody(bodies: pieces))
-        // One convex polygon where the shape allows it, a compound of two where it does not
-
-        let shape = SKShapeNode(path: EndlessIIFaceGeometry.silhouette(face, size: cell))
+        let shape = SKShapeNode()
         shape.xScale = mirrored ? -1 : 1
         shape.yScale = flipped ? -1 : 1
         // The path is built the right way up and the *node* is turned, which is the same
@@ -277,13 +317,48 @@ extension GameScene {
         shape.name = GameScene.brickFaceName
         brick.addChild(shape)
 
+        brick.endlessIIFace = face
+        resizeEndlessIIFace(brick, to: cell)
+    }
+
+    /// Builds a shaped brick's outline, body and hiding place at a given cell size.
+    ///
+    /// The whole of what a face *is*, in one place, because a Breathing shaped brick has it
+    /// done again as it swells and shrinks (round 235) and a face rebuilt two different ways
+    /// is a face that will one day disagree with itself.
+    func resizeEndlessIIFace(_ brick: SKSpriteNode, to cell: CGSize, solid: Bool = true) {
+        redrawEndlessIIFace(brick, to: cell)
+        rebuildEndlessIIFaceBody(brick, to: cell, solid: solid)
+    }
+
+    /// The drawn half: the silhouette, its artwork, and where the sprite hides inside it.
+    ///
+    /// Cheap enough to run every frame, which is what a breath needs - a path of four or five
+    /// points and two assignments. The body is the expensive half and is rebuilt in steps.
+    func redrawEndlessIIFace(_ brick: SKSpriteNode, to cell: CGSize) {
+        guard let face = brick.endlessIIFace,
+              let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
+        else { return }
+
+        guard cell.width > 0.01, cell.height > 0.01 else {
+            shape.path = nil
+            brick.size = .zero
+            return
+            // A breath reaches nothing at all at the bottom, and a brick that is not there is
+            // drawn as nothing rather than as a degenerate sliver
+        }
+
+        shape.path = EndlessIIFaceGeometry.silhouette(face, size: cell)
+        // The *unreflected* path, every time. The reflection lives on the shape node's own
+        // scale (see `makeFace`), so rebuilding the path must not apply it again
         if refreshEndlessIIFaceArt(brick, shape, GameScene.shapedArt(for: face),
                                    cell: cell) == false {
             shape.fillTexture = endlessIIFaceFill(brick, nil)
         }
 
-        let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell, mirrored: mirrored,
-                                                   flipped: flipped)
+        let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell,
+                                                   mirrored: brick.endlessIIFaceMirrored ?? false,
+                                                   flipped: brick.endlessIIFaceFlipped ?? false)
         brick.size = hide.size
         brick.anchorPoint = CGPoint(x: 0.5 - hide.midX/hide.width,
                                     y: 0.5 - hide.midY/hide.height)
@@ -291,7 +366,27 @@ extension GameScene {
         // its row centre, which is the one thing the descent and the bottom-row check read
         // (§8.6). For the dome and the notch this is the anchor it already had; only the
         // Wedge's sprite has to go and sit in a corner
-        brick.endlessIIFace = face
+    }
+
+    /// The solid half. `solid` is false at the bottom of a breath, where a brick is a picture
+    /// rather than a brick - the arrangement a Flashing brick has in its passable phase.
+    func rebuildEndlessIIFaceBody(_ brick: SKSpriteNode, to cell: CGSize, solid: Bool = true) {
+        guard let face = brick.endlessIIFace else { return }
+        guard solid, cell.width > 0.01, cell.height > 0.01 else {
+            brick.physicsBody = nil
+            return
+            // `SKPhysicsBody(polygonFrom:)` given an empty path is not a body nothing can hit,
+            // it is undefined - so nothing at all is the honest answer as well as the safe one
+        }
+
+        let pieces = EndlessIIFaceGeometry
+            .bodyPieces(face, size: cell,
+                        mirrored: brick.endlessIIFaceMirrored ?? false,
+                        flipped: brick.endlessIIFaceFlipped ?? false)
+            .map { SKPhysicsBody(polygonFrom: $0) }
+        brick.physicsBody = brickBody(pieces.count == 1 ? pieces[0]
+                                                        : SKPhysicsBody(bodies: pieces))
+        // One convex polygon where the shape allows it, a compound of two where it does not
     }
 
     /// Keeps a shaped brick's face showing what the brick is.

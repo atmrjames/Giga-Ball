@@ -153,6 +153,159 @@ final class EndlessIIFaceTests: XCTestCase {
         XCTAssertEqual(faceStyles.count, EndlessIIFace.allCases.count)
     }
 
+    // MARK: - Shape and action as two axes (round 235)
+
+    /// A scene with the field geometry filled in, for the tests that need a real brick.
+    private func fieldScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.ballSize = 12
+        return scene
+    }
+
+    private func shapedBrick(_ scene: GameScene, _ face: EndlessIIFace,
+                             at point: CGPoint = CGPoint(x: 0, y: 200)) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+        brick.position = point
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        scene.makeFace(face, on: brick)
+        return brick
+        // The ordinary brick texture, not a plain colour: `endlessIIBehaviour(of:)` reads what
+        // a brick *is* off its texture, and a brick with none is refused every style - which
+        // would have made the assertions below pass for the wrong reason
+    }
+
+    /// A shaped brick fills a whole cell, however small the sprite hiding inside it is.
+    ///
+    /// This is the one fact the whole axis split rests on. `makeFace` shrinks the sprite into
+    /// the rectangle the face says is safely inside itself - about a third of a cell - so
+    /// every style that asks "how big is this brick" was being told a shaped brick was a Tiny
+    /// one sitting off the grid. That did not matter while a shape refused all five of them.
+    func testAShapedBrickStillFillsItsWholeCell() {
+        let scene = fieldScene()
+        for face in EndlessIIFace.allCases {
+            let brick = shapedBrick(scene, face)
+            XCTAssertLessThan(brick.size.width, cell.width*0.9,
+                              "\(face)'s sprite should be tucked inside the shape")
+            XCTAssertEqual(scene.endlessIIFieldSize(of: brick).width, cell.width,
+                           accuracy: 0.5, "\(face)")
+            XCTAssertEqual(scene.endlessIIFieldSize(of: brick).height, cell.height,
+                           accuracy: 0.5, "\(face)")
+            XCTAssertTrue(scene.isOrdinaryCellSized(brick), "\(face)")
+            XCTAssertTrue(scene.occupiesOneCell(brick), "\(face)")
+            brick.removeFromParent()
+        }
+    }
+
+    /// And the field sees it in exactly one cell, not none and not four.
+    func testAShapedBrickOccupiesTheCellItSitsIn() {
+        let scene = fieldScene()
+        let brick = shapedBrick(scene, .wedge)
+        let cellOf = scene.endlessIICell(of: brick)
+        let occupancy = scene.endlessIIOccupancy()
+        XCTAssertEqual(occupancy[cellOf]?.count, 1)
+        XCTAssertTrue(occupancy[cellOf]?.first === brick)
+    }
+
+    /// The five styles the workbook freed now stack with every shape.
+    func testAShapeTakesTheStylesThatOnlySayWhereABrickIs() {
+        for face in EndlessIIFace.allCases {
+            for other in [EndlessIIStyle.spinning, .gravity, .moving, .fixed, .breathing] {
+                XCTAssertTrue(face.style.stacksWith(other),
+                              "\(face) should stack with \(other) - shape and action are two "
+                              + "axes, and none of these five touches the outline")
+            }
+        }
+    }
+
+    /// A shaped brick can actually be *given* one, which is a different question.
+    ///
+    /// A style has to be in a pool to exist (§8.6), and the same trap has a second door: a
+    /// combination the grid allows and the generator can never produce looks exactly like one
+    /// that is very rare. The shapes have their own pass for this reason - while they shared
+    /// the appearance pool with Breathing, a brick could have a shape *or* breathe and never
+    /// both, whatever `stacksWith` said.
+    func testAShapedBrickIsStillOfferedASecondStyle() {
+        let scene = fieldScene()
+        let brick = shapedBrick(scene, .convex)
+        for style in [EndlessIIStyle.spinning, .gravity, .moving, .fixed, .breathing] {
+            XCTAssertTrue(scene.endlessIICanTake(style, brick), "\(style)")
+        }
+        XCTAssertFalse(scene.endlessIICanTake(.rounded, brick), "two outlines, one brick")
+        XCTAssertFalse(scene.endlessIICanTake(.directional, brick),
+                       "James: directional bricks are always the standard shape")
+    }
+
+    /// A breathing shaped brick rebuilds its silhouette rather than stretching its sprite.
+    ///
+    /// The sprite is only the marker hiding inside the shape. Resizing it - which is what
+    /// Breathing does to every other brick - would have left one whose picture grew while its
+    /// outline and the body traced from it stayed exactly where they were.
+    func testAShapedBrickBreathesByRebuildingItsFace() {
+        let scene = fieldScene()
+        let brick = shapedBrick(scene, .concave)
+
+        scene.resizeEndlessIIFace(brick, to: CGSize(width: cell.width*2,
+                                                    height: cell.height*2))
+        XCTAssertEqual(scene.endlessIIFieldSize(of: brick).width, cell.width*2, accuracy: 0.5,
+                       "the outline did not grow with the breath")
+        XCTAssertNotNil(brick.physicsBody, "and it has to stay solid on the way up")
+
+        scene.resizeEndlessIIFace(brick, to: .zero, solid: false)
+        XCTAssertNil(brick.physicsBody,
+                     "at the bottom of a breath a brick is a picture, not a brick")
+    }
+
+    /// An action's glyph is drawn to the brick, not to the sprite hiding inside it.
+    ///
+    /// The mark every action wears - Gravity's chevron, Exploding's burst - is sized and
+    /// placed from the brick. Ask the *sprite* and a shaped brick gets a mark a third of the
+    /// size, sitting whereever the sprite happens to hide: for a Wedge, down in the corner
+    /// beneath the slope. Both of those read as a drawing bug rather than as the wrong
+    /// question having been asked.
+    func testAnActionsGlyphIsDrawnToTheWholeBrickNotTheHidingSprite() {
+        let scene = fieldScene()
+        for face in EndlessIIFace.allCases {
+            let brick = shapedBrick(scene, face)
+            scene.makeExploding(brick)
+            guard let glyph = brick.children.first(where: { $0 is SKShapeNode
+                                                            && $0.name != GameScene.brickFaceName })
+            else { return XCTFail("\(face) drew no glyph at all") }
+
+            XCTAssertGreaterThan(glyph.frame.height, cell.height*0.4,
+                                 "\(face)'s burst was drawn to the sprite's size")
+            XCTAssertEqual(glyph.frame.midX, 0, accuracy: 0.5,
+                           "\(face)'s burst sat where the sprite hides, not on the brick")
+            XCTAssertEqual(glyph.frame.midY, 0, accuracy: 0.5, "\(face)")
+            brick.removeFromParent()
+        }
+    }
+
+    /// A Moving shaped brick measures its room by the cell it fills.
+    ///
+    /// It looks at what is actually beside it rather than at the cell either side, and it did
+    /// that by reading `brick.frame` - which for a shaped brick is the hiding rectangle. A
+    /// Moving dome would have slid a third of the way into its neighbour before noticing it.
+    func testAMovingShapedBrickIsAsWideAsTheCellItFills() {
+        let scene = fieldScene()
+        let brick = shapedBrick(scene, .convex, at: CGPoint(x: 0, y: 200))
+        XCTAssertEqual(scene.endlessIIFieldRect(of: brick).width, cell.width, accuracy: 0.5)
+        XCTAssertEqual(scene.endlessIIFieldRect(of: brick).midX, 0, accuracy: 0.5)
+
+        let limits = scene.endlessIIWanderLimits(for: brick)
+        XCTAssertEqual(limits.left, -scene.gameWidth/2 + cell.width/2, accuracy: 0.5,
+                       "it thought it was narrower than its cell and could reach the wall")
+        XCTAssertEqual(limits.right, scene.gameWidth/2 - cell.width/2, accuracy: 0.5)
+    }
+
     // MARK: - How they combine
 
     func testAShapedBrickRefusesEverythingThatWouldRedrawOrMoveIt() {

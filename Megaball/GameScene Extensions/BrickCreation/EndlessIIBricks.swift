@@ -36,6 +36,9 @@ import SpriteKit
 struct EndlessIIBreather {
     let brick: SKSpriteNode
     /// The size it was created at, which is the largest it ever gets.
+    ///
+    /// The room it fills in the field, not its sprite's size - a shaped brick's sprite is
+    /// tucked inside its own silhouette and is a third of a cell (`endlessIIFieldSize`).
     let full: CGSize
     /// Seconds for one full shrink and swell.
     let period: TimeInterval
@@ -428,9 +431,11 @@ extension GameScene {
     /// Whether a brick sits in exactly one cell - true of an ordinary brick and of a Tiny
     /// one, false of a Big one.
     func occupiesOneCell(_ brick: SKSpriteNode) -> Bool {
-        let size = endlessIIGeometry.footprint(of: brick.size)
+        let size = endlessIIGeometry.footprint(of: endlessIIFieldSize(of: brick))
         return size.columns == 1 && size.rows == 1
     }
+    // The *field* size, not the sprite's: a shaped brick's sprite is tucked inside its own
+    // silhouette and is about a third of a cell across
 
     /// Which styles a brick is already wearing.
     ///
@@ -482,8 +487,16 @@ extension GameScene {
         }
         guard style.suits(behaviour) else { return false }
 
-        let centred = abs(brick.anchorPoint.x - 0.5) < 0.01
-            && abs(brick.anchorPoint.y - 0.5) < 0.01
+        let centred = brick.endlessIIFace != nil
+            || (abs(brick.anchorPoint.x - 0.5) < 0.01
+                && abs(brick.anchorPoint.y - 0.5) < 0.01)
+        // **A shaped brick counts as centred**, and it is the one exception worth making. The
+        // question this asks is "does the drawing sit on the node", because a Big brick's
+        // does not - and a shaped brick's anchor is off-centre for the opposite reason: the
+        // sprite has been moved *into* the silhouette, which is itself centred on the node.
+        // The Wedge is the only face that actually moves it, and a Wedge that could not turn
+        // would be the one shape excluded from spinning by an accident of where its sprite
+        // hides (round 235)
         switch style {
         case .rounded: return centred
         case .convex, .concave, .wedge, .diamond:
@@ -548,12 +561,30 @@ extension GameScene {
     /// Called after the row's arrival animation has been set up, because that animation
     /// resets the colour blend on every normal brick and would undo the tinting here.
     func applyEndlessIIBehaviours(to bricks: [SKNode]) {
-        applyEndlessIIStyles([.rounded, .flashing, .breathing,
-                              .convex, .concave, .wedge, .diamond],
-                             to: bricks)
-        // The shapes go in the appearance pool beside Rounded, which is the pool for
-        // "changes how the brick answers a hit" - and a style has to be in a pool to
-        // exist at all (§8.6), which is the trap this line exists to avoid
+        applyEndlessIIStyles([.rounded, .flashing, .breathing], to: bricks)
+        // A style has to be in a pool to exist at all (§8.6), which is the trap this line
+        // exists to avoid. The shapes used to be in this one, beside Rounded
+    }
+
+    /// Gives each new brick a shaped face, sometimes - its own pass, because shape is its own
+    /// axis.
+    ///
+    /// **This is what "two axes" actually means** (James, on the 2026 brick workbook). Shrinking
+    /// `refusedByAFace` says a shaped brick *may* also fall, wander, anchor, turn or breathe;
+    /// it does not make one. `applyEndlessIIStyles` offers a brick one style from the pool it
+    /// is handed, so while the shapes sat in the appearance pool a brick could have a shape
+    /// *or* be Breathing and never both - the combination would have been legal, unreachable,
+    /// and indistinguishable from very rare.
+    ///
+    /// First of the three passes, so the shape is the thing a brick is offered while it is
+    /// still plain. The two-style cap then leaves it room for exactly one more, which is the
+    /// point of the cap: a brick doing three things is one nobody can read at a glance.
+    ///
+    /// **This does make shaped bricks more common**, and that is not a side effect to be
+    /// tuned away - they had been sharing one roll with Rounded, Flashing and Breathing, and
+    /// an axis that has to win a raffle against the other axis is not a separate axis.
+    func applyEndlessIIShapes(to bricks: [SKNode]) {
+        applyEndlessIIStyles([.convex, .concave, .wedge, .diamond], to: bricks)
     }
 
     /// Offers each brick a style from a pool, at whatever rate the run's depth calls for.
@@ -664,7 +695,7 @@ extension GameScene {
         brick.color = GameScene.breathingBrickColour
         brick.colorBlendFactor = 1.0
         endlessIIBreathers.append(
-            EndlessIIBreather(brick: brick, full: brick.size,
+            EndlessIIBreather(brick: brick, full: endlessIIFieldSize(of: brick),
                               period: .random(in: 2.2...3.2),
                               phase: .random(in: 0...3.2),
                               bodyScale: 1,
@@ -879,14 +910,29 @@ extension GameScene {
         }
 
         breather.phase = phase
-        brick.size = CGSize(width: breather.full.width*scale,
-                            height: breather.full.height*scale)
+        let cell = CGSize(width: breather.full.width*scale,
+                          height: breather.full.height*scale)
+        let shaped = brick.endlessIIFace != nil
+        if shaped {
+            redrawEndlessIIFace(brick, to: cell)
+            // A shaped brick breathes by rebuilding its silhouette rather than by having its
+            // sprite resized: the sprite is only the marker hiding inside the shape, and
+            // stretching *that* would have left a brick whose picture grew and whose outline
+            // did not. The drawn half is cheap enough for every frame; the body below is not
+        } else {
+            brick.size = cell
+        }
 
         if abs(scale - breather.bodyScale) >= EndlessIIBreather.bodyStep
             || (scale < EndlessIIBreather.solidBelow) != (brick.physicsBody == nil) {
             breather.bodyScale = scale
-            brick.physicsBody = scale < EndlessIIBreather.solidBelow
-                ? nil : brickBody(SKPhysicsBody(rectangleOf: brick.size))
+            let solid = scale >= EndlessIIBreather.solidBelow
+            if shaped {
+                rebuildEndlessIIFaceBody(brick, to: cell, solid: solid)
+            } else {
+                brick.physicsBody = solid ? brickBody(SKPhysicsBody(rectangleOf: brick.size))
+                                          : nil
+            }
             // Rebuilt in steps rather than every frame: a body cannot be resized, only
             // replaced, and the sprite is the thing the player is reading.
             //

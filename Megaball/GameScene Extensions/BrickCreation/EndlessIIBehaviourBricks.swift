@@ -94,13 +94,15 @@ extension GameScene {
         glyph.name = GameScene.glyphName
         glyph.strokeColor = UIColor(white: 0, alpha: 0.75)
         glyph.fillColor = filled ? UIColor(white: 0, alpha: 0.75) : .clear
-        glyph.lineWidth = max(1.5, brick.size.height*0.08)
+        glyph.lineWidth = max(1.5, endlessIIFieldSize(of: brick).height*0.08)
         glyph.setScale(scale)
         glyph.zPosition = 1
-        // Follows the sprite, which on a Big brick is not centred on the node
-        glyph.position = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
-                                 y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        glyph.position = endlessIIBrickCentre(of: brick)
         brick.addChild(glyph)
+        // Positioned at the brick's middle, which on a Big brick and on a shaped one is not
+        // the node's origin (§8.6), and weighted by the room the brick actually fills - a
+        // shaped brick's sprite is a third of a cell, and a glyph drawn to it would have been
+        // a mark too small to read on a brick of ordinary size
     }
 
     // MARK: - Gravity
@@ -110,7 +112,7 @@ extension GameScene {
         brick.endlessIIRole = .gravity
         tint(brick, GameScene.gravityBrickColour)
 
-        let unit = brick.size.height*0.28
+        let unit = endlessIIFieldSize(of: brick).height*0.28
         let chevron = CGMutablePath()
         chevron.move(to: CGPoint(x: -unit, y: unit/2))
         chevron.addLine(to: CGPoint(x: 0, y: -unit/2))
@@ -172,7 +174,7 @@ extension GameScene {
         brick.endlessIIRole = .moving
         tint(brick, GameScene.movingBrickColour)
 
-        let unit = brick.size.height*0.26
+        let unit = endlessIIFieldSize(of: brick).height*0.26
         let arrows = CGMutablePath()
         arrows.move(to: CGPoint(x: -unit*1.6, y: 0))
         arrows.addLine(to: CGPoint(x: unit*1.6, y: 0))
@@ -196,7 +198,7 @@ extension GameScene {
     /// trusting limits worked out when the brick was made - the field it sits in changes
     /// constantly underneath it.
     func endlessIIWanderLimits(for brick: SKSpriteNode) -> (left: CGFloat, right: CGFloat) {
-        let halfWidth = brick.size.width/2
+        let halfWidth = endlessIIFieldSize(of: brick).width/2
 
         var leftLimit = -gameWidth/2 + halfWidth
         var rightLimit = gameWidth/2 - halfWidth
@@ -208,7 +210,7 @@ extension GameScene {
         // through the three quarters it shares a cell with. Worse, the cell either side held
         // whichever of its four bricks happened to be enumerated last, so the same set blocked
         // it from one direction and not the other.
-        let mine = brick.frame
+        let mine = endlessIIFieldRect(of: brick)
         let overlap = min(mine.height, brickHeight)*0.4
         // Bricks in the same horizontal band. A Tiny brick on the bottom of a cell is stopped
         // by the one beside it, not by the one above it
@@ -409,7 +411,7 @@ extension GameScene {
         brick.endlessIIRole = .exploding
         tint(brick, GameScene.explodingBrickColour)
 
-        let unit = brick.size.height*0.3
+        let unit = endlessIIFieldSize(of: brick).height*0.3
         let burst = CGMutablePath()
         for step in 0..<4 {
             let angle = CGFloat(step)*(.pi/4)
@@ -527,7 +529,7 @@ extension GameScene {
         brick.endlessIIRole = .spawner
         tint(brick, GameScene.spawnerBrickColour)
 
-        let unit = brick.size.height*0.28
+        let unit = endlessIIFieldSize(of: brick).height*0.28
         let plus = CGMutablePath()
         plus.move(to: CGPoint(x: -unit, y: 0))
         plus.addLine(to: CGPoint(x: unit, y: 0))
@@ -633,7 +635,7 @@ extension GameScene {
         brick.endlessIIRole = .fixed
         tint(brick, GameScene.fixedBrickColour)
 
-        let unit = brick.size.height*0.28
+        let unit = endlessIIFieldSize(of: brick).height*0.28
         let pin = CGMutablePath()
         pin.move(to: CGPoint(x: -unit, y: unit*0.7))
         pin.addLine(to: CGPoint(x: unit, y: unit*0.7))
@@ -828,7 +830,8 @@ extension GameScene {
         // Indestructible artwork is dark and shaded - so any colour comes out as a dark,
         // muddy version of itself. That is the right look for a brick that cannot be broken,
         // so the identity goes in the glyph rather than the body.
-        let radius = min(brick.size.width, brick.size.height)*0.3
+        let cell = endlessIIFieldSize(of: brick)
+        let radius = min(cell.width, cell.height)*0.3
         let rings = CGMutablePath()
         rings.addEllipse(in: CGRect(x: -radius, y: -radius, width: radius*2, height: radius*2))
         rings.addEllipse(in: CGRect(x: -radius*0.5, y: -radius*0.5,
@@ -842,10 +845,9 @@ extension GameScene {
         // hit the blue one and you come out of the yellow, hit the yellow and you come out
         // of the blue
         glyph.fillColor = .clear
-        glyph.lineWidth = max(1.5, brick.size.height*0.1)
+        glyph.lineWidth = max(1.5, cell.height*0.1)
         glyph.zPosition = 1
-        glyph.position = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
-                                 y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        glyph.position = endlessIIBrickCentre(of: brick)
         brick.addChild(glyph)
     }
 
@@ -1173,7 +1175,8 @@ extension GameScene {
             let step = GameScene.movingSpeed*rate*brickWidth*CGFloat(delta)*wanderer.direction
             var x = wanderer.brick.position.x + step
             if let wrapped = endlessIIWrapWandererX(at: x, limits: limits,
-                                                    halfWidth: wanderer.brick.size.width/2) {
+                                                    halfWidth: self.endlessIIFieldSize(
+                                                        of: wanderer.brick).width/2) {
                 x = wrapped
                 // Wrap-Around: a clear run to the wall carries on from the far one, same
                 // direction - the walls are not walls for the bricks either (§5.4)

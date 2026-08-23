@@ -119,9 +119,22 @@ extension EndlessIIStyleTests {
         XCTAssertFalse(EndlessIIStyle.gravity.stacksWith(.moving))
     }
 
-    func testAVulnerableSideHasToStayFindable() {
+    func testAVulnerableSideMayBeHardToReachButNotImpossible() {
+        // **The reverse of what this used to assert.** Spinning, Moving and Flashing were all
+        // refused with Directional on one reasoning - "a vulnerable side has to stay findable"
+        // - and the 2026 brick workbook's matrix takes the other view: "spinning plus
+        // directional should be allowed" (James), and the other two follow from it. A soft
+        // side that turns, wanders or blinks is a shot you have to *time*, which is what
+        // Directional is for rather than a failure of it
         for style in [EndlessIIStyle.spinning, .moving, .flashing] {
-            XCTAssertFalse(EndlessIIStyle.directional.stacksWith(style), "\(style)")
+            XCTAssertTrue(EndlessIIStyle.directional.stacksWith(style), "\(style)")
+        }
+
+        // What is still refused is the shapes, and that is James's own line: "directional
+        // bricks are always the standard shape". It is the one pair that would have needed
+        // hit detection against something other than a rectangle
+        for face in EndlessIIFace.allCases {
+            XCTAssertFalse(EndlessIIStyle.directional.stacksWith(face.style), "\(face)")
         }
     }
 
@@ -193,10 +206,18 @@ extension EndlessIIStyleTests {
     }
 
     func testFixedStillCombinesWithTheHarmlessStyles() {
-        // Anchoring says nothing about a brick's shape or what it does when destroyed.
-        for style in [EndlessIIStyle.rounded, .spinning, .flashing, .exploding, .spawner] {
+        // Anchoring says nothing about a brick's shape or what it does when destroyed - and
+        // since round 235 it says nothing about its *outline* either, so an anchored dome is
+        // now a brick that can exist
+        for style in [EndlessIIStyle.rounded, .flashing, .exploding, .spawner,
+                      .convex, .concave, .wedge, .diamond] {
             XCTAssertTrue(EndlessIIStyle.fixed.stacksWith(style), "\(style)")
         }
+
+        // Spinning left this list on the workbook's matrix: one style anchors a brick where it
+        // stands and the other never lets it stand still, which is the argument Fixed already
+        // made against Moving and Gravity
+        XCTAssertFalse(EndlessIIStyle.fixed.stacksWith(.spinning))
     }
 
     /// James, round 172: "at one point I had a big brick overlapping a fixed brick. In this

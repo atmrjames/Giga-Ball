@@ -99,6 +99,7 @@ extension GameScene {
 
         if savedGame == nil {
             applyEndlessIISizes(to: &brickBuildArray)
+            applyEndlessIIShapes(to: brickBuildArray)
             applyEndlessIIBehaviours(to: brickBuildArray)
             applyEndlessIIRoles(to: brickBuildArray)
             endlessIIRepointBlockedDirectionals()
