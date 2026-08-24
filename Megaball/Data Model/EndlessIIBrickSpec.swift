@@ -173,6 +173,7 @@ enum EndlessIIBrickSpecFault: Equatable, CustomStringConvertible {
     case styleRefusesBehaviour(EndlessIIStyle, EndlessIIBehaviour)
     case sideWithoutDirectional
     case orientationWithoutAShape
+    case sizeNotYetBuildable(BrickSize)
 
     var description: String {
         switch self {
@@ -192,6 +193,10 @@ enum EndlessIIBrickSpecFault: Equatable, CustomStringConvertible {
             return "names an open side without asking for Directional"
         case .orientationWithoutAShape:
             return "names an orientation without asking for a shape to turn"
+        case .sizeNotYetBuildable(let size):
+            return "asks for a \(size) brick, and a formation cannot place one yet - Big needs "
+                + "the two-row reserve and Tiny needs four quarters, and a row either reserves "
+                + "or runs a pattern"
         }
     }
 }
@@ -205,10 +210,10 @@ extension EndlessIIBrickSpec {
     /// wrong the first time the grid changed, which is the exact failure that makes a reference
     /// page not worth having (`BrickTypeCatalogue` says the same thing about its own facts).
     ///
-    /// Size is deliberately *not* checked against `endlessIICanTake`'s size rules. Those need a
-    /// live brick in a live field - whether a spinner is in this column, whether a Directional
-    /// brick has an open face - and a formation is authored long before either exists. What can
-    /// be answered on paper is answered here; the rest is answered when the brick is built.
+    /// The size rules in `endlessIICanTake` are deliberately not consulted. Those need a live
+    /// brick in a live field - whether a spinner is in this column, whether a Directional brick
+    /// has an open face - and a formation is authored long before either exists. What can be
+    /// answered on paper is answered here; the rest is answered when the brick is built.
     var faults: [EndlessIIBrickSpecFault] {
         guard isEmpty == false else { return [] }
         var found: [EndlessIIBrickSpecFault] = []
@@ -241,6 +246,16 @@ extension EndlessIIBrickSpec {
                 found.append(.styleRefusesBehaviour(style, behaviour))
             }
         }
+
+        if let size, size != .normal {
+            found.append(.sizeNotYetBuildable(size))
+        }
+        // **Refused rather than ignored.** The builder places one brick per cell, and a Big one
+        // needs the two-row reserve while a Tiny one is four quarters - neither of which a
+        // formation can ask for while the rule stands that a row either reserves or runs a
+        // pattern. Silently dropping the size would have produced an ordinary brick where
+        // somebody drew a large one, which is the shape coming out wrong with nothing to say
+        // why. This fault is meant to be deleted, in the round that builds it
 
         if side != nil, actions.contains(.directional) == false {
             found.append(.sideWithoutDirectional)

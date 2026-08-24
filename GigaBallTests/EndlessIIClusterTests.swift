@@ -39,8 +39,18 @@ final class EndlessIIClusterTests: XCTestCase {
     }
 
     func testEveryClusterUsesCharactersTheGeneratorKnows() {
-        let known: Set<Character> = [".", "N", "M", "i", "I", "?"]
+        // The six shared ones, **or one this cluster's own legend defines** (round 239). The
+        // alphabet used to be exactly six characters and this test said so; a legend is what
+        // lets a formation reach the shapes and the actions without a letter per combination,
+        // so the question became "does anything define this character" rather than "is it one
+        // of the six".
+        //
+        // `EndlessIIBrickSpecTests` asks the same thing of both tiers at once, and asks the
+        // other half too - that a legend never defines a character the grid does not draw. This
+        // stays because a cluster reaching the generator with a character nothing answers is a
+        // hole in a shape somebody drew, and it is worth failing twice
         for cluster in placeable {
+            let known = Set(cluster.legend.keys).union(EndlessIIBrickSpec.classic.keys)
             for row in cluster.rows {
                 for character in row {
                     XCTAssertTrue(known.contains(character),

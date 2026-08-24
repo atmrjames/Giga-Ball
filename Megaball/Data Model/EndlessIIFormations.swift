@@ -69,9 +69,7 @@ enum EndlessIIFormationCatalogue {
     }
 
     static var clusters: [EndlessIIFormation] {
-        (EndlessIICluster.all + EndlessIICluster.pendingLegendSupport).map {
-            // The pending ones too. A shape authored today and built in three rounds' time
-            // should fail its validation today, while somebody is still looking at it
+        EndlessIICluster.all.map {
             EndlessIIFormation(name: $0.name, tier: .cluster, rows: $0.rows,
                                legend: $0.legend, minimumHeight: $0.minimumHeight,
                                weight: $0.weight)

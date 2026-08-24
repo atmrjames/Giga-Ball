@@ -679,10 +679,19 @@ extension GameScene {
                 // this only catches a row already carrying one - it keeps the old
                 // behaviour rather than drawing half a pattern
             } else if let setRow {
-                brick.texture = endlessIISetRowTexture(setRow, column: j)
+                let spec = endlessIISetRowSpec(setRow, column: j)
+                brick.texture = endlessIIBrickTexture(for: spec)
                 brick.endlessIIStaysPlain = true
                 // A designed row stays as designed. Styling it would be overwriting the one
-                // thing that makes it different from the rows either side
+                // thing that makes it different from the rows either side - so the generator's
+                // own passes skip it, and what the legend asks for is put on afterwards by
+                // `applyEndlessIIDesignedSpecs`
+                if spec.isPlain == false, spec.isEmpty == false {
+                    endlessIIDesignedSpecs.append((brick, spec))
+                }
+                // Only the cells that ask for something. `?` and the four plain types are the
+                // whole of what a formation could say before round 238, and they still need
+                // nothing doing to them
             } else if gameMode == .endlessII {
                 brick.texture = endlessIIBrickTexture()
             }
@@ -824,6 +833,10 @@ extension GameScene {
         applyEndlessIIBehaviours(to: brickArray)
         applyEndlessIIRoles(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend
+
+        applyEndlessIIDesignedSpecs()
+        // The designed cells get what their legend asked for, after the passes that would
+        // have rolled for them and could not
 
         endlessIIRepointBlockedDirectionals()
         // And the whole field, not just this row: a new row is what blocks the face of a

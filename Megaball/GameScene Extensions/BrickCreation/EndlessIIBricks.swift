@@ -327,7 +327,8 @@ extension GameScene {
 
             if Int.random(in: 1...100) <= GameScene.endlessIIClusterChance,
                let queued = endlessIIStartCluster() {
-                endlessIISetRowQueue = queued
+                endlessIISetRowQueue = queued.rows
+                endlessIISetRowLegend = queued.legend
             } else {
                 guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else {
                     return nil
@@ -338,13 +339,18 @@ extension GameScene {
                 // runs to the same depth meet different landmarks
                 guard let pattern = choices.randomElement() else { return nil }
                 endlessIISetRowQueue = pattern.rows
+                endlessIISetRowLegend = pattern.legend
             }
         }
-        return endlessIISetRowQueue.removeFirst()
+        let row = endlessIISetRowQueue.removeFirst()
+        if endlessIISetRowQueue.isEmpty { endlessIISetRowLegend = [:] }
+        // Cleared as the last row goes out, so a legend can never be read by the formation
+        // after this one - the character `A` means something different in every shape
+        return row
     }
 
     /// Picks a cluster and a column for it, and writes it out as rows.
-    func endlessIIStartCluster() -> [String]? {
+    func endlessIIStartCluster() -> (rows: [String], legend: [Character: EndlessIIBrickSpec])? {
         guard let picked = EndlessIICluster.pick(at: endlessHeight,
                                                  roll: { Int.random(in: 0..<$0) }) else {
             return nil
@@ -356,18 +362,64 @@ extension GameScene {
         let places = EndlessIICluster.placements(width: cluster.width,
                                                  in: numberOfBrickColumns)
         guard let column = places.randomElement() else { return nil }
-        return cluster.expanded(atColumn: column, fieldWidth: numberOfBrickColumns)
+        return (cluster.expanded(atColumn: column, fieldWidth: numberOfBrickColumns),
+                cluster.legend)
     }
 
-    /// What a designed row puts in one of its columns.
-    func endlessIISetRowTexture(_ row: String, column: Int) -> SKTexture {
-        switch EndlessIISetRow.character(in: row, column: column) {
-        case "N": return brickNormalTexture
-        case "M": return brickMultiHit3Texture
-        case "i": return brickIndestructible1Texture
-        case "I": return brickIndestructible2Texture
-        case "?": return endlessIIBrickTexture()
-        default: return brickNullTexture
+    /// What a designed row asks for in one of its columns.
+    ///
+    /// The formation's own key first and the shared alphabet after, which is the whole of what
+    /// a legend is (`EndlessIIBrickSpec`).
+    func endlessIISetRowSpec(_ row: String, column: Int) -> EndlessIIBrickSpec {
+        EndlessIIBrickSpec.spec(for: EndlessIISetRow.character(in: row, column: column),
+                                legend: endlessIISetRowLegend)
+    }
+
+    /// The texture a spec's behaviour calls for.
+    ///
+    /// Nil behaviour is `?` - the field's own mix - which is the one case that draws rather
+    /// than reads. An empty cell is the null texture, which the row cleanup removes.
+    func endlessIIBrickTexture(for spec: EndlessIIBrickSpec) -> SKTexture {
+        guard spec.isEmpty == false else { return brickNullTexture }
+        switch spec.behaviour {
+        case .standard: return brickNormalTexture
+        case .multiHit: return brickMultiHit3Texture
+        case .indestructibleOnce: return brickIndestructible1Texture
+        case .indestructibleAlways: return brickIndestructible2Texture
+        case .invisible: return brickInvisibleTexture
+        case nil: return endlessIIBrickTexture()
+        }
+    }
+
+    /// Gives every designed brick built this row exactly what its legend asked for.
+    ///
+    /// **Run after the generator's own styling passes, and reaching bricks those passes will
+    /// not touch.** A designed brick carries `endlessIIStaysPlain`, so `applyEndlessIIStyles`
+    /// skips it - which is the point rather than an obstacle to work around. A shape somebody
+    /// arranged should not then be handed a random spinner, and the styles it *does* wear are
+    /// the ones written beside it in the catalogue.
+    ///
+    /// Nothing here asks `endlessIICanTake`. The legend was put to the compatibility rules when
+    /// it was authored (`EndlessIIBrickSpecTests`), which is the right moment: a brick refused
+    /// here would leave a hole in a shape somebody drew, silently, at some depth in some run.
+    func applyEndlessIIDesignedSpecs() {
+        guard gameMode == .endlessII else { return }
+        defer { endlessIIDesignedSpecs.removeAll() }
+
+        for (brick, spec) in endlessIIDesignedSpecs where brick.parent != nil {
+            if let mirrored = spec.mirrored { brick.endlessIIFaceMirrored = mirrored }
+            if let flipped = spec.flipped { brick.endlessIIFaceFlipped = flipped }
+            if let side = spec.side { brick.endlessIIVulnerableSide = side }
+            // Written on before the styles that read them. `makeFace` keeps an orientation the
+            // brick already carries rather than rolling one, and `makeDirectional` keeps a side
+            // - both bargains made for the resume path (rounds 154 and 174), and both exactly
+            // what a legend needs: this is a shape being told which way it faces
+
+            if let shape = spec.shape { applyEndlessIIStyle(shape, to: brick) }
+            for action in spec.actions { applyEndlessIIStyle(action, to: brick) }
+            // Shape first. It rewrites the sprite's size and anchor, and every action drawn
+            // over it measures itself against the room the brick fills - which is a question
+            // `endlessIIFieldSize` can only answer once the face is on
         }
     }
 
@@ -893,6 +945,7 @@ extension GameScene {
         endlessIIProgression = EndlessIIProgression.make()
         clearEndlessIIMarkers()
         endlessIISetRowQueue = []
+        endlessIISetRowLegend = [:]
         endlessIIPhase = .standard
         endlessIIPhaseEndsAt = 0
         endlessIIPhaseBehaviour = nil

@@ -101,38 +101,33 @@ struct EndlessIICluster {
         // the key on the way through would be losing the whole design
     }
 
-    /// Authored, validated, and **not yet offered to the generator**.
-    ///
-    /// The builder reads the six shared characters and nothing else - it turns one into a
-    /// texture and stamps `endlessIIStaysPlain` on the brick - so a cluster whose grid uses a
-    /// legend would build as holes where its own characters are. That is worse than not
-    /// existing, so these wait here until the builder is taught to read a spec.
-    ///
-    /// They are in `EndlessIIFormationCatalogue` and therefore fully validated: an authored
-    /// shape that turns out to be impossible should say so now, not in the round that finally
-    /// builds it.
-    static let pendingLegendSupport: [EndlessIICluster] = [
+    static let all: [EndlessIICluster] = [
+
+        // MARK: The first one written with a legend (round 239)
+        //
+        // Everything below this is drawn from the six shared characters, which is four kinds of
+        // brick. A legend lets a formation reach the rest of what the game builds - the shapes,
+        // the actions, the four types - without inventing a letter for every combination.
+        // `EndlessIIBrickSpec` is the format and its tests are the check.
 
         EndlessIICluster(name: "Millrace", rows: ["WWWWW",
                                                   ".???.",
                                                   "wwwww"], minimumHeight: 160, weight: 6,
                          legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
-                                                          mirrored: false, flipped: true),
+                                                          mirrored: true, flipped: true),
                                   "w": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
                                                           mirrored: false, flipped: false)]),
-        // Two rows of wedges with the field's own bricks between them. Both slopes run the
-        // same way, so a ball that gets inside is passed along the channel rather than out of
-        // it - the shape does what a funnel does without being drawn as one, which is the
-        // thing a shape can say and a wall cannot.
+        // Two rows of wedges with the field's own bricks between them. Both slopes run the same
+        // way, so a ball that gets inside is passed along the channel rather than out of it -
+        // the shape does what a funnel does without being drawn as one, which is the thing a
+        // shape can say and a wall cannot.
         //
         // The orientations are named rather than rolled. Every wedge in the game turns over on
         // a coin (round 154), because a field of them all facing up is a field of flat
         // undersides - but here the point *is* that they agree, and a coin would have produced
-        // a mixture and no channel at all. That is the first thing a legend buys that the six
+        // a mixture and no channel at all. That is the first thing a legend buys which the six
         // characters could not express at all
-    ]
 
-    static let all: [EndlessIICluster] = [
 
         // MARK: Scatters - chosen contents, rolled shape (§6.2.1's third kind)
 

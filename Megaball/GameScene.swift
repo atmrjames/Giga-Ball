@@ -1002,6 +1002,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIBuildInStartNow = false
 	var endlessIIStuckTimer: TimeInterval = 0
 	var endlessIISetRowQueue: [String] = []
+	/// What the formation currently being laid down means by its own characters.
+	///
+	/// Beside the queue rather than inside it, because only one formation is ever in flight -
+	/// the queue is drained before another can start - so one legend is always the right one.
+	/// Cleared with the queue.
+	var endlessIISetRowLegend: [Character: EndlessIIBrickSpec] = [:]
+	/// The designed bricks built this row and what their legend asked them to be.
+	///
+	/// Gathered during the row loop and spent immediately after it. A designed brick is
+	/// `endlessIIStaysPlain`, so the generator's own styling passes skip it entirely - which is
+	/// the point: a designed brick gets exactly what the legend says and never a roll.
+	var endlessIIDesignedSpecs: [(brick: SKSpriteNode, spec: EndlessIIBrickSpec)] = []
 	// The rows of a designed pattern still to come, one per generated row
 	var endlessIIPhaseBehaviour: EndlessIIBehaviour?
 	var endlessIIPhaseStyles: [EndlessIIStyle] = []

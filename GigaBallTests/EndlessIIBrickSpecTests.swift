@@ -115,6 +115,181 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         XCTAssertTrue(spec.isBuildable, "nothing is being built, so nothing can be impossible")
     }
 
+    func testASizeIsRefusedUntilAFormationCanPlaceOne() {
+        // Refused rather than ignored: dropping the size silently would put an ordinary brick
+        // where somebody drew a large one, which is the shape coming out wrong with nothing to
+        // say why. Meant to be deleted in the round that builds it
+        XCTAssertEqual(EndlessIIBrickSpec(size: .big).faults, [.sizeNotYetBuildable(.big)])
+        XCTAssertEqual(EndlessIIBrickSpec(size: .tiny).faults, [.sizeNotYetBuildable(.tiny)])
+        XCTAssertTrue(EndlessIIBrickSpec(size: .normal).isBuildable,
+                      "one ordinary cell is what a formation has always placed")
+    }
+
+    // MARK: - What the builder does with a legend
+
+    private func fieldScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 440
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - 20*21
+        scene.ballSize = 12
+        return scene
+    }
+
+    private func brick(_ scene: GameScene) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: 40, height: 20))
+        brick.position = CGPoint(x: 0, y: 200)
+        brick.name = BrickCategoryName
+        brick.endlessIIStaysPlain = true
+        scene.addChild(brick)
+        return brick
+    }
+
+    /// A legend's character becomes the brick the legend describes.
+    func testTheBuilderPutsOnWhatTheLegendAsksFor() {
+        let scene = fieldScene()
+        let node = brick(scene)
+        scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(behaviour: .standard,
+                                                                 shape: .diamond,
+                                                                 actions: [.gravity]))]
+        scene.applyEndlessIIDesignedSpecs()
+
+        XCTAssertEqual(node.endlessIIFace, .diamond)
+        XCTAssertEqual(node.endlessIIRole, .gravity)
+        XCTAssertTrue(scene.endlessIIDesignedSpecs.isEmpty,
+                      "spent as it is applied, or the next row would style this brick again")
+    }
+
+    /// A named orientation is kept rather than rolled.
+    ///
+    /// Every shaped brick turns over on a coin (round 154), because a field of them all facing
+    /// up is a field of flat undersides. A formation that wants two rows of wedges to agree
+    /// needs that coin *not* tossed, and the mechanism is the one the resume path already uses.
+    func testANamedOrientationIsNotRolled() {
+        let scene = fieldScene()
+        for _ in 0..<12 {
+            let node = brick(scene)
+            scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(shape: .wedge,
+                                                                      mirrored: true,
+                                                                      flipped: false))]
+            scene.applyEndlessIIDesignedSpecs()
+            XCTAssertEqual(node.endlessIIFaceMirrored, true)
+            XCTAssertEqual(node.endlessIIFaceFlipped, false)
+            node.removeFromParent()
+        }
+    }
+
+    /// A named open side is kept too, which is what makes a one-angle formation possible.
+    func testANamedOpenSideIsKept() {
+        let scene = fieldScene()
+        let node = brick(scene)
+        scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(actions: [.directional],
+                                                                  side: .left))]
+        scene.applyEndlessIIDesignedSpecs()
+        XCTAssertEqual(node.endlessIIVulnerableSide, .left)
+    }
+
+    /// A designed brick is never handed a *random* style.
+    ///
+    /// `endlessIIStaysPlain` is what stops the generator's own passes reaching it, and it stays
+    /// on: the legend is the whole of what a designed cell wears. A shape somebody arranged and
+    /// then had a spinner dropped into is not the shape they arranged.
+    func testADesignedBrickIsStillSkippedByTheGeneratorsOwnPasses() {
+        let scene = fieldScene()
+        let node = brick(scene)
+        scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(shape: .convex))]
+        scene.applyEndlessIIDesignedSpecs()
+
+        XCTAssertTrue(node.endlessIIStaysPlain)
+        XCTAssertFalse(scene.endlessIICanTake(.spinning, node),
+                       "the generator must not be able to add to a designed brick")
+    }
+
+    /// The behaviour a spec names decides the texture; nil leaves it to the field's mix.
+    func testASpecsBehaviourChoosesTheTexture() {
+        let scene = fieldScene()
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: EndlessIIBrickSpec(behaviour: .multiHit)),
+                       scene.brickMultiHit3Texture)
+        XCTAssertEqual(scene.endlessIIBrickTexture(
+            for: EndlessIIBrickSpec(behaviour: .indestructibleAlways)),
+                       scene.brickIndestructible2Texture)
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: .nothing), scene.brickNullTexture)
+    }
+
+    /// The shared alphabet still builds what it always built.
+    ///
+    /// The old characters go through the spec path now rather than a switch of their own, so
+    /// this is the check that the move changed nothing for the thirty-one shapes already
+    /// written.
+    func testTheOldAlphabetStillBuildsTheSameBricks() {
+        let scene = fieldScene()
+        scene.endlessIISetRowLegend = [:]
+        let row = "N.MiI?"
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: scene.endlessIISetRowSpec(row, column: 0)),
+                       scene.brickNormalTexture)
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: scene.endlessIISetRowSpec(row, column: 1)),
+                       scene.brickNullTexture)
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: scene.endlessIISetRowSpec(row, column: 2)),
+                       scene.brickMultiHit3Texture)
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: scene.endlessIISetRowSpec(row, column: 3)),
+                       scene.brickIndestructible1Texture)
+        XCTAssertEqual(scene.endlessIIBrickTexture(for: scene.endlessIISetRowSpec(row, column: 4)),
+                       scene.brickIndestructible2Texture)
+        XCTAssertTrue(scene.endlessIISetRowSpec(row, column: 5).isPlain,
+                      "`?` asks for nothing, and the generator answers")
+    }
+
+    /// A formation's legend is read while it is being laid down and gone the moment it is.
+    ///
+    /// `A` means something different in every shape, so a legend outliving its formation would
+    /// build the next one out of the last one's bricks.
+    func testALegendIsClearedWithTheFormationThatBroughtIt() {
+        let scene = fieldScene()
+        scene.endlessIISetRowQueue = ["AA", "AA"]
+        scene.endlessIISetRowLegend = ["A": EndlessIIBrickSpec(behaviour: .multiHit)]
+
+        XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "AA")
+        XCTAssertEqual(scene.endlessIISetRowLegend.count, 1, "still mid-formation")
+
+        XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "AA")
+        XCTAssertTrue(scene.endlessIISetRowLegend.isEmpty,
+                      "the last row went out, so the key goes with it")
+    }
+
+    /// Millrace is a channel, which means its two rows must not be the same wedge.
+    ///
+    /// The shape is two rows of slopes with the field's own bricks between them, and the whole
+    /// idea is that the slopes *agree* - a 180-degree turn apart, so their hypotenuses run
+    /// parallel and a ball inside is passed along rather than thrown out. Two rows of the same
+    /// wedge would be two rows of the same wedge, and nothing would read as a channel.
+    ///
+    /// Worth pinning because the orientations are four booleans and the failure is a shape that
+    /// still builds, still looks deliberate, and does not do the one thing it was drawn for.
+    func testMillracesTwoRowsAreOppositeTurnsOfTheSameWedge() {
+        guard let millrace = EndlessIIFormationCatalogue.all.first(where: {
+            $0.name == "Millrace"
+        }) else { return XCTFail("Millrace has left the catalogue") }
+
+        let top = millrace.spec(atRow: 0, column: 0)
+        let bottom = millrace.spec(atRow: 2, column: 0)
+        XCTAssertEqual(top.shape, .wedge)
+        XCTAssertEqual(bottom.shape, .wedge)
+        XCTAssertNotEqual(top.mirrored, bottom.mirrored)
+        XCTAssertNotEqual(top.flipped, bottom.flipped)
+        // Both axes turned: a half turn, which leaves the two slopes parallel. Turning one axis
+        // only would put them at right angles, which is a funnel and a different shape
+
+        XCTAssertTrue(millrace.spec(atRow: 1, column: 1).isPlain,
+                      "the middle row is the field's own bricks, or there is nothing to catch")
+    }
+
     // MARK: - The catalogue itself
 
     /// **Every cell of every designed formation describes a brick the game can build.**
