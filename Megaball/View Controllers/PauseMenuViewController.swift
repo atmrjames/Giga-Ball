@@ -51,6 +51,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     @IBOutlet var containterView: UIView!
     let dailyTotalTitle = UILabel()
     let dailyTotalLabel = UILabel()
+    /// The daily breakdown's first line: Level Score and Time Bonus, side by side.
+    ///
+    /// James, round 241: "the level score and time bonus can be on the same line with total
+    /// score underneath". They used to borrow the storyboard's score and high-score rows - two
+    /// rows already sitting where they were needed - and three stacked rows plus a stats
+    /// summary is what was pushing the bottom of this screen off the end of itself.
+    ///
+    /// Their own labels rather than the borrowed ones, because the borrowed pair is centred by
+    /// the storyboard and a column is not: moving them would mean fighting constraints this
+    /// file does not own. The storyboard rows are hidden instead, so the block keeps its slot
+    /// and everything hanging below it still has an anchor.
+    let dailyLevelTitle = UILabel()
+    let dailyLevelLabel = UILabel()
+    let dailyBonusTitle = UILabel()
+    let dailyBonusLabel = UILabel()
+    /// Where the total hangs from: under the borrowed rows, or under the two columns.
+    var dailyTotalUnderHighscore: NSLayoutConstraint!
+    var dailyTotalUnderColumns: NSLayoutConstraint!
 
     /// The two halves of a completed level's score, for the daily's breakdown (round 210).
     var levelScore: Int = 0
@@ -240,11 +258,30 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             statsWellUnderTheResult.isActive = false
             return
         }
-        runStatsLabel.isHidden = false
         moreStatsButton.isHidden = false
+        showActivePowerUps()
+
+        guard isDailyChallenge == false else {
+            runStatsLabel.isHidden = true
+            statsUnderTheResult.isActive = false
+            statsWellUnderTheResult.isActive = false
+            return
+            // **A daily says none of it on the screen** (James, round 241: "perhaps the stats
+            // summary isn't important in daily challenges. All stats can go under the more
+            // stats button"). This is the one ending that has the most to fit - a score
+            // breakdown, the day's twists, the leaderboard note - and the summary is four
+            // lines of numbers that are all still one tap away. Nothing is lost, because the
+            // button is what the detail screen was always for.
+            //
+            // The two spacing constraints go with it. They exist to keep the result line and
+            // the stats block apart, and with no stats block there is nothing to keep apart -
+            // left active they would hold a gap open under the result for a thing that is not
+            // there, which is the crowding from the other direction
+        }
+
+        runStatsLabel.isHidden = false
         statsUnderTheResult.isActive = true
         statsWellUnderTheResult.isActive = true
-        showActivePowerUps()
         let text = NSMutableAttributedString()
         var items: [(String, String, Int)] = [
             ("rectangle.fill", "Paddle hits", summary.paddleHits),
@@ -508,10 +545,51 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // lives line off it left "Last ball" stranded a third of a screen below the
         // score it belongs to (play-test round 16's screenshot)
 
+        for label in [dailyLevelTitle, dailyBonusTitle] {
+            label.translatesAutoresizingMaskIntoConstraints = false
+            label.textAlignment = .center
+            label.font = highscoreLabelTitle.font
+            label.textColor = highscoreLabelTitle.textColor
+            label.isHidden = true
+            containterView.addSubview(label)
+        }
+        for label in [dailyLevelLabel, dailyBonusLabel] {
+            label.translatesAutoresizingMaskIntoConstraints = false
+            label.textAlignment = .center
+            label.font = highscoreLabel.font
+            label.textColor = highscoreLabel.textColor
+            label.isHidden = true
+            containterView.addSubview(label)
+        }
+        // The borrowed rows' own fonts and colours, so the breakdown reads as the block it
+        // replaced rather than as something new that arrived in its place
+
+        dailyTotalUnderHighscore = dailyTotalTitle.topAnchor.constraint(
+            equalTo: highscoreLabel.bottomAnchor, constant: 8)
+        dailyTotalUnderColumns = dailyTotalTitle.topAnchor.constraint(
+            equalTo: dailyLevelLabel.bottomAnchor, constant: 8)
+        dailyTotalUnderHighscore.isActive = true
+        // Under the columns when there are columns. A label that is hidden still holds its
+        // place, so the borrowed rows would otherwise have gone on pushing the total down the
+        // screen while showing nothing - which is the crowding this round is undoing
+
         NSLayoutConstraint.activate([
+            dailyLevelTitle.topAnchor.constraint(equalTo: scoreLabelTitle.topAnchor),
+            dailyLevelTitle.trailingAnchor.constraint(equalTo: containterView.centerXAnchor,
+                                                      constant: -14),
+            dailyLevelLabel.topAnchor.constraint(equalTo: dailyLevelTitle.bottomAnchor),
+            dailyLevelLabel.centerXAnchor.constraint(equalTo: dailyLevelTitle.centerXAnchor),
+
+            dailyBonusTitle.topAnchor.constraint(equalTo: scoreLabelTitle.topAnchor),
+            dailyBonusTitle.leadingAnchor.constraint(equalTo: containterView.centerXAnchor,
+                                                     constant: 14),
+            dailyBonusLabel.topAnchor.constraint(equalTo: dailyBonusTitle.bottomAnchor),
+            dailyBonusLabel.centerXAnchor.constraint(equalTo: dailyBonusTitle.centerXAnchor),
+            // Two columns either side of the middle with 28pt between them, each centred on
+            // itself rather than on the screen - so a four-figure score and a two-figure bonus
+            // still read as a pair rather than as one line drifting off the other
+
             dailyTotalTitle.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            dailyTotalTitle.topAnchor.constraint(equalTo: highscoreLabel.bottomAnchor,
-                                                 constant: 8),
             dailyTotalLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             dailyTotalLabel.topAnchor.constraint(equalTo: dailyTotalTitle.bottomAnchor),
 
@@ -1200,6 +1278,23 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 dailyTotalTitle.isHidden = false
                 dailyTotalLabel.isHidden = false
                 dailyTotalTitle.text = "Total Score"
+
+                dailyLevelTitle.text = "Level Score"
+                dailyBonusTitle.text = "Time Bonus"
+                for label in [dailyLevelTitle, dailyLevelLabel,
+                              dailyBonusTitle, dailyBonusLabel] {
+                    label.isHidden = false
+                }
+                scoreLabelTitle.isHidden = true
+                scoreLabel.isHidden = true
+                highscoreLabelTitle.isHidden = true
+                highscoreLabel.isHidden = true
+                dailyTotalUnderHighscore.isActive = false
+                dailyTotalUnderColumns.isActive = true
+                // **Two lines where there were three** (James, round 241). The borrowed rows
+                // go away and the two columns take their place, so the total moves up a whole
+                // row and the block below it gets that row back
+
                 startDailyBreakdownTally()
                 // **The breakdown a pack's end gives** (James, round 210: "single levels on
                 // daily challenge need a time bonus on the complete screen... broken down like
@@ -1211,6 +1306,19 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 scoreLabel.text = String(score)
                 dailyTotalTitle.isHidden = true
                 dailyTotalLabel.isHidden = true
+                for label in [dailyLevelTitle, dailyLevelLabel,
+                              dailyBonusTitle, dailyBonusLabel] {
+                    label.isHidden = true
+                }
+                scoreLabelTitle.isHidden = false
+                scoreLabel.isHidden = false
+                highscoreLabelTitle.isHidden = false
+                highscoreLabel.isHidden = false
+                dailyTotalUnderColumns.isActive = false
+                dailyTotalUnderHighscore.isActive = true
+                // Put back, because `updateLabels` runs again every time this screen is
+                // returned to - from settings, from the reference pages - and the screen it
+                // comes back to is not always the one it left
                 if sender != "Pause" {
                     startTally(to: score, suffix: "")
                 }
@@ -1557,8 +1665,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     }
 
     private func showBreakdown(_ reading: ScoreTally.Reading) {
-        scoreLabel.text = String(reading.level)
-        highscoreLabel.text = String(reading.bonus)
+        dailyLevelLabel.text = String(reading.level)
+        dailyBonusLabel.text = String(reading.bonus)
         dailyTotalLabel.text = String(reading.total)
     }
 

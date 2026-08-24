@@ -964,14 +964,17 @@ extension GameScene {
     func endlessIIPaddleRingEntries() -> [PowerUpRingHUD.Entry] {
         let clocks: [(String, EndlessIIClock, UIImage)] = [
             ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.hud("AimedStickyIcon", PowerUpIcon.aimedSticky)),
-            ("endlessIIMagnetism", endlessIIMagnetismClock, PowerUpIcon.magnetism),
+            ("endlessIIMagnetism", endlessIIMagnetismClock,
+             PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism)),
             ("endlessIIPortalPaddle", endlessIIPortalPaddleClock, PowerUpIcon.portalPaddle),
             ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.hud("PaddleHaloIcon", PowerUpIcon.paddleHalo)),
-            ("endlessIIBallSteering", endlessIIBallSteeringClock, PowerUpIcon.ballSteering),
+            ("endlessIIBallSteering", endlessIIBallSteeringClock,
+             PowerUpIcon.hud("BallSteeringIcon", PowerUpIcon.ballSteering)),
             ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.hud("InertPaddleIcon", PowerUpIcon.inertPaddle)),
             ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.hud("FlippedAngleIcon", PowerUpIcon.flippedAngle)),
             ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.hud("ReversedControlsIcon", PowerUpIcon.reversedControls)),
-            ("endlessIIAutoAim", endlessIIAutoAimClock, PowerUpIcon.autoAim),
+            ("endlessIIAutoAim", endlessIIAutoAimClock,
+             PowerUpIcon.hud("AutoAimIcon", PowerUpIcon.autoAim)),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
              PowerUpIcon.hud(endlessIIPaddleShapeIconName,
                              PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex))),
@@ -980,7 +983,9 @@ extension GameScene {
             ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock,
              PowerUpIcon.hud("MirrorPaddleIcon", PowerUpIcon.mirrorPaddle)),
             // Round art for the ring, drawn rather than derived (round 210's delivery). The
-            // badge stays as the fallback, so a build without it looks exactly as it did
+            // badge stays as the fallback everywhere, so a build without a picture looks
+            // exactly as it did - which is what `hud` is for, and why Magnetism, Ball Steering
+            // and Auto-Aim could be given theirs in round 241 by naming a file
             ("endlessIIBallSpin", endlessIIBallSpinClock, PowerUpIcon.ballSpin),
         ]
         return clocks.compactMap { id, clock, icon in

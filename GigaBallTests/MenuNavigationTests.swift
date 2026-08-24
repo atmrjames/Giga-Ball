@@ -710,3 +710,151 @@ final class MenuResizeTests: XCTestCase {
         // answer has to be a count rather than a crash
     }
 }
+
+/// The daily challenge's end screen, which is the fullest screen the app has.
+///
+/// James, round 241: "the daily challenge end screen is now too crowded so items are getting
+/// clipped." It carries a score breakdown, the day's result, a stats summary, a more-stats
+/// button, the leaderboard note and the button row - and the breakdown was three stacked rows
+/// where two would do.
+///
+/// Laid out at a real phone size, because that is where it ran out of room. Anything asserted
+/// about a screen that was never laid out is asserted about a view with no frame.
+final class DailyEndScreenLayoutTests: XCTestCase {
+
+    private var pauseMenus: [PauseMenuViewController] = []
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        InGameRecents.shared.runSummary = nil
+        pauseMenus.removeAll()
+        super.tearDown()
+    }
+
+    /// A finished daily on a single level: the one ending that shows the breakdown.
+    private func dailyCompleteScreen() -> PauseMenuViewController? {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .classic, classicLevel: 0, twists: [])
+
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
+        guard let pause = board.instantiateViewController(withIdentifier: "pauseMenuVC")
+                as? PauseMenuViewController
+        else { return nil }
+        pause.sender = "Complete"
+        pause.levelNumber = 1
+        // Not zero. `viewWillAppear` reads a level number of zero as an endless run, and an
+        // endless ending has a height where this one has a score - so the whole classic score
+        // block, breakdown included, is skipped
+        pause.levelTimerBonus = 300
+        pause.levelScore = 1200
+        pause.score = 1500
+        pause.totalStatsArray = [TotalStats()]
+        InGameRecents.shared.runSummary = InGameRecents.RunSummary(
+            height: 0, durationSeconds: 90, paddleHits: 40, bricksDestroyed: 60,
+            ballsLost: 1, powerUpsSeen: 4, powerUpsCollected: 3,
+            score: 1500, levelsCleared: 1, isEndless: false)
+        // Without one, `updateRunStatsLabel` hides the summary *and* the button at its first
+        // guard - so the screen a test looks at would be missing the block the change is about
+        // and would agree with the change for the wrong reason
+
+        pauseMenus.append(pause)
+        pause.loadViewIfNeeded()
+        pause.view.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        pause.viewWillAppear(false)
+        // The labels are written on the way in, not in `viewDidLoad` - and everything here is
+        // about what they say and where they end up
+        pause.view.setNeedsLayout()
+        pause.view.layoutIfNeeded()
+        return pause
+    }
+
+    /// Level Score and Time Bonus share a line, and the total is under both.
+    func testTheBreakdownIsTwoLinesRatherThanThree() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen(),
+                                  "the storyboard no longer has a pauseMenuVC")
+        XCTAssertTrue(pause.showsDailyBreakdown, "this is the screen the change is about")
+
+        let level = pause.dailyLevelTitle
+        let bonus = pause.dailyBonusTitle
+        XCTAssertFalse(level.isHidden)
+        XCTAssertFalse(bonus.isHidden)
+
+        let levelFrame = level.convert(level.bounds, to: pause.view)
+        let bonusFrame = bonus.convert(bonus.bounds, to: pause.view)
+        XCTAssertEqual(levelFrame.midY, bonusFrame.midY, accuracy: 1,
+                       "Level Score and Time Bonus should be on the same line")
+        XCTAssertLessThan(levelFrame.maxX, bonusFrame.minX,
+                          "and side by side, with the level score on the left")
+
+        let total = pause.dailyTotalTitle
+        let totalFrame = total.convert(total.bounds, to: pause.view)
+        XCTAssertGreaterThan(totalFrame.minY, levelFrame.maxY,
+                             "the total belongs under both of them")
+    }
+
+    /// The rows it borrowed are out of the way, and the total hangs off the columns instead.
+    ///
+    /// A hidden label still holds its place, so leaving the borrowed pair in the chain would
+    /// have kept the total exactly where it was and saved nothing at all - which is the whole
+    /// point of the change.
+    func testTheBorrowedRowsAreHiddenAndNoLongerHoldTheTotalDown() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+        XCTAssertTrue(pause.scoreLabelTitle.isHidden)
+        XCTAssertTrue(pause.highscoreLabelTitle.isHidden)
+        XCTAssertTrue(pause.dailyTotalUnderColumns.isActive)
+        XCTAssertFalse(pause.dailyTotalUnderHighscore.isActive)
+
+        let columns = pause.dailyLevelLabel.convert(pause.dailyLevelLabel.bounds, to: pause.view)
+        let total = pause.dailyTotalTitle.convert(pause.dailyTotalTitle.bounds, to: pause.view)
+        XCTAssertLessThan(total.minY - columns.maxY, 20,
+                          "the total should follow the columns closely - a bigger gap than "
+                          + "that means it is still hanging off the rows that were hidden")
+    }
+
+    /// And the breakdown counts into its own labels, not the ones it used to borrow.
+    func testTheTallyWritesIntoTheColumns() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+        XCTAssertEqual(pause.dailyLevelTitle.text, "Level Score")
+        XCTAssertEqual(pause.dailyBonusTitle.text, "Time Bonus")
+        XCTAssertEqual(pause.dailyTotalTitle.text, "Total Score")
+        XCTAssertFalse(pause.dailyLevelLabel.text?.isEmpty ?? true,
+                       "the tally should have written a figure by now")
+    }
+
+    /// A daily says its numbers under the button rather than on the screen.
+    ///
+    /// "Perhaps the stats summary isn't important in daily challenges. All stats can go under
+    /// the more stats button." Nothing is lost - the button is what the detail screen was
+    /// always for - and this is the ending with the most competing for the space.
+    func testADailyShowsNoStatsSummaryButKeepsTheButton() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+        XCTAssertTrue(pause.runStatsLabel.isHidden,
+                      "the four lines of numbers are all one tap away")
+        XCTAssertFalse(pause.moreStatsButton.isHidden,
+                       "and the way to them has to stay")
+        // The two spacing constraints go with it - they keep the result line and the stats
+        // block apart, and with no stats block there is nothing to keep apart. Asserted through
+        // what a player would see rather than through the constraints, which are private: the
+        // result line should be able to sit close to the buttons with nothing between them
+    }
+
+    /// Everything on the screen stays inside it.
+    ///
+    /// The symptom James reported was clipping, so this is the assertion that speaks to it
+    /// directly rather than to the arrangement that caused it.
+    func testNothingOnTheDailyEndScreenIsPushedOffTheBottom() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+        let bounds = pause.view.bounds
+
+        for (name, view) in [("total", pause.dailyTotalLabel as UIView),
+                             ("more stats", pause.moreStatsButton as UIView),
+                             ("buttons", pause.buttonCollectionView as UIView)]
+        where view.isHidden == false {
+            let frame = view.convert(view.bounds, to: pause.view)
+            XCTAssertLessThanOrEqual(frame.maxY, bounds.maxY,
+                                     "\(name) runs \(frame.maxY - bounds.maxY)pt off the "
+                                     + "bottom of a \(Int(bounds.height))pt screen")
+            XCTAssertGreaterThanOrEqual(frame.minY, 0, "\(name) runs off the top")
+        }
+    }
+}

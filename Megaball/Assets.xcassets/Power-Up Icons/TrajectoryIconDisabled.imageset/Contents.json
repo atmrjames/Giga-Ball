@@ -1,17 +1,17 @@
 {
   "images": [
     {
-      "filename": "PowerUpMagnetism.png",
+      "filename": "TrajectoryIconDisabled.png",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "PowerUpMagnetism@2x.png",
+      "filename": "TrajectoryIconDisabled@2x.png",
       "idiom": "universal",
       "scale": "2x"
     },
     {
-      "filename": "PowerUpMagnetism@3x.png",
+      "filename": "TrajectoryIconDisabled@3x.png",
       "idiom": "universal",
       "scale": "3x"
     }

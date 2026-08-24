@@ -1,17 +1,17 @@
 {
   "images": [
     {
-      "filename": "PowerUpMagnetism.png",
+      "filename": "MagnetismIcon.png",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "PowerUpMagnetism@2x.png",
+      "filename": "MagnetismIcon@2x.png",
       "idiom": "universal",
       "scale": "2x"
     },
     {
-      "filename": "PowerUpMagnetism@3x.png",
+      "filename": "MagnetismIcon@3x.png",
       "idiom": "universal",
       "scale": "3x"
     }

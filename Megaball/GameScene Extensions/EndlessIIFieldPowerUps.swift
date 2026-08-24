@@ -900,9 +900,13 @@ extension GameScene {
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
           PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat)),
          ("endlessIIQuicksand", endlessIIQuicksandClock,
-          UIImage(named: "PowerUpBricksDown") ?? PowerUpIcon.clearAndRetreat),
-         // Classic's Quicksand badge, because it is Classic's Quicksand: the same power-up
-         // wearing the same picture, doing a temporary version of the same thing (round 218)
+          PowerUpIcon.hud("QuicksandIcon",
+                          UIImage(named: "PowerUpBricksDown") ?? PowerUpIcon.clearAndRetreat)),
+         // **Its own round icon now** (round 241's delivery). It wore Classic's Quicksand
+         // badge, because it is Classic's Quicksand - the same power-up doing a temporary
+         // version of the same thing (round 218) - and a square badge in a round ring is a
+         // square in a circle. The badge is still the fallback, so the two are the same
+         // picture anywhere the drawn one is missing
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
           PowerUpIcon.hud("SafetyPaddleIcon", PowerUpIcon.safetyPaddle)),
          ("endlessIIDrift", endlessIIDriftClock,

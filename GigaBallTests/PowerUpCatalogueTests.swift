@@ -503,3 +503,53 @@ final class RetiredPowerUpTests: XCTestCase {
                        "the stored arrays and the names have to stay the same length")
     }
 }
+
+/// The drawn artwork, against the names the code asks for.
+///
+/// Every icon in the game has a *drawn* fallback - `PowerUpIcon.badge` builds one from a glyph
+/// - so a picture that fails to load is invisible: the power-up keeps an icon and it is the
+/// wrong one. That is the whole failure mode of installing art, and the only way it shows is
+/// somebody noticing the old badge still there.
+///
+/// James delivers files named `IconAimedSticky`; the app has asked for `AimedStickyIcon` since
+/// long before, and the catalogue's own convention is `<Name>Icon`. The renaming happens on the
+/// way in, which is exactly the step this pins.
+final class DeliveredIconArtworkTests: XCTestCase {
+
+    /// The HUD icons wired to drawn art, and the names the ring asks for.
+    private let hudIcons = [
+        "AimedStickyIcon", "AutoAimIcon", "BallSteeringIcon", "FlippedAngleIcon",
+        "InertPaddleIcon", "MagnetismIcon", "QuicksandIcon", "TrajectoryIcon",
+    ]
+
+    func testEveryWiredHudIconHasArtworkToLoad() {
+        for name in hudIcons {
+            XCTAssertNotNil(UIImage(named: name),
+                            "\(name) is asked for by `PowerUpIcon.hud` and is not in the "
+                            + "catalogue - the ring would fall back to the drawn badge and "
+                            + "nothing would say so")
+        }
+    }
+
+    /// And the greyed twin of each, which the Classic tray reads for the eight it shows.
+    ///
+    /// Nothing reads the newer ones yet - the ring has no disabled state - but they are
+    /// delivered in pairs and installed in pairs, so a missing one is a delivery half applied.
+    func testEveryHudIconHasItsDisabledTwin() {
+        for name in hudIcons {
+            XCTAssertNotNil(UIImage(named: name + "Disabled"), "\(name)Disabled")
+        }
+    }
+
+    /// `hud` returns the artwork when there is some, and the badge when there is not.
+    ///
+    /// The property the two tests above rest on: if this ever stopped being true they would
+    /// pass while the game showed badges.
+    func testHudPrefersTheArtworkAndFallsBackToTheBadge() {
+        let badge = PowerUpIcon.magnetism
+        XCTAssertFalse(PowerUpIcon.hud("MagnetismIcon", badge) === badge,
+                       "the drawn artwork should win where it exists")
+        XCTAssertTrue(PowerUpIcon.hud("NoSuchIconExists", badge) === badge,
+                      "and the badge should answer where it does not")
+    }
+}

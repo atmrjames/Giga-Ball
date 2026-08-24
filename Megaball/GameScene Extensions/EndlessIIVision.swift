@@ -410,7 +410,8 @@ extension GameScene {
         if endlessIITrajectoryRemaining > 0, endlessIITrajectoryTotal > 0 {
             entries.append(PowerUpRingHUD.Entry(
                 id: "endlessIITrajectory",
-                texture: SKTexture(image: PowerUpIcon.trajectoryLine),
+                texture: SKTexture(image: PowerUpIcon.hud("TrajectoryIcon",
+                                                          PowerUpIcon.trajectoryLine)),
                 remaining: CGFloat(endlessIITrajectoryRemaining/endlessIITrajectoryTotal),
                 segments: Int(endlessIITrajectoryTotal)))
         }

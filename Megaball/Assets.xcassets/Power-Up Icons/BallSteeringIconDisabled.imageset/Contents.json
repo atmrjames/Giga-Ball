@@ -1,17 +1,17 @@
 {
   "images": [
     {
-      "filename": "PowerUpMagnetism.png",
+      "filename": "BallSteeringIconDisabled.png",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "PowerUpMagnetism@2x.png",
+      "filename": "BallSteeringIconDisabled@2x.png",
       "idiom": "universal",
       "scale": "2x"
     },
     {
-      "filename": "PowerUpMagnetism@3x.png",
+      "filename": "BallSteeringIconDisabled@3x.png",
       "idiom": "universal",
       "scale": "3x"
     }
