@@ -115,14 +115,53 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         XCTAssertTrue(spec.isBuildable, "nothing is being built, so nothing can be impossible")
     }
 
-    func testASizeIsRefusedUntilAFormationCanPlaceOne() {
+    func testBigIsRefusedUntilAFormationCanPlaceOne() {
         // Refused rather than ignored: dropping the size silently would put an ordinary brick
         // where somebody drew a large one, which is the shape coming out wrong with nothing to
         // say why. Meant to be deleted in the round that builds it
         XCTAssertEqual(EndlessIIBrickSpec(size: .big).faults, [.sizeNotYetBuildable(.big)])
-        XCTAssertEqual(EndlessIIBrickSpec(size: .tiny).faults, [.sizeNotYetBuildable(.tiny)])
-        XCTAssertTrue(EndlessIIBrickSpec(size: .normal).isBuildable,
-                      "one ordinary cell is what a formation has always placed")
+        XCTAssertTrue(EndlessIIBrickSpec(size: .normal).isBuildable)
+        XCTAssertTrue(EndlessIIBrickSpec(size: .tiny).isBuildable,
+                      "a Tiny brick needs no reservation - it is one brick split where it "
+                      + "already stands")
+    }
+
+    /// A formation cannot ask for a style the size cannot carry.
+    ///
+    /// The rules are the game's own (`EndlessIIStyle.suits(_:BrickSize)`), which is the same
+    /// place `endlessIICanTake` and the reference page now read them from. A Tiny wedge is the
+    /// obvious mistake and is worth catching where it is written.
+    func testAStyleTheSizeCannotCarryIsRefused() {
+        XCTAssertEqual(EndlessIIBrickSpec(shape: .wedge, size: .tiny).faults,
+                       [.styleRefusesSize(.wedge, .tiny)])
+        XCTAssertEqual(EndlessIIBrickSpec(size: .tiny, actions: [.gravity]).faults,
+                       [.styleRefusesSize(.gravity, .tiny)])
+        XCTAssertTrue(EndlessIIBrickSpec(size: .tiny, actions: [.flashing]).isBuildable,
+                      "and the ones a quarter-cell brick can carry still go on it")
+    }
+
+    /// A Tiny cell becomes four quarter-cell bricks, and they join the row.
+    ///
+    /// The three new ones have to reach the row's own array or the count and the arrival
+    /// animation never see them - the same bargain `applyEndlessIISizes` makes for a Tiny brick
+    /// the generator made.
+    func testATinyCellBecomesFourQuartersThatJoinTheRow() {
+        let scene = fieldScene()
+        let node = brick(scene)
+        scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(behaviour: .standard,
+                                                                  size: .tiny))]
+        var row: [SKNode] = [node]
+        scene.applyEndlessIIDesignedSpecs(to: &row)
+
+        XCTAssertTrue(row.count == 4 || row.count == 2,
+                      "a Tiny set is all four quarters or one of the two diagonal pairs, "
+                      + "and a pair is what leaves a route through the cell")
+        XCTAssertEqual(node.size.width, scene.brickWidth/2 - scene.endlessIITinyGap,
+                       accuracy: 0.5, "the original became the first quarter")
+        for piece in row.compactMap({ $0 as? SKSpriteNode }) {
+            XCTAssertLessThan(piece.size.width, scene.brickWidth*0.75, "every piece is a quarter")
+            XCTAssertEqual(scene.endlessIISizeOf(piece), .tiny)
+        }
     }
 
     // MARK: - What the builder does with a legend
@@ -159,7 +198,8 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(behaviour: .standard,
                                                                  shape: .diamond,
                                                                  actions: [.gravity]))]
-        scene.applyEndlessIIDesignedSpecs()
+        var row: [SKNode] = []
+        scene.applyEndlessIIDesignedSpecs(to: &row)
 
         XCTAssertEqual(node.endlessIIFace, .diamond)
         XCTAssertEqual(node.endlessIIRole, .gravity)
@@ -179,7 +219,8 @@ final class EndlessIIBrickSpecTests: XCTestCase {
             scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(shape: .wedge,
                                                                       mirrored: true,
                                                                       flipped: false))]
-            scene.applyEndlessIIDesignedSpecs()
+            var row: [SKNode] = []
+            scene.applyEndlessIIDesignedSpecs(to: &row)
             XCTAssertEqual(node.endlessIIFaceMirrored, true)
             XCTAssertEqual(node.endlessIIFaceFlipped, false)
             node.removeFromParent()
@@ -192,7 +233,8 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         let node = brick(scene)
         scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(actions: [.directional],
                                                                   side: .left))]
-        scene.applyEndlessIIDesignedSpecs()
+        var row: [SKNode] = []
+        scene.applyEndlessIIDesignedSpecs(to: &row)
         XCTAssertEqual(node.endlessIIVulnerableSide, .left)
     }
 
@@ -205,7 +247,8 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         let scene = fieldScene()
         let node = brick(scene)
         scene.endlessIIDesignedSpecs = [(node, EndlessIIBrickSpec(shape: .convex))]
-        scene.applyEndlessIIDesignedSpecs()
+        var row: [SKNode] = []
+        scene.applyEndlessIIDesignedSpecs(to: &row)
 
         XCTAssertTrue(node.endlessIIStaysPlain)
         XCTAssertFalse(scene.endlessIICanTake(.spinning, node),
@@ -324,8 +367,13 @@ final class EndlessIIBrickSpecTests: XCTestCase {
     }
 
     /// A legend entry that is never drawn is dead weight, and usually a renamed character.
+    ///
+    /// **Scatters are exempt**, and not as a convenience: a scatter has no drawn grid at all -
+    /// its rows are rolled at placement, from a character it names separately - so there is
+    /// nothing here to compare a legend against. Asking anyway reports every scatter that
+    /// carries a legend as carrying a dead one.
     func testNoFormationCarriesALegendEntryItNeverUses() {
-        for formation in EndlessIIFormationCatalogue.all {
+        for formation in EndlessIIFormationCatalogue.all where formation.rows.isEmpty == false {
             let drawn = Set(formation.rows.flatMap { $0 })
             for character in formation.legend.keys where drawn.contains(character) == false {
                 XCTFail("\(formation.name) defines '\(character)' and never draws it")

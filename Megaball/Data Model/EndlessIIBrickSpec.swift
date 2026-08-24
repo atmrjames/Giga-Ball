@@ -116,6 +116,20 @@ struct EndlessIIBrickSpec: Equatable {
         (shape.map { [$0] } ?? []) + actions
     }
 
+    /// Whether a hit on this cell can eventually take it away.
+    ///
+    /// A cell whose behaviour is unspecified counts as breakable: `?` is the field's own mix
+    /// and is mostly destructible, which is how the six-character alphabet has always been
+    /// read. The question matters for the rule that no designed row may be a wall with nothing
+    /// to earn - see the catalogue's tests.
+    var isBreakable: Bool {
+        guard isEmpty == false else { return false }
+        switch behaviour {
+        case .indestructibleOnce, .indestructibleAlways: return false
+        case .standard, .multiHit, .invisible, nil: return true
+        }
+    }
+
     /// Whether this spec asks for anything at all beyond an ordinary brick.
     ///
     /// A spec that asks for nothing is `?`, and a formation full of them is a formation with
@@ -174,6 +188,7 @@ enum EndlessIIBrickSpecFault: Equatable, CustomStringConvertible {
     case sideWithoutDirectional
     case orientationWithoutAShape
     case sizeNotYetBuildable(BrickSize)
+    case styleRefusesSize(EndlessIIStyle, BrickSize)
 
     var description: String {
         switch self {
@@ -194,9 +209,10 @@ enum EndlessIIBrickSpecFault: Equatable, CustomStringConvertible {
         case .orientationWithoutAShape:
             return "names an orientation without asking for a shape to turn"
         case .sizeNotYetBuildable(let size):
-            return "asks for a \(size) brick, and a formation cannot place one yet - Big needs "
-                + "the two-row reserve and Tiny needs four quarters, and a row either reserves "
-                + "or runs a pattern"
+            return "asks for a \(size) brick, and a formation cannot place one yet - it needs "
+                + "the two-row reserve, and a row either reserves or runs a pattern"
+        case .styleRefusesSize(let style, let size):
+            return "\(style) cannot be carried by a \(size) brick"
         }
     }
 }
@@ -247,15 +263,27 @@ extension EndlessIIBrickSpec {
             }
         }
 
-        if let size, size != .normal {
-            found.append(.sizeNotYetBuildable(size))
+        if size == .big {
+            found.append(.sizeNotYetBuildable(.big))
         }
-        // **Refused rather than ignored.** The builder places one brick per cell, and a Big one
-        // needs the two-row reserve while a Tiny one is four quarters - neither of which a
-        // formation can ask for while the rule stands that a row either reserves or runs a
-        // pattern. Silently dropping the size would have produced an ordinary brick where
-        // somebody drew a large one, which is the shape coming out wrong with nothing to say
-        // why. This fault is meant to be deleted, in the round that builds it
+        // **Big is refused rather than ignored.** It spans two rows, and rows arrive one at a
+        // time from the top - so it has to be *reserved* by one row and built by the next, and
+        // that machinery owns the row it runs on. A formation cannot ask for one while the rule
+        // stands that a row either reserves or runs a pattern. Silently dropping the size would
+        // have produced an ordinary brick where somebody drew a large one, which is the shape
+        // coming out wrong with nothing to say why. The fault is meant to be deleted by the
+        // round that builds it.
+        //
+        // **Tiny needs none of that** and is allowed: it is four quarter-cell bricks filling
+        // one cell, built by splitting an ordinary one where it already stands (`makeTiny`),
+        // which is a thing that can be done to a brick after the row is laid down
+
+        for style in styles where style.suits(size ?? .normal) == false {
+            found.append(.styleRefusesSize(style, size ?? .normal))
+        }
+        // The game's own size rules, asked rather than restated - the same bargain the pair
+        // rules make above. A Tiny wedge is the obvious mistake here and is worth catching
+        // where it is written rather than where it is built
 
         if side != nil, actions.contains(.directional) == false {
             found.append(.sideWithoutDirectional)

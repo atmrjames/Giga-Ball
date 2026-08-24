@@ -98,6 +98,56 @@ struct EndlessIISetRow {
                                              "..IIIII...."], minimumHeight: 250),
         // Something walled in. Reachable only once the walls have been dealt with
 
+        // MARK: Rows that are made of something (round 240)
+        //
+        // The eleven above are drawn from the four brick kinds the shared alphabet reaches. A
+        // legend lets a row be made of a *shape* or an *action*, which is a different kind of
+        // landmark: the Palisade is not a wall with a gap, it is a wall that answers every hit
+        // the same way.
+
+        EndlessIISetRow(name: "Palisade", rows: ["WWWWWWWWWWW"], minimumHeight: 100,
+                        legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: true)]),
+        // A full row of slopes all facing the same way. Anything reaching it leaves in the same
+        // direction whatever angle it arrived at, so the row is a redirection rather than an
+        // obstacle - and it is a shot worth setting up rather than one to get through
+
+        EndlessIISetRow(name: "Ripple", rows: ["VCVCVCVCVCV"], minimumHeight: 130,
+                        legend: ["V": EndlessIIBrickSpec(behaviour: .standard, shape: .convex),
+                                 "C": EndlessIIBrickSpec(behaviour: .standard,
+                                                         shape: .concave)]),
+        // Domes and dishes alternating. Each dome throws a shot wider and each dish gathers it
+        // back, so a ball working along the row is passed between two opposite answers
+
+        EndlessIISetRow(name: "Drawbridge", rows: ["DDDD.DDDDDD",
+                                                   "?????.?????"], minimumHeight: 150,
+                        legend: ["D": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.directional],
+                                                         side: .bottom)]),
+        // A wall with one gap that only takes damage from below, over a row with its gap
+        // somewhere else. Going through the top is one shot; taking the top apart is a rally
+
+        EndlessIISetRow(name: "Shingle", rows: ["ttttttttttt"], minimumHeight: 110,
+                        legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny)]),
+        // A full row of quarter-cell bricks: forty-four of them where eleven would be, each
+        // worth a hit and none of them worth aiming at. It comes apart a quarter at a time, so
+        // the row thins rather than opening
+
+        EndlessIISetRow(name: "Trawl", rows: ["mmm.mmm.mmm"], minimumHeight: 170,
+                        legend: ["m": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.moving])]),
+        // Three groups of wanderers with gaps between them. They set off into the gaps the
+        // moment the row arrives, so the shape starts as a design and becomes a field
+
+        EndlessIISetRow(name: "Rockfall", rows: ["g.g.g.g.g.g",
+                                                 "...........",
+                                                 "?.?.?.?.?.?"], minimumHeight: 200,
+                        legend: ["g": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.gravity])]),
+        // Six fallers over an empty row over six ordinary bricks. The top row lands on the
+        // bottom one and the shape closes itself, so what looks like three rows of room is one
+        // row of bricks arriving in two stages
+
         // MARK: The mazes
         //
         // James, round 190: "Mazes of indestructible bricks dotted with normal bricks so they

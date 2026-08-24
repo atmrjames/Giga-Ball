@@ -220,12 +220,28 @@ final class BrickTypeCatalogueTests: XCTestCase {
         for style in EndlessIIStyle.allCases {
             XCTAssertFalse(BrickTypeCatalogue.sizes(carrying: style).isEmpty, "\(style)")
         }
-        // The two that are pinned to one cell, for reasons that are not the same reason
-        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .gravity), "Normal")
-        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .fixed), "Normal")
+        // **These were pinned to the wrong answers for three rounds**, which is the whole
+        // reason the sentence is derived now. Round 237 opened Fixed and Moving to any size and
+        // Gravity to everything but Tiny, and moved only the generator's copy of the rule - so
+        // the page went on saying "Normal" and this test went on agreeing with it
+        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .gravity), "Normal and Big")
+        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .fixed), "Any")
+        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .moving), "Any")
+
         // A Big brick cannot spin: the clearance a full-size one needs to turn is already two
         // cells in each direction
         XCTAssertFalse(BrickTypeCatalogue.sizes(carrying: .spinning).contains("Big"))
+
+        // And the page's answer is the generator's answer, for every style and every size -
+        // which is the property that makes the two impossible to drift apart again
+        for style in EndlessIIStyle.allCases {
+            for size in BrickSize.allCases where style.suits(size) {
+                let sentence = BrickTypeCatalogue.sizes(carrying: style)
+                XCTAssertTrue(sentence == "Any"
+                              || sentence.contains(BrickTypeCatalogue.name(of: size)),
+                              "\(style) takes \(size) and the page does not say so")
+            }
+        }
     }
 
     func testEveryEntryDrawsSomething() {

@@ -834,7 +834,7 @@ extension GameScene {
         applyEndlessIIRoles(to: brickArray)
         // Endless 2.0 only, and after the animation above, which resets the colour blend
 
-        applyEndlessIIDesignedSpecs()
+        applyEndlessIIDesignedSpecs(to: &brickArray)
         // The designed cells get what their legend asked for, after the passes that would
         // have rolled for them and could not
 

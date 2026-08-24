@@ -263,34 +263,16 @@ enum BrickTypeCatalogue {
     /// `endlessIICanTake`, which needs a live brick to answer. Written out here, and covered
     /// by a test that every style says something.
     static func sizes(carrying style: EndlessIIStyle) -> String {
-        switch style {
-        case .spinning:
-            // A full-size brick already sweeps two cells in each direction as it turns, and a
-            // Big one would need four. A Tiny one is worse than either: four quarter-cell
-            // bricks share a cell, and each turning about its own centre sweeps through the
-            // three beside it
-            return "Normal"
-        case .fixed, .gravity:
-            // Only some quarters of a Tiny set would ever draw the style, and a Big one would
-            // wall off two columns at once
-            return "Normal"
-        case .breathing:
-            // It changes its size about its own middle, which a Big brick's off-centre
-            // sprite would do around a corner - and a Tiny one shrinking to half of a
-            // quarter-cell is a brick nobody can hit
-            return "Normal"
-        case .moving:
-            // Both the room it looks for and the position it measures from assume a brick
-            // sitting in exactly one cell
-            return "Tiny and Normal"
-        case .convex, .concave, .wedge, .diamond:
-            // The silhouette is built from the brick's own size and drawn about its node,
-            // which only holds for a brick that is one ordinary cell sitting centred
-            return "Normal"
-        case .rounded, .flashing, .directional, .exploding, .spawner, .portal:
-            return "Any"
-        }
+        let suited = BrickSize.allCases.filter { style.suits($0) }
+        guard suited.count < BrickSize.allCases.count else { return "Any" }
+        return suited.map(name(of:)).joined(separator: " and ")
     }
+    // **Read off `EndlessIIStyle.suits` rather than written down**, which is what the line
+    // above this one has always claimed and this one did not do. It was a switch of hand-typed
+    // sentences, and round 237 changed the rules and moved only the generator's copy - so the
+    // page spent three rounds telling players that Fixed is Normal-only and Moving is
+    // Tiny-and-Normal, when both take any size now. That is the exact failure a derived
+    // reference page exists to avoid, sitting inside one
 
     private static var shapes: [Entry] { shapeOrder.map(entry(for:)) }
 

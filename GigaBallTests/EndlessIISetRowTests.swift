@@ -31,8 +31,11 @@ final class EndlessIISetRowTests: XCTestCase {
     }
 
     func testEveryCharacterMeansSomething() {
-        let known: Set<Character> = [".", "N", "M", "i", "I", "?"]
+        // The six shared ones, **or one this pattern's own legend defines** (round 240). A
+        // legend is what lets a row be made of a shape or an action rather than of the four
+        // brick kinds the shared alphabet reaches
         for pattern in EndlessIISetRow.all {
+            let known = Set(pattern.legend.keys).union(EndlessIIBrickSpec.classic.keys)
             for row in pattern.rows {
                 for character in row {
                     XCTAssertTrue(known.contains(character),
@@ -44,10 +47,16 @@ final class EndlessIISetRowTests: XCTestCase {
 
     func testNoPatternIsCompletelySolid() {
         // A full row of indestructible bricks is a run-ending wall, not a shape.
+        //
+        // Asked through the legend since round 240. The rule is unchanged and was always about
+        // what a cell *is*; the check used to read the character, which meant a row of
+        // Standard wedges - entirely breakable - was reported as a wall because `W` is not one
+        // of the six letters it knew
         for pattern in EndlessIISetRow.all {
             let anyGap = pattern.rows.contains { $0.contains(".") }
             let anyBreakable = pattern.rows.contains { row in
-                row.contains(where: { $0 == "N" || $0 == "M" || $0 == "?" })
+                row.contains { EndlessIIBrickSpec.spec(for: $0,
+                                                       legend: pattern.legend).isBreakable }
             }
             XCTAssertTrue(anyGap || anyBreakable, "\(pattern.name) can never be got past")
         }

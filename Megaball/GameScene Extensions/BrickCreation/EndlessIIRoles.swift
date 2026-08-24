@@ -102,6 +102,45 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
         }
     }
 
+    /// Whether this style can be carried by a brick of a given size.
+    ///
+    /// **The size half of `endlessIICanTake`, said once.** It used to live in that method as a
+    /// handful of `isOrdinaryCellSized` checks and *again* in the reference page as a sentence
+    /// somebody typed, and round 237 changed the rules and only moved one of them: the page has
+    /// been telling players that Fixed is Normal-only and Moving is Tiny-and-Normal ever since,
+    /// when both take any size now. A decision written down twice is wrong the first time it
+    /// changes, and this one changed.
+    ///
+    /// Only the size question. Whether the brick is *centred*, whether a spinner is in the
+    /// column, whether a Directional brick has a face the ball can reach - those need a live
+    /// brick in a live field and stay where they are.
+    func suits(_ size: BrickSize) -> Bool {
+        switch self {
+        case .convex, .concave, .wedge, .diamond:
+            // The silhouette is built from the brick's own size and drawn about its node, which
+            // only holds for a brick that is one ordinary cell sitting centred
+            return size == .normal
+        case .spinning:
+            // Four quarter-cell bricks each turning about their own centre sweep straight
+            // through one another, and a Big one sweeps a circle wider than the clearance the
+            // generator reserves for it
+            return size == .normal
+        case .breathing:
+            // It changes size about its own middle, which a Big brick's off-centre sprite would
+            // do around a corner - and a Tiny one shrinking to half of a quarter-cell is a
+            // brick nobody can hit
+            return size == .normal
+        case .gravity:
+            // Any size but Tiny. Four quarters share a cell, so "is the space below free" is a
+            // question the occupancy map cannot answer for one of them, and a whole-row drop
+            // would put it through its own siblings (round 237)
+            return size != .tiny
+        case .rounded, .flashing, .moving, .fixed,
+             .directional, .exploding, .spawner, .portal:
+            return true
+        }
+    }
+
     /// Whether this style fires when the brick is hit rather than when it is destroyed.
     ///
     /// The same style, read differently depending on what it is attached to. A brick that

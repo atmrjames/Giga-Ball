@@ -235,6 +235,140 @@ struct EndlessIICluster {
                                               ".MMM."], minimumHeight: 240, weight: 5),
         // Multi-hit all the way round something ordinary. Slow to open and quick to finish
 
+        // MARK: Shapes that say something a wall cannot (round 240)
+        //
+        // Everything above is drawn from the four brick kinds the six shared characters reach.
+        // These use a legend, so what a cell *is* can be part of the drawing: a slope that
+        // points somewhere, a face that only opens one way, a brick that will not sit still.
+
+        EndlessIICluster(name: "Weir", rows: ["V.V.V",
+                                              ".V.V.",
+                                              "V.V.V"], minimumHeight: 100, weight: 8,
+                         legend: ["V": EndlessIIBrickSpec(behaviour: .standard, shape: .convex,
+                                                          flipped: true)]),
+        // Domes hanging point-down in a chequer. A ball entering from below is scattered by
+        // whichever one it meets first and then meets another, so the shape spreads a shot
+        // rather than returning it - the opposite of what the same chequer of flat bricks does
+
+        EndlessIICluster(name: "Gullet", rows: ["C.C",
+                                                "C?C",
+                                                "C.C"], minimumHeight: 120, weight: 7,
+                         legend: ["C": EndlessIIBrickSpec(behaviour: .standard,
+                                                          shape: .concave)]),
+        // Two columns of dishes facing across a gap. Each one turns a hit back toward the
+        // middle, so a ball that gets into the channel is kept there for a while
+
+        EndlessIICluster(name: "Turbine", rows: [".S.",
+                                                 "S?S",
+                                                 ".S."], minimumHeight: 180, weight: 6,
+                         legend: ["S": EndlessIIBrickSpec(behaviour: .multiHit,
+                                                          actions: [.spinning])]),
+        // Four turning multi-hit bricks around something ordinary. The middle is easy and
+        // getting at it is not: the angle each one presents is different every time round, and
+        // they take four hits each
+
+        EndlessIICluster(name: "Portcullis", rows: ["DDDDD",
+                                                    ".....",
+                                                    "?????"], minimumHeight: 140, weight: 7,
+                         legend: ["D": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.directional],
+                                                          side: .bottom)]),
+        // A row that only opens downward, with a row of ordinary bricks beneath it. The bricks
+        // under it are the reason to be there and the gate is what makes it a shot rather than
+        // a rally: every hit on the lid has to arrive from below, which is where the ball
+        // already is - and the row underneath is in the way of exactly that
+
+        EndlessIICluster(name: "Shoalwater", rows: ["ttttt",
+                                                    "?????"], minimumHeight: 90, weight: 8,
+                         legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny)]),
+        // A shelf of quarter-cell bricks over ordinary ones. Four times as many hits and each
+        // one opens a gap a quarter the size, so it comes apart gradually and what is behind
+        // it is visible the whole way through
+
+        EndlessIICluster(name: "Grit", rows: [], minimumHeight: 130, weight: 7,
+                         scatter: Scatter(character: "t", count: 10, rows: 3),
+                         legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny)]),
+        // Ten quarter-cell bricks thrown across three rows - forty bricks, none of them worth
+        // aiming at and all of them in the way. A scatter of Tiny is the densest thing this
+        // catalogue can produce without being a wall
+
+        EndlessIICluster(name: "Shuttle", rows: ["mmm"], minimumHeight: 110, weight: 7,
+                         legend: ["m": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.moving])]),
+        // Three wanderers side by side. They set off the moment there is room, so the shape
+        // this leaves is never the shape it arrived as - and it is one row, so it reads as
+        // something loose in the field rather than as a structure
+
+        EndlessIICluster(name: "Cairn", rows: [".g.",
+                                               "ggg",
+                                               "?.?"], minimumHeight: 160, weight: 6,
+                         legend: ["g": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.gravity])]),
+        // A pile that falls as it is cleared. Take the bottom out and the rest comes down into
+        // whatever the field left below it, so what the shape becomes is decided by where it
+        // happened to land
+
+        EndlessIICluster(name: "Keystone", rows: ["?F?",
+                                                  "FFF",
+                                                  "?F?"], minimumHeight: 210, weight: 5,
+                         legend: ["F": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.fixed])]),
+        // A cross of anchors with ordinary bricks in the corners. Hit one and it stops where it
+        // is for good - and anything that runs into it afterwards is destroyed by it, so where
+        // the player chooses to strike decides what the next twenty rows do here
+
+        EndlessIICluster(name: "Sawtooth", rows: ["WwWwW"], minimumHeight: 130, weight: 7,
+                         legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                          mirrored: true),
+                                  "w": EndlessIIBrickSpec(behaviour: .standard,
+                                                          shape: .wedge)]),
+        // Slopes alternating along a single row, so neighbouring bricks throw a ball opposite
+        // ways. One row of it is a surface nothing comes off predictably - and unlike the
+        // Jagged paddle it retired with, this one can be cleared
+
+        EndlessIICluster(name: "Rimshot", rows: ["OOO",
+                                                 "O?O",
+                                                 "OOO"], minimumHeight: 70, weight: 8,
+                         legend: ["O": EndlessIIBrickSpec(behaviour: .standard,
+                                                          shape: .rounded)]),
+        // A ring of rounded bricks around one ordinary cell. Every corner in the shape is a
+        // corner a ball glances off, so getting to the middle is luck the first time and aim
+        // the second
+
+        EndlessIICluster(name: "Nest", rows: [".DDD.",
+                                              "D???D",
+                                              ".DDD."], minimumHeight: 230, weight: 5,
+                         legend: ["D": EndlessIIBrickSpec(behaviour: .multiHit,
+                                                          actions: [.directional])]),
+        // A multi-hit shell where every brick opens on a face the generator chose - and it
+        // chooses one the ball can reach (round 233), so the way in exists and has to be found
+
+        EndlessIICluster(name: "Hatchery", rows: [".p.",
+                                                  "p?p",
+                                                  ".p."], minimumHeight: 250, weight: 4,
+                         legend: ["p": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.spawner])]),
+        // Four spawners around a hole. Each one fills between one and eight of the cells around
+        // it as it goes, so clearing this makes more field than it removes - the one shape here
+        // that is worse to start than to leave alone
+
+        EndlessIICluster(name: "Powderkeg", rows: ["?x?",
+                                                   "xxx",
+                                                   "?x?"], minimumHeight: 190, weight: 5,
+                         legend: ["x": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.exploding])]),
+        // The opposite of the Hatchery, and deliberately the same shape. One hit anywhere on
+        // the cross takes the lot and two rows of whatever was around it
+
+        EndlessIICluster(name: "Lantern", rows: [".f.",
+                                                 "f?f",
+                                                 ".f."], minimumHeight: 100, weight: 7,
+                         legend: ["f": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.flashing])]),
+        // A shape that is only there half the time. What is inside can be reached whenever the
+        // walls are in their passable phase, which is a timing problem rather than an aiming
+        // one - and the four are staggered, so it is never open all the way round at once
+
         EndlessIICluster(name: "Studs", rows: ["i.i.i",
                                                ".N.N.",
                                                "i.i.i"], minimumHeight: 200, weight: 6),

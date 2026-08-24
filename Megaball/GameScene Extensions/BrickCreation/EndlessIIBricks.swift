@@ -402,11 +402,23 @@ extension GameScene {
     /// Nothing here asks `endlessIICanTake`. The legend was put to the compatibility rules when
     /// it was authored (`EndlessIIBrickSpecTests`), which is the right moment: a brick refused
     /// here would leave a hole in a shape somebody drew, silently, at some depth in some run.
-    func applyEndlessIIDesignedSpecs() {
+    func applyEndlessIIDesignedSpecs(to bricks: inout [SKNode]) {
         guard gameMode == .endlessII else { return }
         defer { endlessIIDesignedSpecs.removeAll() }
 
         for (brick, spec) in endlessIIDesignedSpecs where brick.parent != nil {
+            if spec.size == .tiny {
+                bricks.append(contentsOf: Array(makeTiny(brick).dropFirst()) as [SKNode])
+                continue
+                // **Split first and last.** `makeTiny` turns the brick into the bottom-left
+                // quarter and builds three more beside it, and the three join the row so the
+                // count and the arrival animation see them - exactly as a Tiny brick the
+                // generator made. Nothing else on the spec is applied: every style a
+                // quarter-cell brick cannot carry is refused when the legend is authored
+                // (`styleRefusesSize`), and the ones it *can* carry would have to be put on
+                // all four quarters or on none, which is a decision this format has not been
+                // asked to make yet. A formation asking for a Tiny brick gets four Tiny bricks
+            }
             if let mirrored = spec.mirrored { brick.endlessIIFaceMirrored = mirrored }
             if let flipped = spec.flipped { brick.endlessIIFaceFlipped = flipped }
             if let side = spec.side { brick.endlessIIVulnerableSide = side }
@@ -480,6 +492,17 @@ extension GameScene {
     /// combinations fun rather than noisy.
     static let endlessIIMaximumStyles = 2
 
+    /// Which size class a brick belongs to, by the room it fills.
+    ///
+    /// The field size rather than the sprite's, so a shaped brick is the ordinary cell it fills
+    /// rather than the third of one its sprite hides in (`endlessIIFieldSize`).
+    func endlessIISizeOf(_ brick: SKSpriteNode) -> BrickSize {
+        let width = endlessIIFieldSize(of: brick).width
+        if width > brickWidth*1.5 { return .big }
+        if width < brickWidth*0.75 { return .tiny }
+        return .normal
+    }
+
     /// Whether a brick sits in exactly one cell - true of an ordinary brick and of a Tiny
     /// one, false of a Big one.
     func occupiesOneCell(_ brick: SKSpriteNode) -> Bool {
@@ -538,6 +561,9 @@ extension GameScene {
             return behaviour != .invisible
         }
         guard style.suits(behaviour) else { return false }
+        guard style.suits(endlessIISizeOf(brick)) else { return false }
+        // The size half, asked of `EndlessIIStyle` rather than restated here - so the reference
+        // page and the generator can never give different answers (round 240)
 
         let centred = brick.endlessIIFace != nil
             || (abs(brick.anchorPoint.x - 0.5) < 0.01
@@ -551,40 +577,14 @@ extension GameScene {
         // hides (round 235)
         switch style {
         case .rounded: return centred
-        case .convex, .concave, .wedge, .diamond:
-            // The same demand Rounded makes, plus one of its own: a shaped face is built
-            // from the brick's own size, so it has to be a brick of ordinary size sitting
-            // centred on its node. A Big brick's sprite hangs off its node and a Tiny one
-            // is a quarter of a cell - shaping either would put the silhouette somewhere
-            // other than where the brick appears to be
-            return centred && isOrdinaryCellSized(brick)
-        case .spinning: return centred && isOrdinaryCellSized(brick)
-        case .breathing:
-            // Centred and one ordinary cell: it changes its own size about its own middle,
-            // which a Big brick's off-centre sprite would do around a corner, and a Tiny one
-            // shrinking to a quarter of a quarter is a brick nobody can hit
-            return centred && isOrdinaryCellSized(brick)
-        case .fixed:
-            // **Any size** (the 2026 brick workbook: "any brick type in any state with any
-            // shape in any orientation and any size can take any motion"). It was ordinary-
-            // sized only on the grounds that a Big one "would wall off two columns at once" -
-            // which is a description of what a Big Fixed brick does rather than a reason it
-            // cannot exist, and the player chose where to put it
-            return true
+        case .convex, .concave, .wedge, .diamond, .spinning, .breathing:
+            return centred
+            // The size these three demand is answered above, by the rule they share with the
+            // reference page. What is left is whether the drawing sits on the node, which is a
+            // question about a *particular* brick rather than about its size class - a Big
+            // one's sprite hangs off its node on purpose (§8.6)
+        case .fixed: return true
         case .gravity:
-            // **Any size but Tiny.** A Big one falls by whole rows exactly as an ordinary one
-            // does, now that the fall asks about every cell of its footprint rather than only
-            // the one its node sits in.
-            //
-            // Tiny is the one still refused, and for a reason that is about the *fall* rather
-            // than about taste: a quarter-cell brick sits at quarter-cell granularity and the
-            // fall is answered in whole cells. Four of them share a cell, so "is the space
-            // below free" is a question the occupancy map cannot answer for one - it can only
-            // say how full the cell is. Falling one by a whole row would drop it through its
-            // own siblings. The fix is to measure against frames the way the wander limits
-            // already do, and it is queued in §12.0 rather than guessed at here
-            guard endlessIIFieldSize(of: brick).width > brickWidth*0.75 else { return false }
-
             // And never in a column a spinner is in. A falling brick stops on whatever is
             // below it, and a spinner's cell reads as empty to that check because the spinner
             // is not *in* the cells it sweeps - so the faller would come to rest inside a
@@ -603,15 +603,7 @@ extension GameScene {
             // fudged in `makeDirectional`, because a brick that cannot carry a style should
             // not carry it: refusing leaves the brick free to draw a different one
             return endlessIIOpenSides(from: brick).isEmpty == false
-        case .moving:
-            // **Any size.** It was restricted to bricks in exactly one cell because the wander
-            // limits worked in cells - "the cell to its right is part of itself" - and a Big
-            // Moving brick saw nothing in its way and slid over its neighbours. That stopped
-            // being true in round 175, when the limits were rewritten to measure against the
-            // *frames* of the bricks beside it rather than against the cells either side, so a
-            // Tiny brick would stop being blind to its own siblings. A frame is a frame at any
-            // size, and `endlessIIFieldRect` is what asks for it now
-            return true
+        case .moving: return true
         default: return true
         }
     }
