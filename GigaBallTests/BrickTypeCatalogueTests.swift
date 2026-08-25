@@ -224,7 +224,9 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // reason the sentence is derived now. Round 237 opened Fixed and Moving to any size and
         // Gravity to everything but Tiny, and moved only the generator's copy of the rule - so
         // the page went on saying "Normal" and this test went on agreeing with it
-        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .gravity), "Normal and Big")
+        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .gravity), "Any")
+        // Any size since round 244, when the fall stopped walking the occupancy map a row at a
+        // time and started measuring frames - which a quarter-cell brick can be measured by
         XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .fixed), "Any")
         XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .moving), "Any")
 

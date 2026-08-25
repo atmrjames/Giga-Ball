@@ -134,8 +134,13 @@ final class EndlessIIBrickSpecTests: XCTestCase {
     func testAStyleTheSizeCannotCarryIsRefused() {
         XCTAssertEqual(EndlessIIBrickSpec(shape: .wedge, size: .tiny).faults,
                        [.styleRefusesSize(.wedge, .tiny)])
-        XCTAssertEqual(EndlessIIBrickSpec(size: .tiny, actions: [.gravity]).faults,
-                       [.styleRefusesSize(.gravity, .tiny)])
+        XCTAssertEqual(EndlessIIBrickSpec(size: .tiny, actions: [.breathing]).faults,
+                       [.styleRefusesSize(.breathing, .tiny)])
+        // Breathing rather than Gravity, which was the example here until round 244 opened the
+        // fall to every size. A quarter-cell brick shrinking to half of a quarter is a brick
+        // nobody can hit, and that has not changed
+        XCTAssertTrue(EndlessIIBrickSpec(size: .tiny, actions: [.gravity]).isBuildable,
+                      "a Tiny brick falls now, and a formation may ask for one that does")
         XCTAssertTrue(EndlessIIBrickSpec(size: .tiny, actions: [.flashing]).isBuildable,
                       "and the ones a quarter-cell brick can carry still go on it")
     }

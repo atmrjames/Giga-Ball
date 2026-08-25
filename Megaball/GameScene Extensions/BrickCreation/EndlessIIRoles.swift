@@ -131,10 +131,13 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
             // brick nobody can hit
             return size == .normal
         case .gravity:
-            // Any size but Tiny. Four quarters share a cell, so "is the space below free" is a
-            // question the occupancy map cannot answer for one of them, and a whole-row drop
-            // would put it through its own siblings (round 237)
-            return size != .tiny
+            // **Any size** since round 244. It was every size but Tiny, because the fall walked
+            // the occupancy map a row at a time and that map can say how full a cell is but
+            // never *where* in it the space is - so a quarter-cell brick dropped a whole row
+            // went through its own siblings. The fall measures frames now and a frame is a
+            // frame at any size, which is the same answer `endlessIIWanderLimits` reached
+            // going sideways in round 175
+            return true
         case .rounded, .flashing, .moving, .fixed,
              .directional, .exploding, .spawner, .portal:
             return true

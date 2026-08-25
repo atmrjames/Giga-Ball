@@ -127,64 +127,109 @@ extension GameScene {
     func settleEndlessIIGravityBricks() {
         guard gameMode == .endlessII else { return }
 
-        var fill = endlessIIFill()
         let geometry = endlessIIGeometry
-        let lowestRow = endlessIILowestRow
+        let floor = geometry.centre(of: EndlessIICell(column: 0, row: endlessIILowestRow)).y
 
-        let falling = endlessIIBricks()
+        var resting: [ObjectIdentifier: CGRect] = [:]
+        var anchoredBricks: Set<ObjectIdentifier> = []
+        let everything = endlessIIBricks()
+        for brick in everything {
+            resting[ObjectIdentifier(brick)] = endlessIIFieldRect(of: brick)
+            if brick.endlessIIIsAnchored { anchoredBricks.insert(ObjectIdentifier(brick)) }
+        }
+        // Where every brick will *be*, not where it is. A stack of fallers has to land in
+        // order rather than each one dropping through the space the one before it claimed, so
+        // each landing is written back here before the next brick is asked
+
+        let falling = everything
             .filter { $0.endlessIIRole == .gravity }
-            .sorted { endlessIICell(of: $0).row > endlessIICell(of: $1).row }
-
-        let anchored = endlessIIAnchoredCells()
+            .sorted { (resting[ObjectIdentifier($0)]?.minY ?? 0)
+                    < (resting[ObjectIdentifier($1)]?.minY ?? 0) }
+        // Bottom-most first, by the bottom of the brick rather than by its node - a Big
+        // brick's node sits on the top-left of its footprint (§8.6), so sorting by node
+        // would put a Big brick above a Normal one it is actually standing beside
 
         for brick in falling {
-            let from = endlessIICell(of: brick)
-            let span = geometry.footprint(of: endlessIIFieldSize(of: brick))
-            var to = from
-            var landsOnAnAnchor = false
-            while to.row + span.rows - 1 < lowestRow {
-                let under = (0..<span.columns).map {
-                    EndlessIICell(column: to.column + $0, row: to.row + span.rows)
-                }
-                // **The whole width of the brick, and the row under its *lowest* one.** A Big
-                // brick is two cells across and two deep with its node on the top-left of the
-                // footprint, so asking about `row + 1` asks about a cell the brick is standing
-                // in - which is never free, so a Big brick would never have fallen at all -
-                // and asking about one column lets it settle with its other half inside a
-                // neighbour (§8.6, the trap a Big brick sets for anything reading its node)
-                guard under.allSatisfy({ endlessIICellBlocks($0, fill: fill) == false }) else {
-                    landsOnAnAnchor = under.contains { anchored.contains($0) }
-                    break
-                }
-                to = EndlessIICell(column: to.column, row: to.row + 1)
-            }
-            guard to != from || landsOnAnAnchor else { continue }
-            // **A brick already resting on an anchor is destroyed where it stands.** It has
-            // nowhere to fall to, so the guard used to send it away untouched - and a faller
-            // that came to rest on a Fixed brick before this round was built stays there for
-            // ever otherwise
+            let key = ObjectIdentifier(brick)
+            guard let mine = resting[key] else { continue }
 
-            for row in 0..<span.rows {
-                for column in 0..<span.columns {
-                    fill[EndlessIICell(column: from.column + column,
-                                       row: from.row + row)] = 0
-                    if landsOnAnAnchor == false {
-                        fill[EndlessIICell(column: to.column + column,
-                                           row: to.row + row)] = 1
-                    }
+            var landing = floor + mine.height/2 - endlessIIFieldSize(of: brick).height/2
+            var landedOn: ObjectIdentifier?
+            // The floor is a row centre, and what has to sit on it is the brick's *field*
+            // extent - a shaped brick's sprite is a third of a cell and its silhouette is not
+
+            for other in everything where other !== brick {
+                guard let theirs = resting[ObjectIdentifier(other)] else { continue }
+                guard theirs.maxX > mine.minX + 0.5, theirs.minX < mine.maxX - 0.5 else {
+                    continue
+                }
+                // Genuinely under it, not merely beside it. Two bricks in touching cells share
+                // an edge exactly, so half a point of inset is the difference between "below
+                // me" and "next to me"
+                guard theirs.maxY <= mine.minY + 0.5 else { continue }
+
+                let restingCentre = theirs.maxY + mine.height/2
+                if restingCentre > landing {
+                    landing = restingCentre
+                    landedOn = ObjectIdentifier(other)
                 }
             }
-            // Kept in step so a stack of them lands in order rather than each one falling
-            // through the space the one before it just claimed. A brick about to be destroyed
-            // claims nothing: the next faller down the column may have the cell
-            endlessIIFallers[ObjectIdentifier(brick)] =
-                EndlessIIFall(brick: brick, targetY: geometry.centre(of: to).y,
-                              crushes: landsOnAnAnchor)
+            // **Measured against frames, not cells** (round 244). The fall used to walk down
+            // the occupancy map a whole row at a time, which cannot answer for a Tiny brick:
+            // four of them share a cell, so the map can say how full that cell is and never
+            // *where* in it the space is - and a quarter-cell brick dropped a whole row goes
+            // through its own siblings. `endlessIIWanderLimits` had the same problem going
+            // sideways and solved it this way in round 175; this is the same answer turned
+            // ninety degrees, and it happens to serve every size at once
+
+            var target = landing + (brick.position.y - mine.midY)
+            // Back from "where the brick's middle goes" to "where its node goes", which are
+            // the same thing for everything except a Big brick
+
+            if endlessIISizeOf(brick) != .tiny {
+                target = endlessIISnappedRestY(target, geometry: geometry)
+            }
+            // **Everything but a Tiny brick comes to rest on a row centre.** A brick's
+            // `position.y` *is* its row (§8.6): the descent and the bottom-row check both read
+            // it, and a brick resting half a row off is cleared at the wrong moment or blocks
+            // generation for ever. A Tiny brick already lives off the row centres by design -
+            // it is a quarter of a cell - and lands on the quarter-cell grid on its own,
+            // because whatever it came to rest on is itself on the grid
+
+            let crushes = landedOn.map { anchoredBricks.contains($0) } ?? false
+            guard abs(target - brick.position.y) > 0.5 || crushes else { continue }
+            // A brick already where it belongs is left alone - unless it is standing on an
+            // anchor, which destroys it whether it moved to get there or was built there
+
+            resting[key] = crushes
+                ? CGRect(x: mine.minX, y: -.greatestFiniteMagnitude/4,
+                         width: mine.width, height: mine.height)
+                : mine.offsetBy(dx: 0, dy: target - brick.position.y)
+            // A brick about to be destroyed claims nothing, so the next faller down the
+            // column may have the space. Moved out of the field rather than removed from the
+            // map, so nothing below has to check for a missing entry
+
+            endlessIIFallers[key] = EndlessIIFall(brick: brick, targetY: target,
+                                                 crushes: crushes)
             // **A Fixed brick destroys what falls onto it** (the 2026 brick workbook). It
             // lands first and is destroyed on arrival rather than vanishing in mid-air: the
             // brick has to be seen to run into the anchor, or a faller stopping short and
             // disappearing reads as a brick that failed rather than as one that was struck
         }
+    }
+
+    /// The nearest row centre at or above a resting height.
+    ///
+    /// **Above, never below.** A brick that comes to rest on a Tiny one is stopping half a cell
+    /// off the grid, and rounding it down would push it into the thing it just landed on.
+    /// Rounding up leaves a gap of at most half a cell, which is a brick sitting a little high
+    /// rather than two bricks in one place.
+    func endlessIISnappedRestY(_ y: CGFloat, geometry: EndlessIIFieldGeometry) -> CGFloat {
+        let row = geometry.cell(at: CGPoint(x: 0, y: y)).row
+        let centre = geometry.centre(of: EndlessIICell(column: 0, row: row)).y
+        guard centre < y - 0.5 else { return centre }
+        return geometry.centre(of: EndlessIICell(column: 0, row: row - 1)).y
+        // Rows count downward, so the row above is one fewer
     }
 
     // MARK: - Moving

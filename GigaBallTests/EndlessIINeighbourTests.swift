@@ -529,24 +529,100 @@ final class EndlessIINeighbourTests: XCTestCase {
                         EndlessIICell(column: 4, row: 4), EndlessIICell(column: 5, row: 4)])
     }
 
-    /// A Tiny brick is still refused Gravity, and it is the fall that refuses it.
+    /// A Tiny brick can fall now, and every other motion was already open to it.
     ///
-    /// Four of them share a cell, so "is the space below free" is a question the occupancy map
-    /// cannot answer for one - it can only say how full the cell is. Dropping one by a whole
-    /// row would drop it through its own siblings. Queued in §12.0 rather than guessed at.
-    func testATinyBrickIsTheOneSizeGravityStillRefuses() {
+    /// It was the one size Gravity refused, because the fall walked the occupancy map a row at
+    /// a time and that map can say how full a cell is but never *where* in it the space is.
+    /// The fall measures frames since round 244, and a frame is a frame at any size.
+    func testATinyBrickCanTakeEveryMotion() {
         let scene = fieldScene()
-        let tiny = SKSpriteNode(texture: scene.brickNormalTexture,
-                                size: CGSize(width: cell.width/2, height: cell.height/2))
-        tiny.position = CGPoint(x: 0, y: 200)
-        tiny.name = BrickCategoryName
-        scene.addChild(tiny)
+        let tiny = tinyBrick(scene, at: CGPoint(x: 0, y: 200))
 
-        XCTAssertFalse(scene.endlessIICanTake(.gravity, tiny))
-        XCTAssertTrue(scene.endlessIICanTake(.moving, tiny),
-                      "moving measures against frames, which works at any size")
-        XCTAssertTrue(scene.endlessIICanTake(.fixed, tiny),
-                      "and anchoring one in place asks nothing about its size at all")
+        XCTAssertTrue(scene.endlessIICanTake(.gravity, tiny))
+        XCTAssertTrue(scene.endlessIICanTake(.moving, tiny))
+        XCTAssertTrue(scene.endlessIICanTake(.fixed, tiny))
+    }
+
+    /// **And it lands on its own sibling rather than through it.**
+    ///
+    /// This is the failure the old restriction existed to avoid, and the reason the fix had to
+    /// be a rewrite rather than a relaxation: four quarter-cell bricks share one cell, so a
+    /// faller dropped by a whole row passes straight through the three it shares with.
+    func testATinyBrickLandsOnTheOneBelowItRatherThanThroughIt() {
+        let scene = fieldScene()
+        let quarter = cell.height/2
+
+        // One resting in the lower half of its cell, and one falling down the same column
+        let below = tinyBrick(scene, at: CGPoint(x: -cell.width/4, y: 200 - quarter/2))
+        let faller = tinyBrick(scene, at: CGPoint(x: -cell.width/4, y: 200 + cell.height*3))
+        faller.endlessIIRole = .gravity
+
+        scene.settleEndlessIIGravityBricks()
+        scene.tickEndlessIIRoles(1)
+
+        XCTAssertNotNil(faller.parent)
+        XCTAssertGreaterThan(faller.frame.minY, below.frame.maxY - 0.5,
+                             "it came to rest inside the brick it landed on")
+        XCTAssertLessThan(faller.frame.minY, below.frame.maxY + quarter,
+                          "and it should be resting on it, not hovering a row above")
+    }
+
+    /// A Tiny brick keeps its own quarter of the cell rather than being snapped to a row.
+    ///
+    /// Everything else comes to rest on a row centre, because a brick's `position.y` is its row
+    /// (§8.6). A Tiny brick is a quarter of a cell and lives off those centres by design, so
+    /// snapping one would move it by half a cell - into whatever it just landed on.
+    func testATinyBrickIsNotSnappedToARowCentre() {
+        let scene = fieldScene()
+        let floorTop = 200 + cell.height/2
+
+        let ground = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        let faller = tinyBrick(scene, at: CGPoint(x: -cell.width/4, y: 200 + cell.height*4))
+        faller.endlessIIRole = .gravity
+
+        scene.settleEndlessIIGravityBricks()
+        scene.tickEndlessIIRoles(1)
+
+        XCTAssertEqual(faller.frame.minY, floorTop, accuracy: 0.5,
+                       "its underside should be on the brick it landed on")
+        XCTAssertNotEqual(faller.position.y, ground.position.y + cell.height, accuracy: 0.5,
+                          "and it should not have been rounded onto the row centre above")
+    }
+
+    /// An ordinary brick landing on a Tiny one is rounded *up* to the row above.
+    ///
+    /// It has come to rest half a cell off the grid, and its `position.y` has to be a row or
+    /// the descent and the bottom-row check disagree about where it is. Rounding down would
+    /// push it into the brick it just landed on, so it sits a little high instead.
+    func testAnOrdinaryBrickRestingOnATinyOneIsRoundedUpwards() {
+        let scene = fieldScene()
+        let geometry = scene.endlessIIGeometry
+
+        tinyBrick(scene, at: CGPoint(x: 0, y: 200 - cell.height/4))
+        let faller = addBrick(scene, at: CGPoint(x: 0, y: 200 + cell.height*4), size: cell)
+        faller.endlessIIRole = .gravity
+
+        scene.settleEndlessIIGravityBricks()
+        scene.tickEndlessIIRoles(1)
+
+        let row = geometry.cell(at: faller.position).row
+        XCTAssertEqual(faller.position.y, geometry.centre(of: EndlessIICell(column: 5, row: row)).y,
+                       accuracy: 0.5, "it has to come to rest on a row centre (§8.6)")
+        XCTAssertGreaterThan(faller.frame.minY, 200 - cell.height/4 + cell.height/4 - 0.5,
+                             "and above the Tiny brick rather than inside it")
+    }
+
+    /// A quarter-cell brick, built the way `makeTiny` builds one.
+    @discardableResult
+    private func tinyBrick(_ scene: GameScene, at point: CGPoint) -> SKSpriteNode {
+        let gap = scene.endlessIITinyGap
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: cell.width/2 - gap,
+                                              height: cell.height/2 - gap))
+        brick.position = point
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        return brick
     }
 
     /// A scene with the field geometry filled in and a Mayhem mode, for the tests above.
