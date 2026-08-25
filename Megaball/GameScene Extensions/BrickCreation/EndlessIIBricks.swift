@@ -359,10 +359,43 @@ extension GameScene {
             }
         }
         let row = endlessIISetRowQueue.removeFirst()
+        endlessIIBookFormationBig()
         if endlessIISetRowQueue.isEmpty { endlessIISetRowLegend = [:] }
         // Cleared as the last row goes out, so a legend can never be read by the formation
         // after this one - the character `A` means something different in every shape
         return row
+    }
+
+    /// Books a Big brick that the *next* row of this formation asks for.
+    ///
+    /// A Big brick spans two rows and cannot be built when its turn comes, so one row leaves
+    /// the cells empty and the next builds down into them. Rows are emitted bottom-first
+    /// (round 249), so the row that reserves is emitted *before* the row the brick is drawn
+    /// on - which means the booking has to be made by looking one row ahead in the queue.
+    ///
+    /// That the queue holds the whole formation is what makes this possible at all: a rolled
+    /// Big brick has to guess a row in advance, and a drawn one is already written down.
+    ///
+    /// **Only when nothing else is pending.** A row either reserves or builds, and the
+    /// generator's own roll for this row has already happened by the time a formation row is
+    /// asked for. Where the two collide the formation's Big brick is simply not built and its
+    /// cell is left empty - one brick missing from a shape, rather than two shapes arranging
+    /// the same cells and neither surviving.
+    func endlessIIBookFormationBig() {
+        guard endlessIIPendingBuild == nil, let next = endlessIISetRowQueue.first else { return }
+        for column in 0..<numberOfBrickColumns {
+            let spec = endlessIISetRowSpec(next, column: column)
+            guard spec.size == .big else { continue }
+            guard EndlessIIBigBrick.fits(leftColumn: column, columns: numberOfBrickColumns) else {
+                continue
+            }
+            endlessIIPendingBuild = .big(leftColumn: column)
+            return
+            // One per row. Two Big bricks in one row of a formation would need two
+            // reservations from one row, and a row has one pending slot because a row has one
+            // shape - so the second is left for a shape that wants it and the author is told
+            // by the catalogue's own test rather than by a hole in the field
+        }
     }
 
     /// Picks a cluster and a column for it, and writes it out as rows.

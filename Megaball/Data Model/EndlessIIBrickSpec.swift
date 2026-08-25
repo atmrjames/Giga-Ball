@@ -263,20 +263,11 @@ extension EndlessIIBrickSpec {
             }
         }
 
-        if size == .big {
-            found.append(.sizeNotYetBuildable(.big))
-        }
-        // **Big is refused rather than ignored.** It spans two rows, and rows arrive one at a
-        // time from the top - so it has to be *reserved* by one row and built by the next, and
-        // that machinery owns the row it runs on. A formation cannot ask for one while the rule
-        // stands that a row either reserves or runs a pattern. Silently dropping the size would
-        // have produced an ordinary brick where somebody drew a large one, which is the shape
-        // coming out wrong with nothing to say why. The fault is meant to be deleted by the
-        // round that builds it.
-        //
-        // **Tiny needs none of that** and is allowed: it is four quarter-cell bricks filling
-        // one cell, built by splitting an ordinary one where it already stands (`makeTiny`),
-        // which is a thing that can be done to a brick after the row is laid down
+        // **Every size is buildable now** (round 250). Big was refused for two rounds because
+        // it spans two rows and the reserve-and-build sequence owned the row it ran on; a
+        // formation books it a row ahead instead, which the queue can do because it holds the
+        // whole shape. Tiny never needed any of that - it is one brick split where it already
+        // stands - and Square runs the same two-row sequence as a power-up brick
 
         for style in styles where style.suits(size ?? .normal) == false {
             found.append(.styleRefusesSize(style, size ?? .normal))

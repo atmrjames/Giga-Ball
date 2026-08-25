@@ -242,6 +242,20 @@ struct EndlessIICluster {
         // These use a legend, so what a cell *is* can be part of the drawing: a slope that
         // points somewhere, a face that only opens one way, a brick that will not sit still.
 
+        EndlessIICluster(name: "Keepsake", rows: ["?B.?",
+                                                  "?..?",
+                                                  "MMMM"], minimumHeight: 200, weight: 5,
+                         legend: ["B": EndlessIIBrickSpec(behaviour: .indestructibleAlways,
+                                                          size: .big)]),
+        // A Big Indestructible brick sitting on a multi-hit floor, with the field's own bricks
+        // either side of it. The block cannot be broken and the floor under it takes four hits
+        // a brick, so what is worth having here is the room *beside* it - and the block is in
+        // the way of the shot that gets there.
+        //
+        // **Its own three cells are drawn empty**, which is the rule every Big brick in a
+        // formation follows: only the top-left cell carries the spec, and the other three have
+        // to be left for it or the field builds two bricks in one place
+
         EndlessIICluster(name: "Weir", rows: ["V.V.V",
                                               ".V.V.",
                                               "V.V.V"], minimumHeight: 100, weight: 8,

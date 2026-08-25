@@ -228,6 +228,57 @@ final class EndlessIIRowPlanTests: XCTestCase {
         }
     }
 
+    // MARK: - A formation driving the sequence
+
+    /// A formation books its Big brick a row before the row it is drawn on.
+    ///
+    /// Rows are emitted bottom-first (round 249), so the row that reserves comes *out* before
+    /// the row the brick is drawn on - which is only possible because the queue holds the whole
+    /// shape and can be read one row ahead. A rolled Big brick has to guess a row in advance; a
+    /// drawn one is already written down.
+    func testAFormationBooksItsBigBrickARowAhead() {
+        let scene = fieldScene()
+        scene.endlessIISetRowLegend = ["B": EndlessIIBrickSpec(size: .big)]
+        scene.endlessIISetRowQueue = ["...........", "..B........"]
+        // Emission order: the plain row first - it lands lower - then the row with the brick
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertEqual(scene.endlessIIPendingBuild, .big(leftColumn: 2),
+                       "the row below has to leave the cells empty before the brick arrives")
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        let plan = scene.endlessIIPlanRow()
+        XCTAssertEqual(plan.dueAt, 2, "and the row it is drawn on builds it")
+        XCTAssertEqual(plan.skip, [2, 3])
+    }
+
+    /// It does not book one over a reservation the generator has already made.
+    ///
+    /// A row either reserves or builds, and the generator's own roll for this row has happened
+    /// by the time a formation row is asked for. The formation gives way: one brick missing
+    /// from a shape beats two shapes arranging the same cells and neither surviving.
+    func testAFormationGivesWayToAReservationAlreadyMade() {
+        let scene = fieldScene()
+        scene.endlessIISetRowLegend = ["B": EndlessIIBrickSpec(size: .big)]
+        scene.endlessIISetRowQueue = ["...........", "..B........"]
+        scene.endlessIIPendingBuild = .spinner(column: 7)
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertEqual(scene.endlessIIPendingBuild, .spinner(column: 7),
+                       "the spinner was booked first and keeps the row")
+    }
+
+    /// And it never books one that would hang off the edge of the field.
+    func testAFormationsBigBrickHasToFitTheField() {
+        let scene = fieldScene()
+        scene.endlessIISetRowLegend = ["B": EndlessIIBrickSpec(size: .big)]
+        scene.endlessIISetRowQueue = ["...........", "..........B"]
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertNil(scene.endlessIIPendingBuild,
+                     "a Big brick in the last column has no second column to fill")
+    }
+
     /// A power-up brick is not even reserved while one is still in play.
     ///
     /// The row that reserves is a row with a hole in it, and holding one open for a brick that

@@ -115,15 +115,38 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         XCTAssertTrue(spec.isBuildable, "nothing is being built, so nothing can be impossible")
     }
 
-    func testBigIsRefusedUntilAFormationCanPlaceOne() {
-        // Refused rather than ignored: dropping the size silently would put an ordinary brick
-        // where somebody drew a large one, which is the shape coming out wrong with nothing to
-        // say why. Meant to be deleted in the round that builds it
-        XCTAssertEqual(EndlessIIBrickSpec(size: .big).faults, [.sizeNotYetBuildable(.big)])
-        XCTAssertTrue(EndlessIIBrickSpec(size: .normal).isBuildable)
-        XCTAssertTrue(EndlessIIBrickSpec(size: .tiny).isBuildable,
-                      "a Tiny brick needs no reservation - it is one brick split where it "
-                      + "already stands")
+    func testEverySizeIsBuildableInAFormationNow() {
+        // Big was refused for two rounds, because it spans two rows and the reserve-and-build
+        // sequence owned the row it ran on. A formation books it a row ahead instead, which the
+        // queue can do because it holds the whole shape
+        for size in BrickSize.allCases {
+            XCTAssertTrue(EndlessIIBrickSpec(size: size).isBuildable, "\(size)")
+        }
+    }
+
+    /// A Big brick drawn in a formation has the room for it drawn as well.
+    ///
+    /// It fills a two-by-two, and only its top-left cell carries the spec - so the three cells
+    /// beside and below it have to be empty in the grid, or the formation is asking for two
+    /// bricks in one place. The field would build both and the shape would come out wrong in a
+    /// way that looks like a generator bug rather than like a grid with a typo in it.
+    func testEveryBigBrickInAFormationHasItsOtherThreeCellsLeftEmpty() {
+        for formation in EndlessIIFormationCatalogue.all where formation.rows.isEmpty == false {
+            for row in formation.rows.indices {
+                for column in 0..<formation.rows[row].count {
+                    guard formation.spec(atRow: row, column: column).size == .big else {
+                        continue
+                    }
+                    for (dr, dc) in [(0, 1), (1, 0), (1, 1)] {
+                        let spec = formation.spec(atRow: row + dr, column: column + dc)
+                        XCTAssertTrue(spec.isEmpty,
+                                      "\(formation.name)'s Big brick at row \(row) column "
+                                      + "\(column) needs the cell at +\(dr),+\(dc) left "
+                                      + "empty, and it holds something")
+                    }
+                }
+            }
+        }
     }
 
     /// A formation cannot ask for a style the size cannot carry.
