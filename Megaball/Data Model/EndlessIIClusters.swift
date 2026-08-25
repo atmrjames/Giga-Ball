@@ -242,6 +242,47 @@ struct EndlessIICluster {
         // These use a legend, so what a cell *is* can be part of the drawing: a slope that
         // points somewhere, a face that only opens one way, a brick that will not sit still.
 
+        // MARK: Shapes made of a size (round 251)
+        //
+        // Tiny, Square and Big all became things a formation could name inside three rounds -
+        // the fall learned to measure frames, the Square size arrived, and a formation learned
+        // to book a Big brick a row ahead. These are the shapes that could not have been drawn
+        // before that, because the *size* is what each of them is about.
+
+        EndlessIICluster(name: "Palisade Post", rows: ["Q.Q.Q"], minimumHeight: 120, weight: 8,
+                         legend: ["Q": EndlessIIBrickSpec(behaviour: .standard, size: .square)]),
+        // Three square bricks with a gap between each. Every other brick in the field is wider
+        // than it is tall and blocks a row; these block a *column*, so a shot that would have
+        // cleared an ordinary brick meets this one and the gaps are the only way through
+
+        EndlessIICluster(name: "Gravel", rows: ["ttttt",
+                                                "t...t",
+                                                "ttttt"], minimumHeight: 150, weight: 6,
+                         legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny)]),
+        // A ring of quarter-cell bricks around a hole. Sixty-odd bricks and none of them worth
+        // aiming at - it comes apart a crumb at a time, and the hole in the middle is a target
+        // that is easy to reach and worth nothing when you do
+
+        EndlessIICluster(name: "Hourglass", rows: ["QQQ",
+                                                   "?.?",
+                                                   "QQQ"], minimumHeight: 180, weight: 6,
+                         legend: ["Q": EndlessIIBrickSpec(behaviour: .standard, size: .square)]),
+        // Two courses of square bricks with a pinch between them. Both courses block columns,
+        // so the way through is the middle row - and the middle row is where the field's own
+        // bricks are
+
+        EndlessIICluster(name: "Millstone", rows: ["B.g",
+                                                   "..g",
+                                                   "ggg"], minimumHeight: 230, weight: 5,
+                         legend: ["B": EndlessIIBrickSpec(behaviour: .standard, size: .big),
+                                  "g": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.gravity])]),
+        // A Big brick with a column of fallers beside it and a floor of them underneath. Clear
+        // the floor and the column comes down; clear the column and the Big brick is left
+        // standing on nothing, because a Big brick is not a faller and does not follow.
+        //
+        // The three cells the Big brick fills are drawn empty, which is the rule
+
         EndlessIICluster(name: "Keepsake", rows: ["?B.?",
                                                   "?..?",
                                                   "MMMM"], minimumHeight: 200, weight: 5,
