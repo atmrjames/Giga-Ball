@@ -365,29 +365,29 @@ final class EndlessIIBrickSpecTests: XCTestCase {
 
     /// Everything a Big or Square brick needs of the shape it is drawn in.
     ///
-    /// Three rules, and all three come from the same fact: **a brick taller than a row is
-    /// booked by the row below it and built on its own row.** So it needs a row below it to be
-    /// booked from, it needs the cells it will grow into left empty, and it can only be one per
-    /// row, because a row has one pending slot.
+    /// Two rules, and both come from the same fact: **a brick taller than a row is booked by
+    /// the row below it and built on its own row.** So it needs a row below it to be booked
+    /// from, and it needs the cells it will grow into left empty.
     ///
-    /// Written because two formations broke all of this the hour they were authored (round
-    /// 253). Palisade Post asked for three squares in one row and Hourglass for six, and the
-    /// field answered by building one of each and drawing the rest as ordinary bricks - which
-    /// is the failure this whole file exists to catch: a shape that validates, builds, and is
-    /// not the shape.
+    /// Written because two formations broke this the hour they were authored (round 253):
+    /// Palisade Post and Hourglass both drew squares on their bottom rows and over cells that
+    /// were not empty, and the field answered by drawing them as ordinary bricks - a shape that
+    /// validates, builds, and is not the shape.
+    ///
+    /// **There was a third rule for one round**, that a row may hold one of these, because the
+    /// booking was one slot. Monolith is a wall of Big bricks abreast and could not live with
+    /// it, so the booking holds a row's worth now (round 254) and the rule is gone. What has
+    /// not gone is the reason it existed: two bricks in one place is still refused, by the
+    /// overlap check in the booking rather than by the catalogue.
     func testNoFormationAsksMoreOfATwoRowSizeThanARowCanGive() {
         for formation in EndlessIIFormationCatalogue.all where formation.rows.isEmpty == false {
             let lastRow = formation.rows.count - 1
 
             for row in formation.rows.indices {
                 let width = Array(formation.rows[row]).count
-                var tallInThisRow = 0
-
                 for column in 0..<width {
                     let spec = formation.spec(atRow: row, column: column)
                     guard let size = spec.size, size == .big || size == .square else { continue }
-                    tallInThisRow += 1
-
                     XCTAssertNotEqual(row, lastRow,
                                       "\(formation.name) puts a \(size) brick on its bottom "
                                       + "row, and there is no row below it to book it from")
@@ -403,11 +403,6 @@ final class EndlessIIBrickSpecTests: XCTestCase {
                                       + "which is not drawn empty")
                     }
                 }
-
-                XCTAssertLessThanOrEqual(tallInThisRow, 1,
-                                         "\(formation.name) asks for \(tallInThisRow) "
-                                         + "two-row bricks in row \(row), and a row has one "
-                                         + "pending slot")
             }
         }
     }

@@ -752,21 +752,22 @@ extension GameScene {
 
         if gameMode == .endlessII {
             endlessIIFillEmptyRowIfOverdue(brickArray, reserved: endlessII.skip,
-                                           shapeComing: endlessII.dueAt != nil
-                                               || endlessII.powerUpAt != nil
-                                               || endlessII.squareAt != nil)
+                                           shapeComing: endlessII.fillsTheRow)
         }
         // Checked before the two-row shapes are added, because those count as filling the row
 
-        if let leftColumn = endlessII.dueAt {
-            let big = endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless)
-            endlessIIDressBookedShape(big)
+        for booking in endlessII.bigs {
+            let big = endlessIIMakeBig(leftColumn: booking.build.column,
+                                       rowY: yBrickOffsetEndless)
+            endlessIIDressBookedShape(big, as: booking.spec)
             brickArray.append(big)
         }
+        // A loop rather than one brick, because a Monolith row is a wall of them (§6.2)
 
-        if let column = endlessII.squareAt {
-            let square = endlessIIMakeSquare(column: column, rowY: yBrickOffsetEndless)
-            endlessIIDressBookedShape(square)
+        for booking in endlessII.squares {
+            let square = endlessIIMakeSquare(column: booking.build.column,
+                                             rowY: yBrickOffsetEndless)
+            endlessIIDressBookedShape(square, as: booking.spec)
             brickArray.append(square)
         }
 

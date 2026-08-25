@@ -89,36 +89,39 @@ final class EndlessIIRowPlanTests: XCTestCase {
     /// exists to prevent as well.
     func testARowThatOwesAShapeBuildsItAndReservesNothing() {
         let scene = fieldScene()
-        scene.endlessIIPendingBuild = .big(leftColumn: 3)
+        scene.endlessIIPendingBookings = [EndlessIIBooking(.big(leftColumn: 3))]
 
         let plan = scene.endlessIIPlanRow()
-        XCTAssertEqual(plan.build, .big(leftColumn: 3))
-        XCTAssertEqual(plan.dueAt, 3)
+        XCTAssertEqual(plan.builds, [EndlessIIBooking(.big(leftColumn: 3))])
+        XCTAssertEqual(plan.bigs.map(\.build.column), [3])
         XCTAssertEqual(plan.skip, [3, 4])
-        XCTAssertNil(scene.endlessIIPendingBuild,
-                     "the slot has to be emptied or the next row builds it again")
+        XCTAssertTrue(scene.endlessIIPendingBookings.isEmpty,
+                      "the bookings have to be emptied or the next row builds them again")
     }
 
     /// A spinner is the exception: placing one books the clearance above it.
     func testPlacingASpinnerBooksTheCellAboveIt() {
         let scene = fieldScene()
-        scene.endlessIIPendingBuild = .spinner(column: 5)
+        scene.endlessIIPendingBookings = [EndlessIIBooking(.spinner(column: 5))]
 
         let plan = scene.endlessIIPlanRow()
         XCTAssertEqual(plan.spinAt, 5)
         XCTAssertEqual(plan.skip, [4, 6], "room to turn, either side")
-        XCTAssertEqual(scene.endlessIIPendingBuild, .spinnerClearance(column: 5),
+        XCTAssertEqual(scene.endlessIIPendingBookings,
+                       [EndlessIIBooking(.spinnerClearance(column: 5))],
                        "and the row above has to stay empty too")
 
         let next = scene.endlessIIPlanRow()
         XCTAssertEqual(next.skip, [5])
         XCTAssertNil(next.spinAt, "the clearance places nothing - it is a hole")
-        XCTAssertNil(scene.endlessIIPendingBuild, "and the sequence ends there")
+        XCTAssertTrue(scene.endlessIIPendingBookings.isEmpty,
+                      "and the sequence ends there")
     }
 
     /// The three names the row generator asks by point at one shape each.
     func testTheThreeNamesReadTheOneValue() {
-        XCTAssertEqual(EndlessIIRowPlan(build: .big(leftColumn: 2)).dueAt, 2)
+        XCTAssertEqual(EndlessIIRowPlan(build: .big(leftColumn: 2)).bigs.map(\.build.column),
+                       [2])
         XCTAssertNil(EndlessIIRowPlan(build: .big(leftColumn: 2)).powerUpAt)
         XCTAssertNil(EndlessIIRowPlan(build: .big(leftColumn: 2)).spinAt)
 
@@ -135,8 +138,9 @@ final class EndlessIIRowPlanTests: XCTestCase {
         scene.gameMode = .classic
         let plan = scene.endlessIIPlanRow()
         XCTAssertTrue(plan.skip.isEmpty)
-        XCTAssertNil(plan.build)
-        XCTAssertNil(scene.endlessIIPendingBuild, "and no other mode is left holding one")
+        XCTAssertTrue(plan.builds.isEmpty)
+        XCTAssertTrue(scene.endlessIIPendingBookings.isEmpty,
+                      "and no other mode is left holding one")
     }
 
     // MARK: - The Square size
@@ -168,7 +172,7 @@ final class EndlessIIRowPlanTests: XCTestCase {
         let square = EndlessIITwoRowBuild.square(column: 6)
         XCTAssertEqual(square.columnsToReserve(in: columns), [6])
         XCTAssertEqual(square.columnsToClear(in: columns), [6])
-        XCTAssertEqual(EndlessIIRowPlan(build: square).squareAt, 6)
+        XCTAssertEqual(EndlessIIRowPlan(build: square).squares.map(\.build.column), [6])
         XCTAssertNil(EndlessIIRowPlan(build: square).powerUpAt,
                      "it is the same shape and not the same brick")
     }
@@ -228,6 +232,108 @@ final class EndlessIIRowPlanTests: XCTestCase {
         }
     }
 
+    // MARK: - Monolith
+
+    /// A Monolith row is a wall of Big bricks with one channel through it (§6.2).
+    ///
+    /// **The phase that needed a row to hold more than one shape.** "One enormous Big brick
+    /// formation with a narrow route" is four Big bricks abreast on an eleven-column field, and
+    /// four abreast is four reservations from one row - which is why this arrived with the
+    /// booking list rather than with the other seventeen phases.
+    func testAMonolithRowBooksAWallOfBigBricks() {
+        let scene = fieldScene()
+        scene.endlessIIPhase = .monolith
+
+        let reserving = scene.endlessIIPlanRow()
+        let wall = scene.endlessIIPendingBookings
+        XCTAssertGreaterThan(wall.count, 1, "one Big brick is Giants, not a monolith")
+        XCTAssertTrue(wall.allSatisfy { if case .big = $0.build { return true }
+                                        else { return false } },
+                      "the wall is Big bricks and nothing else")
+        XCTAssertTrue(reserving.builds.isEmpty,
+                      "the row that reserves builds nothing - it is the holes")
+
+        let building = scene.endlessIIPlanRow()
+        XCTAssertEqual(building.bigs.count, wall.count,
+                       "and the next row builds every one of them")
+        XCTAssertEqual(building.skip, reserving.skip,
+                       "over exactly the cells that were left empty for it")
+    }
+
+    /// No two bricks in the wall want the same cell.
+    func testTheWallNeverPutsTwoBricksInOnePlace() {
+        let scene = fieldScene()
+        scene.endlessIIPhase = .monolith
+        _ = scene.endlessIIPlanRow()
+
+        var seen: Set<Int> = []
+        for booking in scene.endlessIIPendingBookings {
+            let wanted = booking.build.columnsToReserve(in: scene.numberOfBrickColumns)
+            XCTAssertTrue(wanted.isDisjoint(with: seen), "two bricks want \(wanted)")
+            seen.formUnion(wanted)
+        }
+        XCTAssertLessThan(seen.count, scene.numberOfBrickColumns,
+                          "a wall with no way through is a wall, not a route")
+    }
+
+    /// The channel is in the same columns for as long as the phase lasts.
+    ///
+    /// A route that moved from row to row would be a wall with gaps in it rather than a way
+    /// through, which is the whole difference between this and a dense stretch of Giants.
+    func testTheRouteIsHeldForTheWholePhase() {
+        let scene = fieldScene()
+        scene.endlessIIPhase = .monolith
+        _ = scene.endlessIIPlanRow()
+        let route = scene.endlessIIMonolithRoute
+
+        XCTAssertNotNil(route)
+        XCTAssertLessThanOrEqual(route?.count ?? 0, 2, "narrow, which is §6.2's word")
+
+        for _ in 0..<20 {
+            _ = scene.endlessIIPlanRow()
+            XCTAssertEqual(scene.endlessIIMonolithRoute, route)
+        }
+
+        for booking in scene.endlessIIPendingBookings {
+            let wanted = booking.build.columnsToReserve(in: scene.numberOfBrickColumns)
+            XCTAssertTrue(wanted.isDisjoint(with: route ?? []),
+                          "a Big brick was booked across the route")
+        }
+    }
+
+    /// And it is forgotten when the phase ends, so the next one starts somewhere else.
+    func testTheRouteGoesWithThePhase() {
+        let scene = fieldScene()
+        scene.endlessIIPhase = .monolith
+        _ = scene.endlessIIPlanRow()
+        XCTAssertNotNil(scene.endlessIIMonolithRoute)
+
+        scene.endlessIIPhase = .standard
+        scene.endlessIIPendingBookings = []
+        _ = scene.endlessIIPlanRow()
+        XCTAssertNil(scene.endlessIIMonolithRoute,
+                     "a route left behind would put the next monolith's channel where the "
+                     + "last one's was")
+    }
+
+    /// Every other phase still books one shape to a row.
+    ///
+    /// The density the mode was play-tested at: more than one roll can come up on a row and
+    /// only the first is ever taken. Booking several is a thing a phase asks for, and Monolith
+    /// is the only phase that asks.
+    func testNoOtherPhaseBooksMoreThanOneShapeToARow() {
+        for phase in EndlessIIPhase.allCases where phase != .monolith {
+            let scene = fieldScene()
+            scene.endlessIIPhase = phase
+            for _ in 0..<80 {
+                scene.endlessIIPendingBookings = []
+                _ = scene.endlessIIPlanRow()
+                XCTAssertLessThanOrEqual(scene.endlessIIPendingBookings.count, 1,
+                                         "\(phase) booked two shapes into one row")
+            }
+        }
+    }
+
     // MARK: - A formation driving the sequence
 
     /// A formation books its Big brick a row before the row it is drawn on.
@@ -243,12 +349,12 @@ final class EndlessIIRowPlanTests: XCTestCase {
         // Emission order: the plain row first - it lands lower - then the row with the brick
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
-        XCTAssertEqual(scene.endlessIIPendingBuild, .big(leftColumn: 2),
+        XCTAssertEqual(scene.endlessIIPendingBookings.map(\.build), [.big(leftColumn: 2)],
                        "the row below has to leave the cells empty before the brick arrives")
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
         let plan = scene.endlessIIPlanRow()
-        XCTAssertEqual(plan.dueAt, 2, "and the row it is drawn on builds it")
+        XCTAssertEqual(plan.bigs.map(\.build.column), [2], "and the row it is drawn on builds it")
         XCTAssertEqual(plan.skip, [2, 3])
     }
 
@@ -266,12 +372,13 @@ final class EndlessIIRowPlanTests: XCTestCase {
         scene.endlessIISetRowQueue = ["...........", "....Q......"]
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
-        XCTAssertEqual(scene.endlessIIPendingBuild, .square(column: 4),
+        XCTAssertEqual(scene.endlessIIPendingBookings.map(\.build), [.square(column: 4)],
                        "a Square brick is two rows tall, so it needs the row below left empty")
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
         let plan = scene.endlessIIPlanRow()
-        XCTAssertEqual(plan.squareAt, 4, "and the row it is drawn on builds it")
+        XCTAssertEqual(plan.squares.map(\.build.column), [4],
+                       "and the row it is drawn on builds it")
         XCTAssertEqual(plan.skip, [4], "one column, because a Square brick is one column wide")
     }
 
@@ -289,11 +396,11 @@ final class EndlessIIRowPlanTests: XCTestCase {
             _ = scene.endlessIINextSetRow(reservationPending: false)
             switch size {
             case .tiny, .normal:
-                XCTAssertNil(scene.endlessIIPendingBuild,
-                             "\(size) fits in the row it is drawn on")
+                XCTAssertTrue(scene.endlessIIPendingBookings.isEmpty,
+                              "\(size) fits in the row it is drawn on")
             case .big, .square:
-                XCTAssertNotNil(scene.endlessIIPendingBuild,
-                                "\(size) is taller than a row, so it has to be booked ahead")
+                XCTAssertFalse(scene.endlessIIPendingBookings.isEmpty,
+                               "\(size) is taller than a row, so it has to be booked ahead")
             }
         }
     }
@@ -310,16 +417,15 @@ final class EndlessIIRowPlanTests: XCTestCase {
         scene.endlessIISetRowQueue = ["...........", "..B........"]
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
-        XCTAssertEqual(scene.endlessIIPendingSpec, asked,
+        XCTAssertEqual(scene.endlessIIPendingBookings.first?.spec, asked,
                        "the booking carries the legend, or the brick is built from the mix")
 
         let brick = scene.endlessIIMakeBig(leftColumn: 2, rowY: 0)
-        scene.endlessIIDressBookedShape(brick)
+        scene.endlessIIDressBookedShape(brick, as: scene.endlessIIPendingBookings.first?.spec)
         XCTAssertEqual(brick.texture, scene.brickMultiHit3Texture,
                        "a multi-hit Big brick has to look like one")
         XCTAssertTrue(brick.endlessIIStaysPlain,
                       "and the generator's own styling passes leave a designed brick alone")
-        XCTAssertNil(scene.endlessIIPendingSpec, "spent with the brick it dressed")
     }
 
     /// The generator's own roll carries no legend.
@@ -329,22 +435,20 @@ final class EndlessIIRowPlanTests: XCTestCase {
     /// could see.
     func testARolledShapeIsNeverDressedByAFormation() {
         let scene = fieldScene()
-        scene.endlessIIPendingSpec = EndlessIIBrickSpec(behaviour: .multiHit, size: .big)
-        scene.endlessIIPendingBuild = nil
+        scene.endlessIIPendingBookings = []
 
-        var rolled: EndlessIITwoRowBuild?
+        var rolled: EndlessIIBooking?
         for _ in 0..<400 where rolled == nil {
             _ = scene.endlessIIPlanRow()
-            rolled = scene.endlessIIPendingBuild
+            rolled = scene.endlessIIPendingBookings.first
             if rolled != nil { break }
-            scene.endlessIIPendingBuild = nil
+            scene.endlessIIPendingBookings = []
         }
         // The candidates are rolled, so this asks until one comes up rather than assuming it
         // does on the first row
 
         XCTAssertNotNil(rolled, "400 rows without a single shape means the chances have gone")
-        XCTAssertNil(scene.endlessIIPendingSpec,
-                     "a rolled shape is a size and nothing else")
+        XCTAssertNil(rolled?.spec, "a rolled shape is a size and nothing else")
     }
 
     /// It does not book one over a reservation the generator has already made.
@@ -356,10 +460,10 @@ final class EndlessIIRowPlanTests: XCTestCase {
         let scene = fieldScene()
         scene.endlessIISetRowLegend = ["B": EndlessIIBrickSpec(size: .big)]
         scene.endlessIISetRowQueue = ["...........", "..B........"]
-        scene.endlessIIPendingBuild = .spinner(column: 7)
+        scene.endlessIIPendingBookings = [EndlessIIBooking(.spinner(column: 7))]
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
-        XCTAssertEqual(scene.endlessIIPendingBuild, .spinner(column: 7),
+        XCTAssertEqual(scene.endlessIIPendingBookings.map(\.build), [.spinner(column: 7)],
                        "the spinner was booked first and keeps the row")
     }
 
@@ -370,8 +474,8 @@ final class EndlessIIRowPlanTests: XCTestCase {
         scene.endlessIISetRowQueue = ["...........", "..........B"]
 
         _ = scene.endlessIINextSetRow(reservationPending: false)
-        XCTAssertNil(scene.endlessIIPendingBuild,
-                     "a Big brick in the last column has no second column to fill")
+        XCTAssertTrue(scene.endlessIIPendingBookings.isEmpty,
+                      "a Big brick in the last column has no second column to fill")
     }
 
     /// A power-up brick is not even reserved while one is still in play.
@@ -389,9 +493,11 @@ final class EndlessIIRowPlanTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIPowerUpBricksInPlay.count, 1)
 
         for _ in 0..<200 {
-            scene.endlessIIPendingBuild = nil
+            scene.endlessIIPendingBookings = []
             _ = scene.endlessIIPlanRow()
-            if case .powerUpBrick = scene.endlessIIPendingBuild {
+            if scene.endlessIIPendingBookings.contains(where: {
+                if case .powerUpBrick = $0.build { return true } else { return false }
+            }) {
                 return XCTFail("a second power-up brick was booked while one was in play")
             }
         }

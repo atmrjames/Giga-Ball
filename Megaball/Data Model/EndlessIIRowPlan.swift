@@ -86,34 +86,80 @@ enum EndlessIITwoRowBuild: Equatable {
     }
 }
 
+/// One thing a row builds, and what it was drawn as.
+///
+/// The spec is the half that arrived in round 253. A Big or Square brick is built by its own
+/// function from the field's own mix, which is right for a rolled one and wrong for a drawn
+/// one: a formation asking for a multi-hit Big brick was getting a standard one, with nothing
+/// anywhere to say it had not. It rides *with* the build rather than beside it, because a
+/// booking and the thing it was booked as are one fact and two properties would be two.
+struct EndlessIIBooking: Equatable {
+    var build: EndlessIITwoRowBuild
+    /// The legend's spec, when a formation is what booked this. Nil for the generator's own
+    /// rolls, which are a size and nothing else.
+    var spec: EndlessIIBrickSpec?
+
+    init(_ build: EndlessIITwoRowBuild, spec: EndlessIIBrickSpec? = nil) {
+        self.build = build
+        self.spec = spec
+    }
+}
+
 /// One row's instructions: what to leave empty, and what to build.
+///
+/// **A list rather than one slot** (round 254). A row could hold one shape, which was true of
+/// everything that had ever asked for one: the generator rolls at most one per row, and a
+/// formation was held to the same limit. §6.2's Monolith is the phase that cannot live with
+/// it - "one enormous Big brick formation with a narrow route" is four Big bricks abreast, and
+/// four bricks abreast is four reservations from one row.
+///
+/// What did *not* change is the rule underneath: a row either reserves or builds, never both.
+/// A row with bookings outstanding builds them all; a row with none may make some. So there is
+/// still only ever one generation of bookings in flight, and it is still the row below that
+/// leaves the cells empty.
 struct EndlessIIRowPlan: Equatable {
     var skip: Set<Int> = []
-    /// What this row builds. Nil on a row that is only reserving, which is most of them.
-    var build: EndlessIITwoRowBuild?
+    /// What this row builds. Empty on a row that is only reserving, which is most of them.
+    var builds: [EndlessIIBooking] = []
 
-    /// The left column of a Big brick due on this row.
-    ///
-    /// These three read the one value the row generator has always asked for by three names.
-    /// Kept as names rather than as a `switch` at the call site, because the generator's job is
-    /// to build a row and not to know which shapes exist.
-    var dueAt: Int? {
-        if case .big(let column) = build { return column }
-        return nil
+    init(skip: Set<Int> = [], builds: [EndlessIIBooking] = []) {
+        self.skip = skip
+        self.builds = builds
     }
 
+    /// One shape, which is what almost every row that builds anything is building.
+    init(skip: Set<Int> = [], build: EndlessIITwoRowBuild) {
+        self.init(skip: skip, builds: [EndlessIIBooking(build)])
+    }
+
+    /// The Big bricks due on this row, and what each was drawn as.
+    ///
+    /// These four read the bookings the row generator has always asked for by name, rather
+    /// than making every call site switch over a build it does not otherwise care about.
+    var bigs: [EndlessIIBooking] {
+        builds.filter { if case .big = $0.build { return true } else { return false } }
+    }
+
+    var squares: [EndlessIIBooking] {
+        builds.filter { if case .square = $0.build { return true } else { return false } }
+    }
+
+    /// The two that are only ever rolled, and only ever one to a row.
     var powerUpAt: Int? {
-        if case .powerUpBrick(let column) = build { return column }
-        return nil
+        builds.compactMap { if case .powerUpBrick(let column) = $0.build { return column }
+                            else { return nil } }.first
     }
 
     var spinAt: Int? {
-        if case .spinner(let column) = build { return column }
-        return nil
+        builds.compactMap { if case .spinner(let column) = $0.build { return column }
+                            else { return nil } }.first
     }
 
-    var squareAt: Int? {
-        if case .square(let column) = build { return column }
-        return nil
+    /// Whether this row builds something that counts as filling it.
+    ///
+    /// The density floor asks before the two-row shapes are added, because a row about to grow
+    /// one is not an empty row. A spinner is not counted, which is how it has always been.
+    var fillsTheRow: Bool {
+        bigs.isEmpty == false || squares.isEmpty == false || powerUpAt != nil
     }
 }

@@ -135,29 +135,96 @@ extension GameScene {
     func endlessIIPlanRow() -> EndlessIIRowPlan {
         guard gameMode == .endlessII else { return EndlessIIRowPlan() }
 
-        if let due = endlessIIPendingBuild {
-            endlessIIPendingBuild = nil
-            if case .spinner(let column) = due {
-                endlessIIPendingBuild = .spinnerClearance(column: column)
-                // A spinner is the odd one out: one cell, but it needs the cells above and
-                // below kept clear, so it runs the sequence over three rows rather than two.
-                // The cell below was left empty a row ago; this row places it and books the
-                // one above
+        if endlessIIPhase != .monolith { endlessIIMonolithRoute = nil }
+        // The route is chosen once and held for the phase, or the channel would wander and the
+        // block would stop being one block
+
+        if endlessIIPendingBookings.isEmpty == false {
+            let due = endlessIIPendingBookings
+            endlessIIPendingBookings = due.compactMap { booking in
+                guard case .spinner(let column) = booking.build else { return nil }
+                return EndlessIIBooking(.spinnerClearance(column: column))
             }
-            return EndlessIIRowPlan(skip: due.columnsToClear(in: numberOfBrickColumns),
-                                    build: due)
+            // A spinner is the odd one out: one cell, but it needs the cells above and below
+            // kept clear, so it runs the sequence over three rows rather than two. The cell
+            // below was left empty a row ago; this row places it and books the one above
+
+            return EndlessIIRowPlan(skip: endlessIIColumns(due) { $0.columnsToClear(in: $1) },
+                                    builds: due)
         }
 
+        if endlessIIPhase == .monolith, let wall = endlessIIMonolithWall() {
+            endlessIIPendingBookings = wall
+            return EndlessIIRowPlan(skip: endlessIIColumns(wall) { $0.columnsToReserve(in: $1) })
+        }
+        // Asked before the rolls, because a Monolith row is the whole row: a spinner or a
+        // power-up brick booked into the middle of a wall would be a hole the design did not
+        // put there
+
         for candidate in endlessIIRowCandidates() {
-            endlessIIPendingBuild = candidate
-            endlessIIPendingSpec = nil
-            // The generator's own roll carries no legend. Cleared here rather than trusted to
-            // have been consumed, so a formation's spec can never dress a rolled shape
+            endlessIIPendingBookings = [EndlessIIBooking(candidate)]
             return EndlessIIRowPlan(skip: candidate.columnsToReserve(in: numberOfBrickColumns))
             // Reserved, not built: the cells this row leaves empty are the ones the next row
-            // will fill from above
+            // will fill from above.
+            //
+            // **One offer taken, however many were made.** More than one roll can come up on a
+            // row and only the first is ever taken, which is what the chain of early returns
+            // did and is the density the mode was play-tested at. Booking several is a thing a
+            // *phase* asks for, and Monolith is the phase that asks
         }
         return EndlessIIRowPlan()
+    }
+
+    /// The columns a set of bookings wants, gathered.
+    private func endlessIIColumns(_ bookings: [EndlessIIBooking],
+                                  _ wanted: (EndlessIITwoRowBuild, Int) -> Set<Int>) -> Set<Int> {
+        bookings.reduce(into: Set<Int>()) {
+            $0.formUnion(wanted($1.build, numberOfBrickColumns))
+        }
+    }
+
+    // MARK: - Monolith
+
+    /// A wall of Big bricks with one channel left through it (§6.2).
+    ///
+    /// **The phase that needed the row to hold more than one shape.** "One enormous Big brick
+    /// formation with a narrow route" is four Big bricks abreast on an eleven-column field, and
+    /// four abreast is four reservations from one row - which is why this arrived with the
+    /// booking list rather than with the other seventeen phases.
+    ///
+    /// A Big brick is two rows tall, so the phase alternates on its own: a row of holes, a row
+    /// of wall, a row of holes. The block that comes out of that is solid except for the
+    /// channel, and the channel is in the same columns for as long as the phase lasts - it is
+    /// rolled once and held, because a route that moved from row to row would be a wall with
+    /// gaps rather than a way through.
+    ///
+    /// Nil on a field too narrow to have a wall and a route both, which no shipping device is.
+    func endlessIIMonolithWall() -> [EndlessIIBooking]? {
+        let columns = numberOfBrickColumns
+        guard columns >= 5 else { return nil }
+
+        if endlessIIMonolithRoute == nil {
+            let width = Int.random(in: 1...2)
+            let start = Int.random(in: 0...(columns - width))
+            endlessIIMonolithRoute = Set(start..<(start + width))
+            // One or two columns out of eleven, which is the "narrow" in §6.2's line. Two is
+            // a gap the ball goes through without being aimed; one has to be found
+        }
+        let route = endlessIIMonolithRoute ?? []
+
+        var wall: [EndlessIIBooking] = []
+        var column = 0
+        while column + 1 < columns {
+            guard route.contains(column) == false, route.contains(column + 1) == false else {
+                column += 1
+                continue
+                // Stepped one at a time past the channel rather than two, so the wall picks up
+                // again on the very next column the route does not want
+            }
+            wall.append(EndlessIIBooking(.big(leftColumn: column)))
+            column += 2
+        }
+        return wall.isEmpty ? nil : wall
     }
 
     /// What this row might commit to, in the order it is offered.

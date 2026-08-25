@@ -1026,23 +1026,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// What a uniform phase settled on when it started, so every brick in it matches
 	// Shuffled once per run, so two runs to the same height meet a different subset
 	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
-	var endlessIIPendingBuild: EndlessIITwoRowBuild?
-	/// What the next row owes: a shape reserved by the row just built.
+	var endlessIIPendingBookings: [EndlessIIBooking] = []
+	/// What the next row owes: the shapes reserved by the row just built.
 	///
-	/// One slot rather than four properties (round 246). A row either reserves or builds, so
-	/// there is only ever one of these outstanding - which four separate columns could not say,
-	/// and which is the reason the priority chain that read them had to be written in a fixed
-	/// order and cleared four times on a reset.
-	var endlessIIPendingSpec: EndlessIIBrickSpec?
-	/// What the reserved shape was drawn as, when a formation is the thing that booked it.
+	/// One slot rather than four properties (round 246), and a list rather than one slot
+	/// (round 254). A row either reserves or builds, so there is only ever one generation of
+	/// these outstanding - which four separate columns could not say, and which is the reason
+	/// the priority chain that read them had to be written in a fixed order and cleared four
+	/// times on a reset.
 	///
-	/// Nil for the generator's own rolls, which is most of them: a rolled Big brick is a size
-	/// and nothing else. A drawn one carries whatever its legend asked for, and without this it
-	/// would be built from the field's own mix and dressed in nothing - a formation asking for
-	/// a multi-hit Big brick would get a standard one and never say so.
+	/// It holds several because §6.2's Monolith is a wall of Big bricks abreast, and a wall
+	/// abreast is several reservations from one row. Everything else books exactly one.
+	var endlessIIMonolithRoute: Set<Int>?
+	/// The columns a Monolith phase keeps open, rolled once and held for the phase.
 	///
-	/// Kept beside `endlessIIPendingBuild` and set, cleared and reset in exactly the same
-	/// places, because the two are one booking.
+	/// A route that moved from row to row would be a wall with gaps in it rather than a way
+	/// through, which is the whole difference between the phase and a dense stretch of Giants.
 	/// How many rows have arrived empty in a row.
 	var endlessIIEmptyRowRun = 0
 	// A spinning brick needs the cells above, below and either side of it empty, and rows

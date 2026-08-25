@@ -249,27 +249,37 @@ struct EndlessIICluster {
         // to book a Big brick a row ahead. These are the shapes that could not have been drawn
         // before that, because the *size* is what each of them is about.
 
-        EndlessIICluster(name: "Palisade Post", rows: ["Q....",
-                                                       ".....",
-                                                       "...Q.",
+        EndlessIICluster(name: "Palisade Post", rows: ["Q.Q.Q",
                                                        "....."], minimumHeight: 120, weight: 8,
                          legend: ["Q": EndlessIIBrickSpec(behaviour: .standard, size: .square)]),
-        // Two posts, staggered. Every other brick in the field is wider than it is tall and
-        // blocks a row; these block a *column*, so a shot that would have cleared an ordinary
-        // brick meets one of these instead and has to be aimed past it.
+        // Three posts with a gap between each. Every other brick in the field is wider than it
+        // is tall and blocks a row; these block a *column*, so a shot that would have cleared
+        // an ordinary brick meets a post instead and the gaps are the only way through.
         //
-        // **Staggered because it has to be** (round 253). This was drawn as three posts side by
-        // side in one row, and a row can build one brick taller than itself: the other two came
-        // out as ordinary bricks. Each post therefore gets a row of its own, and the row under
-        // each is drawn empty because that is the row the post grows into
+        // The row under them is drawn empty because that is the row they grow into. It was
+        // staggered over four rows for one round, when a row could build one brick taller than
+        // itself and the other two posts came out as ordinary bricks; the booking holds a row's
+        // worth now (round 254), so the palisade is a palisade again
 
         EndlessIICluster(name: "Gravel", rows: ["ttttt",
                                                 "t...t",
                                                 "ttttt"], minimumHeight: 150, weight: 6,
                          legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny)]),
-        // A ring of quarter-cell bricks around a hole. Sixty-odd bricks and none of them worth
-        // aiming at - it comes apart a crumb at a time, and the hole in the middle is a target
-        // that is easy to reach and worth nothing when you do
+        // A ring of quarter-cell bricks around a hole. Twelve cells, and a Tiny cell is four
+        // bricks, so it is forty-eight of them and none worth aiming at - it comes apart a
+        // crumb at a time, and the hole in the middle is a target that is easy to reach and
+        // worth nothing when you get there
+
+        EndlessIICluster(name: "Hourglass", rows: ["Q.Q.Q",
+                                                   ".....",
+                                                   "?...?",
+                                                   "Q.Q.Q",
+                                                   "....."], minimumHeight: 180, weight: 6,
+                         legend: ["Q": EndlessIIBrickSpec(behaviour: .standard, size: .square)]),
+        // Two courses of posts with a pinch between them. Both courses block columns, so the
+        // way through is the middle - and the middle is where the field's own bricks are.
+        //
+        // Each course is followed by an empty row, because that is where its posts hang to
 
         EndlessIICluster(name: "Plumb Line", rows: ["MMM",
                                                     ".Q.",

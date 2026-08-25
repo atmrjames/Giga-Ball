@@ -481,6 +481,8 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
     case windfall
     /// Flashing bricks with their timers in step, so the whole field blinks together (§6.2).
     case `static`
+    /// A wall of Big bricks with one narrow channel through it (§6.2).
+    case monolith
 
     /// How much this phase multiplies the height's density by.
     var densityFactor: Double {
@@ -496,6 +498,10 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
         case .monoculture, .motif: return 0.9
         case .giants: return 0.7
         case .miniatures: return 1.3
+        case .monolith: return 0.5
+        // The wall is not drawn from the density at all - it is booked, a row at a time - so
+        // this only governs the bricks in the channel, and a channel that filled up would stop
+        // being the route the phase is named for
         }
     }
 
@@ -510,6 +516,10 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
     var isUniform: Bool {
         switch self {
         case .monoculture, .giants, .miniatures, .motif: return true
+        // A wall of Big bricks with a channel through it is a field made of one thing, and
+        // more completely than the other four: they settle a *choice* once and this one has
+        // no choice left to settle, which is why the switch below it has nothing to do
+        case .monolith: return true
         default: return false
         }
     }
@@ -525,7 +535,7 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
         case .gauntlet: return [.directional]
         case .carousel: return [.spinning, .rounded]
         case .standard, .quiet, .swarm, .fortress, .windfall: return []
-        case .monoculture, .giants, .miniatures, .motif: return []
+        case .monoculture, .giants, .miniatures, .motif, .monolith: return []
         }
     }
 
@@ -555,6 +565,11 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
         // The uniform ones are the rarest. They are the strongest flavour here, and a run
         // that kept serving them would be a run of set pieces rather than a field
         case .monoculture, .giants, .miniatures, .motif: return 4
+        // The rarest of the lot. It is not a field with a character, it is one object, and a
+        // run that served it twice would be a run about that object
+        case .monolith: return 3
+        // Rarer still, and the reason the rule is "no uniform phase is commoner than a varied
+        // one" rather than "they all weigh 4"
         default: return 8
         }
     }
@@ -572,6 +587,8 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
         // and §6.2 gates it High
         case .monoculture, .miniatures: return 150
         case .giants: return 200
+        // §6.2 gates it High, with the others that are a set piece rather than a mix
+        case .monolith: return 250
         // A motif is two styles at once, so it waits until stacking is a thing a player has
         // met on ordinary bricks first
         case .motif: return 350

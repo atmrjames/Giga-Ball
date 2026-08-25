@@ -404,27 +404,34 @@ extension GameScene {
     /// is left empty - one brick missing from a shape, rather than two shapes arranging the
     /// same cells and neither surviving.
     func endlessIIBookFormationShape() {
-        guard endlessIIPendingBuild == nil, let next = endlessIISetRowQueue.first else { return }
+        guard endlessIIPendingBookings.isEmpty,
+              let next = endlessIISetRowQueue.first else { return }
+
+        var taken: Set<Int> = []
         for column in 0..<numberOfBrickColumns {
             let spec = endlessIISetRowSpec(next, column: column)
+            let build: EndlessIITwoRowBuild
             switch spec.size {
             case .big:
                 guard EndlessIIBigBrick.fits(leftColumn: column,
                                              columns: numberOfBrickColumns) else { continue }
-                endlessIIPendingBuild = .big(leftColumn: column)
+                build = .big(leftColumn: column)
             case .square:
-                endlessIIPendingBuild = .square(column: column)
+                build = .square(column: column)
             case .tiny, .normal, nil:
                 continue
                 // A Tiny brick needs none of this - it is one brick split where it already
                 // stands - and the other two are what a cell is by default
             }
-            endlessIIPendingSpec = spec
-            return
-            // One per row. Two of these in one row of a formation would need two reservations
-            // from one row, and a row has one pending slot because a row has one shape - so
-            // the second is left for a shape that wants it and the author is told by the
-            // catalogue's own test rather than by a hole in the field
+
+            let wanted = build.columnsToReserve(in: numberOfBrickColumns)
+            guard wanted.isDisjoint(with: taken) else { continue }
+            taken.formUnion(wanted)
+            endlessIIPendingBookings.append(EndlessIIBooking(build, spec: spec))
+            // **All of them, not the first** (round 254). A row held one shape until the
+            // booking became a list, so a formation drawn with three posts across it built one
+            // and drew the other two as ordinary bricks. Overlapping cells are still refused,
+            // because two bricks in one place is the one thing the reservation exists to stop
         }
     }
 
@@ -457,9 +464,8 @@ extension GameScene {
     /// it, exactly as for the ordinary cells of the same shape.
     ///
     /// Does nothing when no formation booked the shape, which is most rows.
-    func endlessIIDressBookedShape(_ brick: SKSpriteNode) {
-        guard let spec = endlessIIPendingSpec else { return }
-        endlessIIPendingSpec = nil
+    func endlessIIDressBookedShape(_ brick: SKSpriteNode, as spec: EndlessIIBrickSpec?) {
+        guard let spec else { return }
 
         brick.texture = endlessIIBrickTexture(for: spec)
         brick.colorBlendFactor = brick.texture == brickNormalTexture ? 1 : 0
@@ -1049,8 +1055,8 @@ extension GameScene {
         endlessIISpinners.removeAll()
         endlessIIFlashers.removeAll()
         endlessIIBreathers.removeAll()
-        endlessIIPendingBuild = nil
-        endlessIIPendingSpec = nil
+        endlessIIPendingBookings = []
+        endlessIIMonolithRoute = nil
         endlessIIProgression = EndlessIIProgression.make()
         clearEndlessIIMarkers()
         endlessIISetRowQueue = []
