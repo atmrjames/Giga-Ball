@@ -343,8 +343,7 @@ extension GameScene {
 
             if Int.random(in: 1...100) <= GameScene.endlessIIClusterChance,
                let queued = endlessIIStartCluster() {
-                endlessIISetRowQueue = queued.rows.reversed()
-                endlessIISetRowLegend = queued.legend
+                endlessIIQueueFormation(rows: queued.rows, legend: queued.legend)
             } else {
                 guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else {
                     return nil
@@ -354,8 +353,7 @@ extension GameScene {
                 // introduction schedule like the styles and power-ups do (round 193), so two
                 // runs to the same depth meet different landmarks
                 guard let pattern = choices.randomElement() else { return nil }
-                endlessIISetRowQueue = pattern.rows.reversed()
-                endlessIISetRowLegend = pattern.legend
+                endlessIIQueueFormation(rows: pattern.rows, legend: pattern.legend)
             }
         }
         let row = endlessIISetRowQueue.removeFirst()
@@ -364,6 +362,23 @@ extension GameScene {
         // Cleared as the last row goes out, so a legend can never be read by the formation
         // after this one - the character `A` means something different in every shape
         return row
+    }
+
+    /// Puts a formation in the queue, in the order the field has to emit it.
+    ///
+    /// **This is the one place the reversal happens, and it is a function so that it can be
+    /// tested through.** Round 249's bug was that the queue was filled in written order and
+    /// drained from the front, which drew every formation upside down; the fix was two
+    /// `.reversed()` calls at two assignment sites, and a test that seeds the queue itself
+    /// cannot tell whether either of them is still there. A test can call this.
+    ///
+    /// The rule it carries: **the row written first is emitted last.** The field descends -
+    /// everything moves down a row and the new one is built at a fixed y at the top - so the
+    /// row emitted first ends up lowest, and the top row of a drawn shape has to go out last
+    /// to land at the top.
+    func endlessIIQueueFormation(rows: [String], legend: [Character: EndlessIIBrickSpec]) {
+        endlessIISetRowQueue = rows.reversed()
+        endlessIISetRowLegend = legend
     }
 
     /// Books a Big brick that the *next* row of this formation asks for.

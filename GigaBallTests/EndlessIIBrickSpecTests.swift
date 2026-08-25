@@ -377,8 +377,10 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         scene.gameMode = .endlessII
         scene.numberOfBrickColumns = 11
 
-        scene.endlessIISetRowQueue = ["TOP", "MIDDLE", "BOTTOM"].reversed()
-        // Queued the way `endlessIINextSetRow` queues one
+        scene.endlessIIQueueFormation(rows: ["TOP", "MIDDLE", "BOTTOM"], legend: [:])
+        // Queued through the builder's own function rather than by hand. Seeding the array
+        // directly would pass whether or not the reversal is still in the code, which is the
+        // one thing this test is for
 
         XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "BOTTOM",
                        "the first row out is the one that lands lowest, so it has to be the "
@@ -386,6 +388,52 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "MIDDLE")
         XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "TOP",
                        "and the row written first is emitted last, which puts it on top")
+    }
+
+    /// A whole formation, queued and drained, comes back the way it was written.
+    ///
+    /// The test above pins the first row out; this one pins the *shape*, by draining the queue
+    /// and reading the rows back into the order they will be seen in. Written because the bug
+    /// was never about one row - it was about a lid ending up under the thing it lidded.
+    func testAQueuedFormationDrainsIntoTheOrderItWasWrittenIn() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.numberOfBrickColumns = 11
+
+        let written = ["LID", "MIDDLE", "FLOOR"]
+        scene.endlessIIQueueFormation(rows: written, legend: [:])
+
+        let emitted = written.indices.compactMap { _ in
+            scene.endlessIINextSetRow(reservationPending: false)
+        }
+        // Exactly as many rows as were queued, and not "until it returns nil": an empty queue
+        // rolls for a *new* formation, so draining past the end would sometimes pick one up
+        // and this would be a test that failed one run in six
+
+        XCTAssertEqual(emitted.reversed(), written,
+                       "the rows are emitted bottom-first, so reading them back up the field "
+                       + "has to give the formation as it was drawn")
+    }
+
+    /// The legend goes out with the last row and not before.
+    ///
+    /// `A` means something different in every formation, so a legend that outlived its own
+    /// shape would dress the next one's bricks.
+    func testTheLegendIsClearedOnlyWhenTheFormationIsSpent() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.numberOfBrickColumns = 11
+
+        let legend: [Character: EndlessIIBrickSpec] = ["A": EndlessIIBrickSpec(behaviour: .multiHit)]
+        scene.endlessIIQueueFormation(rows: ["AAA", "AAA"], legend: legend)
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertEqual(scene.endlessIISetRowLegend["A"], legend["A"],
+                       "one row still to come, so the key is still needed")
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertTrue(scene.endlessIISetRowLegend.isEmpty,
+                      "the shape is spent, so its key goes with it")
     }
 
     /// A formation that says which way up it goes has its lid above its contents.
