@@ -334,6 +334,37 @@ final class EndlessIIRowPlanTests: XCTestCase {
         }
     }
 
+    /// The wall, measured rather than counted.
+    ///
+    /// The bookings can be right and the bricks still wrong - a Big brick hangs off its
+    /// top-left cell and is drawn about an anchor, which is the sort of arithmetic that is off
+    /// by half a cell and looks deliberate. So this builds the row's bricks and reads their
+    /// frames: none may overlap, and the channel has to be a real gap in the wall rather than
+    /// a seam.
+    func testTheWallIsSolidExceptForItsChannel() {
+        let scene = fieldScene()
+        scene.endlessIIPhase = .monolith
+        _ = scene.endlessIIPlanRow()
+        let building = scene.endlessIIPlanRow()
+
+        let frames = building.bigs
+            .map { scene.endlessIIMakeBig(leftColumn: $0.build.column, rowY: 0).frame }
+            .sorted { $0.minX < $1.minX }
+        XCTAssertGreaterThan(frames.count, 1)
+
+        var gaps: [CGFloat] = []
+        for (a, b) in zip(frames, frames.dropFirst()) {
+            XCTAssertLessThanOrEqual(a.maxX, b.minX + 0.01,
+                                     "two Big bricks in the wall overlap")
+            gaps.append(b.minX - a.maxX)
+        }
+        let channel = (gaps + [frames[0].minX - -scene.gameWidth/2,
+                               scene.gameWidth/2 - frames[frames.count - 1].maxX]).max() ?? 0
+        XCTAssertGreaterThanOrEqual(channel, scene.brickWidth - 0.01,
+                                    "the way through has to be at least a brick wide, or it "
+                                    + "is a seam rather than a route")
+    }
+
     // MARK: - A formation driving the sequence
 
     /// A formation books its Big brick a row before the row it is drawn on.
