@@ -303,6 +303,7 @@ enum BrickTypeCatalogue {
         case .tiny: return "Tiny"
         case .normal: return "Normal"
         case .big: return "Big"
+        case .square: return "Square"
         }
     }
 
@@ -314,6 +315,8 @@ enum BrickTypeCatalogue {
             return "One cell, which is what every brick in Classic and Endless is."
         case .big:
             return "Two cells by two. It takes four times the room and needs four times the clearing."
+        case .square:
+            return "One cell across and two down - which is a square on screen, because a cell is twice as wide as it is tall. It is the only brick that is taller than it is wide, so it blocks a column rather than a row, and a shot that would have gone over an ordinary brick meets this one."
         }
     }
 
@@ -322,6 +325,7 @@ enum BrickTypeCatalogue {
         case .tiny: return "A quarter cell"
         case .normal: return "One cell"
         case .big: return "2 × 2 cells"
+        case .square: return "1 × 2 cells"
         }
     }
 

@@ -497,10 +497,14 @@ extension GameScene {
     /// The field size rather than the sprite's, so a shaped brick is the ordinary cell it fills
     /// rather than the third of one its sprite hides in (`endlessIIFieldSize`).
     func endlessIISizeOf(_ brick: SKSpriteNode) -> BrickSize {
-        let width = endlessIIFieldSize(of: brick).width
-        if width > brickWidth*1.5 { return .big }
-        if width < brickWidth*0.75 { return .tiny }
+        let size = endlessIIFieldSize(of: brick)
+        if size.width > brickWidth*1.5 { return .big }
+        if size.height > brickHeight*1.5 { return .square }
+        if size.width < brickWidth*0.75 { return .tiny }
         return .normal
+        // **Width first, then height.** A Big brick is two cells on both axes, so asking about
+        // its height first would call it Square - and Square is the one size that is taller
+        // than it is wide, which is exactly what the old width-only test could not see
     }
 
     /// Whether a brick sits in exactly one cell - true of an ordinary brick and of a Tiny

@@ -177,6 +177,10 @@ extension GameScene {
             // worse than not offering one
         }
 
+        if Int.random(in: 1...100) <= GameScene.endlessIISquareChance {
+            offered.append(.square(column: Int.random(in: 0..<max(1, numberOfBrickColumns))))
+        }
+
         let bigChance = endlessIIPhase == .giants ? 90 : GameScene.endlessIIBigChance
         if Int.random(in: 1...100) <= bigChance {
             let left = Int.random(in: 0..<max(1, numberOfBrickColumns - 1))
@@ -192,6 +196,40 @@ extension GameScene {
 
     /// How often a row commits to the three-row sequence a spinning brick needs.
     static let endlessIISpinChance = 12
+
+    /// How often a row commits to the two-row sequence a Square brick needs.
+    ///
+    /// Under a Big brick's, because it is the quieter of the two shapes: a Big one is an
+    /// obstacle you plan a whole screen around, and a Square one is a column with a lid on it.
+    /// Both cost a row with a hole in it, so neither can be common.
+    static let endlessIISquareChance = 12
+
+    /// Builds the Square brick a row owes: one cell wide, two tall, and square on screen.
+    ///
+    /// The same geometry the power-up brick has always had - `EndlessIITallBrick` is that plan
+    /// with the power-up taken out of it (§12.0: "the power-up brick already builds one, so the
+    /// machinery exists"). The node sits on the *upper* cell's centre with the sprite covering
+    /// both, which is the trick a Big brick uses for the same reason: a brick's `position.y` is
+    /// its row (§8.6), so the node stays on a row centre and the drawing hangs off it.
+    func endlessIIMakeSquare(column: Int, rowY: CGFloat) -> SKSpriteNode {
+        let plan = EndlessIITallBrick(cell: CGSize(width: brickWidth, height: brickHeight))
+
+        let brick = SKSpriteNode(texture: endlessIIBrickTexture())
+        brick.color = brickWhite
+        brick.colorBlendFactor = brick.texture == brickNormalTexture ? 1 : 0
+        brick.size = plan.size
+        brick.anchorPoint = plan.anchorPoint
+        brick.position = CGPoint(x: plan.nodeX(column: column, gameWidth: gameWidth), y: rowY)
+        brick.zPosition = 1
+        brick.name = BrickCategoryName
+        brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: plan.size,
+                                                    center: plan.bodyCentre))
+        if brick.texture == brickInvisibleTexture { brick.isHidden = true }
+        addChild(brick)
+        return brick
+        // Drawn from the field's own mix rather than always Standard, so a Square brick is a
+        // *size* rather than a kind - which is the whole of what §12.0 asked for
+    }
 
     /// Builds the Big brick a row owes, ready to be animated in with the rest of the row.
     func endlessIIMakeBig(leftColumn: Int, rowY: CGFloat) -> SKSpriteNode {

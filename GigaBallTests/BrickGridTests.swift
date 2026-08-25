@@ -26,14 +26,32 @@ final class BrickGridTests: XCTestCase {
         XCTAssertEqual(field.rows, 20)
     }
 
-    func testTheThreeSizesFitTheHalfCellGridExactly() {
+    func testEverySizeFitsTheHalfCellGridExactly() {
         // The whole reason for half-cell resolution: no fractions, no special cases.
-        XCTAssertEqual(BrickSize.tiny.halfCells, 1)
-        XCTAssertEqual(BrickSize.normal.halfCells, 2)
-        XCTAssertEqual(BrickSize.big.halfCells, 4)
-        XCTAssertEqual(BrickSize.tiny.scale, 0.5)
-        XCTAssertEqual(BrickSize.normal.scale, 1.0)
-        XCTAssertEqual(BrickSize.big.scale, 2.0)
+        //
+        // **Both axes, since round 247.** Three of the four sizes are the same across as they
+        // are down, and Square is the one that is not - so a single extent stopped being able
+        // to describe them and would have drawn a Square brick as a Big one.
+        XCTAssertEqual(BrickSize.tiny.halfCellsWide, 1)
+        XCTAssertEqual(BrickSize.normal.halfCellsWide, 2)
+        XCTAssertEqual(BrickSize.big.halfCellsWide, 4)
+        XCTAssertEqual(BrickSize.square.halfCellsWide, 2)
+
+        XCTAssertEqual(BrickSize.tiny.halfCellsTall, 1)
+        XCTAssertEqual(BrickSize.normal.halfCellsTall, 2)
+        XCTAssertEqual(BrickSize.big.halfCellsTall, 4)
+        XCTAssertEqual(BrickSize.square.halfCellsTall, 4)
+
+        XCTAssertEqual(BrickSize.tiny.scaleWide, 0.5)
+        XCTAssertEqual(BrickSize.normal.scaleWide, 1.0)
+        XCTAssertEqual(BrickSize.big.scaleWide, 2.0)
+        XCTAssertEqual(BrickSize.square.scaleWide, 1.0)
+        XCTAssertEqual(BrickSize.square.scaleTall, 2.0)
+
+        for size in BrickSize.allCases {
+            XCTAssertGreaterThan(size.halfCellsWide, 0, "\(size)")
+            XCTAssertGreaterThan(size.halfCellsTall, 0, "\(size)")
+        }
     }
 
     func testFourTinyBricksFitWhereOneNormalWould() {

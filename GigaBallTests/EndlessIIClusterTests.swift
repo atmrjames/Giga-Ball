@@ -228,7 +228,7 @@ final class EndlessIIClusterTests: XCTestCase {
 final class EndlessIIPowerUpBrickTests: XCTestCase {
 
     private let cell = CGSize(width: 40, height: 20)
-    private var plan: EndlessIIPowerUpBrick { EndlessIIPowerUpBrick(cell: cell) }
+    private var plan: EndlessIITallBrick { EndlessIITallBrick(cell: cell) }
 
     func testItIsSquareOnScreen() {
         // The whole reason for the shape. A cell is twice as wide as it is tall, so one cell
@@ -269,10 +269,10 @@ final class EndlessIIPowerUpBrickTests: XCTestCase {
     }
 
     func testItOnlyGoesWhereThereIsAColumnForIt() {
-        XCTAssertTrue(EndlessIIPowerUpBrick.fits(column: 0, columns: 11))
-        XCTAssertTrue(EndlessIIPowerUpBrick.fits(column: 10, columns: 11))
-        XCTAssertFalse(EndlessIIPowerUpBrick.fits(column: 11, columns: 11))
-        XCTAssertFalse(EndlessIIPowerUpBrick.fits(column: -1, columns: 11))
+        XCTAssertTrue(EndlessIITallBrick.fits(column: 0, columns: 11))
+        XCTAssertTrue(EndlessIITallBrick.fits(column: 10, columns: 11))
+        XCTAssertFalse(EndlessIITallBrick.fits(column: 11, columns: 11))
+        XCTAssertFalse(EndlessIITallBrick.fits(column: -1, columns: 11))
     }
 
     func testItIsRarerThanTheOtherTwoRowShapes() {

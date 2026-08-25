@@ -45,12 +45,23 @@ enum BrickSize: Int, CaseIterable {
     case tiny = 1
     case normal = 2
     case big = 4
+    /// One cell wide and two tall - which is *square on screen*, because a cell is twice as
+    /// wide as it is tall (§12.0). The power-up brick has been this shape since it was built;
+    /// this is the same shape offered as a size an ordinary brick can be.
+    case square = 3
 
-    /// The brick's extent in half-cells, on both axes.
-    var halfCells: Int { rawValue }
+    /// The brick's extent in half-cells, across and down.
+    ///
+    /// **Two properties rather than one**, because Square is the first size that is not the
+    /// same on both axes. Everything here read a single `halfCells` before it, which is a
+    /// perfectly good model of three sizes that scale uniformly and no model at all of a
+    /// fourth that does not - it would have drawn a Square brick as a two-by-two.
+    var halfCellsWide: Int { self == .square ? 2 : rawValue }
+    var halfCellsTall: Int { self == .square ? 4 : rawValue }
 
-    /// How this size relates to a normal brick, for scoring and artwork.
-    var scale: CGFloat { CGFloat(rawValue)/CGFloat(BrickSize.normal.rawValue) }
+    /// How this size relates to a normal brick, per axis, for scoring and artwork.
+    var scaleWide: CGFloat { CGFloat(halfCellsWide)/CGFloat(BrickSize.normal.rawValue) }
+    var scaleTall: CGFloat { CGFloat(halfCellsTall)/CGFloat(BrickSize.normal.rawValue) }
 }
 
 /// A brick's identity within the grid. The grid does not care what a brick *is* - that
@@ -62,8 +73,8 @@ struct GridBrick: Equatable {
 
     /// Every half-cell this brick covers.
     var cells: [GridCell] {
-        (0..<size.halfCells).flatMap { dx in
-            (0..<size.halfCells).map { dy in
+        (0..<size.halfCellsWide).flatMap { dx in
+            (0..<size.halfCellsTall).map { dy in
                 GridCell(origin.column + dx, origin.row + dy)
             }
         }
@@ -93,8 +104,8 @@ struct BrickGrid {
     /// Built from a column count in whole bricks, which is how the rest of the game and
     /// every existing level counts.
     init(brickColumns: Int, brickRows: Int) {
-        self.init(columns: brickColumns*BrickSize.normal.halfCells,
-                  rows: brickRows*BrickSize.normal.halfCells)
+        self.init(columns: brickColumns*BrickSize.normal.halfCellsWide,
+                  rows: brickRows*BrickSize.normal.halfCellsTall)
     }
 
     // MARK: - Reading
@@ -212,7 +223,7 @@ struct BrickGrid {
     @discardableResult
     mutating func settle(_ ids: [Int]) -> [(id: Int, from: GridCell, to: GridCell)] {
         let falling = ids.compactMap { bricks[$0] }.sorted {
-            ($0.origin.row + $0.size.halfCells) > ($1.origin.row + $1.size.halfCells)
+            ($0.origin.row + $0.size.halfCellsTall) > ($1.origin.row + $1.size.halfCellsTall)
         }
 
         var moved: [(id: Int, from: GridCell, to: GridCell)] = []
@@ -246,15 +257,16 @@ struct BrickGrid {
     /// The centre of a brick, which is not the centre of its origin cell unless it is Tiny.
     func centre(of brick: GridBrick, in rect: CGRect) -> CGPoint {
         let size = halfCellSize(in: rect)
-        let extent = CGFloat(brick.size.halfCells)
-        return CGPoint(x: rect.minX + (CGFloat(brick.origin.column) + extent/2)*size.width,
-                       y: rect.maxY - (CGFloat(brick.origin.row) + extent/2)*size.height)
+        let across = CGFloat(brick.size.halfCellsWide)
+        let down = CGFloat(brick.size.halfCellsTall)
+        return CGPoint(x: rect.minX + (CGFloat(brick.origin.column) + across/2)*size.width,
+                       y: rect.maxY - (CGFloat(brick.origin.row) + down/2)*size.height)
     }
 
     func size(of brick: GridBrick, in rect: CGRect) -> CGSize {
         let half = halfCellSize(in: rect)
-        let extent = CGFloat(brick.size.halfCells)
-        return CGSize(width: half.width*extent, height: half.height*extent)
+        return CGSize(width: half.width*CGFloat(brick.size.halfCellsWide),
+                      height: half.height*CGFloat(brick.size.halfCellsTall))
     }
 
     func halfCellSize(in rect: CGRect) -> CGSize {

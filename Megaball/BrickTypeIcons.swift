@@ -325,8 +325,10 @@ enum BrickTypeIcons {
         // it the only thing saying what a Tiny brick is small compared to
         context.restoreGState()
 
-        let scale = size.scale
-        let brick = centred(CGSize(width: cell.width*scale, height: cell.height*scale))
+        let brick = centred(CGSize(width: cell.width*size.scaleWide,
+                                   height: cell.height*size.scaleTall))
+        // Per axis, since round 247: a Square brick is one cell across and two down, and a
+        // single scale would have drawn it as a Big one
         artwork("BrickNormal")?.tinted(standardColour).draw(in: brick)
     }
 

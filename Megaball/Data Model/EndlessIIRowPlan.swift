@@ -38,6 +38,8 @@ enum EndlessIITwoRowBuild: Equatable {
     case big(leftColumn: Int)
     /// One cell wide and two tall, holding a power-up.
     case powerUpBrick(column: Int)
+    /// One cell wide and two tall, and an ordinary brick - the Square size (§12.0).
+    case square(column: Int)
     /// A turning brick, which needs the cells around it kept clear.
     case spinner(column: Int)
     /// The cell above a spinner placed a row ago.
@@ -46,7 +48,7 @@ enum EndlessIITwoRowBuild: Equatable {
     /// The column its own node sits in, whatever else it reaches.
     var column: Int {
         switch self {
-        case .big(let column), .powerUpBrick(let column),
+        case .big(let column), .powerUpBrick(let column), .square(let column),
              .spinner(let column), .spinnerClearance(let column):
             return column
         }
@@ -59,7 +61,8 @@ enum EndlessIITwoRowBuild: Equatable {
     func columnsToReserve(in columns: Int) -> Set<Int> {
         switch self {
         case .big(let left): return trimmed([left, left + 1], to: columns)
-        case .powerUpBrick(let column), .spinner(let column), .spinnerClearance(let column):
+        case .powerUpBrick(let column), .square(let column),
+             .spinner(let column), .spinnerClearance(let column):
             return trimmed([column], to: columns)
         }
     }
@@ -72,7 +75,7 @@ enum EndlessIITwoRowBuild: Equatable {
     func columnsToClear(in columns: Int) -> Set<Int> {
         switch self {
         case .big(let left): return trimmed([left, left + 1], to: columns)
-        case .powerUpBrick(let column), .spinnerClearance(let column):
+        case .powerUpBrick(let column), .square(let column), .spinnerClearance(let column):
             return trimmed([column], to: columns)
         case .spinner(let column): return trimmed([column - 1, column + 1], to: columns)
         }
@@ -106,6 +109,11 @@ struct EndlessIIRowPlan: Equatable {
 
     var spinAt: Int? {
         if case .spinner(let column) = build { return column }
+        return nil
+    }
+
+    var squareAt: Int? {
+        if case .square(let column) = build { return column }
         return nil
     }
 }

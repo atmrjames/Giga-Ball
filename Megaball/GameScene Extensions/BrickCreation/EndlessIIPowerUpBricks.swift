@@ -31,7 +31,7 @@ import SpriteKit
 /// that the descent and the bottom-row check both read, and the extra size is expressed as an
 /// anchor point and an offset body. It covers its own row and the one below, which was left
 /// empty a row earlier.
-struct EndlessIIPowerUpBrick {
+struct EndlessIITallBrick {
     let cell: CGSize
 
     var size: CGSize { CGSize(width: cell.width, height: cell.height*2) }
@@ -123,7 +123,7 @@ extension GameScene {
         // A power-up the player has not unlocked yet is one they would not recognise, and
         // setting one off would be showing them something the packs have not reached
 
-        let plan = EndlessIIPowerUpBrick(cell: CGSize(width: brickWidth, height: brickHeight))
+        let plan = EndlessIITallBrick(cell: CGSize(width: brickWidth, height: brickHeight))
 
         let brick = SKSpriteNode(texture: brickIndestructible2Texture)
         brick.size = plan.size

@@ -753,12 +753,17 @@ extension GameScene {
         if gameMode == .endlessII {
             endlessIIFillEmptyRowIfOverdue(brickArray, reserved: endlessII.skip,
                                            shapeComing: endlessII.dueAt != nil
-                                               || endlessII.powerUpAt != nil)
+                                               || endlessII.powerUpAt != nil
+                                               || endlessII.squareAt != nil)
         }
         // Checked before the two-row shapes are added, because those count as filling the row
 
         if let leftColumn = endlessII.dueAt {
             brickArray.append(endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless))
+        }
+
+        if let column = endlessII.squareAt {
+            brickArray.append(endlessIIMakeSquare(column: column, rowY: yBrickOffsetEndless))
         }
 
         if let column = endlessII.powerUpAt,

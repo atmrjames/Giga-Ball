@@ -139,6 +139,95 @@ final class EndlessIIRowPlanTests: XCTestCase {
         XCTAssertNil(scene.endlessIIPendingBuild, "and no other mode is left holding one")
     }
 
+    // MARK: - The Square size
+
+    /// A Square brick is one cell wide and two tall, which is square on screen.
+    ///
+    /// A cell is twice as wide as it is tall, so "one by two in cells" and "square to look at"
+    /// are the same statement - which is the whole reason the size is worth having and the
+    /// reason it is called Square rather than Tall.
+    func testASquareBrickIsOneCellAcrossAndTwoDown() {
+        XCTAssertEqual(BrickSize.square.halfCellsWide, BrickSize.normal.halfCellsWide)
+        XCTAssertEqual(BrickSize.square.halfCellsTall, BrickSize.big.halfCellsTall)
+        XCTAssertEqual(BrickSize.square.scaleWide, 1)
+        XCTAssertEqual(BrickSize.square.scaleTall, 2)
+    }
+
+    /// Every other size is still the same on both axes.
+    ///
+    /// The per-axis split is new, and the way it goes wrong is by being applied to the three
+    /// that never needed it.
+    func testTheOtherThreeSizesAreStillSquareInCells() {
+        for size in [BrickSize.tiny, .normal, .big] {
+            XCTAssertEqual(size.halfCellsWide, size.halfCellsTall, "\(size)")
+        }
+    }
+
+    /// It runs the same two-row sequence as a power-up brick, and takes one column.
+    func testASquareBrickReservesAndClearsItsOwnColumn() {
+        let square = EndlessIITwoRowBuild.square(column: 6)
+        XCTAssertEqual(square.columnsToReserve(in: columns), [6])
+        XCTAssertEqual(square.columnsToClear(in: columns), [6])
+        XCTAssertEqual(EndlessIIRowPlan(build: square).squareAt, 6)
+        XCTAssertNil(EndlessIIRowPlan(build: square).powerUpAt,
+                     "it is the same shape and not the same brick")
+    }
+
+    /// The field can tell one from the three sizes it already had.
+    ///
+    /// A Square brick is exactly one cell wide, so a width-only test calls it Normal - which is
+    /// what `endlessIISizeOf` did until it was given a height to look at. And a Big brick is
+    /// two cells on *both* axes, so asking about height first would call that one Square.
+    func testTheFieldRecognisesEachSizeByItsShape() {
+        let scene = fieldScene()
+        let cell = CGSize(width: scene.brickWidth, height: scene.brickHeight)
+
+        let wanted: [(BrickSize, CGSize)] = [
+            (.tiny, CGSize(width: cell.width/2, height: cell.height/2)),
+            (.normal, cell),
+            (.square, CGSize(width: cell.width, height: cell.height*2)),
+            (.big, CGSize(width: cell.width*2, height: cell.height*2)),
+        ]
+        for (size, extent) in wanted {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture, size: extent)
+            brick.position = CGPoint(x: 0, y: 100)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            XCTAssertEqual(scene.endlessIISizeOf(brick), size, "\(size)")
+            brick.removeFromParent()
+        }
+    }
+
+    /// And it is built where it was booked, hanging from the upper cell's centre.
+    ///
+    /// The node stays on a row centre and the drawing hangs off it, which is the trick a Big
+    /// brick uses for the same reason: a brick's `position.y` is its row (§8.6), and the
+    /// descent and the bottom-row check both read it.
+    func testASquareBrickHangsFromItsRowRatherThanStraddlingIt() {
+        let scene = fieldScene()
+        let brick = scene.endlessIIMakeSquare(column: 4, rowY: 200)
+
+        XCTAssertEqual(brick.position.y, 200, "the node is on the row it was built for")
+        XCTAssertEqual(brick.size.width, scene.brickWidth, accuracy: 0.5)
+        XCTAssertEqual(brick.size.height, scene.brickHeight*2, accuracy: 0.5)
+        XCTAssertLessThan(brick.frame.midY, brick.position.y,
+                          "and the sprite hangs below it, into the row that was reserved")
+        XCTAssertEqual(brick.frame.maxY, 200 + scene.brickHeight/2, accuracy: 0.5,
+                       "its top edge should sit on the top of its own row")
+    }
+
+    /// The size a style can carry is asked of the same rule as everything else.
+    func testASquareBrickTakesTheStylesItsShapeAllows() {
+        XCTAssertTrue(EndlessIIStyle.moving.suits(BrickSize.square))
+        XCTAssertTrue(EndlessIIStyle.gravity.suits(BrickSize.square))
+        XCTAssertTrue(EndlessIIStyle.directional.suits(BrickSize.square))
+
+        for style in [EndlessIIStyle.spinning, .breathing, .convex, .diamond] {
+            XCTAssertFalse(style.suits(BrickSize.square),
+                           "\(style) needs one ordinary centred cell, and this is not one")
+        }
+    }
+
     /// A power-up brick is not even reserved while one is still in play.
     ///
     /// The row that reserves is a row with a hole in it, and holding one open for a brick that
