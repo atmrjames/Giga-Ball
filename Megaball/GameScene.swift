@@ -95,7 +95,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIILandingTotal: TimeInterval = 0
 	var endlessIIVisionLastTick: TimeInterval = 0
 	var endlessIITrajectoryLines: [SKShapeNode] = []
-	var endlessIILandingMarkers: [SKShapeNode] = []
+	var endlessIILandingMarkers: [SKSpriteNode] = []
 
 	// The paddle batch's clocks and state - see EndlessIIPaddlePowerUps
 	var endlessIIAimedStickyClock = EndlessIIClock()
@@ -257,7 +257,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// the lifetime best in `TotalStats`, which is the same question asked of every run there
 	/// has ever been.
 	var runBestBallHits: Int = 0
-	var endlessIIAuraNodes: [SKShapeNode] = []
+	var endlessIIAuraNodes: [SKSpriteNode] = []
 	/// Bricks the aura is currently sitting on, so each is hit once per pass rather than
 	/// once per frame. Cleared as the glow moves off them.
 	var endlessIIAuraHitBricks: Set<ObjectIdentifier> = []
@@ -438,6 +438,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var iconSize: CGFloat = 0
 	
 	var layoutUnit: CGFloat = 0
+
+	/// The ball's size before any power-up has had a say.
+	///
+	/// `ballSize` is the *current* one and the size power-ups write to it, so anything that
+	/// should not grow and shrink with the ball has to ask this instead - the laser beam's core
+	/// is drawn to it (James, round 243: "it shouldn't change size with the ball").
+	var normalBallSize: CGFloat { layoutUnit*0.67 }
     var paddleWidth: CGFloat = 0
 	var paddleHeight: CGFloat = 0
     var paddleGap: CGFloat = 0
@@ -1349,7 +1356,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		totalBricksWidth = CGFloat(numberOfBrickColumns) * (brickWidth)
 		totalBricksHeight = CGFloat(numberOfBrickRows) * (brickHeight)
 		
-		ballSize = layoutUnit*0.67
+		ballSize = normalBallSize
 		ball.size.width = ballSize
         ball.size.height = ballSize
 		life.texture = ballTexture

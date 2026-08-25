@@ -252,38 +252,49 @@ extension GameScene {
                 self.endlessIIDestroy(brick)
             }
 
-            let bloom = SKSpriteNode(color: GameScene.endlessIIHaloColour,
-                                     size: CGSize(width: subject.size.width*3,
-                                                  height: frame.height))
-            bloom.position = CGPoint(x: beamX, y: 0)
-            bloom.zPosition = 4
-            bloom.alpha = 0.35
-            bloom.blendMode = .add
-            addChild(bloom)
-            bloom.run(.sequence([.fadeOut(withDuration: 1.2), .removeFromParent()]))
-
-            let beam = SKSpriteNode(color: .white,
-                                    size: CGSize(width: subject.size.width,
-                                                 height: frame.height))
+            let beam = endlessIILaserBeamNode()
             beam.position = CGPoint(x: beamX, y: 0)
-            beam.zPosition = 4.1
-            beam.alpha = 0.9
             addChild(beam)
             beam.run(.sequence([.fadeOut(withDuration: 1.2), .removeFromParent()]))
             // **Made unmissable** (play-test round 102: "doesn't appear to do anything").
             // The mechanics were right all along - a beam through each ball's column, as
             // the description says - but it fired the instant the paddle caught the icon,
             // at the ball's column where the player's eyes are not, silently, for a third
-            // of a second. Now it is the ring HUD's two-pass construction at field size: a
-            // wide additive bloom underneath, a bright core on top, twice the linger, and
-            // the laser's own sound below - the destruction is still the instant, and the
-            // light finally insists on being seen
+            // of a second. It was built as two sprites for that - a wide additive bloom with
+            // a bright core over it - which is what one drawn strip is now (round 243)
         }
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
         if soundsSetting { run(laserFiredSound) }
     }
+
+    /// The beam's own picture: a white-hot core with the glow falling away either side of it.
+    ///
+    /// James delivered `LaserBeamLength` for this, and it is built the way `PortalLength` is -
+    /// a *length* of an effect, uniform along it, so it stretches to the height of the view
+    /// with nothing to distort. What it is not uniform across is its width, and the numbers
+    /// below are the two measurements that matter: the picture is 124 points wide and its
+    /// opaque core is the middle 22 of them.
+    ///
+    /// **The core is a normal ball wide, whatever size the ball currently is** (James, round
+    /// 243: "it shouldn't change size with the ball"). The column it *destroys* is still the
+    /// ball's own width - that is the mechanic and it is untouched - so a shrunken ball now
+    /// fires a beam wider than the column it clears. That is the right way round: the beam is
+    /// light and the column is what the light did.
+    func endlessIILaserBeamNode() -> SKSpriteNode {
+        let core: CGFloat = 22, whole: CGFloat = 124
+        let beam = SKSpriteNode(texture: GameScene.endlessIILaserBeamTexture)
+        beam.size = CGSize(width: normalBallSize*(whole/core), height: frame.height)
+        beam.zPosition = 4
+        beam.alpha = 0.9
+        return beam
+    }
+
+    /// Loaded once. Nil in a build without the artwork, which draws a white rectangle - the
+    /// beam that was there before it, near enough, rather than nothing at all.
+    static let endlessIILaserBeamTexture: SKTexture? =
+        UIImage(named: "LaserBeamLength").map { SKTexture(image: $0) }
 
     // MARK: - Wrecking Ball
 
@@ -316,6 +327,23 @@ extension GameScene {
     /// ball's radius to start (§5.4); a deepening collection grows it.
     static let endlessIIAuraReach: [CGFloat] = [2.0, 2.8]
 
+    /// How much of the artwork's half-width still reads as glow.
+    ///
+    /// `BallAura` fades from the middle outward and reaches nothing at its own edge, so "how
+    /// big is it" has no single answer. Measured off the file: alpha is a half at 45% of the
+    /// half-width, a quarter at 62%, and a tenth at 76%. The tenth is taken as the edge - past
+    /// that it is not doing anything a player can see - and the sprite is drawn large enough
+    /// to put that contour on the reach.
+    ///
+    /// It replaced a stroked circle whose rim sat exactly on the reach, so the reach was
+    /// unmistakable and the effect was flat. This keeps the honesty and loses the rim.
+    static let endlessIIAuraVisibleShare: CGFloat = 0.76
+
+    /// Loaded once. Nil leaves a sprite with no texture, which draws nothing - so a build
+    /// without the artwork has an aura that works and cannot be seen.
+    static let endlessIIAuraTexture: SKTexture? =
+        UIImage(named: "BallAura").map { SKTexture(image: $0) }
+
     /// Hits what each ball's glow touches, and keeps the glow on the balls.
     ///
     /// **A hit, not a kill** (play-test rounds 6, 9 and 11 all said the same thing: too
@@ -345,10 +373,7 @@ extension GameScene {
         let balls = endlessIIBallsInPlay.filter { $0.parent != nil }
 
         while endlessIIAuraNodes.count < balls.count {
-            let glow = SKShapeNode(circleOfRadius: 1)
-            glow.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.5)
-            glow.fillColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.12)
-            glow.lineWidth = 1.5
+            let glow = SKSpriteNode(texture: GameScene.endlessIIAuraTexture)
             glow.zPosition = 3
             addChild(glow)
             endlessIIAuraNodes.append(glow)
@@ -363,8 +388,13 @@ extension GameScene {
         for (index, subject) in balls.enumerated() {
             let glow = endlessIIAuraNodes[index]
             glow.position = subject.position
-            glow.setScale(reach)
+            glow.size = CGSize(width: reach*2/GameScene.endlessIIAuraVisibleShare,
+                               height: reach*2/GameScene.endlessIIAuraVisibleShare)
             glow.alpha = subject.alpha
+            // **Sized so the glow's edge sits on the reach**, not so the *picture* does. A
+            // radial fade has no edge, and drawn to the reach exactly it would show a soft
+            // blob well inside the circle it actually eats - which is a power-up lying about
+            // how far it goes. `endlessIIAuraVisibleShare` is where that is worked out
             // **An effect worn by the ball is as visible as the ball is** (James, round 182:
             // "with ghost ball and aura power-ups together, I can still see the aura effect
             // around the ball... it should also be invisible when the ball is invisible. The

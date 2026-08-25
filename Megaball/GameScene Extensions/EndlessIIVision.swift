@@ -144,10 +144,13 @@ extension GameScene {
             }
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
-                marker.position = CGPoint(x: endlessIISettledLandingX(landing.x, for: marker,
-                                                                     delta: delta),
-                                          y: paddle.position.y + paddleHeight*1.2)
+                let mark = CGPoint(x: endlessIISettledLandingX(landing.x, for: marker,
+                                                               delta: delta),
+                                   y: paddle.position.y + paddleHeight*1.2)
+                marker.position = endlessIILandingMarkerCentre(over: mark)
                 markerIndex += 1
+                // The *triangle* goes on the mark, not the picture: the picture is mostly
+                // glow and its shape sits a little below the middle of it
             }
             // Just above the paddle, pointing down at where the ball will cross - below it,
             // the Backstop covered it whenever the two ran together. Pulled in closer to
@@ -339,25 +342,74 @@ extension GameScene {
     }
 
     /// The landing marker for the nth ball, made when first needed.
-    private func endlessIIVisionMarker(at index: Int) -> SKShapeNode {
+    ///
+    /// **The drawn triangle goes exactly where the drawn-by-hand one was** (James, round 243:
+    /// "make sure the actual triangle is put in the same place as the existing one, with the
+    /// glow effect surrounding it"), which takes a little arithmetic because the artwork is
+    /// mostly glow. The picture is 146 x 132 points and the triangle inside it is 55.3 x 37,
+    /// centred across and a hair below centre down - so the sprite has to be about two and a
+    /// half times the size of the shape a player actually reads, and nudged so the triangle
+    /// rather than the picture lands on the mark.
+    ///
+    /// The old path was `ballSize*0.7` across the shoulders by the same down to the point,
+    /// with its apex at -0.6 and its shoulders at +0.4 of that - so its box sat a tenth of the
+    /// size *below* the node. Both of those are what is matched here.
+    private func endlessIIVisionMarker(at index: Int) -> SKSpriteNode {
         while endlessIILandingMarkers.count <= index {
-            let size = ballSize*0.7
-            let path = CGMutablePath()
-            path.move(to: CGPoint(x: 0, y: -size*0.6))
-            path.addLine(to: CGPoint(x: -size*0.55, y: size*0.4))
-            path.addLine(to: CGPoint(x: size*0.55, y: size*0.4))
-            path.closeSubpath()
-            let marker = SKShapeNode(path: path)
-            marker.strokeColor = .clear
-            marker.fillColor = UIColor(white: 1, alpha: 0.7)
+            let marker = SKSpriteNode(texture: GameScene.endlessIILandingMarkerTexture)
             marker.zPosition = 5
-            // Pointing down now, and above the backstop's layer - it lives above the paddle
-            // A small triangle pointing up at the crossing point, sitting under the paddle -
-            // play-testing preferred it to the ghost ball, which crowded the paddle itself
+            marker.alpha = 0.9
             addChild(marker)
             endlessIILandingMarkers.append(marker)
+            // Pointing down, and above the backstop's layer - it lives above the paddle.
+            // Play-testing preferred it to the ghost ball, which crowded the paddle itself
         }
-        return endlessIILandingMarkers[index]
+        let marker = endlessIILandingMarkers[index]
+        marker.size = endlessIILandingMarkerSize
+        return marker
+    }
+
+    /// How big the whole picture has to be for its triangle to be the size the old one was.
+    ///
+    /// Followed rather than set once, because the ball can change size under it and the marker
+    /// has always been drawn to the ball.
+    var endlessIILandingMarkerSize: CGSize {
+        let triangleWidth = ballSize*0.7*1.1
+        // The old path's shoulders: `size*0.55` either side of the middle, where size is
+        // `ballSize*0.7`
+        let width = triangleWidth/GameScene.endlessIILandingTriangleShare
+        return CGSize(width: width, height: width*(132/146))
+        // The picture's own proportions. Scaled on one axis only, so the triangle inside it
+        // stays the shape it was drawn as rather than being squared up to the old one - the
+        // old one was a hand-written path and this is a drawing, and stretching a drawing to
+        // match a path is the wrong way round
+    }
+
+    /// How wide the triangle is as a share of the whole picture: 55.3 points of 146, measured
+    /// off the file rather than guessed, so a redraw that moves it is one number to change.
+    static let endlessIILandingTriangleShare: CGFloat = 55.3/146
+
+    /// Where the triangle's middle sits inside the picture, as a share of its height measured
+    /// from the middle: 51.3% from the top, so a touch below centre.
+    static let endlessIILandingTriangleDrop: CGFloat = 0.513 - 0.5
+
+    /// Loaded once. Nil draws nothing, which is a marker that has quietly stopped marking - the
+    /// same bargain the aura makes, and the reason there is a test that the artwork is present.
+    static let endlessIILandingMarkerTexture: SKTexture? =
+        UIImage(named: "LandingMarker").map { SKTexture(image: $0) }
+
+    /// Where the sprite's centre goes, so that the *triangle's* centre lands on `point`.
+    ///
+    /// Two offsets, both small and both real: the old triangle's box sat a tenth of its size
+    /// below the node it hung from, and the new one sits a little below the middle of its own
+    /// picture. Getting either backwards moves the mark by a couple of points, which is exactly
+    /// the amount nobody notices and the marker is then wrong about where the ball will be.
+    func endlessIILandingMarkerCentre(over point: CGPoint) -> CGPoint {
+        let size = endlessIILandingMarkerSize
+        let oldBoxCentre = -ballSize*0.7*0.1
+        return CGPoint(x: point.x,
+                       y: point.y + oldBoxCentre
+                           + GameScene.endlessIILandingTriangleDrop*size.height)
     }
 
     private func endlessIIVisionCGPath(_ points: [CGPoint]) -> CGPath {
