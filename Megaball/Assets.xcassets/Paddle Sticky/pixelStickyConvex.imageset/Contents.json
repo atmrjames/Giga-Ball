@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "pixelStickyConvex.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "pixelStickyConvex@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "pixelStickyConvex@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

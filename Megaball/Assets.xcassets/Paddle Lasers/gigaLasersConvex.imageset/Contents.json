@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "gigaLasersConvex.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "gigaLasersConvex@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "gigaLasersConvex@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

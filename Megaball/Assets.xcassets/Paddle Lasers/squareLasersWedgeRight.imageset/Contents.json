@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "squareLasersWedgeRight.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "squareLasersWedgeRight@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "squareLasersWedgeRight@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

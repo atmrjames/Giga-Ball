@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "rainbowLasersConvex.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "rainbowLasersConvex@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "rainbowLasersConvex@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

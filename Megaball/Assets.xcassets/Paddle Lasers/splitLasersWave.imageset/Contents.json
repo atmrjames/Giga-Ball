@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "splitLasersWave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "splitLasersWave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "splitLasersWave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

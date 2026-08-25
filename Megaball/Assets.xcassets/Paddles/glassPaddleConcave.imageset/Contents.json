@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "glassPaddleConcave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "glassPaddleConcave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "glassPaddleConcave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

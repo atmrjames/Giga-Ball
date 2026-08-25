@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "rainbowStickyWave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "rainbowStickyWave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "rainbowStickyWave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

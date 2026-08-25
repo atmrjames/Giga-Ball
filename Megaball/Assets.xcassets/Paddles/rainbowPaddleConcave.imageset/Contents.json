@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "rainbowPaddleConcave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "rainbowPaddleConcave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "rainbowPaddleConcave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

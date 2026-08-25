@@ -103,6 +103,7 @@
 		1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000039 /* TotalStatsConsistencyTests.swift */; };
 		1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000037 /* EndlessIIStyleTests.swift */; };
 		1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000000E3 /* EndlessIIFaceTests.swift */; };
+		1AF1000000000C11 /* ShapedPaddleThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000C12 /* ShapedPaddleThemeTests.swift */; };
 		1AF1000000000B11 /* EndlessIIRowPlanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000B12 /* EndlessIIRowPlanTests.swift */; };
 		1AF1000000000A11 /* EndlessIIDrawnEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000A12 /* EndlessIIDrawnEffectsTests.swift */; };
 		1AF10000000009F1 /* EndlessIIEdgeGlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000009F2 /* EndlessIIEdgeGlowTests.swift */; };
@@ -470,6 +471,7 @@
 		1AF1700000000039 /* TotalStatsConsistencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalStatsConsistencyTests.swift; sourceTree = "<group>"; };
 		1AF1700000000037 /* EndlessIIStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStyleTests.swift; sourceTree = "<group>"; };
 		1AF10000000000E3 /* EndlessIIFaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFaceTests.swift; sourceTree = "<group>"; };
+		1AF1000000000C12 /* ShapedPaddleThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapedPaddleThemeTests.swift; sourceTree = "<group>"; };
 		1AF1000000000B12 /* EndlessIIRowPlanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIRowPlanTests.swift; sourceTree = "<group>"; };
 		1AF1000000000A12 /* EndlessIIDrawnEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIDrawnEffectsTests.swift; sourceTree = "<group>"; };
 		1AF10000000009F2 /* EndlessIIEdgeGlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIEdgeGlowTests.swift; sourceTree = "<group>"; };
@@ -803,6 +805,7 @@
 				1AF1700000000039 /* TotalStatsConsistencyTests.swift */,
 				1AF1700000000037 /* EndlessIIStyleTests.swift */,
 				1AF10000000000E3 /* EndlessIIFaceTests.swift */,
+				1AF1000000000C12 /* ShapedPaddleThemeTests.swift */,
 				1AF1000000000B12 /* EndlessIIRowPlanTests.swift */,
 				1AF1000000000A12 /* EndlessIIDrawnEffectsTests.swift */,
 				1AF10000000009F2 /* EndlessIIEdgeGlowTests.swift */,
@@ -1619,6 +1622,7 @@
 				1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */,
 				1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */,
 				1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */,
+				1AF1000000000C11 /* ShapedPaddleThemeTests.swift in Sources */,
 				1AF1000000000B11 /* EndlessIIRowPlanTests.swift in Sources */,
 				1AF1000000000A11 /* EndlessIIDrawnEffectsTests.swift in Sources */,
 				1AF10000000009F1 /* EndlessIIEdgeGlowTests.swift in Sources */,

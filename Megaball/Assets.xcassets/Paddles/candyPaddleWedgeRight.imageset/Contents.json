@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "candyPaddleWedgeRight.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "candyPaddleWedgeRight@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "candyPaddleWedgeRight@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

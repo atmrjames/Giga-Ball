@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "splitLasersWedgeLeft.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "splitLasersWedgeLeft@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "splitLasersWedgeLeft@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

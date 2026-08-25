@@ -124,15 +124,36 @@ extension GameScene {
     /// for it to stand in for every theme until the rest are drawn. When they arrive this
     /// becomes the theme's own prefix instead of `regular`.
     func endlessIIPaddleShapeTextureName(_ surface: PaddleBounce.Surface) -> String? {
-        switch surface {
-        case .convex: return "regularPaddleConvex"
-        case .concave: return "regularPaddleConcave"
-        case .wavy: return "regularPaddleWave"
-        case .wedgeLeft: return "regularPaddleWedgeLeft"
-        case .wedgeRight: return "regularPaddleWedgeRight"
-        case .jagged: return nil
-            // Retired (round 213). No art was drawn for it and none will be
-        }
+        endlessIIPaddleShapeSuffix(surface).map { endlessIIThemedShapeArt("Paddle", $0) }
+    }
+
+    /// The theme prefixes, in the order `paddleSetting` indexes them.
+    ///
+    /// The same order as `paddleTextureArray`, and it has to stay that way: the setting is an
+    /// index into that array, so a prefix out of step here dresses a shaped paddle as a theme
+    /// the player is not using. Written beside the array it mirrors would be better still, and
+    /// the array is built inside a method - so there is a test instead, asking every prefix for
+    /// artwork the catalogue actually holds.
+    static let paddleThemePrefixes = ["regular", "3D", "ice", "outline", "square", "glass",
+                                      "pixel", "split", "candy", "giga", "rainbow", "retro"]
+
+    /// The name of a shaped paddle's artwork in the theme being played, or the plain theme's if
+    /// this one has none.
+    ///
+    /// **Themed since round 248**, when James delivered the five shapes for eleven of the twelve
+    /// themes with their lasers and sticky overlays. Before that every shaped paddle wore the
+    /// regular theme's picture whatever the player had chosen, which is a paddle that changes
+    /// theme when a power-up lands on it.
+    ///
+    /// The fallback is not a nicety. Retro has no shaped art yet and one outline sticky is not
+    /// drawn, and the honest answer for both is the regular theme's picture rather than nothing
+    /// at all - a paddle with no texture is an invisible paddle.
+    func endlessIIThemedShapeArt(_ kind: String, _ shape: String) -> String {
+        let prefixes = GameScene.paddleThemePrefixes
+        let theme = prefixes.indices.contains(paddleSetting) ? prefixes[paddleSetting]
+                                                             : prefixes[0]
+        let themed = "\(theme)\(kind)\(shape)"
+        return UIImage(named: themed) != nil ? themed : "regular\(kind)\(shape)"
     }
 
     /// The ring's picture for the shape that is running.
@@ -187,9 +208,9 @@ extension GameScene {
         let base = paddleTexture.size().height
         guard base > 0 else { return }
 
-        let laser = suffix.map { SKTexture(imageNamed: "regularLasers\($0)") }
+        let laser = suffix.map { SKTexture(imageNamed: endlessIIThemedShapeArt("Lasers", $0)) }
             ?? laserPaddleTexture
-        let sticky = suffix.map { SKTexture(imageNamed: "regularSticky\($0)") }
+        let sticky = suffix.map { SKTexture(imageNamed: endlessIIThemedShapeArt("Sticky", $0)) }
             ?? stickyPaddleTexture
 
         paddleLaser.texture = laser

@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "iceStickyWave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "iceStickyWave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "iceStickyWave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}
