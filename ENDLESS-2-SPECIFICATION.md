@@ -614,7 +614,12 @@ Each has a **weight** and some a **minimum height**, so the opening stays gentle
 | Miniatures | Tiny bricks only, at higher density | Medium |
 | Motif | Every brick wears the same pair of styles — spinning Multi-hit, rounded Indestructible | High |
 
-**The uniform phases are the rarest.** Monoculture, Giants, Miniatures and Motif fix what
+**Seventeen of the eighteen are built.** Downpour is the one that is not, and it is not
+waiting on code: the field steps down when the bottom row empties rather than on a timer, so
+"the descent runs faster" has no lever to pull and would have to be given a meaning first.
+
+**The uniform phases are the rarest.** Monoculture, Giants, Miniatures, Motif and Monolith fix
+what
 the field is made of once, at the start of the phase, rather than drawing it per brick. A
 field where everything is one thing is a different problem from one where everything is
 different, and it is a problem the player can plan against — which is what makes it a relief
@@ -680,6 +685,13 @@ rather than what is guaranteed.
 **They never fit half-way.** A shape that runs off the side of the field is not the shape, and
 the wall would be doing the part of the work the design was for. A cluster is only placed at a
 column where it fits whole.
+
+**The table above is the founding fifteen, not the catalogue.** `EndlessIICluster.all` is the
+list, and it has grown a long way past this table: round 240 added twenty-one at once, and the
+sizes have since become things a shape can be *about* rather than made of. Two documents saying
+what the clusters are would be one document wrong, so this table is left as the set that
+established what a cluster is and the file is where the answer lives. The same goes for
+`EndlessIISetRow.all` and the set rows.
 
 ### 6.2.2 A floor under the density
 
