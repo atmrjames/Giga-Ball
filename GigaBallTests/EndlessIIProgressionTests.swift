@@ -9,6 +9,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class EndlessIIProgressionTests: XCTestCase {
@@ -841,5 +842,107 @@ final class EndlessIIDensityStepTests: XCTestCase {
         let runs = (0..<12).map { _ in EndlessIIProgression.make() }
         let readings = Set(runs.map { String(format: "%.4f", $0.density(at: 200)) })
         XCTAssertGreaterThan(readings.count, 1, "every run thickens on the same metres")
+    }
+}
+
+/// The two phases §6.2 described and nobody had built.
+///
+/// Both are a stretch of ordinary field with one thing turned up, which is the cheapest kind of
+/// phase there is - and the kind most easily got wrong in a way nobody sees, because a phase
+/// that never fires and a phase that fires and does nothing look identical from outside.
+final class WindfallAndStaticPhaseTests: XCTestCase {
+
+    /// A Windfall halves the gap between drops, and nothing else does.
+    ///
+    /// "Normal density, noticeably more power-ups" (§6.2). The lever is the *gap* rather than
+    /// the table: it makes whatever the level allocated rainier, instead of overruling what is
+    /// in it - so a pack with its own odd weighting stays that pack, only wetter.
+    func testOnlyAWindfallChangesTheDropRate() {
+        for phase in EndlessIIPhase.allCases {
+            let expected = phase == .windfall ? 0.5 : 1.0
+            XCTAssertEqual(phase.powerUpGapFactor, expected, "\(phase)")
+        }
+    }
+
+    /// And it does not change the density, which is the half of it that stays ordinary.
+    func testAWindfallIsAnOrdinaryFieldWithMoreFallingOutOfIt() {
+        XCTAssertEqual(EndlessIIPhase.windfall.densityFactor,
+                       EndlessIIPhase.standard.densityFactor,
+                       "the *density* is normal - it is the drops that are not")
+        XCTAssertTrue(EndlessIIPhase.windfall.favours.isEmpty,
+                      "and it leans on no style, or it would be two phases at once")
+    }
+
+    /// A Static phase is the only one whose flashers blink together.
+    ///
+    /// Everywhere else they are staggered on purpose - "or a whole row would breathe in
+    /// unison" - and this is that sentence turned round.
+    func testOnlyAStaticPhaseFlashesInStep() {
+        for phase in EndlessIIPhase.allCases {
+            XCTAssertEqual(phase.flashesInStep, phase == .static, "\(phase)")
+        }
+        XCTAssertEqual(EndlessIIPhase.static.favours, [.flashing],
+                       "and it has to actually produce flashers to be about them")
+    }
+
+    /// Every Flashing brick built during a Static phase agrees with the others.
+    ///
+    /// All three numbers, not just the start: a field that begins in step and holds each brick
+    /// solid for a different length drifts apart within a few blinks, which is a phase that
+    /// looks right for two seconds.
+    func testAStaticPhaseGivesEveryFlasherTheSameRhythm() {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        scene.endlessIIPhase = .static
+
+        for index in 0..<8 {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: 40, height: 20))
+            brick.position = CGPoint(x: CGFloat(index)*40, y: 100)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            scene.makeFlashing(brick)
+        }
+
+        let phases = Set(scene.endlessIIFlashers.map(\.phase))
+        let solid = Set(scene.endlessIIFlashers.map(\.solidFor))
+        let passable = Set(scene.endlessIIFlashers.map(\.passableFor))
+        XCTAssertEqual(phases.count, 1, "they should start together")
+        XCTAssertEqual(solid.count, 1, "and stay solid for as long as each other")
+        XCTAssertEqual(passable.count, 1, "and be passable for as long as each other")
+    }
+
+    /// And an ordinary phase still staggers them, or this is a change to every field.
+    func testAnOrdinaryPhaseStillStaggersItsFlashers() {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        scene.endlessIIPhase = .standard
+
+        for index in 0..<24 {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: 40, height: 20))
+            brick.position = CGPoint(x: CGFloat(index)*10, y: 100)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            scene.makeFlashing(brick)
+        }
+        XCTAssertGreaterThan(Set(scene.endlessIIFlashers.map(\.phase)).count, 1,
+                             "a whole row breathing in unison is what the stagger prevents")
+    }
+
+    /// Both are gated where §6.2 puts them, and neither is gated out of existence.
+    ///
+    /// A phase that cannot be drawn looks exactly like a phase that is very rare, which is the
+    /// trap §8.6 keeps a whole section for.
+    func testBothArrivePartWayThroughARunRatherThanNever() {
+        for phase in [EndlessIIPhase.windfall, .static] {
+            XCTAssertGreaterThan(phase.minimumHeight, 0, "\(phase) is not an opening phase")
+            XCTAssertLessThan(phase.minimumHeight, 400,
+                              "\(phase) has to be reachable in a run somebody actually plays")
+            XCTAssertGreaterThan(phase.weight, 0, "\(phase) must be offered at all")
+        }
+        XCTAssertLessThan(EndlessIIPhase.windfall.minimumHeight,
+                          EndlessIIPhase.static.minimumHeight,
+                          "§6.2 gates Static High and Windfall not at all")
     }
 }

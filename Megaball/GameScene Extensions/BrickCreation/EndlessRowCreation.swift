@@ -111,8 +111,19 @@ extension GameScene {
         // state rather than a table, which is why they are set here on every row rather than
         // once at level load
 
+        if gameMode == .endlessII {
+            let gap = Double(powerUpProbFactor) * endlessIIPhase.powerUpGapFactor
+            powerUpProbFactor = max(1, Int(gap.rounded()))
+        }
+        // **A Windfall phase halves the gap between drops**, which is the whole of what it is
+        // (§6.2: "normal density, noticeably more power-ups"). Applied to whatever the level's
+        // own allocation set rather than replacing it, so a phase makes a table rainier instead
+        // of overruling what is in it
+
         applyDailyEconomyTwists()
-        // After the endless rows' own weights too, so the day's economy holds per row
+        // After the endless rows' own weights too, so the day's economy holds per row.
+        // **And after the phase**, deliberately: a Power Shower or a Drought is the day's
+        // headline and a phase is a stretch of field, so the day has the last word
         // Guarded by mode, because these rows are built for *both* endless modes - the
         // Multi-Ball line above gets the same guard for free from endlessIICanAddBall, but a
         // flat weight here would have quietly added the new power-ups to the original

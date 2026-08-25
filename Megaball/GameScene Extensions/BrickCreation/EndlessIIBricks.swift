@@ -733,11 +733,20 @@ extension GameScene {
         brick.color = brickGreenGigaball
         brick.colorBlendFactor = 1.0
 
+        let inStep = endlessIIPhase.flashesInStep
         endlessIIFlashers.append(EndlessIIFlasher(brick: brick,
-                                                  solidFor: .random(in: 2.0...3.0),
-                                                  passableFor: .random(in: 1.5...2.5),
-                                                  phase: .random(in: 0...2)))
-        // Staggered starts, or a whole row would breathe in unison
+                                                  solidFor: inStep ? 2.5
+                                                      : .random(in: 2.0...3.0),
+                                                  passableFor: inStep ? 2.0
+                                                      : .random(in: 1.5...2.5),
+                                                  phase: inStep ? 0 : .random(in: 0...2)))
+        // Staggered starts, or a whole row would breathe in unison.
+        //
+        // **Which is exactly what a Static phase wants** (§6.2). The stagger is three numbers -
+        // when it starts, how long it is solid, how long it is passable - and all three have to
+        // agree or the field drifts back out of step within a few blinks. So a Static phase
+        // fixes the two durations as well as the phase, and the field opens and closes as one
+        // thing: a rhythm to play to rather than a field to read
     }
 
     static let breathingBrickColour = UIColor(red: 0.95, green: 0.45, blue: 0.85, alpha: 1)

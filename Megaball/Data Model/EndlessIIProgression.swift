@@ -477,6 +477,10 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
     case giants, miniatures
     /// Every brick wears the same pair of styles.
     case motif
+    /// Ordinary density, and noticeably more power-ups (§6.2).
+    case windfall
+    /// Flashing bricks with their timers in step, so the whole field blinks together (§6.2).
+    case `static`
 
     /// How much this phase multiplies the height's density by.
     var densityFactor: Double {
@@ -485,7 +489,10 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
         case .drift, .flicker, .carousel: return 0.8
         case .swarm: return 1.15
         case .fortress, .minefield: return 1.25
-        case .standard, .cascade, .gauntlet: return 1.0
+        case .standard, .cascade, .gauntlet, .windfall: return 1.0
+        case .static: return 0.9
+        // The field going passable all at once is generous enough on its own; a crowded one
+        // on top of it would be a phase that plays itself
         case .monoculture, .motif: return 0.9
         case .giants: return 0.7
         case .miniatures: return 1.3
@@ -511,15 +518,33 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
     var favours: [EndlessIIStyle] {
         switch self {
         case .drift: return [.moving]
+        case .static: return [.flashing]
         case .flicker: return [.flashing]
         case .cascade: return [.gravity]
         case .minefield: return [.exploding]
         case .gauntlet: return [.directional]
         case .carousel: return [.spinning, .rounded]
-        case .standard, .quiet, .swarm, .fortress: return []
+        case .standard, .quiet, .swarm, .fortress, .windfall: return []
         case .monoculture, .giants, .miniatures, .motif: return []
         }
     }
+
+    /// How much this phase multiplies the *gap* between power-up drops by.
+    ///
+    /// One for almost every phase, because the drop rate is the mode's economy and a phase is a
+    /// stretch of field rather than a change to the rules. Windfall is the exception and is the
+    /// whole of what it is: "normal density, noticeably more power-ups" (§6.2). Half the gap is
+    /// twice the drops, which is generous without being the Power Shower a daily twist gives.
+    var powerUpGapFactor: Double {
+        self == .windfall ? 0.5 : 1
+    }
+
+    /// Whether every Flashing brick in this phase should blink in step with the others.
+    ///
+    /// Flashers are staggered everywhere else on purpose - "or a whole row would breathe in
+    /// unison" - and Static is that sentence turned round: the whole field going passable at
+    /// once is a rhythm to play to rather than a field to read.
+    var flashesInStep: Bool { self == .static }
 
     /// How likely this phase is to be drawn. Quiet is the most likely single outcome, so
     /// breathers arrive often without ever being scheduled.
@@ -541,6 +566,10 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
         case .swarm, .drift, .flicker: return 40
         case .cascade, .minefield: return 120
         case .fortress, .gauntlet, .carousel: return 250
+        case .windfall: return 60
+        case .static: return 250
+        // Deep, with the other two that ask the player to time a shot rather than aim one -
+        // and §6.2 gates it High
         case .monoculture, .miniatures: return 150
         case .giants: return 200
         // A motif is two styles at once, so it waits until stacking is a thing a player has
