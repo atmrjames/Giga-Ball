@@ -26,7 +26,8 @@ import Foundation
 
 /// A small designed shape, placed somewhere in an otherwise ordinary field.
 ///
-/// Written as text, top row first, exactly as a set row is - because that is the form a person
+/// Written as text, top row first - the first row is the one that lands highest, which the
+/// queue has only done since round 249 - exactly as a set row is, because that is the form a person
 /// can read and edit, and being able to see the shape in the source is most of why these are
 /// worth having.
 ///

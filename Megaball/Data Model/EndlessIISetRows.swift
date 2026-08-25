@@ -19,7 +19,9 @@ import Foundation
 /// One designed run of one to three rows.
 ///
 /// Written out as text because that is the form a person can actually read and edit. Each
-/// character is a column, top row first.
+/// character is a column, **top row first** - the first row here is the one that ends up
+/// highest on screen, which is what a person drawing a shape expects and what the queue
+/// finally does since round 249.
 ///
 ///     .  empty        N  ordinary brick     M  multi-hit
 ///     i  indestructible x1                  I  indestructible x2
@@ -66,7 +68,13 @@ struct EndlessIISetRow {
         EndlessIISetRow(name: "Funnel", rows: ["NN.......NN",
                                                ".NN.....NN.",
                                                "..NN...NN.."], minimumHeight: 90),
-        // Opens downward, so the way in gets easier the longer you leave it
+        // Wide at the top and narrowing to one gap at the bottom, which is what a funnel is.
+        // The ball meets the narrow end first and opens out into room once it is through.
+        //
+        // **Its comment said the opposite until round 249**, and it was right about what the
+        // field was drawing: the queue was laying every formation out upside down, so this one
+        // really did open downward. It is the shape that made the bug hard to see, because a
+        // funnel the wrong way up is still a funnel
 
         EndlessIISetRow(name: "Pillars", rows: ["I..I..I..I.",
                                                 "N..N..N..N."], minimumHeight: 120),

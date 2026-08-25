@@ -338,6 +338,58 @@ final class EndlessIIBrickSpecTests: XCTestCase {
                       "the middle row is the field's own bricks, or there is nothing to catch")
     }
 
+    // MARK: - Which way up a formation lands
+
+    /// **The first row written is the one that ends up at the top.**
+    ///
+    /// The field descends - everything moves down a row and the new one is built at a fixed y
+    /// at the top - so the row emitted *first* ends up *lowest*. A queue drained from the front
+    /// therefore laid every formation out upside down, which is what this pins.
+    ///
+    /// It survived a long time because most of the catalogue is symmetrical: a ring, a cross, a
+    /// diamond and a chequer look the same either way up. The shapes that gave it away are the
+    /// six that say which way up they go in their own comments.
+    func testAFormationIsQueuedSoItsWrittenTopRowLandsHighest() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.numberOfBrickColumns = 11
+
+        scene.endlessIISetRowQueue = ["TOP", "MIDDLE", "BOTTOM"].reversed()
+        // Queued the way `endlessIINextSetRow` queues one
+
+        XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "BOTTOM",
+                       "the first row out is the one that lands lowest, so it has to be the "
+                       + "one written last")
+        XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "MIDDLE")
+        XCTAssertEqual(scene.endlessIINextSetRow(reservationPending: false), "TOP",
+                       "and the row written first is emitted last, which puts it on top")
+    }
+
+    /// A formation that says which way up it goes has its lid above its contents.
+    ///
+    /// Read off the catalogue rather than written down: these are the shapes whose comments
+    /// describe an orientation, and the property they share is that the unbreakable part is
+    /// drawn before - and so lands above - the part worth breaking.
+    func testEveryLiddedFormationHasItsLidOverItsContents() {
+        for name in ["Anvil", "Vault"] {
+            guard let formation = EndlessIIFormationCatalogue.all.first(where: {
+                $0.name == name && $0.rows.isEmpty == false
+            }) else { continue }
+
+            func unbreakable(_ row: Int) -> Int {
+                (0..<formation.rows[row].count)
+                    .map { formation.spec(atRow: row, column: $0) }
+                    .filter { $0.isEmpty == false && $0.isBreakable == false }
+                    .count
+            }
+            let top = unbreakable(0)
+            let bottom = unbreakable(formation.rows.count - 1)
+            XCTAssertGreaterThan(top, bottom,
+                                 "\(name) is a lid over something, so its first row - the one "
+                                 + "that lands highest - has to be the unbreakable one")
+        }
+    }
+
     // MARK: - The catalogue itself
 
     /// **Every cell of every designed formation describes a brick the game can build.**

@@ -317,6 +317,22 @@ extension GameScene {
     /// either side of it. That one character is the whole difference between the two, and it
     /// is why a cluster needs no new pipeline: the reservation guard, the height gating and
     /// the row-to-texture mapping all already do the right thing.
+    /// **Queued last row first, so a shape appears the way it is written** (round 249).
+    ///
+    /// The field descends: `moveEndlessModeRowDown` takes everything down a row and the new one
+    /// is built at a fixed y at the top. So the row emitted *first* ends up *lowest*, and a
+    /// queue drained from the front was laying every formation out upside down.
+    ///
+    /// It went unnoticed because most of the catalogue is symmetrical - a ring, a cross, a
+    /// diamond and a chequer look the same either way up - and because the shapes that are not
+    /// still looked deliberate. What gave it away is that six of them say which way up they go
+    /// and were all saying the opposite of what the field drew: the Anvil's "indestructible lid
+    /// with the field's own bricks underneath it" had its lid at the bottom, the Vault's lid
+    /// was under the thing it was meant to be lidding, and Pillars had bricks hanging off the
+    /// tops of its posts rather than below them.
+    ///
+    /// Both catalogues have always said "top row first" in their own documentation, so the
+    /// shapes were authored correctly and the queue was reading them backwards.
     func endlessIINextSetRow(reservationPending: Bool) -> String? {
         guard gameMode == .endlessII else { return nil }
 
@@ -327,7 +343,7 @@ extension GameScene {
 
             if Int.random(in: 1...100) <= GameScene.endlessIIClusterChance,
                let queued = endlessIIStartCluster() {
-                endlessIISetRowQueue = queued.rows
+                endlessIISetRowQueue = queued.rows.reversed()
                 endlessIISetRowLegend = queued.legend
             } else {
                 guard Int.random(in: 1...100) <= GameScene.endlessIISetRowChance else {
@@ -338,7 +354,7 @@ extension GameScene {
                 // introduction schedule like the styles and power-ups do (round 193), so two
                 // runs to the same depth meet different landmarks
                 guard let pattern = choices.randomElement() else { return nil }
-                endlessIISetRowQueue = pattern.rows
+                endlessIISetRowQueue = pattern.rows.reversed()
                 endlessIISetRowLegend = pattern.legend
             }
         }
