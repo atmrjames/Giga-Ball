@@ -361,6 +361,57 @@ final class EndlessIIBrickSpecTests: XCTestCase {
                       "the middle row is the field's own bricks, or there is nothing to catch")
     }
 
+    // MARK: - What a formation may ask of a two-row size
+
+    /// Everything a Big or Square brick needs of the shape it is drawn in.
+    ///
+    /// Three rules, and all three come from the same fact: **a brick taller than a row is
+    /// booked by the row below it and built on its own row.** So it needs a row below it to be
+    /// booked from, it needs the cells it will grow into left empty, and it can only be one per
+    /// row, because a row has one pending slot.
+    ///
+    /// Written because two formations broke all of this the hour they were authored (round
+    /// 253). Palisade Post asked for three squares in one row and Hourglass for six, and the
+    /// field answered by building one of each and drawing the rest as ordinary bricks - which
+    /// is the failure this whole file exists to catch: a shape that validates, builds, and is
+    /// not the shape.
+    func testNoFormationAsksMoreOfATwoRowSizeThanARowCanGive() {
+        for formation in EndlessIIFormationCatalogue.all where formation.rows.isEmpty == false {
+            let lastRow = formation.rows.count - 1
+
+            for row in formation.rows.indices {
+                let width = Array(formation.rows[row]).count
+                var tallInThisRow = 0
+
+                for column in 0..<width {
+                    let spec = formation.spec(atRow: row, column: column)
+                    guard let size = spec.size, size == .big || size == .square else { continue }
+                    tallInThisRow += 1
+
+                    XCTAssertNotEqual(row, lastRow,
+                                      "\(formation.name) puts a \(size) brick on its bottom "
+                                      + "row, and there is no row below it to book it from")
+
+                    var mustBeEmpty = [(row + 1, column)]
+                    if size == .big {
+                        mustBeEmpty += [(row, column + 1), (row + 1, column + 1)]
+                    }
+                    for (r, c) in mustBeEmpty {
+                        XCTAssertTrue(formation.spec(atRow: r, column: c).isEmpty,
+                                      "\(formation.name)'s \(size) brick at row \(row) "
+                                      + "column \(column) grows into row \(r) column \(c), "
+                                      + "which is not drawn empty")
+                    }
+                }
+
+                XCTAssertLessThanOrEqual(tallInThisRow, 1,
+                                         "\(formation.name) asks for \(tallInThisRow) "
+                                         + "two-row bricks in row \(row), and a row has one "
+                                         + "pending slot")
+            }
+        }
+    }
+
     // MARK: - Which way up a formation lands
 
     /// **The first row written is the one that ends up at the top.**

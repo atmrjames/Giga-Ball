@@ -1033,6 +1033,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// there is only ever one of these outstanding - which four separate columns could not say,
 	/// and which is the reason the priority chain that read them had to be written in a fixed
 	/// order and cleared four times on a reset.
+	var endlessIIPendingSpec: EndlessIIBrickSpec?
+	/// What the reserved shape was drawn as, when a formation is the thing that booked it.
+	///
+	/// Nil for the generator's own rolls, which is most of them: a rolled Big brick is a size
+	/// and nothing else. A drawn one carries whatever its legend asked for, and without this it
+	/// would be built from the field's own mix and dressed in nothing - a formation asking for
+	/// a multi-hit Big brick would get a standard one and never say so.
+	///
+	/// Kept beside `endlessIIPendingBuild` and set, cleared and reset in exactly the same
+	/// places, because the two are one booking.
 	/// How many rows have arrived empty in a row.
 	var endlessIIEmptyRowRun = 0
 	// A spinning brick needs the cells above, below and either side of it empty, and rows

@@ -759,11 +759,15 @@ extension GameScene {
         // Checked before the two-row shapes are added, because those count as filling the row
 
         if let leftColumn = endlessII.dueAt {
-            brickArray.append(endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless))
+            let big = endlessIIMakeBig(leftColumn: leftColumn, rowY: yBrickOffsetEndless)
+            endlessIIDressBookedShape(big)
+            brickArray.append(big)
         }
 
         if let column = endlessII.squareAt {
-            brickArray.append(endlessIIMakeSquare(column: column, rowY: yBrickOffsetEndless))
+            let square = endlessIIMakeSquare(column: column, rowY: yBrickOffsetEndless)
+            endlessIIDressBookedShape(square)
+            brickArray.append(square)
         }
 
         if let column = endlessII.powerUpAt,

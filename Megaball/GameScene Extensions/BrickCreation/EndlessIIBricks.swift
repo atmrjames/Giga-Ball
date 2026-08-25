@@ -357,7 +357,7 @@ extension GameScene {
             }
         }
         let row = endlessIISetRowQueue.removeFirst()
-        endlessIIBookFormationBig()
+        endlessIIBookFormationShape()
         if endlessIISetRowQueue.isEmpty { endlessIISetRowLegend = [:] }
         // Cleared as the last row goes out, so a legend can never be read by the formation
         // after this one - the character `A` means something different in every shape
@@ -381,35 +381,50 @@ extension GameScene {
         endlessIISetRowLegend = legend
     }
 
-    /// Books a Big brick that the *next* row of this formation asks for.
+    /// Books a two-row brick that the *next* row of this formation asks for.
     ///
-    /// A Big brick spans two rows and cannot be built when its turn comes, so one row leaves
-    /// the cells empty and the next builds down into them. Rows are emitted bottom-first
-    /// (round 249), so the row that reserves is emitted *before* the row the brick is drawn
-    /// on - which means the booking has to be made by looking one row ahead in the queue.
+    /// A Big brick spans two rows and a Square brick spans two, so neither can be built when
+    /// its turn comes: one row leaves the cells empty and the next builds down into them. Rows
+    /// are emitted bottom-first (round 249), so the row that reserves is emitted *before* the
+    /// row the brick is drawn on - which means the booking has to be made by looking one row
+    /// ahead in the queue.
     ///
     /// That the queue holds the whole formation is what makes this possible at all: a rolled
-    /// Big brick has to guess a row in advance, and a drawn one is already written down.
+    /// shape has to guess a row in advance, and a drawn one is already written down.
+    ///
+    /// **Square was the size that could be asked for and never arrived** (round 253). Round
+    /// 250 taught this to book a Big brick and round 251 wrote two formations out of squares,
+    /// and nothing in between joined them up: a cell asking for `.square` validated, built,
+    /// and came out as an ordinary oblong. It is the same sequence and the same slot, so it is
+    /// the same function - which is why this one asks about *size* rather than about Big.
     ///
     /// **Only when nothing else is pending.** A row either reserves or builds, and the
     /// generator's own roll for this row has already happened by the time a formation row is
-    /// asked for. Where the two collide the formation's Big brick is simply not built and its
-    /// cell is left empty - one brick missing from a shape, rather than two shapes arranging
-    /// the same cells and neither surviving.
-    func endlessIIBookFormationBig() {
+    /// asked for. Where the two collide the formation's brick is simply not built and its cell
+    /// is left empty - one brick missing from a shape, rather than two shapes arranging the
+    /// same cells and neither surviving.
+    func endlessIIBookFormationShape() {
         guard endlessIIPendingBuild == nil, let next = endlessIISetRowQueue.first else { return }
         for column in 0..<numberOfBrickColumns {
             let spec = endlessIISetRowSpec(next, column: column)
-            guard spec.size == .big else { continue }
-            guard EndlessIIBigBrick.fits(leftColumn: column, columns: numberOfBrickColumns) else {
+            switch spec.size {
+            case .big:
+                guard EndlessIIBigBrick.fits(leftColumn: column,
+                                             columns: numberOfBrickColumns) else { continue }
+                endlessIIPendingBuild = .big(leftColumn: column)
+            case .square:
+                endlessIIPendingBuild = .square(column: column)
+            case .tiny, .normal, nil:
                 continue
+                // A Tiny brick needs none of this - it is one brick split where it already
+                // stands - and the other two are what a cell is by default
             }
-            endlessIIPendingBuild = .big(leftColumn: column)
+            endlessIIPendingSpec = spec
             return
-            // One per row. Two Big bricks in one row of a formation would need two
-            // reservations from one row, and a row has one pending slot because a row has one
-            // shape - so the second is left for a shape that wants it and the author is told
-            // by the catalogue's own test rather than by a hole in the field
+            // One per row. Two of these in one row of a formation would need two reservations
+            // from one row, and a row has one pending slot because a row has one shape - so
+            // the second is left for a shape that wants it and the author is told by the
+            // catalogue's own test rather than by a hole in the field
         }
     }
 
@@ -428,6 +443,32 @@ extension GameScene {
         guard let column = places.randomElement() else { return nil }
         return (cluster.expanded(atColumn: column, fieldWidth: numberOfBrickColumns),
                 cluster.legend)
+    }
+
+    /// Gives a two-row brick whatever the formation that booked it asked for.
+    ///
+    /// A Big or Square brick is built by its own function from the field's own mix, which is
+    /// right for the generator's rolls and wrong for a drawn one: a formation asking for a
+    /// multi-hit Big brick was getting a standard one, with nothing to say it had not.
+    ///
+    /// **The size is already right** - the booking is what made the brick two rows tall - so
+    /// what is left is the behaviour and the styles, and those go through the same pass every
+    /// other designed brick uses. `endlessIIStaysPlain` keeps the generator's own styling off
+    /// it, exactly as for the ordinary cells of the same shape.
+    ///
+    /// Does nothing when no formation booked the shape, which is most rows.
+    func endlessIIDressBookedShape(_ brick: SKSpriteNode) {
+        guard let spec = endlessIIPendingSpec else { return }
+        endlessIIPendingSpec = nil
+
+        brick.texture = endlessIIBrickTexture(for: spec)
+        brick.colorBlendFactor = brick.texture == brickNormalTexture ? 1 : 0
+        brick.isHidden = brick.texture == brickInvisibleTexture
+        brick.endlessIIStaysPlain = true
+        if spec.isPlain == false { endlessIIDesignedSpecs.append((brick, spec)) }
+        // The spec keeps its size and that is safe: the only size the styling pass acts on
+        // is `.tiny`, which it splits into four, and a brick that reached here was booked
+        // because it was Big or Square
     }
 
     /// What a designed row asks for in one of its columns.
@@ -1009,6 +1050,7 @@ extension GameScene {
         endlessIIFlashers.removeAll()
         endlessIIBreathers.removeAll()
         endlessIIPendingBuild = nil
+        endlessIIPendingSpec = nil
         endlessIIProgression = EndlessIIProgression.make()
         clearEndlessIIMarkers()
         endlessIISetRowQueue = []

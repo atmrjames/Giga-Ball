@@ -150,6 +150,9 @@ extension GameScene {
 
         for candidate in endlessIIRowCandidates() {
             endlessIIPendingBuild = candidate
+            endlessIIPendingSpec = nil
+            // The generator's own roll carries no legend. Cleared here rather than trusted to
+            // have been consumed, so a formation's spec can never dress a rolled shape
             return EndlessIIRowPlan(skip: candidate.columnsToReserve(in: numberOfBrickColumns))
             // Reserved, not built: the cells this row leaves empty are the ones the next row
             // will fill from above

@@ -252,6 +252,101 @@ final class EndlessIIRowPlanTests: XCTestCase {
         XCTAssertEqual(plan.skip, [2, 3])
     }
 
+    /// A formation asking for a Square brick gets one.
+    ///
+    /// **This is the test that was missing.** Round 247 added the Square size, round 250 taught
+    /// a formation to book a Big brick, and round 251 wrote two formations out of squares -
+    /// and nothing joined them up. A `.square` cell validated, built, and came out as an
+    /// ordinary oblong, because the booking asked whether the size was Big rather than whether
+    /// it was two rows tall. Palisade Post and Hourglass are *about* their squares, and both
+    /// were quietly being drawn as plain rows of bricks.
+    func testAFormationBooksItsSquareBrickTheSameWay() {
+        let scene = fieldScene()
+        scene.endlessIISetRowLegend = ["Q": EndlessIIBrickSpec(size: .square)]
+        scene.endlessIISetRowQueue = ["...........", "....Q......"]
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertEqual(scene.endlessIIPendingBuild, .square(column: 4),
+                       "a Square brick is two rows tall, so it needs the row below left empty")
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        let plan = scene.endlessIIPlanRow()
+        XCTAssertEqual(plan.squareAt, 4, "and the row it is drawn on builds it")
+        XCTAssertEqual(plan.skip, [4], "one column, because a Square brick is one column wide")
+    }
+
+    /// Every size a formation may name is either booked or needs no booking.
+    ///
+    /// Read off `BrickSize` rather than listed, so a sixth size cannot be added and silently
+    /// ignored the way Square was. Tiny is the one that needs nothing: it is one brick split
+    /// where it already stands.
+    func testEverySizeAFormationCanNameIsAnsweredSomewhere() {
+        for size in BrickSize.allCases {
+            let scene = fieldScene()
+            scene.endlessIISetRowLegend = ["X": EndlessIIBrickSpec(size: size)]
+            scene.endlessIISetRowQueue = ["...........", "....X......"]
+
+            _ = scene.endlessIINextSetRow(reservationPending: false)
+            switch size {
+            case .tiny, .normal:
+                XCTAssertNil(scene.endlessIIPendingBuild,
+                             "\(size) fits in the row it is drawn on")
+            case .big, .square:
+                XCTAssertNotNil(scene.endlessIIPendingBuild,
+                                "\(size) is taller than a row, so it has to be booked ahead")
+            }
+        }
+    }
+
+    /// The brick a formation booked wears what the formation asked for.
+    ///
+    /// A Big or Square brick is built by its own function from the field's own mix, which is
+    /// right for a rolled one and wrong for a drawn one: without this a formation asking for a
+    /// multi-hit Big brick got a standard one, with nothing anywhere to say it had not.
+    func testABookedShapeCarriesItsFormationsSpec() {
+        let scene = fieldScene()
+        let asked = EndlessIIBrickSpec(behaviour: .multiHit, size: .big)
+        scene.endlessIISetRowLegend = ["B": asked]
+        scene.endlessIISetRowQueue = ["...........", "..B........"]
+
+        _ = scene.endlessIINextSetRow(reservationPending: false)
+        XCTAssertEqual(scene.endlessIIPendingSpec, asked,
+                       "the booking carries the legend, or the brick is built from the mix")
+
+        let brick = scene.endlessIIMakeBig(leftColumn: 2, rowY: 0)
+        scene.endlessIIDressBookedShape(brick)
+        XCTAssertEqual(brick.texture, scene.brickMultiHit3Texture,
+                       "a multi-hit Big brick has to look like one")
+        XCTAssertTrue(brick.endlessIIStaysPlain,
+                      "and the generator's own styling passes leave a designed brick alone")
+        XCTAssertNil(scene.endlessIIPendingSpec, "spent with the brick it dressed")
+    }
+
+    /// The generator's own roll carries no legend.
+    ///
+    /// A spec left lying around would dress the next rolled shape in whatever the last
+    /// formation asked for, which is a Big brick that is multi-hit for no reason a player
+    /// could see.
+    func testARolledShapeIsNeverDressedByAFormation() {
+        let scene = fieldScene()
+        scene.endlessIIPendingSpec = EndlessIIBrickSpec(behaviour: .multiHit, size: .big)
+        scene.endlessIIPendingBuild = nil
+
+        var rolled: EndlessIITwoRowBuild?
+        for _ in 0..<400 where rolled == nil {
+            _ = scene.endlessIIPlanRow()
+            rolled = scene.endlessIIPendingBuild
+            if rolled != nil { break }
+            scene.endlessIIPendingBuild = nil
+        }
+        // The candidates are rolled, so this asks until one comes up rather than assuming it
+        // does on the first row
+
+        XCTAssertNotNil(rolled, "400 rows without a single shape means the chances have gone")
+        XCTAssertNil(scene.endlessIIPendingSpec,
+                     "a rolled shape is a size and nothing else")
+    }
+
     /// It does not book one over a reservation the generator has already made.
     ///
     /// A row either reserves or builds, and the generator's own roll for this row has happened
