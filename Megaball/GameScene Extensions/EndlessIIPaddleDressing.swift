@@ -72,32 +72,17 @@ extension GameScene {
         // better is: a Portal Paddle with bricks in play exits at the bricks, and a pair of
         // bricks exit at each other
 
-        guard wanted else {
-            endlessIITopExitStrip?.removeFromParent()
-            endlessIITopExitStrip = nil
-            return
-        }
-
-        let single = gameMode == .endlessII ? endlessIIPortals().first : nil
-        let colour = single?.endlessIIPortalIsBlue == true
-            ? GameScene.portalYellowColour
-            : (single != nil ? GameScene.portalBlueColour : GameScene.portalYellowColour)
-        // The strip is the other end of whatever portal is in play, so it wears the other
-        // colour of the pair - a blue brick's exit is yellow, a yellow brick's is blue.
-        // The Portal Paddle alone keeps the yellow exit it has always had
-
-        let strip = endlessIITopExitStrip ?? {
-            let node = SKSpriteNode(color: colour,
-                                    size: CGSize(width: gameWidth, height: 5))
-            node.position = CGPoint(x: 0, y: frame.height/2 - topScreenBlock.size.height - 2.5)
-            node.zPosition = 4
-            node.alpha = 0
-            addChild(node)
-            node.run(.fadeAlpha(to: 0.8, duration: 0.2))
-            endlessIITopExitStrip = node
-            return node
-        }()
-        strip.color = colour
+        showEndlessIIEdgeGlow(.top, wanted: wanted)
+        // **A glow rather than a bar** (James, round 242's delivery). It was five points of
+        // flat colour at 0.8 alpha, which says "there is a line here" where the thing being
+        // said is "the field opens out this way".
+        //
+        // **The strip no longer wears the portal's colour.** It used to take the far colour of
+        // whatever pair was in play - a blue brick's exit is yellow - and the artwork cannot
+        // carry that without being flattened into one hue (see `showEndlessIIEdgeGlow`). The
+        // coding is the thing given up for the effect, and it is worth saying that it *was* a
+        // decision rather than an oversight: a player with a blue brick on screen can no longer
+        // read which end the top is. Two drawn variants would give both back
     }
 
     // MARK: - The pull

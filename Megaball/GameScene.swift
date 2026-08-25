@@ -125,7 +125,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleHaloDrawnReach: CGFloat = 0
 	var endlessIISteeringLastPaddleX: CGFloat = 0
 	var endlessIISteeringPending: CGFloat = 0
-	var endlessIITopExitStrip: SKSpriteNode?
 	var endlessIIPullLines: [SKShapeNode] = []
 	var endlessIILowerLimitLine: SKSpriteNode?
 

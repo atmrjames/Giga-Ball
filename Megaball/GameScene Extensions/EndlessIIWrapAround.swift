@@ -202,14 +202,28 @@ extension GameScene {
         tickEndlessIIWrapGhost()
 
         let running = endlessIIWrapIsRunning
+
+        showEndlessIIEdgeGlow(.left, wanted: running)
+        showEndlessIIEdgeGlow(.right, wanted: running)
+        // **The same glow the top exit wears** (James, round 242: "the same graphic running
+        // vertically along each side of the game for the wrap-around power-up"), in the two
+        // colours the walls were already tinted. Outside the `if` below, because that branch
+        // fires once when the power-up starts and this has to keep up with a field whose size
+        // can change under it - and putting a glow back that is already there costs a lookup
+
         if running, endlessIIWrapDressed == false {
             sideScreenBlockLeft.color = GameScene.portalBlueColour
             sideScreenBlockRight.color = GameScene.portalYellowColour
             for wall in [sideScreenBlockLeft, sideScreenBlockRight] {
-                wall.colorBlendFactor = 0.6
+                wall.colorBlendFactor = 0.35
             }
             // Blue left, yellow right (§12.0's note): the walls are the two ends of one
-            // portal pair, so they wear the pair's two colours
+            // portal pair, so they wear the pair's two colours.
+            //
+            // **Lighter than it was**, because the glow inside the field now carries most of
+            // the message. At 0.6 the wall and the glow beside it were two statements of the
+            // same thing competing at the same strength; the wall is the quieter of the two
+            // now and the glow is what the eye goes to
             paddle.physicsBody?.collisionBitMask &= ~CollisionTypes.boarderCategory.rawValue
             // The paddle's body is dynamic and collides with the frame's edge, so every
             // overhang the touch wrote was resolved straight back by the engine - the balls

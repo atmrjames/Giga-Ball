@@ -1183,8 +1183,11 @@ extension GameScene {
         endlessIIPaddleHaloNode = nil
         endlessIIPaddleHaloDrawnReach = 0
         endlessIISteeringPending = 0
-        endlessIITopExitStrip?.removeFromParent()
-        endlessIITopExitStrip = nil
+        for edge in [GameScene.EndlessIIEdge.top, .left, .right] {
+            childNode(withName: edge.glowName)?.removeFromParent()
+        }
+        // Every edge, not only the top: a run being reset takes the doorways with it, and a
+        // glow found by name is a glow nothing has to hold a reference to
         endlessIIPullLines.forEach { $0.removeFromParent() }
         endlessIIPullLines.removeAll()
         if paddle.colorBlendFactor != 0 { paddle.colorBlendFactor = 0 }

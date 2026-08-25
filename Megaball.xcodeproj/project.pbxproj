@@ -39,6 +39,7 @@
 		000000001AF18000000000E1 /* DailyCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000E0 /* DailyCardView.swift */; };
 		000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */; };
 		000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000080 /* EndlessIIWrapAround.swift */; };
+		000000001AF1800000000401 /* EndlessIIEdgeGlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000400 /* EndlessIIEdgeGlow.swift */; };
 		000000001AF1800000000095 /* EndlessIISafetyPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000094 /* EndlessIISafetyPaddle.swift */; };
 		000000001AF1800000000E01 /* EndlessIIDrift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000E00 /* EndlessIIDrift.swift */; };
 		000000001AF1900000000F01 /* EndlessIIDoublePaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1900000000F00 /* EndlessIIDoublePaddle.swift */; };
@@ -101,6 +102,7 @@
 		1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000039 /* TotalStatsConsistencyTests.swift */; };
 		1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000037 /* EndlessIIStyleTests.swift */; };
 		1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000000E3 /* EndlessIIFaceTests.swift */; };
+		1AF10000000009F1 /* EndlessIIEdgeGlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000009F2 /* EndlessIIEdgeGlowTests.swift */; };
 		1AF10000000009C5 /* EndlessIIBrickSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000009C6 /* EndlessIIBrickSpecTests.swift */; };
 		1AF1700000000034 /* EndlessIIFieldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000035 /* EndlessIIFieldTests.swift */; };
 		1AF1700000000032 /* EndlessIISizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000033 /* EndlessIISizeTests.swift */; };
@@ -401,6 +403,7 @@
 		000000001AF18000000000E0 /* DailyCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCardView.swift; sourceTree = "<group>"; };
 		000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIScrollingBackground.swift; sourceTree = "<group>"; };
 		000000001AF1800000000080 /* EndlessIIWrapAround.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIWrapAround.swift; sourceTree = "<group>"; };
+		000000001AF1800000000400 /* EndlessIIEdgeGlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIEdgeGlow.swift; sourceTree = "<group>"; };
 		000000001AF1800000000094 /* EndlessIISafetyPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISafetyPaddle.swift; sourceTree = "<group>"; };
 		000000001AF1800000000E00 /* EndlessIIDrift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIDrift.swift; sourceTree = "<group>"; };
 		000000001AF1900000000F00 /* EndlessIIDoublePaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIDoublePaddle.swift; sourceTree = "<group>"; };
@@ -463,6 +466,7 @@
 		1AF1700000000039 /* TotalStatsConsistencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalStatsConsistencyTests.swift; sourceTree = "<group>"; };
 		1AF1700000000037 /* EndlessIIStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStyleTests.swift; sourceTree = "<group>"; };
 		1AF10000000000E3 /* EndlessIIFaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFaceTests.swift; sourceTree = "<group>"; };
+		1AF10000000009F2 /* EndlessIIEdgeGlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIEdgeGlowTests.swift; sourceTree = "<group>"; };
 		1AF10000000009C6 /* EndlessIIBrickSpecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBrickSpecTests.swift; sourceTree = "<group>"; };
 		1AF1700000000035 /* EndlessIIFieldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFieldTests.swift; sourceTree = "<group>"; };
 		1AF1700000000033 /* EndlessIISizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIISizeTests.swift; sourceTree = "<group>"; };
@@ -793,6 +797,7 @@
 				1AF1700000000039 /* TotalStatsConsistencyTests.swift */,
 				1AF1700000000037 /* EndlessIIStyleTests.swift */,
 				1AF10000000000E3 /* EndlessIIFaceTests.swift */,
+				1AF10000000009F2 /* EndlessIIEdgeGlowTests.swift */,
 				1AF10000000009C6 /* EndlessIIBrickSpecTests.swift */,
 				1AF1700000000035 /* EndlessIIFieldTests.swift */,
 				1AF1700000000033 /* EndlessIISizeTests.swift */,
@@ -1233,6 +1238,7 @@
 				000000001AF18000000000A2 /* DailyTwists.swift */,
 				000000001AF1800000000090 /* EndlessIIScrollingBackground.swift */,
 				000000001AF1800000000080 /* EndlessIIWrapAround.swift */,
+				000000001AF1800000000400 /* EndlessIIEdgeGlow.swift */,
 				000000001AF1800000000094 /* EndlessIISafetyPaddle.swift */,
 				000000001AF1800000000E00 /* EndlessIIDrift.swift */,
 				000000001AF1900000000F00 /* EndlessIIDoublePaddle.swift */,
@@ -1604,6 +1610,7 @@
 				1AF1700000000038 /* TotalStatsConsistencyTests.swift in Sources */,
 				1AF1700000000036 /* EndlessIIStyleTests.swift in Sources */,
 				1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */,
+				1AF10000000009F1 /* EndlessIIEdgeGlowTests.swift in Sources */,
 				1AF10000000009C5 /* EndlessIIBrickSpecTests.swift in Sources */,
 				1AF1700000000034 /* EndlessIIFieldTests.swift in Sources */,
 				1AF1700000000032 /* EndlessIISizeTests.swift in Sources */,
@@ -1644,6 +1651,7 @@
 		000000001AF18000000000E1 /* DailyCardView.swift in Sources */,
 				000000001AF1800000000091 /* EndlessIIScrollingBackground.swift in Sources */,
 				000000001AF1800000000081 /* EndlessIIWrapAround.swift in Sources */,
+				000000001AF1800000000401 /* EndlessIIEdgeGlow.swift in Sources */,
 				000000001AF1800000000095 /* EndlessIISafetyPaddle.swift in Sources */,
 				000000001AF1800000000E01 /* EndlessIIDrift.swift in Sources */,
 				000000001AF1900000000F01 /* EndlessIIDoublePaddle.swift in Sources */,
