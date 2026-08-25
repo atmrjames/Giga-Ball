@@ -120,79 +120,74 @@ extension GameScene {
 
     // MARK: - Big
 
-    /// Decides what this row owes a Big brick, and which columns it has to leave empty.
+    /// What this row has to leave empty, and what it has to build.
     ///
-    /// Called at the top of row generation. A Big brick needs two rows, and rows arrive one
-    /// at a time from the top with nothing above them, so it cannot be built in one go: a
-    /// row leaves a two-cell gap, and the next row builds the brick down into it.
+    /// Rows arrive one at a time from the top with nothing above them, so anything taller than
+    /// one row cannot be built in one go: a row leaves the cells empty, and the next row builds
+    /// down into the gap. A row either reserves or builds, never both.
     ///
-    /// Returns the columns this row must skip, and the left column of a Big brick that is
-    /// now due - which is never the one just reserved, since a row either builds or
-    /// reserves, not both.
-    func endlessIIReserveOrBuildBig() -> (skip: Set<Int>, dueAt: Int?, spinAt: Int?,
-                                          powerUpAt: Int?) {
-        guard gameMode == .endlessII else { return ([], nil, nil, nil) }
+    /// **One pending slot rather than four** (round 246). It was a property per shape - Big,
+    /// power-up brick, spinner, and the spinner's own clearance - each cleared at the top and
+    /// checked in a fixed order, which is four ways of saying one thing and four places to
+    /// forget when a fifth shape arrives. A fifth is exactly what is coming: the 2x1 square
+    /// size wants this sequence, a formation asking for a Big brick wants to drive it, and
+    /// §6.2's Monolith wants both.
+    func endlessIIPlanRow() -> EndlessIIRowPlan {
+        guard gameMode == .endlessII else { return EndlessIIRowPlan() }
 
-        let due = endlessIIPendingBigColumn
-        let spinDue = endlessIIPendingSpinColumn
-        let clearDue = endlessIIPendingClearColumn
-        let powerUpDue = endlessIIPendingPowerUpColumn
-        endlessIIPendingBigColumn = nil
-        endlessIIPendingSpinColumn = nil
-        endlessIIPendingClearColumn = nil
-        endlessIIPendingPowerUpColumn = nil
-
-        if let left = due {
-            return ([left, left + 1], left, nil, nil)
-            // Its top half fills these cells here; its bottom half fills the gap below
+        if let due = endlessIIPendingBuild {
+            endlessIIPendingBuild = nil
+            if case .spinner(let column) = due {
+                endlessIIPendingBuild = .spinnerClearance(column: column)
+                // A spinner is the odd one out: one cell, but it needs the cells above and
+                // below kept clear, so it runs the sequence over three rows rather than two.
+                // The cell below was left empty a row ago; this row places it and books the
+                // one above
+            }
+            return EndlessIIRowPlan(skip: due.columnsToClear(in: numberOfBrickColumns),
+                                    build: due)
         }
 
-        if let column = powerUpDue {
-            return ([column], nil, nil, column)
-            // Two cells tall in one column: this row holds its top, and its bottom fills the
-            // gap the row before left
+        for candidate in endlessIIRowCandidates() {
+            endlessIIPendingBuild = candidate
+            return EndlessIIRowPlan(skip: candidate.columnsToReserve(in: numberOfBrickColumns))
+            // Reserved, not built: the cells this row leaves empty are the ones the next row
+            // will fill from above
         }
+        return EndlessIIRowPlan()
+    }
 
-        if let column = spinDue {
-            // The spinner goes here, with its side cells empty. The cell below was left
-            // empty a row ago; the cell above is left empty by the next row.
-            endlessIIPendingClearColumn = column
-            return (Set([column - 1, column + 1].filter { $0 >= 0 && $0 < numberOfBrickColumns }),
-                    nil, column, nil)
-        }
-
-        if let column = clearDue {
-            return ([column], nil, nil, nil)
-            // The cell above a spinner placed a row ago
-        }
+    /// What this row might commit to, in the order it is offered.
+    ///
+    /// A sequence rather than a list, so a roll that fails costs nothing and the next shape is
+    /// asked in turn - which is what the chain of early returns was doing, said once.
+    private func endlessIIRowCandidates() -> [EndlessIITwoRowBuild] {
+        var offered: [EndlessIITwoRowBuild] = []
 
         if Int.random(in: 1...100) <= GameScene.endlessIISpinChance {
-            let column = Int.random(in: 0..<max(1, numberOfBrickColumns))
-            endlessIIPendingSpinColumn = column
-            return ([column], nil, nil, nil)
-            // Left empty for the cell below the spinner the next row will place
+            offered.append(.spinner(column: Int.random(in: 0..<max(1, numberOfBrickColumns))))
         }
 
         if endlessIIPowerUpBricksInPlay.isEmpty,
            Int.random(in: 1...100) <= GameScene.endlessIIPowerUpBrickChance {
-            let column = Int.random(in: 0..<max(1, numberOfBrickColumns))
-            endlessIIPendingPowerUpColumn = column
-            return ([column], nil, nil, nil)
-            // Left empty for the bottom half of the power-up brick the next row will build.
+            offered.append(.powerUpBrick(column: Int.random(in: 0..<max(1,
+                                                                       numberOfBrickColumns))))
             // Not even reserved while one is still in play - the row that reserves is a row
             // with a hole in it, and holding one open for a brick that will not be built is
             // worse than not offering one
         }
 
         let bigChance = endlessIIPhase == .giants ? 90 : GameScene.endlessIIBigChance
-        guard Int.random(in: 1...100) <= bigChance else { return ([], nil, nil, nil) }
-        let left = Int.random(in: 0..<max(1, numberOfBrickColumns - 1))
-        guard EndlessIIBigBrick.fits(leftColumn: left, columns: numberOfBrickColumns) else {
-            return ([], nil, nil, nil)
+        if Int.random(in: 1...100) <= bigChance {
+            let left = Int.random(in: 0..<max(1, numberOfBrickColumns - 1))
+            if EndlessIIBigBrick.fits(leftColumn: left, columns: numberOfBrickColumns) {
+                offered.append(.big(leftColumn: left))
+            }
         }
-        endlessIIPendingBigColumn = left
-        return ([left, left + 1], nil, nil, nil)
-        // Left empty for the brick the next row will build down into
+
+        return offered
+        // The order is the priority the four early returns had: a spinner beats a power-up
+        // brick beats a Big one, on the rows where more than one roll comes up
     }
 
     /// How often a row commits to the three-row sequence a spinning brick needs.

@@ -175,7 +175,7 @@ extension GameScene {
         // Checked per row, so a phase ends where it ends rather than on a schedule
 
         let milestoneRow = endlessIIRowIsMilestone
-        let endlessII = endlessIIReserveOrBuildBig()
+        let endlessII = endlessIIPlanRow()
         let setRow = milestoneRow
             ? nil
             : endlessIINextSetRow(reservationPending: endlessII.skip.isEmpty == false)

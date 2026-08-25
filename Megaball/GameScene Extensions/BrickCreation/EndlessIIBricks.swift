@@ -940,9 +940,7 @@ extension GameScene {
         endlessIISpinners.removeAll()
         endlessIIFlashers.removeAll()
         endlessIIBreathers.removeAll()
-        endlessIIPendingBigColumn = nil
-        endlessIIPendingSpinColumn = nil
-        endlessIIPendingClearColumn = nil
+        endlessIIPendingBuild = nil
         endlessIIProgression = EndlessIIProgression.make()
         clearEndlessIIMarkers()
         endlessIISetRowQueue = []

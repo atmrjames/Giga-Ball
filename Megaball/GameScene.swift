@@ -1026,11 +1026,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// What a uniform phase settled on when it started, so every brick in it matches
 	// Shuffled once per run, so two runs to the same height meet a different subset
 	// Endless 2.0's phase 5 bricks, driven from update for the same reason as phase 3's
-	var endlessIIPendingBigColumn: Int?
-	var endlessIIPendingSpinColumn: Int?
-	var endlessIIPendingClearColumn: Int?
-	/// The column a two-cell-tall power-up brick is due to be built in.
-	var endlessIIPendingPowerUpColumn: Int?
+	var endlessIIPendingBuild: EndlessIITwoRowBuild?
+	/// What the next row owes: a shape reserved by the row just built.
+	///
+	/// One slot rather than four properties (round 246). A row either reserves or builds, so
+	/// there is only ever one of these outstanding - which four separate columns could not say,
+	/// and which is the reason the priority chain that read them had to be written in a fixed
+	/// order and cleared four times on a reset.
 	/// How many rows have arrived empty in a row.
 	var endlessIIEmptyRowRun = 0
 	// A spinning brick needs the cells above, below and either side of it empty, and rows
