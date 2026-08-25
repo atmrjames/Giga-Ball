@@ -350,6 +350,12 @@ final class EndlessIIProgressionTests: XCTestCase {
         // heard of falls back to the authored gate - available, not hidden
         var run = EndlessIIProgression.make(powerUps: 40)
         run.setRowOrder = []
+        run.releaseOrder = run.releaseOrder?.filter {
+            if case .setRow = $0 { return false } else { return true }
+        }
+        // Both lists, since round 258: a schedule names its set rows in the release queue now
+        // and the old per-kind order is only read by a run saved before that. "Has never heard
+        // of this index" means neither knows it
         for index in EndlessIISetRow.all.indices {
             XCTAssertEqual(run.setRowAvailableHeight(of: index),
                            EndlessIISetRow.all[index].minimumHeight)
@@ -820,9 +826,12 @@ final class EndlessIIDensityStepTests: XCTestCase {
     /// merely looks similar.
     func testAQuickerRunThickensEarlier() {
         var quick = EndlessIIProgression.make()
-        quick.styleSpacing = EndlessIIProgression.styleSpacingRange.lowerBound
+        quick.elementSpacing = EndlessIIProgression.elementSpacingRange.lowerBound
         var slow = quick
-        slow.styleSpacing = EndlessIIProgression.styleSpacingRange.upperBound
+        slow.elementSpacing = EndlessIIProgression.elementSpacingRange.upperBound
+        // `elementSpacing` rather than `styleSpacing` since round 258: one queue for every
+        // kind means one number saying how fast a run meets things, and the old per-kind
+        // spacings are only read by a run saved before the queue existed
 
         let atHalfway = EndlessIIProgression.densityCapMetres/2
         XCTAssertGreaterThan(quick.density(at: atHalfway), slow.density(at: atHalfway),

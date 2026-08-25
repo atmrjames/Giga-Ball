@@ -332,8 +332,10 @@ extension GameScene {
     /// Traces the paddle's current picture, and keeps everything the old body was carrying.
     func rebuildEndlessIIPaddleBody() {
         guard let texture = paddle.texture, let old = paddle.physicsBody else { return }
-        let body = SKPhysicsBody(texture: texture, size: paddle.size)
+        let body = TracedBodyCache.body(texture: texture, size: paddle.size)
             ?? SKPhysicsBody(rectangleOf: paddle.size)
+        // Traced once per picture and size and copied after (round 258). One trace is 8.8ms,
+        // which is over half a frame, and a run collects the same five shapes over and over
         body.allowsRotation = false
         body.friction = 0
         body.affectedByGravity = false

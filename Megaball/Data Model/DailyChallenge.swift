@@ -99,11 +99,20 @@ enum DailyTwist: String, CaseIterable, Codable {
     case monochromatic, dailyTheme
     case alwaysOn
     case landslide
+    /// Endless Mayhem with nothing held back: every element in play from the first metre,
+    /// each still as rare as it was written to be.
+    case fullDeck
+    /// The same, with rarity levelled: everything in play, and everything equally likely.
+    case levelPegging
 
     /// §4.2's categories: a day draws at most one twist per category, which is what makes
     /// every combination the generator can produce legal by construction.
     enum Category: CaseIterable {
         case economy, lives, dress, layout, nerve, tempo, look, standing, field
+        /// What the run has been introduced to, and how rare it is - which is a category
+        /// because its two twists are the same dial at two settings and a day that drew both
+        /// would be one twist arguing with itself.
+        case disclosure
 
         /// The date this category may first be *drawn* (§2.1), and the reason it exists.
         ///
@@ -121,6 +130,7 @@ enum DailyTwist: String, CaseIterable, Codable {
             case .nerve: return "2026-10-01"
             case .tempo: return "2026-10-01"
             case .look, .standing, .field: return "2026-11-01"
+            case .disclosure: return "2026-12-01"
             }
             // **Three categories of one, and that is the design saying what it means.** A
             // category is how a day refuses to draw two of a kind, and each of these three
@@ -143,6 +153,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .monochromatic, .dailyTheme: return .look
         case .alwaysOn: return .standing
         case .landslide: return .field
+        case .fullDeck, .levelPegging: return .disclosure
         }
         // **The look category exists for these two** (James, round 229: "ok, they are not
         // possible together then"). Both decide which theme is on screen, and his matrix
@@ -183,6 +194,8 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .dailyTheme: return "Theme"
         case .alwaysOn: return "Always On"
         case .landslide: return "Landslide"
+        case .fullDeck: return "Full Deck"
+        case .levelPegging: return "Level Pegging"
         }
     }
 
@@ -208,6 +221,11 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .dailyTheme: return "One theme, chosen for you, whatever you usually play in."
         case .alwaysOn: return "One power-up is on all day, and never runs out."
         case .landslide: return "The bricks are coming down, and they do not stop."
+        case .fullDeck:
+            return "Everything is in play from the first metre. The rare stays rare."
+        case .levelPegging:
+            return "Everything is in play from the first metre, and nothing is rarer than "
+                + "anything else."
         }
     }
 
@@ -240,6 +258,11 @@ enum DailyTwist: String, CaseIterable, Codable {
             // **Classic alone** (the workbook's own column). The endless modes already have a
             // field that comes down at them, and a twist that promises a landslide and delivers
             // the mode's own cadence is a twist that did nothing
+        case .fullDeck, .levelPegging:
+            return mode == .endlessII
+            // Mayhem alone, because the thing they turn off is Mayhem's introduction queue.
+            // Classic has a designed level and the original Endless has height-band tables;
+            // neither holds anything back, so neither has anything for these to let go of
         case .mayhemBricks:
             return mode == .endlessII
             // §4's table says "Endless modes", and this is narrower on purpose: the original
@@ -279,6 +302,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .mayhemBricks: return "2026-10-01"
         case .monochromatic, .dailyTheme: return "2026-11-01"
         case .alwaysOn, .landslide: return "2026-11-01"
+        case .fullDeck, .levelPegging: return "2026-12-01"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date

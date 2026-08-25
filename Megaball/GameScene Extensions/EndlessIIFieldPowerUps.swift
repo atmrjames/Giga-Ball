@@ -1079,19 +1079,48 @@ extension GameScene {
     /// `breakHorizontalRuns`), and a bad power-up is allowed to be unfair but not to hand the
     /// player a ball that can never be lost or played. So the offset is clamped back inside
     /// the launchable arc rather than allowed out of it.
-    /// - Parameter share: the fraction of the arriving angle to throw it off by, where a
+    /// - Parameter share: the fraction of the room the bounce has to throw it off by, where a
     ///   caller wants to name one. Tests pass it to ask for a known bounce; play rolls it.
     static func randomisedBounceAngle(from angleDeg: Double, minimumDeg: Double,
                                       spread: Double = endlessIIRandomisedBounceSpread,
                                       share: Double? = nil) -> Double {
         let fraction = share ?? Double.random(in: -spread...spread)
-        return min(max(angleDeg + angleDeg*fraction, minimumDeg), 180 - minimumDeg)
+
+        let travellingDown = angleDeg < 0
+        let magnitude = abs(angleDeg)
+        // **The sign is the ball's up or down and is never a magnitude** (round 258). This is
+        // what "still broken" was: `atan2` reports -180...180 and this arithmetic was written
+        // for 0...180, so `max(angleDeg + ..., minimumDeg)` on a ball travelling *down* at
+        // -45° returned +10 - the ball was slammed from a fair descent into a shallow climb,
+        // at every brick contact, for the whole ten seconds. And +10 is `minAngleDeg` exactly,
+        // which is the escape hatch's own trigger, so the shallow climb was then re-aimed with
+        // a random jitter frame after frame. That is the vibrating, and it survived two rounds
+        // of narrowing the spread because every test written for it passed an upward angle
+
+        let steepness = min(magnitude, 180 - magnitude)
+        // How far this bounce is from horizontal, which is the thing the game actually cares
+        // about. A heading of 10° and one of 170° are both a ball skimming sideways, and the
+        // old proportional form treated the second as seventeen times the first
+
+        let room = steepness - minimumDeg
+        guard room > 0 else { return angleDeg }
+        // **A bounce with no room is left exactly as it arrived.** The escape hatch in
+        // `ballHorizontalControl` owns the ones at or under the minimum, and two things
+        // rescuing one bounce is the other half of what the vibrating was
+
+        let nudged = magnitude + room*fraction
+        // A tenth of the *room*, not a tenth of the angle. It cannot reach the minimum, so
+        // the clamp below can no longer fire at the spread this ships at - it is kept for a
+        // future spread wider than 1, where it could
+
+        let bounded = min(max(nudged, minimumDeg), 180 - minimumDeg)
+        return travellingDown ? -bounded : bounded
     }
 
     /// Whether this bounce should be randomised at all.
     ///
-    /// Only the main ball and only while the clock runs. An extra ball keeping its honest
-    /// bounce while the first one lies would be stranger than either.
+    /// Every ball, and only while the clock runs. An extra ball keeping its honest bounce
+    /// while the first one lied would be stranger than either.
     func endlessIIRandomisesBounces(for subject: SKSpriteNode) -> Bool {
         gameMode == .endlessII && endlessIIRandomisedBounceClock.isRunning
     }

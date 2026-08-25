@@ -210,19 +210,18 @@ extension GameScene {
     // MARK: - The nodes
 
     /// The line for the nth ball, made when first needed.
-    private func endlessIIVisionLine(at index: Int) -> SKShapeNode {
+    ///
+    /// **A sprite rather than a shape node** (round 258). Forty-six of these are laid every
+    /// frame per ball, and an `SKShapeNode` re-tessellates when it is handed a path and is
+    /// rendered through an offscreen pass when it glows. They all wear one texture now, so
+    /// SpriteKit draws the whole line in a single batch. `FadingLine` says the rest.
+    private func endlessIIVisionLine(at index: Int) -> SKSpriteNode {
         while endlessIITrajectoryLines.count <= index {
-            let line = SKShapeNode()
-            line.strokeColor = UIColor(white: 1, alpha: 0.35)
-            line.lineWidth = 1.5
-            // Both overwritten per segment by endlessIIDrawFadingTrajectory - this is what a
-            // segment wears before it knows how far down the path it sits
-            line.lineCap = .round
-            line.zPosition = 3
-            // Under the balls and power-ups, over the background and bricks - and faint,
-            // because four of these must not shout over the field they are explaining
+            let line = FadingLine.segment()
             addChild(line)
             endlessIITrajectoryLines.append(line)
+            // Under the balls and power-ups, over the background and bricks - and faint,
+            // because four of these must not shout over the field they are explaining
         }
         return endlessIITrajectoryLines[index]
     }
@@ -272,22 +271,21 @@ extension GameScene {
 
                 let segment = endlessIIVisionLine(at: index)
                 index += 1
-                let path = CGMutablePath()
-                path.move(to: head)
-                path.addLine(to: tail)
-                segment.path = path
-                segment.strokeColor = UIColor(white: 1, alpha: max(0.04, 0.5*certainty))
-                segment.lineWidth = 1.5 + (1 - certainty)*2
-                segment.glowWidth = (1 - certainty)*(1 - certainty)*6
+                FadingLine.lay(segment, from: head, to: tail,
+                               thickness: 1.5 + (1 - certainty)*2,
+                               blur: (1 - certainty)*(1 - certainty)*6,
+                               alpha: max(0.04, 0.5*certainty))
                 // The blur grows as the confidence falls, which is the same statement made
                 // twice - a line you can barely see and can barely locate. Round 85 said
                 // the first cut of this was not fuzzy enough: the width stayed fixed, so
                 // the far end was a thin crisp core with a faint halo rather than a blur.
                 // Now the stroke itself swells as the certainty falls - a wide faint line
-                // is what the eye reads as fuzz - and the glow grows on a square, so it
-                // arrives mostly over the far half, where the guessing is. The glow stays
-                // modest per segment because SKShapeNode pays for it, and there can be
-                // four lines of these on screen at once
+                // is what the eye reads as fuzz - and the blur grows on a square, so it
+                // arrives mostly over the far half, where the guessing is.
+                //
+                // The three numbers are exactly the ones the shape node was given (round
+                // 258); what changed is that the blur is now the picture's own soft edge
+                // being stretched rather than an offscreen glow pass per segment
             }
             travelled += length
         }

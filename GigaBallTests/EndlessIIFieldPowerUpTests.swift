@@ -1004,10 +1004,81 @@ final class RandomisedBounceTests: XCTestCase {
     }
 
     func testItThrowsTheAngleOffTheOneTheBallArrivedAt() {
+        // A tenth of the *room* the bounce has, which at 90° with a 10° minimum is 80° of it
         XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, share: 0.1),
-                       99, accuracy: 0.001)
+                       98, accuracy: 0.001)
         XCTAssertEqual(GameScene.randomisedBounceAngle(from: 90, minimumDeg: 10, share: -0.1),
-                       81, accuracy: 0.001)
+                       82, accuracy: 0.001)
+    }
+
+    // MARK: - The one the tests never asked
+
+    /// **A ball travelling down still travels down.**
+    ///
+    /// James, round 258: "Random bounce power up is still broken." It was, and in the one way
+    /// nothing here had ever asked about: `atan2` reports -180...180 and the arithmetic was
+    /// written for 0...180, so clamping a ball descending at -45° to "at least the minimum"
+    /// returned **+10** - a fair descent slammed into a shallow climb, at every brick contact,
+    /// for the whole ten seconds.
+    ///
+    /// And +10 is `minAngleDeg` exactly, which is the escape hatch's own trigger, so the
+    /// shallow climb was then re-aimed with a random jitter frame after frame. That is the
+    /// vibrating James reported in round 185, and it survived two rounds of narrowing the
+    /// spread because **every test written for it passed an upward angle**.
+    func testADescendingBallIsStillDescendingAfterwards() {
+        for arriving in [-15.0, -45.0, -90.0, -135.0, -168.0] {
+            for share in stride(from: -0.10, through: 0.10, by: 0.02) {
+                let bounced = GameScene.randomisedBounceAngle(from: arriving, minimumDeg: 10,
+                                                              share: share)
+                XCTAssertLessThan(bounced, 0,
+                                  "\(arriving)° thrown by \(share) came back climbing")
+                XCTAssertGreaterThanOrEqual(bounced, -170)
+                XCTAssertLessThanOrEqual(bounced, -10)
+            }
+        }
+    }
+
+    /// Down and up are thrown off by the same amount, because they are the same bounce.
+    func testTheSameBounceUpOrDownIsThrownTheSameWay() {
+        for magnitude in [15.0, 45.0, 90.0, 135.0, 168.0] {
+            let up = GameScene.randomisedBounceAngle(from: magnitude, minimumDeg: 10, share: 0.1)
+            let down = GameScene.randomisedBounceAngle(from: -magnitude, minimumDeg: 10,
+                                                       share: 0.1)
+            XCTAssertEqual(up, -down, accuracy: 0.001, "\(magnitude)°")
+        }
+    }
+
+    /// A shallow bounce to the left is as gently nudged as a shallow one to the right.
+    ///
+    /// The old form was proportional to the heading rather than to its distance from
+    /// horizontal, so 170° - a ball skimming leftward - was treated as seventeen times the
+    /// bounce that 10° is, when they are the same ball going opposite ways.
+    func testShallowIsShallowWhicheverWayTheBallIsGoing() {
+        let right = GameScene.randomisedBounceAngle(from: 20, minimumDeg: 10, share: 0.1)
+        let left = GameScene.randomisedBounceAngle(from: 160, minimumDeg: 10, share: 0.1)
+        XCTAssertEqual(abs(right - 20), abs(left - 160), accuracy: 0.001,
+                       "the same distance from horizontal is the same size of nudge")
+
+        let steepRight = GameScene.randomisedBounceAngle(from: 70, minimumDeg: 10, share: 0.1)
+        let steepLeft = GameScene.randomisedBounceAngle(from: 110, minimumDeg: 10, share: 0.1)
+        XCTAssertEqual(abs(steepRight - 70), abs(steepLeft - 110), accuracy: 0.001)
+
+        // The *size* rather than the direction: one share steepens a rightward bounce and
+        // shallows a leftward one, because the nudge is added to a heading measured from the
+        // right-hand horizontal. It does not matter, because the roll is symmetric - what
+        // would matter, and is what this pins, is one side being nudged harder than the other
+    }
+
+    /// A bounce with no room to be thrown is handed back untouched.
+    ///
+    /// The escape hatch in `ballHorizontalControl` owns the ones at or under the minimum, and
+    /// two things rescuing one bounce is the other half of what the vibrating was.
+    func testABounceWithNoRoomIsLeftExactlyAsItArrived() {
+        for arriving in [10.0, 8.0, -10.0, 172.0, -175.0] {
+            XCTAssertEqual(GameScene.randomisedBounceAngle(from: arriving, minimumDeg: 10,
+                                                           share: 0.1),
+                           arriving, accuracy: 0.0001, "\(arriving)°")
+        }
     }
 
     /// James, round 185: "randomised bounce is way too erratic... the ball seems to go crazy,
@@ -1022,8 +1093,11 @@ final class RandomisedBounceTests: XCTestCase {
         let shallow = GameScene.randomisedBounceAngle(from: 15, minimumDeg: 10, share: 0.1)
         let steep = GameScene.randomisedBounceAngle(from: 120, minimumDeg: 10, share: 0.1)
 
-        XCTAssertEqual(shallow - 15, 1.5, accuracy: 0.001, "a shallow nudge for a shallow bounce")
-        XCTAssertEqual(steep - 120, 12, accuracy: 0.001)
+        XCTAssertEqual(shallow - 15, 0.5, accuracy: 0.001, "a shallow nudge for a shallow bounce")
+        XCTAssertEqual(steep - 120, 5, accuracy: 0.001)
+        // A tenth of the room each has: five degrees above the minimum for the shallow one,
+        // fifty for the steep. Round 258 changed the basis from the heading to the room, which
+        // is what makes 15° and 165° the same bounce
     }
 
     func testItNeverThrowsAShallowBounceIntoTheEscapeHatch() {

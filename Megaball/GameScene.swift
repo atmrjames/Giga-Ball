@@ -94,7 +94,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIILandingRemaining: TimeInterval = 0
 	var endlessIILandingTotal: TimeInterval = 0
 	var endlessIIVisionLastTick: TimeInterval = 0
-	var endlessIITrajectoryLines: [SKShapeNode] = []
+	var endlessIITrajectoryLines: [SKSpriteNode] = []
 	var endlessIILandingMarkers: [SKSpriteNode] = []
 
 	// The paddle batch's clocks and state - see EndlessIIPaddlePowerUps
@@ -1465,13 +1465,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Define ball properties
 
 		paddle.texture = paddleTexture
-		paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
+		paddle.physicsBody = TracedBodyCache.body(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
+		// Through the cache like every other trace since round 258 - a level start is exactly
+		// where a half-frame is least welcome, because the first ball is already moving
 		var counter = 0
 		while paddle.physicsBody == nil {
 			counter+=1
 			paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.frame.size)
 			if paddle.physicsBody == nil {
-				paddle.physicsBody = SKPhysicsBody(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
+				paddle.physicsBody = TracedBodyCache.body(texture: paddle.texture!, size: CGSize(width: paddle.size.width, height: paddle.size.height))
 			}
 			if counter > 10 {
 				break

@@ -950,6 +950,41 @@ enum PowerUpIcon {
         }
     }
 
+    /// Full Deck: four cards fanned out, all of them face up. Nothing left in the deck is
+    /// the whole of the twist.
+    static let twistFullDeck: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.055)
+        let width = rect.width*0.20, height = rect.height*0.34
+        for card in 0..<4 {
+            let lean = CGFloat(card) - 1.5
+            let card = CGRect(x: rect.midX - width/2 + lean*rect.width*0.115,
+                              y: rect.midY - height/2 + abs(lean)*rect.height*0.045,
+                              width: width, height: height)
+            context.addPath(CGPath(roundedRect: card, cornerWidth: width*0.18,
+                                   cornerHeight: width*0.18, transform: nil))
+            context.strokePath()
+        }
+        // Fanned by leaning each one out from the middle and lifting the outer pair, which is
+        // what a hand of cards does and what four upright rectangles do not
+    }
+
+    /// Level Pegging: three bars of exactly the same height. Everything as likely as
+    /// everything else, said as a flat line where a chart would rise.
+    static let twistLevelPegging: UIImage = badge(twist) { context, rect in
+        stroke(context, width: rect.width*0.07)
+        let height = rect.height*0.34
+        for bar in 0..<3 {
+            let x = rect.midX + (CGFloat(bar) - 1)*rect.width*0.22
+            context.move(to: CGPoint(x: x, y: rect.midY + height/2))
+            context.addLine(to: CGPoint(x: x, y: rect.midY - height/2))
+        }
+        context.strokePath()
+        context.move(to: CGPoint(x: rect.midX - rect.width*0.30, y: rect.midY - height/2))
+        context.addLine(to: CGPoint(x: rect.midX + rect.width*0.30, y: rect.midY - height/2))
+        context.strokePath()
+        // A baseline under them, or three equal strokes read as a pause symbol
+    }
+
     /// Time Trial: a stopwatch - a circle, a stem, and a hand pointing near the top because
     /// the time on this clock is nearly up from the moment it starts.
     static let twistTimeTrial: UIImage = badge(twist) { context, rect in
@@ -1117,6 +1152,8 @@ extension DailyTwist {
         case .dailyTheme: return PowerUpIcon.twistTheme
         case .alwaysOn: return PowerUpIcon.twistAlwaysOn
         case .landslide: return PowerUpIcon.twistLandslide
+        case .fullDeck: return PowerUpIcon.twistFullDeck
+        case .levelPegging: return PowerUpIcon.twistLevelPegging
         }
     }
 

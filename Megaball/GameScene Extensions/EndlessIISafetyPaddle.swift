@@ -189,7 +189,8 @@ extension GameScene {
             ? endlessIIPaddleShapeArtName : nil
         let body: SKPhysicsBody
         if endlessIIShapeOwnsTheBounce, let art = endlessIISafetyPaddleDress {
-            body = SKPhysicsBody(texture: art, size: size)
+            body = TracedBodyCache.body(texture: art, size: size)
+                ?? SKPhysicsBody(rectangleOf: size)
         } else {
             body = SKPhysicsBody(rectangleOf: size)
         }

@@ -203,7 +203,8 @@ extension GameScene {
         endlessIIMirrorPaddleBodyArt = endlessIIMirrorPaddleShapeArtName
         let body: SKPhysicsBody
         if endlessIIShapeOwnsTheBounce, let art = endlessIIMirrorPaddleDress {
-            body = SKPhysicsBody(texture: art, size: size)
+            body = TracedBodyCache.body(texture: art, size: size)
+                ?? SKPhysicsBody(rectangleOf: size)
         } else {
             body = SKPhysicsBody(rectangleOf: size)
         }

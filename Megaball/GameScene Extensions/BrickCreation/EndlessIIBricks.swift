@@ -246,6 +246,43 @@ extension GameScene {
     ///
     /// A save written before the schedule existed carries none, and keeps the one drawn at
     /// launch - which is exactly what those runs always did.
+    /// The schedule a new run starts on.
+    ///
+    /// **A daily's is drawn from the day** (James, round 258: "Is there a way to make sure the
+    /// endless mayhem in the daily challenge is still random for everyone, but the element
+    /// introduction for that game's day is similar, so the challenge for everyone is similar
+    /// so the leaderboard is fair?").
+    ///
+    /// Yes, and this is the whole of it, because the two halves were already separate. What a
+    /// run *knows* is the schedule - which elements it has met, in what order, at what pace -
+    /// and what a run *is* is the field, rolled brick by brick as it descends. Seeding the
+    /// schedule from the date makes everybody's day the same shape without touching a single
+    /// roll the field makes: two players on the same day meet the same things at the same
+    /// depths, and neither one's field is the other's.
+    ///
+    /// It is the day's key that seeds it and nothing else, so practice runs are the same day
+    /// as the scoring attempt. A player who practises is practising the day they will play.
+    func endlessIIFreshSchedule() -> EndlessIIProgression {
+        guard let day = DailyChallengeSession.shared.active?.dateKey else {
+            return EndlessIIProgression.make()
+        }
+        var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: day) &+ 0xE2E2)
+        // Its own offset in the seed space, like every other stream the day draws - a shared
+        // one would tie the schedule to whatever else that stream had already been asked for,
+        // so adding a twist would silently redraw everybody's elements
+
+        var schedule = EndlessIIProgression.make(using: &stream)
+        let daily = DailyChallengeSession.shared.active
+        schedule.everythingAtOnce = daily?.has(.fullDeck) == true
+            || daily?.has(.levelPegging) == true
+        schedule.flatRarity = daily?.has(.levelPegging) == true
+        // The day's two disclosure twists, applied to the schedule rather than to the field:
+        // Full Deck opens the whole queue at the first metre and leaves rarity alone, and
+        // Level Pegging does that and levels the rarity too. The schedule is still drawn from
+        // the day either way, so the run under the twist is the same run for everybody
+        return schedule
+    }
+
     func adoptEndlessIISchedule(from savedGame: SavedGame) {
         guard let schedule = savedGame.endlessIIProgression else { return }
         endlessIIProgression = schedule
@@ -262,6 +299,20 @@ extension GameScene {
     func applyEndlessIIPowerUpSchedule() {
         guard gameMode == .endlessII else { return }
         let progression = endlessIIProgression
+
+        if progression.flatRarity {
+            for index in powerUpProbArray.indices where powerUpProbArray[index] > 0 {
+                powerUpProbArray[index] = 100
+            }
+            // **Level Pegging** (§4): "all elements have equal rarity". The authored weights
+            // are the rarity - a Get A Life is written as a rare thing and a Points Bonus as a
+            // common one - so levelling them is the twist, and it is done here rather than in
+            // the schedule because here is where they are read.
+            //
+            // Only the ones already above zero: a weight of zero means "this power-up is not
+            // in this mode at all", which is a different statement from "this one is rare",
+            // and a twist about rarity must not put Classic's own drops into Mayhem
+        }
 
         for index in powerUpProbArray.indices where powerUpProbArray[index] > 0 {
             let scale = progression.powerUpWeightScale(for: index, at: endlessHeight)
@@ -289,7 +340,7 @@ extension GameScene {
         }
 
         switch endlessIIPhaseBehaviour ?? progression.pickBehaviour(at: endlessHeight) {
-        case .multiHit: return brickMultiHit3Texture
+        case .multiHit: return endlessIIMultiHitTexture()
         case .indestructibleOnce: return brickIndestructible1Texture
         case .indestructibleAlways: return brickIndestructible2Texture
         case .invisible: return brickInvisibleTexture
@@ -494,11 +545,50 @@ extension GameScene {
         guard spec.isEmpty == false else { return brickNullTexture }
         switch spec.behaviour {
         case .standard: return brickNormalTexture
-        case .multiHit: return brickMultiHit3Texture
+        case .multiHit: return endlessIIMultiHitTexture()
         case .indestructibleOnce: return brickIndestructible1Texture
         case .indestructibleAlways: return brickIndestructible2Texture
         case .invisible: return brickInvisibleTexture
         case nil: return endlessIIBrickTexture()
+        }
+    }
+
+    /// How many hits a multi-hit brick should take, and the picture that says so.
+    ///
+    /// **The textures count up, not down.** `BrickMultiHit4` is one hit from gone and
+    /// `BrickMultiHit1` is four, because a hit steps the picture *forward* until the brick is
+    /// destroyed. So a brick that takes n hits starts at `MultiHit(5 - n)`, and Mayhem's
+    /// multi-hit brick starting at `MultiHit3` has always meant **two hits**.
+    ///
+    /// James, round 258: "Multi bricks should start from level 2 (2 hits to destroy). Level 3
+    /// and level 4 (3 and 4 hits to destroy) should be considered new elements." So two hits
+    /// is what the mode opens with, as it always has, and three and four arrive from the
+    /// introduction queue like anything else - which is also the first time either has existed
+    /// in this mode at all.
+    ///
+    /// Rarity is applied on top, and deliberately falls away with the tier: a field of
+    /// four-hit bricks is a wall, and the point of the deeper tiers is that one of them in a
+    /// row is a brick worth thinking about.
+    func endlessIIMultiHitTexture() -> SKTexture {
+        var offered: [(hits: Int, weight: Int)] = [(2, 100)]
+        for (index, hits) in EndlessIIElement.multiHitTiers.enumerated() {
+            guard endlessIIProgression.hasArrived(.multiHit(hits: hits),
+                                                  at: endlessHeight) else { continue }
+            offered.append((hits, index == 0 ? 45 : 20))
+        }
+
+        let total = offered.reduce(0) { $0 + $1.weight }
+        var remaining = Int.random(in: 0..<max(1, total))
+        var hits = 2
+        for tier in offered {
+            remaining -= tier.weight
+            if remaining < 0 { hits = tier.hits; break }
+        }
+
+        switch hits {
+        case 4: return brickMultiHit1Texture
+        case 3: return brickMultiHit2Texture
+        default: return brickMultiHit3Texture
         }
     }
 
@@ -1057,7 +1147,7 @@ extension GameScene {
         endlessIIBreathers.removeAll()
         endlessIIPendingBookings = []
         endlessIIMonolithRoute = nil
-        endlessIIProgression = EndlessIIProgression.make()
+        endlessIIProgression = endlessIIFreshSchedule()
         clearEndlessIIMarkers()
         endlessIISetRowQueue = []
         endlessIISetRowLegend = [:]

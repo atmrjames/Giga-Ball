@@ -94,18 +94,41 @@ final class ShapedPaddleThemeTests: XCTestCase {
 
     /// And so does any single picture that is not drawn.
     ///
-    /// One is missing from the delivery - outline's concave sticky overlay - and the fallback
-    /// is per *picture* rather than per theme for exactly this: outline keeps its own shaped
-    /// paddles and borrows one overlay, instead of losing the lot over one file.
+    /// The fallback is per *picture* rather than per theme, so a theme missing one overlay
+    /// keeps its own shaped paddles and borrows only that one file instead of losing the lot.
+    ///
+    /// **Found rather than named** (round 258). This used to name outline's concave sticky
+    /// overlay as the missing one, and James delivered it - so the test was asserting that a
+    /// picture that now exists is still absent. What it means to say is "wherever a picture is
+    /// missing, only that picture borrows", which does not need a particular gap and cannot go
+    /// stale when one is filled.
     func testASingleMissingPictureFallsBackOnItsOwn() {
-        guard let outline = GameScene.paddleThemePrefixes.firstIndex(of: "outline") else {
-            return XCTFail("outline has left the theme list")
+        let kinds = ["Paddle", "Lasers", "Sticky"]
+        let shapes = ["Convex", "Concave", "Wave", "WedgeLeft", "WedgeRight"]
+
+        var found = false
+        for (index, theme) in GameScene.paddleThemePrefixes.enumerated() where theme != "regular" {
+            let scene = scene(theme: index)
+            for kind in kinds {
+                for shape in shapes where UIImage(named: "\(theme)\(kind)\(shape)") == nil {
+                    found = true
+                    XCTAssertEqual(scene.endlessIIThemedShapeArt(kind, shape),
+                                   "regular\(kind)\(shape)",
+                                   "\(theme)\(kind)\(shape) is missing and has to borrow")
+
+                    for other in kinds where UIImage(named: "\(theme)\(other)\(shape)") != nil {
+                        XCTAssertEqual(scene.endlessIIThemedShapeArt(other, shape),
+                                       "\(theme)\(other)\(shape)",
+                                       "\(theme) lost \(other)\(shape) over a different file")
+                    }
+                    // The half that matters: the gap borrows, and everything beside it does not
+                }
+            }
         }
-        let scene = scene(theme: outline)
-        XCTAssertEqual(scene.endlessIIThemedShapeArt("Paddle", "Concave"), "outlinePaddleConcave",
-                       "the paddle itself is drawn and should be used")
-        XCTAssertEqual(scene.endlessIIThemedShapeArt("Sticky", "Concave"), "regularStickyConcave",
-                       "and only the one that is missing borrows")
+
+        XCTAssertTrue(found,
+                      "every theme is complete, so there is no fallback left to exercise - "
+                      + "delete this rather than leaving it passing on nothing")
     }
 
     /// The shaped paddle's own lookup goes through the themed one.

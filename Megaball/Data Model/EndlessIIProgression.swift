@@ -52,7 +52,17 @@ struct EndlessIIProgression: Codable, Equatable {
     /// How many power-ups beyond the standard ones are.
     var openingPowerUps: Int = EndlessIIProgression.openingPowerUpRange.lowerBound
 
+    /// This run's metres between one element and the next, whatever kind it is.
+    ///
+    /// Around James's screenful - "a new element every game view of bricks, so 22m" - varied
+    /// per run like every other number here, because two runs that introduced things at
+    /// exactly the same rate would be two runs with the same shape.
+    var elementSpacing: Int = EndlessIIProgression.elementIntroductionSpacing
+
     /// This run's metres between one style being introduced and the next.
+    ///
+    /// Only read by a run saved before round 258, which has no `releaseOrder` and keeps the
+    /// five-clock arithmetic it was given.
     var styleSpacing: Int = EndlessIIProgression.introductionSpacing
 
     /// And between one power-up and the next.
@@ -72,6 +82,59 @@ struct EndlessIIProgression: Codable, Equatable {
 
     /// How many phases are.
     var openingPhases: Int = EndlessIIProgression.openingPhaseRange.lowerBound
+
+    // MARK: - One queue for everything new (round 258)
+
+    /// Everything this run has left to show, in the order it will show it.
+    ///
+    /// James: "Don't introduce new elements too quickly. Perhaps a new element every game view
+    /// of bricks, so 22m... The order in which elements are introduced should be randomised."
+    ///
+    /// **Five schedules were the problem.** A style every 35m, a power-up every 14m, a set row
+    /// every 30m and a phase every 30m are four reasonable numbers whose *sum* nobody had
+    /// worked out: a player meets all of them at once, so something new arrived about every
+    /// seven metres. One queue, one spacing, and the kind of the next thing is the shuffle's
+    /// business.
+    ///
+    /// **Optional, because a run saved before this has none.** Those runs keep the five-clock
+    /// arithmetic exactly as it was - a schedule is a promise made to a run in progress, and
+    /// rewriting it under a player mid-run would move things they had already been shown.
+    var releaseOrder: [EndlessIIElement]?
+
+    /// Whether the run has been handed everything at once (§4: Full Deck, Level Pegging).
+    ///
+    /// James, round 258, on two daily twists for Endless Mayhem: "All elements in endless
+    /// mayhem are immediately introduced - rarity is still respected, density still ramps" and
+    /// "All elements are immediately introduced and all elements have equal rarity."
+    ///
+    /// One flag, because the first half of both twists is the same sentence. What differs is
+    /// `flatRarity`, and only that.
+    var everythingAtOnce = false
+
+    /// Whether everything is as likely as everything else (§4: Level Pegging).
+    var flatRarity = false
+
+    /// Whether an element is in play at this height.
+    ///
+    /// The one question every kind now asks, so the answer is written once. An element not in
+    /// the queue at all is available - which is the safe reading for anything added since the
+    /// save was written, and the same rule every one of the five schedules already followed.
+    func hasArrived(_ element: EndlessIIElement, at height: Int) -> Bool {
+        height >= arrivalHeight(of: element)
+    }
+
+    /// The metre an element joins this run.
+    ///
+    /// Zero for the openings, and for anything the queue does not name. Otherwise its place in
+    /// the queue, at this run's own spacing, through the same quickening every schedule here
+    /// has used since round 190 - the gaps shorten with depth, so a run that goes deep meets
+    /// things faster rather than at a flat rate for ever.
+    func arrivalHeight(of element: EndlessIIElement) -> Int {
+        guard everythingAtOnce == false else { return 0 }
+        guard let releaseOrder, let place = releaseOrder.firstIndex(of: element) else { return 0 }
+        return EndlessIIProgression.introductionDistance(steps: place + 1,
+                                                         spacing: elementSpacing)
+    }
 
     /// The height this run first allows a *bad* power-up inside a power-up brick, and the
     /// height the *disastrous* ones join them. Optionals so a schedule saved before round
@@ -235,6 +298,18 @@ struct EndlessIIProgression: Codable, Equatable {
         return max(1, Int(total.rounded()))
     }
 
+    /// Metres between one element and the next, in a run that has one queue for all of them.
+    ///
+    /// **A screenful** (James, round 258: "a new element every game view of bricks, so 22m").
+    /// The play area is about that many metres of field, so the rule is that a player meets at
+    /// most one new thing in the time it takes the screen they are looking at to leave.
+    ///
+    /// The quickening still applies on top of it, so a deep run meets things faster than a
+    /// shallow one - "the game will start gentle but quickly ramp up" - and with the floor at
+    /// a third of this, everything in the mode has arrived somewhere near the end of the ramp.
+    static let elementIntroductionSpacing = 22
+    static let elementSpacingRange = 18...26
+
     /// Metres between one style being introduced and the next.
     ///
     /// Spread so the last one arrives around 280m, which leaves most of a long run for the
@@ -274,29 +349,74 @@ struct EndlessIIProgression: Codable, Equatable {
     static let rampEasing = 0.4
 
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
-                     powerUps: Int = LevelPackSetup().powerUpNameArray.count) -> EndlessIIProgression {
+                     powerUps: Int = LevelPackSetup().powerUpNameArray.count,
+                     using generator: inout some RandomNumberGenerator) -> EndlessIIProgression {
         // Every power-up in the table, including Endless 2.0's own, derived from the array
         // that names them rather than counted by hand - the hand-count came up short the
         // first time a batch landed, which is exactly what §8.6 says literals do. A new
         // power-up missing from this shuffle is introduced at 0m, the opposite of introduced
-        EndlessIIProgression(
-            introductionOrder: styles.shuffled(),
-            powerUpOrder: Array(0..<powerUps).shuffled(),
-            openingStyles: Int.random(in: openingStyleRange),
-            openingPowerUps: Int.random(in: openingPowerUpRange),
-            styleSpacing: Int.random(in: styleSpacingRange),
-            powerUpSpacing: Int.random(in: powerUpSpacingRange),
-            setRowOrder: Array(0..<EndlessIISetRow.all.count).shuffled(),
-            phaseOrder: EndlessIIPhase.allCases.shuffled(),
-            openingSetRows: Int.random(in: openingSetRowRange),
-            openingPhases: Int.random(in: openingPhaseRange),
-            brickBadFromHeight: Int.random(in: brickBadRange),
-            brickDisastrousFromHeight: Int.random(in: brickDisastrousRange),
-            rarityTweak: (0..<powerUps).map { _ in Double.random(in: rarityTweakRange) },
-            densityLagShare: Double.random(in: densityLagRange),
+        //
+        // **Everything is drawn from a generator handed in** (round 258), rather than from the
+        // system's. It is `SystemRandomNumberGenerator` for an ordinary run and nothing
+        // changes; a daily hands in one seeded from the day, which is how everybody playing a
+        // given day meets the same things in the same order while the field itself stays their
+        // own (see `DailyChallengeSession`)
+
+        let styleOrder = styles.shuffled(using: &generator)
+        let powerUpOrder = Array(0..<powerUps).shuffled(using: &generator)
+        let setRowOrder = Array(0..<EndlessIISetRow.all.count).shuffled(using: &generator)
+        let phaseOrder = EndlessIIPhase.allCases.shuffled(using: &generator)
+
+        let openingStyles = Int.random(in: openingStyleRange, using: &generator)
+        let openingPowerUps = Int.random(in: openingPowerUpRange, using: &generator)
+        let openingSetRows = Int.random(in: openingSetRowRange, using: &generator)
+        let openingPhases = Int.random(in: openingPhaseRange, using: &generator)
+
+        var queue: [EndlessIIElement] = []
+        queue += styleOrder.dropFirst(openingStyles).map { EndlessIIElement.style($0) }
+        queue += powerUpOrder.dropFirst(openingPowerUps)
+            .filter { $0 >= LevelPackSetup.firstEndlessIIPowerUp }
+            .map { EndlessIIElement.powerUp($0) }
+        // The classic power-ups are never queued at all: "all the classic game mode power-ups"
+        // are available from the first metre, and one sitting in the queue would be one the
+        // player already knows taking a slot from something they do not
+        queue += EndlessIIElement.multiHitTiers.map { EndlessIIElement.multiHit(hits: $0) }
+        queue += setRowOrder.dropFirst(openingSetRows).map { EndlessIIElement.setRow($0) }
+        queue += phaseOrder.dropFirst(openingPhases).map { EndlessIIElement.phase($0) }
+        queue.shuffle(using: &generator)
+        // Shuffled *after* the kinds are gathered, so the queue is not five blocks in a row.
+        // What each kind's own order still decides is *which* of its members are in the
+        // opening set, and the queue decides when the rest arrive
+
+        return EndlessIIProgression(
+            introductionOrder: styleOrder,
+            powerUpOrder: powerUpOrder,
+            openingStyles: openingStyles,
+            openingPowerUps: openingPowerUps,
+            elementSpacing: Int.random(in: elementSpacingRange, using: &generator),
+            styleSpacing: Int.random(in: styleSpacingRange, using: &generator),
+            powerUpSpacing: Int.random(in: powerUpSpacingRange, using: &generator),
+            setRowOrder: setRowOrder,
+            phaseOrder: phaseOrder,
+            openingSetRows: openingSetRows,
+            openingPhases: openingPhases,
+            releaseOrder: queue,
+            brickBadFromHeight: Int.random(in: brickBadRange, using: &generator),
+            brickDisastrousFromHeight: Int.random(in: brickDisastrousRange, using: &generator),
+            rarityTweak: (0..<powerUps).map { _ in
+                Double.random(in: rarityTweakRange, using: &generator)
+            },
+            densityLagShare: Double.random(in: densityLagRange, using: &generator),
             densityStepTweak: (0..<styles.count).map { _ in
-                Double.random(in: densityStepRange)
+                Double.random(in: densityStepRange, using: &generator)
             })
+    }
+
+    /// The ordinary run's version: the system's own randomness.
+    static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
+                     powerUps: Int = LevelPackSetup().powerUpNameArray.count) -> EndlessIIProgression {
+        var generator = SystemRandomNumberGenerator()
+        return make(shuffling: styles, powerUps: powerUps, using: &generator)
     }
 
     /// Metres between one power-up being introduced and the next.
@@ -319,6 +439,9 @@ struct EndlessIIProgression: Codable, Equatable {
     /// the floor a run is playable on before it has been taught anything.
     func powerUpIntroductionHeight(of index: Int) -> Int {
         guard index >= LevelPackSetup.firstEndlessIIPowerUp else { return 0 }
+        if releaseOrder != nil { return arrivalHeight(of: .powerUp(index)) }
+        // One queue for every kind since round 258. The arithmetic below is what a run saved
+        // before that was promised, and it keeps it
         guard let place = powerUpOrder.firstIndex(of: index) else { return 0 }
         guard place >= openingPowerUps else { return 0 }
         return EndlessIIProgression.introductionDistance(steps: place - openingPowerUps + 1,
@@ -334,6 +457,11 @@ struct EndlessIIProgression: Codable, Equatable {
     func powerUpWeightScale(for index: Int, at height: Int) -> Double {
         let introduced = height >= powerUpIntroductionHeight(of: index)
         let base = introduced ? 1 : EndlessIIProgression.powerUpEarlyScale
+        guard flatRarity == false else { return base }
+        // Level Pegging drops this run's own weighting, which is the part that makes one
+        // power-up likelier than another for no reason the player can see. The authored
+        // weights are levelled where they are read, in `endlessIIFlattenPowerUpOdds` - here
+        // there is only the per-run tweak to let go of
         return base*tweak(for: index)
     }
 
@@ -353,6 +481,7 @@ struct EndlessIIProgression: Codable, Equatable {
     /// unusual for twelve metres would just be Endless - and how many that is varies per run,
     /// which is what makes two runs to the same height feel differently stocked.
     func introductionHeight(of style: EndlessIIStyle) -> Int {
+        if releaseOrder != nil { return arrivalHeight(of: .style(style)) }
         guard let place = introductionOrder.firstIndex(of: style) else { return 0 }
         guard place >= openingStyles else { return 0 }
         return EndlessIIProgression.introductionDistance(steps: place - openingStyles + 1,
@@ -361,7 +490,10 @@ struct EndlessIIProgression: Codable, Equatable {
 
     /// How strongly a style should be drawn at this height, relative to the others.
     func weight(for style: EndlessIIStyle, at height: Int) -> Int {
-        height >= introductionHeight(of: style)
+        guard flatRarity == false else { return EndlessIIProgression.introducedWeight }
+        // Level Pegging: everything as likely as everything else, which for the styles is
+        // already what an introduced weight means - they differ only by *when* they arrive
+        return height >= introductionHeight(of: style)
             ? EndlessIIProgression.introducedWeight
             : EndlessIIProgression.earlyWeight
     }
@@ -685,16 +817,38 @@ extension EndlessIIProgression {
     }
 
     /// The height each density step lands at: part-way along the gap after an introduction.
+    ///
+    /// **Along the release queue, not along the style order** (round 258). The steps follow
+    /// introductions - "new things added -> increase density -> new things added" - and until
+    /// there was one queue, "the next introduction" meant the next *style*, which was the next
+    /// entry in `introductionOrder` because that array was in height order.
+    ///
+    /// It is not any more. Styles are scattered through a queue they share with power-ups, set
+    /// rows and phases, so the style after this one in that array can arrive a hundred metres
+    /// *earlier* - which made the gap negative, clamped it to one metre, and landed the step on
+    /// the metre the style arrived. That is the one thing this function exists to prevent: the
+    /// new thing has to be met in the field it arrived in, and the field thickens once the
+    /// player has met it.
+    ///
+    /// Following the queue is also the more faithful reading of the rule. A power-up or a
+    /// designed row is a new thing too, and the density has no reason to notice only the
+    /// styles.
     func densityStepHeights() -> [Int] {
         let cap = EndlessIIProgression.densityCapMetres
+
+        let arrivals: [Int]
+        if let releaseOrder {
+            arrivals = releaseOrder.map { arrivalHeight(of: $0) }
+        } else {
+            arrivals = introductionOrder.map { introductionHeight(of: $0) }
+        }
+        // Already in ascending order either way - the queue by construction, and the style
+        // order because that is what it was before the queue existed
+
         var heights: [Int] = []
-        for place in 0..<introductionOrder.count {
-            let style = introductionOrder[place]
-            let arrives = introductionHeight(of: style)
+        for (place, arrives) in arrivals.enumerated() {
             guard arrives > 0, arrives < cap else { continue }
-            let next = place + 1 < introductionOrder.count
-                ? introductionHeight(of: introductionOrder[place + 1])
-                : cap
+            let next = place + 1 < arrivals.count ? arrivals[place + 1] : cap
             let gap = max(1, next - arrives)
             let step = arrives + Int((Double(gap)*densityLagShare).rounded())
             // **After the introduction, never with it.** A share of the gap rather than a
@@ -706,7 +860,12 @@ extension EndlessIIProgression {
     }
 
     private func densityStepWeight(_ index: Int) -> Double {
-        densityStepTweak.indices.contains(index) ? densityStepTweak[index] : 1
+        guard densityStepTweak.isEmpty == false else { return 1 }
+        return densityStepTweak[index % densityStepTweak.count]
+        // Wrapped rather than falling back to a flat one past the end. There are as many
+        // tweaks as there are styles and, since round 258, many more steps than styles - and
+        // a run whose steps stopped varying after the fifteenth would be a run that thickened
+        // evenly for the rest of its climb, which is the thing these exist to avoid
     }
 
     /// The most rows in a row that may arrive with nothing in them.
@@ -733,6 +892,13 @@ extension EndlessIIProgression {
     /// other half of not going stale: if the field only ever got fuller, a deep run would be
     /// the opening with more of it.
     func behaviourWeights(at height: Int) -> [(EndlessIIBehaviour, Int)] {
+        guard flatRarity == false else {
+            return [(.standard, 100), (.multiHit, 100), (.indestructibleOnce, 100),
+                    (.indestructibleAlways, 100), (.invisible, 100)]
+            // Level Pegging, and the one place in the mode where "equal" is a genuinely
+            // strange field: a fifth of every row unbreakable is far heavier than the deep
+            // mix ever gets. That is the twist doing what it says rather than a mistake
+        }
         guard height > 0 else { return [(.standard, 100)] }
         // Ordinary bricks and nothing else to begin with, for the same reason
         let toward = { (opening: Int, deep: Int) in
@@ -777,6 +943,11 @@ extension EndlessIIProgression {
     func setRowAvailableHeight(of index: Int) -> Int {
         let authored = EndlessIISetRow.all.indices.contains(index)
             ? EndlessIISetRow.all[index].minimumHeight : 0
+        if releaseOrder != nil {
+            return max(authored, arrivalHeight(of: .setRow(index)))
+        }
+        // The authored floor still wins over the queue, for the reason above: a lucky shuffle
+        // must not put a 150m shape in front of somebody at 20m
         guard let place = setRowOrder.firstIndex(of: index) else { return authored }
         guard place >= openingSetRows else { return authored }
         return max(authored,
@@ -802,6 +973,9 @@ extension EndlessIIProgression {
     /// caught it before it shipped.
     func phaseAvailableHeight(of phase: EndlessIIPhase) -> Int {
         guard phase != .standard else { return 0 }
+        if releaseOrder != nil {
+            return max(phase.minimumHeight, arrivalHeight(of: .phase(phase)))
+        }
         guard let place = phaseOrder.firstIndex(of: phase) else { return phase.minimumHeight }
         guard place >= openingPhases else { return phase.minimumHeight }
         return max(phase.minimumHeight,
@@ -814,11 +988,12 @@ extension EndlessIIProgression {
     func pickPhase(at height: Int,
                    roll: (Int) -> Int = { Int.random(in: 0..<$0) }) -> EndlessIIPhase {
         let allowed = EndlessIIPhase.allCases.filter { height >= phaseAvailableHeight(of: $0) }
-        let total = allowed.reduce(0) { $0 + $1.weight }
+        let weight = { (phase: EndlessIIPhase) in self.flatRarity ? 1 : phase.weight }
+        let total = allowed.reduce(0) { $0 + weight($1) }
         guard total > 0 else { return .standard }
         var remaining = roll(total)
         for phase in allowed {
-            remaining -= phase.weight
+            remaining -= weight(phase)
             if remaining < 0 { return phase }
         }
         return .standard
