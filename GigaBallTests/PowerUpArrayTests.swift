@@ -212,6 +212,9 @@ final class PowerUpArtworkTests: XCTestCase {
         ("Mirror Paddle", PowerUpIcon.mirrorPaddle),
         ("Multi-Ball", PowerUpIcon.multiBall),
         ("Halo", PowerUpIcon.paddleHalo),
+        ("Portal", PowerUpIcon.portalPaddle),
+        ("Wrap Around", PowerUpIcon.wrapAround),
+        ("Ball Spin", PowerUpIcon.ballSpin),
         ("Random Bounce", PowerUpIcon.randomisedBounce),
         ("Reversed Paddle Control", PowerUpIcon.reversedControls),
         ("Safety Paddle", PowerUpIcon.safetyPaddle),
@@ -228,13 +231,16 @@ final class PowerUpArtworkTests: XCTestCase {
         }
     }
 
-    func testTheOnesWithNoArtworkYetStillDrawThemselves() {
-        // The other half of the same rule: §8.5 still lists these, and they must keep looking
-        // like something until it does arrive
-        for (name, icon) in [("Portal", PowerUpIcon.portalPaddle),
-                             ("Wrap Around", PowerUpIcon.wrapAround),
-                             ("Ball Spin", PowerUpIcon.ballSpin)] {
-            XCTAssertEqual(icon.size, PowerUpIcon.canvas, name)
+    /// **The list of power-ups still wearing a drawing is empty** (round 261).
+    ///
+    /// Portal, Wrap-Around and Ball Spin were the last three, and James delivered all three,
+    /// so this stopped being "these must keep looking like something" and became the check
+    /// that the set is complete. Asked of the catalogue rather than of a list, so a
+    /// sixty-seventh power-up arriving without art fails here rather than being remembered.
+    func testEveryPowerUpHasRealArtworkNow() {
+        for (name, icon) in drawn {
+            XCTAssertNotEqual(icon.size, PowerUpIcon.canvas,
+                              "\(name) is still drawing its placeholder")
         }
     }
 

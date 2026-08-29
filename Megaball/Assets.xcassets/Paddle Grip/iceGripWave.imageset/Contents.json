@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "iceGripWave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "iceGripWave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "iceGripWave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

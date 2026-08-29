@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "retroGripConcave.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "retroGripConcave@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "retroGripConcave@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

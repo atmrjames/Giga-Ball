@@ -118,7 +118,7 @@ enum PowerUpIcon {
     }
 
     /// Portal Paddle: in at the paddle, out at the top.
-    static let portalPaddle: UIImage = badge { context, rect in
+    static let portalPaddle: UIImage = artwork("PowerUpPortal") { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.maxY - rect.height*0.2))
         context.addLine(to: CGPoint(x: rect.maxX - rect.width*0.18, y: rect.maxY - rect.height*0.2))
@@ -342,7 +342,7 @@ enum PowerUpIcon {
     }
 
     /// Wrap-Around: out one side, in the other.
-    static let wrapAround: UIImage = badge { context, rect in
+    static let wrapAround: UIImage = artwork("PowerUpWrap") { context, rect in
         stroke(context, width: rect.width*0.06)
         for x in [rect.minX + rect.width*0.16, rect.maxX - rect.width*0.16] {
             context.setLineDash(phase: 0, lengths: [rect.width*0.07, rect.width*0.06])
@@ -610,7 +610,7 @@ enum PowerUpIcon {
     }
 
     /// Ball Spin: the ball leaving on a curve, with the paddle that threw it under.
-    static let ballSpin: UIImage = badge { context, rect in
+    static let ballSpin: UIImage = artwork("PowerUpBallSpin") { context, rect in
         context.setStrokeColor(UIColor.white.cgColor)
         context.setLineWidth(rect.width*0.07)
         context.setLineCap(.round)

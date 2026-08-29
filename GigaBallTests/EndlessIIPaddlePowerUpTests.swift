@@ -2716,3 +2716,103 @@ final class AimedStickyIsAVariantOfStickyTests: XCTestCase {
         XCTAssertTrue(scene.paddleSticky.isHidden)
     }
 }
+
+/// The grip: what the paddle wears while Ball Control steers (round 261).
+///
+/// James: "Grip is the texture to use when the ball steering power-up is active - it replaces
+/// the sticky and aimed sticky power-up and textures when caught."
+final class EndlessIIGripTests: XCTestCase {
+
+    private func mayhem(theme: Int = 0) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddleSetting = theme
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.addChild(scene.paddleSticky)
+        scene.addChild(scene.paddleRetroStickyTexture)
+        scene.paddleSticky.isHidden = true
+        return scene
+    }
+
+    /// Every theme has a grip drawn for it, plain and in all five shapes.
+    ///
+    /// Read off the theme list rather than written out, so a thirteenth theme fails here rather
+    /// than silently borrowing the regular one's grip.
+    func testEveryThemeHasAGripInEveryShape() {
+        for (index, theme) in GameScene.paddleThemePrefixes.enumerated() {
+            let scene = mayhem(theme: index)
+            for shape in ["", "Convex", "Concave", "Wave", "WedgeLeft", "WedgeRight"] {
+                XCTAssertEqual(scene.endlessIIThemedShapeArt("Grip", shape), "\(theme)Grip\(shape)",
+                               "\(theme) is borrowing somebody else's grip for \(shape)")
+            }
+        }
+    }
+
+    func testCollectingBallControlPutsTheGripOn() {
+        let scene = mayhem()
+        scene.endlessIICollectBallSteering()
+        XCTAssertTrue(scene.endlessIIWearsGrip)
+        XCTAssertFalse(scene.paddleSticky.isHidden)
+        XCTAssertEqual(scene.endlessIIPaddleTopKind, "Grip")
+    }
+
+    /// "It replaces the sticky and aimed sticky power-up... when caught" - the power-ups, not
+    /// only their pictures.
+    func testItReplacesStickyAndAimedSticky() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        scene.stickyPaddleCatchesTotal = 3
+        scene.endlessIICollectAimedSticky()
+
+        scene.endlessIICollectBallSteering()
+
+        XCTAssertEqual(scene.stickyPaddleCatches, 0)
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
+        XCTAssertEqual(scene.endlessIIPaddleTopKind, "Grip")
+    }
+
+    /// Retro's grip goes on the shared overlay, not on retro's own sticky node.
+    ///
+    /// James: "for retro, its regular sticky texture is quite different from the other paddles,
+    /// but its grip texture is in the same style as the other paddles."
+    func testRetroWearsItsGripOnTheSharedOverlay() {
+        guard let retro = GameScene.paddleThemePrefixes.firstIndex(of: "retro") else {
+            return XCTFail("retro has left the theme list")
+        }
+        let scene = mayhem(theme: retro)
+        scene.paddleRetroStickyTexture.isHidden = false
+
+        scene.endlessIICollectBallSteering()
+
+        XCTAssertFalse(scene.paddleSticky.isHidden, "the grip is in everybody else's style")
+        XCTAssertTrue(scene.paddleRetroStickyTexture.isHidden,
+                      "and retro's own sticky picture stands down while it is worn")
+    }
+
+    /// The face comes off when the steering stops.
+    func testTheGripComesOffWhenTheSteeringEnds() {
+        let scene = mayhem()
+        scene.endlessIICollectBallSteering()
+        scene.endlessIIBallSteeringClock.reset()
+
+        scene.refreshEndlessIIStickyFace()
+        XCTAssertTrue(scene.paddleSticky.isHidden)
+    }
+
+    /// And hands the picture back if a Sticky was collected underneath it.
+    func testAStickyCollectedUnderTheGripGetsThePictureBack() {
+        let scene = mayhem()
+        scene.endlessIICollectBallSteering()
+        scene.stickyPaddleCatches = 3
+        scene.stickyPaddleCatchesTotal = 3
+
+        scene.endlessIIBallSteeringClock.reset()
+        scene.refreshEndlessIIStickyFace()
+
+        XCTAssertFalse(scene.paddleSticky.isHidden, "the Sticky still wants a face")
+        XCTAssertEqual(scene.endlessIIPaddleTopKind, "Sticky")
+        XCTAssertEqual(scene.paddleSticky.texture, scene.stickyPaddleTexture)
+    }
+}

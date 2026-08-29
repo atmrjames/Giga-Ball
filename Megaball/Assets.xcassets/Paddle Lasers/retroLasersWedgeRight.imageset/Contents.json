@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "retroLasersWedgeRight.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "retroLasersWedgeRight@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "retroLasersWedgeRight@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

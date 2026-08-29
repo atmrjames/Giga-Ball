@@ -75,60 +75,53 @@ final class ShapedPaddleThemeTests: XCTestCase {
         }
     }
 
-    /// Retro has no shaped art yet, and falls back to the plain theme's.
+
+    /// **Retro is complete now** (round 261), which is what the fallback was covering for.
     ///
-    /// James, round 248: "I have yet to do retro." A paddle with no texture is an invisible
-    /// paddle, so the honest answer is the regular theme's picture rather than nothing.
-    func testRetroFallsBackUntilItsArtIsDrawn() {
+    /// It was the one theme with no shaped art at all - fifteen pictures - and every shape it
+    /// was asked for came back as the regular theme's. James delivered the set, so it answers
+    /// for itself, and its three overlay nodes (`retroPaddleTexture` and its laser and sticky)
+    /// have shaped pictures too, which no other theme needs.
+    func testRetroAnswersForItsOwnShapes() {
         guard let retro = GameScene.paddleThemePrefixes.firstIndex(of: "retro") else {
             return XCTFail("retro has left the theme list")
         }
         let scene = scene(theme: retro)
-        for shape in shapes {
-            for kind in kinds {
+        for shape in ["Convex", "Concave", "Wave", "WedgeLeft", "WedgeRight"] {
+            for kind in ["Paddle", "Lasers", "Sticky", "Grip"] {
                 XCTAssertEqual(scene.endlessIIThemedShapeArt(kind, shape),
-                               "regular\(kind)\(shape)")
+                               "retro\(kind)\(shape)",
+                               "retro is still borrowing the regular theme's \(kind)\(shape)")
             }
+            XCTAssertNotNil(UIImage(named: "retroPaddleTexture\(shape)"),
+                            "retro's own overlay layer has no \(shape) picture")
         }
     }
 
-    /// And so does any single picture that is not drawn.
+    /// **The fallback is still there and there is nothing left for it to catch** (round 261).
     ///
-    /// The fallback is per *picture* rather than per theme, so a theme missing one overlay
-    /// keeps its own shaped paddles and borrows only that one file instead of losing the lot.
+    /// This used to name outline's concave sticky overlay as the missing picture, and James
+    /// delivered it; round 258 rewrote it to *find* whichever picture was missing rather than
+    /// name one, and it found retro's fifteen. James has now delivered those too, and the grip
+    /// set arrived complete across all twelve themes - so there is no gap anywhere and the
+    /// finding version had nothing left to assert.
     ///
-    /// **Found rather than named** (round 258). This used to name outline's concave sticky
-    /// overlay as the missing one, and James delivered it - so the test was asserting that a
-    /// picture that now exists is still absent. What it means to say is "wherever a picture is
-    /// missing, only that picture borrows", which does not need a particular gap and cannot go
-    /// stale when one is filled.
-    func testASingleMissingPictureFallsBackOnItsOwn() {
-        let kinds = ["Paddle", "Lasers", "Sticky"]
-        let shapes = ["Convex", "Concave", "Wave", "WedgeLeft", "WedgeRight"]
-
-        var found = false
-        for (index, theme) in GameScene.paddleThemePrefixes.enumerated() where theme != "regular" {
-            let scene = scene(theme: index)
-            for kind in kinds {
-                for shape in shapes where UIImage(named: "\(theme)\(kind)\(shape)") == nil {
-                    found = true
-                    XCTAssertEqual(scene.endlessIIThemedShapeArt(kind, shape),
-                                   "regular\(kind)\(shape)",
-                                   "\(theme)\(kind)\(shape) is missing and has to borrow")
-
-                    for other in kinds where UIImage(named: "\(theme)\(other)\(shape)") != nil {
-                        XCTAssertEqual(scene.endlessIIThemedShapeArt(other, shape),
-                                       "\(theme)\(other)\(shape)",
-                                       "\(theme) lost \(other)\(shape) over a different file")
-                    }
-                    // The half that matters: the gap borrows, and everything beside it does not
-                }
-            }
+    /// What is checked instead is the fallback itself, on a name that will never exist: a
+    /// theme without a picture borrows the regular theme's rather than showing nothing. That
+    /// is the property worth keeping, and it is now the only way to state it.
+    func testAThemeWithoutAPictureBorrowsTheRegularOnes() {
+        guard let outline = GameScene.paddleThemePrefixes.firstIndex(of: "outline") else {
+            return XCTFail("outline has left the theme list")
         }
+        let scene = scene(theme: outline)
 
-        XCTAssertTrue(found,
-                      "every theme is complete, so there is no fallback left to exercise - "
-                      + "delete this rather than leaving it passing on nothing")
+        XCTAssertNil(UIImage(named: "outlineSpangleConvex"), "the point of the name")
+        XCTAssertEqual(scene.endlessIIThemedShapeArt("Spangle", "Convex"),
+                       "regularSpangleConvex",
+                       "a picture a theme has not got is borrowed, not skipped")
+
+        XCTAssertEqual(scene.endlessIIThemedShapeArt("Paddle", "Convex"), "outlinePaddleConvex",
+                       "and everything it has got is still its own")
     }
 
     /// The shaped paddle's own lookup goes through the themed one.

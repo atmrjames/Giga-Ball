@@ -73,10 +73,11 @@ extension GameScene {
         paddleSticky.isHidden = paddleTexture == retroPaddle
     }
 
-    /// Whether anything on the paddle still wants the sticky face.
+    /// Whether anything on the paddle still wants the sticky face - or the grip, which is the
+    /// same overlay wearing a different picture.
     var endlessIIWantsStickyFace: Bool {
         stickyPaddleCatches != 0 || endlessIIAimedStickyClock.isRunning || endlessIIAimHold
-            || endlessIIAimOwedHold
+            || endlessIIAimOwedHold || endlessIIWearsGrip
     }
 
     /// Takes the sticky face off once nothing wants it any more.
@@ -90,7 +91,20 @@ extension GameScene {
     /// It only ever takes the face *off*. Putting it on is a collection, and a collection is a
     /// moment.
     func refreshEndlessIIStickyFace() {
-        guard gameMode == .endlessII, endlessIIWantsStickyFace == false else { return }
+        guard gameMode == .endlessII else { return }
+
+        if endlessIIShapeOwnsTheBounce == false, endlessIIWantsStickyFace,
+           paddleSticky.isHidden == false {
+            let wanted = endlessIIPaddleTopTexture
+            if paddleSticky.texture !== wanted { paddleSticky.texture = wanted }
+        }
+        // **The overlay follows whichever of the two is running, both ways.** A grip starting
+        // over a bare paddle has nothing else to dress it - the shaped path runs only while a
+        // shape is on, and a collection is a moment - and a grip *ending* over a Sticky that
+        // was collected under it has to hand the picture back. Compared by identity, so this
+        // is a pointer check on almost every frame and a texture write on almost none
+
+        guard endlessIIWantsStickyFace == false else { return }
         guard paddleSticky.isHidden == false || paddleRetroStickyTexture.isHidden == false
         else { return }
         guard endlessIIHasHeldExtras == false else { return }
@@ -155,6 +169,9 @@ extension GameScene {
     func endlessIICollectBallSteering() {
         endlessIIDisplace(byCollecting: .ballControl)
         endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        startEndlessIIGrip()
+        // The paddle wears the grip while this steers, and the grip replaces Sticky and Aimed
+        // Sticky outright rather than sitting over them (James, round 261). See EndlessIIGrip
         // Timed, alone in this batch (play-test round 15). Turns are the right unit for a
         // power-up that acts *on* a paddle hit; steering acts continuously between them,
         // and counting hits meant the effect ended in the middle of using it
@@ -274,8 +291,11 @@ extension GameScene {
 
         let laser = suffix.map { SKTexture(imageNamed: endlessIIThemedShapeArt("Lasers", $0)) }
             ?? laserPaddleTexture
-        let sticky = suffix.map { SKTexture(imageNamed: endlessIIThemedShapeArt("Sticky", $0)) }
-            ?? stickyPaddleTexture
+        let kind = endlessIIPaddleTopKind
+        let sticky = suffix.map { SKTexture(imageNamed: endlessIIThemedShapeArt(kind, $0)) }
+            ?? endlessIIPaddleTopTexture
+        // Grip or Sticky, asked rather than assumed: they are one overlay wearing one of two
+        // pictures, and every shape has both drawn for it (round 261)
 
         paddleLaser.texture = laser
         paddleLaser.size = CGSize(width: paddle.size.width,
@@ -290,6 +310,32 @@ extension GameScene {
             paddleSticky.centerRect = whole
             // Stretched whole, for the paddle's own reason: the cap rects are written in the
             // plain art's unit coordinates and would protect the wrong strips of a shaped one
+        }
+
+        refreshEndlessIIRetroShapeDressing(suffix)
+    }
+
+    /// Retro's three overlay nodes, which no other theme has.
+    ///
+    /// The retro paddle is drawn as a decorated layer *over* the ordinary paddle sprite -
+    /// `retroPaddleTexture` - with its own laser and sticky pictures beside it, and all three
+    /// take their texture from the scene file rather than from code, because until round 261
+    /// there was nothing to swap them for. James has now drawn the shaped set for retro, so
+    /// they swap like everything else.
+    ///
+    /// Nothing happens in any other theme, and nothing happens for the grip: James's note is
+    /// that retro's grip is in the *other* themes' style, so it wears the shared overlay and
+    /// this layer stands down (see `EndlessIIGrip`).
+    func refreshEndlessIIRetroShapeDressing(_ suffix: String?) {
+        guard paddleTexture == retroPaddle else { return }
+
+        paddleRetroTexture.texture = SKTexture(imageNamed:
+            suffix.map { "retroPaddleTexture\($0)" } ?? "retroPaddleTexture")
+        paddleRetroLaserTexture.texture = SKTexture(imageNamed:
+            suffix.map { "retroLasers\($0)" } ?? "retroLasers")
+        if endlessIIWearsGrip == false {
+            paddleRetroStickyTexture.texture = SKTexture(imageNamed:
+                suffix.map { "retroSticky\($0)" } ?? "retroSticky")
         }
     }
 
@@ -1054,7 +1100,8 @@ extension GameScene {
             ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.hud("AimedStickyIcon", PowerUpIcon.aimedSticky)),
             ("endlessIIMagnetism", endlessIIMagnetismClock,
              PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism)),
-            ("endlessIIPortalPaddle", endlessIIPortalPaddleClock, PowerUpIcon.portalPaddle),
+            ("endlessIIPortalPaddle", endlessIIPortalPaddleClock,
+             PowerUpIcon.hud("PortalIcon", PowerUpIcon.portalPaddle)),
             ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.hud("PaddleHaloIcon", PowerUpIcon.paddleHalo)),
             ("endlessIIBallSteering", endlessIIBallSteeringClock,
              PowerUpIcon.hud("BallSteeringIcon", PowerUpIcon.ballSteering)),
@@ -1074,7 +1121,8 @@ extension GameScene {
             // badge stays as the fallback everywhere, so a build without a picture looks
             // exactly as it did - which is what `hud` is for, and why Magnetism, Ball Steering
             // and Auto-Aim could be given theirs in round 241 by naming a file
-            ("endlessIIBallSpin", endlessIIBallSpinClock, PowerUpIcon.ballSpin),
+            ("endlessIIBallSpin", endlessIIBallSpinClock,
+             PowerUpIcon.hud("BallSpinIcon", PowerUpIcon.ballSpin)),
         ]
         return clocks.compactMap { id, clock, icon in
             guard clock.isRunning else { return nil }

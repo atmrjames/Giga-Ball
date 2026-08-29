@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "gigaGripWedgeLeft.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "gigaGripWedgeLeft@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "gigaGripWedgeLeft@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}
