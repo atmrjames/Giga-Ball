@@ -34,18 +34,84 @@ extension GameScene {
 
     /// The shapes there is drawn art for.
     ///
-    /// Not `EndlessIIFace`, which has three cases and two of them have no art, and not
-    /// `EndlessIIStyle`, which has thirty. Its own two-case vocabulary, so the day Convex is
-    /// drawn the change is one case here and one line in `shapedArtName`.
+    /// Not `EndlessIIStyle`, which has thirty. Its own vocabulary, and as of round 262 it
+    /// covers every face the game draws - James delivered Convex, Concave and Diamond for the
+    /// classic theme, so `shapedArt(for:)` no longer has a case that returns nil.
     enum ShapedBrickArt: String {
         case rounded = "Rounded"
         case wedge = "Wedge"
+        case convex = "Convex"
+        case concave = "Concave"
+        case diamond = "Diamond"
+    }
+
+    /// The suffix an orientation-specific picture carries.
+    ///
+    /// James, round 262: "I've appended 0, 90, 180 and 270 to these... The reason for this is
+    /// that the lighting on these bricks wouldn't look right in the rotated / mirrored
+    /// versions."
+    ///
+    /// Which is true, and is the thing a reflected node cannot fix: turning a picture over
+    /// turns its highlight over with it, so a wedge lit from above is lit from below the
+    /// moment it is flipped.
+    ///
+    /// **The number names the transform, not a rotation**, and how many there are depends on
+    /// how many the shape has. Only the Wedge has a handedness worth varying - `makeFace`
+    /// forces `mirrored` false for the others, because a mirrored dome is the same dome - so
+    /// it is drawn four ways and everything else two: "the indestructible bricks have 0 and
+    /// 180 appended as they can be right-side-up or upside-down".
+    ///
+    /// Worked out against the art rather than assumed. The base wedge in
+    /// `EndlessIIFaceGeometry` is right-angled at the bottom right, which is exactly what
+    /// `Wedge0` is drawn as, and `ShapedBrickArtOrientationTests` compares the alpha
+    /// silhouettes, so the mapping is pinned to the pictures rather than to a reading of them.
+    static func orientationSuffix(_ shape: ShapedBrickArt,
+                                  mirrored: Bool, flipped: Bool) -> String {
+        switch shape {
+        case .wedge: return String((mirrored ? 180 : 0) + (flipped ? 90 : 0))
+        case .convex, .concave, .diamond, .rounded: return flipped ? "180" : "0"
+        }
     }
 
     /// The drawn face for a brick of this type in this shape, or nil where there is none.
-    func endlessIIShapedArt(for texture: SKTexture?, _ shape: ShapedBrickArt) -> SKTexture? {
+    ///
+    /// **The oriented picture first, the plain one after.** Only some of the set is drawn per
+    /// orientation - every retro wedge and both Indestructibles are, the classic Multi-hits
+    /// are not yet - so this asks for the specific one and falls back, which means a picture
+    /// arriving later needs no code at all. `endlessIIArtIsOriented` is the same question
+    /// asked by the caller that has to decide whether to un-reflect the sprite.
+    func endlessIIShapedArt(for texture: SKTexture?, _ shape: ShapedBrickArt,
+                            mirrored: Bool = false, flipped: Bool = false) -> SKTexture? {
         guard let name = endlessIIBrickTextureName(texture) else { return nil }
-        return SKTexture(imageNamed: name + shape.rawValue)
+        let oriented = name + shape.rawValue
+            + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped)
+        if UIImage(named: oriented) != nil { return SKTexture(imageNamed: oriented) }
+
+        let plain = name + shape.rawValue
+        guard UIImage(named: plain) != nil else { return nil }
+        return SKTexture(imageNamed: plain)
+        // **Asked of the catalogue, not of SpriteKit.** `SKTexture(imageNamed:)` does not
+        // return nil for a name that is not there - it hands back a placeholder - so the
+        // old code was safe only because it was asked about Rounded and Wedge, which every
+        // type has. Round 262 opened it to Convex, Concave and Diamond, which the classic
+        // theme now has and the retro theme does not yet ("the retro concave and convex
+        // bricks will be the same, but they aren't ready yet"). Nil is the honest answer
+        // there, and it is the answer §8.5 already describes: the face keeps stretching the
+        // brick's own texture until the picture exists
+    }
+
+    /// Whether this brick's picture is drawn for its own orientation rather than reflected
+    /// into it.
+    ///
+    /// The face's *path* is reflected by scaling the shape node, and a sprite inside it
+    /// inherits that scale - which is right for a picture drawn one way up and wrong for one
+    /// drawn four ways. Where the oriented art exists the sprite cancels the scale back out,
+    /// so the outline is turned and the lighting is not.
+    func endlessIIArtIsOriented(for texture: SKTexture?, _ shape: ShapedBrickArt,
+                                mirrored: Bool, flipped: Bool) -> Bool {
+        guard let name = endlessIIBrickTextureName(texture) else { return false }
+        return UIImage(named: name + shape.rawValue
+                       + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped)) != nil
     }
 
     /// The asset name of a brick type's plain texture.
@@ -116,13 +182,16 @@ extension GameScene {
     /// No clipping is needed: the drawn faces are silhouettes already, transparent where the
     /// shape is not. The shape node stays - it carries the name the style is identified by,
     /// and the physics is built from its path - but it stops trying to paint.
-    func drawEndlessIIFaceArt(_ texture: SKTexture, on shape: SKShapeNode, cell: CGSize) {
+    @discardableResult
+    func drawEndlessIIFaceArt(_ texture: SKTexture, on shape: SKShapeNode,
+                              cell: CGSize) -> SKSpriteNode {
         shape.fillTexture = nil
         shape.fillColor = .clear
         let art = SKSpriteNode(texture: texture, size: cell)
         art.name = GameScene.faceArtName
         art.zPosition = 0.01
         shape.addChild(art)
+        return art
     }
 
     static let faceArtName = "endlessIIFaceArt"
@@ -145,26 +214,45 @@ extension GameScene {
     @discardableResult
     func refreshEndlessIIFaceArt(_ brick: SKSpriteNode, _ shape: SKShapeNode,
                                  _ art: ShapedBrickArt?, cell: CGSize) -> Bool {
-        guard let art, let texture = endlessIIShapedArt(for: brick.texture, art) else {
+        let mirrored = brick.endlessIIFaceMirrored ?? false
+        let flipped = brick.endlessIIFaceFlipped ?? false
+
+        guard let art, let texture = endlessIIShapedArt(for: brick.texture, art,
+                                                        mirrored: mirrored, flipped: flipped)
+        else {
             shape.childNode(withName: GameScene.faceArtName)?.removeFromParent()
             return false
         }
-        if let sprite = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode {
-            if sprite.texture != texture { sprite.texture = texture }
-            if sprite.size != cell { sprite.size = cell }
-            sprite.color = brick.color
-            sprite.colorBlendFactor = brick.colorBlendFactor
-        } else {
-            drawEndlessIIFaceArt(texture, on: shape, cell: cell)
-        }
+
+        let oriented = endlessIIArtIsOriented(for: brick.texture, art,
+                                              mirrored: mirrored, flipped: flipped)
+        let sprite = (shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode)
+            ?? drawEndlessIIFaceArt(texture, on: shape, cell: cell)
+
+        if sprite.texture != texture { sprite.texture = texture }
+        if sprite.size != cell { sprite.size = cell }
+        sprite.color = brick.color
+        sprite.colorBlendFactor = brick.colorBlendFactor
+
+        sprite.xScale = oriented && mirrored ? -1 : 1
+        sprite.yScale = oriented && flipped ? -1 : 1
+        // **A picture drawn for its own orientation is un-turned here** (round 262). The face's
+        // path is reflected by scaling the shape node, and this sprite is inside it, so it
+        // inherits the reflection - which is right for a picture drawn one way up and wrong
+        // for one James has drawn four ways. Cancelling the parent's scale leaves the outline
+        // turned and the lighting the way he drew it, which is the whole reason the four
+        // exist: "the lighting on these bricks wouldn't look right in the rotated / mirrored
+        // versions"
         return true
     }
 
-    /// The drawn shape a face uses, if any. Convex and Concave have none yet (§8.5).
+    /// The drawn shape a face uses. All four have art as of round 262.
     static func shapedArt(for face: EndlessIIFace) -> ShapedBrickArt? {
         switch face {
         case .wedge: return .wedge
-        case .convex, .concave, .diamond: return nil
+        case .convex: return .convex
+        case .concave: return .concave
+        case .diamond: return .diamond
         }
     }
 }

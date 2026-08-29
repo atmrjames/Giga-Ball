@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "BrickInvisibleDiamond.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "BrickInvisibleDiamond@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "BrickInvisibleDiamond@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

@@ -98,8 +98,11 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
         endlessIIDisplace(byCollecting: .ballSpin)
         endlessIIBallSpinClock.collect(turns: GameScene.endlessIIBallSpinTurns)
+        startEndlessIIGrip()
         // Spin and every other answer to "where does the ball go when it leaves the paddle"
-        // are one question with one answer (round 223's matrix)
+        // are one question with one answer (round 223's matrix) - and the paddle says which it
+        // is giving by wearing the grip, which also replaces Sticky and Aimed Sticky outright
+        // rather than sitting over them (James, round 261). See `EndlessIIGrip`
     }
 
     var endlessIIBallSpinIsRunning: Bool {

@@ -4,9 +4,16 @@
 //
 //  The grip: what the paddle wears while Ball Control is steering.
 //
-//  James, round 261: "Grip is the texture to use when the ball steering power-up is active -
-//  it replaces the sticky and aimed sticky power-up and textures when caught. The grip texture
-//  is effectively just a black version of the sticky texture."
+//  James, round 262, correcting round 261: "grip is for the ball spin, not ball steering."
+//
+//  Which is what §5.4 and §8.5 had said three times - "ball spin grippy texture" is his own
+//  phrase from round 200 - and is the reading the picture suggests: a paddle that grips the
+//  ball is a paddle that can spin it. Built against Ball Steering for one round because that
+//  is what the note said, and moved by changing the one property it hangs on.
+//
+//  His round-261 note otherwise stands: "it replaces the sticky and aimed sticky power-up and
+//  textures when caught. The grip texture is effectively just a black version of the sticky
+//  texture."
 //
 //  ## Why it lives with the sticky face rather than beside it
 //
@@ -44,8 +51,10 @@ import SpriteKit
 extension GameScene {
 
     /// Whether the paddle should be wearing the grip rather than a sticky face.
+    ///
+    /// **Ball Spin, not Ball Control** (round 262). This is the one line the correction moved.
     var endlessIIWearsGrip: Bool {
-        gameMode == .endlessII && endlessIIBallSteeringClock.isRunning
+        gameMode == .endlessII && endlessIIBallSpinClock.isRunning
     }
 
     /// Which overlay picture the paddle's top wants: the grip's or the sticky's.
@@ -66,7 +75,7 @@ extension GameScene {
 
     /// Puts the grip on, and takes the catching power-ups off with it.
     ///
-    /// Called from the Ball Control collection, which is the only thing that starts a grip.
+    /// Called from the Ball Spin collection, which is the only thing that starts a grip.
     func startEndlessIIGrip() {
         guard gameMode == .endlessII else { return }
 

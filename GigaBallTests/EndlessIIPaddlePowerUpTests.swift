@@ -2717,10 +2717,11 @@ final class AimedStickyIsAVariantOfStickyTests: XCTestCase {
     }
 }
 
-/// The grip: what the paddle wears while Ball Control steers (round 261).
+/// The grip: what the paddle wears while Ball Spin runs (rounds 261 and 262).
 ///
-/// James: "Grip is the texture to use when the ball steering power-up is active - it replaces
-/// the sticky and aimed sticky power-up and textures when caught."
+/// James, round 261: "it replaces the sticky and aimed sticky power-up and textures when
+/// caught." Round 262, correcting which power-up it belongs to: "grip is for the ball spin,
+/// not ball steering" - which is what §5.4 had said all along.
 final class EndlessIIGripTests: XCTestCase {
 
     private func mayhem(theme: Int = 0) -> GameScene {
@@ -2750,9 +2751,9 @@ final class EndlessIIGripTests: XCTestCase {
         }
     }
 
-    func testCollectingBallControlPutsTheGripOn() {
+    func testCollectingBallSpinPutsTheGripOn() {
         let scene = mayhem()
-        scene.endlessIICollectBallSteering()
+        scene.endlessIICollectBallSpin()
         XCTAssertTrue(scene.endlessIIWearsGrip)
         XCTAssertFalse(scene.paddleSticky.isHidden)
         XCTAssertEqual(scene.endlessIIPaddleTopKind, "Grip")
@@ -2766,7 +2767,7 @@ final class EndlessIIGripTests: XCTestCase {
         scene.stickyPaddleCatchesTotal = 3
         scene.endlessIICollectAimedSticky()
 
-        scene.endlessIICollectBallSteering()
+        scene.endlessIICollectBallSpin()
 
         XCTAssertEqual(scene.stickyPaddleCatches, 0)
         XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
@@ -2784,7 +2785,7 @@ final class EndlessIIGripTests: XCTestCase {
         let scene = mayhem(theme: retro)
         scene.paddleRetroStickyTexture.isHidden = false
 
-        scene.endlessIICollectBallSteering()
+        scene.endlessIICollectBallSpin()
 
         XCTAssertFalse(scene.paddleSticky.isHidden, "the grip is in everybody else's style")
         XCTAssertTrue(scene.paddleRetroStickyTexture.isHidden,
@@ -2794,8 +2795,8 @@ final class EndlessIIGripTests: XCTestCase {
     /// The face comes off when the steering stops.
     func testTheGripComesOffWhenTheSteeringEnds() {
         let scene = mayhem()
-        scene.endlessIICollectBallSteering()
-        scene.endlessIIBallSteeringClock.reset()
+        scene.endlessIICollectBallSpin()
+        scene.endlessIIBallSpinClock.reset()
 
         scene.refreshEndlessIIStickyFace()
         XCTAssertTrue(scene.paddleSticky.isHidden)
@@ -2804,11 +2805,11 @@ final class EndlessIIGripTests: XCTestCase {
     /// And hands the picture back if a Sticky was collected underneath it.
     func testAStickyCollectedUnderTheGripGetsThePictureBack() {
         let scene = mayhem()
-        scene.endlessIICollectBallSteering()
+        scene.endlessIICollectBallSpin()
         scene.stickyPaddleCatches = 3
         scene.stickyPaddleCatchesTotal = 3
 
-        scene.endlessIIBallSteeringClock.reset()
+        scene.endlessIIBallSpinClock.reset()
         scene.refreshEndlessIIStickyFace()
 
         XCTAssertFalse(scene.paddleSticky.isHidden, "the Sticky still wants a face")

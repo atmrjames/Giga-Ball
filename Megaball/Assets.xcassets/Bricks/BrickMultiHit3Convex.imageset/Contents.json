@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "BrickMultiHit3Convex.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "BrickMultiHit3Convex@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "BrickMultiHit3Convex@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

@@ -169,9 +169,6 @@ extension GameScene {
     func endlessIICollectBallSteering() {
         endlessIIDisplace(byCollecting: .ballControl)
         endlessIIBallSteeringClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
-        startEndlessIIGrip()
-        // The paddle wears the grip while this steers, and the grip replaces Sticky and Aimed
-        // Sticky outright rather than sitting over them (James, round 261). See EndlessIIGrip
         // Timed, alone in this batch (play-test round 15). Turns are the right unit for a
         // power-up that acts *on* a paddle hit; steering acts continuously between them,
         // and counting hits meant the effect ended in the middle of using it

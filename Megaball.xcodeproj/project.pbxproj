@@ -109,6 +109,7 @@
 		1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF10000000000E3 /* EndlessIIFaceTests.swift */; };
 		1AF1000000000C11 /* ShapedPaddleThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000C12 /* ShapedPaddleThemeTests.swift */; };
 		1AF1000000000B11 /* EndlessIIRowPlanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000B12 /* EndlessIIRowPlanTests.swift */; };
+		1AF1000000000B41 /* ShapedBrickArtOrientationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000B42 /* ShapedBrickArtOrientationTests.swift */; };
 		1AF1000000000B31 /* EndlessIIElementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000B32 /* EndlessIIElementTests.swift */; };
 		1AF1000000000B21 /* EndlessIIFrameCostTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000B22 /* EndlessIIFrameCostTests.swift */; };
 		1AF1000000000A11 /* EndlessIIDrawnEffectsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1000000000A12 /* EndlessIIDrawnEffectsTests.swift */; };
@@ -483,6 +484,7 @@
 		1AF10000000000E3 /* EndlessIIFaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFaceTests.swift; sourceTree = "<group>"; };
 		1AF1000000000C12 /* ShapedPaddleThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapedPaddleThemeTests.swift; sourceTree = "<group>"; };
 		1AF1000000000B12 /* EndlessIIRowPlanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIRowPlanTests.swift; sourceTree = "<group>"; };
+		1AF1000000000B42 /* ShapedBrickArtOrientationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapedBrickArtOrientationTests.swift; sourceTree = "<group>"; };
 		1AF1000000000B32 /* EndlessIIElementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIElementTests.swift; sourceTree = "<group>"; };
 		1AF1000000000B22 /* EndlessIIFrameCostTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIFrameCostTests.swift; sourceTree = "<group>"; };
 		1AF1000000000A12 /* EndlessIIDrawnEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIDrawnEffectsTests.swift; sourceTree = "<group>"; };
@@ -819,6 +821,7 @@
 				1AF10000000000E3 /* EndlessIIFaceTests.swift */,
 				1AF1000000000C12 /* ShapedPaddleThemeTests.swift */,
 				1AF1000000000B12 /* EndlessIIRowPlanTests.swift */,
+				1AF1000000000B42 /* ShapedBrickArtOrientationTests.swift */,
 				1AF1000000000B32 /* EndlessIIElementTests.swift */,
 				1AF1000000000B22 /* EndlessIIFrameCostTests.swift */,
 				1AF1000000000A12 /* EndlessIIDrawnEffectsTests.swift */,
@@ -1642,6 +1645,7 @@
 				1AF10000000000E2 /* EndlessIIFaceTests.swift in Sources */,
 				1AF1000000000C11 /* ShapedPaddleThemeTests.swift in Sources */,
 				1AF1000000000B11 /* EndlessIIRowPlanTests.swift in Sources */,
+				1AF1000000000B41 /* ShapedBrickArtOrientationTests.swift in Sources */,
 				1AF1000000000B31 /* EndlessIIElementTests.swift in Sources */,
 				1AF1000000000B21 /* EndlessIIFrameCostTests.swift in Sources */,
 				1AF1000000000A11 /* EndlessIIDrawnEffectsTests.swift in Sources */,

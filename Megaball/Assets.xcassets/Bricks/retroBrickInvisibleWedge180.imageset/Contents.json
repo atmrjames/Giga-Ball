@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "retroBrickInvisibleWedge180.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "retroBrickInvisibleWedge180@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "retroBrickInvisibleWedge180@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

@@ -421,16 +421,22 @@ final class EndlessIIShapedBrickArtTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIFaceFill(brick, .rounded), brick.texture)
     }
 
-    func testConvexAndConcaveHaveNoDrawnFaceYet() {
-        // §8.5. Stated rather than assumed, so the day they are drawn the test says where
-        XCTAssertNil(GameScene.shapedArt(for: .convex))
-        XCTAssertNil(GameScene.shapedArt(for: .concave))
+    /// **Every face has drawn art now** (round 262), which is what this test was waiting to
+    /// say: it used to assert Convex and Concave had none, and said where to look on the day
+    /// they arrived. James drew them, along with Diamond, for the whole classic set.
+    func testEveryFaceHasItsOwnDrawnArt() {
         XCTAssertEqual(GameScene.shapedArt(for: .wedge), .wedge)
+        XCTAssertEqual(GameScene.shapedArt(for: .convex), .convex)
+        XCTAssertEqual(GameScene.shapedArt(for: .concave), .concave)
+        XCTAssertEqual(GameScene.shapedArt(for: .diamond), .diamond)
 
         let scene = scene()
         let brick = SKSpriteNode(texture: scene.brickNormalTexture)
-        XCTAssertEqual(scene.endlessIIFaceFill(brick, GameScene.shapedArt(for: .convex)),
-                       brick.texture, "the dome still stretches the rectangle")
+        for face in [EndlessIIFace.wedge, .convex, .concave, .diamond] {
+            XCTAssertNotEqual(scene.endlessIIFaceFill(brick, GameScene.shapedArt(for: face)),
+                              brick.texture,
+                              "\(face) is still stretching the rectangle")
+        }
     }
 
     func testTheWedgeArtIsHandedTheSameWayTheGeometryIs() {

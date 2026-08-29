@@ -123,6 +123,58 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  The fading line, drawn: \(file.path)\n")
     }
 
+    /// Draws every shaped brick face to a file so the new art can be looked at.
+    ///
+    /// Round 262 opened the drawn set from two shapes to five and gave the Wedge four
+    /// orientations of its own, and the mapping between "which way is this brick facing" and
+    /// "which of James's four pictures" is the sort of thing that is checked by arithmetic and
+    /// believed by eye. `ShapedBrickArtOrientationTests` does the arithmetic against the alpha
+    /// silhouettes; this is the eye.
+    func testEveryShapedBrickFaceCanBeLookedAt() throws {
+        let cell = CGSize(width: 56, height: 28)
+        let scene = SKScene(size: CGSize(width: cell.width*6 + 40,
+                                         height: cell.height*8 + 60))
+        scene.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        let game = GameScene(size: CGSize(width: 402, height: 874))
+        game.gameMode = .endlessII
+        game.brickWidth = cell.width
+        game.brickHeight = cell.height
+
+        let types = ["BrickNormal", "BrickMultiHit1", "BrickMultiHit4",
+                     "BrickInvisible", "BrickIndestructible1", "BrickIndestructible2"]
+        let orientations: [(String, Bool, Bool)] = [("", false, false), ("f", false, true),
+                                                    ("m", true, false), ("mf", true, true)]
+
+        var row = 0
+        for shape in [GameScene.ShapedBrickArt.wedge, .convex, .concave, .diamond, .rounded] {
+            for (_, mirrored, flipped) in orientations {
+                guard shape == .wedge || mirrored == false else { continue }
+                for (column, type) in types.enumerated() {
+                    let name = type + shape.rawValue
+                        + GameScene.orientationSuffix(shape, mirrored: mirrored,
+                                                      flipped: flipped)
+                    let picture = UIImage(named: name) ?? UIImage(named: type + shape.rawValue)
+                    guard let picture else { continue }
+
+                    let sprite = SKSpriteNode(texture: SKTexture(image: picture), size: cell)
+                    sprite.position = CGPoint(x: 24 + cell.width*(CGFloat(column) + 0.5),
+                                              y: scene.size.height - 30
+                                                  - cell.height*(CGFloat(row) + 0.5))
+                    scene.addChild(sprite)
+                }
+                row += 1
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let texture = try XCTUnwrap(view.texture(from: scene))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("shaped-bricks.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Shaped brick faces, drawn: \(file.path)\n")
+    }
+
     /// How often a shaped paddle retraces its body, and what one trace costs.
     ///
     /// The third of James's four. Its per-frame *arithmetic* is nothing; what it can be is
