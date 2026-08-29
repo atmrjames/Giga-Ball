@@ -215,15 +215,19 @@ extension GameScene {
     /// frame per ball, and an `SKShapeNode` re-tessellates when it is handed a path and is
     /// rendered through an offscreen pass when it glows. They all wear one texture now, so
     /// SpriteKit draws the whole line in a single batch. `FadingLine` says the rest.
-    private func endlessIIVisionLine(at index: Int) -> SKSpriteNode {
-        while endlessIITrajectoryLines.count <= index {
-            let line = FadingLine.segment()
+    private func endlessIIVisionLine(at index: Int) -> (glow: SKSpriteNode, core: SKSpriteNode) {
+        while endlessIITrajectoryLines.count <= index*2 + 1 {
+            let glowing = endlessIITrajectoryLines.count % 2 == 0
+            let line = FadingLine.segment(glow: glowing)
             addChild(line)
             endlessIITrajectoryLines.append(line)
             // Under the balls and power-ups, over the background and bricks - and faint,
             // because four of these must not shout over the field they are explaining
         }
-        return endlessIITrajectoryLines[index]
+        return (endlessIITrajectoryLines[index*2], endlessIITrajectoryLines[index*2 + 1])
+        // **Two nodes to a segment** (round 260): a wide coloured glow and a narrow white core
+        // over it - James: "a blurry white with a giga-ball yellow/green glow". Kept in one
+        // pool, alternating, so the trim below still counts nodes and cannot lose one of a pair
     }
 
     /// Draws a predicted path as a run of short segments that fade and blur with distance.
@@ -271,10 +275,23 @@ extension GameScene {
 
                 let segment = endlessIIVisionLine(at: index)
                 index += 1
-                FadingLine.lay(segment, from: head, to: tail,
-                               thickness: 1.5 + (1 - certainty)*2,
-                               blur: (1 - certainty)*(1 - certainty)*6,
-                               alpha: max(0.04, 0.5*certainty))
+
+                let core = 1.5 + (1 - certainty)*3.5
+                let blur = (1 - certainty)*(1 - certainty)*9
+                // **Wider and blurrier with distance than round 258 drew it** (James, round
+                // 260: "make the line more blurry and wider the further it gets from the
+                // ball"). Both numbers were tuned when the blur was an `SKShapeNode`'s glow,
+                // which spread further for the same figure than a stretched picture does
+
+                FadingLine.lay(segment.core, from: head, to: tail,
+                               thickness: core, blur: blur,
+                               alpha: max(0.06, 0.55*certainty))
+                FadingLine.lay(segment.glow, from: head, to: tail,
+                               thickness: core, blur: blur + core*1.6,
+                               alpha: max(0.05, 0.40*certainty))
+                // The glow is the same line drawn wider and fainter underneath. It reaches
+                // past the core by a share of the core's own width, so it opens out as the
+                // line widens rather than staying a fixed halo around a growing stroke
                 // The blur grows as the confidence falls, which is the same statement made
                 // twice - a line you can barely see and can barely locate. Round 85 said
                 // the first cut of this was not fuzzy enough: the width stayed fixed, so
@@ -424,7 +441,7 @@ extension GameScene {
     /// A ball can be lost, caught, or stationary between frames, so the number of lines is a
     /// new answer every frame - and a line left behind belongs to a ball that no longer is.
     private func endlessIITrimVision(lines: Int, markers: Int) {
-        while endlessIITrajectoryLines.count > lines {
+        while endlessIITrajectoryLines.count > lines*2 {
             endlessIITrajectoryLines.removeLast().removeFromParent()
         }
         while endlessIILandingMarkers.count > markers {

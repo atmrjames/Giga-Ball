@@ -95,11 +95,17 @@ final class EndlessIIFrameCostTests: XCTestCase {
                 let along = (travelled + length*(a + b)/2)/total
                 let certainty = pow(1 - along, 1.8 - 1*0.45)
 
+                let core = 1.5 + (1 - certainty)*3.5
+                let blur = (1 - certainty)*(1 - certainty)*9
+
+                let glowing = FadingLine.segment(glow: true)
+                FadingLine.lay(glowing, from: head, to: tail, thickness: core,
+                               blur: blur + core*1.6, alpha: max(0.05, 0.40*certainty))
+                scene.addChild(glowing)
+
                 let segment = FadingLine.segment()
-                FadingLine.lay(segment, from: head, to: tail,
-                               thickness: 1.5 + (1 - certainty)*2,
-                               blur: (1 - certainty)*(1 - certainty)*6,
-                               alpha: max(0.04, 0.5*certainty))
+                FadingLine.lay(segment, from: head, to: tail, thickness: core, blur: blur,
+                               alpha: max(0.06, 0.55*certainty))
                 scene.addChild(segment)
             }
             travelled += length
@@ -215,6 +221,9 @@ final class EndlessIIFrameCostTests: XCTestCase {
                              + "the work - which is how a measurement lies")
 
         let drawn = scene.endlessIITrajectoryLines.filter { $0.parent != nil }
+        XCTAssertEqual(drawn.count % 2, 0,
+                       "the segments come in pairs - a glow and a core - so an odd count means "
+                       + "one of a pair has been trimmed away from its partner")
         let textures = Set(drawn.compactMap { $0.texture.map(ObjectIdentifier.init) })
         print(String(format: "\n  Ball Trajectory lays %d segments a frame, per ball,",
                      drawn.count))

@@ -46,12 +46,76 @@ extension GameScene {
     func endlessIICollectAimedSticky() {
         endlessIIDisplace(byCollecting: .aimedSticky)
         endlessIIAimedStickyClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
+        stickyPaddleCatches = 0
+        stickyPaddleCatchesTotal = 0
+        showEndlessIIStickyFace()
+        // **Aimed Sticky is a variant of Sticky, not a rival** (James, round 260: "it should
+        // be another variant of the sticky power-up, so it should apply the sticky paddle
+        // texture... If aimed sticky is caught during sticky, it should become aimed sticky").
+        //
+        // So the two never run side by side: collecting this ends any plain Sticky outright
+        // rather than leaving both clocks going and letting the launchControl group decide
+        // which one answers a catch. One paddle, one face, one rule about where the ball goes
         // **Aimed Sticky cancels the angle-benders, and they cancel it** (James's rule,
         // round 99): an aimed launch and a paddle that ignores or flips where it was struck
         // are answers to the same question, and running both is one lying about the other.
         // Most recent wins. Which power-ups that reaches is `EndlessIIExclusions` from round
         // 223 - the Portal is still compatible, because its rules apply from the top of the
         // screen rather than from the paddle
+    }
+
+    /// Puts the sticky face on the paddle, wherever the reason for it came from.
+    ///
+    /// The plain Sticky Paddle has always done this inline in `applyPowerUp`; Aimed Sticky
+    /// needs the same face and needs it under the same rule, so the rule is said once. The
+    /// retro theme has no sticky picture, which is why it is asked about rather than assumed.
+    func showEndlessIIStickyFace() {
+        paddleSticky.isHidden = paddleTexture == retroPaddle
+    }
+
+    /// Whether anything on the paddle still wants the sticky face.
+    var endlessIIWantsStickyFace: Bool {
+        stickyPaddleCatches != 0 || endlessIIAimedStickyClock.isRunning || endlessIIAimHold
+            || endlessIIAimOwedHold
+    }
+
+    /// Takes the sticky face off once nothing wants it any more.
+    ///
+    /// **Asked every frame rather than at the moment a turn is spent** (round 260). Aimed
+    /// Sticky wears the sticky paddle's face now, so it has to take it off too - and its clock
+    /// does not stop when its last turn is spent: it *lingers*, deliberately, so the ring can
+    /// be seen ending. There is no single moment to hang this on, which is exactly the shape
+    /// of thing that belongs in the tick.
+    ///
+    /// It only ever takes the face *off*. Putting it on is a collection, and a collection is a
+    /// moment.
+    func refreshEndlessIIStickyFace() {
+        guard gameMode == .endlessII, endlessIIWantsStickyFace == false else { return }
+        guard paddleSticky.isHidden == false || paddleRetroStickyTexture.isHidden == false
+        else { return }
+        guard endlessIIHasHeldExtras == false else { return }
+        // A ball still stuck to the paddle keeps the look, the same rule
+        // `spendStickyPaddleCatch` follows
+        paddleSticky.isHidden = true
+        paddleRetroStickyTexture.isHidden = true
+    }
+
+    /// Whether a plain Sticky collection should feed the aim instead of replacing it.
+    ///
+    /// James, round 260: "If the sticky power-up is caught during aimed sticky, the aimed
+    /// sticky power-up should be maintained with the number of paddle hits reset."
+    ///
+    /// The two are the same power-up at two settings, and the aimed one is the higher setting -
+    /// so a plain Sticky landing on top of it is a refill rather than a downgrade. Returns
+    /// whether it took the collection, in which case the ordinary sticky branch stands down.
+    @discardableResult
+    func endlessIIStickyRefillsTheAim() -> Bool {
+        guard gameMode == .endlessII, endlessIIAimedStickyClock.isRunning else { return false }
+        endlessIIAimedStickyClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
+        // Reset rather than extended, which is what "with the number of paddle hits reset"
+        // asks for and what every clock in the mode has done since round 220
+        showEndlessIIStickyFace()
+        return true
     }
 
     /// Cancels Aimed Sticky because an angle-bender was collected over it.
@@ -769,6 +833,7 @@ extension GameScene {
     /// to physics bodies, so they run from `didSimulatePhysics` instead - the one place such
     /// writes stick (§8.6). The frame's delta is kept for them.
     func tickEndlessIIPaddlePowerUps(_ currentTime: TimeInterval) {
+        refreshEndlessIIStickyFace()
         refreshEndlessIIPaddleSurface()
         refreshEndlessIIDoublePaddle()
         tickEndlessIIMirrorPaddle()

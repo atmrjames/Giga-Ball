@@ -663,6 +663,18 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         scene.stickyPaddleCatches = 3
         scene.stickyPaddleCatchesTotal = 3
         scene.endlessIICollectAimedSticky()
+        XCTAssertEqual(scene.stickyPaddleCatches, 0,
+                       "the aim takes over from a plain Sticky rather than running beside it")
+        // Round 260: the two are one power-up at two settings, so collecting the aimed one
+        // ends the plain one. This test used to set three catches and assert all three
+        // survived the launch; there are none to survive now, and the claim it was making -
+        // that an aimed launch spends no catch - is asserted below instead
+
+        scene.stickyPaddleCatches = 3
+        scene.stickyPaddleCatchesTotal = 3
+        // Put back by hand, which no play path does any more, purely so the launch has
+        // something it could wrongly spend
+
         scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
         scene.endlessIIAimedCatch(scene.ball, isExtra: false)
@@ -2613,5 +2625,94 @@ final class HeldBallRestsOnTheShapeTests: XCTestCase {
 
         XCTAssertEqual(scene.ballStartingPositionY, flat, accuracy: 0.001,
                        "the plain paddle got the shaped paddle's resting height")
+    }
+}
+
+/// Aimed Sticky as a variant of Sticky, rather than a rival to it (round 260).
+///
+/// James: "it should be another variant of the sticky power-up, so it should apply the sticky
+/// paddle texture. If the sticky power-up is caught during aimed sticky, the aimed sticky
+/// power-up should be maintained with the number of paddle hits reset. If aimed sticky
+/// power-up is caught during sticky, it should become aimed sticky."
+final class AimedStickyIsAVariantOfStickyTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.addChild(scene.paddleSticky)
+        scene.paddleSticky.isHidden = true
+        return scene
+    }
+
+    func testCollectingItPutsTheStickyFaceOnThePaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        XCTAssertFalse(scene.paddleSticky.isHidden,
+                       "it is a sticky paddle, and a sticky paddle looks like one")
+    }
+
+    /// Aimed Sticky over a plain Sticky *becomes* the aim, rather than the two running at once.
+    func testItTakesOverFromAPlainSticky() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        scene.stickyPaddleCatchesTotal = 5
+
+        scene.endlessIICollectAimedSticky()
+
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.isRunning)
+        XCTAssertEqual(scene.stickyPaddleCatches, 0,
+                       "one paddle, one rule about where the ball goes - and the aimed one is "
+                       + "the higher setting, so the plain one stands down")
+        XCTAssertFalse(scene.paddleSticky.isHidden)
+    }
+
+    /// And a plain Sticky over the aim refills the aim rather than downgrading it.
+    func testAPlainStickyCollectedOverItRefillsTheAim() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        for _ in 0..<3 { scene.endlessIISpendPaddleTurns() }
+        let spent = scene.endlessIIAimedStickyClock.remaining
+
+        XCTAssertTrue(scene.endlessIIStickyRefillsTheAim(), "the aim takes the collection")
+        XCTAssertGreaterThan(scene.endlessIIAimedStickyClock.remaining, spent,
+                             "the hits reset, which is what a refill is")
+        XCTAssertEqual(scene.stickyPaddleCatches, 0,
+                       "and no plain Sticky starts underneath it")
+    }
+
+    /// With no aim running, a plain Sticky is a plain Sticky.
+    func testAPlainStickyIsUntouchedWhenNoAimIsRunning() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIStickyRefillsTheAim())
+    }
+
+    /// A plain Sticky expiring underneath an aim must not take the face off with it.
+    func testAStickyRunningOutUnderTheAimLeavesTheFaceOn() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.stickyPaddleCatches = 1
+        scene.spendStickyPaddleCatch()
+        // Spent down to nothing, which is the path that decides whether the face stays
+        XCTAssertFalse(scene.paddleSticky.isHidden,
+                       "the aim is still running and still wants the face")
+    }
+
+    /// The aim's own last turn is what takes it off.
+    func testTheFaceComesOffWithTheLastAimedTurn() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) + 1 {
+            scene.endlessIISpendPaddleTurns()
+        }
+        scene.endlessIIAimedStickyClock.reset()
+        // The clock *lingers* after its last turn so the ring can be seen ending, which is
+        // why the face is taken off in the tick rather than at the spend - there is no single
+        // moment to hang it on. Reset here stands for the linger running out
+
+        scene.refreshEndlessIIStickyFace()
+        XCTAssertTrue(scene.paddleSticky.isHidden)
     }
 }

@@ -289,10 +289,9 @@ extension GameScene {
         let arrow = endlessIIAimArrow ?? {
             let node = SKShapeNode()
             node.zPosition = 9
-            // The Giga-Ball green the mode uses for anything of its own, over everything -
-            // an aiming aid that can hide behind a brick is not aiming anything.
-            // A pathless parent now: the shaft hangs off it as segments, because one node
-            // wears one stroke and the fuzziness needs a different stroke every step
+            // A pathless parent: the line hangs off it as segments, because one node wears
+            // one stroke and the fade needs a different one every step. Over everything -
+            // an aiming aid that can hide behind a brick is not aiming anything
 
             let length = max(ballSize*4.5,
                              finalBrickRowHeight - brickHeight/2 - target.position.y - ballSize)
@@ -301,13 +300,20 @@ extension GameScene {
             // thing itself: where the bricks begin, less a ball's grace. The max keeps the
             // round-10 length as the floor for the rare catch high up the field
 
-            // Fuzzy like the trajectory line, so the two aiming aids speak one visual
-            // language (play-test round 39): crisp at the ball, and the further it looks
-            // the wider, softer and fainter the stroke - the same swell-and-glow the
-            // trajectory wears, on the same curve. With one difference, because this is
-            // the control the player is actively steering: the alpha keeps a floor and
-            // the head stays legible. A blurred tip is honest; a vanished one is an
-            // aiming aid that stopped aiming
+            // **The trajectory line's own picture, and no arrowhead** (James, round 260: "the
+            // aim line itself should use the same graphic as the trajectory line power-up,
+            // with no arrow head on the end, just a blurry line showing the general direction
+            // the ball will go").
+            //
+            // The two aids were always meant to speak one visual language (play-test round
+            // 39) and were saying it twice - the same fade written out again here, in glowing
+            // shape nodes, which is what round 258 took out of the trajectory for costing 46
+            // offscreen passes a frame. Now they are the same drawing, which also means the
+            // aim line got the white core and the green glow for nothing.
+            //
+            // The head is gone with it. A pointer was worth having when the line stopped
+            // short and faded to almost nothing; a line that reaches the bricks says which
+            // way the ball is going by being there
             let step = max(ballSize*0.9, 1)
             let pieces = max(Int((length/step).rounded(.up)), 1)
             for piece in 0..<pieces {
@@ -316,32 +322,24 @@ extension GameScene {
                 let along = (a + b)/2/length
                 let certainty = pow(1 - along, 1.8)
 
-                let segment = SKShapeNode()
-                let path = CGMutablePath()
-                path.move(to: CGPoint(x: a, y: 0))
-                path.addLine(to: CGPoint(x: b, y: 0))
-                segment.path = path
-                segment.strokeColor = GameScene.endlessIIHaloColour
-                    .withAlphaComponent(max(0.3, 0.95*certainty))
-                segment.lineWidth = 2 + (1 - certainty)*2
-                segment.glowWidth = (1 - certainty)*(1 - certainty)*6
-                segment.lineCap = .round
-                node.addChild(segment)
-            }
+                let core = 2 + (1 - certainty)*3.5
+                let blur = (1 - certainty)*(1 - certainty)*9
 
-            let head = SKShapeNode()
-            let headPath = CGMutablePath()
-            headPath.move(to: CGPoint(x: length - ballSize*0.7, y: ballSize*0.55))
-            headPath.addLine(to: CGPoint(x: length, y: 0))
-            headPath.addLine(to: CGPoint(x: length - ballSize*0.7, y: -ballSize*0.55))
-            head.path = headPath
-            head.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.55)
-            head.lineWidth = 2.5
-            head.glowWidth = 3
-            head.lineCap = .round
-            node.addChild(head)
-            // The head wears the far end's blur but not its fade - soft-edged and glowing
-            // like the trajectory's tail, and still unmistakably the pointer
+                for glowing in [true, false] {
+                    let segment = FadingLine.segment(glow: glowing)
+                    FadingLine.lay(segment,
+                                   from: CGPoint(x: a, y: 0), to: CGPoint(x: b, y: 0),
+                                   thickness: core,
+                                   blur: glowing ? blur + core*1.6 : blur,
+                                   alpha: glowing ? max(0.25, 0.55*certainty)
+                                                  : max(0.3, 0.95*certainty))
+                    node.addChild(segment)
+                }
+                // The alpha keeps a floor and the trajectory's does not, which is the one
+                // difference between them and the reason it is here rather than shared: this
+                // is the control the player is actively steering, and a blurred tip is honest
+                // where a vanished one is an aiming aid that has stopped aiming
+            }
 
             addChild(node)
             endlessIIAimArrow = node

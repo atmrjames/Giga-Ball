@@ -608,7 +608,28 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   bricks (they self-hide), and on the classic build-in (also queued, ENDLESS-2 §12.0)
   the fade waits for that animation's end hook, wherever it lands.
 
-- **App Store in-app events** (§11.5): App Store Connect setup, James's side.
+- **App Store in-app events** (§11.5): App Store Connect setup, James's side - answered in
+  round 260, because "James's side" was not enough to act on.
+
+  **What he has to supply**, per event, in App Store Connect: a name (30 characters), a short
+  description (50) and a long one (120); **event card art at 1920x1080**, and optionally a
+  video at the same size; a badge chosen from Apple's fixed list - Challenge, Competition,
+  Live Event, Major Update, New Season, Premiere, Special Event; a start and end date, no
+  more than 31 days apart; which audiences it is shown to (new, existing, lapsed); and a
+  localisation per language the app is offered in. Events are reviewed by App Review and are
+  **submitted separately from the binary**, so one can go up without a release.
+
+  **What is ours**: the deep link. An event card can open the app at a particular place, and
+  the app has no URL scheme and no associated domain today - `CFBundleURLTypes` is absent from
+  `Info.plist` and the entitlements carry Game Center and iCloud and nothing else. Adding one
+  is small (a scheme, a handler, and routing to the briefing screen) and is the same work the
+  widget wants, so the two are worth doing together if either is done.
+
+  **The caveat worth stating before any of that is made**: an in-app event is for something
+  that *happens between two dates*. A daily challenge that runs for ever is not an event, and
+  a card that says it is will read as one to Apple's reviewers too. What fits the format is a
+  **launch event for 1.3**, or a themed week, or a monthly competition on the overall board -
+  all three of which are a decision about what to run rather than a feature to build.
 
 - **Answered, fourth round — how the daily board works in Game Center.** One board, not
   one a day: a **recurring** leaderboard with a daily recurrence starting at 00:00 UTC.

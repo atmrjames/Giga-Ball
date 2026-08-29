@@ -2349,6 +2349,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // The paddle keeps its sticky look while it is still holding something
 
         if stickyPaddleCatches == 0 {
+            if endlessIIAimedStickyClock.isRunning || endlessIIAimHold {
+                return
+            }
+            // **Aimed Sticky wears the same face** (round 260), so a plain Sticky running out
+            // underneath one must not take it off - nor release the balls the aim is holding.
+            // The aim's own end does both, through `endEndlessIIAimedSticky`
             paddleSticky.isHidden = true
             paddleRetroStickyTexture.isHidden = true
             stickyPaddleCatchesTotal = 0
@@ -4851,6 +4857,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			
 		case powerUpStickyPaddle:
         // Sticky paddle
+			if endlessIIStickyRefillsTheAim() {
+				totalStatsArray[0].powerupsCollected[6]+=1
+				powerUpMultiplierScore = 0.1
+				break
+			}
+			// **A Sticky collected over an Aimed Sticky refills the aim** (James, round 260).
+			// The two are one power-up at two settings and the aimed one is the higher, so
+			// this is a refill rather than a downgrade - it still counts as a Sticky collected
+			// and still scores, because that is what the player picked up
 			endlessIIDisplace(byCollecting: .stickyPaddle)
 			stickyPaddleIcon.texture = self.iconStickyPaddleTexture
 			stickyPaddleIconBar.isHidden = false
