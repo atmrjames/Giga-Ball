@@ -1271,6 +1271,20 @@ Three places still hid the node whenever the theme was retro, written when it co
 wear the sticky picture, and one of them runs on the power-up HUD's own tick - so a retro paddle
 wearing the grip had it taken away and put back several times a second.
 
+**`FadingLine`'s `thickness` and `blur` are not independent.** They add together before the
+picture is sized, so a thin core and a wide blur gets a *thick* core inside a very wide picture.
+That is right for the trajectory, which is a core layer plus a deliberately larger glow layer
+beneath it, and it is the trap for anything else: round 276 handed an `SKShapeNode`'s `lineWidth`
+and `glowWidth` straight across and drew a line three times too wide. For a plain soft line,
+pass the core as `thickness` and leave `blur` near zero - the picture is already about three
+times the core tall with the outer two thirds falling off, which is a glowing line for free.
+
+**And a number that matched arithmetically did not match visually.** The aim line's alpha floor
+was 0.3 as an `SKShapeNode`, whose glow adds brightness on top of its stroke; the same 0.3 on a
+sprite with no such bonus washed out to olive where the old line stayed green. It is 0.6 now,
+chosen by drawing the old line beside four candidates and looking at them. The arithmetic answer
+and the one that looks the same were different answers, and only the render could say so.
+
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is
 cleared away at the wrong moment, or sits in the last row blocking generation for ever. Big

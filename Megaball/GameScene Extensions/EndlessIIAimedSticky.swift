@@ -303,20 +303,26 @@ extension GameScene {
             // thing itself: where the bricks begin, less a ball's grace. The max keeps the
             // round-10 length as the floor for the rare catch high up the field
 
-            // **The trajectory line's own picture, and no arrowhead** (James, round 260: "the
-            // aim line itself should use the same graphic as the trajectory line power-up,
-            // with no arrow head on the end, just a blurry line showing the general direction
-            // the ball will go").
+            // **The line it was before round 260, drawn the way round 260 draws things, and
+            // no arrowhead** (James, play-test round 275: "the new line looks bad. Let's go
+            // back to something more similar to what was there previously, but with no arrow
+            // head").
             //
-            // The two aids were always meant to speak one visual language (play-test round
-            // 39) and were saying it twice - the same fade written out again here, in glowing
-            // shape nodes, which is what round 258 took out of the trajectory for costing 46
-            // offscreen passes a frame. Now they are the same drawing, which also means the
-            // aim line got the white core and the green glow for nothing.
+            // Round 260 gave the aim the trajectory's own look - a white core inside a wide
+            // green glow - on the reasoning that the two aids should speak one visual
+            // language. The reasoning holds for the *trajectory*, which is a prediction the
+            // player reads; it does not hold here, because this is a control the player is
+            // steering, and a thick soft white line is a worse pointer than a thin bright
+            // green one. The white core has gone and so has most of the blur: what is left is
+            // the green glowing line of rounds 39 to 260, at its own widths and its own fade.
             //
-            // The head is gone with it. A pointer was worth having when the line stopped
-            // short and faded to almost nothing; a line that reaches the bricks says which
-            // way the ball is going by being there
+            // **What it keeps from round 260 is how it is drawn.** The old line was a run of
+            // glowing `SKShapeNode`s, which is exactly what round 258 took out of the
+            // trajectory for costing an offscreen pass each, every frame - sixty of them here.
+            // `FadingLine`'s sprites give the same picture in one batch, so going back to the
+            // old *look* costs nothing to go back to.
+            //
+            // The head stays gone: James asked for that in round 260 and again here.
             let step = max(ballSize*0.9, 1)
             let pieces = max(Int((length/step).rounded(.up)), 1)
             for piece in 0..<pieces {
@@ -325,23 +331,32 @@ extension GameScene {
                 let along = (a + b)/2/length
                 let certainty = pow(1 - along, 1.8)
 
-                let core = 2 + (1 - certainty)*3.5
-                let blur = (1 - certainty)*(1 - certainty)*9
-
-                for glowing in [true, false] {
-                    let segment = FadingLine.segment(glow: glowing)
-                    FadingLine.lay(segment,
-                                   from: CGPoint(x: a, y: 0), to: CGPoint(x: b, y: 0),
-                                   thickness: core,
-                                   blur: glowing ? blur + core*1.6 : blur,
-                                   alpha: glowing ? max(0.25, 0.55*certainty)
-                                                  : max(0.3, 0.95*certainty))
-                    node.addChild(segment)
-                }
-                // The alpha keeps a floor and the trajectory's does not, which is the one
-                // difference between them and the reason it is here rather than shared: this
-                // is the control the player is actively steering, and a blurred tip is honest
-                // where a vanished one is an aiming aid that has stopped aiming
+                let segment = FadingLine.segment(glow: true)
+                FadingLine.lay(segment,
+                               from: CGPoint(x: a, y: 0), to: CGPoint(x: b, y: 0),
+                               thickness: 2 + (1 - certainty)*2,
+                               blur: (1 - certainty)*(1 - certainty),
+                               alpha: max(0.6, 0.95*certainty))
+                node.addChild(segment)
+                // **The core is the old `lineWidth`**, unchanged. The old `glowWidth` is not
+                // carried across as `blur`, because blur adds into the core before the picture
+                // is sized and six points of it made the core fourteen - the first attempt did
+                // exactly that and drew a wedge. The picture is three times its core tall with
+                // the outer two thirds falling off, so the core alone is already a glowing
+                // line; the small blur term is all the far end needs on top of that.
+                //
+                // **The alpha floor is 0.6 rather than the old 0.3**, and that is a change made
+                // to keep the *appearance* the same rather than the number. An `SKShapeNode`'s
+                // glow adds brightness on top of its stroke, so the old line read as green all
+                // the way up at a third opacity; these sprites have no such bonus and washed
+                // out to olive at the same figure. Chosen by drawing the old line beside four
+                // candidates and looking at them, which is the only way this could have been
+                // chosen - the arithmetic says 0.3 and the arithmetic is answering a different
+                // question.
+                //
+                // A floor at all is the one difference from the trajectory, and always was: a
+                // blurred tip is honest, a vanished one is an aiming aid that has stopped
+                // aiming
             }
 
             addChild(node)

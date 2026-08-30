@@ -773,4 +773,109 @@ final class EndlessIIFrameCostTests: XCTestCase {
                       "a field that descended while the player was aiming would move the "
                       + "target out from under the shot")
     }
+
+    /// Draws the aim line three ways, so "more similar to what was there previously" can be
+    /// judged rather than asserted.
+    ///
+    /// James, play-test round 275: "the new line looks bad. Let's go back to something more
+    /// similar to what was there previously, but with no arrow head."
+    ///
+    /// Left is the line as it was up to round 260 - glowing `SKShapeNode` segments and a head -
+    /// rebuilt here from that version because it no longer exists in the code, and it is the
+    /// thing being compared *to*. Middle is round 260's, the trajectory's white core inside a
+    /// wide green glow. Right is what the scene draws now, through `tickEndlessIIAim` itself.
+    func testTheAimLineCanBeLookedAt() throws {
+        let ballSize: CGFloat = 12
+        let length: CGFloat = 420
+        let column: CGFloat = 150
+
+        let display = SKScene(size: CGSize(width: column*2 + 40, height: length + 80))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        func certainty(_ along: CGFloat) -> CGFloat { pow(1 - along, 1.8) }
+        func pieces(_ body: (CGFloat, CGFloat, CGFloat) -> Void) {
+            let step = max(ballSize*0.9, 1)
+            let count = max(Int((length/step).rounded(.up)), 1)
+            for piece in 0..<count {
+                let a = length*CGFloat(piece)/CGFloat(count)
+                let b = length*CGFloat(piece + 1)/CGFloat(count)
+                body(a, b, certainty((a + b)/2/length))
+            }
+        }
+
+        // 1. As it was, up to round 260
+        let before = SKNode()
+        pieces { a, b, certain in
+            let segment = SKShapeNode()
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: a, y: 0))
+            path.addLine(to: CGPoint(x: b, y: 0))
+            segment.path = path
+            segment.strokeColor = GameScene.endlessIIHaloColour
+                .withAlphaComponent(max(0.3, 0.95*certain))
+            segment.lineWidth = 2 + (1 - certain)*2
+            segment.glowWidth = (1 - certain)*(1 - certain)*6
+            segment.lineCap = .round
+            before.addChild(segment)
+        }
+        let head = SKShapeNode()
+        let headPath = CGMutablePath()
+        headPath.move(to: CGPoint(x: length - ballSize*0.7, y: ballSize*0.55))
+        headPath.addLine(to: CGPoint(x: length, y: 0))
+        headPath.addLine(to: CGPoint(x: length - ballSize*0.7, y: -ballSize*0.55))
+        head.path = headPath
+        head.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.55)
+        head.lineWidth = 2.5
+        head.glowWidth = 3
+        head.lineCap = .round
+        before.addChild(head)
+
+        // 2. Candidate widths, to pick between. The far end is what is being chosen: an
+        // `SKShapeNode`'s glow reads much narrower than its nominal `glowWidth`, so carrying the
+        // old numbers across arithmetically made a wedge where the old line was nearly parallel
+        // The candidates this was used to choose between are gone; what they settled is
+        // written down where the choice lives, in `tickEndlessIIAim`. Four widths and three
+        // alpha floors were drawn beside the line on the left, and the pair that matched it
+        // won - which is the only way that could have been decided, because the arithmetic
+        // answer and the one that looks the same are different answers
+
+        // 3. What the scene draws now, through its own code
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.ballSize = ballSize
+        scene.brickHeight = 28
+        scene.finalBrickRowHeight = 200
+        let target = SKSpriteNode(color: .white, size: CGSize(width: ballSize, height: ballSize))
+        target.position = CGPoint(x: 0, y: -220)
+        scene.addChild(target)
+        scene.endlessIIHeldBalls.append(target)
+        scene.endlessIIAimedStickyClock.collect(5)
+        scene.endlessIIAimHold = true
+        XCTAssertNotNil(scene.endlessIIAimTarget, "the aim has something to point at")
+        scene.tickEndlessIIAim()
+        let now = try XCTUnwrap(scene.endlessIIAimArrow)
+        now.removeFromParent()
+
+        for (index, line) in [before, now].enumerated() {
+            line.zRotation = .pi/2
+            line.position = CGPoint(x: 20 + column*(CGFloat(index) + 0.5), y: 40)
+            line.zPosition = 1
+            display.addChild(line)
+
+            let ball = SKSpriteNode(color: .white,
+                                    size: CGSize(width: ballSize, height: ballSize))
+            ball.position = line.position
+            display.addChild(ball)
+            // The held ball at the foot of each, because how the line meets it is half of what
+            // is being judged
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("aim-line.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Aim line, drawn: \(file.path)")
+        print("  left: the line as it was before round 260   right: what the scene draws\n")
+    }
 }

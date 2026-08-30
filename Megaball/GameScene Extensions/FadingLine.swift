@@ -120,6 +120,17 @@ enum FadingLine {
     ///   - thickness: how thick the *solid* core should be. The sprite is made taller than this
     ///     so the falloff has somewhere to live, which is where the blur comes from.
     ///   - blur: how far past the core the fade should reach, in points.
+    ///
+    /// **The two are not independent**: they add together before the picture is sized, so
+    /// asking for a thin core and a wide blur gets a *thick* core inside a very wide picture.
+    /// That is right for the trajectory, which is drawn as a core layer plus a deliberately
+    /// larger glow layer beneath it, and it is the trap anything else falls into - round 276's
+    /// first attempt at the aim line handed over an `SKShapeNode`'s `lineWidth` and `glowWidth`
+    /// and got a line three times too wide, which the render showed as a wedge.
+    ///
+    /// For a plain soft line, pass the core as `thickness` and leave `blur` near zero: the
+    /// picture is about three times the core tall already, and the outer two thirds of it are
+    /// the falloff. That is a glowing line without asking for any blur at all.
     static func lay(_ segment: SKSpriteNode, from head: CGPoint, to tail: CGPoint,
                     thickness: CGFloat, blur: CGFloat, alpha: CGFloat) {
         let length = hypot(tail.x - head.x, tail.y - head.y)
