@@ -217,3 +217,111 @@ final class BallSpeedSawtoothTests: XCTestCase {
         XCTAssertEqual(decayed(1, damping: 0, seconds: 30), 1, accuracy: 0.0001)
     }
 }
+
+/// The fix: the ball is held at the run's own speed every frame (round 265).
+///
+/// James, on the audit: "let's update the physics. To me this classes as a bug fix /
+/// improvement, so it's ok to change those older game modes." So this applies to Classic and
+/// the original Endless as well, which is why the exceptions matter as much as the rule.
+final class BallSpeedIsHeldEveryFrameTests: XCTestCase {
+
+    private func playing(mode: GameMode = .endlessII) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.gameState.enter(Playing.self)
+        scene.ballSpeedLimit = 600
+        scene.ballIsOnPaddle = false
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody?.linearDamping = scene.ballLinearDampening
+        return scene
+    }
+
+    private func speed(_ node: SKSpriteNode) -> CGFloat {
+        hypot(node.physicsBody?.velocity.dx ?? 0, node.physicsBody?.velocity.dy ?? 0)
+    }
+
+    /// A ball that has drifted is put back, keeping its heading.
+    func testADriftedBallIsPutBackWithoutTurningIt() {
+        let scene = playing()
+        let heading = atan2(-0.6, 0.8)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0.8*570, dy: -0.6*570)
+        // Two seconds of damping short of the run's 600
+
+        scene.holdBallSpeeds()
+
+        XCTAssertEqual(speed(scene.ball), 600, accuracy: 0.01)
+        XCTAssertEqual(atan2(scene.ball.physicsBody!.velocity.dy,
+                             scene.ball.physicsBody!.velocity.dx), heading, accuracy: 0.0001,
+                       "the hold is a scale, not a turn")
+    }
+
+    /// It reaches Classic and the original Endless too, which is the half James signed off.
+    func testItReachesTheOlderModes() {
+        for mode in [GameMode.classic, .endless] {
+            let scene = playing(mode: mode)
+            scene.ball.physicsBody?.velocity = CGVector(dx: 400, dy: -400)
+            scene.holdBallSpeeds()
+            XCTAssertEqual(speed(scene.ball), 600, accuracy: 0.01, "\(mode)")
+        }
+    }
+
+    // MARK: - What it leaves alone
+
+    /// Gravity is meant to change the speed.
+    func testItLeavesAGravityBallAlone() {
+        let scene = playing()
+        scene.gravityActivated = true
+        scene.ball.physicsBody?.velocity = CGVector(dx: 100, dy: -100)
+        scene.holdBallSpeeds()
+        XCTAssertEqual(speed(scene.ball), hypot(100, 100), accuracy: 0.01)
+    }
+
+    /// A ball resting on the paddle has no speed to hold.
+    func testItLeavesAHeldBallAlone() {
+        let scene = playing()
+        scene.ballIsOnPaddle = true
+        scene.ball.physicsBody?.velocity = .zero
+        scene.holdBallSpeeds()
+        XCTAssertEqual(speed(scene.ball), 0, accuracy: 0.01)
+    }
+
+    /// **The ball-lost animation raises the damping to bring the ball to a stop**, and a hold
+    /// that fought it would keep a lost ball travelling for ever.
+    func testItLeavesABallSomethingIsDeliberatelySlowingAlone() {
+        let scene = playing()
+        scene.ball.physicsBody?.linearDamping = 2
+        scene.ball.physicsBody?.velocity = CGVector(dx: 60, dy: -60)
+        scene.holdBallSpeeds()
+        XCTAssertEqual(speed(scene.ball), hypot(60, 60), accuracy: 0.01,
+                       "the lose-a-life slowdown was fought")
+    }
+
+    /// And it writes nothing at all on the frames where nothing has drifted.
+    func testItWritesNothingWhenThereIsNothingToCorrect() {
+        let scene = playing()
+        let exact = CGVector(dx: 0, dy: -600)
+        scene.ball.physicsBody?.velocity = exact
+        scene.holdBallSpeeds()
+        XCTAssertEqual(scene.ball.physicsBody?.velocity.dy, exact.dy)
+    }
+
+    /// The sawtooth is gone: a frame's drift is put back inside that frame.
+    func testTheSawtoothIsOneFrameDeepNow() {
+        let scene = playing()
+        var speedNow: CGFloat = 600
+        var worst: CGFloat = 0
+
+        for _ in 0..<600 {
+            speedNow /= (1 + CGFloat(1.0/60)*scene.ballLinearDampening)
+            scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -speedNow)
+            scene.holdBallSpeeds()
+            speedNow = speed(scene.ball)
+            worst = max(worst, abs(600 - speedNow)/600)
+        }
+
+        XCTAssertLessThan(worst, 0.001,
+                          "ten seconds of flight and the worst tooth is a tenth of a per cent - "
+                          + "it was 7.7% over eight seconds before this")
+    }
+}

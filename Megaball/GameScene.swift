@@ -2572,6 +2572,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         applyEndlessIIWraps()
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
+        holdBallSpeeds()
         sweepDyingBricks()
         phantomBrickWatch()
         crookedBallWatch()
@@ -6911,6 +6912,56 @@ laserTimer?.invalidate()
 		}
 	}
 	
+	/// Holds every ball in play at the run's own speed, every frame.
+	///
+	/// **The ball-jitter fix** (James, round 200: "the ball still sometimes feels jittery like
+	/// it's speeding up and slowing down constantly"; round 265, on the audit: "let's update the
+	/// physics. To me this classes as a bug fix / improvement, so it's ok to change those older
+	/// game modes").
+	///
+	/// Round 264 measured it. The ball carries `linearDamping` and was only ever put back to
+	/// `ballSpeedLimit` by `ballSpeedControl`, which runs at the end of a *corrected bounce* -
+	/// so between two corrections it slowed and at the correction it was restored in a single
+	/// frame. A sawtooth, whose size is the length of the flight: 0.5% over half a second, 2%
+	/// over two, 7.7% over eight. The power-ups James kept naming do not cause it; they lengthen
+	/// the interval between snap-backs, which is the same sawtooth with longer teeth.
+	///
+	/// Asked every frame, the tooth is one frame long - a sixtieth of a percent, which is
+	/// nothing to a hand. And it catches drift from *any* source rather than from damping alone,
+	/// which is why this rather than simply setting the damping to zero: the engine's own solver
+	/// and any future writer are covered by the same line.
+	///
+	/// **In `didSimulatePhysics`, after every other writer** - §8.6's one safe place, and last
+	/// so nothing can undo it. Before `crookedBallWatch`, so the tripwire judges the ball as it
+	/// will actually travel.
+	///
+	/// Four things are left alone, and each is something deliberately changing the speed:
+	/// gravity, a ball resting on the paddle or held for an aim, a ball that is not moving at
+	/// all, and a ball whose damping something has raised on purpose - which is how the Lose A
+	/// Life animation brings the ball to a stop.
+	func holdBallSpeeds() {
+		guard gravityActivated == false, gameState.currentState is Playing, isPaused == false
+		else { return }
+		guard ballSpeedLimit > 0 else { return }
+
+		for subject in endlessIIBallsInPlay {
+			if subject === ball, ballIsOnPaddle { continue }
+			if endlessIIHeldBalls.contains(where: { $0 === subject }) { continue }
+			guard let body = subject.physicsBody else { continue }
+			guard body.linearDamping <= ballLinearDampening else { continue }
+			// Something has deliberately set out to slow this ball - the ball-lost animation
+			// raises the damping to 2 - and a hold that fought it would keep a lost ball
+			// travelling for ever
+
+			let speed = hypot(body.velocity.dx, body.velocity.dy)
+			guard speed > 0 else { continue }
+			let scale = ballSpeedLimit/speed
+			guard abs(scale - 1) > 0.0001 else { continue }
+			// Nothing written on the frames where nothing has drifted, which is most of them
+			body.velocity = CGVector(dx: body.velocity.dx*scale, dy: body.velocity.dy*scale)
+		}
+	}
+
 	func ballSpeedControl() {
 		if !gravityActivated && gameState.currentState is Playing && ballIsOnPaddle == false {
 			let xSpeed = ball.physicsBody!.velocity.dx
