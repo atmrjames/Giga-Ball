@@ -389,7 +389,7 @@ extension GameScene {
     /// Followed rather than set once, because the ball can change size under it and the marker
     /// has always been drawn to the ball.
     var endlessIILandingMarkerSize: CGSize {
-        let triangleWidth = ballSize*0.7*1.1
+        let triangleWidth = ballSize*0.7*1.1*GameScene.endlessIILandingMarkerScale
         // The old path's shoulders: `size*0.55` either side of the middle, where size is
         // `ballSize*0.7`
         let width = triangleWidth/GameScene.endlessIILandingTriangleShare
@@ -399,6 +399,16 @@ extension GameScene {
         // old one was a hand-written path and this is a drawing, and stretching a drawing to
         // match a path is the wrong way round
     }
+
+    /// How much bigger than the old drawn triangle the marker is.
+    ///
+    /// James, round 259: "make the landing marker bigger." Applied to the *triangle*, which is
+    /// what a player sees as the marker - the picture around it is mostly glow, and scaling the
+    /// picture would have grown the halo faster than the mark inside it.
+    ///
+    /// A half again. Enough to answer the report at a glance, and short of the point where the
+    /// mark starts covering the paddle it is pointing at.
+    static let endlessIILandingMarkerScale: CGFloat = 1.5
 
     /// How wide the triangle is as a share of the whole picture: 55.3 points of 146, measured
     /// off the file rather than guessed, so a redraw that moves it is one number to change.

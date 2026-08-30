@@ -310,6 +310,10 @@ extension GameScene {
         }
 
         refreshEndlessIIRetroShapeDressing(suffix)
+        positionPaddleOverlays()
+        // Placed here as well as on every paddle move, because a shape collected while the
+        // paddle is standing still changes its height without the touch handler running - and
+        // the overlays would sit at the old shape's underside until the player moved
     }
 
     /// Retro's three overlay nodes, which no other theme has.

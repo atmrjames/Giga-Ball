@@ -73,14 +73,17 @@ final class EndlessIIDrawnEffectsTests: XCTestCase {
     /// The old path was `ballSize*0.7` across, with shoulders at `size*0.55` either side of the
     /// middle - so the shape a player reads was `ballSize*0.77` wide. The picture is mostly
     /// glow, so the sprite is far bigger than that and the triangle inside it is not.
-    func testTheDrawnTriangleIsTheSizeTheOldOneWas() {
+    /// **Half again bigger than the old drawn one** (James, round 259: "make the landing marker
+    /// bigger"). The rule this test holds has not changed - the *triangle* is the marker and
+    /// the glow around it is not - only the number it is held to.
+    func testTheDrawnTriangleIsTheSizeItIsMeantToBe() {
         let scene = fieldScene()
         let old = scene.ballSize*0.7*1.1
         let inside = scene.endlessIILandingMarkerSize.width
             * GameScene.endlessIILandingTriangleShare
-        XCTAssertEqual(inside, old, accuracy: 0.5,
-                       "the shape has to be the same size or the marker has changed, however "
-                       + "much glow is around it")
+        XCTAssertEqual(inside, old*GameScene.endlessIILandingMarkerScale, accuracy: 0.5,
+                       "the shape has to be the size it is meant to be, however much glow is "
+                       + "around it")
         XCTAssertGreaterThan(scene.endlessIILandingMarkerSize.width, old*2,
                              "and the picture has to be much bigger, because it is mostly glow")
     }

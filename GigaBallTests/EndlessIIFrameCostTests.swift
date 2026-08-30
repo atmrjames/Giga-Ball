@@ -175,6 +175,79 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  Shaped brick faces, drawn: \(file.path)\n")
     }
 
+    /// Draws each shaped paddle with its overlays, placed by the scene's own code, so the
+    /// alignment can be looked at.
+    ///
+    /// James, round 259: "shaped paddle laser and sticky graphics are sized so that the bottom
+    /// of the graphic aligns with the bottom of the paddle graphic to ensure they line up
+    /// properly with the paddle. Some of the graphics are currently not aligned properly."
+    ///
+    /// **Through `refreshEndlessIIPaddleShapeArt` and `positionPaddleOverlays`**, not through a
+    /// re-implementation of them. The first version of this drew the three pictures against a
+    /// shared bottom line by hand and they all looked right - which proved only that the *art*
+    /// shares a bottom line, and missed the bug entirely, because the bug was in where the
+    /// scene puts them.
+    func testTheShapedPaddleOverlaysCanBeLookedAt() throws {
+        let shapes: [PaddleBounce.Surface?] = [nil, .convex, .concave, .wavy,
+                                               .wedgeLeft, .wedgeRight]
+        let paddleWidth: CGFloat = 150, paddleHeight: CGFloat = 24
+        let column = paddleWidth + 30, row: CGFloat = 100
+
+        let scene = SKScene(size: CGSize(width: column*CGFloat(shapes.count) + 20,
+                                         height: row*2 + 20))
+        scene.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (index, surface) in shapes.enumerated() {
+            for (line, wearing) in ["Lasers", "Sticky"].enumerated() {
+                let game = GameScene(size: CGSize(width: 402, height: 874))
+                game.gameMode = .endlessII
+                game.totalStatsArray = [TotalStats()]
+                game.ballSize = paddleHeight
+                game.paddleHeight = paddleHeight
+                game.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+                game.addChild(game.paddle)
+                game.paddle.texture = game.paddleTexture
+                game.paddle.size = CGSize(width: paddleWidth, height: paddleHeight)
+                game.paddle.position = .zero
+                game.addChild(game.paddleLaser)
+                game.addChild(game.paddleSticky)
+                game.paddleLaser.anchorPoint = CGPoint(x: 0.5, y: 0)
+                game.paddleSticky.anchorPoint = CGPoint(x: 0.5, y: 0)
+
+                if let surface { game.endlessIICollectPaddleSurface(surface) }
+                game.refreshEndlessIIPaddleShapeArt()
+
+                let worn = wearing == "Lasers" ? game.paddleLaser : game.paddleSticky
+                let bottom = scene.size.height - row*(CGFloat(line) + 1)
+                let x = 10 + column*(CGFloat(index) + 0.5)
+                let lift = CGPoint(x: x - game.paddle.position.x,
+                                   y: bottom - (game.paddle.position.y
+                                                - game.paddle.size.height/2))
+
+                for node in [game.paddle, worn] {
+                    guard let texture = node.texture else { continue }
+                    let copy = SKSpriteNode(texture: texture, size: node.size)
+                    copy.anchorPoint = node.anchorPoint
+                    copy.position = CGPoint(x: node.position.x + lift.x,
+                                            y: node.position.y + lift.y)
+                    copy.alpha = node === worn ? 0.75 : 1
+                    scene.addChild(copy)
+                }
+
+                let mark = SKSpriteNode(color: .red, size: CGSize(width: column, height: 1))
+                mark.position = CGPoint(x: x, y: bottom)
+                scene.addChild(mark)
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let texture = try XCTUnwrap(view.texture(from: scene))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("shaped-paddle-overlays.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Shaped paddle overlays, drawn: \(file.path)\n")
+    }
+
     /// How often a shaped paddle retraces its body, and what one trace costs.
     ///
     /// The third of James's four. Its per-frame *arithmetic* is nothing; what it can be is

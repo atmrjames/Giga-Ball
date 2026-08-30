@@ -958,6 +958,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFlashers: [EndlessIIFlasher] = []
 	var endlessIIBreathers: [EndlessIIBreather] = []
 	var endlessIILastTick: TimeInterval = 0
+	/// Which frame this is, counted in `update`.
+	var frameNumber: Int = 0
+	/// The frame each ball's last counted paddle landing was in.
+	///
+	/// A traced shaped paddle is several convex pieces, and a contact is reported per piece,
+	/// so one landing can arrive twice (round 263). Balls drop out of this by being replaced,
+	/// which is a handful of stale keys over a run and cheaper than watching for their removal.
+	var paddleLandingFrame: [ObjectIdentifier: Int] = [:]
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
@@ -2046,10 +2054,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Ball matches paddle position
 			
-			paddleLaser.position.x = paddle.position.x
-			paddleLaser.position.y = paddle.position.y - paddleHeight/2
-			paddleSticky.position.x = paddle.position.x
-			paddleSticky.position.y = paddle.position.y - paddleHeight/2
+			positionPaddleOverlays()
 			paddleRetroTexture.position.x = paddle.position.x
 			paddleRetroTexture.position.y = paddle.position.y
 			paddleRetroLaserTexture.position.x = paddle.position.x
@@ -2058,6 +2063,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
 			// Keep the different paddle textures together
         }
+    }
+
+    /// Puts the laser and sticky overlays on the paddle's underside.
+    ///
+    /// **The paddle's own underside, not the plain paddle's** (James, round 259: "shaped paddle
+    /// laser and sticky graphics are sized so that the bottom of the graphic aligns with the
+    /// bottom of the paddle graphic... some of the graphics are currently not aligned
+    /// properly").
+    ///
+    /// Both are anchored at (0.5, 0) and grow upward from wherever they are put, so where they
+    /// are put is the whole of the alignment. This used to be `paddle.position.y -
+    /// paddleHeight/2`, which is the *plain* paddle's underside - and a shaped paddle is taller
+    /// than the plain one and its node rises by half the growth to keep its own underside on
+    /// the same line (round 213). So the overlays were being placed the height of that lift too
+    /// high, by a different amount for every shape: a quarter of the paddle's height under a
+    /// dome or a wedge, a tenth under a wave, and nothing at all on the plain paddle. Which is
+    /// exactly "some of them".
+    ///
+    /// `paddle.size.height` is the shape's height when one is on and the plain height when it
+    /// is not, so this is one expression rather than a branch.
+    func positionPaddleOverlays() {
+        let underside = paddle.position.y - paddle.size.height/2
+        paddleLaser.position = CGPoint(x: paddle.position.x, y: underside)
+        paddleSticky.position = CGPoint(x: paddle.position.x, y: underside)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -2646,6 +2675,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		frameDelta = lastFrameTime == 0 ? 0 : max(0, currentTime - lastFrameTime)
 		lastFrameTime = currentTime
+		frameNumber &+= 1
+		// Counted so a landing can be told from a second report of the same landing - see
+		// `paddleHit`. Wrapping addition, because the number's only use is comparing this
+		// frame with the last one
 		tickDailyTimeTrial(frameDelta)
 		tickDeferredBallPowerUpEnds()
 		// Measured once, for everything that needs to know what a frame is worth - the sticky
@@ -4014,6 +4047,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if ballIsUnderPaddle(ball) {
 			return
 		}
+
+		if paddleLandingFrame[ObjectIdentifier(ball)] == frameNumber {
+			return
+		}
+		paddleLandingFrame[ObjectIdentifier(ball)] = frameNumber
+		// **One landing, however many contacts the engine reports it as** (James, round 259:
+		// "each hit on a shaped paddle is taking off 2 segments from the power-up HUD icon").
+		//
+		// `paddleHit` has one call site and spends one turn, so two turns is two calls, and
+		// `didBegin` is reported per contacting *fixture* pair rather than per node. A dish or
+		// a wave traced from its picture is decomposed into several convex pieces - that is
+		// what `SKPhysicsBody(bodies:)` is for - so a ball landing where two of them meet
+		// begins contact with both, and the plain paddle, being one rounded rectangle, never
+		// did.
+		//
+		// Keyed per ball, because with Multi-Ball two balls genuinely can land in one frame
+		// and both should count. What cannot happen is the *same* ball landing twice in one
+		// frame: it has to leave the paddle and come back, and there is no time in a frame to
+		// do it. Guarding here rather than inside the spend, because everything below - the
+		// sound, the haptic, the bounce arithmetic - is equally about the landing and was
+		// equally being done twice.
 
 		endlessIISpendPaddleTurns()
 		// This contact is a turn for every running paddle power-up, whatever the paddle

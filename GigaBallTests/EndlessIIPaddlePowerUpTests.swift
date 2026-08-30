@@ -440,8 +440,12 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         for _ in 0..<Int(GameScene.endlessIIPaddlePowerUpTurns) {
             scene.endlessIISpendPaddleTurns()
         }
-        XCTAssertFalse(scene.endlessIIAimedStickyClock.countsTurns,
-                       "the last landing spends the turns out - what is left is the goodbye")
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.lingering,
+                      "the last landing spends the turns out - what is left is the goodbye")
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.countsTurns,
+                      "and it keeps counting turns through the goodbye (round 263), so the "
+                      + "ring keeps its segment marks and shows every one of them spent "
+                      + "rather than dropping to a smooth arc for the last second")
 
         XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false),
                       "the turn that expired the clock still catches")
@@ -1987,7 +1991,11 @@ final class EndlessIIBallSpinTests: XCTestCase {
         }
         XCTAssertTrue(scene.endlessIIBallSpinClock.lingering,
                       "the last turn starts the goodbye rather than ending it (round 231)")
-        XCTAssertFalse(scene.endlessIIBallSpinClock.countsTurns, "no turns left to count")
+        XCTAssertTrue(scene.endlessIIBallSpinClock.countsTurns,
+                      "it keeps counting turns through the goodbye (round 263). The goodbye "
+                      + "used to be expressed by blanking this and rewriting the clock as a "
+                      + "one-second timer, which refilled the ring and took its segment marks "
+                      + "off for the last second - two things nobody had asked for")
 
         scene.runEndlessIILingeringClocks(EndlessIIClock.lingerSeconds + 0.1)
         XCTAssertFalse(scene.endlessIIBallSpinClock.isRunning)
@@ -2425,7 +2433,11 @@ final class SpentPowerUpsLingerTests: XCTestCase {
 
         XCTAssertTrue(clock.isRunning, "the shape snapped back in the frame the ball left it")
         XCTAssertTrue(clock.lingering)
-        XCTAssertEqual(clock.remaining, EndlessIIClock.lingerSeconds, accuracy: 0.001)
+        XCTAssertEqual(clock.goodbye, EndlessIIClock.lingerSeconds, accuracy: 0.001,
+                       "the goodbye has its own field since round 263 - it used to be written "
+                       + "over `remaining`, which refilled the ring and swept it round again")
+        XCTAssertEqual(clock.remaining, 0, accuracy: 0.001,
+                       "and the turns are all genuinely spent")
     }
 
     /// And it is a second of ordinary time, spent the way every other clock spends one.
@@ -2466,13 +2478,22 @@ final class SpentPowerUpsLingerTests: XCTestCase {
         XCTAssertTrue(clock.countsTurns)
     }
 
-    /// Its ring stops being segmented for that second, because it has no turns to mark.
-    func testTheRingStopsCountingTurnsForTheGoodbye() {
+    /// **Its ring keeps its marks for that second, and shows every one of them spent.**
+    ///
+    /// It used to stop being segmented, because the goodbye was expressed by rewriting the
+    /// clock as a one-second timer - which took the marks off *and* refilled the arc so it
+    /// swept round a second time. James, round 259: "the power-up HUD progress bar is
+    /// resetting and quickly animating down at the end of the last paddle hit segment. This is
+    /// unnecessary." The delay was the point; the animation was a side effect of how it was
+    /// written down.
+    func testTheRingShowsTheGoodbyeAsSpentRatherThanRefilling() {
         var clock = EndlessIIClock()
         clock.collect(turns: 1)
         clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
-        XCTAssertFalse(clock.countsTurns,
-                       "a segmented ring fed a smooth fraction reads as broken")
+        XCTAssertTrue(clock.countsTurns, "the marks stay")
+        XCTAssertEqual(clock.total, 1, accuracy: 0.001, "and so does how many there were")
+        XCTAssertEqual(clock.fraction, 0, accuracy: 0.001,
+                       "spent, rather than full and sweeping round again")
     }
 
     /// The scene runs the goodbye down, or the power-up would never end at all.
@@ -2815,5 +2836,184 @@ final class EndlessIIGripTests: XCTestCase {
         XCTAssertFalse(scene.paddleSticky.isHidden, "the Sticky still wants a face")
         XCTAssertEqual(scene.endlessIIPaddleTopKind, "Sticky")
         XCTAssertEqual(scene.paddleSticky.texture, scene.stickyPaddleTexture)
+    }
+}
+
+/// Play-test round 259's four, in the order James gave them.
+final class PlayTestRound259Tests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSize = 24
+        scene.paddleHeight = 24
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 150, height: 24)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+        scene.addChild(scene.paddleLaser)
+        scene.addChild(scene.paddleSticky)
+        scene.paddleLaser.anchorPoint = CGPoint(x: 0.5, y: 0)
+        scene.paddleSticky.anchorPoint = CGPoint(x: 0.5, y: 0)
+        return scene
+    }
+
+    // MARK: (a) The landing marker is too small
+
+    /// James: "make the landing marker bigger."
+    func testTheLandingMarkerIsBiggerThanItWas() {
+        let scene = mayhem()
+        let triangle = scene.endlessIILandingMarkerSize.width
+            * GameScene.endlessIILandingTriangleShare
+
+        XCTAssertEqual(triangle,
+                       scene.ballSize*0.7*1.1*GameScene.endlessIILandingMarkerScale,
+                       accuracy: 0.001,
+                       "the *triangle* is what grows - the picture around it is mostly glow")
+        XCTAssertGreaterThan(GameScene.endlessIILandingMarkerScale, 1)
+    }
+
+    /// And the mark still lands where the ball will, which is the thing size must not move.
+    func testTheBiggerMarkerStillPointsAtTheSameSpot() {
+        let scene = mayhem()
+        let point = CGPoint(x: 40, y: -260)
+        let centre = scene.endlessIILandingMarkerCentre(over: point)
+        let size = scene.endlessIILandingMarkerSize
+
+        XCTAssertEqual(centre.x, point.x, accuracy: 0.001)
+        XCTAssertEqual(centre.y - GameScene.endlessIILandingTriangleDrop*size.height
+                           + scene.ballSize*0.7*0.1,
+                       point.y, accuracy: 0.001,
+                       "the triangle's own centre is still on the point, at any size")
+    }
+
+    // MARK: (b) The overlays do not line up
+
+    /// James: "the bottom of the graphic aligns with the bottom of the paddle graphic... some
+    /// of the graphics are currently not aligned properly."
+    ///
+    /// A shaped paddle is taller than the plain one and its node rises by half the growth so
+    /// its own underside stays put (round 213). The overlays were placed at the *plain*
+    /// paddle's underside, so they sat the height of that lift too high - a quarter of the
+    /// paddle's height under a dome, a tenth under a wave, nothing at all on the plain paddle,
+    /// which is exactly "some of them".
+    func testTheOverlaysSitOnThePaddlesOwnUnderside() {
+        let scene = mayhem()
+        let underside = scene.paddle.position.y - scene.paddle.size.height/2
+
+        for surface in [PaddleBounce.Surface.convex, .concave, .wavy, .wedgeLeft, .wedgeRight] {
+            scene.endlessIICollectPaddleSurface(surface)
+            scene.refreshEndlessIIPaddleShapeArt()
+
+            XCTAssertGreaterThan(scene.paddle.size.height, 24,
+                                 "\(surface) should have grown the paddle")
+            XCTAssertEqual(scene.paddle.position.y - scene.paddle.size.height/2, underside,
+                           accuracy: 0.001,
+                           "\(surface) moved the paddle's underside, which nothing may do")
+            XCTAssertEqual(scene.paddleSticky.position.y, underside, accuracy: 0.001,
+                           "\(surface)'s sticky pad is off the paddle's bottom line")
+            XCTAssertEqual(scene.paddleLaser.position.y, underside, accuracy: 0.001,
+                           "\(surface)'s lasers are off the paddle's bottom line")
+        }
+    }
+
+    /// And a shape collected while the paddle is standing still places them straight away.
+    func testTheOverlaysArePlacedWithoutWaitingForThePaddleToMove() {
+        let scene = mayhem()
+        scene.paddleSticky.position.y = 9999
+
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.refreshEndlessIIPaddleShapeArt()
+
+        XCTAssertEqual(scene.paddleSticky.position.y,
+                       scene.paddle.position.y - scene.paddle.size.height/2, accuracy: 0.001)
+    }
+
+    // MARK: (c) Two segments a hit
+
+    /// James: "each hit on a shaped paddle is taking off 2 segments from the power-up HUD
+    /// icon."
+    ///
+    /// `paddleHit` has one call site and spends one turn, so two turns is two calls - and
+    /// `didBegin` is reported per contacting *fixture* pair. A dish or a wave traced from its
+    /// picture is several convex pieces, so a ball landing where two meet begins contact with
+    /// both. One landing is one turn however many times the engine says so.
+    func testOneLandingSpendsOneTurnHoweverManyContactsItIsReportedAs() {
+        let scene = mayhem()
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.position = CGPoint(x: 0, y: -260)
+        scene.ballIsOnPaddle = false
+        // A run *starts* with the ball on the paddle, and `paddleHit` returns straight away
+        // for a ball it is already holding - so a landing has to be a landing
+        scene.endlessIICollectPaddleSurface(.concave)
+        let turns = scene.endlessIIPaddleSurfaceClock.remaining
+
+        scene.paddleHit(scene.ball)
+        scene.paddleHit(scene.ball)
+        scene.paddleHit(scene.ball)
+
+        XCTAssertEqual(scene.endlessIIPaddleSurfaceClock.remaining, turns - 1, accuracy: 0.001,
+                       "three contacts in one frame is one landing")
+    }
+
+    /// The next frame is a new landing, or the power-up would never end.
+    func testTheNextFrameCountsAgain() {
+        let scene = mayhem()
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.position = CGPoint(x: 0, y: -260)
+        scene.ballIsOnPaddle = false
+        scene.endlessIICollectPaddleSurface(.concave)
+        let turns = scene.endlessIIPaddleSurfaceClock.remaining
+
+        scene.paddleHit(scene.ball)
+        scene.frameNumber += 1
+        scene.paddleHit(scene.ball)
+
+        XCTAssertEqual(scene.endlessIIPaddleSurfaceClock.remaining, turns - 2, accuracy: 0.001)
+    }
+
+    // MARK: (d) The ring animating itself down
+
+    /// James: "the power-up HUD progress bar is resetting and quickly animating down at the
+    /// end of the last paddle hit segment. This is unnecessary. Delay the change back to a
+    /// normal paddle, but there's no need for this additional animation."
+    func testTheGoodbyeSecondShowsSpentRatherThanRefilling() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 5)
+        for _ in 0..<5 { clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds) }
+
+        XCTAssertTrue(clock.isRunning, "the delay is the point and it stays")
+        XCTAssertTrue(clock.lingering)
+        XCTAssertEqual(clock.fraction, 0, accuracy: 0.001,
+                       "an empty ring, not a full one sweeping round a second time")
+        XCTAssertTrue(clock.countsTurns,
+                      "and it keeps its segment marks, all of them spent")
+        XCTAssertEqual(clock.total, 5, accuracy: 0.001, "so the ring still shows five")
+    }
+
+    /// The goodbye runs out on time and takes the power-up with it.
+    func testTheGoodbyeEndsTheClock() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        XCTAssertTrue(clock.isRunning)
+
+        clock.run(down: EndlessIIClock.lingerSeconds + 0.01)
+        XCTAssertFalse(clock.isRunning)
+    }
+
+    /// And a hit during the goodbye spends nothing, because there is nothing left to spend.
+    func testAHitDuringTheGoodbyeTakesNothingOffIt() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        let left = clock.goodbye
+
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        XCTAssertEqual(clock.goodbye, left, accuracy: 0.001,
+                       "a spend used to take a whole second off the farewell")
     }
 }

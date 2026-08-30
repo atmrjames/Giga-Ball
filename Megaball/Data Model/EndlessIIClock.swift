@@ -39,12 +39,34 @@ struct EndlessIIClock: Equatable {
     /// the questions that assumed seconds ask the clock instead.
     var countsTurns: Bool = false
 
-    var isRunning: Bool { remaining > 0 }
+    var isRunning: Bool { remaining > 0 || goodbye > 0 }
 
     /// How much is left, from one down to zero, for the ring.
+    ///
+    /// **Zero for the whole goodbye second** (James, round 259: "the power-up HUD progress bar
+    /// is resetting and quickly animating down at the end of the last paddle hit segment. This
+    /// is unnecessary. Delay the change back to a normal paddle, but there's no need for this
+    /// additional animation").
+    ///
+    /// The goodbye was built as an ordinary clock of one second, which meant the ring refilled
+    /// itself and swept round again - a second countdown, of a thing that had already counted
+    /// down, that nobody had asked for. The delay is the point and the animation was a side
+    /// effect of how it was expressed. Spent, is what the ring says now, for the second the
+    /// paddle takes to change back.
     var fraction: CGFloat {
-        total > 0 ? CGFloat(max(0, min(1, remaining/total))) : 0
+        guard lingering == false else { return 0 }
+        return total > 0 ? CGFloat(max(0, min(1, remaining/total))) : 0
     }
+
+    /// Seconds of goodbye left after the last turn is spent.
+    ///
+    /// **Its own field rather than the clock reset to a one-second timer** (round 263). The
+    /// goodbye used to be expressed by overwriting `total`, `remaining` and `countsTurns`,
+    /// which had two consequences nobody wanted: the ring refilled and swept round a second
+    /// time, and the segment marks came off because the clock had stopped counting turns. Kept
+    /// apart, everything the ring reads about turns survives the goodbye and simply reads as
+    /// spent.
+    var goodbye: TimeInterval = 0
 
     /// A collection lands.
     ///
@@ -106,13 +128,16 @@ struct EndlessIIClock: Equatable {
     /// A turn was used - for the clocks that count paddle hits rather than seconds,
     /// the way the sticky paddle always has (§5.4, revised in play-testing).
     mutating func spendTurn(thenLingerFor linger: TimeInterval = 0) {
+        guard goodbye == 0 else { return }
+        // A clock already saying goodbye has nothing left to spend, and spending one anyway
+        // was taking a second off the farewell rather than a turn off the power-up
         remaining = max(0, remaining - 1)
         if remaining == 0, total > 0, linger > 0 {
-            countsTurns = false
-            level = 0
-            total = linger
-            remaining = linger
-            lingering = true
+            goodbye = linger
+            // `total`, `remaining` and `countsTurns` are all left exactly as they are, so the
+            // ring keeps its segment marks through the goodbye and shows every one of them
+            // spent. Overwriting them refilled the ring and took the marks off, which is a
+            // different power-up's HUD wearing this one's icon for a second
             // **The last turn does not end it, it starts the goodbye** (James, round 231: "on
             // the last bounce of a paddle hit based power up, wait a second to remove the
             // power up and HUD icon. Especially the shaped paddles power ups. They look weird
@@ -144,10 +169,17 @@ struct EndlessIIClock: Equatable {
     ///
     /// Not saved: a run resumed mid-goodbye comes back without it, which is a power-up ending
     /// a second early after an interruption that took longer than that anyway.
-    var lingering: Bool = false
+    var lingering: Bool { goodbye > 0 }
 
     /// Play advanced by this much.
     mutating func run(down delta: TimeInterval) {
+        if goodbye > 0 {
+            goodbye = max(0, goodbye - delta)
+            if goodbye == 0 { self = EndlessIIClock() }
+            return
+            // A clock in its goodbye has no turns left to spend and no time left to run: the
+            // only thing still counting is the second the paddle takes to change back
+        }
         remaining = max(0, remaining - delta)
         if remaining == 0, total > 0 {
             self = EndlessIIClock()
