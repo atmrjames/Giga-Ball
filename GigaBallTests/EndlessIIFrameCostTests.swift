@@ -878,4 +878,210 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  Aim line, drawn: \(file.path)")
         print("  left: the line as it was before round 260   right: what the scene draws\n")
     }
+
+    /// What a shaped paddle costs per frame **while it is moving**, which is the case the
+    /// round-258 test does not cover.
+    ///
+    /// James, play-test rounds 258 and 275: "the ball gets stuttery when there's a shaped paddle
+    /// active." Round 258 cached the body trace and this stayed on the list, so the trace is not
+    /// it - and the test that says so calls `refreshEndlessIIPaddleShapeArt` on a *stationary*
+    /// paddle, in isolation. In play the paddle is being dragged and the whole of
+    /// `tickEndlessIIPaddlePowerUps` runs, so this measures that.
+    func testWhatAMovingShapedPaddleCostsPerFrame() {
+        let scene = loadedField()
+        scene.paddleHeight = 12
+        scene.paddleWidth = 75
+        scene.ballSize = 12
+        scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.texture = scene.paddleTexture
+        scene.paddle.size = CGSize(width: 75, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.endlessIIPaddleSurface = .convex
+        scene.endlessIIPaddleSurfaceClock.collect(10)
+        scene.refreshEndlessIIPaddleShapeArt()
+        XCTAssertEqual(scene.paddle.texture?.description,
+                       SKTexture(imageNamed: "regularPaddleConvex").description,
+                       "or this is measuring a plain paddle and proving nothing")
+
+        var traces = 0, sizeWrites = 0
+        var lastSize = scene.paddle.size
+        let start = Date.timeIntervalSinceReferenceDate
+        for step in 0..<120 {
+            scene.paddle.position.x = sin(Double(step)/6)*80
+            // Dragged, the way a finger drags it - the stationary case is the one already
+            // covered, and a paddle that only costs something while it moves is exactly what
+            // "stuttery" describes
+
+            let bodyBefore = scene.paddle.physicsBody
+            scene.tickEndlessIIPaddlePowerUps(Double(step)/60)
+            if scene.paddle.physicsBody !== bodyBefore { traces += 1 }
+            if scene.paddle.size != lastSize { sizeWrites += 1; lastSize = scene.paddle.size }
+        }
+        let each = (Date.timeIntervalSinceReferenceDate - start)/120
+
+        print(String(format: "\n  A moving shaped paddle, 120 frames:"))
+        print(String(format: "    body retraces:      %d", traces))
+        print(String(format: "    paddle size writes: %d", sizeWrites))
+        print(String(format: "    tick:               %6.3f ms  (%4.1f%% of a frame)",
+                     each*1000, each/frame*100))
+        print("")
+
+        XCTAssertEqual(traces, 0,
+                       "a paddle whose shape and width have not changed must not retrace its "
+                       + "body just because it moved")
+        XCTAssertLessThan(each, frame/4,
+                          "the paddle tick is taking a quarter of a frame on its own")
+    }
+
+    /// How ragged the surface a traced paddle body gives the ball is.
+    ///
+    /// The remaining candidate for "the ball gets stuttery when there's a shaped paddle
+    /// active", once the per-frame cost has been measured and found to be 3% of a frame. A
+    /// shaped paddle's body is traced from the *picture's alpha* at the size it is drawn -
+    /// about 75 points across - so the dome the ball rolls along is a staircase of roughly
+    /// point-high steps rather than a curve. A flat paddle's staircase is a straight line and
+    /// costs nothing; a curved one's is not.
+    ///
+    /// Measured off the artwork rather than off the body, because `SKPhysicsBody` will not say
+    /// what its outline is. This walks the same alpha the tracer walks, at the same resolution.
+    func testHowRaggedATracedPaddleSurfaceIs() throws {
+        let width = 75, drawnHeight: CGFloat = 18
+
+        for name in ["regularPaddle", "regularPaddleConvex", "regularPaddleConcave",
+                     "regularPaddleWave"] {
+            guard let art = UIImage(named: name), let source = art.cgImage else { continue }
+
+            let height = Int(drawnHeight.rounded())
+            var pixels = [UInt8](repeating: 0, count: width*height*4)
+            let context = CGContext(data: &pixels, width: width, height: height,
+                                    bitsPerComponent: 8, bytesPerRow: width*4,
+                                    space: CGColorSpaceCreateDeviceRGB(),
+                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
+            // Redrawn at the size the body is traced at, which is the whole point: the steps
+            // are a consequence of the resolution the tracer works at
+
+            var top: [Int] = []
+            for x in 0..<width {
+                var found = height
+                for y in 0..<height where pixels[(y*width + x)*4 + 3] > 128 {
+                    found = y
+                    break
+                }
+                top.append(found)
+            }
+
+            let steps = zip(top, top.dropFirst()).map { abs($1 - $0) }
+            let jumps = steps.filter { $0 > 0 }
+            print(String(format: "    %-24@ %2d steps, biggest %d point(s)",
+                         name as NSString, jumps.count, steps.max() ?? 0))
+        }
+        print("")
+        // Printed rather than asserted: what counts as ragged is a judgement about how a ball
+        // feels, and the number is here to be read beside the shapes it comes from
+    }
+
+    /// The paddle tick's frame times, as a distribution rather than a mean.
+    ///
+    /// A stutter is not a slow average, it is a few frames that arrive late - so a mean of 3%
+    /// of a frame says almost nothing on its own. This runs the tick over a shaped paddle and
+    /// over a plain one and prints the worst frames of each, which is where a stutter would be
+    /// if the tick were causing it.
+    func testTheShapedPaddleTicksFrameTimes() {
+        func times(shaped: Bool) -> [Double] {
+            let scene = loadedField()
+            scene.paddleHeight = 12
+            scene.paddleWidth = 75
+            scene.ballSize = 12
+            scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+            scene.paddle.texture = scene.paddleTexture
+            scene.paddle.size = CGSize(width: 75, height: 12)
+            scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+            if shaped {
+                scene.endlessIIPaddleSurface = .wavy
+                scene.endlessIIPaddleSurfaceClock.collect(10)
+            }
+            scene.refreshEndlessIIPaddleShapeArt()
+
+            var each: [Double] = []
+            for step in 0..<240 {
+                scene.paddle.position.x = sin(Double(step)/6)*80
+                let start = Date.timeIntervalSinceReferenceDate
+                scene.tickEndlessIIPaddlePowerUps(Double(step)/60)
+                each.append(Date.timeIntervalSinceReferenceDate - start)
+            }
+            return each.sorted()
+        }
+
+        for (label, each) in [("plain", times(shaped: false)),
+                              ("shaped (wave)", times(shaped: true))] {
+            let median = each[each.count/2]
+            let ninetyNine = each[Int(Double(each.count)*0.99)]
+            print(String(format: "\n  %@: median %6.3f ms, 99th %6.3f ms, worst %6.3f ms",
+                         label as NSString, median*1000, ninetyNine*1000,
+                         (each.last ?? 0)*1000))
+            XCTAssertLessThan(ninetyNine, frame/2,
+                              "\(label): all but the worst 1% of frames must leave the "
+                              + "physics and the drawing half a frame to work in")
+        }
+        print("")
+    }
+
+    /// What the power-up timer rings cost per frame, and how much of it is spent redrawing a
+    /// path that has not visibly changed.
+    ///
+    /// The lead the shaped paddle's own numbers pointed at. James listed four power-ups
+    /// together - "Drift, Shaped paddles, Trajectory line, Quicksand" - and what those four
+    /// share is not what they do to the field, it is that each is *timed* and so each wears a
+    /// ring in the HUD. `PowerUpTrayRings.update` runs every frame and hands a freshly built
+    /// `CGPath` to two `SKShapeNode`s per running power-up, one of them glowing: an
+    /// `SKShapeNode` re-tessellates when it is handed a path, and a glowing one is rendered
+    /// through an offscreen pass of its own. That is round 258's finding about the trajectory
+    /// line, in the one place round 258 did not look.
+    func testWhatThePowerUpTimerRingsCostPerFrame() {
+        let radius: CGFloat = 12
+
+        for running in [1, 4, 8] {
+            var built = 0
+            let start = Date.timeIntervalSinceReferenceDate
+            for frame in 0..<600 {
+                for slot in 0..<running {
+                    let left = 1 - CGFloat(frame)/600 - CGFloat(slot)*0.01
+                    _ = PowerUpRingHUD.ringPath(remaining: max(0, left), segments: nil,
+                                                radius: radius)
+                    built += 1
+                }
+            }
+            let each = (Date.timeIntervalSinceReferenceDate - start)/600
+            print(String(format: "  %d running: %5d paths in 600 frames, %6.4f ms per frame",
+                         running, built, each*1000))
+        }
+
+        // What the skip saves, counted rather than timed - which is the only way this kind of
+        // cost has ever shown itself here. Building a path is cheap; *handing* one to an
+        // SKShapeNode re-tessellates it, and the glowing copy under it is an offscreen pass
+        for (label, segments) in [("a plain ring", Int?.none), ("a five-segment ring", 5)] {
+            for seconds in [10, 30] {
+                let frames = seconds*60
+                var drawn = 0
+                var last: CGFloat = -1
+                for frame in 0...frames {
+                    let left = 1 - CGFloat(frame)/CGFloat(frames)
+                    guard PowerUpRingHUD.hasTurned(from: last, to: left,
+                                                   segments: segments, radius: radius)
+                    else { continue }
+                    last = left
+                    drawn += 1
+                }
+                print(String(format: "  %@ over %2ds: %4d redraws instead of %4d  (%.0f%% saved)",
+                             label as NSString, seconds, drawn, frames + 1,
+                             (1 - Double(drawn)/Double(frames + 1))*100))
+                XCTAssertLessThan(drawn, frames/2,
+                                  "\(label) over \(seconds)s is still redrawing on most frames")
+            }
+        }
+        print("")
+        // Two nodes per running power-up, so the frames saved are twice this in
+        // re-tessellations and the same again in offscreen passes avoided
+    }
 }

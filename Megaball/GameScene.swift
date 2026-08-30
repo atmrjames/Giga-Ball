@@ -2045,9 +2045,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// and pushed further does not move at all - and "it did not move" is exactly the
 			// moment the wall is worth feeling
 
+			let carried = paddleX1 - paddleX0
 			paddle.position = CGPoint(x: paddleX1, y: paddle.position.y)
 			// Sets the paddle to match the new calculated position
-				
+
+			if endlessIIAimHold, endlessIIAimTouched {
+				endlessIIAimTouchX += carried
+			}
+			// **The aim rides the paddle** (James, play-test round 275: "when moving the
+			// paddle the aim arrow can snap down to a low angle").
+			//
+			// The aim is kept as the *point the finger last pointed at* and the angle is
+			// measured from the ball to it (round 232, so that aiming at a brick means
+			// pointing at the brick). The held ball rides the paddle - that is the line just
+			// below - so dragging the paddle walks the ball out from under a point that stays
+			// where it was. The vector from one to the other swings as the ball approaches,
+			// and once the ball is nearly level with the point the angle is almost flat and
+			// the clamp takes it to the minimum: the arrow snapping down.
+			//
+			// Carrying the point by however far the paddle *actually* went holds the angle
+			// exactly. Measured from the clamp rather than from `paddleMovedDistance`, because
+			// a paddle already against a wall does not move and its aim must not either
+			
 			if ballIsOnPaddle && paddleMovedDistance != 0 {
 				ball.position.x = paddle.position.x + ballRelativePositionOnPaddle				
 				ball.position.y = ballStartingPositionY

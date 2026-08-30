@@ -1285,6 +1285,32 @@ sprite with no such bonus washed out to olive where the old line stayed green. I
 chosen by drawing the old line beside four candidates and looking at them. The arithmetic answer
 and the one that looks the same were different answers, and only the render could say so.
 
+**An `SKShapeNode` handed a path re-tessellates, and a glowing one costs an offscreen pass.**
+Round 258 found the trajectory line doing both 46 times a frame per ball and fixed it there. The
+power-up **timer rings** were doing the same thing and were not looked at: two shape nodes per
+*running* power-up, one of them glowing, both handed a freshly built path on every frame for the
+whole of its life. Which is the likeliest reading of James's stutter list - "Drift, Shaped
+paddles, Trajectory line, Quicksand" is not four unrelated mechanics, it is four **timed**
+power-ups, and the cost is per ring rather than per power-up. `PowerUpRingHUD.hasTurned` now
+skips the redraws that land in the same place: 75% of them over ten seconds, 92% over thirty,
+and 99% for a segmented ring, which only ever shows whole segments.
+
+Neither this nor anything else measured is *proven* to be the stutter - what is proven is that a
+shaped paddle's own per-frame tick is indistinguishable from a plain paddle's (median 0.36ms
+against 0.35ms, identical 99th percentiles, and the worst single frame belonging to the plain
+one). The trace cache from round 258 holds: zero retraces in 120 frames of a moving shaped
+paddle.
+
+**One thing measured and not acted on:** a shaped paddle's body is traced from the picture's
+alpha at the size it is drawn, so the surface the ball meets is a staircase - 20 steps for the
+dome, 26 for the dish, 32 for the wave, each up to two points high, against a plain paddle's
+flat top. `testHowRaggedATracedPaddleSurfaceIs` prints them. Whether that is enough to be felt
+depends on what resolution SpriteKit samples at, which it does not document and which
+`SKPhysicsBody.area` will not answer - it reports zero for a traced body. Giving the shapes
+analytic outlines the way `EndlessIIFaceGeometry` gives the bricks theirs would remove the
+question, and it would change how every shaped paddle bounces, so it wants James rather than a
+guess.
+
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is
 cleared away at the wrong moment, or sits in the last row blocking generation for ever. Big

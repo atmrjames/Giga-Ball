@@ -3016,4 +3016,64 @@ final class PlayTestRound259Tests: XCTestCase {
         XCTAssertEqual(clock.goodbye, left, accuracy: 0.001,
                        "a spend used to take a whole second off the farewell")
     }
+
+    /// Moving the paddle must not drop the aim to a low angle.
+    ///
+    /// James, play-test round 275: "the swiping to move the paddle and aim the arrow is working
+    /// well, except when moving the paddle the aim arrow can snap down to a low angle."
+    ///
+    /// The aim is kept as the point the finger last pointed at, and the angle is measured from
+    /// the ball to it - round 232, so that aiming at a brick means pointing at the brick. The
+    /// held ball rides the paddle, so dragging the paddle walks the ball out from under a point
+    /// that stays where it was: the vector between them swings as the ball approaches, and once
+    /// the ball is nearly level with the point the angle is almost flat and the clamp takes it
+    /// to the minimum. That is the snap.
+    func testTheAimSurvivesThePaddleBeingMoved() {
+        let minimum = 20*Double.pi/180
+        let ball = CGPoint(x: 0, y: -300)
+        let finger = CGPoint(x: 40, y: -120)
+        let aimed = EndlessIIPaddleEffects.aimedAngle(at: finger, from: ball, minimum: minimum)
+
+        // The paddle is dragged 90 points right, so the ball goes with it and passes under
+        // the point the player was aiming at
+        let moved = CGPoint(x: ball.x + 90, y: ball.y)
+        let adrift = EndlessIIPaddleEffects.aimedAngle(at: finger, from: moved, minimum: minimum)
+        XCTAssertNotEqual(aimed, adrift, accuracy: 0.01,
+                          "this is the bug: the same finger, a moved ball, a different shot")
+
+        // Carried by the same distance, which is what the drag now does to it
+        let carried = CGPoint(x: finger.x + 90, y: finger.y)
+        let held = EndlessIIPaddleEffects.aimedAngle(at: carried, from: moved, minimum: minimum)
+        XCTAssertEqual(held, aimed, accuracy: 0.0001,
+                       "the angle the player set is the angle they keep")
+    }
+
+    /// And the drag that would have collapsed it really did collapse it.
+    ///
+    /// Not "some other angle" but *flat*: the failure James saw is the clamp catching a shot
+    /// that had swung down to nothing, which is what makes it read as a snap rather than as
+    /// drift.
+    func testTheUncarriedAimCollapsesToTheClamp() {
+        let minimum = 20*Double.pi/180
+        let ball = CGPoint(x: 0, y: -300)
+        let finger = CGPoint(x: 40, y: -250)
+        // Aimed low and near, which is the aim a long drag ruins soonest: the paddle only moves
+        // sideways, so what a drag can do to the angle is widen its run and never shorten its
+        // rise - and a shallow aim has the least rise to spare
+
+        let set = EndlessIIPaddleEffects.aimedAngle(at: finger, from: ball, minimum: minimum)
+        XCTAssertEqual(set*180/Double.pi, 51.3, accuracy: 0.5, "a perfectly ordinary shot")
+
+        let dragged = EndlessIIPaddleEffects.aimedAngle(
+            at: finger, from: CGPoint(x: 200, y: ball.y), minimum: minimum)
+        XCTAssertEqual(dragged, Double.pi - minimum, accuracy: 0.0001,
+                       "and after dragging the paddle 200 points the shot is the clamp: not "
+                       + "the angle the player set, and not one they chose - which is what "
+                       + "makes it read as a snap rather than as drift")
+
+        let carried = EndlessIIPaddleEffects.aimedAngle(
+            at: CGPoint(x: finger.x + 200, y: finger.y), from: CGPoint(x: 200, y: ball.y),
+            minimum: minimum)
+        XCTAssertEqual(carried, set, accuracy: 0.0001)
+    }
 }

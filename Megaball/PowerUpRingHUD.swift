@@ -51,6 +51,8 @@ final class PowerUpRingHUD: SKNode {
         let halo: SKShapeNode
         var remaining: CGFloat
         var segments: Int?
+        var drawn: CGFloat = -1
+        // What the ring's path was last built for. -1 so the first refresh always draws
     }
 
     private var slots: [String: Slot] = [:]
@@ -138,9 +140,16 @@ final class PowerUpRingHUD: SKNode {
             }
             slots[entry.id]?.remaining = entry.remaining
             slots[entry.id]?.segments = entry.segments
-            let path = ringPath(remaining: entry.remaining, segments: entry.segments)
-            slots[entry.id]?.ring.path = path
-            slots[entry.id]?.halo.path = path
+
+            let drawn = slots[entry.id]?.drawn ?? -1
+            if PowerUpRingHUD.hasTurned(from: drawn, to: entry.remaining,
+                                        segments: entry.segments, radius: radius()) {
+                let path = ringPath(remaining: entry.remaining, segments: entry.segments)
+                slots[entry.id]?.ring.path = path
+                slots[entry.id]?.halo.path = path
+                slots[entry.id]?.drawn = entry.remaining
+            }
+            // Only when it has turned somewhere new - see `hasTurned`
         }
 
         if changed { layoutSlots() }
@@ -280,6 +289,35 @@ final class PowerUpRingHUD: SKNode {
     /// Static and radius-parameterised because two displays draw it now: Mayhem's
     /// only-active row, and the old modes' fixed tray - one geometry, or the same
     /// power-up would read differently between modes.
+    /// Whether the ring has turned far enough to be worth handing a new path.
+    ///
+    /// **An `SKShapeNode` re-tessellates every time it is given one**, and the glowing copy
+    /// under it is rendered through an offscreen pass - which is what round 258 found costing
+    /// the trajectory line 46 of each per frame, and did not look for anywhere else. Each
+    /// running power-up wears two of these nodes and both were handed a freshly built path on
+    /// every frame, for the whole of the power-up's life.
+    ///
+    /// Most of that work cannot be seen. The arc's end travels the ring's circumference over
+    /// the power-up's life, so a ring 75 points round has about 150 positions the eye can tell
+    /// apart - against 60 redraws a second for twenty or thirty seconds. This is the test for
+    /// the ones that land somewhere new.
+    ///
+    /// The two ends are always drawn: full and empty are the readings that have to be exact,
+    /// and a ring that stopped a pixel short of empty would be a timer that never finished.
+    static func hasTurned(from drawn: CGFloat, to wanted: CGFloat,
+                          segments: Int?, radius: CGFloat) -> Bool {
+        if wanted <= 0 || wanted >= 1 { return drawn != wanted }
+        if let segments, segments > 1 {
+            return Int((wanted*CGFloat(segments)).rounded())
+                != Int((drawn*CGFloat(segments)).rounded())
+            // A segmented ring only ever shows whole segments, so it changes when the count of
+            // lit ones does and at no other time - which for a five-segment ring is five
+            // redraws over its whole life rather than twelve hundred
+        }
+        let positions = max(1, 2*CGFloat.pi*radius*2)
+        return abs(wanted - drawn)*positions >= 1
+    }
+
     static func ringPath(remaining: CGFloat, segments: Int?, radius: CGFloat) -> CGPath {
         let fraction = min(max(remaining, 0), 1)
 
@@ -333,6 +371,7 @@ final class PowerUpTrayRings: SKNode {
         let ring: SKShapeNode
         let halo: SKShapeNode
         var wasActive = false
+        var drawn: CGFloat = -1
     }
 
     private var slots: [Slot] = []
@@ -384,11 +423,15 @@ final class PowerUpTrayRings: SKNode {
     func update(remaining: [(fraction: CGFloat, segments: Int?)?]) {
         for (index, entry) in remaining.enumerated() where slots.indices.contains(index) {
             if let entry {
-                let path = PowerUpRingHUD.ringPath(remaining: entry.fraction,
-                                                  segments: entry.segments,
-                                                  radius: radius)
-                slots[index].ring.path = path
-                slots[index].halo.path = path
+                if PowerUpRingHUD.hasTurned(from: slots[index].drawn, to: entry.fraction,
+                                            segments: entry.segments, radius: radius) {
+                    let path = PowerUpRingHUD.ringPath(remaining: entry.fraction,
+                                                      segments: entry.segments,
+                                                      radius: radius)
+                    slots[index].ring.path = path
+                    slots[index].halo.path = path
+                    slots[index].drawn = entry.fraction
+                }
                 if slots[index].wasActive == false {
                     slots[index].wasActive = true
                     slots[index].holder.removeAllActions()
