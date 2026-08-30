@@ -374,14 +374,17 @@ extension GameScene {
     /// the small one. The overlay darkens the three hard sides and leaves the soft one clear,
     /// so what shows through the picture is the way in.
     ///
-    /// Two pictures, for the two proportions a brick comes in - 2:1 for Tiny, Normal and Big,
-    /// which are all that shape, and square for a Square brick. Sized and placed off the *cell*
-    /// rather than off `brick.size`, which is the hiding rectangle once a face is on it.
+    /// Three pictures, for the three sizes worth drawing one for: 2:1 for Tiny and Normal,
+    /// square for a Square brick, and a Big one of its own (round 274) - a Big brick is 2:1
+    /// like an ordinary one and four times the area, so the ordinary panel stretched over it
+    /// would have four times the border and a bevel to match. A Tiny brick keeps the ordinary
+    /// panel scaled down, which is right: it is the same shape. Sized and placed off the
+    /// *cell* rather than off `brick.size`, which is the hiding rectangle once a face is on it.
     func endlessIIDrawVulnerableEdge(on brick: SKSpriteNode, side: EndlessIISide) {
         brick.childNode(withName: GameScene.directionalEdgeName)?.removeFromParent()
 
         let cell = endlessIIFieldSize(of: brick)
-        if let art = endlessIIDirectionalArt(side, square: endlessIISizeOf(brick) == .square) {
+        if let art = endlessIIDirectionalArt(side, size: endlessIISizeOf(brick)) {
             let panel = SKSpriteNode(texture: art, size: cell)
             panel.name = GameScene.directionalEdgeName
             panel.zPosition = 1
@@ -422,9 +425,9 @@ extension GameScene {
     }
 
     /// The overlay drawn for a soft side, at the proportions this brick comes in.
-    func endlessIIDirectionalArt(_ side: EndlessIISide, square: Bool) -> SKTexture? {
+    func endlessIIDirectionalArt(_ side: EndlessIISide, size: BrickSize) -> SKTexture? {
         let name = "BrickDirectional" + side.artName + "Open"
-            + (square ? GameScene.squareArtSuffix : "")
+            + GameScene.artSuffix(for: size)
         guard UIImage(named: name) != nil else { return nil }
         return SKTexture(imageNamed: name)
         // Asked of the catalogue, not of SpriteKit, for the reason `endlessIIShapedArt` gives:
@@ -1215,7 +1218,7 @@ extension GameScene {
     func endlessIIWearsPortalArt(_ brick: SKSpriteNode) -> Bool {
         if brick.childNode(withName: GameScene.brickArtName) != nil { return true }
 
-        let square = endlessIISizeOf(brick) == .square
+        let suffix = GameScene.artSuffix(for: endlessIISizeOf(brick))
         let mirrored = brick.endlessIIFaceMirrored ?? false
         let flipped = brick.endlessIIFaceFlipped ?? false
         for (name, art) in [(GameScene.roundedBrickOutlineName, GameScene.ShapedBrickArt.rounded),
@@ -1223,7 +1226,7 @@ extension GameScene {
                              brick.endlessIIFace.flatMap(GameScene.shapedArt(for:)) ?? .rounded)]
         where brick.childNode(withName: name) != nil {
             let source = endlessIIFaceArtName(for: brick, art, mirrored: mirrored,
-                                              flipped: flipped, square: square)
+                                              flipped: flipped, suffix: suffix)
             if source == GameScene.portalBrickArtName { return true }
         }
         return false
@@ -1231,11 +1234,14 @@ extension GameScene {
 
     /// Greys a Portal out, or brings it back.
     ///
-    /// **The tint goes on the brick, not on the picture.** `refreshEndlessIIBrickArt` and
-    /// `refreshEndlessIIFaceArt` copy the brick's colour onto the art every frame, so a tint
-    /// written straight onto the art would be wiped off on the next one. Writing it where those
-    /// two read from is what makes it stick - and it reaches a shaped Portal's face without
-    /// this having to know which node is doing the showing.
+    /// James, round 274: "For the portal brick cooling, can we make the brick monochrome during
+    /// this period." A picture with the colour drained out of it, which keeps every light and
+    /// dark where it was - so it reads as the same brick waiting rather than as a different
+    /// brick. `endlessIIShown` is where that happens, on the way to the sprite, so it reaches a
+    /// shaped Portal's face without this having to know which node is doing the showing.
+    ///
+    /// The rings drawn on a Portal with no picture still change colour, because a shape node
+    /// has no picture to drain.
     func endlessIIShowPortal(_ brick: SKSpriteNode, cooling: Bool) {
         if let glyph = endlessIIPortalMark(on: brick) as? SKShapeNode {
             glyph.removeAllActions()
@@ -1243,21 +1249,16 @@ extension GameScene {
                                         : GameScene.portalReadyColour
             return
         }
-        brick.color = GameScene.portalCoolingColour
-        brick.colorBlendFactor = cooling ? GameScene.portalCoolingBlend : 0
         refreshEndlessIIBrickArt(brick)
         endlessIIRefreshFace(on: brick)
-        // Carried onto the picture now rather than on the next frame's sweep. A Portal cools
-        // for a fixed number of seconds and comes back; a state that only appears on the frame
-        // after it is set is a state that reads late at both ends of a short window
+        // **Nothing is written on the brick.** `endlessIIShown` reads the cooldown and hands
+        // back the desaturated picture for as long as it is running, so the state is a
+        // consequence of the clock rather than a flag somebody has to remember to clear - and
+        // the per-frame refresh, which used to wipe a tint off, is now what keeps it on.
+        // Refreshed here as well so it lands on the frame it is set rather than the next: a
+        // Portal cools for a few seconds, and a state that reads late at both ends of a short
+        // window barely reads at all
     }
-
-    /// How far a cooling Portal is greyed towards the cooling colour.
-    ///
-    /// Not all the way. A Portal that went flat grey would read as a different brick rather
-    /// than as the same one waiting, and the rings James drew into the picture are what has to
-    /// stay legible through it.
-    static let portalCoolingBlend: CGFloat = 0.7
 
     /// What a Portal's rings are when it can be entered.
     static let portalReadyColour = UIColor(red: 0.30, green: 0.68, blue: 1.0, alpha: 1)

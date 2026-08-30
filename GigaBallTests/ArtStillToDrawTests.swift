@@ -75,15 +75,18 @@ final class ArtStillToDrawTests: XCTestCase {
     /// **Read off the rules rather than listed**, so the day a square Wedge becomes buildable
     /// this starts asking for its picture without anybody remembering to.
     private func missingSquareArt() -> [String] {
-        let shapes = [""] + GameScene.ShapedBrickArt.allCases
-            .filter { $0.style.suits(BrickSize.square) }
-            .map(\.rawValue)
         var missing: [String] = []
-        for (_, names) in brickTypes {
-            for name in names {
-                for shape in shapes {
-                    let wanted = name + shape + GameScene.squareArtSuffix
-                    if UIImage(named: wanted) == nil { missing.append(wanted) }
+        for size in [BrickSize.square, .big] {
+            let suffix = GameScene.artSuffix(for: size)
+            let shapes = [""] + GameScene.ShapedBrickArt.allCases
+                .filter { $0.style.suits(size) && $0.style.suitsAnyBrickOf(size) }
+                .map(\.rawValue)
+            for (_, names) in brickTypes {
+                for name in names {
+                    for shape in shapes {
+                        let wanted = name + shape + suffix
+                        if UIImage(named: wanted) == nil { missing.append(wanted) }
+                    }
                 }
             }
         }
@@ -107,6 +110,13 @@ final class ArtStillToDrawTests: XCTestCase {
         }
         if UIImage(named: GameScene.powerUpBrickArtName) == nil {
             missing.append(GameScene.powerUpBrickArtName)
+        }
+        for size in [BrickSize.normal, .square, .big] {
+            for side in EndlessIISide.allCases {
+                let name = "BrickDirectional" + side.artName + "Open"
+                    + GameScene.artSuffix(for: size)
+                if UIImage(named: name) == nil { missing.append(name) }
+            }
         }
         return missing.sorted()
     }
@@ -170,11 +180,9 @@ final class ArtStillToDrawTests: XCTestCase {
     ///
     /// Named here rather than in a comment somewhere, so the day they land this test fails and
     /// says which line of §8.5 to strike - which is the whole reason this file exists.
-    private let stillToDrawAtSquareProportions = [
-        "BrickInvisibleDiamondSquare", "BrickMultiHit1DiamondSquare",
-        "BrickMultiHit2DiamondSquare", "BrickMultiHit3DiamondSquare",
-        "BrickMultiHit4DiamondSquare", "BrickNormalDiamondSquare",
-    ].sorted()
+    private let stillToDrawAtSquareProportions: [String] = []
+    // **Empty since round 274.** It was the six classic Diamond squares, and James drew them
+    // the same evening he drew the Big set - so both sizes are complete in both themes
 
     /// **The on-hit overlays exist** as of round 271 - all eight panels and the badge.
     ///

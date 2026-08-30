@@ -96,15 +96,15 @@ extension GameScene {
     /// asked by the caller that has to decide whether to un-reflect the sprite.
     func endlessIIShapedArt(for texture: SKTexture?, _ shape: ShapedBrickArt,
                             mirrored: Bool = false, flipped: Bool = false,
-                            square: Bool = false, named: String? = nil) -> SKTexture? {
+                            suffix: String = "", named: String? = nil) -> SKTexture? {
         guard let name = named ?? endlessIIBrickTextureName(texture) else { return nil }
         // **The name may be given rather than looked up.** A Portal is built on the
         // Indestructible artwork and is not an Indestructible brick, so asked by texture alone
         // it would wear `BrickIndestructible2Rounded` and never find `BrickPortalRounded`
 
-        if square {
-            let squared = name + shape.rawValue + GameScene.squareArtSuffix
-            if UIImage(named: squared) != nil { return SKTexture(imageNamed: squared) }
+        if suffix.isEmpty == false {
+            let sized = name + shape.rawValue + suffix
+            if UIImage(named: sized) != nil { return SKTexture(imageNamed: sized) }
         }
         // **The size comes after the shape**, which is how James delivered them:
         // `BrickNormalRoundedSquare`. A Square brick is one cell wide and two tall, so the
@@ -136,10 +136,10 @@ extension GameScene {
     /// drawn four ways. Where the oriented art exists the sprite cancels the scale back out,
     /// so the outline is turned and the lighting is not.
     func endlessIIArtIsOriented(for texture: SKTexture?, _ shape: ShapedBrickArt,
-                                mirrored: Bool, flipped: Bool, square: Bool = false,
+                                mirrored: Bool, flipped: Bool, suffix: String = "",
                                 named: String? = nil) -> Bool {
         guard let name = named ?? endlessIIBrickTextureName(texture) else { return false }
-        if square, UIImage(named: name + shape.rawValue + GameScene.squareArtSuffix) != nil {
+        if suffix.isEmpty == false, UIImage(named: name + shape.rawValue + suffix) != nil {
             return false
         }
         // A square picture is drawn one way up and there is only one of it, so it is not the
@@ -356,11 +356,11 @@ extension GameScene {
     /// picture drawn for its own orientation" have to be asked of the *same* picture - the two
     /// falling back independently is how a sprite ends up un-turning art that was never turned.
     func endlessIIFaceArtName(for brick: SKSpriteNode, _ art: ShapedBrickArt?,
-                              mirrored: Bool, flipped: Bool, square: Bool) -> String? {
+                              mirrored: Bool, flipped: Bool, suffix: String) -> String? {
         guard let art else { return nil }
         if let named = endlessIIArtName(for: brick),
            endlessIIShapedArt(for: brick.texture, art, mirrored: mirrored, flipped: flipped,
-                              square: square, named: named) != nil {
+                              suffix: suffix, named: named) != nil {
             return named
         }
         return endlessIIBrickTextureName(brick.texture)
@@ -370,17 +370,18 @@ extension GameScene {
                                  _ art: ShapedBrickArt?, cell: CGSize) -> Bool {
         let mirrored = brick.endlessIIFaceMirrored ?? false
         let flipped = brick.endlessIIFaceFlipped ?? false
-        let square = abs(cell.height - cell.width) < 0.01
-        // Asked of the face's own cell rather than of `endlessIISizeOf`, for the reason that
-        // function's comment gives: Square is the one size taller than it is wide, and the
-        // path the face was built to is the thing that still knows the cell after the sprite
-        // behind it has been shrunk out of the way
+        let suffix = GameScene.artSuffix(for: endlessIISizeOf(brick))
+        // Asked of the size rather than of the cell's shape. Square is the one size taller than
+        // it is wide, so its cell can be recognised by its aspect - and a Big brick's is 2:1
+        // exactly like an ordinary brick's, so that trick never worked for the second one.
+        // `endlessIISizeOf` reads the face's own path (`endlessIIFieldSize`), which is what
+        // still knows the cell after the sprite behind it has been shrunk away
 
         let source = endlessIIFaceArtName(for: brick, art,
-                                          mirrored: mirrored, flipped: flipped, square: square)
+                                          mirrored: mirrored, flipped: flipped, suffix: suffix)
         guard let art, let source, let texture = endlessIIShapedArt(
             for: brick.texture, art,
-            mirrored: mirrored, flipped: flipped, square: square, named: source)
+            mirrored: mirrored, flipped: flipped, suffix: suffix, named: source)
         else {
             shape.childNode(withName: GameScene.faceArtName)?.removeFromParent()
             shape.childNode(withName: GameScene.facePartnerName)?.removeFromParent()
@@ -389,12 +390,13 @@ extension GameScene {
 
         let oriented = endlessIIArtIsOriented(for: brick.texture, art,
                                               mirrored: mirrored, flipped: flipped,
-                                              square: square, named: source)
+                                              suffix: suffix, named: source)
         let sprite = (shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode)
             ?? drawEndlessIIFaceArt(texture, on: shape, cell: cell)
 
         let centre = endlessIIFaceCentre(shape: shape)
-        if sprite.texture != texture { sprite.texture = texture }
+        let shown = endlessIIShown(texture, on: brick)
+        if sprite.texture != shown { sprite.texture = shown }
         if sprite.size != cell { sprite.size = cell }
         if sprite.position != centre { sprite.position = centre }
         sprite.color = brick.color
@@ -424,6 +426,43 @@ extension GameScene {
         }
     }
 
+    // MARK: - Monochrome
+
+    /// The same picture with the colour taken out of it.
+    ///
+    /// James, round 274: "For the portal brick cooling, can we make the brick monochrome during
+    /// this period." Which is the right instrument and the one `colorBlendFactor` cannot play:
+    /// blending towards grey flattens a picture towards *one* grey and takes the shading with
+    /// it, where desaturating keeps every light and dark exactly where it was and only stops
+    /// them being green. A cooling Portal reads as the same brick, waiting.
+    ///
+    /// **Computed once per picture and kept**, the way `TracedBodyCache` keeps a traced body.
+    /// A Core Image pass is far too expensive to run on a frame, and there are only ever a
+    /// handful of distinct portal pictures in a run - so the cache is bounded by the art rather
+    /// than by anything that happens in play.
+    func endlessIIMonochrome(of texture: SKTexture) -> SKTexture {
+        let key = texture.description
+        if let kept = GameScene.monochromeArt[key] { return kept }
+        guard let filter = CIFilter(name: "CIColorControls",
+                                    parameters: [kCIInputSaturationKey: 0]) else { return texture }
+        let drained = texture.applying(filter)
+        GameScene.monochromeArt[key] = drained
+        return drained
+    }
+
+    private static var monochromeArt: [String: SKTexture] = [:]
+
+    /// The picture a brick should actually be showing, given what is happening to it.
+    ///
+    /// One place, so the overlay and the shaped face cannot disagree - and so the cooling state
+    /// survives the per-frame refresh, which is where the first version of it went wrong. A
+    /// tint written onto the art is wiped off by the next frame's copy of the brick's colour; a
+    /// *texture* chosen here is chosen again every frame, for as long as the reason holds.
+    func endlessIIShown(_ texture: SKTexture, on brick: SKSpriteNode) -> SKTexture {
+        guard brick.endlessIIRole == .portal, endlessIIPortalCooldown > 0 else { return texture }
+        return endlessIIMonochrome(of: texture)
+    }
+
     // MARK: - Square
 
     /// The suffix a picture drawn for a Square brick carries.
@@ -431,6 +470,23 @@ extension GameScene {
     /// James, round 270: "by square, I just mean 2x2" - one cell wide and two tall, which is
     /// square on screen because a cell is twice as wide as it is high.
     static let squareArtSuffix = "Square"
+
+    /// And the one a picture drawn for a Big brick carries: two cells by two, so it is 2:1 like
+    /// an ordinary brick and four times the area. Round 274.
+    static let bigArtSuffix = "Big"
+
+    /// What a picture drawn for this size is called.
+    ///
+    /// Nothing for Tiny, deliberately: a Tiny brick is a quarter cell wearing the ordinary
+    /// picture *scaled* into it, which is right - the stretch these suffixes exist to end is a
+    /// change of proportion, and a Tiny brick has none.
+    static func artSuffix(for size: BrickSize) -> String {
+        switch size {
+        case .normal, .tiny: return ""
+        case .square: return squareArtSuffix
+        case .big: return bigArtSuffix
+        }
+    }
 
     static let brickArtName = "endlessIIBrickArt"
 
@@ -478,11 +534,12 @@ extension GameScene {
             // varies: "Power-up bricks only come in this shape and style"
         }
 
-        let square = endlessIISizeOf(brick) == .square
-        guard square || name != endlessIIBrickTextureName(brick.texture) else { return nil }
+        let suffix = GameScene.artSuffix(for: endlessIISizeOf(brick))
+        guard suffix.isEmpty == false
+                || name != endlessIIBrickTextureName(brick.texture) else { return nil }
         // Nothing to put on an ordinary brick that is already wearing its own picture
 
-        let wanted = name + (square ? GameScene.squareArtSuffix : "")
+        let wanted = name + suffix
         guard UIImage(named: wanted) != nil else { return nil }
         return SKTexture(imageNamed: wanted)
         // Asked of the catalogue for the same reason the shaped lookup is: a missing name gets
@@ -523,9 +580,20 @@ extension GameScene {
             sprite.zPosition = 0.01
             brick.addChild(sprite)
         }
-        if sprite.texture != texture { sprite.texture = texture }
-        if sprite.size != brick.size { sprite.size = brick.size }
-        if sprite.anchorPoint != brick.anchorPoint { sprite.anchorPoint = brick.anchorPoint }
+        let cell = endlessIIFieldSize(of: brick)
+        let centre = endlessIIBrickCentre(of: brick)
+        let shown = endlessIIShown(texture, on: brick)
+        if sprite.texture != shown { sprite.texture = shown }
+        if sprite.size != cell { sprite.size = cell }
+        if sprite.anchorPoint != CGPoint(x: 0.5, y: 0.5) {
+            sprite.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        }
+        if sprite.position != centre { sprite.position = centre }
+        // **Off the cell and the drawn centre**, not off `brick.size` and the brick's anchor.
+        // They are the same thing for most bricks and not for a power-up brick, whose sprite is
+        // shrunk away behind its badge the way a rounded brick's is (round 274) - so the
+        // picture has to be measured against what the brick *occupies* rather than against
+        // what is left of the sprite underneath it
         if sprite.color != brick.color { sprite.color = brick.color }
         if sprite.colorBlendFactor != brick.colorBlendFactor {
             sprite.colorBlendFactor = brick.colorBlendFactor

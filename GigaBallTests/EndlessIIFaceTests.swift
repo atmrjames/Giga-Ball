@@ -726,7 +726,7 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         for retro in [false, true] {
             let scene = scene(retro: retro)
             for texture in types(scene) {
-                let art = scene.endlessIIShapedArt(for: texture, .rounded, square: true)
+                let art = scene.endlessIIShapedArt(for: texture, .rounded, suffix: GameScene.squareArtSuffix)
                 guard let art else {
                     let name = scene.endlessIIBrickTextureName(texture) ?? "?"
                     return XCTFail("no RoundedSquare art for \(name), retro: \(retro)")
@@ -757,11 +757,15 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         XCTAssertEqual(brick.texture, scene.brickNormalTexture,
                        "the picture goes on an overlay, never on the brick")
         XCTAssertNotEqual(brick.texture?.description, art.texture?.description)
-        XCTAssertEqual(art.size, brick.size)
-        XCTAssertEqual(art.anchorPoint, brick.anchorPoint,
-                       "a child is placed from the parent's origin rather than its anchor, so "
-                       + "the two agreeing on both is what puts them in the same place")
-        XCTAssertEqual(art.position, .zero)
+        XCTAssertEqual(art.frame.width, brick.size.width, accuracy: 0.01)
+        XCTAssertEqual(art.frame.height, brick.size.height, accuracy: 0.01)
+        XCTAssertEqual(art.frame.midY, brick.frame.midY, accuracy: 0.01,
+                       "the picture covers the brick's own drawing exactly")
+        // **Asked of the frames, not of the anchors.** Round 270 matched the overlay's anchor
+        // to the brick's and left it at the origin, which was one way of landing in the right
+        // place; round 274 centres it on the drawn centre instead, because a power-up brick's
+        // sprite is shrunk away behind its badge and its anchor stops describing the cell. The
+        // thing worth pinning is where the picture ends up, which both do the same
     }
 
     /// A Multi-hit brick steps down through four textures as it is hit, and the overlay is a
@@ -1044,7 +1048,7 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
     func testASquareDiamondWearsTheSquarePictureWhereThereIsOne() {
         let retro = scene(retro: true)
         let square = retro.endlessIIShapedArt(for: retro.brickNormalTexture, .diamond,
-                                              square: true)
+                                              suffix: GameScene.squareArtSuffix)
         XCTAssertNotNil(square)
         XCTAssertNotEqual(square?.description,
                           retro.endlessIIShapedArt(for: retro.brickNormalTexture,
@@ -1190,28 +1194,48 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         XCTAssertEqual(pictures[0], pictures[1])
     }
 
-    /// A cooling Portal stays greyed for longer than one frame.
+    /// A cooling Portal goes monochrome, and stays that way through a refresh.
     ///
-    /// The whole of the risk in moving the cooling state onto the picture:
-    /// `refreshEndlessIIBrickArt` copies the brick's colour onto its art *every frame*, so a
-    /// tint written straight onto the art would be wiped off on the next one - and the cooling
-    /// state is what stops a ball arriving at the top and being sent straight back.
-    func testACoolingPortalStaysGreyThroughARefresh() {
+    /// James, round 274: "For the portal brick cooling, can we make the brick monochrome during
+    /// this period." The state has to survive the per-frame refresh, which is where the first
+    /// version of it went wrong - a tint written onto the art is wiped off by the next frame's
+    /// copy of the brick's colour. Choosing a different *texture* is a choice the refresh makes
+    /// again every frame, for as long as the cooldown is running.
+    func testACoolingPortalGoesMonochromeAndStaysThatWay() {
         let scene = scene()
         let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
                                  size: CGSize(width: scene.brickWidth,
                                               height: scene.brickHeight))
         scene.addChild(brick)
         scene.makePortal(brick)
-        scene.endlessIIShowPortal(brick, cooling: true)
+        guard let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
+        else { return XCTFail("no portal picture") }
+        let coloured = art.texture
 
-        let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
+        scene.endlessIIPortalCooldown = GameScene.endlessIIPortalCooldownSeconds
         scene.refreshEndlessIIBrickArt(brick)
-        XCTAssertEqual(art?.colorBlendFactor ?? 0, GameScene.portalCoolingBlend, accuracy: 0.01,
-                       "greyed, and still greyed after the frame that redraws it")
+        let drained = art.texture
+        XCTAssertNotEqual(drained?.description, coloured?.description,
+                          "the picture is not the coloured one while the Portal is cooling")
+        scene.refreshEndlessIIBrickArt(brick)
+        XCTAssertEqual(art.texture?.description, drained?.description,
+                       "and the frame that redraws it does not put the colour back")
 
-        scene.endlessIIShowPortal(brick, cooling: false)
+        scene.endlessIIPortalCooldown = 0
         scene.refreshEndlessIIBrickArt(brick)
-        XCTAssertEqual(art?.colorBlendFactor ?? 1, 0, accuracy: 0.01, "and back when it is ready")
+        XCTAssertEqual(art.texture?.description, coloured?.description,
+                       "and it comes back when the Portal can be entered again")
+    }
+
+    /// The drained picture is worked out once and kept.
+    ///
+    /// A Core Image pass is far too expensive to run on a frame, and `endlessIIShown` is called
+    /// from the per-frame refresh - so the second ask has to be a dictionary lookup.
+    func testTheMonochromePictureIsComputedOnce() {
+        let scene = scene()
+        let art = SKTexture(imageNamed: GameScene.portalBrickArtName)
+        let first = scene.endlessIIMonochrome(of: art)
+        let second = scene.endlessIIMonochrome(of: art)
+        XCTAssertTrue(first === second, "the second ask is the first one's answer")
     }
 }

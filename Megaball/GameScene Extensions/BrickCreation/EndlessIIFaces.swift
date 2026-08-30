@@ -250,6 +250,12 @@ extension GameScene {
     /// Read off the face's own path rather than remembered, so it cannot fall out of step with
     /// the shape actually drawn - which is `endlessIIFaceCell`'s whole job for the artwork.
     func endlessIIFieldSize(of brick: SKSpriteNode) -> CGSize {
+        if brick.endlessIIPowerUpIndex != nil, brickWidth > 0, brickHeight > 0 {
+            return EndlessIITallBrick(cell: CGSize(width: brickWidth, height: brickHeight)).size
+        }
+        // A power-up brick's sprite is shrunk behind its badge and its plan is the thing that
+        // still knows the cell - the same job the face's path does for a shaped brick
+
         let face = brick.childNode(withName: GameScene.brickFaceName)
             ?? brick.childNode(withName: GameScene.roundedBrickOutlineName)
         guard let shape = face as? SKShapeNode else { return brick.size }

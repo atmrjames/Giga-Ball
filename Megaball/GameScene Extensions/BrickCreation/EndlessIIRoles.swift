@@ -114,6 +114,19 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     /// Only the size question. Whether the brick is *centred*, whether a spinner is in the
     /// column, whether a Directional brick has a face the ball can reach - those need a live
     /// brick in a live field and stay where they are.
+    /// Whether *any* brick of this size could actually carry the style, as opposed to whether
+    /// the design allows it.
+    ///
+    /// The two questions `endlessIICanTake` asks separately, and the second one has an answer
+    /// that depends only on the size: a Big brick's drawing is two cells across as well as two
+    /// down and hangs off its node, so nothing that has to sit on the node fits it. Written
+    /// here so the outstanding-art list asks the same rule the generator does rather than
+    /// keeping its own opinion about which pictures could ever be shown.
+    func suitsAnyBrickOf(_ size: BrickSize) -> Bool {
+        guard isFace || self == .rounded else { return true }
+        return size != .big
+    }
+
     func suits(_ size: BrickSize) -> Bool {
         switch self {
         case .convex, .concave, .wedge:

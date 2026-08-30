@@ -993,10 +993,16 @@ is read in a dozen places for the score, the particle colour, the sound and the 
 Round 270 had it quietly picking up `BrickIndestructible2Square` on the way past, which was
 right by accident.
 
-*One thing to look at:* the badge has rounded corners and the texture under it does not, so a
-few pixels of the Indestructible artwork show at each corner. Every clean fix in code touches
-either that texture (a dozen call sites) or the size logic that finds the brick in the first
-place; drawing `PowerUpBrick` out to square corners would close it with no code at all.
+~~*One thing to look at:* the badge has rounded corners and the texture under it does not.~~
+**Closed in round 274**, and James chose the other way: "keep the corners rounded like the
+graphic I supplied, and like the power-up icons. Make the power-up icons overlay the entire
+brick, so it's the same size." So the icon is the brick now rather than a smaller badge inside
+a yellow frame - two rounded squares saying the same thing, one inside the other - and the
+sprite underneath is shrunk out of sight behind it, exactly as a rounded brick's is. Shrunk to
+fit inside the *inscribed circle*, which is inside a rounded square of any corner radius, so
+the number never has to be measured off the art and kept in step with it. `endlessIIFieldSize`
+answers for the plan rather than for the sprite from there on, so everything that asks what a
+power-up brick occupies still gets a cell.
 
 **The Diamond joined them** the same evening (round 272): "Square size diamond bricks - I
 decided to do these." It is the one face symmetrical in both axes at once, so it takes a square
@@ -1025,6 +1031,25 @@ Retro's set is complete and classic has the two Indestructibles, checked against
 rather than the names. `ArtStillToDrawTests` names those six, so the day they land the test
 fails and says which line here to strike.
 
+### The Big brick's own picture, and one suffix for every size
+
+James drew the Big set in round 274 - Normal, Invisible and the four Multi-hits in both themes,
+plus the two Indestructibles - and the four directional panels at Big proportions with them. A
+Big brick is two cells by two, so it is 2:1 like an ordinary brick and *four times the area*,
+and until this it wore `BrickNormal` stretched over all of it: four times the border, and a
+bevel to match.
+
+Which turned the Square suffix into a size suffix. `artSuffix(for:)` answers "" for Normal and
+Tiny, `Square`, or `Big`, and the whole lookup - the plain overlay, the shaped faces, the
+directional panels - takes its suffix from there. **Tiny gets nothing on purpose**: a Tiny
+brick is a quarter cell wearing the ordinary picture *scaled* into it, and the stretch these
+suffixes exist to end is a change of proportion, which a Tiny brick has none of.
+
+One thing the change had to fix on the way. The face lookup recognised a Square cell by its
+*aspect* - Square is the one size taller than it is wide - and a Big brick's cell is 2:1 exactly
+like an ordinary brick's, so that trick could never have found the second one. It asks
+`endlessIISizeOf` now, which reads the face's own path.
+
 ### The Portal brick, and one colour for both ends
 
 James delivered five: plain and Rounded at 2:1, plain, Rounded and Diamond at square. And a
@@ -1046,6 +1071,19 @@ not their own texture, the Portal and the power-up brick, and the whole lookup t
 from there. Which also generalised round 270's overlay: it was "the picture for a Square brick"
 and is now "the picture this brick should be showing, where that is not the texture it wears" -
 three cases, one rule.
+
+**Cooling is monochrome** since round 274 - James: "For the portal brick cooling, can we make
+the brick monochrome during this period." Which is the right instrument and the one
+`colorBlendFactor` cannot play: blending towards grey flattens a picture towards *one* grey and
+takes the shading with it, where desaturating keeps every light and dark where it was and only
+stops them being green. The drained picture is computed once per texture and kept, the way
+`TracedBodyCache` keeps a traced body - a Core Image pass is far too expensive for a frame, and
+there are only ever a handful of distinct portal pictures in a run.
+
+**And nothing is written on the brick.** The lookup reads the cooldown and hands back the
+drained picture for as long as it is running, so the state is a consequence of the clock rather
+than a flag somebody has to remember to clear - and the per-frame refresh, which wiped a tint
+off in the first version of this, is now exactly what keeps it on.
 
 **The rings had a job nobody had written down.** They are not only identity: they go grey while
 the Portal is cooling and pulse when it can be entered again, which is the only thing that stops

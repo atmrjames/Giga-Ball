@@ -141,20 +141,52 @@ extension GameScene {
         brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: plan.size,
                                                     center: plan.bodyCentre))
         addChild(brick)
+        hidePowerUpBrickSprite(brick, plan: plan)
         refreshEndlessIIBrickArt(brick)
         // The badge the brick is drawn as, laid over the Indestructible texture it is built
         // on - which stays the brick's own texture, because that is what says what a hit does
 
         let icon = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
-        icon.size = CGSize(width: plan.size.width*0.78, height: plan.size.width*0.78)
+        icon.size = plan.size
         icon.position = CGPoint(x: 0, y: -plan.cell.height/2)
         icon.zPosition = 1
         icon.name = GameScene.powerUpBrickName
         brick.addChild(icon)
-        // The power-up's own icon, so which one it is is read the same way it is read falling.
-        // Square, because the brick is - that is what the shape is for
+        // **The whole brick**, since round 274 - James: "Make the power-up icons overlay the
+        // entire brick, so it's the same size." The icon was 0.78 of it, which left the badge
+        // showing as a yellow frame round a smaller badge: two rounded squares saying the same
+        // thing, one inside the other. At full size it *is* the brick, which is what "power-up
+        // bricks only come in this shape and style" describes. Square, because the brick is
 
         return brick
+    }
+
+    /// Tucks a power-up brick's sprite behind the badge drawn over it.
+    ///
+    /// James, round 274: "keep the corners rounded like the graphic I supplied, and like the
+    /// power-up icons." The badge has rounded corners and the Indestructible texture underneath
+    /// does not, so four corners of it were showing outside the picture - the same problem a
+    /// rounded brick has, and the same fix: shrink the sprite until it is inside, and move the
+    /// anchor by the matching amount so the drawing does not walk while it shrinks.
+    ///
+    /// **Shrunk to fit inside the inscribed circle**, which is inside a rounded square of any
+    /// corner radius up to a full round. Being conservative costs nothing here - the sprite is
+    /// hidden either way, and it means the number does not have to be measured off James's art
+    /// and kept in step with it. `endlessIIFieldSize` answers for the plan rather than for the
+    /// sprite from here on, so everything that asks what this brick occupies still gets a cell.
+    func hidePowerUpBrickSpriteForTesting(_ brick: SKSpriteNode, plan: EndlessIITallBrick) {
+        hidePowerUpBrickSprite(brick, plan: plan)
+    }
+
+    private func hidePowerUpBrickSprite(_ brick: SKSpriteNode, plan: EndlessIITallBrick) {
+        let centre = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                             y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        let fit = GameScene.largestFraction(hidingInside: plan.size,
+                                            radius: min(plan.size.width, plan.size.height)/2)*0.99
+        brick.size = CGSize(width: plan.size.width*fit, height: plan.size.height*fit)
+        guard brick.size.width > 0, brick.size.height > 0 else { return }
+        brick.anchorPoint = CGPoint(x: 0.5 - centre.x/brick.size.width,
+                                    y: 0.5 - centre.y/brick.size.height)
     }
 
     /// Sets off the power-up a brick was holding, and takes the brick with it.

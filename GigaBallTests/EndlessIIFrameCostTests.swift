@@ -561,9 +561,11 @@ final class EndlessIIFrameCostTests: XCTestCase {
     /// left open/transparent so the brick below can be seen".
     func testTheOnHitMarksCanBeLookedAt() throws {
         let cell = CGSize(width: 56, height: 28)
-        let column: CGFloat = 90, row: CGFloat = 80
+        let column: CGFloat = 140, row: CGFloat = 80
+        // Wide enough for a Big brick, which is two cells across - at the old spacing the four
+        // of them ran into one another and the row said nothing
 
-        let display = SKScene(size: CGSize(width: column*5 + 20, height: row*4 + 20))
+        let display = SKScene(size: CGSize(width: column*5 + 20, height: row*5 + 20))
         display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
 
         func game() -> GameScene {
@@ -599,7 +601,12 @@ final class EndlessIIFrameCostTests: XCTestCase {
                 brick.endlessIIVulnerableSide = side
                 brick.color = GameScene.directionalBrickColour
                 brick.colorBlendFactor = 1
+                scene.refreshEndlessIIBrickArt(brick)
                 scene.endlessIIDrawVulnerableEdge(on: brick, side: side)
+                // Refreshed *after* the tint, which is the order the game gets for free from
+                // the per-frame sweep - the first version of this tinted a picture it had
+                // already drawn, so the open side showed white where the game shows the
+                // brick's own colour
                 // Tinted as `makeDirectional` tints it, because what shows through the open
                 // side is the brick underneath and the whole question is whether that reads
                 place(brick, index, line)
@@ -618,18 +625,32 @@ final class EndlessIIFrameCostTests: XCTestCase {
             place(brick, index, 2)
         }
 
+        for (index, side) in EndlessIISide.allCases.enumerated() {
+            let scene = game()
+            let brick = scene.endlessIIMakeBig(leftColumn: 0, rowY: 0)
+            brick.endlessIIRole = .directional
+            brick.endlessIIVulnerableSide = side
+            brick.color = GameScene.directionalBrickColour
+            brick.colorBlendFactor = 1
+            scene.refreshEndlessIIBrickArt(brick)
+            scene.endlessIIDrawVulnerableEdge(on: brick, side: side)
+            place(brick, index, 3)
+        }
+
         for (index, powerUp) in [0, 3].enumerated() {
             let scene = game()
             let brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
             brick.texture = scene.brickIndestructible2Texture
             brick.isHidden = false
             brick.endlessIIPowerUpIndex = powerUp
+            let plan = EndlessIITallBrick(cell: cell)
+            scene.hidePowerUpBrickSpriteForTesting(brick, plan: plan)
             scene.refreshEndlessIIBrickArt(brick)
             // Built by hand rather than through `endlessIIMakePowerUpBrick`, which rolls
             // against a schedule an unstarted run does not have and answers nil
 
             let icon = SKSpriteNode(texture: scene.endlessIIPowerUpTexture(powerUp))
-            icon.size = CGSize(width: brick.size.width*0.78, height: brick.size.width*0.78)
+            icon.size = plan.size
             icon.position = CGPoint(x: 0, y: -scene.brickHeight/2)
             icon.zPosition = 1
             brick.addChild(icon)
@@ -644,7 +665,8 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  On-hit marks, drawn: \(file.path)")
         print("  row 1: directional top, bottom, left, right (2:1)")
         print("  row 2: the same, square")
-        print("  row 3: Fixed loose, Fixed locked, then the power-up brick\n")
+        print("  row 3: Fixed loose, Fixed locked, then two power-up bricks")
+        print("  row 4: the directional Big bricks\n")
     }
 
     /// Draws the Portal - plain, Rounded and square, and greyed out while it is cooling - plus
