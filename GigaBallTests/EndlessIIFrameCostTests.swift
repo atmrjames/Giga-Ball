@@ -175,6 +175,68 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  Shaped brick faces, drawn: \(file.path)\n")
     }
 
+    /// Draws a spinning brick through a half turn so the cross-fade can be looked at.
+    ///
+    /// James, round 266, asking for it: "so it looks like the light on the brick is changing as
+    /// it spins". Whether it does is not something the arithmetic can answer.
+    func testTheSpinningCrossFadeCanBeLookedAt() throws {
+        let cell = CGSize(width: 112, height: 56)
+        let steps = 9
+        let scene = SKScene(size: CGSize(width: cell.width*CGFloat(steps) + 40,
+                                         height: cell.height*2 + 60))
+        scene.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (row, texture) in ["BrickIndestructible1", "BrickIndestructible2"].enumerated() {
+            for step in 0..<steps {
+                let game = GameScene(size: CGSize(width: 402, height: 874))
+                game.gameMode = .endlessII
+                game.brickWidth = cell.width
+                game.brickHeight = cell.height
+                let own = texture == "BrickIndestructible2"
+                    ? game.brickIndestructible2Texture : game.brickIndestructible1Texture
+                let brick = SKSpriteNode(texture: own, size: cell)
+                brick.name = BrickCategoryName
+                brick.endlessIIFaceMirrored = false
+                brick.endlessIIFaceFlipped = false
+                game.addChild(brick)
+                game.makeFace(.wedge, on: brick)
+                brick.zRotation = .pi*CGFloat(step)/CGFloat(steps - 1)
+                game.refreshEndlessIIShapedFaces()
+
+                guard let shape = brick.childNode(withName: GameScene.brickFaceName)
+                        as? SKShapeNode else { continue }
+                let holder = SKNode()
+                holder.position = CGPoint(
+                    x: 20 + cell.width*(CGFloat(step) + 0.5),
+                    y: scene.size.height - 30 - cell.height*(CGFloat(row) + 0.5))
+                holder.zRotation = brick.zRotation
+                scene.addChild(holder)
+
+                for child in shape.children.compactMap({ $0 as? SKSpriteNode }) {
+                    let copy = SKSpriteNode(texture: child.texture, size: child.size)
+                    copy.alpha = child.alpha
+                    copy.xScale = child.xScale
+                    copy.yScale = child.yScale
+                    copy.zRotation = child.zRotation
+                    copy.position = child.position
+                    copy.zPosition = child.zPosition
+                    holder.addChild(copy)
+                    // Every transform the sprite carries, not the three I happened to think
+                    // of - the first version copied all but `zRotation`, which is precisely
+                    // the one the partner uses, so the render could not show the fix it was
+                    // drawn to check
+                }
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let texture = try XCTUnwrap(view.texture(from: scene))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("spinning-crossfade.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Spinning cross-fade, drawn: \(file.path)\n")
+    }
+
     /// Draws each shaped paddle with its overlays, placed by the scene's own code, so the
     /// alignment can be looked at.
     ///

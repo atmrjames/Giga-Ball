@@ -208,6 +208,88 @@ extension GameScene {
         return CGSize(width: box.width, height: box.height)
     }
 
+    /// How much of the half-turn partner shows at this rotation.
+    ///
+    /// James, round 266: "when a brick with multiple variants is spinning, is it possible to
+    /// fade in and out the corresponding variants so it looks like the light on the brick is
+    /// changing as it spins? Each brick will have a maximum of 2 variants it can fade between
+    /// as the 90 and 180 are mirrors of 0 and 270, so not the same shape."
+    ///
+    /// Which is exactly right, and the reason is worth writing down. The four pictures are a
+    /// base and three *reflections* of it, and a spin is a **rotation** - so a turning brick
+    /// only ever passes through the two of them a rotation can reach. Half a turn inverts both
+    /// flags, so the pairs are {0, 270} and {180, 90}: 90 and 180 are the mirrors, and a
+    /// spinning brick never looks like its own mirror.
+    ///
+    /// A cosine, so the two cross-fade smoothly and are equal at the quarter turns, where the
+    /// brick is on its side and neither lighting is the right one. Zero at no rotation and at
+    /// a full turn, one at half.
+    static func spinningFaceBlend(zRotation: CGFloat) -> CGFloat {
+        (1 - cos(zRotation))/2
+    }
+
+    /// Cross-fades a spinning brick's face between its own picture and its half-turn partner.
+    ///
+    /// **Only where both pictures exist.** The oriented sets are the ones James has drawn per
+    /// orientation - the Indestructibles, all of retro's wedges, the retro convex pair - and
+    /// everything else keeps one picture that turns with the brick, exactly as it did.
+    ///
+    /// The partner sprite carries the same counter-scale as the main one: both pictures are
+    /// drawn to be seen the right way up, and the shape node they sit in is reflected to make
+    /// the *outline*, so both have to cancel it.
+    ///
+    /// Driven from the frame like everything else that moves on a brick (§8.6) - the spin
+    /// itself is a `zRotation` written in `tickEndlessIIRoles`, never an action.
+    func refreshEndlessIISpinningFaceArt(_ brick: SKSpriteNode, _ shape: SKShapeNode,
+                                         _ art: ShapedBrickArt, cell: CGSize,
+                                         mirrored: Bool, flipped: Bool, main: SKSpriteNode) {
+        let partnerNode = shape.childNode(withName: GameScene.facePartnerName) as? SKSpriteNode
+
+        guard brick.zRotation != 0,
+              endlessIIArtIsOriented(for: brick.texture, art,
+                                     mirrored: !mirrored, flipped: !flipped),
+              let partnerArt = endlessIIShapedArt(for: brick.texture, art,
+                                                  mirrored: !mirrored, flipped: !flipped)
+        else {
+            partnerNode?.removeFromParent()
+            if main.alpha != 1 { main.alpha = 1 }
+            return
+        }
+
+        let partner = partnerNode ?? {
+            let node = SKSpriteNode(texture: partnerArt, size: cell)
+            node.name = GameScene.facePartnerName
+            node.zPosition = main.zPosition
+            shape.addChild(node)
+            return node
+        }()
+
+        if partner.texture != partnerArt { partner.texture = partnerArt }
+        if partner.size != cell { partner.size = cell }
+        partner.color = brick.color
+        partner.colorBlendFactor = brick.colorBlendFactor
+        partner.xScale = mirrored ? -1 : 1
+        partner.yScale = flipped ? -1 : 1
+        partner.zRotation = .pi
+        // **Turned half a circle inside the brick, which is the whole of why it works.**
+        //
+        // The partner is the picture drawn for a brick already standing at half a turn, so its
+        // *silhouette* is the base shape rotated 180 degrees. Laid in unturned it draws a wedge
+        // pointing the other way to the one the brick actually is - two triangles crossing,
+        // which is what the render showed and what no amount of checking the alphas would have.
+        //
+        // Turned back by 180, its outline lands exactly on the brick's own at every angle, and
+        // what is left showing through is the lighting it was drawn with: the world-correct one
+        // for the far end of the turn. Which is the effect asked for - the light staying put
+        // while the brick goes round.
+
+        let blend = GameScene.spinningFaceBlend(zRotation: brick.zRotation)
+        partner.alpha = blend
+        main.alpha = 1 - blend
+    }
+
+    static let facePartnerName = "endlessIIFacePartner"
+
     /// Keeps a drawn face showing what the brick is, as a Multi-hit brick steps down through
     /// its four textures. Returns whether it took the job - a face with no art still has its
     /// fill refreshed the old way.
@@ -221,6 +303,7 @@ extension GameScene {
                                                         mirrored: mirrored, flipped: flipped)
         else {
             shape.childNode(withName: GameScene.faceArtName)?.removeFromParent()
+            shape.childNode(withName: GameScene.facePartnerName)?.removeFromParent()
             return false
         }
 
@@ -236,6 +319,8 @@ extension GameScene {
 
         sprite.xScale = oriented && mirrored ? -1 : 1
         sprite.yScale = oriented && flipped ? -1 : 1
+        refreshEndlessIISpinningFaceArt(brick, shape, art, cell: cell,
+                                        mirrored: mirrored, flipped: flipped, main: sprite)
         // **A picture drawn for its own orientation is un-turned here** (round 262). The face's
         // path is reflected by scaling the shape node, and this sprite is inside it, so it
         // inherits the reflection - which is right for a picture drawn one way up and wrong

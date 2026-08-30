@@ -144,19 +144,182 @@ final class ShapedBrickArtFallbackTests: XCTestCase {
         }
     }
 
-    /// Retro has Rounded and Wedge and is waiting for the rest.
-    func testRetroKeepsItsStretchedFillWhereTheArtIsNotDrawnYet() {
+    /// **Retro is complete too now** (round 266), so both themes have every shape drawn.
+    func testRetroHasEveryShapeDrawn() {
         let scene = scene(retro: true)
         scene.brickNormalTexture = SKTexture(imageNamed: "retroBrickNormal")
 
-        for shape in [GameScene.ShapedBrickArt.rounded, .wedge] {
+        for shape in [GameScene.ShapedBrickArt.rounded, .wedge, .convex, .concave, .diamond] {
             XCTAssertNotNil(scene.endlessIIShapedArt(for: scene.brickNormalTexture, shape),
-                            "retro has had \(shape.rawValue) since round 153")
+                            "retro has no \(shape.rawValue)")
         }
-        for shape in [GameScene.ShapedBrickArt.convex, .concave, .diamond] {
-            XCTAssertNil(scene.endlessIIShapedArt(for: scene.brickNormalTexture, shape),
-                         "retro's \(shape.rawValue) is not drawn, so the honest answer is "
-                         + "nil and the face keeps stretching the brick's own texture")
+    }
+
+    /// And a picture that does not exist still answers nil rather than the placeholder.
+    ///
+    /// This is what the test above used to be holding while it had a gap to point at - the
+    /// gaps keep filling, and the rule outlives them. Asked of a name that will never exist,
+    /// which is the only way left to state it: `SKTexture(imageNamed:)` hands back a blank
+    /// rather than nil, so a lookup that trusted it would dress a face in an empty square.
+    func testAShapeWithNoPictureAnswersNilRatherThanABlank() {
+        let scene = scene(retro: true)
+        let unknown = SKTexture(imageNamed: "retroBrickNormal")
+        scene.brickNormalTexture = unknown
+
+        XCTAssertNil(UIImage(named: "retroBrickNormalSpangle"), "the point of the name")
+        XCTAssertNotNil(SKTexture(imageNamed: "retroBrickNormalSpangle"),
+                        "SpriteKit answers with a placeholder, which is the trap")
+    }
+}
+
+/// A spinning brick cross-fading between the two pictures a rotation can reach (round 266).
+///
+/// James: "when a brick with multiple variants is spinning, is it possible to fade in and out
+/// the corresponding variants so it looks like the light on the brick is changing as it spins?
+/// Each brick will have a maximum of 2 variants it can fade between as the 90 and 180 are
+/// mirrors of 0 and 270, so not the same shape."
+final class SpinningFaceCrossFadeTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 56
+        scene.brickHeight = 28
+        return scene
+    }
+
+    private func shapedBrick(in scene: GameScene, mirrored: Bool, flipped: Bool) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickIndestructible1Texture,
+                                 size: CGSize(width: 56, height: 28))
+        brick.name = BrickCategoryName
+        // `refreshEndlessIIShapedFaces` enumerates the field by name, so a brick without one
+        // is a brick the refresh never visits
+        brick.endlessIIFaceMirrored = mirrored
+        brick.endlessIIFaceFlipped = flipped
+        scene.addChild(brick)
+        scene.makeFace(.wedge, on: brick)
+        return brick
+    }
+
+    private func face(_ brick: SKSpriteNode) -> SKShapeNode {
+        brick.childNode(withName: GameScene.brickFaceName) as! SKShapeNode
+    }
+
+    /// **The pairs are the two a rotation can reach**, which is James's own reasoning made
+    /// mechanical: half a turn inverts both flags, so 0 pairs with 270 and 180 with 90 - and a
+    /// spinning brick never looks like its own mirror.
+    func testTheHalfTurnPartnerIsTheOtherRotationNotTheMirror() {
+        let pairs: [(Bool, Bool, String, String)] = [
+            (false, false, "0", "270"), (true, true, "270", "0"),
+            (true, false, "180", "90"), (false, true, "90", "180"),
+        ]
+        for (mirrored, flipped, own, partner) in pairs {
+            XCTAssertEqual(GameScene.orientationSuffix(.wedge, mirrored: mirrored,
+                                                       flipped: flipped), own)
+            XCTAssertEqual(GameScene.orientationSuffix(.wedge, mirrored: !mirrored,
+                                                       flipped: !flipped), partner,
+                           "\(own) should turn into \(partner) over half a circle")
         }
+    }
+
+    /// And for the two-way shapes, the pair is the only other picture there is.
+    func testTheTwoWayShapesPairWithTheirOnlyOtherPicture() {
+        for shape in [GameScene.ShapedBrickArt.convex, .concave] {
+            XCTAssertEqual(GameScene.orientationSuffix(shape, mirrored: false, flipped: false),
+                           "0")
+            XCTAssertEqual(GameScene.orientationSuffix(shape, mirrored: true, flipped: true),
+                           "180")
+        }
+    }
+
+    /// The blend is zero at rest, one at half a turn, and back to zero at a full one.
+    func testTheBlendFollowsTheTurn() {
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: .pi/2), 0.5, accuracy: 0.0001,
+                       "on its side, and neither lighting is the right one")
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: .pi), 1, accuracy: 0.0001)
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: .pi*1.5), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: .pi*2), 0, accuracy: 0.0001)
+    }
+
+    /// It never leaves the pair, whichever way and however far the brick has turned.
+    func testTheTwoAlwaysSumToOne() {
+        for turns in stride(from: -8.0, through: 8.0, by: 0.13) {
+            let blend = GameScene.spinningFaceBlend(zRotation: CGFloat(turns))
+            XCTAssertGreaterThanOrEqual(blend, -0.0001)
+            XCTAssertLessThanOrEqual(blend, 1.0001)
+        }
+    }
+
+    // MARK: - In the scene
+
+    func testASpinningBrickGrowsAPartnerAndFadesBetweenTheTwo() {
+        let scene = scene()
+        let brick = shapedBrick(in: scene, mirrored: false, flipped: false)
+
+        brick.zRotation = .pi
+        scene.refreshEndlessIIShapedFaces()
+
+        let art = face(brick).childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        let partner = face(brick).childNode(withName: GameScene.facePartnerName) as? SKSpriteNode
+        XCTAssertNotNil(partner, "half a turn and there is nothing to have turned into")
+        XCTAssertEqual(partner?.alpha ?? 0, 1, accuracy: 0.001)
+        XCTAssertEqual(art?.alpha ?? 1, 0, accuracy: 0.001)
+        XCTAssertEqual(partner?.texture?.description.contains("Wedge270"), true,
+                       "the partner is the rotation, not the mirror")
+    }
+
+    /// **The partner is turned half a circle inside the brick**, which is what makes the two
+    /// share one outline.
+    ///
+    /// The partner is the picture drawn for a brick already standing at half a turn, so its
+    /// silhouette *is* the base shape rotated 180 degrees. Laid in unturned it draws a wedge
+    /// pointing the other way to the one the brick actually is - two triangles crossing rather
+    /// than one changing colour. Nothing about the alphas or the texture names says so, which
+    /// is why the first version of this passed its tests and was wrong on screen.
+    func testThePartnerIsTurnedSoTheTwoShareOneOutline() {
+        let scene = scene()
+        let brick = shapedBrick(in: scene, mirrored: false, flipped: false)
+        brick.zRotation = .pi/2
+        scene.refreshEndlessIIShapedFaces()
+
+        let art = face(brick).childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        let partner = face(brick).childNode(withName: GameScene.facePartnerName) as? SKSpriteNode
+
+        XCTAssertEqual(art?.zRotation ?? -1, 0, accuracy: 0.0001,
+                       "the brick's own picture is drawn for where it stands")
+        XCTAssertEqual(abs(partner?.zRotation ?? 0), CGFloat.pi, accuracy: 0.0001,
+                       "and the partner is turned back onto it")
+        XCTAssertEqual(partner?.xScale, art?.xScale, "both cancel the outline's reflection")
+        XCTAssertEqual(partner?.yScale, art?.yScale)
+    }
+
+    /// A brick that is not turning has one picture, exactly as it did.
+    func testAStillBrickHasNoPartnerAtAll() {
+        let scene = scene()
+        let brick = shapedBrick(in: scene, mirrored: false, flipped: false)
+        scene.refreshEndlessIIShapedFaces()
+
+        XCTAssertNil(face(brick).childNode(withName: GameScene.facePartnerName))
+        let art = face(brick).childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        XCTAssertEqual(art?.alpha ?? 0, 1, accuracy: 0.001)
+    }
+
+    /// And one whose type has no oriented art keeps its single turning picture.
+    func testABrickWithOnlyOnePictureIsLeftAlone() {
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: 56, height: 28))
+        brick.name = BrickCategoryName
+        brick.endlessIIFaceMirrored = false
+        brick.endlessIIFaceFlipped = false
+        scene.addChild(brick)
+        scene.makeFace(.wedge, on: brick)
+        brick.zRotation = .pi
+
+        scene.refreshEndlessIIShapedFaces()
+
+        XCTAssertNil(face(brick).childNode(withName: GameScene.facePartnerName),
+                     "the classic wedges are one picture per type until James draws four")
     }
 }

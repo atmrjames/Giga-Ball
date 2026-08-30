@@ -610,12 +610,22 @@ final class EndlessIIFaceArtTests: XCTestCase {
                           "the two differ here, and before the fix the second one won")
     }
 
+    /// **The fallback, on a brick that will never have a picture.**
+    ///
+    /// It used to be aimed at whichever shape James had not drawn yet - Convex and Concave in
+    /// both themes, then retro's Convex, then retro's Concave - and it went stale three times
+    /// in three rounds because he kept drawing them. Both themes are complete as of round 266.
+    ///
+    /// So it is aimed at the other reason a brick has no drawn art, which is permanent: a
+    /// power-up brick, a Null, anything a role has dressed. `endlessIIBrickTextureName` has no
+    /// name for those and never will, and the face has to keep stretching whatever the brick is
+    /// wearing - or a dome would be a hole in the field.
     func testAFaceWithNoDrawnArtStillGetsItsOldFill() {
-        // Convex and Concave (§8.5). They keep the stretched texture until they are drawn,
-        // and the fallback has to stay wired or they would come out blank
         let scene = retro()
-        let subject = brick(scene)
-        scene.makeFace(.convex, on: subject)
+        let subject = SKSpriteNode(texture: scene.brickNullTexture,
+                                   size: CGSize(width: 40, height: 20))
+        scene.addChild(subject)
+        scene.makeFace(.concave, on: subject)
 
         let shape = subject.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
         XCTAssertNil(shape?.childNode(withName: GameScene.faceArtName))
