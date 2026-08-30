@@ -271,7 +271,23 @@ enum StatsPage {
             rows.append(Row(label: "Best day score", value: grouped(best), icon: "star.fill"))
         }
         rows.append(Row(label: "Total posted score", value: grouped(stats.dailyTotalPostedScore), icon: "sum"))
+
+        let streak = DailyStreak.current(records: records, today: Date())
+        let longest = DailyStreak.longest(records: records)
+        if longest > 0 {
+            rows.append(Row(label: "Current streak", value: days(streak), icon: "flame.fill"))
+            rows.append(Row(label: "Longest streak", value: days(longest), icon: "flame"))
+        }
+        // Both, and the current one even at zero once there has ever been a streak: "0 days"
+        // after a run of nine is the fact the player wants, and hiding it would only be kind
+        // on the day they most want to see it
+
         return rows
+    }
+
+    /// A run of days, in the units a streak is counted in.
+    static func days(_ count: Int) -> String {
+        count == 1 ? "1 day" : grouped(count) + " days"
     }
 
     // MARK: - Formatting

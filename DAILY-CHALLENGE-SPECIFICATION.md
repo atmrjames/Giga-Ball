@@ -1,9 +1,11 @@
 # Daily Challenge — design specification
 
-**Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full; ten
-feedback rounds folded in. Still open: phase 4's twist subset, phase 5 (streaks,
-per-day results, round 12's posted-score container), phase 6 themes, and §11.5's
-notifications and share card. **The test clock's controls are gone** (round 19): debug-gating them
+**Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full and phase
+5's streaks (round 268); ten feedback rounds folded in. Still open: phase 4's twist subset -
+of which only **Blackout** and **Mayhem Rules** remain written-and-unbuilt, and Mayhem Rules is
+a round of its own rather than the curated weights list it reads as (ENDLESS-2 §12.0, round
+267) - the rest of phase 5 (per-day results, round 12's posted-score container, achievements),
+phase 6 themes, and §11.5's notifications and share card. **The test clock's controls are gone** (round 19): debug-gating them
 in round 18 took them out of release builds but left them on screen in every build James
 actually plays, so they kept being reported. The DAY stepper, the LIVE readout and RESET
 ATTEMPTS were removed outright and the briefing card took the room back. The simulated day
@@ -307,6 +309,32 @@ Flipped Angle means.
   Center keeps the best (highest) submission, so the total only ever grows.
 - **Streaks** are tracked locally (§10) and surfaced on the challenge screen. A streak
   achievement set ships in phase 5.
+
+  **Built round 268, and derived rather than stored.** §10 lists `dailyStreak` and
+  `longestStreak` as fields to add beside the per-day records; they are not added, because the
+  records already answer. Every one carries its `dateKey` and whether it `posted`, and a streak
+  is a question about that list rather than a separate fact about the player. Storing it would
+  mean two more numbers in the iCloud arrays - "the trap that crashed sync once already", in
+  §10's own words - and two numbers that can disagree with the history they count: a device
+  that syncs a day it missed would have to know to recompute them, and one that did not would
+  carry a streak its own records deny. Asked of the records, the answer is right by
+  construction on every device, including one that has just merged another's history, and
+  there is a test that says so.
+
+  **A posted day, not a day played** - practice is playable all day, and a streak of days
+  somebody opened would be a streak of nothing. **Today being unplayed does not break it**: the
+  day is not over, so the run counts back from today if today is posted and from yesterday if
+  not, and reaches zero only once yesterday has been missed too. Anything else would tell a
+  player their streak was broken every morning until they played.
+
+  Shown on the statistics page's Daily tab, as a current and a longest. The challenge screen is
+  where §7 asks for it and is a line to place with James rather than to guess at.
+
+  One thing found on the way: `Calendar.date(from:)` is **lenient**. Handed a 30th of February
+  it does not refuse - it rolls forward and hands back the 2nd of March. Keys the app writes are
+  always real days, but records arrive off disk and out of iCloud, and a corrupted one silently
+  becoming a different day is a day that could join a streak it has nothing to do with. The key
+  is checked by writing the date back out and comparing.
 - **The game-over screen shows the day's result in its own terms** (play-test request):
   the score, the daily summary with the twists, no campaign high-score lines, no
   play-again. Where the player *placed* on today's board goes on this screen too - built
