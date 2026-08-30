@@ -63,6 +63,22 @@ extension GameScene {
     /// dressing, the plain setup, a resize - asks rather than decides.
     var endlessIIPaddleTopKind: String { endlessIIWearsGrip ? "Grip" : "Sticky" }
 
+    /// Whether the shared paddle-top overlay has to stay hidden for this theme.
+    ///
+    /// Retro's *sticky* picture is not drawn on that node - it has its own,
+    /// `paddleRetroStickyTexture`, because "its regular sticky texture is quite different from
+    /// the other paddles" (James, round 261). Its **grip** is not: "its grip texture is in the
+    /// same style as the other paddles", so the grip uses the shared node in every theme.
+    ///
+    /// Which is the distinction three places were missing. They hid the node whenever the theme
+    /// was retro, full stop - written when the node only ever wore the sticky picture - and one
+    /// of them runs on the power-up HUD's own tick, so a retro paddle wearing the grip had it
+    /// taken away and put back several times a second. James, play-test: "grip / ball spin
+    /// texture on retro paddle is flashing on and off quickly".
+    var endlessIIRetroHidesPaddleTop: Bool {
+        paddleTexture == retroPaddle && endlessIIWearsGrip == false
+    }
+
     /// The plain, unshaped picture for whichever of the two is wanted.
     ///
     /// Grip is themed like everything else and every theme has one, so it goes through the same

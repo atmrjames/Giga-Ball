@@ -734,4 +734,43 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  row 2: the same, cooling")
         print("  row 3: the reference page's Portal, then its Fixed brick\n")
     }
+
+    /// The field keeps descending while Aimed Sticky runs.
+    ///
+    /// James, play-test round 275: "The bricks stopped descending down, even with the bottom
+    /// row empty. I had to pause and unpause the game for them to start descending properly
+    /// again."
+    ///
+    /// `endlessIISpendPaddleTurns` sets `endlessIIAimedStickyOwedTurn` on every landing while
+    /// the clock runs, as a snapshot for the one contact it belongs to - and only the catch
+    /// that found the clock already stopped cleared it. `endlessIIFieldIsHeld` reads it, so one
+    /// landing stopped the field for the rest of the power-up. It read as a pause bug for the
+    /// reason round 169's did: resuming resets the ball, and the reset clears the flag.
+    func testTheFieldStillDescendsBetweenAimedStickyCatches() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.endlessIIAimedStickyClock.collect(5)
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.isRunning)
+
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertTrue(scene.endlessIIAimedStickyOwedTurn,
+                      "the snapshot is taken, which is what it is for")
+
+        scene.endlessIIAimedStickyOwedTurn = false
+        // What the contact now does with it, whichever way the catch went
+
+        XCTAssertFalse(scene.endlessIIAimHold)
+        XCTAssertFalse(scene.endlessIIFieldIsHeld,
+                       "nobody is aiming, so nothing is holding the field")
+    }
+
+    /// And the hold that *should* stop it still does.
+    func testAimingStillHoldsTheField() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.endlessIIAimHold = true
+        XCTAssertTrue(scene.endlessIIFieldIsHeld,
+                      "a field that descended while the player was aiming would move the "
+                      + "target out from under the shot")
+    }
 }

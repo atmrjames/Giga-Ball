@@ -84,9 +84,12 @@ extension GameScene {
         // sitting still while the paddle moves out from under it - and so it launches at the
         // angle its own landing spot earns, exactly as the first ball does
 
-        if paddleTexture == retroPaddle {
+        if endlessIIRetroHidesPaddleTop {
             paddleRetroStickyTexture.isHidden = false
         }
+        // Retro's own sticky layer, and only when retro is actually using it. A paddle wearing
+        // the grip shows the shared overlay instead, and putting this one up as well would be
+        // retro's sticky picture laid over everybody else's grip
         return true
     }
 

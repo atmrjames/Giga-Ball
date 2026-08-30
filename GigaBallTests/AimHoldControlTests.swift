@@ -233,4 +233,35 @@ final class AimedArrowPointsAtTheFingerTests: XCTestCase {
         XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: false, intent: .paddle),
                        .notAiming)
     }
+
+    /// A finger that was already down when the ball was caught cannot tap.
+    ///
+    /// James, play-test round 275: "if I let my finger go after the ball lands on the paddle,
+    /// the ball releases. In this case, it should stay on the paddle. It should only release on
+    /// a tap."
+    ///
+    /// The travel test cannot see this on its own. A player carrying the paddle when the ball
+    /// arrives has been aiming for a fraction of a second by the time they lift, so they have
+    /// travelled nothing *while aiming* - and the lift read as a tap and took the shot, on a
+    /// gesture that was only ever a paddle move ending.
+    func testALiftIsNotATapWhenTheFingerWasAlreadyDown() {
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true, intent: .paddle,
+                                              touchPredatesAim: true),
+                       .keepAiming,
+                       "the ball stays on the paddle")
+
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true, intent: .paddle,
+                                              touchPredatesAim: false),
+                       .aimedLaunch,
+                       "and a tap that begins after the catch still fires")
+    }
+
+    /// Travelling still declines, whichever way the touch began.
+    func testADragNeverLaunchesEitherWay() {
+        for predates in [false, true] {
+            XCTAssertEqual(AimHoldControl.release(travelled: 40, aiming: true, intent: .paddle,
+                                                  touchPredatesAim: predates),
+                           .keepAiming, "predates: \(predates)")
+        }
+    }
 }

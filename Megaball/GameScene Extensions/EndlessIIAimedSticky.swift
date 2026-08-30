@@ -124,6 +124,9 @@ extension GameScene {
         // survive the freeze the same way it survives the pause menu
 
         endlessIIAimHold = true
+        endlessIIAimTouchPredatesHold = touchBeganWhilstPlaying
+        // A finger already on the screen when the catch happens was not put there to aim, so
+        // its release is a paddle move ending rather than a tap (play-test round 275)
         // Nothing is paused and no velocity is recorded: with the world still running there is
         // nothing to put back, which is also why `endlessIIEndAimHold` has so much less to do
     }

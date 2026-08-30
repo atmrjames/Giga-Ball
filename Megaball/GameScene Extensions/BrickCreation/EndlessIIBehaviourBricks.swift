@@ -100,6 +100,10 @@ extension GameScene {
         glyph.setScale(scale)
         glyph.zPosition = 1
         glyph.position = endlessIIBrickCentre(of: brick)
+        glyph.userData = ["cell": endlessIIFieldSize(of: brick).height]
+        // The cell it was drawn for, so `refreshEndlessIIBrickMarks` can tell how far the
+        // brick has changed size since. Kept on the node rather than in a list beside it,
+        // because the node is the thing that goes away when the brick does
         brick.addChild(glyph)
         return glyph
         // Positioned at the brick's middle, which on a Big brick and on a shaped one is not
@@ -254,20 +258,11 @@ extension GameScene {
     func makeMoving(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .moving
         tint(brick, GameScene.movingBrickColour)
-
-        let unit = endlessIIFieldSize(of: brick).height*0.26
-        let arrows = CGMutablePath()
-        arrows.move(to: CGPoint(x: -unit*1.6, y: 0))
-        arrows.addLine(to: CGPoint(x: unit*1.6, y: 0))
-        arrows.move(to: CGPoint(x: -unit*1.6, y: 0))
-        arrows.addLine(to: CGPoint(x: -unit*0.8, y: unit*0.7))
-        arrows.move(to: CGPoint(x: -unit*1.6, y: 0))
-        arrows.addLine(to: CGPoint(x: -unit*0.8, y: -unit*0.7))
-        arrows.move(to: CGPoint(x: unit*1.6, y: 0))
-        arrows.addLine(to: CGPoint(x: unit*0.8, y: unit*0.7))
-        arrows.move(to: CGPoint(x: unit*1.6, y: 0))
-        arrows.addLine(to: CGPoint(x: unit*0.8, y: -unit*0.7))
-        addGlyph(arrows, to: brick, filled: false)
+        // **No glyph.** James, play-test: "remove the arrow icon from moving bricks", which is
+        // round 271's own rule applied to the one brick that was still breaking it - Moving is
+        // a movement action, and "the movement is enough of an indication of the brick type".
+        // A double-headed arrow on a brick that is visibly sliding from side to side was the
+        // clearest case of a mark saying what the brick was already saying
 
         endlessIIWanderers.append(EndlessIIWander(brick: brick,
                                                   direction: Bool.random() ? 1 : -1))
@@ -280,6 +275,16 @@ extension GameScene {
     /// constantly underneath it.
     func endlessIIWanderLimits(for brick: SKSpriteNode) -> (left: CGFloat, right: CGFloat) {
         let halfWidth = endlessIIFieldSize(of: brick).width/2
+        let offset = endlessIIBrickCentre(of: brick).x
+        // **How far the drawing is from the node**, which is half a cell for a Big brick: its
+        // node sits on the top-left cell's centre so the node can stay on a row (§8.6), and its
+        // sprite covers all four. Everything below is worked out for the *drawing* - the walls
+        // are where the drawing must stop, and `endlessIIFieldRect` gives the neighbours in the
+        // same space - and the tick moves the *node*, so the answer is converted at the end.
+        //
+        // James, play-test: "a big moving brick is moving beyond the edge of the game view by
+        // half a brick width". Half a brick is exactly this offset, and it read as the brick
+        // stopping half a cell short at the other wall as well
 
         var leftLimit = -gameWidth/2 + halfWidth
         var rightLimit = gameWidth/2 - halfWidth
@@ -313,8 +318,8 @@ extension GameScene {
                 rightLimit = min(rightLimit, theirs.minX - halfWidth)
             }
         }
-        return (max(leftLimit, -gameWidth/2 + halfWidth),
-                min(rightLimit, gameWidth/2 - halfWidth))
+        return (max(leftLimit, -gameWidth/2 + halfWidth) - offset,
+                min(rightLimit, gameWidth/2 - halfWidth) - offset)
     }
 
     // MARK: - Directional
@@ -432,6 +437,46 @@ extension GameScene {
         return SKTexture(imageNamed: name)
         // Asked of the catalogue, not of SpriteKit, for the reason `endlessIIShapedArt` gives:
         // a name that is not there comes back as a placeholder rather than as nil
+    }
+
+    /// Keeps a brick's mark the size of the brick.
+    ///
+    /// James, play-test: "the icon on the brick should scale with the brick. For example a
+    /// fixed brick that shrinks and grows, the icon should shrink and grow with the brick."
+    ///
+    /// Which is right and was never true: a glyph is drawn once at the cell the brick was built
+    /// for, and Breathing changes that cell every frame - so a Fixed brick that also breathes
+    /// kept a full-size T on a brick shrinking to half a cell, and the mark ended up wider than
+    /// the thing it was marking. The directional panel had the same problem for the same
+    /// reason, one node type over.
+    ///
+    /// Driven from the frame, like everything else that moves on a brick (§8.6), and inside the
+    /// sweep that already visits every brick rather than in one of its own.
+    func refreshEndlessIIBrickMarks(on brick: SKSpriteNode) {
+        let cell = endlessIIFieldSize(of: brick)
+        let centre = endlessIIBrickCentre(of: brick)
+
+        if let glyph = brick.childNode(withName: GameScene.glyphName) as? SKShapeNode {
+            let built = (glyph.userData?["cell"] as? CGFloat) ?? cell.height
+            let scale = built > 0.01 ? cell.height/built : 1
+            if abs(glyph.xScale - scale) > 0.001 { glyph.setScale(scale) }
+            if glyph.position != centre { glyph.position = centre }
+        }
+        // Scaled off the *height*, which is the axis every size changes on together - a
+        // Breathing brick shrinks about its middle on both, and scaling each axis separately
+        // would let a mark go oval on anything that ever changes only one
+
+        if let panel = brick.childNode(withName: GameScene.directionalEdgeName)
+            as? SKSpriteNode {
+            if panel.size != cell { panel.size = cell }
+            if panel.position != centre { panel.position = centre }
+        }
+        if let bar = brick.childNode(withName: GameScene.directionalEdgeName) as? SKShapeNode {
+            if bar.position != centre { bar.position = centre }
+            // The drawn bar is the fallback for a brick with no panel. Its *path* is built to
+            // the cell and is not rebuilt here, which is the one thing left un-followed - it
+            // only shows where no picture exists, and every size has one
+        }
     }
 
     /// Every face of this brick the ball could actually reach.
@@ -1476,9 +1521,10 @@ extension GameScene {
 
             let step = GameScene.movingSpeed*rate*brickWidth*CGFloat(delta)*wanderer.direction
             var x = wanderer.brick.position.x + step
-            if let wrapped = endlessIIWrapWandererX(at: x, limits: limits,
-                                                    halfWidth: self.endlessIIFieldSize(
-                                                        of: wanderer.brick).width/2) {
+            if let wrapped = endlessIIWrapWandererX(
+                at: x, limits: limits,
+                halfWidth: self.endlessIIFieldSize(of: wanderer.brick).width/2,
+                offset: self.endlessIIBrickCentre(of: wanderer.brick).x) {
                 x = wrapped
                 // Wrap-Around: a clear run to the wall carries on from the far one, same
                 // direction - the walls are not walls for the bricks either (§5.4)

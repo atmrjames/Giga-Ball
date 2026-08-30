@@ -1246,6 +1246,31 @@ size, because a sprite shrinks towards its anchor point and a Square brick's is 
 - `(0.5 - anchorPoint) * size` is the invariant every one of these has to hold, because it is
 where the drawing sits, and the face, the multi-hit bar and the resumed body all read it.
 
+**A snapshot for one contact has to be cleared by that contact.** `endlessIISpendPaddleTurns`
+takes three - the portal paddle's, Auto-Aim's and Aimed Sticky's - so a clock expired by its own
+last turn still delivers what that turn bought. Aimed Sticky's is also read by
+`endlessIIFieldIsHeld`, and it was only ever cleared on the catch that found the clock already
+stopped. So the *first* landing of the power-up set it, nothing put it back, and the field
+stopped descending for the rest of the run (play-test round 275: "the bricks stopped descending
+down, even with the bottom row empty. I had to pause and unpause"). It read as a pause bug for
+the same reason round 169's did - resuming resets the ball, and the reset clears the flag. The
+hold that *should* stop the field while the player aims is `endlessIIAimHold`, which begins at
+the catch and ends at the launch.
+
+**A layer that follows the paddle has to follow its underside.** A shaped paddle is taller and
+its node rises by half the growth so the underside stays on the line it was on - so anything
+tracking `paddle.position.y` rises with it. Round 259 found this for the laser and sticky
+overlays; round 275 found the retro theme's three extra layers doing it too, which read as "2
+paddle graphics at the same time with one laid over another". They are drawn at one size for
+every shape, so pinning them to the underside is the whole fix.
+
+**The paddle's top overlay is shared between Sticky and Grip.** Since round 261 it is one node
+wearing one of two pictures, and retro hides only the *sticky* one - "its regular sticky texture
+is quite different from the other paddles, but its grip texture is in the same style" (James).
+Three places still hid the node whenever the theme was retro, written when it could only ever
+wear the sticky picture, and one of them runs on the power-up HUD's own tick - so a retro paddle
+wearing the grip had it taken away and put back several times a second.
+
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is
 cleared away at the wrong moment, or sits in the last row blocking generation for ever. Big

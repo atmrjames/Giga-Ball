@@ -91,8 +91,22 @@ enum AimHoldControl {
     /// that flag - so the very change that made aiming feel right removed the thing that had
     /// been guarding the door.
     static func release(travelled: CGFloat, aiming: Bool, intent: Intent = .paddle,
+                        touchPredatesAim: Bool = false,
                         slop: CGFloat = tapSlop) -> Release {
         guard aiming else { return .notAiming }
+        guard touchPredatesAim == false else { return .keepAiming }
+        // **A finger that was already down cannot tap** (James, play-test round 275: "if I let
+        // my finger go after the ball lands on the paddle, the ball releases. In this case, it
+        // should stay on the paddle. It should only release on a tap").
+        //
+        // The travel test below asks whether the finger moved *while aiming*, and a player
+        // carrying the paddle when the ball arrives has been aiming for a fraction of a second
+        // by the time they lift - long enough to have travelled nothing. So the lift read as a
+        // tap and took the shot, on a gesture that was only ever a paddle move ending.
+        //
+        // A tap is a touch that begins and ends without travelling. This is the "begins" half,
+        // which the travel alone cannot see.
+
         guard launches(travelled: travelled, slop: slop) else { return .keepAiming }
         return intent == .paddle ? .aimedLaunch : .keepAiming
         // **Where the tap was decides what it means** (James, round 232: "a tap above the

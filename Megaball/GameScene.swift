@@ -215,6 +215,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAimArrow: SKShapeNode?
 	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
 	var endlessIIAimHold = false
+
+	/// Whether the touch now on screen was already down when the aim began.
+	///
+	/// Such a touch can be lifted but cannot *tap*, so its release must not launch. See
+	/// `AimHoldControl.release`.
+	var endlessIIAimTouchPredatesHold = false
 	/// How far this touch has travelled while the aim hold has been on, in points. Only a
 	/// touch that stayed put is a launch (`AimHoldControl`).
 	var endlessIIAimTravel: CGFloat = 0
@@ -1427,12 +1433,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.position.x = 0
 		paddlePositionY = frame.height/2 - topScreenBlock.size.height - topGap - totalBricksHeight - paddleGap - paddleHeight/2
 		paddle.position.y = paddlePositionY
-		paddleRetroTexture.position.x = paddle.position.x
-		paddleRetroTexture.position.y = paddle.position.y
-		paddleRetroLaserTexture.position.x = paddle.position.x
-		paddleRetroLaserTexture.position.y = paddle.position.y
-		paddleRetroStickyTexture.position.x = paddle.position.x
-		paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
+		positionRetroPaddleLayers()
 		ball.position.x = 0
 		ballStartingPositionY = paddlePositionY + paddleHeight/2 + ball.size.height/2 + 1
 		ball.position.y = ballStartingPositionY
@@ -2055,12 +2056,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Ball matches paddle position
 			
 			positionPaddleOverlays()
-			paddleRetroTexture.position.x = paddle.position.x
-			paddleRetroTexture.position.y = paddle.position.y
-			paddleRetroLaserTexture.position.x = paddle.position.x
-			paddleRetroLaserTexture.position.y = paddle.position.y
-			paddleRetroStickyTexture.position.x = paddle.position.x
-			paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
+			positionRetroPaddleLayers()
 			// Keep the different paddle textures together
         }
     }
@@ -2094,6 +2090,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         switch gameState.currentState {
         case is Playing:
             touchBeganWhilstPlaying = true
+            endlessIIAimTouchPredatesHold = endlessIIAimHold
+            // Recorded on the way in, because that is the only moment the answer is knowable:
+            // a touch that begins while an aim is already running is one the player started
+            // *for* the aim, and one that was down before it began is a paddle move that
+            // happened to be under way when the ball arrived
             paddleMoved = false
             endlessIIAimTravel = 0
         default:
@@ -2148,7 +2149,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             aiming: endlessIIAimHold,
             intent: AimHoldControl.intent(touchY: lift?.y ?? paddle.position.y,
                                           paddleTopY: paddle.position.y + paddle.size.height/2,
-                                          paddleMayMove: stickyPaddleCatches != 0))
+                                          paddleMayMove: stickyPaddleCatches != 0),
+            touchPredatesAim: endlessIIAimTouchPredatesHold)
         if aimedRelease == .keepAiming, endlessIIAimTarget != nil, let lift {
             _ = endlessIIAimMoved(to: lift)
         }
@@ -4153,10 +4155,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2
 			&& endlessIIAimedCatch(ball, isExtra: isExtra) {
+			endlessIIAimedStickyOwedTurn = false
 			return
 		}
+		endlessIIAimedStickyOwedTurn = false
 		// Aimed Sticky catches any ball landing on the top surface, wherever it lands - it
 		// owns the launch while it runs, and costs no sticky catches
+		//
+		// **And the owed turn is spent here, whichever way the catch went** (play-test, round
+		// 275: "the bricks stopped descending down, even with the bottom row empty. I had to
+		// pause and unpause the game for them to start descending properly again").
+		//
+		// `endlessIISpendPaddleTurns` sets the flag on *every* landing while the clock runs,
+		// as a snapshot for the one contact it belongs to - and only the catch that finds the
+		// clock already stopped was clearing it. So while Aimed Sticky ran, the first landing
+		// set it and nothing put it back: `endlessIIFieldIsHeld` reads it, so the whole field
+		// stopped descending for the rest of the power-up. It looked like a pause bug for the
+		// same reason round 169's did - resuming resets the ball, and the reset clears it.
+		//
+		// A snapshot for one contact is now cleared by that contact. What holds the field
+		// while the player is actually aiming is `endlessIIAimHold`, which begins in the catch
+		// above and ends at the launch, and `endlessIIAimOwedHold` covers the last catch of all
 
 		if isExtra && inTheStickyBand && endlessIICatchExtraBall(ball) {
 			return
@@ -4930,11 +4949,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			stickyPaddleCatchesTotal = stickyPaddleCatches
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[6]+=1
-			paddleSticky.isHidden = false
-			if paddleTexture == retroPaddle {
-				paddleSticky.isHidden = true
-			}
-            // Power up set and limit number of catches per power up
+			paddleSticky.isHidden = endlessIIRetroHidesPaddleTop
+            // Power up set and limit number of catches per power up.
+            // **Asked rather than assumed** (play-test, round 275): the overlay is shared with
+            // the grip since round 261, and retro hides only the *sticky* picture
 			
 		case powerUpGravityBall:
 		// Gravity ball
@@ -8564,10 +8582,10 @@ laserTimer?.invalidate()
 						stickyPaddleIcon.texture = self.iconStickyPaddleTexture
 						stickyPaddleIconBar.isHidden = false
 						stickyPaddleIconBar.run(SKAction.scaleX(to: scale, duration: 0.01))
-						paddleSticky.isHidden = false
-						if paddleTexture == retroPaddle {
-							paddleSticky.isHidden = true
-						}
+						paddleSticky.isHidden = self.endlessIIRetroHidesPaddleTop
+						// This runs on the power-up HUD's own tick, which is what turned the
+						// missing grip check into a flash rather than into a picture that was
+						// simply never there
 						
 					case "backstop":
 						backstop.size.height = self.paddleHeight

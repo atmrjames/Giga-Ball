@@ -70,7 +70,7 @@ extension GameScene {
     /// needs the same face and needs it under the same rule, so the rule is said once. The
     /// retro theme has no sticky picture, which is why it is asked about rather than assumed.
     func showEndlessIIStickyFace() {
-        paddleSticky.isHidden = paddleTexture == retroPaddle
+        paddleSticky.isHidden = endlessIIRetroHidesPaddleTop
     }
 
     /// Whether anything on the paddle still wants the sticky face - or the grip, which is the
@@ -311,6 +311,7 @@ extension GameScene {
 
         refreshEndlessIIRetroShapeDressing(suffix)
         positionPaddleOverlays()
+        positionRetroPaddleLayers()
         // Placed here as well as on every paddle move, because a shape collected while the
         // paddle is standing still changes its height without the touch handler running - and
         // the overlays would sit at the old shape's underside until the player moved
@@ -327,6 +328,33 @@ extension GameScene {
     /// Nothing happens in any other theme, and nothing happens for the grip: James's note is
     /// that retro's grip is in the *other* themes' style, so it wears the shared overlay and
     /// this layer stands down (see `EndlessIIGrip`).
+    /// Puts the retro theme's extra layers on the paddle's underside.
+    ///
+    /// **The underside, not the centre** (play-test, round 275: "retro concave and wedge
+    /// paddles, it looks like there are 2 paddle graphics at the same time with one laid over
+    /// another"). These followed `paddle.position.y`, which is the *centre* - and a shaped
+    /// paddle is taller and its node rises by half the growth so the underside stays on the
+    /// line it was on. So every one of these layers rose with it, by up to half a paddle
+    /// height, and sat above the paddle they belong to: two paddles, one over the other.
+    ///
+    /// They are drawn at one size for every shape - `retroPaddleTexture` and all four of its
+    /// shaped variants are the same 273x78 - so unlike the paddle itself they neither grow nor
+    /// move. Pinning them to the underside is the whole fix, and it is the same fix round 259
+    /// made for the laser and sticky overlays, which had risen for the same reason.
+    ///
+    /// One function, called from the setup and from every paddle move, so the two cannot drift.
+    func positionRetroPaddleLayers() {
+        let bottom = paddle.position.y - paddle.size.height/2
+        for layer in [paddleRetroTexture, paddleRetroLaserTexture] {
+            layer.position.x = paddle.position.x
+            layer.position.y = bottom + paddleHeight/2
+            // Centred where the *plain* paddle would be, which is where these were drawn for
+        }
+        paddleRetroStickyTexture.position.x = paddle.position.x
+        paddleRetroStickyTexture.position.y = bottom + paddleRetroStickyTexture.size.height/2
+        // This one was already measured off the underside and stays as it was
+    }
+
     func refreshEndlessIIRetroShapeDressing(_ suffix: String?) {
         guard paddleTexture == retroPaddle else { return }
 

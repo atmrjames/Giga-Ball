@@ -167,10 +167,13 @@ extension GameScene {
     /// blocker exactly as before, because wrapping it beside another brick would put it
     /// inside the field's own furniture. Returns nil when the wrap does not apply.
     func endlessIIWrapWandererX(at x: CGFloat, limits: (left: CGFloat, right: CGFloat),
-                                halfWidth: CGFloat) -> CGFloat? {
+                                halfWidth: CGFloat, offset: CGFloat = 0) -> CGFloat? {
         guard endlessIIWrapIsRunning else { return nil }
-        let wallLeft = -gameWidth/2 + halfWidth
-        let wallRight = gameWidth/2 - halfWidth
+        let wallLeft = -gameWidth/2 + halfWidth - offset
+        let wallRight = gameWidth/2 - halfWidth - offset
+        // The walls as *node* positions, which is what `x` and `limits` are. They are the same
+        // number for every brick whose drawing sits on its node and half a cell out for a Big
+        // one, whose sprite covers four cells from a node on one of them
 
         if x >= limits.right, limits.right >= wallRight - 0.5, limits.left <= wallLeft + 0.5 {
             return wallLeft
