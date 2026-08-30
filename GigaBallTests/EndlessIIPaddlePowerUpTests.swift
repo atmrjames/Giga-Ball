@@ -3173,3 +3173,49 @@ final class PaddleSurfaceTests: XCTestCase {
                        accuracy: 0.01)
     }
 }
+
+
+/// The shaped-paddle drop weight is still where the play test put it.
+///
+/// `shapedPaddlePlayTestWeight` has been ten times its shipping value since round 214, so James
+/// can meet the shapes often enough to judge them. That is right for now and wrong the day the
+/// build goes out, and until round 278 the only record of it was a comment on the number itself.
+/// This is the second one, in the place a green suite is read.
+final class ShapedPaddleWeightTests: XCTestCase {
+
+    /// What it ships at. Named here as well as in the scene so the two have to be changed
+    /// together, and so this test says what "put it back" means.
+    private let shipping = 3
+
+    func testTheShapedPaddleWeightIsStillThePlayTestOne() {
+        let weight = GameScene.shapedPaddlePlayTestWeight
+        guard weight != shipping else { return }
+        print("""
+
+          NOTE: shaped paddles are dropping at weight \(weight), not \(shipping).
+          That is round 214's play-test setting. Put it back before release -
+          GameScene.shapedPaddlePlayTestWeight.
+
+        """)
+        XCTAssertEqual(weight, 30,
+                       "the play-test weight has been changed to something that is neither the "
+                       + "play-test value nor the shipping one, which is worth a second look")
+    }
+
+    /// Every shape drops at the same weight, whatever it is.
+    ///
+    /// Five power-ups read the one number, which is what makes putting it back a single edit -
+    /// and what would quietly stop being true if one of them were ever given its own.
+    func testAllFiveShapesShareTheOneWeight() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.applyEndlessRowPowerUpWeights()
+
+        let shapes = [55, 56, 57, 64, 65]
+        for index in shapes where scene.powerUpProbArray.indices.contains(index) {
+            XCTAssertEqual(scene.powerUpProbArray[index],
+                           GameScene.shapedPaddlePlayTestWeight,
+                           "power-up \(index) has stopped sharing the one weight")
+        }
+    }
+}
