@@ -684,8 +684,20 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         let brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
         brick.texture = texture ?? scene.brickNormalTexture
         brick.isHidden = false
-        scene.refreshEndlessIISquareArt(brick)
+        scene.refreshEndlessIIBrickArt(brick)
         return brick
+    }
+
+    /// The picture a Square brick of this type would wear.
+    ///
+    /// `endlessIIOwnArt` is asked about a *brick* rather than a texture since round 273, when
+    /// it grew to answer for the power-up brick and the Portal too - neither of which can be
+    /// told from its texture, because both are built on the Indestructible artwork.
+    private func ownArt(_ scene: GameScene, _ texture: SKTexture?) -> SKTexture? {
+        let brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
+        brick.texture = texture
+        defer { brick.removeFromParent() }
+        return scene.endlessIIOwnArt(for: brick)
     }
 
     private func types(_ scene: GameScene) -> [SKTexture] {
@@ -699,7 +711,7 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         for retro in [false, true] {
             let scene = scene(retro: retro)
             for texture in types(scene) {
-                guard let art = scene.endlessIISquareArt(for: texture) else {
+                guard let art = ownArt(scene, texture) else {
                     let name = scene.endlessIIBrickTextureName(texture) ?? "?"
                     return XCTFail("no Square art for \(name), retro: \(retro)")
                 }
@@ -736,10 +748,10 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         let scene = scene()
         let brick = squareBrick(scene)
 
-        guard let art = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
+        guard let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
         else { return XCTFail("no square art worn") }
         XCTAssertEqual(art.texture?.description,
-                       scene.endlessIISquareArt(for: scene.brickNormalTexture)?.description)
+                       ownArt(scene, scene.brickNormalTexture)?.description)
         // By name: two `SKTexture(imageNamed:)` of the same picture are two objects, and
         // `SKTexture` compares by identity
         XCTAssertEqual(brick.texture, scene.brickNormalTexture,
@@ -758,11 +770,11 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         let scene = scene()
         let brick = squareBrick(scene)
         brick.texture = scene.brickMultiHit2Texture
-        scene.refreshEndlessIISquareArt(brick)
+        scene.refreshEndlessIIBrickArt(brick)
 
-        let art = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
+        let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
         XCTAssertEqual(art?.texture?.description,
-                       scene.endlessIISquareArt(for: scene.brickMultiHit2Texture)?.description)
+                       ownArt(scene, scene.brickMultiHit2Texture)?.description)
     }
 
     /// A power-up brick is Square-sized and has no type texture at all, so there is no picture
@@ -770,7 +782,7 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
     func testAPowerUpBrickKeepsItsIcon() {
         let scene = scene()
         let brick = SKSpriteNode(texture: scene.brickNullTexture)
-        XCTAssertNil(scene.endlessIISquareArt(for: brick.texture))
+        XCTAssertNil(scene.endlessIIOwnArt(for: brick))
     }
 
     /// A Square brick can be Rounded, since round 270.
@@ -800,7 +812,7 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         let art = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
         XCTAssertEqual(art?.position.y ?? 0, drawn.y, accuracy: 0.01,
                        "and the picture has to hang with it")
-        XCTAssertNil(brick.childNode(withName: GameScene.squareArtName),
+        XCTAssertNil(brick.childNode(withName: GameScene.brickArtName),
                      "the overlay comes off once a face is doing the showing, or the brick "
                      + "wears both pictures")
     }
@@ -1074,5 +1086,132 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
                        "a resumed square Diamond sits where the one that was saved sat")
         XCTAssertEqual(scene.endlessIIFieldSize(of: rebuilt).height, cell.height, accuracy: 0.01)
         XCTAssertEqual(scene.endlessIISizeOf(rebuilt), .square)
+    }
+
+    /// A Portal wears its own picture without stopping being the brick it is built on.
+    ///
+    /// James, round 271: "Portal bricks - these come in just the square size and a single
+    /// theme." The brick is built on the Indestructible artwork because that is the look of a
+    /// brick a hit does not break, and that texture is read in a dozen places for the score,
+    /// the particle colour, the sound and the clearing rules - so the picture goes over it, the
+    /// way the power-up brick's badge does.
+    func testAPortalWearsItsOwnPicture() {
+        for (kind, square) in [("plain", false), ("square", true)] {
+            let scene = scene()
+            let brick: SKSpriteNode
+            if square {
+                brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
+                brick.isHidden = false
+            } else {
+                brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: scene.brickWidth,
+                                                  height: scene.brickHeight))
+                scene.addChild(brick)
+            }
+            brick.texture = scene.brickIndestructible2Texture
+            scene.makePortal(brick)
+
+            XCTAssertEqual(brick.texture, scene.brickIndestructible2Texture, kind)
+            guard let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
+            else { return XCTFail("no portal picture: \(kind)") }
+            let wanted = GameScene.portalBrickArtName
+                + (square ? GameScene.squareArtSuffix : "")
+            XCTAssertEqual(art.texture?.description,
+                           SKTexture(imageNamed: wanted).description, kind)
+            XCTAssertNil(brick.childNode(withName: GameScene.glyphName),
+                         "the picture has the rings in it - drawing them again is one set of "
+                         + "rings too many (\(kind))")
+        }
+    }
+
+    /// A Rounded Portal's face is a Portal's, not an Indestructible's.
+    ///
+    /// The trap this closes: a Portal is *built on* `brickIndestructible2Texture`, so a face
+    /// asked by texture alone finds `BrickIndestructible2Rounded` and can never find
+    /// `BrickPortalRounded`. The lookup takes the name from the brick now.
+    func testARoundedPortalWearsThePortalsFace() {
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                 size: CGSize(width: scene.brickWidth,
+                                              height: scene.brickHeight))
+        scene.addChild(brick)
+        scene.makeRounded(brick)
+        scene.makePortal(brick)
+
+        let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName) as? SKShapeNode
+        let art = shape?.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        XCTAssertEqual(art?.texture?.description,
+                       SKTexture(imageNamed: "BrickPortalRounded").description)
+        XCTAssertNil(brick.childNode(withName: GameScene.glyphName),
+                     "and no rings on top of a face that already has them")
+    }
+
+    /// A shape James has not drawn a Portal for keeps the art it has always worn.
+    ///
+    /// A Portal may take a Wedge, a dome or a notch (`takenByAPortal`) and only plain, Rounded
+    /// and the square Diamond are drawn. Falling back to the Indestructible shaped art is what
+    /// it looked like before this round; falling back to *nothing* would be a hole in the field.
+    func testAPortalShapeWithNoPictureKeepsTheOldOne() {
+        let scene = scene()
+        XCTAssertNil(UIImage(named: "BrickPortalWedge"), "if this arrives, so does a test")
+
+        let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                 size: CGSize(width: scene.brickWidth,
+                                              height: scene.brickHeight))
+        scene.addChild(brick)
+        scene.makeFace(.wedge, on: brick)
+        scene.makePortal(brick)
+
+        let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
+        let art = shape?.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        XCTAssertNotNil(art?.texture, "or a Portal wedge is a hole in the field")
+        XCTAssertNotNil(brick.childNode(withName: GameScene.glyphName),
+                        "and it keeps its rings, because nothing else says it is a Portal")
+    }
+
+    /// Both ends are one colour.
+    ///
+    /// James, round 273: "Portal is just 1 colour now. Both bricks will just be one colour."
+    /// `endlessIIPortalIsBlue` is still set and still saved - a save format is not the place to
+    /// economise, and an old save has to decode - it just no longer decides anything you see.
+    func testBothEndsOfAPortalLookTheSame() {
+        let scene = scene()
+        var pictures: [String] = []
+        for _ in 0..<2 {
+            let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                     size: CGSize(width: scene.brickWidth,
+                                                  height: scene.brickHeight))
+            scene.addChild(brick)
+            scene.makePortal(brick)
+            let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
+            pictures.append(art?.texture?.description ?? "none")
+        }
+        XCTAssertEqual(pictures.count, 2)
+        XCTAssertEqual(pictures[0], pictures[1])
+    }
+
+    /// A cooling Portal stays greyed for longer than one frame.
+    ///
+    /// The whole of the risk in moving the cooling state onto the picture:
+    /// `refreshEndlessIIBrickArt` copies the brick's colour onto its art *every frame*, so a
+    /// tint written straight onto the art would be wiped off on the next one - and the cooling
+    /// state is what stops a ball arriving at the top and being sent straight back.
+    func testACoolingPortalStaysGreyThroughARefresh() {
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                 size: CGSize(width: scene.brickWidth,
+                                              height: scene.brickHeight))
+        scene.addChild(brick)
+        scene.makePortal(brick)
+        scene.endlessIIShowPortal(brick, cooling: true)
+
+        let art = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
+        scene.refreshEndlessIIBrickArt(brick)
+        XCTAssertEqual(art?.colorBlendFactor ?? 0, GameScene.portalCoolingBlend, accuracy: 0.01,
+                       "greyed, and still greyed after the frame that redraws it")
+
+        scene.endlessIIShowPortal(brick, cooling: false)
+        scene.refreshEndlessIIBrickArt(brick)
+        XCTAssertEqual(art?.colorBlendFactor ?? 1, 0, accuracy: 0.01, "and back when it is ready")
     }
 }

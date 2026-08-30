@@ -1056,7 +1056,7 @@ extension GameScene {
         shape.zPosition = 0.1
         shape.name = GameScene.roundedBrickOutlineName
         brick.addChild(shape)
-        refreshEndlessIISquareArt(brick)
+        refreshEndlessIIBrickArt(brick)
         // Takes the Square overlay off in the same breath as putting the face on. It would
         // come off at the next refresh anyway, and a frame of a brick wearing both pictures is
         // a frame of the thing this is here to prevent

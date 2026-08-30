@@ -338,7 +338,7 @@ extension GameScene {
 
         brick.endlessIIFace = face
         resizeEndlessIIFace(brick, to: cell)
-        refreshEndlessIISquareArt(brick)
+        refreshEndlessIIBrickArt(brick)
         // Takes the Square overlay off, the way `makeRounded` does. Without it a square Diamond
         // wore both: the plain square picture underneath, showing through the four transparent
         // corners of the diamond one, so the brick came out square with a rhombus drawn on it -
@@ -432,7 +432,7 @@ extension GameScene {
     func refreshEndlessIIShapedFaces() {
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
-            self.refreshEndlessIISquareArt(brick)
+            self.refreshEndlessIIBrickArt(brick)
             // Inside this walk rather than beside it. Round 258 measured the per-frame ticks
             // and the two that cost anything were the ones that visited every brick, so a
             // third enumeration to reach the Square bricks would cost more than the drawing

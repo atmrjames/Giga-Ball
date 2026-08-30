@@ -141,7 +141,7 @@ extension GameScene {
         brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: plan.size,
                                                     center: plan.bodyCentre))
         addChild(brick)
-        refreshEndlessIISquareArt(brick)
+        refreshEndlessIIBrickArt(brick)
         // The badge the brick is drawn as, laid over the Indestructible texture it is built
         // on - which stays the brick's own texture, because that is what says what a hit does
 

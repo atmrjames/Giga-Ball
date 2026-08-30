@@ -1025,6 +1025,49 @@ Retro's set is complete and classic has the two Indestructibles, checked against
 rather than the names. `ArtStillToDrawTests` names those six, so the day they land the test
 fails and says which line here to strike.
 
+### The Portal brick, and one colour for both ends
+
+James delivered five: plain and Rounded at 2:1, plain, Rounded and Diamond at square. And a
+decision with them (round 273): "Portal is just 1 colour now. Both bricks will just be one
+colour."
+
+It was blue and yellow so a player could see which end pairs with which, and with exactly two
+in the field at a time that was never information anybody had to act on - neither is the way in,
+and the far end is the far end whichever colour it is. `endlessIIPortalIsBlue` is still set and
+still saved, because a save format is not the place to economise and an old save has to decode;
+it just no longer decides anything you can see.
+
+**A Portal is not the texture it is built on**, which is the whole of the wiring. It wears
+`brickIndestructible2Texture` - the look of a brick a hit does not break, and a texture read in
+a dozen places for the score, the particle colour, the sound and the clearing rules - so a face
+asked by texture alone finds `BrickIndestructible2Rounded` and can never find
+`BrickPortalRounded`. `endlessIIArtName(for:)` answers that question for the two bricks that are
+not their own texture, the Portal and the power-up brick, and the whole lookup takes its name
+from there. Which also generalised round 270's overlay: it was "the picture for a Square brick"
+and is now "the picture this brick should be showing, where that is not the texture it wears" -
+three cases, one rule.
+
+**The rings had a job nobody had written down.** They are not only identity: they go grey while
+the Portal is cooling and pulse when it can be entered again, which is the only thing that stops
+a ball arriving at the top and being sent straight back. James's picture has rings drawn into
+it, so replacing the glyph would have taken the state with it. A Portal wearing a picture greys
+the *brick* instead, at 0.7 rather than all the way - a Portal that went flat grey would read as
+a different brick rather than the same one waiting - and the per-frame refreshes carry that onto
+whichever node is doing the showing, which is how it reaches a shaped Portal's face without
+anything having to know.
+
+Two traps found on the way, both by asking the wrong question first. `makePortal` decides
+whether to draw the rings by asking whether a picture is showing, and that has to be asked
+*after* the face is refreshed, or a Portal built on an already-Rounded brick keeps its rings and
+gains a picture. And "is a picture showing" is not "does a face have art": a Portal wearing a
+Wedge has face art - the Indestructible wedge, since there is no Portal wedge drawn - so the
+first version took its rings away and left nothing at all saying what it was. The question is
+what name the art was resolved from.
+
+**Still to draw, if he wants them:** a Portal Convex, Concave and Wedge, and a 2:1 Diamond. All
+four are reachable (`takenByAPortal`) and all four keep the Indestructible shaped art plus the
+drawn rings, which is exactly what a Portal looked like before this round.
+
 *One to look at, and it is older than any of this:* the Diamond art carries a thin dark border
 around its own square canvas, in the oblong pictures as well as the square ones. A face's art
 is a sprite inside the shape node and a sprite is not clipped to a path, so that border draws -

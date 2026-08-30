@@ -96,8 +96,11 @@ extension GameScene {
     /// asked by the caller that has to decide whether to un-reflect the sprite.
     func endlessIIShapedArt(for texture: SKTexture?, _ shape: ShapedBrickArt,
                             mirrored: Bool = false, flipped: Bool = false,
-                            square: Bool = false) -> SKTexture? {
-        guard let name = endlessIIBrickTextureName(texture) else { return nil }
+                            square: Bool = false, named: String? = nil) -> SKTexture? {
+        guard let name = named ?? endlessIIBrickTextureName(texture) else { return nil }
+        // **The name may be given rather than looked up.** A Portal is built on the
+        // Indestructible artwork and is not an Indestructible brick, so asked by texture alone
+        // it would wear `BrickIndestructible2Rounded` and never find `BrickPortalRounded`
 
         if square {
             let squared = name + shape.rawValue + GameScene.squareArtSuffix
@@ -133,8 +136,9 @@ extension GameScene {
     /// drawn four ways. Where the oriented art exists the sprite cancels the scale back out,
     /// so the outline is turned and the lighting is not.
     func endlessIIArtIsOriented(for texture: SKTexture?, _ shape: ShapedBrickArt,
-                                mirrored: Bool, flipped: Bool, square: Bool = false) -> Bool {
-        guard let name = endlessIIBrickTextureName(texture) else { return false }
+                                mirrored: Bool, flipped: Bool, square: Bool = false,
+                                named: String? = nil) -> Bool {
+        guard let name = named ?? endlessIIBrickTextureName(texture) else { return false }
         if square, UIImage(named: name + shape.rawValue + GameScene.squareArtSuffix) != nil {
             return false
         }
@@ -191,7 +195,10 @@ extension GameScene {
     /// through the drawn set on its way in and the stretched set on its way through.
     func endlessIIFaceFill(_ brick: SKSpriteNode, _ shape: ShapedBrickArt?) -> SKTexture? {
         guard let shape else { return brick.texture }
-        return endlessIIShapedArt(for: brick.texture, shape) ?? brick.texture
+        return endlessIIShapedArt(for: brick.texture, shape,
+                                  named: endlessIIArtName(for: brick))
+            ?? endlessIIShapedArt(for: brick.texture, shape)
+            ?? brick.texture
     }
 
     /// Draws a face's art as a sprite the size of the cell, rather than as a shape node's
@@ -337,6 +344,28 @@ extension GameScene {
     /// its four textures. Returns whether it took the job - a face with no art still has its
     /// fill refreshed the old way.
     @discardableResult
+    /// Whose pictures this brick's face should be drawn from.
+    ///
+    /// The brick's own name where there is a picture under it, and the texture it is built on
+    /// where there is not. That second half is what keeps a Portal looking like a Portal only
+    /// as far as James has drawn one: he delivered plain, Rounded and a square Diamond, and a
+    /// Portal may also wear a Wedge, a dome or a notch (`takenByAPortal`) - so those keep the
+    /// Indestructible shaped art they have always worn rather than losing their face entirely.
+    ///
+    /// Asked once and used for both questions below, because "which picture" and "is that
+    /// picture drawn for its own orientation" have to be asked of the *same* picture - the two
+    /// falling back independently is how a sprite ends up un-turning art that was never turned.
+    func endlessIIFaceArtName(for brick: SKSpriteNode, _ art: ShapedBrickArt?,
+                              mirrored: Bool, flipped: Bool, square: Bool) -> String? {
+        guard let art else { return nil }
+        if let named = endlessIIArtName(for: brick),
+           endlessIIShapedArt(for: brick.texture, art, mirrored: mirrored, flipped: flipped,
+                              square: square, named: named) != nil {
+            return named
+        }
+        return endlessIIBrickTextureName(brick.texture)
+    }
+
     func refreshEndlessIIFaceArt(_ brick: SKSpriteNode, _ shape: SKShapeNode,
                                  _ art: ShapedBrickArt?, cell: CGSize) -> Bool {
         let mirrored = brick.endlessIIFaceMirrored ?? false
@@ -347,9 +376,11 @@ extension GameScene {
         // path the face was built to is the thing that still knows the cell after the sprite
         // behind it has been shrunk out of the way
 
-        guard let art, let texture = endlessIIShapedArt(for: brick.texture, art,
-                                                        mirrored: mirrored, flipped: flipped,
-                                                        square: square)
+        let source = endlessIIFaceArtName(for: brick, art,
+                                          mirrored: mirrored, flipped: flipped, square: square)
+        guard let art, let source, let texture = endlessIIShapedArt(
+            for: brick.texture, art,
+            mirrored: mirrored, flipped: flipped, square: square, named: source)
         else {
             shape.childNode(withName: GameScene.faceArtName)?.removeFromParent()
             shape.childNode(withName: GameScene.facePartnerName)?.removeFromParent()
@@ -358,7 +389,7 @@ extension GameScene {
 
         let oriented = endlessIIArtIsOriented(for: brick.texture, art,
                                               mirrored: mirrored, flipped: flipped,
-                                              square: square)
+                                              square: square, named: source)
         let sprite = (shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode)
             ?? drawEndlessIIFaceArt(texture, on: shape, cell: cell)
 
@@ -401,7 +432,28 @@ extension GameScene {
     /// square on screen because a cell is twice as wide as it is high.
     static let squareArtSuffix = "Square"
 
-    static let squareArtName = "endlessIISquareArt"
+    static let brickArtName = "endlessIIBrickArt"
+
+    /// The portal brick's own picture. James, round 271: "Portal bricks - these come in just
+    /// the square size and a single theme", and round 273: "Portal is just 1 colour now. Both
+    /// bricks will just be one colour."
+    ///
+    /// Named like a brick type rather than like a role, because that is what it now is to the
+    /// lookup: `BrickPortalRounded`, `BrickPortalSquare` and the rest fall out of the same
+    /// builder every other type uses.
+    static let portalBrickArtName = "BrickPortal"
+
+    /// What this brick's pictures are called.
+    ///
+    /// Two bricks are not the texture they are built on. A power-up brick and a Portal are both
+    /// built on the Indestructible artwork - the look of a brick a hit does not simply destroy -
+    /// and that texture stays theirs, because it is read in a dozen places for the score, the
+    /// particle colour, the sound and the clearing rules. What they *show* is their own.
+    func endlessIIArtName(for brick: SKSpriteNode) -> String? {
+        if brick.endlessIIPowerUpIndex != nil { return GameScene.powerUpBrickArtName }
+        if brick.endlessIIRole == .portal { return GameScene.portalBrickArtName }
+        return endlessIIBrickTextureName(brick.texture)
+    }
 
     /// The power-up brick's own picture. James, round 271: "this is the same shape as a
     /// power-up graphic. Add the power-up graphic to the brick. Power-up bricks only come in
@@ -411,15 +463,30 @@ extension GameScene {
     /// theme and no shape after it, because there is one of these and it never varies.
     static let powerUpBrickArtName = "PowerUpBrick"
 
-    /// The picture drawn for a brick at Square proportions, if there is one.
-    func endlessIISquareArt(for texture: SKTexture?) -> SKTexture? {
-        guard let name = endlessIIBrickTextureName(texture) else { return nil }
-        let squared = name + GameScene.squareArtSuffix
-        guard UIImage(named: squared) != nil else { return nil }
-        return SKTexture(imageNamed: squared)
-        // Asked of the catalogue for the same reason the shaped lookup is: a missing name
-        // gets a placeholder back from SpriteKit, not nil. A power-up brick is Square-sized
-        // and has no type texture at all, so it falls out here and keeps its icon
+    /// The picture this brick should be showing, where that is not the texture it wears.
+    ///
+    /// Three cases, and they are the same case: the brick's own texture is not the picture.
+    /// A Square brick's texture is an oblong that would be stretched to twice its height; a
+    /// power-up brick's and a Portal's is the Indestructible artwork they are built on. Nil for
+    /// every other brick, which is already showing the right thing and needs nothing put over
+    /// it.
+    func endlessIIOwnArt(for brick: SKSpriteNode) -> SKTexture? {
+        guard let name = endlessIIArtName(for: brick) else { return nil }
+        if name == GameScene.powerUpBrickArtName {
+            return UIImage(named: name) == nil ? nil : SKTexture(imageNamed: name)
+            // The badge has no shape or size after it. There is one of these and it never
+            // varies: "Power-up bricks only come in this shape and style"
+        }
+
+        let square = endlessIISizeOf(brick) == .square
+        guard square || name != endlessIIBrickTextureName(brick.texture) else { return nil }
+        // Nothing to put on an ordinary brick that is already wearing its own picture
+
+        let wanted = name + (square ? GameScene.squareArtSuffix : "")
+        guard UIImage(named: wanted) != nil else { return nil }
+        return SKTexture(imageNamed: wanted)
+        // Asked of the catalogue for the same reason the shaped lookup is: a missing name gets
+        // a placeholder back from SpriteKit, not nil
     }
 
     /// Keeps a plain Square brick wearing the picture drawn for its proportions.
@@ -435,20 +502,11 @@ extension GameScene {
     /// agreeing on both is what puts them in the same place - and a Square brick's anchor is
     /// off centre on purpose (§8.6: the node stays on a row centre and the drawing hangs off
     /// it).
-    func refreshEndlessIISquareArt(_ brick: SKSpriteNode) {
-        let worn = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
-        let art = brick.endlessIIPowerUpIndex == nil
-            ? endlessIISquareArt(for: brick.texture)
-            : SKTexture(imageNamed: GameScene.powerUpBrickArtName)
-        // **A power-up brick wears its own badge**, not the picture of whatever texture it is
-        // built on. It is built on the Indestructible artwork because that is the look of a
-        // brick a hit does not simply destroy, and round 270 had it quietly picking up
-        // `BrickIndestructible2Square` on the way past - right by accident, and not what it is
-
+    func refreshEndlessIIBrickArt(_ brick: SKSpriteNode) {
+        let worn = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
         guard brick.childNode(withName: GameScene.brickFaceName) == nil,
               brick.childNode(withName: GameScene.roundedBrickOutlineName) == nil,
-              endlessIISizeOf(brick) == .square,
-              let texture = art else {
+              let texture = endlessIIOwnArt(for: brick) else {
             worn?.removeFromParent()
             return
             // Removed rather than left hidden, because the two nodes that draw a face do the
@@ -461,7 +519,7 @@ extension GameScene {
             sprite = worn
         } else {
             sprite = SKSpriteNode(texture: texture)
-            sprite.name = GameScene.squareArtName
+            sprite.name = GameScene.brickArtName
             sprite.zPosition = 0.01
             brick.addChild(sprite)
         }

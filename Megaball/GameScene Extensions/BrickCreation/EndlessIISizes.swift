@@ -296,7 +296,7 @@ extension GameScene {
                                                     center: plan.bodyCentre))
         if brick.texture == brickInvisibleTexture { brick.isHidden = true }
         addChild(brick)
-        refreshEndlessIISquareArt(brick)
+        refreshEndlessIIBrickArt(brick)
         // Worn on the way in rather than on the next frame's refresh, so the row animates in
         // showing the picture drawn for it rather than one frame of a stretched one
         return brick

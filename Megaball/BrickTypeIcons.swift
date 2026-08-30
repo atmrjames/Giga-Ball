@@ -217,8 +217,15 @@ enum BrickTypeIcons {
             return
 
         case .portal:
-            // Left untinted, as in the game: the Indestructible artwork is dark, so any colour
-            // put through it comes out muddy. The identity is in the rings
+            if let drawn = artwork(GameScene.portalBrickArtName) {
+                drawn.draw(in: frame)
+                return
+            }
+            // James's picture since round 273, which has the rings in it - so the page shows
+            // what the field shows rather than a second drawing of the same idea. The two
+            // lines below are what a Portal was before it and what it still is anywhere the
+            // picture is missing: left untinted, as in the game, because the Indestructible
+            // artwork is dark and any colour put through it comes out muddy
             artwork("BrickIndestructible2")?.draw(in: frame)
             drawPortalRings(in: frame, context: context)
             return
@@ -283,10 +290,14 @@ enum BrickTypeIcons {
 
         case .fixed:
             let unit = frame.height*0.28
-            path.move(to: CGPoint(x: centre.x - unit, y: centre.y - unit*0.7))
-            path.addLine(to: CGPoint(x: centre.x + unit, y: centre.y - unit*0.7))
-            path.move(to: CGPoint(x: centre.x, y: centre.y - unit*0.7))
-            path.addLine(to: CGPoint(x: centre.x, y: centre.y + unit*0.9))
+            path.move(to: CGPoint(x: centre.x - unit, y: centre.y + unit*0.7))
+            path.addLine(to: CGPoint(x: centre.x + unit, y: centre.y + unit*0.7))
+            path.move(to: CGPoint(x: centre.x, y: centre.y + unit*0.7))
+            path.addLine(to: CGPoint(x: centre.x, y: centre.y - unit*0.9))
+            // **Turned over with the game's** (round 273, James: "flip it upside down so the
+            // top of the T is at the bottom of the brick"). The signs are the opposite of
+            // `makeFixed`'s and always have been: this is drawn into a `UIGraphicsImageRenderer`
+            // where y runs down the page, and the scene's y runs up it
 
         default:
             break

@@ -531,7 +531,7 @@ final class EndlessIIFrameCostTests: XCTestCase {
                 brick.isHidden = false
                 brick.colorBlendFactor = 0
                 // Uncoloured, so what shows is the picture rather than the level's tint
-                game.refreshEndlessIISquareArt(brick)
+                game.refreshEndlessIIBrickArt(brick)
                 if rounded || mode.contains("oblong") { game.makeRounded(brick) }
                 if mode.contains("diamond") { game.applyEndlessIIStyle(.diamond, to: brick) }
 
@@ -590,7 +590,7 @@ final class EndlessIIFrameCostTests: XCTestCase {
                     brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
                     brick.texture = scene.brickNormalTexture
                     brick.isHidden = false
-                    scene.refreshEndlessIISquareArt(brick)
+                    scene.refreshEndlessIIBrickArt(brick)
                 } else {
                     brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
                     scene.addChild(brick)
@@ -624,7 +624,7 @@ final class EndlessIIFrameCostTests: XCTestCase {
             brick.texture = scene.brickIndestructible2Texture
             brick.isHidden = false
             brick.endlessIIPowerUpIndex = powerUp
-            scene.refreshEndlessIISquareArt(brick)
+            scene.refreshEndlessIIBrickArt(brick)
             // Built by hand rather than through `endlessIIMakePowerUpBrick`, which rolls
             // against a schedule an unstarted run does not have and answers nil
 
@@ -645,5 +645,71 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  row 1: directional top, bottom, left, right (2:1)")
         print("  row 2: the same, square")
         print("  row 3: Fixed loose, Fixed locked, then the power-up brick\n")
+    }
+
+    /// Draws the Portal - plain, Rounded and square, and greyed out while it is cooling - plus
+    /// the reference page's own picture of one and of a Fixed brick, which are drawn by
+    /// different code and have to agree with the field.
+    func testThePortalBricksCanBeLookedAt() throws {
+        let cell = CGSize(width: 56, height: 28)
+        let column: CGFloat = 100, row: CGFloat = 90
+
+        let display = SKScene(size: CGSize(width: column*4 + 20, height: row*3 + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        func game() -> GameScene {
+            let scene = GameScene(size: CGSize(width: 402, height: 874))
+            scene.gameMode = .endlessII
+            scene.brickWidth = cell.width
+            scene.brickHeight = cell.height
+            scene.gameWidth = 402
+            return scene
+        }
+
+        let kinds = ["plain", "rounded", "square", "square diamond"]
+        for (index, kind) in kinds.enumerated() {
+            for (line, cooling) in [(0, false), (1, true)] {
+                let scene = game()
+                let brick: SKSpriteNode
+                if kind.hasPrefix("square") {
+                    brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
+                    brick.isHidden = false
+                } else {
+                    brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+                    scene.addChild(brick)
+                }
+                brick.texture = scene.brickIndestructible2Texture
+                if kind == "rounded" { scene.makeRounded(brick) }
+                if kind == "square diamond" { scene.applyEndlessIIStyle(.diamond, to: brick) }
+                scene.makePortal(brick)
+                scene.endlessIIShowPortal(brick, cooling: cooling)
+
+                brick.removeFromParent()
+                brick.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                         y: display.size.height - row*(CGFloat(line) + 0.5))
+                display.addChild(brick)
+            }
+        }
+
+        for (index, art) in [BrickTypeArt.style(.portal), .style(.fixed)].enumerated() {
+            let picture = SKTexture(image: BrickTypeIcons.image(for: art))
+            let node = SKSpriteNode(texture: picture, size: BrickTypeIcons.canvas)
+            node.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                    y: display.size.height - row*2.5)
+            display.addChild(node)
+        }
+        // The reference page's own drawings, beside the field's. They are separate code and
+        // the Fixed one is drawn into a flipped coordinate space, which is exactly the kind of
+        // thing that gets turned over in one place and not the other
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("portal-bricks.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Portal bricks, drawn: \(file.path)")
+        print("  row 1: \(kinds.joined(separator: ", ")) - ready")
+        print("  row 2: the same, cooling")
+        print("  row 3: the reference page's Portal, then its Fixed brick\n")
     }
 }

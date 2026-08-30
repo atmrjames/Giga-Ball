@@ -39,7 +39,7 @@ extension GameScene {
     static let portalBlueColour = UIColor(red: 0.30, green: 0.68, blue: 1.0, alpha: 1)
     static let portalYellowColour = UIColor(red: 1.0, green: 0.85, blue: 0.20, alpha: 1)
 
-    private static let glyphName = "endlessIIGlyph"
+    static let glyphName = "endlessIIGlyph"
     /// The Directional brick's bright bar, named apart from the other glyphs so it can be
     /// replaced on its own when the brick is re-pointed.
     static let directionalEdgeName = "endlessIIDirectionalEdge"
@@ -1026,6 +1026,14 @@ extension GameScene {
         brick.endlessIIRole = .portal
         brick.endlessIIPortalIsBlue = isBlue
         brick.texture = brickIndestructible2Texture
+        refreshEndlessIIBrickArt(brick)
+        endlessIIRefreshFace(on: brick)
+        if endlessIIWearsPortalArt(brick) { return }
+        // **The picture James drew has the rings in it**, so a brick wearing it needs no glyph
+        // drawn on top - two sets of rings is one more than a Portal has. Everything below is
+        // what a Portal wore for two hundred rounds and still wears wherever there is no
+        // picture: a Portal may take a Wedge, a dome or a notch (`takenByAPortal`), and only
+        // the plain, Rounded and square Diamond ones are drawn
 
         // Left untinted, unlike every other role here. `colorBlendFactor` colourises a
         // texture but the result is still modulated by what the texture looks like, and the
@@ -1042,10 +1050,13 @@ extension GameScene {
 
         let glyph = SKShapeNode(path: rings)
         glyph.name = GameScene.glyphName
-        glyph.strokeColor = isBlue ? GameScene.portalBlueColour : GameScene.portalYellowColour
-        // Two colours so a player can see which end pairs with which. Neither is the way in:
-        // hit the blue one and you come out of the yellow, hit the yellow and you come out
-        // of the blue
+        glyph.strokeColor = GameScene.portalReadyColour
+        // **One colour, both ends**, since round 273 - James: "Portal is just 1 colour now.
+        // Both bricks will just be one colour." It was blue and yellow so a player could see
+        // which end pairs with which, and with exactly two in the field at a time that was
+        // never information they had to act on: neither is the way in, and the far end is the
+        // far end whichever colour it is. `endlessIIPortalIsBlue` is still set and still saved,
+        // because a save format is not the place to economise and an old save has to decode
         glyph.fillColor = .clear
         glyph.lineWidth = max(1.5, cell.height*0.1)
         glyph.zPosition = 1
@@ -1140,28 +1151,116 @@ extension GameScene {
     /// through, grey means it is a wall for the moment.
     func showEndlessIIPortalsCooling() {
         for portal in endlessIIPortals() {
-            guard let glyph = portal.childNode(withName: GameScene.glyphName) as? SKShapeNode
-            else { continue }
-            glyph.removeAllActions()
-            glyph.strokeColor = GameScene.portalCoolingColour
+            endlessIIPortalMark(on: portal)?.removeAllActions()
+            endlessIIShowPortal(portal, cooling: true)
         }
     }
 
     /// Puts their colours back, so the moment a Portal can be used again is one you can see.
     func showEndlessIIPortalsReady() {
         for portal in endlessIIPortals() {
-            guard let glyph = portal.childNode(withName: GameScene.glyphName) as? SKShapeNode
-            else { continue }
-            glyph.removeAllActions()
-            glyph.strokeColor = portal.endlessIIPortalIsBlue
-                ? GameScene.portalBlueColour
-                : GameScene.portalYellowColour
-            glyph.run(.sequence([.scale(to: 1.25, duration: 0.08),
-                                 .scale(to: 1, duration: 0.12)]))
+            endlessIIShowPortal(portal, cooling: false)
+            endlessIIPortalMark(on: portal)?
+                .run(.sequence([.scale(to: 1.25, duration: 0.08),
+                                .scale(to: 1, duration: 0.12)]))
             // A small pulse as well as the colour. The two ends can be off screen from each
             // other, and coming back to life is the thing worth noticing
         }
     }
+
+    /// Redraws whatever face a brick is wearing, now, rather than on the next frame.
+    ///
+    /// The per-frame sweeps get to this a frame later, which is fine for a Multi-hit brick
+    /// stepping down and not fine for a Portal: `makePortal` has to know whether a picture is
+    /// showing *before* it decides whether to draw the rings, and asking a frame early would
+    /// have it draw them onto a brick that is about to have a Portal's own face.
+    func endlessIIRefreshFace(on brick: SKSpriteNode) {
+        if let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName)
+            as? SKShapeNode {
+            _ = refreshEndlessIIFaceArt(brick, shape, .rounded,
+                                        cell: endlessIIFaceCell(brick, shape: shape))
+        }
+        if let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
+           let art = brick.endlessIIFace.flatMap(GameScene.shapedArt(for:)) {
+            _ = refreshEndlessIIFaceArt(brick, shape, art,
+                                        cell: endlessIIFaceCell(brick, shape: shape))
+        }
+    }
+
+    /// The node that says whether a Portal can be entered.
+    ///
+    /// The drawn rings for a Portal with no picture, and the picture itself for one that has
+    /// got one - which may be inside a face node, because a Portal can be Rounded or shaped.
+    /// The cooling state is real feedback and had to survive the art arriving: it is the whole
+    /// of what stops a ball arriving at the top and being sent straight back.
+    func endlessIIPortalMark(on brick: SKSpriteNode) -> SKNode? {
+        if let glyph = brick.childNode(withName: GameScene.glyphName) { return glyph }
+        // **The rings win where they exist**, and they exist only where no picture does -
+        // `makePortal` draws them precisely when it finds nothing else saying Portal
+
+        for face in [GameScene.brickFaceName, GameScene.roundedBrickOutlineName] {
+            if let node = brick.childNode(withName: face)?
+                .childNode(withName: GameScene.faceArtName) { return node }
+        }
+        return brick.childNode(withName: GameScene.brickArtName)
+    }
+
+    /// Whether this brick is showing a picture of a *Portal*, as opposed to a picture.
+    ///
+    /// The distinction the first version of this missed. A Portal wearing a Wedge has face art
+    /// - the Indestructible wedge it has always worn, because there is no Portal wedge drawn -
+    /// and asking only whether a face has art said yes, so the brick lost its rings and had
+    /// nothing at all left saying what it was. The name the art was resolved from is the thing
+    /// that actually answers.
+    func endlessIIWearsPortalArt(_ brick: SKSpriteNode) -> Bool {
+        if brick.childNode(withName: GameScene.brickArtName) != nil { return true }
+
+        let square = endlessIISizeOf(brick) == .square
+        let mirrored = brick.endlessIIFaceMirrored ?? false
+        let flipped = brick.endlessIIFaceFlipped ?? false
+        for (name, art) in [(GameScene.roundedBrickOutlineName, GameScene.ShapedBrickArt.rounded),
+                            (GameScene.brickFaceName,
+                             brick.endlessIIFace.flatMap(GameScene.shapedArt(for:)) ?? .rounded)]
+        where brick.childNode(withName: name) != nil {
+            let source = endlessIIFaceArtName(for: brick, art, mirrored: mirrored,
+                                              flipped: flipped, square: square)
+            if source == GameScene.portalBrickArtName { return true }
+        }
+        return false
+    }
+
+    /// Greys a Portal out, or brings it back.
+    ///
+    /// **The tint goes on the brick, not on the picture.** `refreshEndlessIIBrickArt` and
+    /// `refreshEndlessIIFaceArt` copy the brick's colour onto the art every frame, so a tint
+    /// written straight onto the art would be wiped off on the next one. Writing it where those
+    /// two read from is what makes it stick - and it reaches a shaped Portal's face without
+    /// this having to know which node is doing the showing.
+    func endlessIIShowPortal(_ brick: SKSpriteNode, cooling: Bool) {
+        if let glyph = endlessIIPortalMark(on: brick) as? SKShapeNode {
+            glyph.removeAllActions()
+            glyph.strokeColor = cooling ? GameScene.portalCoolingColour
+                                        : GameScene.portalReadyColour
+            return
+        }
+        brick.color = GameScene.portalCoolingColour
+        brick.colorBlendFactor = cooling ? GameScene.portalCoolingBlend : 0
+        refreshEndlessIIBrickArt(brick)
+        endlessIIRefreshFace(on: brick)
+        // Carried onto the picture now rather than on the next frame's sweep. A Portal cools
+        // for a fixed number of seconds and comes back; a state that only appears on the frame
+        // after it is set is a state that reads late at both ends of a short window
+    }
+
+    /// How far a cooling Portal is greyed towards the cooling colour.
+    ///
+    /// Not all the way. A Portal that went flat grey would read as a different brick rather
+    /// than as the same one waiting, and the rings James drew into the picture are what has to
+    /// stay legible through it.
+    static let portalCoolingBlend: CGFloat = 0.7
+
+    /// What a Portal's rings are when it can be entered.
+    static let portalReadyColour = UIColor(red: 0.30, green: 0.68, blue: 1.0, alpha: 1)
 
     /// What a Portal's rings go while it cannot be entered.
     static let portalCoolingColour = UIColor(white: 0.45, alpha: 1)
