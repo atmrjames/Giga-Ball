@@ -389,6 +389,14 @@ extension GameScene {
 
     static let squareArtName = "endlessIISquareArt"
 
+    /// The power-up brick's own picture. James, round 271: "this is the same shape as a
+    /// power-up graphic. Add the power-up graphic to the brick. Power-up bricks only come in
+    /// this shape and style."
+    ///
+    /// So the brick is the badge and the power-up's own icon goes on it. One name, with no
+    /// theme and no shape after it, because there is one of these and it never varies.
+    static let powerUpBrickArtName = "PowerUpBrick"
+
     /// The picture drawn for a brick at Square proportions, if there is one.
     func endlessIISquareArt(for texture: SKTexture?) -> SKTexture? {
         guard let name = endlessIIBrickTextureName(texture) else { return nil }
@@ -415,10 +423,18 @@ extension GameScene {
     /// it).
     func refreshEndlessIISquareArt(_ brick: SKSpriteNode) {
         let worn = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
+        let art = brick.endlessIIPowerUpIndex == nil
+            ? endlessIISquareArt(for: brick.texture)
+            : SKTexture(imageNamed: GameScene.powerUpBrickArtName)
+        // **A power-up brick wears its own badge**, not the picture of whatever texture it is
+        // built on. It is built on the Indestructible artwork because that is the look of a
+        // brick a hit does not simply destroy, and round 270 had it quietly picking up
+        // `BrickIndestructible2Square` on the way past - right by accident, and not what it is
+
         guard brick.childNode(withName: GameScene.brickFaceName) == nil,
               brick.childNode(withName: GameScene.roundedBrickOutlineName) == nil,
               endlessIISizeOf(brick) == .square,
-              let texture = endlessIISquareArt(for: brick.texture) else {
+              let texture = art else {
             worn?.removeFromParent()
             return
             // Removed rather than left hidden, because the two nodes that draw a face do the

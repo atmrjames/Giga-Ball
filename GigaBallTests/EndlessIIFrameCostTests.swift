@@ -550,4 +550,98 @@ final class EndlessIIFrameCostTests: XCTestCase {
               + "classic oblong rounded")
         print("  columns: \(labels.joined(separator: ", "))\n")
     }
+
+    /// Draws the on-hit marks - the four directional overlays at both proportions, the Fixed
+    /// brick before and after it locks, and the power-up brick wearing its badge.
+    ///
+    /// James, round 271, is explicit about what each should read as, and none of it is a thing
+    /// a test can check: "I think this better denotes it stopping", "the open side... has been
+    /// left open/transparent so the brick below can be seen".
+    func testTheOnHitMarksCanBeLookedAt() throws {
+        let cell = CGSize(width: 56, height: 28)
+        let column: CGFloat = 90, row: CGFloat = 80
+
+        let display = SKScene(size: CGSize(width: column*5 + 20, height: row*4 + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        func game() -> GameScene {
+            let scene = GameScene(size: CGSize(width: 402, height: 874))
+            scene.gameMode = .endlessII
+            scene.brickWidth = cell.width
+            scene.brickHeight = cell.height
+            scene.gameWidth = 402
+            scene.totalStatsArray = [TotalStats()]
+            return scene
+        }
+        func place(_ brick: SKSpriteNode, _ x: Int, _ line: Int) {
+            brick.removeFromParent()
+            brick.position = CGPoint(x: 10 + column*(CGFloat(x) + 0.5),
+                                     y: display.size.height - row*(CGFloat(line) + 0.5))
+            display.addChild(brick)
+        }
+
+        for (index, side) in EndlessIISide.allCases.enumerated() {
+            for (line, square) in [(0, false), (1, true)] {
+                let scene = game()
+                let brick: SKSpriteNode
+                if square {
+                    brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
+                    brick.texture = scene.brickNormalTexture
+                    brick.isHidden = false
+                    scene.refreshEndlessIISquareArt(brick)
+                } else {
+                    brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+                    scene.addChild(brick)
+                }
+                brick.endlessIIRole = .directional
+                brick.endlessIIVulnerableSide = side
+                brick.color = GameScene.directionalBrickColour
+                brick.colorBlendFactor = 1
+                scene.endlessIIDrawVulnerableEdge(on: brick, side: side)
+                // Tinted as `makeDirectional` tints it, because what shows through the open
+                // side is the brick underneath and the whole question is whether that reads
+                place(brick, index, line)
+            }
+        }
+
+        for (index, locked) in [(0, false), (1, true)] {
+            let scene = game()
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+            scene.addChild(brick)
+            scene.makeFixed(brick)
+            if locked {
+                brick.endlessIIIsAnchored = true
+                scene.endlessIIDrawFixedPin(on: brick)
+            }
+            place(brick, index, 2)
+        }
+
+        for (index, powerUp) in [0, 3].enumerated() {
+            let scene = game()
+            let brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
+            brick.texture = scene.brickIndestructible2Texture
+            brick.isHidden = false
+            brick.endlessIIPowerUpIndex = powerUp
+            scene.refreshEndlessIISquareArt(brick)
+            // Built by hand rather than through `endlessIIMakePowerUpBrick`, which rolls
+            // against a schedule an unstarted run does not have and answers nil
+
+            let icon = SKSpriteNode(texture: scene.endlessIIPowerUpTexture(powerUp))
+            icon.size = CGSize(width: brick.size.width*0.78, height: brick.size.width*0.78)
+            icon.position = CGPoint(x: 0, y: -scene.brickHeight/2)
+            icon.zPosition = 1
+            brick.addChild(icon)
+            place(brick, 3 + index, 2)
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("on-hit-marks.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  On-hit marks, drawn: \(file.path)")
+        print("  row 1: directional top, bottom, left, right (2:1)")
+        print("  row 2: the same, square")
+        print("  row 3: Fixed loose, Fixed locked, then the power-up brick\n")
+    }
 }

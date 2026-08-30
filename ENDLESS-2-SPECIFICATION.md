@@ -965,11 +965,38 @@ breathing, wandering or falling has told you what it is by the time you look at 
 it as well would say the same thing twice on top of art that is already moving. The other four
 look exactly like ordinary bricks until the ball reaches them.
 
-**Still to draw: an overlay for Fixed, Exploding, Spawner and Directional.** The power-up brick
-is the fifth of that group and already wears its - the icon it carries *is* the mark the others
-are waiting for - and it is Square-only, so its overlay only ever has to exist at those
-proportions. The four are the next batch worth having, and none of them needs a code change
-beyond the one that puts it on.
+~~**Still to draw: an overlay for Fixed, Exploding, Spawner and Directional.**~~ **Settled the
+same day** (round 271), and three of the four needed no picture at all - James: "keep the
+existing T shape", "keep the asterisk/star icon", "keep the plus icon". Gravity came back into
+the movement group with him: "initially I didn't think this should have a graphic overlay, but
+on reflection, I like the downward chevron that already exists."
+
+**The Fixed brick's T is upside down now**, bar at the bottom, stem standing on it - "I think
+this better denotes it stopping", which it does, and the old way up was saying nothing at all.
+**And it gets heavier once the brick has locked**: the same mark at nearly twice the weight and
+full contrast, so a brick that anchors while you are watching thickens rather than turning into
+something else.
+
+**Directional got pictures, and they are the inverse of the bar they replace.** Eight panels,
+four sides at each of the two proportions a brick comes in - 2:1 for Tiny, Normal and Big,
+which are all that shape, and square for a Square brick. The old bar drew the *soft* side
+bright and left the three hard ones looking like ordinary brick, so the mark to read was the
+small one; the panel darkens the three hard sides and leaves the soft one clear, so what shows
+through the picture is the way in. The drawn bar is still the fallback for any brick with no
+panel, which is the bargain the shaped faces already make.
+
+**The power-up brick wears its own badge.** James: "this is the same shape as a power-up
+graphic. Add the power-up graphic to the brick. Power-up bricks only come in this shape and
+style." It is the round-270 overlay with one branch on it, and the brick's own texture stays
+`BrickIndestructible2` - not for the look, which the badge now covers, but because that texture
+is read in a dozen places for the score, the particle colour, the sound and the clearing rules.
+Round 270 had it quietly picking up `BrickIndestructible2Square` on the way past, which was
+right by accident.
+
+*One thing to look at:* the badge has rounded corners and the texture under it does not, so a
+few pixels of the Indestructible artwork show at each corner. Every clean fix in code touches
+either that texture (a dozen call sites) or the size logic that finds the brick in the first
+place; drawing `PowerUpBrick` out to square corners would close it with no code at all.
 
 Square versions of the other shapes are undecided: "I haven't decided if I'll do square
 versions of the other brick shapes yet." The lookup asks the catalogue for the specific name

@@ -83,6 +83,27 @@ final class ArtStillToDrawTests: XCTestCase {
         return missing.sorted()
     }
 
+    /// The on-hit overlays, and the two bricks that are their own picture.
+    ///
+    /// James, round 271: the four directional panels "just for the 2x1 and 2x2 shape bricks",
+    /// the power-up brick's badge, and the portal brick. Named rather than derived, because
+    /// there is no list in the game that these fall out of - they are what the four on-hit
+    /// actions and the two Endless Mayhem brick types wear.
+    private func missingMarkArt() -> [String] {
+        var missing: [String] = []
+        for side in EndlessIISide.allCases {
+            for square in [false, true] {
+                let name = "BrickDirectional" + side.artName + "Open"
+                    + (square ? GameScene.squareArtSuffix : "")
+                if UIImage(named: name) == nil { missing.append(name) }
+            }
+        }
+        if UIImage(named: GameScene.powerUpBrickArtName) == nil {
+            missing.append(GameScene.powerUpBrickArtName)
+        }
+        return missing.sorted()
+    }
+
     /// Every paddle picture the game could ask for and does not have.
     private func missingPaddleArt() -> [String] {
         var missing: [String] = []
@@ -132,14 +153,28 @@ final class ArtStillToDrawTests: XCTestCase {
                        + "draw or a name the lookup is building wrongly")
     }
 
+    /// **The on-hit overlays exist** as of round 271 - all eight panels and the badge.
+    ///
+    /// Which closes §8.5's "still to draw" line for the on-hit actions: Fixed, Exploding and
+    /// Spawner keep their drawn glyphs by James's decision ("keep the existing T shape", "keep
+    /// the asterisk/star icon", "keep the plus icon"), so Directional was the only one that
+    /// needed pictures, and the power-up brick the only brick that needed one of its own.
+    func testTheOnHitMarksAreDrawn() {
+        XCTAssertEqual(missingMarkArt(), [],
+                       "anything printed here is either art to draw or a name the lookup is "
+                       + "building wrongly")
+    }
+
     /// The list, printed, so a round that adds a type or a shape can read what it owes.
     func testWhatIsStillToDraw() {
         let bricks = missingBrickArt()
         let paddles = missingPaddleArt().filter { deliberatelyBorrowed.contains($0) == false }
         print("\n  Art still to draw:")
         let squares = missingSquareArt()
+        let marks = missingMarkArt()
         print("    bricks:  \(bricks.isEmpty ? "none" : bricks.joined(separator: ", "))")
         print("    squares: \(squares.isEmpty ? "none" : squares.joined(separator: ", "))")
+        print("    marks:   \(marks.isEmpty ? "none" : marks.joined(separator: ", "))")
         print("    paddles: \(paddles.isEmpty ? "none" : paddles.joined(separator: ", "))")
         print("")
     }

@@ -88,17 +88,20 @@ extension GameScene {
 
     /// Draws a shape over a brick, sized to the brick rather than to a cell so it stays
     /// legible on a Tiny one and does not look lost on a Big one.
+    @discardableResult
     private func addGlyph(_ path: CGPath, to brick: SKSpriteNode,
-                          filled: Bool = true, scale: CGFloat = 1) {
+                          filled: Bool = true, scale: CGFloat = 1,
+                          weight: CGFloat = 1, contrast: CGFloat = 0.75) -> SKShapeNode {
         let glyph = SKShapeNode(path: path)
         glyph.name = GameScene.glyphName
-        glyph.strokeColor = UIColor(white: 0, alpha: 0.75)
-        glyph.fillColor = filled ? UIColor(white: 0, alpha: 0.75) : .clear
-        glyph.lineWidth = max(1.5, endlessIIFieldSize(of: brick).height*0.08)
+        glyph.strokeColor = UIColor(white: 0, alpha: contrast)
+        glyph.fillColor = filled ? UIColor(white: 0, alpha: contrast) : .clear
+        glyph.lineWidth = max(1.5, endlessIIFieldSize(of: brick).height*0.08*weight)
         glyph.setScale(scale)
         glyph.zPosition = 1
         glyph.position = endlessIIBrickCentre(of: brick)
         brick.addChild(glyph)
+        return glyph
         // Positioned at the brick's middle, which on a Big brick and on a shaped one is not
         // the node's origin (§8.6), and weighted by the room the brick actually fills - a
         // shaped brick's sprite is a third of a cell, and a glyph drawn to it would have been
@@ -359,9 +362,36 @@ extension GameScene {
         endlessIIDrawVulnerableEdge(on: brick, side: side)
     }
 
-    /// Draws the bright bar that says which face is soft, replacing any bar already there.
+    /// The picture that says which face is soft, replacing whatever is there already.
+    ///
+    /// James, round 271: "I've created graphics that should overlay the bricks below, just for
+    /// the 2x1 and 2x2 shape bricks. These can be applied to each brick size. The open side of
+    /// the brick (i.e. the side of the brick that can be hit and causes damage) has been left
+    /// open/transparent so the brick below can be seen."
+    ///
+    /// **The inverse of the bar it replaces**, and better for it: the bar drew the soft side
+    /// bright and left the three hard ones looking like ordinary brick, so the mark to read was
+    /// the small one. The overlay darkens the three hard sides and leaves the soft one clear,
+    /// so what shows through the picture is the way in.
+    ///
+    /// Two pictures, for the two proportions a brick comes in - 2:1 for Tiny, Normal and Big,
+    /// which are all that shape, and square for a Square brick. Sized and placed off the *cell*
+    /// rather than off `brick.size`, which is the hiding rectangle once a face is on it.
     func endlessIIDrawVulnerableEdge(on brick: SKSpriteNode, side: EndlessIISide) {
         brick.childNode(withName: GameScene.directionalEdgeName)?.removeFromParent()
+
+        let cell = endlessIIFieldSize(of: brick)
+        if let art = endlessIIDirectionalArt(side, square: endlessIISizeOf(brick) == .square) {
+            let panel = SKSpriteNode(texture: art, size: cell)
+            panel.name = GameScene.directionalEdgeName
+            panel.zPosition = 1
+            panel.position = endlessIIBrickCentre(of: brick)
+            brick.addChild(panel)
+            return
+        }
+        // The drawn bar below is what a brick with no picture keeps, which is the same bargain
+        // the shaped faces make: art that does not exist is a real answer, and the mark that
+        // was there for two hundred rounds is a better fallback than no mark at all
 
         let width = brick.size.width
         let height = brick.size.height
@@ -389,6 +419,16 @@ extension GameScene {
         // Named for itself rather than sharing the general glyph name, so re-pointing a brick
         // can take away the old bar and leave every other decoration on it alone. The sweep
         // below is the only caller that needs that, and it needs it exactly
+    }
+
+    /// The overlay drawn for a soft side, at the proportions this brick comes in.
+    func endlessIIDirectionalArt(_ side: EndlessIISide, square: Bool) -> SKTexture? {
+        let name = "BrickDirectional" + side.artName + "Open"
+            + (square ? GameScene.squareArtSuffix : "")
+        guard UIImage(named: name) != nil else { return nil }
+        return SKTexture(imageNamed: name)
+        // Asked of the catalogue, not of SpriteKit, for the reason `endlessIIShapedArt` gives:
+        // a name that is not there comes back as a placeholder rather than as nil
     }
 
     /// Every face of this brick the ball could actually reach.
@@ -752,14 +792,33 @@ extension GameScene {
     func makeFixed(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .fixed
         tint(brick, GameScene.fixedBrickColour)
+        endlessIIDrawFixedPin(on: brick)
+    }
+
+    /// The upside-down T that says a brick stops where it is, drawn heavier once it has.
+    ///
+    /// James, round 271: "keep the existing T shape, but flip it upside down so the top of the
+    /// T is at the bottom of the brick. I think this better denotes it stopping. When it is
+    /// locked in place after being hit, make the T shape thicker and higher contrast in colour
+    /// to denote it is locked."
+    ///
+    /// Which is the right way round and reads immediately: a stem standing on a bar is a thing
+    /// resting on the ground, and the bar was on top saying nothing at all. The two weights are
+    /// the same mark rather than two marks, so a brick that locks while you are watching gets
+    /// heavier rather than changing into something else.
+    func endlessIIDrawFixedPin(on brick: SKSpriteNode) {
+        brick.childNode(withName: GameScene.glyphName)?.removeFromParent()
 
         let unit = endlessIIFieldSize(of: brick).height*0.28
         let pin = CGMutablePath()
-        pin.move(to: CGPoint(x: -unit, y: unit*0.7))
-        pin.addLine(to: CGPoint(x: unit, y: unit*0.7))
-        pin.move(to: CGPoint(x: 0, y: unit*0.7))
-        pin.addLine(to: CGPoint(x: 0, y: -unit*0.9))
-        addGlyph(pin, to: brick, filled: false)
+        pin.move(to: CGPoint(x: -unit, y: -unit*0.7))
+        pin.addLine(to: CGPoint(x: unit, y: -unit*0.7))
+        pin.move(to: CGPoint(x: 0, y: -unit*0.7))
+        pin.addLine(to: CGPoint(x: 0, y: unit*0.9))
+
+        let locked = brick.endlessIIIsAnchored
+        addGlyph(pin, to: brick, filled: false,
+                 weight: locked ? 1.9 : 1, contrast: locked ? 1 : 0.75)
     }
 
     /// The row centre a brick belongs on, for a brick that has been stopped between two.
@@ -785,6 +844,9 @@ extension GameScene {
         brick.endlessIIIsAnchored = true
         brick.removeAllActions()
         brick.position.y = endlessIISnappedRowY(for: brick)
+        defer { endlessIIDrawFixedPin(on: brick) }
+        // Redrawn heavier at the end of anchoring rather than here, because the texture below
+        // changes on the way through and the glyph's weight is measured off the brick
         // Any descent already under way has to stop, or it finishes moving after anchoring -
         // **and stopping it leaves the brick wherever the animation had got to**, which is
         // halfway between two rows (James, round 184, with a screenshot: "somehow a normal

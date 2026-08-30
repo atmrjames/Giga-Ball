@@ -292,6 +292,12 @@ enum EndlessIIRole: String {
 /// Which face of a Directional brick can be hurt.
 enum EndlessIISide: String, CaseIterable {
     case top, bottom, left, right
+
+    /// How the side is spelled in the artwork's name: `BrickDirectionalTopOpen`.
+    ///
+    /// Capitalised here rather than at the call site so the four names have one source, and
+    /// `rawValue` stays what the save file writes.
+    var artName: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
 }
 
 extension SKNode {

@@ -141,6 +141,9 @@ extension GameScene {
         brick.physicsBody = brickBody(SKPhysicsBody(rectangleOf: plan.size,
                                                     center: plan.bodyCentre))
         addChild(brick)
+        refreshEndlessIISquareArt(brick)
+        // The badge the brick is drawn as, laid over the Indestructible texture it is built
+        // on - which stays the brick's own texture, because that is what says what a hit does
 
         let icon = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         icon.size = CGSize(width: plan.size.width*0.78, height: plan.size.width*0.78)
