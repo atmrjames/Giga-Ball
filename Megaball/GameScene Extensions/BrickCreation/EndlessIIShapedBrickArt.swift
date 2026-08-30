@@ -37,12 +37,26 @@ extension GameScene {
     /// Not `EndlessIIStyle`, which has thirty. Its own vocabulary, and as of round 262 it
     /// covers every face the game draws - James delivered Convex, Concave and Diamond for the
     /// classic theme, so `shapedArt(for:)` no longer has a case that returns nil.
-    enum ShapedBrickArt: String {
+    enum ShapedBrickArt: String, CaseIterable {
         case rounded = "Rounded"
         case wedge = "Wedge"
         case convex = "Convex"
         case concave = "Concave"
         case diamond = "Diamond"
+
+        /// The style this shape is, which is what carries the rules about it - what sizes it
+        /// fits, what it stacks with. `shapedArt(for:)` is the other direction, from a face to
+        /// its picture; Rounded has no `EndlessIIFace` at all, which is why the pair does not
+        /// go through one.
+        var style: EndlessIIStyle {
+            switch self {
+            case .rounded: return .rounded
+            case .wedge: return .wedge
+            case .convex: return .convex
+            case .concave: return .concave
+            case .diamond: return .diamond
+            }
+        }
     }
 
     /// The suffix an orientation-specific picture carries.

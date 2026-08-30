@@ -225,11 +225,23 @@ final class EndlessIIRowPlanTests: XCTestCase {
         XCTAssertTrue(EndlessIIStyle.moving.suits(BrickSize.square))
         XCTAssertTrue(EndlessIIStyle.gravity.suits(BrickSize.square))
         XCTAssertTrue(EndlessIIStyle.directional.suits(BrickSize.square))
+        XCTAssertTrue(EndlessIIStyle.rounded.suits(BrickSize.square))
 
-        for style in [EndlessIIStyle.spinning, .breathing, .convex, .diamond] {
+        XCTAssertTrue(EndlessIIStyle.diamond.suits(BrickSize.square),
+                      "since round 272 - James: \"Square size diamond bricks - I decided to "
+                      + "do these\". It is the one face symmetrical in both axes at once, so "
+                      + "it takes a square cell without any of the questions the other three "
+                      + "raise")
+
+        for style in [EndlessIIStyle.spinning, .breathing, .convex, .concave, .wedge] {
             XCTAssertFalse(style.suits(BrickSize.square),
                            "\(style) needs one ordinary centred cell, and this is not one")
         }
+        // Spinning and Breathing for geometry - a brick twice as tall as it is wide sweeps a
+        // circle wider than its clearance, and one that shrinks about its middle is not a brick
+        // anybody can hit. The other three for want of a picture, which is a different reason
+        // and may change: "I haven't decided if I'll do square versions of the other brick
+        // shapes yet"
     }
 
     // MARK: - Monolith

@@ -781,14 +781,14 @@ extension GameScene {
         // would be the one shape excluded from spinning by an accident of where its sprite
         // hides (round 235)
         switch style {
-        case .rounded: return centred || endlessIISizeOf(brick) == .square
+        case .rounded, .diamond: return centred || endlessIISizeOf(brick) == .square
             // **And a Square one**, since round 270 - James drew a rounded picture of every
             // brick type at Square proportions, and `suits(_ size:)` has always said Rounded
             // fits any size. All that stood in the way was this mechanical question, and the
             // answer changed when `makeRounded` learned to build its face around the sprite.
             // A Big brick is still out: its drawing is two cells wide as well as tall, and
             // there is no picture of it
-        case .convex, .concave, .wedge, .diamond, .spinning, .breathing:
+        case .convex, .concave, .wedge, .spinning, .breathing:
             return centred
             // The size these three demand is answered above, by the rule they share with the
             // reference page. What is left is whether the drawing sits on the node, which is a

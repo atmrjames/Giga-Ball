@@ -116,10 +116,19 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
     /// brick in a live field and stay where they are.
     func suits(_ size: BrickSize) -> Bool {
         switch self {
-        case .convex, .concave, .wedge, .diamond:
-            // The silhouette is built from the brick's own size and drawn about its node, which
-            // only holds for a brick that is one ordinary cell sitting centred
-            return size == .normal
+        case .convex, .concave, .wedge:
+            // Normal-only for want of a picture rather than for want of geometry. The
+            // silhouette is built from whatever cell it is handed, and round 272 taught the
+            // face to sit where the drawing is rather than on the node - so what is left is
+            // James, round 271: "I haven't decided if I'll do square versions of the other
+            // brick shapes yet." A square dome stretched out of an oblong one is the exact
+            // wrongness the drawn faces exist to end
+        return size == .normal
+        case .diamond:
+            // **And Square, since round 272** - "Square size diamond bricks - I decided to do
+            // these" (James). The rhombus is the one face symmetrical in both axes at once, so
+            // it takes a square cell without any of the questions the other three raise
+            return size == .normal || size == .square
         case .spinning:
             // Four quarter-cell bricks each turning about their own centre sweep straight
             // through one another, and a Big one sweeps a circle wider than the clearance the

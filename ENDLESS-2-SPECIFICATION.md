@@ -998,10 +998,43 @@ few pixels of the Indestructible artwork show at each corner. Every clean fix in
 either that texture (a dozen call sites) or the size logic that finds the brick in the first
 place; drawing `PowerUpBrick` out to square corners would close it with no code at all.
 
-Square versions of the other shapes are undecided: "I haven't decided if I'll do square
-versions of the other brick shapes yet." The lookup asks the catalogue for the specific name
-and falls back, so a picture arriving later needs no code at all - and until one does, a Square
-brick simply cannot take those faces, which `suits(_ size:)` has always said anyway.
+**The Diamond joined them** the same evening (round 272): "Square size diamond bricks - I
+decided to do these." It is the one face symmetrical in both axes at once, so it takes a square
+cell without any of the questions the other three raise, and `suits(_ size:)` is where that
+decision lives - so the generator, `endlessIICanTake` and the reference page all read it from
+one place.
+
+Making it work meant teaching a face to sit where the *drawing* is rather than on the node,
+which is the same lesson `makeRounded` learned a round earlier and in a harder place: a face is
+rebuilt every frame by Breathing, and `redrawEndlessIIFace` rewrites the brick's anchor to
+point at the hiding rectangle - so the cell centre it needs is gone by the second call. It is
+read back off the face node's own position, which `makeFace` sets once from the brick's own
+anchor at the only moment that anchor still describes the cell. Zero for every brick drawn on
+its node, which is why the term was never there. The body is translated by the same amount,
+because a polygon body is given in the node's coordinates and the outline is drawn in the
+face's - and the save round-trips it without a new field, since round 270 already made a brick
+save the cell it occupies rather than the sprite hidden inside it.
+
+**And the render caught one more.** A square Diamond wore both pictures: the plain square one
+underneath, showing through the four transparent corners of the diamond one, so the brick came
+out square with a rhombus drawn on it. `makeFace` takes the Square overlay off now, the way
+`makeRounded` already did.
+
+*Still to draw:* the six classic Diamond squares - Normal, Invisible and the four Multi-hits.
+Retro's set is complete and classic has the two Indestructibles, checked against the pictures
+rather than the names. `ArtStillToDrawTests` names those six, so the day they land the test
+fails and says which line here to strike.
+
+*One to look at, and it is older than any of this:* the Diamond art carries a thin dark border
+around its own square canvas, in the oblong pictures as well as the square ones. A face's art
+is a sprite inside the shape node and a sprite is not clipped to a path, so that border draws -
+a faint square around every diamond brick in the game. Cropping it out of the files closes it;
+doing it in code would mean clipping every face, which is a lot of machinery for a hairline.
+
+Square versions of Convex, Concave and Wedge remain undecided: "I haven't decided if I'll do
+square versions of the other brick shapes yet." The lookup asks the catalogue for the specific
+name and falls back, so a picture arriving later needs no code at all - and until one does, a
+Square brick simply cannot take those faces, which `suits(_ size:)` says.
 
 ### Wrecking ball textures — three still to draw
 

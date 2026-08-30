@@ -66,15 +66,22 @@ final class ArtStillToDrawTests: XCTestCase {
 
     /// Every Square picture the game could ask for and does not have.
     ///
-    /// The plain one and the Rounded one, which are the two a Square brick can wear: the four
-    /// drawn faces are Normal-only by `suits(_ size:)`, so asking for a square Diamond would be
-    /// asking for a picture of a brick the generator cannot build. James, round 270: "I haven't
-    /// decided if I'll do square versions of the other brick shapes yet."
+    /// The plain one, the Rounded one and - since round 272 - the Diamond, which are the three
+    /// a Square brick can wear. Convex, Concave and Wedge are Normal-only by `suits(_ size:)`,
+    /// so asking for those would be asking for a picture of a brick the generator cannot build:
+    /// James, round 271, "I haven't decided if I'll do square versions of the other brick
+    /// shapes yet."
+    ///
+    /// **Read off the rules rather than listed**, so the day a square Wedge becomes buildable
+    /// this starts asking for its picture without anybody remembering to.
     private func missingSquareArt() -> [String] {
+        let shapes = [""] + GameScene.ShapedBrickArt.allCases
+            .filter { $0.style.suits(BrickSize.square) }
+            .map(\.rawValue)
         var missing: [String] = []
         for (_, names) in brickTypes {
             for name in names {
-                for shape in ["", GameScene.ShapedBrickArt.rounded.rawValue] {
+                for shape in shapes {
                     let wanted = name + shape + GameScene.squareArtSuffix
                     if UIImage(named: wanted) == nil { missing.append(wanted) }
                 }
@@ -148,10 +155,26 @@ final class ArtStillToDrawTests: XCTestCase {
     /// its oblong texture stretched to twice its height, which reads as art nobody got round to
     /// rather than as a bug.
     func testEveryBrickTypeIsDrawnAtSquareProportions() {
-        XCTAssertEqual(missingSquareArt(), [],
-                       "§8.5's Square list is closed - anything printed here is either art to "
-                       + "draw or a name the lookup is building wrongly")
+        XCTAssertEqual(missingSquareArt(), stillToDrawAtSquareProportions,
+                       "§8.5's Square list has moved - strike what has arrived, and add what "
+                       + "has not")
     }
+
+    /// **The six classic Diamond squares.**
+    ///
+    /// James delivered the retro set complete and, for classic, the two Indestructibles only -
+    /// checked against the pictures rather than the names, because the retro-prefixed ones are
+    /// unmistakably the retro bevel. Until they arrive those six bricks fall back to the oblong
+    /// Diamond stretched into a square rhombus, which is the same bargain every unfinished
+    /// shape has made and is why the fallback exists.
+    ///
+    /// Named here rather than in a comment somewhere, so the day they land this test fails and
+    /// says which line of §8.5 to strike - which is the whole reason this file exists.
+    private let stillToDrawAtSquareProportions = [
+        "BrickInvisibleDiamondSquare", "BrickMultiHit1DiamondSquare",
+        "BrickMultiHit2DiamondSquare", "BrickMultiHit3DiamondSquare",
+        "BrickMultiHit4DiamondSquare", "BrickNormalDiamondSquare",
+    ].sorted()
 
     /// **The on-hit overlays exist** as of round 271 - all eight panels and the badge.
     ///

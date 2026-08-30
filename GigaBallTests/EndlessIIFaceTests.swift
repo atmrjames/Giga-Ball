@@ -928,4 +928,151 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         XCTAssertLessThan(brick.size.width, cell.width,
                           "the sprite really is tucked away - or this test proves nothing")
     }
+
+    /// A Square brick can be a Diamond, since round 272.
+    ///
+    /// James: "Square size diamond bricks - I decided to do these." The rhombus is the one face
+    /// symmetrical in both axes at once, so it takes a square cell without any of the questions
+    /// the other three raise - and `suits(_ size:)` is where that decision lives, so the
+    /// generator and the reference page cannot give different answers.
+    func testASquareBrickCanBeADiamond() {
+        XCTAssertTrue(EndlessIIStyle.diamond.suits(BrickSize.square))
+        for other: EndlessIIStyle in [.convex, .concave, .wedge] {
+            XCTAssertFalse(other.suits(BrickSize.square),
+                           "\(other) has no square picture and is not offered one")
+        }
+        let scene = scene()
+        XCTAssertTrue(scene.endlessIICanTake(.diamond, squareBrick(scene)))
+    }
+
+    /// The face goes where the drawing is, not where the node is.
+    ///
+    /// A Square brick's sprite hangs a cell below its node so the node can stay on a row centre
+    /// (§8.6). `redrawEndlessIIFace` rewrites the anchor to point at the hiding rectangle, and
+    /// a face built about the node would have dragged the whole brick half a cell up the field
+    /// - it would have looked like the brick had moved, because it would have.
+    func testASquareDiamondSitsWhereTheSquareBrickWas() {
+        let scene = scene()
+        let brick = squareBrick(scene)
+        let drawn = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                            y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        let cell = brick.size
+        scene.applyEndlessIIStyle(.diamond, to: brick)
+
+        guard let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
+              let path = shape.path else { return XCTFail("no face") }
+        XCTAssertEqual(shape.position.y, drawn.y, accuracy: 0.01,
+                       "the silhouette is put where the sprite was")
+        XCTAssertEqual(path.boundingBox.width, cell.width, accuracy: 0.01)
+        XCTAssertEqual(path.boundingBox.height, cell.height, accuracy: 0.01)
+
+        XCTAssertEqual(scene.endlessIIBrickCentre(of: brick).y, drawn.y, accuracy: 0.01)
+        XCTAssertEqual((0.5 - brick.anchorPoint.y)*brick.size.height,
+                       drawn.y + EndlessIIFaceGeometry.hidingRect(.diamond, size: cell).midY,
+                       accuracy: 0.01,
+                       "and the sprite hides inside it rather than beside it")
+        XCTAssertEqual(scene.endlessIISizeOf(brick), .square)
+    }
+
+    /// The body moves with the outline.
+    ///
+    /// A polygon body is given in the node's own coordinates and the silhouette is drawn in the
+    /// face node's, so a face moved off the node needs its body moved by the same amount - or
+    /// the brick you hit is a cell away from the brick you see.
+    func testASquareDiamondsBodyIsWhereItsOutlineIs() {
+        let scene = scene()
+        let brick = squareBrick(scene)
+        let drawn = (0.5 - brick.anchorPoint.y)*brick.size.height
+        scene.applyEndlessIIStyle(.diamond, to: brick)
+
+        guard let body = brick.physicsBody else { return XCTFail("no body") }
+        let box = body.area
+        XCTAssertGreaterThan(box, 0)
+
+        guard let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
+              let path = shape.path else { return XCTFail("no face") }
+        // The outline's own vertical middle, which is where the body's has to be. Measured by
+        // asking the node to convert the two into the same space rather than by arithmetic
+        XCTAssertEqual(shape.position.y + path.boundingBox.midY, drawn, accuracy: 0.01)
+    }
+
+    /// An ordinary brick's face is exactly where it always was.
+    ///
+    /// The regression guard on all of the above: every brick drawn on its own node has an
+    /// origin of zero, so nothing about the shaped bricks that have shipped for two hundred
+    /// rounds may move by so much as a point.
+    func testAnOrdinaryBricksFaceHasNotMoved() {
+        let scene = scene()
+        for face in EndlessIIFace.allCases {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: scene.brickWidth,
+                                                  height: scene.brickHeight))
+            scene.addChild(brick)
+            scene.makeFace(face, on: brick)
+
+            let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
+            XCTAssertEqual(shape?.position ?? CGPoint(x: 1, y: 1), .zero, "\(face)")
+
+            let hide = EndlessIIFaceGeometry
+                .hidingRect(face, size: CGSize(width: scene.brickWidth, height: scene.brickHeight),
+                            mirrored: brick.endlessIIFaceMirrored ?? false,
+                            flipped: brick.endlessIIFaceFlipped ?? false)
+            XCTAssertEqual(brick.anchorPoint.x, 0.5 - hide.midX/hide.width, accuracy: 0.001,
+                           "\(face)")
+            XCTAssertEqual(brick.anchorPoint.y, 0.5 - hide.midY/hide.height, accuracy: 0.001,
+                           "\(face)")
+        }
+    }
+
+    /// The square diamond asks for the picture drawn at those proportions.
+    ///
+    /// Retro's set is complete; classic's is the two Indestructibles only, so the other six
+    /// fall back to the oblong picture stretched into a square rhombus. That is the honest
+    /// answer and `ArtStillToDrawTests` is what names the gap.
+    func testASquareDiamondWearsTheSquarePictureWhereThereIsOne() {
+        let retro = scene(retro: true)
+        let square = retro.endlessIIShapedArt(for: retro.brickNormalTexture, .diamond,
+                                              square: true)
+        XCTAssertNotNil(square)
+        XCTAssertNotEqual(square?.description,
+                          retro.endlessIIShapedArt(for: retro.brickNormalTexture,
+                                                   .diamond)?.description)
+
+        let size = square?.size() ?? .zero
+        XCTAssertEqual(size.width/size.height, 1, accuracy: 0.01)
+    }
+
+    /// A square Diamond comes back where it was.
+    ///
+    /// The risky half of round 272, because it is where the two halves meet. The save writes
+    /// the cell a brick occupies and the anchor it would have at that size (round 270), and the
+    /// restore applies the face again from them - so `makeFace` has to be handed a brick whose
+    /// own anchor still describes the cell, which is the one moment it can read the drawn
+    /// centre off. If either end of that is wrong the brick comes back half a cell up the field
+    /// and nothing says so.
+    func testASquareDiamondSurvivesBeingSavedAndRebuilt() {
+        let scene = scene()
+        let brick = squareBrick(scene)
+        let cell = brick.size
+        let drawn = (0.5 - brick.anchorPoint.y)*brick.size.height
+        scene.applyEndlessIIStyle(.diamond, to: brick)
+
+        let record = scene.savedBrick(for: brick, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.width, Double(cell.width), accuracy: 0.01)
+        XCTAssertEqual(record.height, Double(cell.height), accuracy: 0.01)
+
+        let rebuilt = SKSpriteNode(texture: scene.brickNormalTexture,
+                                   size: CGSize(width: record.width, height: record.height))
+        rebuilt.anchorPoint = CGPoint(x: record.anchorX, y: record.anchorY)
+        scene.addChild(rebuilt)
+        rebuilt.endlessIIFaceMirrored = record.faceMirrored
+        rebuilt.endlessIIFaceFlipped = record.faceFlipped
+        scene.applyEndlessIIStyle(.diamond, to: rebuilt)
+        // The restore's own sequence: size, anchor, orientation, then the style
+
+        XCTAssertEqual(scene.endlessIIBrickCentre(of: rebuilt).y, drawn, accuracy: 0.01,
+                       "a resumed square Diamond sits where the one that was saved sat")
+        XCTAssertEqual(scene.endlessIIFieldSize(of: rebuilt).height, cell.height, accuracy: 0.01)
+        XCTAssertEqual(scene.endlessIISizeOf(rebuilt), .square)
+    }
 }

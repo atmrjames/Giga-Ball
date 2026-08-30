@@ -491,12 +491,13 @@ final class EndlessIIFrameCostTests: XCTestCase {
         let labels = ["Normal", "MultiHit1", "MultiHit4", "Indestr.1", "Invisible"]
 
         let display = SKScene(size: CGSize(width: column*CGFloat(labels.count) + 20,
-                                           height: row*5 + 20))
+                                           height: row*7 + 20))
         display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
 
         for (line, mode) in [(0, "classic plain"), (1, "classic rounded"),
-                             (2, "retro plain"), (3, "retro rounded"),
-                             (4, "classic oblong rounded")] {
+                             (2, "classic diamond"), (3, "retro plain"),
+                             (4, "retro rounded"), (5, "retro diamond"),
+                             (6, "classic oblong rounded")] {
             let retro = mode.hasPrefix("retro")
             let rounded = mode.hasSuffix("rounded")
 
@@ -532,6 +533,7 @@ final class EndlessIIFrameCostTests: XCTestCase {
                 // Uncoloured, so what shows is the picture rather than the level's tint
                 game.refreshEndlessIISquareArt(brick)
                 if rounded || mode.contains("oblong") { game.makeRounded(brick) }
+                if mode.contains("diamond") { game.applyEndlessIIStyle(.diamond, to: brick) }
 
                 brick.removeFromParent()
                 brick.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
@@ -546,8 +548,8 @@ final class EndlessIIFrameCostTests: XCTestCase {
             .appendingPathComponent("square-bricks.png")
         try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
         print("\n  Square bricks, drawn: \(file.path)")
-        print("  rows: classic plain, classic rounded, retro plain, retro rounded, "
-              + "classic oblong rounded")
+        print("  rows: classic plain/rounded/diamond, retro plain/rounded/diamond, "
+              + "then an ordinary rounded brick")
         print("  columns: \(labels.joined(separator: ", "))\n")
     }
 

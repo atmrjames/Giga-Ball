@@ -277,13 +277,19 @@ extension GameScene {
     /// Where the middle of a brick is, in its own coordinates - where anything drawn *on* a
     /// brick belongs.
     ///
-    /// Zero for an ordinary brick, and zero again for a shaped one: `makeFace` adds the
-    /// silhouette as a child at the node's origin and moves the *sprite* out of the way, so
-    /// the shape is centred on the node even though the sprite is not. A Big brick is the one
-    /// case that actually travels - its sprite hangs off the node so the node can stay on its
-    /// row centre (§8.6) - and the formula below is for it.
+    /// Zero for an ordinary brick, and for most shaped ones: `makeFace` adds the silhouette as
+    /// a child at the brick's drawn centre and moves the *sprite* out of the way, and for a
+    /// brick whose drawing sits on its node those are the same point. The two that travel are a
+    /// Big brick, whose sprite hangs off the node so the node can stay on its row centre
+    /// (§8.6), and a Square one, for the same reason.
+    ///
+    /// **Read off the face node rather than worked out again.** The face is put where the
+    /// drawing was, so where it is *is* the answer - and the alternative is recomputing it from
+    /// an anchor the face itself has since rewritten (round 272).
     func endlessIIBrickCentre(of brick: SKSpriteNode) -> CGPoint {
-        guard brick.endlessIIFace == nil else { return .zero }
+        if let shape = brick.childNode(withName: GameScene.brickFaceName) {
+            return shape.position
+        }
         return CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
                        y: (0.5 - brick.anchorPoint.y)*brick.size.height)
     }
@@ -310,6 +316,13 @@ extension GameScene {
         // the orientation - the round-150 lesson, one level further in
 
         let shape = SKShapeNode()
+        shape.position = endlessIIBrickCentre(of: brick)
+        // **Where the drawing is, not where the node is.** The two are the same point for
+        // every brick that sits on its own node and a cell apart for a Square one, whose
+        // sprite hangs below the node so the node can stay on a row centre (§8.6). Asked
+        // before the face exists, which is the only moment the brick's own anchor still
+        // describes the cell - `redrawEndlessIIFace` rewrites it to point at the hiding
+        // rectangle, and reads this position back afterwards
         shape.xScale = mirrored ? -1 : 1
         shape.yScale = flipped ? -1 : 1
         // The path is built the right way up and the *node* is turned, which is the same
@@ -325,6 +338,11 @@ extension GameScene {
 
         brick.endlessIIFace = face
         resizeEndlessIIFace(brick, to: cell)
+        refreshEndlessIISquareArt(brick)
+        // Takes the Square overlay off, the way `makeRounded` does. Without it a square Diamond
+        // wore both: the plain square picture underneath, showing through the four transparent
+        // corners of the diamond one, so the brick came out square with a rhombus drawn on it -
+        // which the render showed and no assertion here would have
     }
 
     /// Builds a shaped brick's outline, body and hiding place at a given cell size.
@@ -365,9 +383,13 @@ extension GameScene {
         let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell,
                                                    mirrored: brick.endlessIIFaceMirrored ?? false,
                                                    flipped: brick.endlessIIFaceFlipped ?? false)
+        let origin = shape.position
         brick.size = hide.size
-        brick.anchorPoint = CGPoint(x: 0.5 - hide.midX/hide.width,
-                                    y: 0.5 - hide.midY/hide.height)
+        brick.anchorPoint = CGPoint(x: 0.5 - (origin.x + hide.midX)/hide.width,
+                                    y: 0.5 - (origin.y + hide.midY)/hide.height)
+        // The hiding rectangle is given in the *face's* coordinates, so where the sprite has
+        // to go is the face's own position plus it. Zero plus it for every brick drawn on its
+        // node, which is why this read the same for two hundred rounds without the term
         // The anchor is what moves the drawing without moving the node - the node stays on
         // its row centre, which is the one thing the descent and the bottom-row check read
         // (§8.6). For the dome and the notch this is the anchor it already had; only the
@@ -378,6 +400,7 @@ extension GameScene {
     /// rather than a brick - the arrangement a Flashing brick has in its passable phase.
     func rebuildEndlessIIFaceBody(_ brick: SKSpriteNode, to cell: CGSize, solid: Bool = true) {
         guard let face = brick.endlessIIFace else { return }
+        let origin = endlessIIBrickCentre(of: brick)
         guard solid, cell.width > 0.01, cell.height > 0.01 else {
             brick.physicsBody = nil
             return
@@ -385,11 +408,17 @@ extension GameScene {
             // it is undefined - so nothing at all is the honest answer as well as the safe one
         }
 
+        var shift = CGAffineTransform(translationX: origin.x, y: origin.y)
         let pieces = EndlessIIFaceGeometry
             .bodyPieces(face, size: cell,
                         mirrored: brick.endlessIIFaceMirrored ?? false,
                         flipped: brick.endlessIIFaceFlipped ?? false)
+            .map { $0.copy(using: &shift) ?? $0 }
             .map { SKPhysicsBody(polygonFrom: $0) }
+        // **Moved with the outline.** A polygon body is given in the node's own coordinates
+        // and the silhouette is drawn in the face node's, so a face that has been moved off the
+        // node needs its body moved by the same amount - or the brick you hit is a cell away
+        // from the brick you see, which is the thing §8.6 keeps having to say
         brick.physicsBody = brickBody(pieces.count == 1 ? pieces[0]
                                                         : SKPhysicsBody(bodies: pieces))
         // One convex polygon where the shape allows it, a compound of two where it does not
