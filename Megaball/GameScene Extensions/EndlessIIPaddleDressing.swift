@@ -130,8 +130,7 @@ extension GameScene {
             let line = endlessIIPullLines[index]
             let path = CGMutablePath()
             path.move(to: entry.ball.position)
-            path.addLine(to: CGPoint(x: paddle.position.x,
-                                     y: paddle.position.y + paddleHeight/2))
+            path.addLine(to: CGPoint(x: paddle.position.x, y: paddleTopY))
             line.path = path
             line.strokeColor = entry.colour.withAlphaComponent(0.15 + entry.strength*0.45)
         }

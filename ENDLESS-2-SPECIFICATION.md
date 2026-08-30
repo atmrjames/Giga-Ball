@@ -1257,6 +1257,22 @@ the same reason round 169's did - resuming resets the ball, and the reset clears
 hold that *should* stop the field while the player aims is `endlessIIAimHold`, which begins at
 the catch and ends at the launch.
 
+**There is one paddle top and one paddle underside, and `paddleHeight` is neither.** It is the
+*plain* paddle's height; a shaped paddle is up to half as tall again with its node lifted so the
+underside stays put, so `paddle.position.y + paddleHeight/2` names a line inside the dome rather
+than the surface the ball meets. Eleven places worked it out by hand. Round 259 fixed the laser
+and sticky overlays, round 275 the retro theme's three layers, and round 278 found a third copy
+of both in the *resume* path - a run resumed wearing a shape came back with its overlays and its
+retro dress misplaced, then quietly corrected itself the first time the player moved, which is
+why nobody ever reported it. `paddleTopY` and `paddleUndersideY` are the answer now.
+
+**The placement sites use them; the judgement sites deliberately do not.** Four expressions of
+that shape are not placements but *decisions* - whether a ball has landed on top, whether a
+sticky catch has arrived, the square paddle's branch - and moving those lines up would make a
+shaped paddle catch fewer balls off the flank of its own dome. That is a change to how the
+power-up plays rather than to where a picture sits, and it belongs in a play test rather than in
+a sweep. They are listed in `PaddleSurfaceTests`.
+
 **A layer that follows the paddle has to follow its underside.** A shaped paddle is taller and
 its node rises by half the growth so the underside stays on the line it was on - so anything
 tracking `paddle.position.y` rises with it. Round 259 found this for the laser and sticky

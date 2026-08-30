@@ -6239,8 +6239,35 @@ laserTimer?.invalidate()
 	// Dimmer than the ball in play, so the row reads as a counter rather than as balls
 	// sitting in the play area, but still bright enough to read at a glance
 
+	/// The paddle's own top surface, whatever it is wearing.
+	///
+	/// **Not `paddle.position.y + paddleHeight/2`**, which eleven places worked it out as.
+	/// `paddleHeight` is the *plain* paddle's height and a shaped paddle is up to half as tall
+	/// again, with its node lifted so the underside stays on the line it was on - so that
+	/// expression names a line inside the dome rather than the surface the ball meets.
+	///
+	/// Round 259 found this in the laser and sticky overlays, round 275 in the retro theme's
+	/// three layers, round 278 in the resume path's hand-written copy of both. Said once here
+	/// so the next one is a call rather than a rediscovery.
+	var paddleTopY: CGFloat { paddle.position.y + paddleDrawnHeight/2 }
+
+	/// And its underside, by the same rule.
+	var paddleUndersideY: CGFloat { paddle.position.y - paddleDrawnHeight/2 }
+
+	/// The paddle's height as it is actually drawn, falling back to the setting.
+	///
+	/// **The fallback is not defensive tidiness, it is the difference between a wrong answer
+	/// and a silent one.** A `GameScene` that has not laid itself out yet has a paddle sprite
+	/// of no size, and `position.y + 0/2` is the paddle's *centre* dressed up as its top -
+	/// which is exactly the mistake these two properties exist to end, arriving by the other
+	/// door. Answering with the setting is right for that scene, because a paddle that has not
+	/// been sized is a plain one.
+	var paddleDrawnHeight: CGFloat {
+		paddle.size.height > 0 ? paddle.size.height : paddleHeight
+	}
+
 	var livesRowY: CGFloat {
-		let paddleBottom = paddle.position.y - paddleHeight/2
+		let paddleBottom = paddleUndersideY
 		let safeBottom = -frame.size.height/2 + (self.view?.safeAreaInsets.bottom ?? 0)
 		return paddleBottom + (safeBottom - paddleBottom)*0.6
 	}
@@ -8257,16 +8284,18 @@ laserTimer?.invalidate()
 				paddle.position.x = CGFloat(savedGame.ballProperties[4])
 				endlessIIRestoreExtraBalls(from: EndlessIIBalls.unflattened(savedGame.extraBallProperties))
 				// A run paused with a Multi-Ball in play comes back with it
-				paddleLaser.position.x = paddle.position.x
-				paddleLaser.position.y = paddle.position.y - paddleHeight/2
-				paddleSticky.position.x = paddle.position.x
-				paddleSticky.position.y = paddle.position.y - paddleHeight/2
-				paddleRetroTexture.position.x = paddle.position.x
-				paddleRetroTexture.position.y = paddle.position.y
-				paddleRetroLaserTexture.position.x = paddle.position.x
-				paddleRetroLaserTexture.position.y = paddle.position.y
-				paddleRetroStickyTexture.position.x = paddle.position.x
-				paddleRetroStickyTexture.position.y = paddle.position.y + paddleRetroStickyTexture.size.height/2 - paddle.size.height/2
+				positionPaddleOverlays()
+				positionRetroPaddleLayers()
+				// **The two functions, not a third copy of them** (round 278). This was the
+				// same placement written out again, and it carried both of the bugs the
+				// originals have since had fixed: the overlays measured off `paddleHeight`
+				// rather than off the paddle's own height, which round 259 corrected, and the
+				// retro layers followed the paddle's *centre*, which round 275 did. A shaped
+				// paddle is taller than `paddleHeight` and its node rides higher, so a run
+				// resumed wearing one came back with its lasers, its sticky face and its retro
+				// dress in the wrong places - and then quietly corrected itself the first time
+				// the player moved, which is the kind of bug that never gets reported because
+				// it is gone by the time anybody looks
 				numberOfLevels = savedGame.numberOfLevels
 				levelTimerValue = savedGame.levelTimerValue
 				packTimerValue = savedGame.packTimerValue

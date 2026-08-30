@@ -681,8 +681,7 @@ extension GameScene {
     func refreshEndlessIIAutoAimMarker() {
         let aiming = gameMode == .endlessII
             && (endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn)
-        let launch = CGPoint(x: paddle.position.x,
-                             y: paddle.position.y + paddleHeight/2 + ball.size.height/2)
+        let launch = CGPoint(x: paddle.position.x, y: paddleTopY + ball.size.height/2)
         // Where the next bounce will leave from - the reachability check needs a height as
         // well as an x, so the marker judges the shot from the same spot the shot takes
         let target = aiming ? endlessIIAutoAimTarget(from: launch) : nil

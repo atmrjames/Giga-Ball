@@ -3077,3 +3077,99 @@ final class PlayTestRound259Tests: XCTestCase {
         XCTAssertEqual(carried, set, accuracy: 0.0001)
     }
 }
+
+
+/// The paddle has one top and one underside, and everything that places something against
+/// them asks for it.
+///
+/// `paddleHeight` is the *plain* paddle's height. A shaped paddle is up to half as tall again
+/// and its node is lifted so the underside stays on the line it was on, so
+/// `paddle.position.y + paddleHeight/2` names a line inside the dome rather than the surface
+/// the ball meets. Eleven places worked it out that way; round 259 fixed the overlays, round
+/// 275 the retro layers, and round 278 found the resume path carrying a hand-written copy of
+/// both and gave the scene one answer instead.
+final class PaddleSurfaceTests: XCTestCase {
+
+    private func scene(shaped: Bool) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.paddleHeight = 12
+        scene.paddleWidth = 75
+        scene.ballSize = 12
+        scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.texture = scene.paddleTexture
+        scene.paddle.size = CGSize(width: 75, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.addChild(scene.paddle)
+        if shaped {
+            scene.endlessIIPaddleSurface = .convex
+            scene.endlessIIPaddleSurfaceClock.collect(10)
+        }
+        scene.refreshEndlessIIPaddleShapeArt()
+        return scene
+    }
+
+    /// A shaped paddle is taller, and its top is higher than the plain paddle's was.
+    func testAShapedPaddlesTopIsHigherThanThePlainOnes() {
+        let plain = scene(shaped: false), shaped = scene(shaped: true)
+        XCTAssertGreaterThan(shaped.paddle.size.height, plain.paddle.size.height,
+                             "or there is nothing here to get wrong")
+        XCTAssertGreaterThan(shaped.paddleTopY, plain.paddleTopY)
+
+        XCTAssertGreaterThan(shaped.paddleTopY,
+                             shaped.paddle.position.y + shaped.paddleHeight/2,
+                             "which is exactly the difference the hand-written expression "
+                             + "could not see")
+    }
+
+    /// And its underside has not moved, which is the rule the shapes were built to.
+    ///
+    /// "The shapes are drawn at the paddle's width and their own height, so the sprite grows
+    /// and the node rises by half the growth, which leaves the underside exactly on the line it
+    /// was on."
+    func testTheUndersideStaysWhereItWas() {
+        let plain = scene(shaped: false), shaped = scene(shaped: true)
+        XCTAssertEqual(shaped.paddleUndersideY, plain.paddleUndersideY, accuracy: 0.01)
+
+        XCTAssertNotEqual(shaped.paddle.position.y - shaped.paddleHeight/2,
+                          plain.paddleUndersideY, accuracy: 0.01,
+                          "and the hand-written version of it has moved, which is how the "
+                          + "lives row drifted when a shape was collected")
+    }
+
+    /// The overlays sit on the paddle's own underside.
+    func testTheOverlaysFollowTheShape() {
+        let shaped = scene(shaped: true)
+        shaped.positionPaddleOverlays()
+        XCTAssertEqual(shaped.paddleLaser.position.y, shaped.paddleUndersideY, accuracy: 0.01)
+        XCTAssertEqual(shaped.paddleSticky.position.y, shaped.paddleUndersideY, accuracy: 0.01)
+    }
+
+    /// An unsized paddle answers with the setting rather than with its own centre.
+    ///
+    /// A scene that has not laid itself out has a paddle sprite of no size, and
+    /// `position.y + 0/2` is the centre wearing the top's name - the very mistake these
+    /// properties exist to end, arriving by the other door. Found by three landing-marker tests
+    /// that build exactly such a scene.
+    func testAnUnsizedPaddleFallsBackToTheSetting() {
+        let bare = GameScene()
+        bare.gameMode = .endlessII
+        bare.paddleHeight = 12
+        bare.paddle.position = CGPoint(x: 0, y: -300)
+
+        XCTAssertEqual(bare.paddle.size.height, 0, "the state this is about")
+        XCTAssertEqual(bare.paddleTopY, -294, accuracy: 0.001)
+        XCTAssertEqual(bare.paddleUndersideY, -306, accuracy: 0.001)
+    }
+
+    /// The lives row does not jump when a shape is collected.
+    ///
+    /// It measured the paddle's bottom as `position.y - paddleHeight/2`, and the position rises
+    /// with a shape while `paddleHeight` does not - so the row slid up the screen for as long
+    /// as the power-up ran.
+    func testTheLivesRowDoesNotMoveWhenThePaddleIsShaped() {
+        XCTAssertEqual(scene(shaped: true).livesRowY, scene(shaped: false).livesRowY,
+                       accuracy: 0.01)
+    }
+}

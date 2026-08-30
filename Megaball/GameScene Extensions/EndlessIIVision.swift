@@ -164,7 +164,7 @@ extension GameScene {
     func endlessIIVisionBounds() -> BallPath.Bounds {
         BallPath.Bounds(left: -gameWidth/2, right: gameWidth/2,
                         ceiling: frame.height/2 - topScreenBlock.size.height,
-                        paddleLine: paddle.position.y + paddleHeight/2,
+                        paddleLine: paddleTopY,
                         sidesWrap: endlessIIWrapIsRunning)
     }
     // The paddle's *top*, not its centre: contact is the ball's bottom against the top

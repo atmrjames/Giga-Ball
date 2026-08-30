@@ -1139,8 +1139,11 @@ extension GameScene {
         let to: CGPoint
         var leaving = velocity
         if endlessIIPortalPaddleClock.isRunning {
-            to = CGPoint(x: paddle.position.x,
-                         y: paddle.position.y + paddleHeight/2 + ballSize)
+            to = CGPoint(x: paddle.position.x, y: paddleTopY + ballSize)
+            // The paddle's *own* top: a ball put down at the plain paddle's height while a
+            // shaped one is on is a ball put down inside the silhouette, and a body the engine
+            // finds inside another body is one it shoves out - which is round 232's sliding
+            // ball, arriving by a different door
             leaving = CGVector(dx: velocity.dx, dy: abs(velocity.dy))
             // The network the play test asked for: while a Portal Paddle runs, every portal
             // connects to it. A brick hit sends the ball out of the paddle, always upward -
