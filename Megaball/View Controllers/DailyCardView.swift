@@ -292,6 +292,18 @@ final class DailyCardView: UIView {
             string: String(score) + unit,
             attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
+
+        if record.posted, let free = DailyCardView.freePlayLine(record, unit: unit) {
+            line.append(NSAttributedString(string: "\n" + free,
+                                           attributes: [.font: UIFont.systemFont(ofSize: 13),
+                                                        .foregroundColor: UIColor(white: 1,
+                                                                                  alpha: 0.6)]))
+        }
+        // **Free play goes in the same container** (§8's posted-score container, the last
+        // clause of it: "free play attempts played after the post get listed in the same
+        // container"). A second line under the day's own number, quieter than it, because a
+        // free-play score is not on any board and must never read as though it might be
+        resultLabel.numberOfLines = 0
         resultLabel.attributedText = line
 
         // The whole container opens the board, not a button on it - the score and the
@@ -301,6 +313,38 @@ final class DailyCardView: UIView {
             resultCard.addGestureRecognizer(
                 UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
         }
+    }
+
+    /// What free play after the day's attempt adds up to, or nil when there was none.
+    ///
+    /// **Only what was played *after* the attempt was spent**, which is what "free play" means
+    /// here: the first attempt is the counting one and every attempt beyond it is free play, so
+    /// the count is one fewer than the attempts recorded. A day played once has no free play to
+    /// report, and saying "1 attempt" under its own score would be counting the same run twice.
+    ///
+    /// The best of them is worth showing beside the count because it is the thing a player who
+    /// kept going wants to see - and it is shown even when it beats the posted score, since
+    /// hiding it would be the summary quietly editing what happened. It says free play, which
+    /// is the word the player reads everywhere else (round 12's rename from "practice").
+    ///
+    /// **Only drawn on a day that posted**, which is §8's own wording - "free play attempts
+    /// played *after the post*". On a day that did not post, the headline number is already
+    /// `max(firstAttemptScore, bestPracticeScore)`, so a free-play line under it would print
+    /// the same figure twice. Drawn and looked at, round 269: the strings were right and the
+    /// card said 8100m over 8100m.
+    static func freePlayLine(_ record: DailyChallengeRecord, unit: String) -> String? {
+        let extras = max(0, record.attemptCount - 1)
+        guard extras > 0 else { return nil }
+
+        let attempts = extras == 1 ? "1 free play" : "\(extras) free plays"
+        guard record.bestPracticeScore > 0 else { return attempts }
+        return attempts + ", best " + String(record.bestPracticeScore) + unit
+    }
+
+    /// What the result container is saying, for a test that would otherwise have to read a
+    /// label through the view hierarchy.
+    var resultTextForTesting: String {
+        resultCard.isHidden ? "" : (resultLabel.attributedText?.string ?? "")
     }
 
     @objc private func resultWasTapped() {

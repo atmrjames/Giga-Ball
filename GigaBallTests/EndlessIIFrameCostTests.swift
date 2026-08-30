@@ -237,6 +237,46 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  Spinning cross-fade, drawn: \(file.path)\n")
     }
 
+    /// Draws the daily's result container so the free-play line can be looked at.
+    ///
+    /// §8's posted-score container gained its last clause in round 269 - "free play attempts
+    /// played after the post get listed in the same container" - and a second line inside a
+    /// label that had one is exactly the kind of change that reads fine as a string and wraps
+    /// badly on screen. It read fine as a string and printed 8100m over 8100m on the card.
+    ///
+    /// **One card, not a row of them.** The first version laid three states out side by side
+    /// and they all drew at the same place: `DailyCardView` lays itself out with constraints,
+    /// so the frame a harness hands it is not where it goes. One card in its own host is the
+    /// version that can be read.
+    func testTheDailyResultContainerCanBeLookedAt() throws {
+        let posted = DailyChallengeRecord(dateKey: "2026-03-02", firstAttemptScore: 12480,
+                                          posted: true, bestPracticeScore: 15900,
+                                          attemptCount: 4)
+
+        let host = UIView(frame: CGRect(x: 0, y: 0, width: 380, height: 460))
+        host.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        let card = DailyCardView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        host.addSubview(card)
+        NSLayoutConstraint.activate([
+            card.leadingAnchor.constraint(equalTo: host.leadingAnchor, constant: 10),
+            card.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -10),
+            card.topAnchor.constraint(equalTo: host.topAnchor, constant: 10),
+            card.bottomAnchor.constraint(equalTo: host.bottomAnchor, constant: -10),
+        ])
+        card.show(key: posted.dateKey, isToday: true, record: posted, standing: nil)
+        host.layoutIfNeeded()
+
+        let image = UIGraphicsImageRenderer(bounds: host.bounds).image { _ in
+            host.drawHierarchy(in: host.bounds, afterScreenUpdates: true)
+        }
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("daily-result-card.png")
+        try XCTUnwrap(image.pngData()).write(to: file)
+        print("\n  Daily result container, drawn: \(file.path)\n")
+    }
+
     /// Draws each shaped paddle with its overlays, placed by the scene's own code, so the
     /// alignment can be looked at.
     ///

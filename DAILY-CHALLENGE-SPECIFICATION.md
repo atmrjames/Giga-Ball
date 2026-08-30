@@ -4,7 +4,8 @@
 5's streaks (round 268); ten feedback rounds folded in. Still open: phase 4's twist subset -
 of which only **Blackout** and **Mayhem Rules** remain written-and-unbuilt, and Mayhem Rules is
 a round of its own rather than the curated weights list it reads as (ENDLESS-2 §12.0, round
-267) - the rest of phase 5 (per-day results, round 12's posted-score container, achievements),
+267) - the rest of phase 5 (**achievements** - per-day results and round 12's posted-score container
+are built, the latter having been largely built since round 21 and finished in round 269),
 phase 6 themes, and §11.5's notifications and share card. **The test clock's controls are gone** (round 19): debug-gating them
 in round 18 took them out of release builds but left them on screen in every build James
 actually plays, so they kept being reported. The DAY stepper, the LIVE readout and RESET
@@ -418,11 +419,26 @@ briefing screen (§6).
   rank over total. Average needs a sweep of entries (paged, cap it) or an approximation
   from the top page - decide when building. Refresh on screen-appear plus a modest
   timer; never block the screen on the network.
-- **The posted-score container** (twelfth round): once a day's score is posted, it
-  deserves its own container *beneath* the details card, not a line inside it - a
-  checkmark icon and unmistakable "score posted" reading, with the score and rank. Free
-  play attempts played after the post get listed in the same container. (The same round
-  renamed the practice language: it is **free play** everywhere the player can read.)
+- ~~**The posted-score container** (twelfth round)~~ - **built**, and it was mostly built
+  already: the container, its own place beneath the details card, the mark and the reading, the
+  score and the rank all landed with round 21, which also replaced the checkmark with the
+  leaderboard's own `list.number` because "the tick and 'on the board' were two ways of saying
+  the same thing, and neither said the row could be pressed". The status header had it as
+  outstanding, which it had not been for a long time.
+
+  **Its last clause landed in round 269**: free play played after the post is listed in the same
+  container, as a second and quieter line under the day's own number - the count of attempts
+  beyond the first, and the best of them. Shown even when it beats the posted score, because
+  hiding it would be the summary quietly editing what happened, and the line above says which
+  number is the board's.
+
+  **Only on a day that posted**, which is this clause's own wording. On a day that did not, the
+  headline is already `max(firstAttemptScore, bestPracticeScore)`, so a free-play line under it
+  prints the same figure twice - which is exactly what the card did until it was drawn and
+  looked at. The strings were right and the card said 8100m over 8100m.
+
+  (The twelfth round also renamed the practice language: it is **free play** everywhere the
+  player can read, and the line says so.)
 - **A real pager for day browsing** (asked for in rounds 11, 12 and 13 — "is what I'm
   asking for not possible?"). **It is possible; it has simply been approximated three
   times instead of built.** Every version so far moves *one* card with a transform and

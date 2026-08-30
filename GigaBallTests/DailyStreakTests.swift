@@ -125,3 +125,76 @@ final class DailyStreakTests: XCTestCase {
         XCTAssertEqual(StatsPage.days(12), "12 days")
     }
 }
+
+/// The last clause of §8's posted-score container: "free play attempts played after the post
+/// get listed in the same container".
+final class DailyFreePlayLineTests: XCTestCase {
+
+    private func record(attempts: Int, best: Int = 0) -> DailyChallengeRecord {
+        DailyChallengeRecord(dateKey: "2026-03-01", firstAttemptScore: 900, posted: true,
+                             bestPracticeScore: best, attemptCount: attempts)
+    }
+
+    /// **The counting attempt is not free play.** A day played once has none, and saying
+    /// "1 free play" under its own score would be counting the same run twice.
+    func testTheFirstAttemptIsNotFreePlay() {
+        XCTAssertNil(DailyCardView.freePlayLine(record(attempts: 1), unit: ""))
+        XCTAssertNil(DailyCardView.freePlayLine(record(attempts: 0), unit: ""))
+    }
+
+    func testItCountsTheAttemptsBeyondTheFirst() {
+        XCTAssertEqual(DailyCardView.freePlayLine(record(attempts: 2, best: 400), unit: ""),
+                       "1 free play, best 400")
+        XCTAssertEqual(DailyCardView.freePlayLine(record(attempts: 4, best: 400), unit: ""),
+                       "3 free plays, best 400")
+    }
+
+    /// An endless day counts in metres, like everything else about it.
+    func testItCarriesTheModesUnit() {
+        XCTAssertEqual(DailyCardView.freePlayLine(record(attempts: 2, best: 120), unit: "m"),
+                       "1 free play, best 120m")
+    }
+
+    /// Free plays that scored nothing are still free plays.
+    func testAFreePlayWithNoScoreIsStillCounted() {
+        XCTAssertEqual(DailyCardView.freePlayLine(record(attempts: 3), unit: ""), "2 free plays")
+    }
+
+    /// **A free play that beat the posted score is still shown.** Hiding it would be the
+    /// summary quietly editing what happened; the posted score is the day's number and says so
+    /// on the line above.
+    func testABetterFreePlayIsNotHidden() {
+        XCTAssertEqual(DailyCardView.freePlayLine(record(attempts: 2, best: 5000), unit: ""),
+                       "1 free play, best 5000")
+    }
+
+    /// **A day that did not post shows no free-play line**, because its headline number is
+    /// already the best of everything played - `max(firstAttemptScore, bestPracticeScore)` - so
+    /// a line under it would print the same figure twice.
+    ///
+    /// Found by drawing the card and looking at it: the strings were right and the card said
+    /// 8100m over 8100m. §8's wording is "free play attempts played *after the post*", which is
+    /// the rule this restores.
+    func testANotPostedDayShowsNoFreePlayLine() {
+        let card = DailyCardView(frame: CGRect(x: 0, y: 0, width: 360, height: 400))
+        let missed = DailyChallengeRecord(dateKey: "2026-03-03", firstAttemptScore: 0,
+                                          posted: false, bestPracticeScore: 8100,
+                                          attemptCount: 3)
+        card.show(key: missed.dateKey, isToday: true, record: missed, standing: nil)
+        XCTAssertEqual(card.resultTextForTesting.contains("free play"), false,
+                       "the headline is already the free-play best")
+
+        let posted = DailyChallengeRecord(dateKey: "2026-03-02", firstAttemptScore: 12480,
+                                          posted: true, bestPracticeScore: 15900,
+                                          attemptCount: 4)
+        card.show(key: posted.dateKey, isToday: true, record: posted, standing: nil)
+        XCTAssertEqual(card.resultTextForTesting.contains("3 free plays, best 15900"), true)
+    }
+
+    /// It says free play, which is what the player reads everywhere else (round 12's rename).
+    func testItUsesTheWordThePlayerReads() {
+        let line = DailyCardView.freePlayLine(record(attempts: 2, best: 10), unit: "")
+        XCTAssertEqual(line?.contains("practice"), false)
+        XCTAssertEqual(line?.contains("free play"), true)
+    }
+}
