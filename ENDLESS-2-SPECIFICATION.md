@@ -911,6 +911,71 @@ set. The other note stands, by his decision: the retro theme has no Indestructib
 its own and is not getting one - those bricks wear the classic art, and now the classic shaped
 art, which is right rather than a substitute.
 
+### The Square brick's own pictures, and the two kinds of action
+
+James delivered thirty-two on 30 August 2026: a picture of every brick type at Square
+proportions, plain and Rounded, in both themes. `BrickNormalSquare`, `BrickNormalRoundedSquare`
+and so on - the size goes on the end, after the shape. "by square, I just mean 2x2", which is
+one cell across and two down, and square on screen because a cell is twice as wide as it is
+tall.
+
+Until they arrived a Square brick wore the ordinary oblong texture **stretched to twice its
+height** - the same wrongness the shaped faces were built to end, one axis over, and the
+reference page's own picture had it too.
+
+**The picture goes on an overlay, never on the brick.** That is the rule at the top of
+`EndlessIIShapedBrickArt` and it is the whole difficulty here: `hitBrick` and the row scans ask
+what a brick is by comparing `texture` against the type textures, so a Square brick wearing
+`BrickNormalSquare` would stop being a Normal brick - it would score nothing, count for nothing
+and never clear. A shaped brick has its face node to draw on and a rounded one has its outline;
+a plain Square brick had neither, so it gets a child of its own, refreshed inside the walk that
+already visits every brick rather than in a walk of its own (round 258 measured what those
+cost).
+
+**And a Square brick can be Rounded now.** `suits(_ size:)` has always said Rounded fits any
+size, so the rounded-square art James drew had nothing to appear on: what stood in the way was
+the mechanical question in `endlessIICanTake`, whether the drawing sits on the node - and a
+Square brick's sprite hangs a cell below its node so the node can stay on a row centre (§8.6).
+`makeRounded` builds its face around the *drawing* now, which is the same point for an ordinary
+brick and a cell away for this one. The body is cut from that path too, so getting it wrong
+would have moved the brick you hit away from the brick you see. Two smaller things fell out of
+it: `endlessIIFieldSize` reads the rounded outline's path as well as a face's, because
+`makeRounded` shrinks the sprite to 0.78 of the cell and a rounded Square brick was measuring
+1.56 cells against a threshold of 1.5 - right by a twentieth of a cell and right by accident;
+and the reference page's "Styles" line is read off `EndlessIIStyle.suits` instead of being
+hand-typed, which had been saying a Big brick can be anything but Spinning since the drawn
+faces made that false.
+
+**Square is a shape, not a size** (James, round 270). It is listed under Shapes on the bricks
+page and no longer under Sizes - instead of, not as well, because a player who finds the same
+brick under two headings has no way of knowing they are the same brick. What makes a Square
+brick a Square brick is that it is square; the 1 × 2 cells is the mechanism.
+
+**The actions are two categories, and the split is an art specification.** James, round 270:
+
+- *Movement actions* - Spinning, Flashing, Breathing, Moving, Gravity. "These bricks can just
+  use whatever brick graphic, with no additional graphic required. The movement is enough of an
+  indication of the brick type."
+- *On-hit actions* - Power-Up, Fixed, Exploding, Spawner, Directional. "These bricks have
+  overlay graphics, graphics that go on top of the brick graphic to denote what type of brick
+  it is, as these bricks otherwise can't be told apart until they're hit and run their action."
+
+Which is the useful distinction and not an arbitrary one: a brick that is turning, fading,
+breathing, wandering or falling has told you what it is by the time you look at it, and marking
+it as well would say the same thing twice on top of art that is already moving. The other four
+look exactly like ordinary bricks until the ball reaches them.
+
+**Still to draw: an overlay for Fixed, Exploding, Spawner and Directional.** The power-up brick
+is the fifth of that group and already wears its - the icon it carries *is* the mark the others
+are waiting for - and it is Square-only, so its overlay only ever has to exist at those
+proportions. The four are the next batch worth having, and none of them needs a code change
+beyond the one that puts it on.
+
+Square versions of the other shapes are undecided: "I haven't decided if I'll do square
+versions of the other brick shapes yet." The lookup asks the catalogue for the specific name
+and falls back, so a picture arriving later needs no code at all - and until one does, a Square
+brick simply cannot take those faces, which `suits(_ size:)` has always said anyway.
+
 ### Wrecking ball textures — three still to draw
 
 James delivered thirty-six on 16 August 2026 (thirty-three, then glass): a spiked ball for each of
@@ -1027,6 +1092,18 @@ The borrowed ones may be fine borrowed - the new ones from silence are the prior
 Things that are not obvious from reading the code, each of which has already caused a bug.
 Written down because they are the expensive kind of knowledge — every one cost a debugging
 session, and none of them announces itself.
+
+**A brick wearing a face is not the size it looks.** `makeRounded` and `makeFace` shrink the
+sprite so it disappears behind the face they build, and from then on `brick.size` is the
+*hiding rectangle* rather than the cell. Two things read it and were wrong: `endlessIISizeOf`,
+which had a rounded Square brick measuring 1.56 cells against a threshold of 1.5 - right by a
+twentieth of a cell and right by accident; and the save, which wrote the shrunk size while the
+restore applied the style again from it, so **a rounded brick came back 22% smaller on every
+resume**, compounding, and the shaped faces did the same. The face's *path* is the thing that
+still knows the cell, which is what `endlessIIFieldSize` reads. And the anchor moves with the
+size, because a sprite shrinks towards its anchor point and a Square brick's is on its top edge
+- `(0.5 - anchorPoint) * size` is the invariant every one of these has to hold, because it is
+where the drawing sits, and the face, the multi-hit bar and the resumed body all read it.
 
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is

@@ -60,7 +60,8 @@ enum BrickTypeCatalogue {
          Section(title: "Endless Mayhem Brick Types", entries: newBrickTypes),
          Section(title: "Shapes", entries: shapes),
          Section(title: "Sizes", entries: sizes),
-         Section(title: "Actions", entries: actions)]
+         Section(title: "Movement Actions", entries: movementActions),
+         Section(title: "On-Hit Actions", entries: onHitActions)]
     }
     // The two "what is this brick" headings sit together at the top (James, round 238), which
     // is the question a player arrives with. Everything below them is a modifier: what shape
@@ -182,12 +183,32 @@ enum BrickTypeCatalogue {
     /// carried - the only one with no flat face left at all.
     static let shapeOrder: [EndlessIIStyle] = [.rounded, .convex, .concave, .wedge, .diamond]
 
-    /// What a brick does. The ones that change how it *looks* first, then the ones that change
-    /// where it is, then the ones that change the field around it - which is roughly the order
-    /// a run introduces them in, and the order of increasing consequence.
-    static let actionOrder: [EndlessIIStyle] = [.spinning, .flashing, .breathing, .fixed,
-                                                .gravity, .moving, .directional,
-                                                .exploding, .spawner]
+    /// What a brick does, in the two kinds James split it into (round 270).
+    static let actionOrder: [EndlessIIStyle] = movementOrder + onHitOrder
+
+    /// Actions you can see a brick performing.
+    ///
+    /// James, round 270: "these bricks can just use whatever brick graphic, with no additional
+    /// graphic required. The movement is enough of an indication of the brick type."
+    ///
+    /// Which is the useful half of the distinction. A brick that is turning, fading, breathing,
+    /// wandering or falling has already told you what it is by the time you look at it, so
+    /// marking it as well would be saying the same thing twice - and the mark would have to sit
+    /// on top of art that is already moving.
+    static let movementOrder: [EndlessIIStyle] = [.spinning, .flashing, .breathing,
+                                                  .moving, .gravity]
+
+    /// Actions that only happen when the brick is struck.
+    ///
+    /// James, round 270: "these bricks have overlay graphics, graphics that go on top of the
+    /// brick graphic to denote what type of brick it is, as these bricks otherwise can't be
+    /// told apart until they're hit and run their action."
+    ///
+    /// The power-up brick is the fifth of these and is listed at the top of the page instead,
+    /// as a type in its own right - it is also the one that already wears its overlay, since
+    /// the icon it carries is exactly the mark this category describes. It is Square-only, so
+    /// its overlay only ever has to be drawn at those proportions.
+    static let onHitOrder: [EndlessIIStyle] = [.fixed, .directional, .exploding, .spawner]
 
     private static func description(of style: EndlessIIStyle) -> String {
         switch style {
@@ -274,9 +295,18 @@ enum BrickTypeCatalogue {
     // Tiny-and-Normal, when both take any size now. That is the exact failure a derived
     // reference page exists to avoid, sitting inside one
 
-    private static var shapes: [Entry] { shapeOrder.map(entry(for:)) }
+    /// The drawn shapes, and then the Square brick.
+    ///
+    /// James, round 270: "Square brick should be under shapes, not sizes." Which is where a
+    /// player looks for it: what makes a Square brick a Square brick is that it is square, and
+    /// the 1 x 2 cells it occupies is the mechanism rather than the thing. The five above it
+    /// are `EndlessIIStyle`s and it is a `BrickSize`, so the heading holds both - which is what
+    /// `Entry` being a plain description rather than a wrapper around a style is for.
+    private static var shapes: [Entry] { shapeOrder.map(entry(for:)) + [entry(for: .square)] }
 
-    private static var actions: [Entry] { actionOrder.map(entry(for:)) }
+    private static var movementActions: [Entry] { movementOrder.map(entry(for:)) }
+
+    private static var onHitActions: [Entry] { onHitOrder.map(entry(for:)) }
 
     /// The two bricks Endless Mayhem adds, which are not a shape, a size or an action - they
     /// are types in their own right, and they sit under the classic four for that reason.
@@ -320,6 +350,20 @@ enum BrickTypeCatalogue {
         }
     }
 
+    /// The styles a brick of this size can carry.
+    ///
+    /// **Read off `EndlessIIStyle.suits` like its opposite number two hundred lines up**, and
+    /// for the reason written there. This was the hand-typed sentence "Any but Spinning" for a
+    /// Big brick and "Any" for everything else, which had been wrong since round 240: a Big
+    /// brick cannot take Breathing or any of the four drawn faces either, and a Tiny one cannot
+    /// take any of the six. Round 270 only noticed because Square moved to Shapes and would
+    /// have gone on claiming it could be a Diamond.
+    static func styles(fitting size: BrickSize) -> String {
+        let refused = styleOrder.filter { $0.suits(size) == false }
+        guard refused.isEmpty == false else { return "Any" }
+        return "Any but " + refused.map(name(of:)).joined(separator: ", ")
+    }
+
     private static func occupies(_ size: BrickSize) -> String {
         switch size {
         case .tiny: return "A quarter cell"
@@ -346,17 +390,22 @@ enum BrickTypeCatalogue {
     }
 
     private static var sizes: [Entry] {
-        BrickSize.allCases.map { size in
-            Entry(name: name(of: size),
-                  description: description(of: size),
-                  art: .size(size),
-                  isNew: size != .normal,
-                  facts: [Fact(label: "Occupies", value: occupies(size)),
-                          Fact(label: "Behaviours", value: "Any"),
-                          Fact(label: "Styles", value: size == .big ? "Any but Spinning" : "Any"),
-                          Fact(label: "Found in",
-                               value: size == .normal ? "Every mode" : GameMode.endlessII.name)])
-        }
+        BrickSize.allCases.filter { $0 != .square }.map(entry(for:))
+        // Square has moved to Shapes and is listed there instead of here, not as well: the
+        // page's own test counts every entry once, and a brick in two sections is a brick a
+        // player finds twice and cannot tell apart
+    }
+
+    private static func entry(for size: BrickSize) -> Entry {
+        Entry(name: name(of: size),
+              description: description(of: size),
+              art: .size(size),
+              isNew: size != .normal,
+              facts: [Fact(label: "Occupies", value: occupies(size)),
+                      Fact(label: "Behaviours", value: "Any"),
+                      Fact(label: "Styles", value: styles(fitting: size)),
+                      Fact(label: "Found in",
+                           value: size == .normal ? "Every mode" : GameMode.endlessII.name)])
     }
 }
 

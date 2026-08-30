@@ -81,8 +81,19 @@ extension GameScene {
     /// arriving later needs no code at all. `endlessIIArtIsOriented` is the same question
     /// asked by the caller that has to decide whether to un-reflect the sprite.
     func endlessIIShapedArt(for texture: SKTexture?, _ shape: ShapedBrickArt,
-                            mirrored: Bool = false, flipped: Bool = false) -> SKTexture? {
+                            mirrored: Bool = false, flipped: Bool = false,
+                            square: Bool = false) -> SKTexture? {
         guard let name = endlessIIBrickTextureName(texture) else { return nil }
+
+        if square {
+            let squared = name + shape.rawValue + GameScene.squareArtSuffix
+            if UIImage(named: squared) != nil { return SKTexture(imageNamed: squared) }
+        }
+        // **The size comes after the shape**, which is how James delivered them:
+        // `BrickNormalRoundedSquare`. A Square brick is one cell wide and two tall, so the
+        // ordinary picture stretched into it is stretched to twice its height - the same
+        // wrongness the shaped faces were built to end, one axis over
+
         let oriented = name + shape.rawValue
             + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped)
         if UIImage(named: oriented) != nil { return SKTexture(imageNamed: oriented) }
@@ -108,8 +119,14 @@ extension GameScene {
     /// drawn four ways. Where the oriented art exists the sprite cancels the scale back out,
     /// so the outline is turned and the lighting is not.
     func endlessIIArtIsOriented(for texture: SKTexture?, _ shape: ShapedBrickArt,
-                                mirrored: Bool, flipped: Bool) -> Bool {
+                                mirrored: Bool, flipped: Bool, square: Bool = false) -> Bool {
         guard let name = endlessIIBrickTextureName(texture) else { return false }
+        if square, UIImage(named: name + shape.rawValue + GameScene.squareArtSuffix) != nil {
+            return false
+        }
+        // A square picture is drawn one way up and there is only one of it, so it is not the
+        // four-way art this question is about - answering yes would un-turn a sprite that was
+        // never turned
         return UIImage(named: name + shape.rawValue
                        + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped)) != nil
     }
@@ -208,6 +225,17 @@ extension GameScene {
         return CGSize(width: box.width, height: box.height)
     }
 
+    /// Where that cell sits, read back off the same path.
+    ///
+    /// Zero for every face drawn about its node, which is all of them but one: a rounded
+    /// Square brick's outline is built around the *sprite*, which hangs a cell below the node
+    /// (§8.6, the rule that a brick's `position.y` is its row). The art has to hang with it.
+    func endlessIIFaceCentre(shape: SKShapeNode) -> CGPoint {
+        guard let path = shape.path else { return .zero }
+        let box = path.boundingBox
+        return CGPoint(x: box.midX, y: box.midY)
+    }
+
     /// How much of the half-turn partner shows at this rotation.
     ///
     /// James, round 266: "when a brick with multiple variants is spinning, is it possible to
@@ -266,6 +294,7 @@ extension GameScene {
 
         if partner.texture != partnerArt { partner.texture = partnerArt }
         if partner.size != cell { partner.size = cell }
+        if partner.position != main.position { partner.position = main.position }
         partner.color = brick.color
         partner.colorBlendFactor = brick.colorBlendFactor
         partner.xScale = mirrored ? -1 : 1
@@ -298,9 +327,15 @@ extension GameScene {
                                  _ art: ShapedBrickArt?, cell: CGSize) -> Bool {
         let mirrored = brick.endlessIIFaceMirrored ?? false
         let flipped = brick.endlessIIFaceFlipped ?? false
+        let square = abs(cell.height - cell.width) < 0.01
+        // Asked of the face's own cell rather than of `endlessIISizeOf`, for the reason that
+        // function's comment gives: Square is the one size taller than it is wide, and the
+        // path the face was built to is the thing that still knows the cell after the sprite
+        // behind it has been shrunk out of the way
 
         guard let art, let texture = endlessIIShapedArt(for: brick.texture, art,
-                                                        mirrored: mirrored, flipped: flipped)
+                                                        mirrored: mirrored, flipped: flipped,
+                                                        square: square)
         else {
             shape.childNode(withName: GameScene.faceArtName)?.removeFromParent()
             shape.childNode(withName: GameScene.facePartnerName)?.removeFromParent()
@@ -308,12 +343,15 @@ extension GameScene {
         }
 
         let oriented = endlessIIArtIsOriented(for: brick.texture, art,
-                                              mirrored: mirrored, flipped: flipped)
+                                              mirrored: mirrored, flipped: flipped,
+                                              square: square)
         let sprite = (shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode)
             ?? drawEndlessIIFaceArt(texture, on: shape, cell: cell)
 
+        let centre = endlessIIFaceCentre(shape: shape)
         if sprite.texture != texture { sprite.texture = texture }
         if sprite.size != cell { sprite.size = cell }
+        if sprite.position != centre { sprite.position = centre }
         sprite.color = brick.color
         sprite.colorBlendFactor = brick.colorBlendFactor
 
@@ -339,5 +377,72 @@ extension GameScene {
         case .concave: return .concave
         case .diamond: return .diamond
         }
+    }
+
+    // MARK: - Square
+
+    /// The suffix a picture drawn for a Square brick carries.
+    ///
+    /// James, round 270: "by square, I just mean 2x2" - one cell wide and two tall, which is
+    /// square on screen because a cell is twice as wide as it is high.
+    static let squareArtSuffix = "Square"
+
+    static let squareArtName = "endlessIISquareArt"
+
+    /// The picture drawn for a brick at Square proportions, if there is one.
+    func endlessIISquareArt(for texture: SKTexture?) -> SKTexture? {
+        guard let name = endlessIIBrickTextureName(texture) else { return nil }
+        let squared = name + GameScene.squareArtSuffix
+        guard UIImage(named: squared) != nil else { return nil }
+        return SKTexture(imageNamed: squared)
+        // Asked of the catalogue for the same reason the shaped lookup is: a missing name
+        // gets a placeholder back from SpriteKit, not nil. A power-up brick is Square-sized
+        // and has no type texture at all, so it falls out here and keeps its icon
+    }
+
+    /// Keeps a plain Square brick wearing the picture drawn for its proportions.
+    ///
+    /// **An overlay, not the brick's texture**, which is the rule at the top of this file:
+    /// `hitBrick` and the row scans ask what a brick is by comparing `texture` against the
+    /// type textures, so a Square brick that wore `BrickNormalSquare` would stop being a
+    /// Normal brick. A shaped brick has a face node to draw on and a rounded one has its
+    /// outline; a plain Square brick has neither, so it gets a child of its own.
+    ///
+    /// Anchored like its parent and sized to it, so it covers the stretched texture exactly.
+    /// A child is positioned from the parent's origin rather than from its anchor, so the two
+    /// agreeing on both is what puts them in the same place - and a Square brick's anchor is
+    /// off centre on purpose (§8.6: the node stays on a row centre and the drawing hangs off
+    /// it).
+    func refreshEndlessIISquareArt(_ brick: SKSpriteNode) {
+        let worn = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
+        guard brick.childNode(withName: GameScene.brickFaceName) == nil,
+              brick.childNode(withName: GameScene.roundedBrickOutlineName) == nil,
+              endlessIISizeOf(brick) == .square,
+              let texture = endlessIISquareArt(for: brick.texture) else {
+            worn?.removeFromParent()
+            return
+            // Removed rather than left hidden, because the two nodes that draw a face do the
+            // showing themselves once one is there - and a brick that has just been rounded
+            // would otherwise wear both pictures
+        }
+
+        let sprite: SKSpriteNode
+        if let worn {
+            sprite = worn
+        } else {
+            sprite = SKSpriteNode(texture: texture)
+            sprite.name = GameScene.squareArtName
+            sprite.zPosition = 0.01
+            brick.addChild(sprite)
+        }
+        if sprite.texture != texture { sprite.texture = texture }
+        if sprite.size != brick.size { sprite.size = brick.size }
+        if sprite.anchorPoint != brick.anchorPoint { sprite.anchorPoint = brick.anchorPoint }
+        if sprite.color != brick.color { sprite.color = brick.color }
+        if sprite.colorBlendFactor != brick.colorBlendFactor {
+            sprite.colorBlendFactor = brick.colorBlendFactor
+        }
+        // Refreshed rather than set once: a Multi-hit brick steps down through four textures
+        // as it is hit, and a role tints the brick after it was built
     }
 }

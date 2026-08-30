@@ -25,6 +25,19 @@ extension GameScene {
     /// Everything the four legacy arrays cannot say: the size a Tiny or Big brick actually
     /// is, the anchor a Big brick hangs from, the exact position a Moving or drifting brick
     /// had reached, and every style it was wearing.
+    /// The anchor a brick would have at its full size.
+    ///
+    /// `(0.5 - anchorPoint) * size` is where the drawing sits relative to the node, and every
+    /// shrink is defined to hold it - so the anchor for the unshrunk cell falls straight out of
+    /// it. A brick nothing has shrunk answers its own anchor, since its size *is* the cell.
+    func resumedAnchor(of sprite: SKSpriteNode) -> CGPoint {
+        let cell = endlessIIFieldSize(of: sprite)
+        guard cell.width > 0, cell.height > 0 else { return sprite.anchorPoint }
+        let centre = CGPoint(x: (0.5 - sprite.anchorPoint.x)*sprite.size.width,
+                             y: (0.5 - sprite.anchorPoint.y)*sprite.size.height)
+        return CGPoint(x: 0.5 - centre.x/cell.width, y: 0.5 - centre.y/cell.height)
+    }
+
     func savedBrick(for sprite: SKSpriteNode, texture: Int, colour: Int,
                     restingY: CGFloat) -> SavedGame.SavedBrick {
         SavedGame.SavedBrick(
@@ -32,10 +45,16 @@ extension GameScene {
             colour: colour,
             x: Double(sprite.position.x),
             y: Double(restingY),
-            width: Double(sprite.size.width),
-            height: Double(sprite.size.height),
-            anchorX: Double(sprite.anchorPoint.x),
-            anchorY: Double(sprite.anchorPoint.y),
+            width: Double(endlessIIFieldSize(of: sprite).width),
+            height: Double(endlessIIFieldSize(of: sprite).height),
+            anchorX: Double(resumedAnchor(of: sprite).x),
+            anchorY: Double(resumedAnchor(of: sprite).y),
+            // **The cell it occupies, not the sprite hidden inside it.** `makeRounded` and
+            // `makeFace` shrink the sprite so it disappears behind the face they build, and
+            // the restore applies the style again from whatever it reads here - so saving the
+            // shrunk sprite made a rounded brick 22% smaller on every resume, compounding.
+            // The path is what still knows the cell (`endlessIIFieldSize`), and the anchor is
+            // recovered from the drawn centre, which shrinking is defined to leave alone
             hidden: sprite.isHidden,
             role: sprite.endlessIIRole?.rawValue,
             face: sprite.endlessIIFace?.rawValue,

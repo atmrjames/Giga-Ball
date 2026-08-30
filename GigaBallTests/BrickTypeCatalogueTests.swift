@@ -32,7 +32,8 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertEqual(Set(BrickTypeCatalogue.allBehaviours).count, 5)
         XCTAssertEqual(BrickTypeCatalogue.section(titled: "Classic Brick Types")?.count, 4)
         XCTAssertEqual(BrickTypeCatalogue.section(titled: "Sizes")?.count,
-                       BrickSize.allCases.count)
+                       BrickSize.allCases.count - 1)
+        // One short of the four since round 270, because Square is listed under Shapes
         // Asked for by name rather than by position. The page grew from three sections to
         // five in round 237 and the sizes stopped being last, which a positional test would
         // have reported as the sizes having gone missing
@@ -76,7 +77,8 @@ final class BrickTypeCatalogueTests: XCTestCase {
         let sections = BrickTypeCatalogue.sections
         XCTAssertEqual(sections.map(\.title),
                        ["Classic Brick Types", "Endless Mayhem Brick Types",
-                        "Shapes", "Sizes", "Actions"])
+                        "Shapes", "Sizes", "Movement Actions", "On-Hit Actions"])
+        // Six since round 270: "Brick actions should be split into 2 categories" (James)
         // The two "what is this brick" headings together at the top (James, round 238) -
         // everything under them is a modifier of a brick rather than a kind of one
 
@@ -99,6 +101,11 @@ final class BrickTypeCatalogueTests: XCTestCase {
     func testEveryStyleIsUnderExactlyOneHeading() {
         let shapes = Set(BrickTypeCatalogue.shapeOrder)
         let actions = Set(BrickTypeCatalogue.actionOrder)
+        let movement = Set(BrickTypeCatalogue.movementOrder)
+        let onHit = Set(BrickTypeCatalogue.onHitOrder)
+        XCTAssertTrue(movement.isDisjoint(with: onHit))
+        XCTAssertEqual(movement.union(onHit), actions)
+        XCTAssertEqual(movement.count + onHit.count, actions.count, "an action is in both")
         XCTAssertTrue(shapes.isDisjoint(with: actions))
         XCTAssertFalse(shapes.contains(.portal))
         XCTAssertFalse(actions.contains(.portal))
@@ -201,7 +208,9 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // which a turning brick has left behind) and gave it back the four shapes and
         // Directional, so naming what it *refuses* is now the shorter half
         XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .spinning),
-                       "Any but Fixed, Gravity, Moving, Exploding, Spawner")
+                       "Any but Moving, Gravity, Fixed, Exploding, Spawner")
+        // The five are the same five; the order is `styleOrder`'s, which round 270 changed when
+        // it split the actions into the ones you can see happening and the ones you cannot
         // Breathing left that list in round 237 - the matrix says Spinning and Breathing go
         // together, and the objection was never quite true: Spinning turns the node and
         // touches no geometry at all
@@ -316,5 +325,61 @@ final class BrickTypeCatalogueTests: XCTestCase {
                 XCTAssertNotNil(UIImage(named: name), name)
             }
         }
+    }
+
+    /// The two categories James split the actions into, in his own words.
+    ///
+    /// Round 270: "Movement actions - these bricks can just use whatever brick graphic, with
+    /// no additional graphic required. The movement is enough of an indication of the brick
+    /// type: Spinning, flashing, breathing, moving, gravity". And: "On-hit actions - these
+    /// bricks have overlay graphics... as these bricks otherwise can't be told apart until
+    /// they're hit and run their action: Power-up (square bricks only), fixed, exploding,
+    /// spawner, directional".
+    ///
+    /// Written out rather than derived, because this *is* the decision - there is nothing on
+    /// `EndlessIIStyle` that knows whether an action shows itself before it happens, and a
+    /// derivation would only be this list wearing a disguise.
+    func testTheActionsAreSplitTheWayJamesSplitThem() {
+        XCTAssertEqual(Set(BrickTypeCatalogue.movementOrder),
+                       [.spinning, .flashing, .breathing, .moving, .gravity])
+        XCTAssertEqual(Set(BrickTypeCatalogue.onHitOrder),
+                       [.fixed, .exploding, .spawner, .directional])
+
+        // The power-up brick is the fifth on-hit one and is listed at the top of the page as a
+        // type in its own right, so it is not in the list - but it is on the page, and it is
+        // the one that already wears the overlay the others are waiting for
+        let named = BrickTypeCatalogue.allEntries.map(\.name)
+        XCTAssertTrue(named.contains("Power-Up"))
+    }
+
+    /// Square is a shape, not a size.
+    ///
+    /// James, round 270: "Square brick should be under shapes, not sizes." Listed there
+    /// *instead of* rather than as well - a player who finds the same brick under two headings
+    /// has no way of knowing they are the same brick.
+    func testSquareIsUnderShapes() {
+        let shapes = BrickTypeCatalogue.section(titled: "Shapes")?.map(\.name) ?? []
+        let sizes = BrickTypeCatalogue.section(titled: "Sizes")?.map(\.name) ?? []
+        XCTAssertTrue(shapes.contains("Square"), "shapes: \(shapes)")
+        XCTAssertFalse(sizes.contains("Square"), "sizes: \(sizes)")
+        XCTAssertEqual(sizes.sorted(), ["Big", "Normal", "Tiny"])
+    }
+
+    /// What the page says a size can carry is what the generator will let it carry.
+    ///
+    /// This line was hand-typed - "Any but Spinning" for a Big brick, "Any" for the rest - and
+    /// had been wrong since the drawn faces arrived: a Big brick cannot take Breathing or any
+    /// of the four faces, and a Tiny one cannot take any of the six.
+    func testWhatEachSizeCanCarryIsReadOffTheRules() {
+        for size in BrickSize.allCases {
+            let said = BrickTypeCatalogue.styles(fitting: size)
+            for style in BrickTypeCatalogue.styleOrder where style.suits(size) == false {
+                XCTAssertTrue(said.contains(BrickTypeCatalogue.name(of: style)),
+                              "\(BrickTypeCatalogue.name(of: size)) does not say it refuses "
+                              + BrickTypeCatalogue.name(of: style))
+            }
+        }
+        XCTAssertEqual(BrickTypeCatalogue.styles(fitting: .normal), "Any")
+        XCTAssertNotEqual(BrickTypeCatalogue.styles(fitting: .big), "Any")
     }
 }

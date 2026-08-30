@@ -642,3 +642,290 @@ final class EndlessIIFaceArtTests: XCTestCase {
         XCTAssertEqual(art?.size, CGSize(width: 40, height: 20))
     }
 }
+
+
+// MARK: - The Square brick's own art
+
+/// James, round 270: "File sharing now contains 'square' bricks and retro bricks, and 'square'
+/// rounded bricks and retro rounded bricks. by square, I just mean 2x2."
+///
+/// A Square brick is one cell wide and two tall, and until this delivery it wore the ordinary
+/// oblong texture stretched to twice its height - the same wrongness the shaped faces were
+/// built to end, one axis over. Two things this covers: that the picture is found, and that
+/// wearing it does not change what the brick *is*.
+final class EndlessIISquareBrickArtTests: XCTestCase {
+
+    private func scene(retro: Bool = false) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickSetting = retro ? 1 : 0
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        // The cell, which `endlessIISizeOf` measures everything against - a scene that has not
+        // laid itself out has none, and every brick in it is Normal by default
+        if retro {
+            scene.brickNormalTexture = scene.retroBrickNormalTexture
+            scene.brickInvisibleTexture = scene.retroBrickInvisibleTexture
+            scene.brickMultiHit1Texture = scene.retroBrickMultiHit1Texture
+            scene.brickMultiHit2Texture = scene.retroBrickMultiHit2Texture
+            scene.brickMultiHit3Texture = scene.retroBrickMultiHit3Texture
+            scene.brickMultiHit4Texture = scene.retroBrickMultiHit4Texture
+        }
+        return scene
+    }
+
+    /// A Square brick of a known type.
+    ///
+    /// `endlessIIMakeSquare` draws its type from the field's own mix, which is the right
+    /// behaviour and no use to a test: a scene that has not started a run has no mix, and the
+    /// brick comes out wearing the Null texture. Set after building rather than before, so what
+    /// is under test is the overlay following the brick rather than the roll.
+    private func squareBrick(_ scene: GameScene, _ texture: SKTexture? = nil) -> SKSpriteNode {
+        let brick = scene.endlessIIMakeSquare(column: 0, rowY: 0)
+        brick.texture = texture ?? scene.brickNormalTexture
+        brick.isHidden = false
+        scene.refreshEndlessIISquareArt(brick)
+        return brick
+    }
+
+    private func types(_ scene: GameScene) -> [SKTexture] {
+        [scene.brickNormalTexture, scene.brickInvisibleTexture,
+         scene.brickMultiHit1Texture, scene.brickMultiHit2Texture,
+         scene.brickMultiHit3Texture, scene.brickMultiHit4Texture,
+         scene.brickIndestructible1Texture, scene.brickIndestructible2Texture]
+    }
+
+    func testEveryBrickTypeHasASquarePictureInBothThemes() {
+        for retro in [false, true] {
+            let scene = scene(retro: retro)
+            for texture in types(scene) {
+                guard let art = scene.endlessIISquareArt(for: texture) else {
+                    let name = scene.endlessIIBrickTextureName(texture) ?? "?"
+                    return XCTFail("no Square art for \(name), retro: \(retro)")
+                }
+                let size = art.size()
+                XCTAssertEqual(size.width/size.height, 1, accuracy: 0.01,
+                               "a Square brick's picture is square")
+            }
+        }
+    }
+
+    func testEveryBrickTypeHasARoundedSquarePictureInBothThemes() {
+        for retro in [false, true] {
+            let scene = scene(retro: retro)
+            for texture in types(scene) {
+                let art = scene.endlessIIShapedArt(for: texture, .rounded, square: true)
+                guard let art else {
+                    let name = scene.endlessIIBrickTextureName(texture) ?? "?"
+                    return XCTFail("no RoundedSquare art for \(name), retro: \(retro)")
+                }
+                let plain = scene.endlessIIShapedArt(for: texture, .rounded)
+                XCTAssertNotEqual(art, plain,
+                                  "asking for the square one and getting the oblong one back "
+                                  + "is the stretch this delivery exists to end")
+            }
+        }
+    }
+
+    /// The rule at the top of `EndlessIIShapedBrickArt`, tested rather than trusted.
+    ///
+    /// `hitBrick` and the row scans ask what a brick is by comparing `texture` against the type
+    /// textures. A Square brick that wore `BrickNormalSquare` as its own texture would stop
+    /// being a Normal brick - it would score nothing, count for nothing and never clear.
+    func testWearingTheSquarePictureDoesNotChangeWhatTheBrickIs() {
+        let scene = scene()
+        let brick = squareBrick(scene)
+
+        guard let art = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
+        else { return XCTFail("no square art worn") }
+        XCTAssertEqual(art.texture?.description,
+                       scene.endlessIISquareArt(for: scene.brickNormalTexture)?.description)
+        // By name: two `SKTexture(imageNamed:)` of the same picture are two objects, and
+        // `SKTexture` compares by identity
+        XCTAssertEqual(brick.texture, scene.brickNormalTexture,
+                       "the picture goes on an overlay, never on the brick")
+        XCTAssertNotEqual(brick.texture?.description, art.texture?.description)
+        XCTAssertEqual(art.size, brick.size)
+        XCTAssertEqual(art.anchorPoint, brick.anchorPoint,
+                       "a child is placed from the parent's origin rather than its anchor, so "
+                       + "the two agreeing on both is what puts them in the same place")
+        XCTAssertEqual(art.position, .zero)
+    }
+
+    /// A Multi-hit brick steps down through four textures as it is hit, and the overlay is a
+    /// separate node that would otherwise still be showing the first one.
+    func testTheOverlayFollowsABrickDownItsLadder() {
+        let scene = scene()
+        let brick = squareBrick(scene)
+        brick.texture = scene.brickMultiHit2Texture
+        scene.refreshEndlessIISquareArt(brick)
+
+        let art = brick.childNode(withName: GameScene.squareArtName) as? SKSpriteNode
+        XCTAssertEqual(art?.texture?.description,
+                       scene.endlessIISquareArt(for: scene.brickMultiHit2Texture)?.description)
+    }
+
+    /// A power-up brick is Square-sized and has no type texture at all, so there is no picture
+    /// of it to find - and putting one on would hide the icon that says which power-up it is.
+    func testAPowerUpBrickKeepsItsIcon() {
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickNullTexture)
+        XCTAssertNil(scene.endlessIISquareArt(for: brick.texture))
+    }
+
+    /// A Square brick can be Rounded, since round 270.
+    ///
+    /// `suits(_ size:)` has always said Rounded fits any size; what stood in the way was the
+    /// mechanical question in `endlessIICanTake` - whether the drawing sits on the node - and a
+    /// Square brick's sprite hangs a cell below its node so the node can stay on a row centre
+    /// (§8.6). `makeRounded` builds its face around the drawing now, so the answer changed.
+    func testASquareBrickCanBeRoundedAndItsFaceSitsOnTheDrawing() {
+        let scene = scene()
+        let brick = squareBrick(scene)
+        XCTAssertEqual(scene.endlessIISizeOf(brick), .square)
+        XCTAssertTrue(scene.endlessIICanTake(.rounded, brick))
+
+        let drawn = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                            y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        scene.makeRounded(brick)
+
+        guard let shape = brick.childNode(withName: GameScene.roundedBrickOutlineName)
+                as? SKShapeNode, let path = shape.path
+        else { return XCTFail("no rounded face") }
+        XCTAssertEqual(path.boundingBox.midY, drawn.y, accuracy: 0.01,
+                       "a face built about the node would sit a cell above the brick")
+        XCTAssertEqual(path.boundingBox.height/path.boundingBox.width, 1, accuracy: 0.01,
+                       "square on screen, which is what two cells of a 2:1 grid comes to")
+
+        let art = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        XCTAssertEqual(art?.position.y ?? 0, drawn.y, accuracy: 0.01,
+                       "and the picture has to hang with it")
+        XCTAssertNil(brick.childNode(withName: GameScene.squareArtName),
+                     "the overlay comes off once a face is doing the showing, or the brick "
+                     + "wears both pictures")
+    }
+
+    /// The size class survives being rounded.
+    ///
+    /// `makeRounded` shrinks the sprite to 0.78 of the cell to hide it inside the face, so a
+    /// rounded Square brick used to measure 1.56 cells tall against a threshold of 1.5 - right
+    /// by a twentieth of a cell and right by accident. `endlessIIFieldSize` reads the outline's
+    /// path now, which is the thing that still knows the cell.
+    func testARoundedBrickStillKnowsWhatSizeItIs() {
+        let scene = scene()
+        let square = squareBrick(scene)
+        scene.makeRounded(square)
+        XCTAssertEqual(scene.endlessIISizeOf(square), .square)
+
+        let ordinary = SKSpriteNode(texture: scene.brickNormalTexture,
+                                    size: CGSize(width: scene.brickWidth,
+                                                 height: scene.brickHeight))
+        scene.addChild(ordinary)
+        scene.makeRounded(ordinary)
+        XCTAssertEqual(scene.endlessIISizeOf(ordinary), .normal)
+    }
+
+    /// The sprite behind a rounded face stays inside it.
+    ///
+    /// **The render found this and no assertion would have.** A Square brick's rounded face is
+    /// a circle - the radius is half the short side and its sides are equal, and James drew the
+    /// picture that way to match - and the sprite was shrunk by a flat 0.78, which fits inside
+    /// a stadium and does not fit inside a circle. Worse, a sprite shrinks *towards* its anchor
+    /// point and a Square brick's is on its top edge, so it walked up out of the face as well.
+    /// Four corners of brick came out through the top of the ring.
+    ///
+    /// Asked of the path rather than of the numbers, so it holds whatever the corner fraction
+    /// becomes.
+    func testWhatIsLeftOfTheBrickStaysInsideItsRoundedFace() {
+        let scene = scene()
+        let square = squareBrick(scene)
+        let oblong = SKSpriteNode(texture: scene.brickNormalTexture,
+                                  size: CGSize(width: scene.brickWidth,
+                                               height: scene.brickHeight))
+        scene.addChild(oblong)
+
+        for brick in [square, oblong] {
+            scene.makeRounded(brick)
+            guard let path = (brick.childNode(withName: GameScene.roundedBrickOutlineName)
+                              as? SKShapeNode)?.path
+            else { return XCTFail("no rounded face") }
+
+            let centre = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                                 y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+            for x in [-1.0, 1.0] as [CGFloat] {
+                for y in [-1.0, 1.0] as [CGFloat] {
+                    let corner = CGPoint(x: centre.x + x*brick.size.width/2,
+                                         y: centre.y + y*brick.size.height/2)
+                    XCTAssertTrue(path.contains(corner),
+                                  "a corner of the brick is showing outside its face at "
+                                  + "\(corner), face \(path.boundingBox)")
+                }
+            }
+        }
+    }
+
+    /// The largest square fits inside its circle, and the arithmetic says so.
+    ///
+    /// An ordinary 2:1 brick answers 0.8, which is why the flat 0.78 was never wrong there and
+    /// looked like a general number rather than one shape's answer.
+    func testTheHidingFractionIsWorkedOutFromTheShape() {
+        let oblong = CGSize(width: 40, height: 20)
+        XCTAssertEqual(GameScene.largestFraction(hidingInside: oblong, radius: 10),
+                       0.8, accuracy: 0.001)
+        XCTAssertGreaterThan(GameScene.largestFraction(hidingInside: oblong, radius: 10),
+                             GameScene.roundedBrickHidingFraction,
+                             "or an ordinary brick has quietly changed size")
+
+        let square = CGSize(width: 40, height: 40)
+        XCTAssertEqual(GameScene.largestFraction(hidingInside: square, radius: 20),
+                       1/2.squareRoot(), accuracy: 0.001)
+    }
+
+    /// A brick saves the cell it occupies, not the sprite hidden inside its face.
+    ///
+    /// Found while wiring the Square art and older than it. `makeRounded` and `makeFace` shrink
+    /// the sprite so it disappears behind the face they build; the save wrote that shrunk size
+    /// and the resume applied the style again from it. So a rounded brick came back 22% smaller
+    /// every time a run was resumed, and again the next time, and the shaped faces did the
+    /// same - the only reason nobody saw a field of shrivelled bricks is that it takes several
+    /// resumes of one field to become obvious.
+    func testARoundedBrickIsSavedAtTheSizeItOccupies() {
+        let scene = scene()
+        let cell = CGSize(width: scene.brickWidth, height: scene.brickHeight)
+
+        let oblong = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+        scene.addChild(oblong)
+        scene.makeRounded(oblong)
+        var record = scene.savedBrick(for: oblong, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.width, Double(cell.width), accuracy: 0.01)
+        XCTAssertEqual(record.height, Double(cell.height), accuracy: 0.01)
+        XCTAssertEqual(record.anchorX, 0.5, accuracy: 0.01)
+        XCTAssertEqual(record.anchorY, 0.5, accuracy: 0.01)
+
+        let square = squareBrick(scene)
+        let anchor = square.anchorPoint
+        let size = square.size
+        scene.makeRounded(square)
+        record = scene.savedBrick(for: square, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.width, Double(size.width), accuracy: 0.01)
+        XCTAssertEqual(record.height, Double(size.height), accuracy: 0.01)
+        XCTAssertEqual(record.anchorY, Double(anchor.y), accuracy: 0.01,
+                       "and the anchor it comes back with is the one it was built with, or the "
+                       + "brick you hit walks away from the brick you see")
+    }
+
+    /// The same, for a shaped face - which shrinks its sprite for the same reason.
+    func testAShapedBrickIsSavedAtTheSizeItOccupies() {
+        let scene = scene()
+        let cell = CGSize(width: scene.brickWidth, height: scene.brickHeight)
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+        scene.addChild(brick)
+        scene.makeFace(.wedge, on: brick)
+
+        let record = scene.savedBrick(for: brick, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.width, Double(cell.width), accuracy: 0.01)
+        XCTAssertEqual(record.height, Double(cell.height), accuracy: 0.01)
+        XCTAssertLessThan(brick.size.width, cell.width,
+                          "the sprite really is tucked away - or this test proves nothing")
+    }
+}

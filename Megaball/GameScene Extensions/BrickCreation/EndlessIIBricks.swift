@@ -781,7 +781,13 @@ extension GameScene {
         // would be the one shape excluded from spinning by an accident of where its sprite
         // hides (round 235)
         switch style {
-        case .rounded: return centred
+        case .rounded: return centred || endlessIISizeOf(brick) == .square
+            // **And a Square one**, since round 270 - James drew a rounded picture of every
+            // brick type at Square proportions, and `suits(_ size:)` has always said Rounded
+            // fits any size. All that stood in the way was this mechanical question, and the
+            // answer changed when `makeRounded` learned to build its face around the sprite.
+            // A Big brick is still out: its drawing is two cells wide as well as tall, and
+            // there is no picture of it
         case .convex, .concave, .wedge, .diamond, .spinning, .breathing:
             return centred
             // The size these three demand is answered above, by the rule they share with the
@@ -1029,9 +1035,17 @@ extension GameScene {
     func makeRounded(_ brick: SKSpriteNode) {
         let face = brick.size
         let radius = min(face.width, face.height)*GameScene.roundedBrickCornerFraction
-        let path = CGPath(roundedRect: CGRect(x: -face.width/2, y: -face.height/2,
+        let centre = CGPoint(x: (0.5 - brick.anchorPoint.x)*face.width,
+                             y: (0.5 - brick.anchorPoint.y)*face.height)
+        let path = CGPath(roundedRect: CGRect(x: centre.x - face.width/2,
+                                              y: centre.y - face.height/2,
                                               width: face.width, height: face.height),
                           cornerWidth: radius, cornerHeight: radius, transform: nil)
+        // **Built around the drawing, not around the node** (round 270). The two are the same
+        // point for an ordinary brick and a cell apart for a Square one, whose sprite hangs
+        // below its node so the node can stay on a row centre. The body is made from this
+        // path as well, so getting it wrong would have moved the brick you hit away from the
+        // brick you see
 
         brick.physicsBody = brickBody(SKPhysicsBody(polygonFrom: path))
         // A rounded rectangle is convex, which is all a polygon body asks for
@@ -1042,6 +1056,10 @@ extension GameScene {
         shape.zPosition = 0.1
         shape.name = GameScene.roundedBrickOutlineName
         brick.addChild(shape)
+        refreshEndlessIISquareArt(brick)
+        // Takes the Square overlay off in the same breath as putting the face on. It would
+        // come off at the next refresh anyway, and a frame of a brick wearing both pictures is
+        // a frame of the thing this is here to prevent
 
         if refreshEndlessIIFaceArt(brick, shape, .rounded, cell: face) == false {
             shape.fillTexture = endlessIIFaceFill(brick, nil)
@@ -1050,8 +1068,24 @@ extension GameScene {
         // to the shape's own fill, which lays the texture in at whatever size the file is
         // (see `drawEndlessIIFaceArt` - that is the bug this replaced)
 
-        brick.size = CGSize(width: face.width*0.78, height: face.height*0.78)
-        // Small enough to sit entirely inside the rounded face, so no square corner shows
+        let fit = min(GameScene.roundedBrickHidingFraction,
+                      GameScene.largestFraction(hidingInside: face, radius: radius)*0.99)
+        // A hair inside rather than exactly on it. `largestFraction` answers where the corner
+        // *touches* the arc, and a corner drawn on its own edge is a corner antialiasing shows
+        // a pixel of. It costs an ordinary brick nothing - 0.8 less a hundredth is still above
+        // the 0.78 it has always used, so that shape is untouched
+        brick.size = CGSize(width: face.width*fit, height: face.height*fit)
+        if brick.size.width > 0, brick.size.height > 0 {
+            brick.anchorPoint = CGPoint(x: 0.5 - centre.x/brick.size.width,
+                                        y: 0.5 - centre.y/brick.size.height)
+        }
+        // Small enough to sit entirely inside the rounded face, so no square corner shows -
+        // and **shrunk about the drawing rather than about the anchor**, which is the second
+        // half of the same bug. A sprite shrinks *towards* its anchor point, and a Square
+        // brick's is on its top edge, so shrinking it walked the picture up out of the circle
+        // and the corners came out through the top of the ring. Moving the anchor by the same
+        // factor keeps `(0.5 - anchorPoint) * size` where it was, which is the expression the
+        // face, the multi-hit bar and the resumed field all read the drawn centre off
     }
 
     /// How much of a brick's short side is taken up by each rounded corner.
@@ -1059,6 +1093,38 @@ extension GameScene {
     /// A half, so the two short ends are full semicircles and the brick is a stadium - round
     /// at the sides rather than merely softened at the corners.
     static let roundedBrickCornerFraction: CGFloat = 0.5
+
+    /// How far the sprite behind a rounded face is shrunk, at most.
+    ///
+    /// It was this number on its own, and it was chosen for the stadium an ordinary brick makes
+    /// - where it happens to be just inside the largest rectangle that fits. A Square brick's
+    /// face is a **circle**, because the radius is half the short side and its sides are equal,
+    /// and 0.78 of a square does not fit inside the circle around it: the render showed four
+    /// corners of brick poking out through the ring.
+    static let roundedBrickHidingFraction: CGFloat = 0.78
+
+    /// The largest fraction of `face` that still sits entirely inside a rounded rectangle of
+    /// that size with that corner radius.
+    ///
+    /// The corner of the shrunk rectangle is the only point that can escape, and it escapes
+    /// through the corner arc - so this is where that corner meets the arc, which is one
+    /// quadratic. Derived rather than tabulated, because the alternative is a second number to
+    /// keep in step with `roundedBrickCornerFraction`, and the shape is the thing that decides.
+    ///
+    /// An ordinary 2:1 brick answers 0.8, which is why 0.78 was never wrong there and looked
+    /// like a general number. A square one answers 1/√2.
+    static func largestFraction(hidingInside face: CGSize, radius: CGFloat) -> CGFloat {
+        let a = face.width/2, b = face.height/2
+        let insetX = max(0, a - radius), insetY = max(0, b - radius)
+        let square = a*a + b*b
+        guard square > 0 else { return 1 }
+
+        let linear = a*insetX + b*insetY
+        let constant = insetX*insetX + insetY*insetY - radius*radius
+        let discriminant = linear*linear - square*constant
+        guard discriminant >= 0 else { return 1 }
+        return (linear + sqrt(discriminant))/square
+    }
 
     /// Keeps a rounded brick's face showing what the brick is.
     ///

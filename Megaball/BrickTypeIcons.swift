@@ -329,7 +329,13 @@ enum BrickTypeIcons {
                                    height: cell.height*size.scaleTall))
         // Per axis, since round 247: a Square brick is one cell across and two down, and a
         // single scale would have drawn it as a Big one
-        artwork("BrickNormal")?.tinted(standardColour).draw(in: brick)
+
+        let drawn = size == .square ? "BrickNormal" + GameScene.squareArtSuffix : "BrickNormal"
+        let picture = artwork(drawn) ?? artwork("BrickNormal")
+        picture?.tinted(standardColour).draw(in: brick)
+        // **The picture drawn for those proportions where there is one** (round 270). The
+        // reference page had the same stretch the field had - one oblong brick pulled to twice
+        // its height - which made the page a picture of the bug rather than of the brick
     }
 
     // MARK: - Drawing helpers

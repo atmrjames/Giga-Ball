@@ -64,6 +64,25 @@ final class ArtStillToDrawTests: XCTestCase {
         return missing.sorted()
     }
 
+    /// Every Square picture the game could ask for and does not have.
+    ///
+    /// The plain one and the Rounded one, which are the two a Square brick can wear: the four
+    /// drawn faces are Normal-only by `suits(_ size:)`, so asking for a square Diamond would be
+    /// asking for a picture of a brick the generator cannot build. James, round 270: "I haven't
+    /// decided if I'll do square versions of the other brick shapes yet."
+    private func missingSquareArt() -> [String] {
+        var missing: [String] = []
+        for (_, names) in brickTypes {
+            for name in names {
+                for shape in ["", GameScene.ShapedBrickArt.rounded.rawValue] {
+                    let wanted = name + shape + GameScene.squareArtSuffix
+                    if UIImage(named: wanted) == nil { missing.append(wanted) }
+                }
+            }
+        }
+        return missing.sorted()
+    }
+
     /// Every paddle picture the game could ask for and does not have.
     private func missingPaddleArt() -> [String] {
         var missing: [String] = []
@@ -102,12 +121,25 @@ final class ArtStillToDrawTests: XCTestCase {
                        + "art to draw or a name the lookup is building wrongly")
     }
 
+    /// **Every brick type has its Square pictures, in both themes** as of round 270.
+    ///
+    /// Same forward-looking job as the shape test above: a brick type added without them wears
+    /// its oblong texture stretched to twice its height, which reads as art nobody got round to
+    /// rather than as a bug.
+    func testEveryBrickTypeIsDrawnAtSquareProportions() {
+        XCTAssertEqual(missingSquareArt(), [],
+                       "§8.5's Square list is closed - anything printed here is either art to "
+                       + "draw or a name the lookup is building wrongly")
+    }
+
     /// The list, printed, so a round that adds a type or a shape can read what it owes.
     func testWhatIsStillToDraw() {
         let bricks = missingBrickArt()
         let paddles = missingPaddleArt().filter { deliberatelyBorrowed.contains($0) == false }
         print("\n  Art still to draw:")
+        let squares = missingSquareArt()
         print("    bricks:  \(bricks.isEmpty ? "none" : bricks.joined(separator: ", "))")
+        print("    squares: \(squares.isEmpty ? "none" : squares.joined(separator: ", "))")
         print("    paddles: \(paddles.isEmpty ? "none" : paddles.joined(separator: ", "))")
         print("")
     }

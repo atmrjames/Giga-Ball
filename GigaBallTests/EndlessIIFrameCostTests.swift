@@ -473,4 +473,81 @@ final class EndlessIIFrameCostTests: XCTestCase {
                               + "game to fit in it")
         }
     }
+
+    /// Draws the Square bricks, plain and Rounded, in both themes, so the new art can be
+    /// looked at where the scene puts it.
+    ///
+    /// **Reparented, not copied.** Round 266's copy harness rebuilt each node by hand and
+    /// forgot `zRotation`, so it re-rendered the broken picture unchanged and said nothing.
+    /// Moving the real node into the display scene brings its whole subtree - the overlay, the
+    /// rounded outline, the art inside it - with every transform the scene actually gave it.
+    ///
+    /// Two rows per theme: the brick as built, and the same brick with its overlay taken off,
+    /// which is what a Square brick looked like until this delivery - one oblong texture pulled
+    /// to twice its height.
+    func testTheSquareBricksCanBeLookedAt() throws {
+        let cell = CGSize(width: 56, height: 28)
+        let column: CGFloat = 90, row: CGFloat = 90
+        let labels = ["Normal", "MultiHit1", "MultiHit4", "Indestr.1", "Invisible"]
+
+        let display = SKScene(size: CGSize(width: column*CGFloat(labels.count) + 20,
+                                           height: row*5 + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (line, mode) in [(0, "classic plain"), (1, "classic rounded"),
+                             (2, "retro plain"), (3, "retro rounded"),
+                             (4, "classic oblong rounded")] {
+            let retro = mode.hasPrefix("retro")
+            let rounded = mode.hasSuffix("rounded")
+
+            for (index, _) in labels.enumerated() {
+                let game = GameScene(size: CGSize(width: 402, height: 874))
+                game.gameMode = .endlessII
+                game.brickSetting = retro ? 1 : 0
+                game.brickWidth = cell.width
+                game.brickHeight = cell.height
+                game.gameWidth = 402
+                if retro {
+                    game.brickNormalTexture = game.retroBrickNormalTexture
+                    game.brickInvisibleTexture = game.retroBrickInvisibleTexture
+                    game.brickMultiHit1Texture = game.retroBrickMultiHit1Texture
+                    game.brickMultiHit4Texture = game.retroBrickMultiHit4Texture
+                }
+                let types = [game.brickNormalTexture, game.brickMultiHit1Texture,
+                             game.brickMultiHit4Texture, game.brickIndestructible1Texture,
+                             game.brickInvisibleTexture]
+
+                let brick: SKSpriteNode
+                if mode.contains("oblong") {
+                    brick = SKSpriteNode(texture: game.brickNormalTexture, size: cell)
+                    game.addChild(brick)
+                    // An ordinary rounded brick beside them, so anything showing through the
+                    // Square ones can be told from what rounded bricks have always done
+                } else {
+                    brick = game.endlessIIMakeSquare(column: 0, rowY: 0)
+                }
+                brick.texture = types[index]
+                brick.isHidden = false
+                brick.colorBlendFactor = 0
+                // Uncoloured, so what shows is the picture rather than the level's tint
+                game.refreshEndlessIISquareArt(brick)
+                if rounded || mode.contains("oblong") { game.makeRounded(brick) }
+
+                brick.removeFromParent()
+                brick.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                         y: display.size.height - row*(CGFloat(line) + 0.5))
+                display.addChild(brick)
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("square-bricks.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Square bricks, drawn: \(file.path)")
+        print("  rows: classic plain, classic rounded, retro plain, retro rounded, "
+              + "classic oblong rounded")
+        print("  columns: \(labels.joined(separator: ", "))\n")
+    }
 }

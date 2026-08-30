@@ -250,9 +250,15 @@ extension GameScene {
     /// Read off the face's own path rather than remembered, so it cannot fall out of step with
     /// the shape actually drawn - which is `endlessIIFaceCell`'s whole job for the artwork.
     func endlessIIFieldSize(of brick: SKSpriteNode) -> CGSize {
-        guard let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
-        else { return brick.size }
+        let face = brick.childNode(withName: GameScene.brickFaceName)
+            ?? brick.childNode(withName: GameScene.roundedBrickOutlineName)
+        guard let shape = face as? SKShapeNode else { return brick.size }
         return endlessIIFaceCell(brick, shape: shape)
+        // **The rounded outline counts too** (round 270). `makeRounded` shrinks the sprite to
+        // 0.78 of the cell to hide it inside the face, so a rounded Square brick reported
+        // 1.56 cells tall against a threshold of 1.5 - right by a twentieth of a cell, and
+        // right for no reason anybody had chosen. The path is the thing that still knows the
+        // cell, which is the same answer `endlessIIFaceCell` was written for
     }
 
     /// The room a brick takes up, as a rectangle in the field's own coordinates.
@@ -396,8 +402,14 @@ extension GameScene {
     /// face is a separate node that would otherwise still be showing the first.
     func refreshEndlessIIShapedFaces() {
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard let brick = node as? SKSpriteNode,
-                  let shape = brick.childNode(withName: GameScene.brickFaceName)
+            guard let brick = node as? SKSpriteNode else { return }
+            self.refreshEndlessIISquareArt(brick)
+            // Inside this walk rather than beside it. Round 258 measured the per-frame ticks
+            // and the two that cost anything were the ones that visited every brick, so a
+            // third enumeration to reach the Square bricks would cost more than the drawing
+            // it exists to fix
+
+            guard let shape = brick.childNode(withName: GameScene.brickFaceName)
                     as? SKShapeNode else { return }
             let wantedColour = brick.colorBlendFactor > 0.5 ? brick.color : UIColor.white
             let art = brick.endlessIIFace.flatMap { GameScene.shapedArt(for: $0) }

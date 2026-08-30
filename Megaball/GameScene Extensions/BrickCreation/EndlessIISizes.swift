@@ -296,6 +296,9 @@ extension GameScene {
                                                     center: plan.bodyCentre))
         if brick.texture == brickInvisibleTexture { brick.isHidden = true }
         addChild(brick)
+        refreshEndlessIISquareArt(brick)
+        // Worn on the way in rather than on the next frame's refresh, so the row animates in
+        // showing the picture drawn for it rather than one frame of a stretched one
         return brick
         // Drawn from the field's own mix rather than always Standard, so a Square brick is a
         // *size* rather than a kind - which is the whole of what §12.0 asked for
