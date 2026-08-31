@@ -381,7 +381,7 @@ enum BrickTypeCatalogue {
     static var powerUpBrick: Entry {
         Entry(name: "Power-Up",
               description: "A power-up built into the field rather than falling out of it. Breaking it sets it off at once - good or bad. It is never cleared by reaching the bottom: it carries on down and out, so a bad one is something to play around rather than something to move the paddle away from. Two cells tall and one wide, which makes it square, and it wears the icon of whatever it is holding.",
-              art: .style(.rounded),
+              art: .powerUpBrick,
               isNew: true,
               facts: [Fact(label: "Behaviours", value: "Its own"),
                       Fact(label: "Sizes", value: "1 × 2 cells"),
@@ -414,4 +414,12 @@ enum BrickTypeArt {
     case behaviour(EndlessIIBehaviour)
     case style(EndlessIIStyle)
     case size(BrickSize)
+
+    /// The power-up brick, which is none of the three above.
+    ///
+    /// It borrowed `.style(.rounded)` and so the page showed a *rounded brick* - a picture of a
+    /// different brick entirely, and one that stopped being even approximately right when round
+    /// 271 gave the power-up brick its own badge. James, round 283: "power-up - use a generic
+    /// power up graphic."
+    case powerUpBrick
 }

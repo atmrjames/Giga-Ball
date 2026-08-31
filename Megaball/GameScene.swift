@@ -972,6 +972,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// so one landing can arrive twice (round 263). Balls drop out of this by being replaced,
 	/// which is a handful of stale keys over a run and cheaper than watching for their removal.
 	var paddleLandingFrame: [ObjectIdentifier: Int] = [:]
+
+	/// The frame each ball last had its bounce randomised on.
+	///
+	/// The same idea as `paddleLandingFrame` above and against the same trap: `didBegin` reports
+	/// once per *fixture pair*, so one bounce can arrive two or three times, and Randomised
+	/// Bounce drew a fresh angle for each. See `endlessIIRandomisesBounces`.
+	var randomisedBounceFrame: [ObjectIdentifier: Int] = [:]
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]

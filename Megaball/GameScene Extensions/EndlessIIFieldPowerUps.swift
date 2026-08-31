@@ -1061,8 +1061,17 @@ extension GameScene {
     /// frame, with its own jitter, which is the vibrating and glitching. Proportional, it
     /// cannot: ten per cent of a shallow angle is a shallow nudge, so the ball never lands
     /// where the escape hatch has to save it.
+    ///
+    /// **Widened from 0.10 to 0.35 in round 283**, because a tenth was invisible. James: "there's
+    /// no discernible randomness to the bounce." It was narrowed twice - 35 degrees to 25, then
+    /// to a tenth of the room - while chasing a vibrating ball that turned out to be the sign
+    /// bug round 258 found, and once that was fixed nobody put it back. Measured: a tenth moved
+    /// a 45-degree bounce by 3.5 degrees and a 70-degree one by 6, which is *less* than the
+    /// player already gets from hitting the paddle nearer one end. A third moves them by 12 and
+    /// 21, which is a bounce you cannot predict - and it is still proportional to the room, so
+    /// it still cannot throw a shallow bounce below the minimum into the escape hatch's arms.
     static let endlessIIRandomisedBounceDuration = GameScene.endlessIIPaddlePowerUpDuration
-    static let endlessIIRandomisedBounceSpread: Double = 0.10
+    static let endlessIIRandomisedBounceSpread: Double = 0.35
 
     /// Starts or extends Randomised Bounce (§5.4: timed, extends its own duration).
     func endlessIICollectRandomisedBounce() {
@@ -1123,8 +1132,30 @@ extension GameScene {
     /// Every ball, and only while the clock runs. An extra ball keeping its honest bounce
     /// while the first one lied would be stranger than either.
     func endlessIIRandomisesBounces(for subject: SKSpriteNode) -> Bool {
-        gameMode == .endlessII && endlessIIRandomisedBounceClock.isRunning
+        guard gameMode == .endlessII, endlessIIRandomisedBounceClock.isRunning else {
+            return false
+        }
+        guard randomisedBounceFrame[ObjectIdentifier(subject)] != frameNumber else {
+            return false
+        }
+        randomisedBounceFrame[ObjectIdentifier(subject)] = frameNumber
+        return true
+        // **One nudge per ball per frame** (James, round 283: "the ball stutters a lot when
+        // this power up is active").
+        //
+        // A bounce is one event and `didBegin` is not: it reports once per *fixture pair*, so a
+        // brick built from two convex halves - which is every concave brick - reports twice for
+        // one strike, and a ball meeting the seam between two bricks reports twice again. Each
+        // report ran the whole correction, so each drew its own random angle and the ball came
+        // out of a single bounce having been aimed two or three different ways in one frame.
+        // That is the stutter, and widening the spread would have made it worse rather than
+        // better.
+        //
+        // The same shape of guard `paddleHit` has carried since round 259, for the same reason
+        // and against the same §8.6 trap. Kept here rather than at the call sites because this
+        // is already the one gate every one of them asks
     }
+
 
     // MARK: - Ghost Ball
 

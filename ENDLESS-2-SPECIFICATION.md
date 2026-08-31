@@ -1386,6 +1386,24 @@ still returns an object, and area is what tells the difference. Round 280 uses i
 five computed outlines come to 94, 82, 76, 63 and 58 per cent of their cells, which are the
 right fractions for a rounded rectangle, a dome, a wave, a wedge and a dish.
 
+**`didBegin` reports once per *fixture pair*, and a bounce is one event.** This has now bitten
+three times in three different places: the power-up HUD taking two segments off a shaped paddle
+hit (round 259), Randomised Bounce drawing a fresh angle two or three times for one strike
+(round 283), and it is why every concave brick - two convex halves - and every brick seam is a
+double report waiting to happen. The fix each time is the same shape: a per-ball, per-frame
+guard keyed on `frameNumber`, held at the *one gate* everything already asks rather than at each
+call site. `paddleLandingFrame` and `randomisedBounceFrame` are the two that exist.
+
+**A number nobody has measured drifts, and the drift outlives its reason.** Two power-ups read
+as doing nothing in round 283 and both were correctly wired; what was wrong was scale. Ball
+Spin's full grip needed 1400 points a second on a field 400 points across - three and a half
+crossings in one second, a speed no thumb produces - so an ordinary swipe earned a quarter of
+the intended curve. Randomised Bounce's spread had been narrowed twice while chasing a vibrating
+ball that turned out to be round 258's sign bug, and once that was fixed nobody put it back: a
+tenth of the room moved a 45-degree bounce by 3.5 degrees, which is *less* than the player
+already gets from hitting the paddle nearer one end. Neither had ever been made to state its
+effect in degrees. Both do now, in `testWhatBallSpinAndRandomBounceActuallyDo`.
+
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is
 cleared away at the wrong moment, or sits in the last row blocking generation for ever. Big

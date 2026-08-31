@@ -1272,4 +1272,77 @@ final class EndlessIIFrameCostTests: XCTestCase {
         }
         print("")
     }
+
+    /// What Ball Spin and Random Bounce actually do, in degrees.
+    ///
+    /// James, round 283: "ball spin isn't curving the ball - what is actually happening?" and
+    /// "randomised bounce now isn't doing anything. There's no discernible randomness to the
+    /// bounce." Both are wired correctly - the clocks are separate, the grip is taken at the
+    /// bounce, the curve is applied from `didSimulatePhysics`, and the randomiser is called from
+    /// every corrected bounce. So the question is not whether they run but how much they do,
+    /// which is a number neither of them has ever been made to state.
+    func testWhatBallSpinAndRandomBounceActuallyDo() {
+        print("\n  Ball Spin: how far the heading turns over a whole flight")
+        print("    (the play area is about 400 points wide, so a fast swipe is 600-900 pt/s)")
+        for speed in [100, 200, 400, 600, 900, 1400] as [CGFloat] {
+            let rate = EndlessIIBallSpin.turnRate(paddleSpeed: speed)
+
+            // Integrated the way the frames apply it: the rate decays continuously, so the
+            // whole turn is rate / ln(1/decay), and what the player sees near the paddle is
+            // the part spent in the first quarter second
+            let whole = rate/log(1/EndlessIIBallSpin.decayPerSecond)
+            let early = whole*(1 - pow(EndlessIIBallSpin.decayPerSecond, 0.25))
+            print(String(format: "    %4.0f pt/s -> %5.1f deg/s, %5.1f deg in all, "
+                         + "%4.1f deg in the first quarter second",
+                         speed, rate*180/CGFloat.pi, whole*180/CGFloat.pi,
+                         early*180/CGFloat.pi))
+        }
+
+        print("\n  Random Bounce: how far a bounce can be nudged, at spread "
+              + "\(GameScene.endlessIIRandomisedBounceSpread)")
+        let spread = GameScene.endlessIIRandomisedBounceSpread
+        for angle in [20.0, 45.0, 70.0, 90.0] {
+            let full = GameScene.randomisedBounceAngle(from: angle, minimumDeg: 10, share: spread)
+            let none = GameScene.randomisedBounceAngle(from: angle, minimumDeg: 10,
+                                                       share: -spread)
+            // `share` is the *fraction*, and the fraction is drawn from -spread...spread - so
+            // the extremes are +/-spread, not +/-1. Measured with +/-1 the first time, which
+            // reported a 45-degree bounce landing anywhere from 10 to 80 and made the power-up
+            // look ten times wilder than it is
+            print(String(format: "    a %2.0f deg bounce lands between %5.1f and %5.1f "
+                         + "- a spread of %4.1f deg", angle, none, full, full - none))
+        }
+        print("")
+    }
+
+    /// The two reference-page icons James asked to be brought up to date.
+    ///
+    /// Round 283: "power-up - use a generic power up graphic" and "update the directional
+    /// graphic". Both were drawn by the page's own hand rather than from the field's art - the
+    /// power-up brick borrowed a *rounded brick's* picture, and the directional one drew a white
+    /// bar that round 271 replaced with a panel.
+    func testTheUpdatedReferenceIconsCanBeLookedAt() throws {
+        let art: [BrickTypeArt] = [.powerUpBrick, .style(.directional), .style(.fixed),
+                                   .style(.exploding), .style(.spawner)]
+        let column: CGFloat = 140, row: CGFloat = 110
+
+        let display = SKScene(size: CGSize(width: column*CGFloat(art.count) + 20, height: row + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (index, entry) in art.enumerated() {
+            let picture = SKTexture(image: BrickTypeIcons.image(for: entry))
+            let node = SKSpriteNode(texture: picture, size: BrickTypeIcons.canvas)
+            node.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                    y: display.size.height/2)
+            display.addChild(node)
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("reference-icons.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Reference icons, drawn: \(file.path)")
+        print("  power-up, directional, fixed, exploding, spawner\n")
+    }
 }

@@ -48,8 +48,26 @@ enum BrickTypeIcons {
                 draw(style, in: cgContext)
             case .size(let size):
                 draw(size, in: cgContext)
+            case .powerUpBrick:
+                drawPowerUpBrick()
             }
         }
+    }
+
+    /// The power-up brick: the badge every power-up icon is cut to, at the brick's own
+    /// proportions.
+    ///
+    /// **The badge rather than any particular power-up.** James, round 283: "use a generic power
+    /// up graphic." A brick holding Multi-Ball and one holding Shrink Paddle are the same brick
+    /// - what varies is the icon it happens to be carrying, and picking one of the sixty-six for
+    /// the reference page would be describing an example instead of the type.
+    ///
+    /// Square, because the brick is: one cell across and two down (`BrickSize.square`), which is
+    /// the shape `PowerUpBrick` is drawn at.
+    private static func drawPowerUpBrick() {
+        let side = min(canvas.height, canvas.width)*0.82
+        let frame = centred(CGSize(width: side, height: side))
+        artwork(GameScene.powerUpBrickArtName)?.draw(in: frame)
     }
 
     // MARK: - Behaviours
@@ -232,11 +250,14 @@ enum BrickTypeIcons {
 
         case .directional:
             artwork("BrickNormal")?.tinted(tint).draw(in: frame)
-            let thickness = min(frame.width, frame.height)*0.2
-            UIColor.white.setFill()
-            context.fill(CGRect(x: frame.minX, y: frame.maxY - thickness,
-                                width: frame.width, height: thickness))
-            // Facing down, which is the common case - the ball spends most of its time
+            artwork("BrickDirectionalBottomOpen")?.draw(in: frame)
+            // **James's panel, the same one the field wears** (round 283: "update the
+            // directional graphic"). The page drew its own white bar across the bottom, which
+            // was a fair picture of the old mark and no picture at all of the one round 271
+            // replaced it with - the panel darkens the three hard sides and leaves the soft one
+            // clear, so what a player sees on the page is now what they will meet.
+            //
+            // Facing down, which is the common case: the ball spends most of its time
             // travelling up and down, so above and below are the sides a player can plan for
             return
 

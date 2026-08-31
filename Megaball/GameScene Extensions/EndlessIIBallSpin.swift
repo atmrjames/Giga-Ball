@@ -39,7 +39,20 @@ enum EndlessIIBallSpin {
 
     /// The paddle speed that earns the full curve, in points per second. Past this it stops
     /// growing: a flick can be fast enough to be silly, and the ball still has to be playable.
-    static let fullGripSpeed: CGFloat = 1400
+    ///
+    /// **It was 1400, which the play area cannot produce** (James, round 283: "ball spin isn't
+    /// curving the ball - what is actually happening?"). The field is about 400 points across,
+    /// so 1400 points a second is crossing it three and a half times in one - a speed no thumb
+    /// reaches and certainly not while tracking a ball. Everything below full grip is scaled
+    /// linearly from `gripThreshold`, so a brisk 400 pt/s swipe was earning a quarter of the
+    /// curve and a fast 600 pt/s one under half.
+    ///
+    /// Measured rather than guessed at, in `testWhatBallSpinAndRandomBounceActuallyDo`: at 400
+    /// pt/s the ball turned 16 degrees over its *whole* flight and under 5 of them in the first
+    /// quarter second, which is the part played near the paddle where a curve would be seen. At
+    /// 700 the same swipe earns the quarter-turn a second the design always intended, and the
+    /// ceiling is still above what an ordinary swipe reaches so a hard flick still means more.
+    static let fullGripSpeed: CGFloat = 700
 
     /// How far the heading turns per second at full grip, in radians. A quarter-turn over a
     /// second of flight - clearly a curve, never a boomerang.
