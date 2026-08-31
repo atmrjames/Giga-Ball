@@ -349,6 +349,14 @@ extension GameScene {
                                                paddleX: mirror.position.x,
                                                paddleWidth: mirror.size.width)
         let clamped = min(max(collision, -1), 1)
+
+        if endlessIIMirrorPortalTook(subject, collision: clamped) { return }
+        // **The twin has a portal of its own** (James, round 284: "yes - a mirrored paddle gets
+        // its own portal, and both send the ball to the top"). Asked before the bounce is
+        // written, exactly as the paddle asks it, because a portal is the paddle deciding not
+        // to bounce at all - and the ball is put back at the top from `didSimulatePhysics`,
+        // since a position written inside a contact is undone by the rest of the step (§8.6)
+
         body.velocity = PaddleBounce.velocity(arriving: arriving,
                                               collision: PaddleBounce.shaped(
                                                   clamped, by: endlessIIMirrorPaddleSurface),

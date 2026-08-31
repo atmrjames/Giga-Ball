@@ -624,7 +624,41 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   posted", exactly like a force-quit. Honest, but not yet the recommendation; making
   quit post the partial means routing the pause menu's home-confirm through the same
   recording the run's natural end uses.
-- **Monochrome performance** (§5, §4 Blackout).
+- **Monochrome performance** (§5, §4 Blackout). **Measured, round 284**, since James asked
+  for it before deciding: a field of 121 bricks, four balls and a paddle costs 1.69ms to
+  draw as it is and 3.08ms through a `CIPhotoEffectMono` on an `SKEffectNode` wrapping it -
+  **1.82x**, or 10% of a 60fps frame becoming 18.5%. `testWhatBlackoutWouldCostToDraw` is
+  the measurement and it prints both numbers. What it can honestly claim is the *ratio*:
+  it is a real render of a real layer through the real filter, but it runs on a Mac's GPU
+  through the simulator and the oldest supported iPhone is a different machine. A ratio near
+  one would have settled the gate; 1.82x does not, so this still wants one run on the oldest
+  device before the palette-swap fallback is ruled out. The HUD stays outside the filtered
+  node - James, round 284: "for the HUD, leave it, it doesn't need the filter" - which is
+  also the cheaper arrangement, since a filter's cost goes with the area it covers.
+
+- **The twist compatibility matrix is defined, and the generator does not enforce all of
+  it.** James, round 284: "this matrix has already been defined and shared." It is the
+  *Twist Matrix* sheet of `File Sharing/Giga-Ball 2026 - Twist Details.xlsx`, twenty twists
+  by twenty, and it is written down here because a spreadsheet outside the repository is not
+  where a rule the generator has to obey should live. Most of it the generator already keeps
+  for free: it draws **at most one twist per category**, so every "No" between two twists of
+  the same family is legal by construction, and Vanilla - which the sheet marks
+  incompatible with everything - is simply the no-twists day.
+
+  **Four pairs in the sheet are "No" across different categories, and those the generator
+  can and does draw together:** Extra Balls (`lives`) with Time Trial (`tempo`), and Extra
+  Mayhem (`dress`) with each of Upside Down, Mirrored and Brick Swap (`layout`).
+
+  **This is not a quick fix, and the reason is §2.1.** A day is computed from its date and
+  nothing else, so a rule that refuses a pair changes what *past* days drew - the same trap
+  the disclosure category had to be dated around. Refusing these four has to arrive dated,
+  like a new twist does, and the days before that date keep the pairs they were always
+  going to have. Which of the two - honouring the matrix from a date, or accepting that four
+  pairs shipped - is James's call, and the leaderboards are the reason it is his.
+
+  The sheet also lists **Classic Mayhem** and **Landslide**, neither of which is a
+  `DailyTwist` case yet; Classic Mayhem is §12's Mayhem Rules and Landslide is already
+  built. Their rows are recorded here for when Mayhem Rules is scheduled.
 
 - **An early launch snaps the fog shut** (round 177, James: "if fog of war twist is in
   play, at the start if the player launches the ball before the fade out animation has

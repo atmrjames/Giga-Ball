@@ -851,6 +851,33 @@ extension GameScene {
         return true
     }
 
+    /// The mirror's own portal, which is the paddle's with one difference.
+    ///
+    /// James, round 284, answering the parity matrix's third open cell: "yes - a mirrored
+    /// paddle gets its own portal, and both send the ball to the top." So the exit is the same
+    /// exit and the arithmetic is the same arithmetic - `applyEndlessIIPaddlePortals` does not
+    /// know or care which surface swallowed the ball, and it should not.
+    ///
+    /// **It spends the turn.** The mirror deliberately spends none of the paddle's turns for
+    /// an ordinary bounce - that is what makes it a second surface rather than a second paddle
+    /// - but a portal is the whole of what a Portal Paddle turn buys, and a surface that gave
+    /// it away free would make the mirror the way to farm the power-up rather than a second
+    /// place to use it. Worth a play-test: the alternative reading is that the twin's portal is
+    /// a gift and should cost nothing.
+    ///
+    /// **And it does not touch `endlessIIPortalPaddleOwedTurn`.** That flag is the paddle's
+    /// promise to itself - the effect a turn has already been spent on must still land even if
+    /// that turn was the clock's last - and a mirror contact in the same step consuming it
+    /// would take the paddle's own portal away from it.
+    func endlessIIMirrorPortalTook(_ subject: SKSpriteNode, collision: Double) -> Bool {
+        guard gameMode == .endlessII, endlessIIPortalPaddleClock.isRunning else { return false }
+        endlessIIPendingPaddlePortals.append(subject)
+        endlessIIPendingPortalCollisions[ObjectIdentifier(subject)] = collision
+        endlessIIPortalPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        if hapticsSetting { mediumHaptic.impactOccurred() }
+        return true
+    }
+
     /// Puts every ball the paddle swallowed this step back in at the top.
     ///
     /// Runs from `didSimulatePhysics`. The horizontal velocity is kept and the vertical one

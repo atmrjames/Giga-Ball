@@ -3792,3 +3792,267 @@ final class BallControlHasInertiaTests: XCTestCase {
         XCTAssertLessThan(stepped.velocity, 200, "and being slowed")
     }
 }
+
+/// The three parity cells James answered in round 284.
+///
+/// The paddle-family matrix has been open since round 200 - "the safety paddle, mirrored
+/// paddle, split paddle power ups should match power ups of the main paddle" - and it was
+/// never a coding question but a design one: three surfaces by eight effects, each cell its
+/// own decision. Round 284 asked the three that were not obvious and got three answers:
+///
+/// 1. a sticky safety paddle's ball "goes up, like it would from the paddle";
+/// 2. "each split has one laser turret on its far end";
+/// 3. "yes" to a mirrored paddle having its own portal, and "both send the ball to the top".
+///
+/// Each test says which of those it is holding to.
+final class PaddleFamilyParityTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.layoutUnit = 40
+        scene.ballSize = 14
+        scene.paddleWidth = 120
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = 100
+        scene.gameWidth = 400
+        scene.ballSpeedLimit = 600
+        // A launch is `cos(angle)*ballSpeedLimit`, and a scene that never ran `setUpGame` has
+        // that at zero - which reads as "the launch does nothing" and is really "there is no
+        // speed to launch at"
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 60, y: -300)
+        scene.addChild(scene.paddle)
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    // MARK: - "Yes - both send the ball to the top"
+
+    private func mirror(_ scene: GameScene) -> SKSpriteNode? {
+        scene.childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode
+    }
+
+    func testTheMirrorSendsTheBallToTheTopToo() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPortalPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+
+        scene.ball.position = CGPoint(x: mirror.position.x, y: mirror.position.y + 8)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 100, dy: -400)
+        scene.endlessIIMirrorPaddleHit(scene.ball)
+
+        XCTAssertTrue(scene.endlessIIPendingPaddlePortals.contains { $0 === scene.ball },
+                      "the twin swallowed it, and the exit is the paddle's own exit")
+    }
+
+    func testTheMirrorsPortalSpendsTheTurnItUses() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPortalPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        let before = scene.endlessIIPortalPaddleClock.remaining
+
+        scene.ball.position = CGPoint(x: mirror.position.x, y: mirror.position.y + 8)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIIMirrorPaddleHit(scene.ball)
+
+        XCTAssertLessThan(scene.endlessIIPortalPaddleClock.remaining, before,
+                          "a portal is the whole of what a turn buys, and a surface giving it "
+                          + "away free would make the mirror the way to farm the power-up")
+    }
+
+    /// The mirror must not eat the promise the paddle made to itself.
+    func testAMirrorHitLeavesThePaddlesOwedPortalAlone() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPortalPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.endlessIIPortalPaddleOwedTurn = true
+
+        scene.ball.position = CGPoint(x: mirror.position.x, y: mirror.position.y + 8)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIIMirrorPaddleHit(scene.ball)
+
+        XCTAssertTrue(scene.endlessIIPortalPaddleOwedTurn,
+                      "that flag is the paddle's promise that an effect already paid for still "
+                      + "lands; a mirror contact in the same step must not consume it")
+    }
+
+    func testWithNoPortalRunningTheMirrorStillJustBounces() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+
+        scene.ball.position = CGPoint(x: mirror.position.x, y: mirror.position.y + 8)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIIMirrorPaddleHit(scene.ball)
+
+        XCTAssertTrue(scene.endlessIIPendingPaddlePortals.isEmpty)
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "it went back up")
+    }
+
+    // MARK: - "Each split has one laser turret on its far end"
+
+    func testAnUnsplitPaddleFiresFromItsTwoEndsAsItAlwaysHas() {
+        let scene = mayhem()
+        let origins = scene.endlessIILaserOrigins
+        XCTAssertEqual(origins.count, 2)
+        XCTAssertEqual(origins[0], scene.paddle.position.x - 60 + scene.layoutUnit/4,
+                       accuracy: 0.01)
+        XCTAssertEqual(origins[1], scene.paddle.position.x + 60 - scene.layoutUnit/4,
+                       accuracy: 0.01)
+    }
+
+    func testASplitPaddleFiresOnceFromEachPiecesFarEnd() {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let origins = scene.endlessIILaserOrigins
+
+        XCTAssertEqual(origins.count, layout.count,
+                       "one turret per piece - the old two-sided alternation armed the outer "
+                       + "pieces and left the rest wearing the dress and firing nothing")
+
+        let pitch = layout.segment + layout.gap
+        let first = -scene.paddle.size.width/2 + layout.segment/2
+        for (index, origin) in origins.enumerated() {
+            let centre = scene.paddle.position.x + first + pitch*CGFloat(index)
+            let outward: CGFloat = (centre - scene.paddle.position.x) < 0 ? -1 : 1
+            XCTAssertEqual(origin, centre + outward*(layout.segment/2 - scene.layoutUnit/4),
+                           accuracy: 0.01,
+                           "piece \(index) fires from the end away from the middle")
+        }
+    }
+
+    /// An expanded split is more than two pieces, which is the case the old code could not say.
+    func testAWiderSplitArmsEveryPieceItGrew() {
+        let scene = mayhem()
+        scene.paddle.size.width = 360
+        scene.endlessIICollectDoublePaddle()
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 360,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        XCTAssertGreaterThan(layout.count, 2, "a wide paddle really does make more pieces")
+        XCTAssertEqual(scene.endlessIILaserOrigins.count, layout.count)
+    }
+
+    func testNoTurretFiresFromOutsideThePaddle() {
+        let scene = mayhem()
+        scene.paddle.size.width = 300
+        scene.endlessIICollectDoublePaddle()
+        for origin in scene.endlessIILaserOrigins {
+            XCTAssertGreaterThanOrEqual(origin, scene.paddle.position.x - 150)
+            XCTAssertLessThanOrEqual(origin, scene.paddle.position.x + 150)
+        }
+    }
+
+    // MARK: - "Ball goes up, like it would from the paddle"
+
+    private func withSafetyBar() -> (GameScene, SKSpriteNode) {
+        let scene = mayhem()
+        scene.endlessIICollectSafetyPaddle()
+        let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName) as! SKSpriteNode
+        return (scene, bar)
+    }
+
+    private func land(_ scene: GameScene, _ bar: SKSpriteNode, at x: CGFloat) -> SKSpriteNode {
+        let subject = scene.ball
+        subject.position = CGPoint(x: x, y: bar.position.y + 6)
+        subject.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        subject.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIISafetyPaddleHit(subject)
+        return subject
+    }
+
+    func testASafetyBarWithNoStickyStillBounces() {
+        let (scene, bar) = withSafetyBar()
+        let subject = land(scene, bar, at: bar.position.x)
+        XCTAssertTrue(scene.endlessIIHeldBalls.isEmpty, "nothing is caught")
+        XCTAssertNotEqual(subject.physicsBody?.velocity.dy, 0, "it was returned")
+    }
+
+    func testAStickySafetyBarCatchesTheBallInsteadOfBouncingIt() {
+        let (scene, bar) = withSafetyBar()
+        scene.stickyPaddleCatches = 3
+        let subject = land(scene, bar, at: bar.position.x)
+
+        XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === subject },
+                      "it joins the one queue, so launches stay in the order they were caught")
+        XCTAssertTrue(scene.endlessIIIsHeldOnSafetyBar(subject))
+        XCTAssertEqual(subject.physicsBody?.velocity.dx, 0)
+        XCTAssertEqual(subject.physicsBody?.velocity.dy, 0)
+        XCTAssertEqual(subject.position.y,
+                       bar.position.y + bar.size.height/2 + subject.size.height/2,
+                       accuracy: 0.01, "resting on the bar")
+    }
+
+    /// The answer itself: "ball goes up, like it would from the paddle."
+    func testTheCaughtBallGoesUp() {
+        let (scene, bar) = withSafetyBar()
+        scene.stickyPaddleCatches = 3
+        let subject = land(scene, bar, at: bar.position.x)
+        scene.endlessIILaunchHeldBall()
+
+        XCTAssertGreaterThan(subject.physicsBody?.velocity.dy ?? 0, 0, "up")
+        XCTAssertFalse(scene.endlessIIHeldBalls.contains { $0 === subject }, "and gone")
+        XCTAssertFalse(scene.endlessIIIsHeldOnSafetyBar(subject))
+    }
+
+    /// "Like it would from the paddle" - which means the spot decides the angle.
+    func testWhereItLandedOnTheBarDecidesHowSteeplyItLeaves() {
+        func departure(at x: CGFloat) -> CGVector {
+            let (scene, bar) = withSafetyBar()
+            scene.stickyPaddleCatches = 3
+            let subject = land(scene, bar, at: bar.position.x + x)
+            scene.endlessIILaunchHeldBall()
+            return subject.physicsBody?.velocity ?? .zero
+        }
+        let middle = departure(at: 0)
+        let leftish = departure(at: -40)
+        let rightish = departure(at: 40)
+
+        XCTAssertLessThan(abs(middle.dx), abs(leftish.dx),
+                          "caught in the middle it leaves near enough straight up")
+        XCTAssertLessThan(leftish.dx, 0, "caught left of centre it leaves to the left")
+        XCTAssertGreaterThan(rightish.dx, 0, "and right of centre, to the right")
+        XCTAssertGreaterThan(leftish.dy, 0)
+        XCTAssertGreaterThan(rightish.dy, 0)
+    }
+
+    /// The bar can go while it is holding something.
+    func testABallOnABarThatHasGoneStillLaunches() {
+        let (scene, bar) = withSafetyBar()
+        scene.stickyPaddleCatches = 3
+        let subject = land(scene, bar, at: bar.position.x)
+        bar.removeFromParent()
+        scene.endlessIILaunchHeldBall()
+        XCTAssertGreaterThan(subject.physicsBody?.velocity.dy ?? 0, 0,
+                             "a power-up that ended while holding a ball must not strand it")
+    }
+
+    /// A ball on the bar is not carried about by the paddle.
+    func testABallOnTheBarStaysWhereItLanded() {
+        let (scene, bar) = withSafetyBar()
+        scene.stickyPaddleCatches = 3
+        let subject = land(scene, bar, at: bar.position.x + 30)
+        let landed = subject.position
+
+        scene.paddle.position.x += 90
+        scene.tickEndlessIIHeldBalls()
+
+        XCTAssertEqual(subject.position.x, landed.x, accuracy: 0.01,
+                       "the bar stands in the middle of the field and does not move sideways, "
+                       + "so nothing about the paddle should move the ball resting on it")
+        XCTAssertEqual(subject.position.y, landed.y, accuracy: 0.01)
+    }
+}

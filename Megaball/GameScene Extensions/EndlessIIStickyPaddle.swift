@@ -51,6 +51,7 @@ extension GameScene {
         guard endlessIIHeldBalls.isEmpty == false else { return }
         for index in endlessIIHeldBalls.indices.reversed()
         where endlessIIHeldBalls[index].parent == nil {
+            endlessIISafetyHeldBalls.remove(ObjectIdentifier(endlessIIHeldBalls[index]))
             endlessIIHeldBalls.remove(at: index)
             if endlessIIHeldOffsets.indices.contains(index) {
                 endlessIIHeldOffsets.remove(at: index)
@@ -65,7 +66,12 @@ extension GameScene {
     var endlessIITapLaunchesHeldBall: Bool {
         guard gameMode == .endlessII else { return false }
         guard let next = endlessIINextHeldBall else { return false }
-        return next !== ball
+        return next !== ball || endlessIIIsHeldOnSafetyBar(next)
+        // **The first ball counts too when it is on the safety bar** (round 285). It is excluded
+        // here because a first ball resting on the *paddle* at the start of a life is launched
+        // by `releaseBall`, which is six years of code this queue does not want to duplicate -
+        // but a ball caught on the bar is not on the paddle, is not at the start of a life, and
+        // has nothing else in the game that would ever let it go
     }
 
     /// Catches an extra ball on the sticky paddle.
@@ -106,6 +112,7 @@ extension GameScene {
         guard let index = endlessIIHeldBalls.firstIndex(where: { $0 === launched }) else { return }
         endlessIIHeldBalls.remove(at: index)
         endlessIIHeldOffsets.remove(at: index)
+        endlessIISafetyHeldBalls.remove(ObjectIdentifier(launched))
         endlessIIRefreshStickyPaddleLook()
     }
 
@@ -115,10 +122,21 @@ extension GameScene {
     /// first ball's does - a ball caught at the edge leaves steeply and one caught in the
     /// middle leaves near enough straight up.
     func endlessIILaunchHeldBall() {
-        guard let extra = endlessIINextHeldBall, extra !== ball else { return }
+        guard let extra = endlessIINextHeldBall else { return }
+        guard extra !== ball || endlessIIIsHeldOnSafetyBar(extra) else { return }
 
-        let offset = Double((extra.position.x - paddle.position.x)/(paddle.size.width/2))
+        let offset: Double
+        if endlessIIIsHeldOnSafetyBar(extra) {
+            offset = endlessIISafetyBarOffset(of: extra)
+                ?? Double((extra.position.x - paddle.position.x)/(paddle.size.width/2))
+        } else {
+            offset = Double((extra.position.x - paddle.position.x)/(paddle.size.width/2))
+        }
         let angle = endlessIILaunchAngle(atPaddleOffset: offset)
+        // **The same arithmetic off a different surface** (James, round 284: a sticky safety
+        // paddle's ball "goes up, like it would from the paddle"). All that changes is whose
+        // width the landing spot is a fraction of - the angle rule itself is the one written
+        // once below, so the two surfaces cannot drift apart
         extra.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
                                                dy: sin(angle)*Double(ballSpeedLimit))
         endlessIIReleasedFromPaddle(extra)
@@ -161,6 +179,14 @@ extension GameScene {
 
         for (index, held) in endlessIIHeldBalls.enumerated() where held !== ball {
             guard held.parent != nil else { continue }
+            if endlessIIIsHeldOnSafetyBar(held) {
+                held.physicsBody?.velocity = .zero
+                continue
+                // A ball on the safety bar rides nothing: the bar stands in the middle of the
+                // field and never moves sideways, so the ball stays exactly where it landed.
+                // Held still all the same - a body left with its own velocity would drift off
+                // a surface nothing is writing a position for
+            }
             let offset = endlessIIHeldOffsets.indices.contains(index) ? endlessIIHeldOffsets[index] : 0
             held.position.x = paddle.position.x + offset
             held.position.y = ballStartingPositionY
@@ -186,7 +212,9 @@ extension GameScene {
     }
 
     /// Hides the sticky look once the paddle is holding nothing.
-    private func endlessIIRefreshStickyPaddleLook() {
+    /// Not private since round 285: the safety bar catches balls too, and a catch that did
+    /// not refresh the look would leave the sticky overlay saying nothing had happened.
+    func endlessIIRefreshStickyPaddleLook() {
         guard endlessIIHasHeldExtras == false, ballIsOnPaddle == false else { return }
         if paddleTexture == retroPaddle {
             paddleRetroStickyTexture.isHidden = true
@@ -219,5 +247,6 @@ extension GameScene {
     func endlessIIClearHeldBalls() {
         endlessIIHeldBalls.removeAll()
         endlessIIHeldOffsets.removeAll()
+        endlessIISafetyHeldBalls.removeAll()
     }
 }

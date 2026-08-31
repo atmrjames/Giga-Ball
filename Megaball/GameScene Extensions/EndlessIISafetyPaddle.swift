@@ -265,6 +265,11 @@ extension GameScene {
         // edge-touching at that instant registers a contact - which then rang the haptic and,
         // worse, rewrote a climbing ball's velocity through the bounce arithmetic below. Only
         // a ball moving *down* has any business here
+        if endlessIISafetyPaddleCaught(subject) { return }
+        // **Before the sound, the haptic and the shape**, because a catch is the surface
+        // deciding not to bounce at all - the same order the paddle asks its own catches in,
+        // and it plays the sticky sound rather than the bounce one
+
         if soundsSetting { run(ballPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
 
@@ -306,4 +311,69 @@ extension GameScene {
         // line of its own because `ballHorizontalControl` has applied it to every corrected
         // bounce in the game since round 125 - paddle, wall, brick, backstop and this.
     }
+    // MARK: - A sticky safety paddle
+
+    /// Catches a ball on the safety bar while Sticky Paddle is running.
+    ///
+    /// James, round 284, answering the parity matrix's first open cell - what does a *sticky*
+    /// safety paddle do with the ball it catches? "Ball goes up, like it would from the
+    /// paddle." So it is the paddle's own launch, from the paddle's own arithmetic, off a
+    /// different surface: a ball caught near an end leaves steeply and one caught in the middle
+    /// leaves near enough straight up, exactly as `endlessIILaunchAngle` has always said.
+    ///
+    /// **It joins the same queue.** There is one order of launches in this mode and a second
+    /// list would be a second order - a ball caught on the bar and a ball caught on the paddle
+    /// go out oldest first, together, because that is the only order a player can predict.
+    ///
+    /// **What it does not do is ride anything.** A held ball follows the paddle because the
+    /// paddle is under the player's finger; the bar stands in the middle of the field and does
+    /// not move sideways at all, so a ball caught on it is simply left where it landed. That is
+    /// also why the primary ball can be caught here when it cannot be caught on the paddle by
+    /// this route - the 2020 code that moves it with the paddle only runs while it is *on* the
+    /// paddle, and a ball resting on the bar is not.
+    ///
+    /// Refused outside the bar's span for the reason the paddle refuses it: the sticky band is
+    /// the top face, and a ball meeting the very end of the bar has met the end of it.
+    @discardableResult
+    func endlessIISafetyPaddleCaught(_ subject: SKSpriteNode) -> Bool {
+        guard gameMode == .endlessII, stickyPaddleCatches != 0 else { return false }
+        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return false }
+        guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return false }
+
+        let reach = bar.size.width/2 - subject.size.width/3
+        guard abs(subject.position.x - bar.position.x) < reach else { return false }
+
+        subject.physicsBody?.velocity = .zero
+        subject.position.y = bar.position.y + bar.size.height/2 + subject.size.height/2
+        endlessIIHeldBalls.append(subject)
+        endlessIIHeldOffsets.append(subject.position.x - bar.position.x)
+        endlessIISafetyHeldBalls.insert(ObjectIdentifier(subject))
+        // The offset is measured from the *bar* rather than the paddle, and only the launch
+        // reads it - what makes this ball different from a paddle-held one is which surface's
+        // width its spot is a fraction of
+
+        endlessIIRefreshStickyPaddleLook()
+        if soundsSetting { run(stickyPaddleHitSound) }
+        if hapticsSetting { lightHaptic.impactOccurred() }
+        return true
+    }
+
+    /// Whether this ball is waiting on the safety bar rather than on the paddle.
+    func endlessIIIsHeldOnSafetyBar(_ subject: SKSpriteNode) -> Bool {
+        endlessIISafetyHeldBalls.contains(ObjectIdentifier(subject))
+    }
+
+    /// The fraction across the safety bar a held ball is sitting at, for its launch angle.
+    ///
+    /// Nil when the bar has gone - a power-up can end while it is holding something, and a ball
+    /// left on a bar that no longer exists has to launch by *some* rule. The caller falls back
+    /// to the paddle's, which is the same answer the same arithmetic would have given from a
+    /// surface the same width.
+    func endlessIISafetyBarOffset(of subject: SKSpriteNode) -> Double? {
+        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode, bar.size.width > 0 else { return nil }
+        return Double((subject.position.x - bar.position.x)/(bar.size.width/2))
+    }
+
 }

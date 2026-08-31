@@ -808,6 +808,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
+
+    /// Which of `endlessIILaserOrigins` the next shot comes from, while the paddle is split.
+    ///
+    /// A split paddle has more than two places to fire from, so the two-sided flag above
+    /// cannot describe it. That flag stays exactly as it was for every other paddle in every
+    /// mode.
+    var endlessIILaserOriginIndex: Int = 0
+
+    /// One laser dress per segment of a split paddle - see `refreshEndlessIISplitLaserDress`.
+    var endlessIISplitLaserDress: [SKSpriteNode] = []
+
+    /// Which held balls are waiting on the safety bar rather than on the paddle.
+    ///
+    /// They are in the one launch queue with everything else - there is one order of launches
+    /// and a second list would be a second order - and this says which surface's width each
+    /// one's landing spot is a fraction of.
+    var endlessIISafetyHeldBalls: Set<ObjectIdentifier> = []
 	var powerUpProximity: Bool = false
     // Power up properties
     
@@ -2123,6 +2140,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let underside = paddle.position.y - paddle.size.height/2
         paddleLaser.position = CGPoint(x: paddle.position.x, y: underside)
         paddleSticky.position = CGPoint(x: paddle.position.x, y: underside)
+        refreshEndlessIISplitLaserDress()
+        // After the strip has been placed, because the pieces take their height and their line
+        // from it - and from here rather than from the split's own refresh, which returns early
+        // on every frame the paddle's width has not moved, where the dress has to follow the
+        // paddle on every frame it moves
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -7206,7 +7228,19 @@ laserTimer?.invalidate()
 			laser.size.width = layoutUnit/4
 			laser.size.height = laser.size.width*4
 			
-			if laserSideLeft {
+			if endlessIIPaddleIsSplit {
+				let origins = endlessIILaserOrigins
+				let index = endlessIILaserOriginIndex % max(origins.count, 1)
+				laser.position = CGPoint(x: origins[index],
+				                         y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
+				laser.texture = laserNormalTexture
+				endlessIILaserOriginIndex = (index + 1) % max(origins.count, 1)
+				// **One turret per segment, taken in turn** (James, round 284: "each split has
+				// one laser turret on its far end"). The two-sided alternation below cannot say
+				// this: an expanded split is up to five pieces, and it would arm the outermost
+				// two and leave the rest wearing the dress and firing nothing. Every other
+				// paddle in every mode goes through the branches below, untouched
+			} else if laserSideLeft {
 				laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2 + laser.size.width, y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
 				
 				if paddleTexture == retroPaddle {

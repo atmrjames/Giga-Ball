@@ -1523,4 +1523,55 @@ final class EndlessIIFrameCostTests: XCTestCase {
         // a bar invented here would be a bar invented here
     }
 
+    /// A split paddle wearing its lasers, drawn so somebody can look at it.
+    ///
+    /// Round 285's visual half: the laser dress used to be one strip across the whole span,
+    /// which said "armed" about the gaps as well - the one place a laser certainly does not
+    /// come from. The marks below each origin are where the shots actually start.
+    func testTheSplitPaddlesLasersCanBeLookedAt() throws {
+        let display = SKScene(size: CGSize(width: 700, height: 300))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (index, span) in [CGFloat(120), 240, 360].enumerated() {
+            let scene = GameScene()
+            scene.gameMode = .endlessII
+            scene.totalStatsArray = [TotalStats()]
+            scene.layoutUnit = 40
+            scene.ballSize = 14
+            scene.paddleWidth = 120
+            scene.paddle.size = CGSize(width: span, height: 12)
+            scene.paddle.position = .zero
+            scene.addChild(scene.paddle)
+            scene.endlessIICollectDoublePaddle()
+            scene.refreshEndlessIIDoublePaddle()
+
+            let layout = GameScene.endlessIIDoublePaddleLayout(span: span,
+                                                               standardWidth: 120,
+                                                               ballSize: 14)
+            let pitch = layout.segment + layout.gap
+            let first = -span/2 + layout.segment/2
+            let y = 240 - 80*CGFloat(index)
+
+            for piece in 0..<layout.count {
+                let bar = SKSpriteNode(color: .white,
+                                       size: CGSize(width: layout.segment, height: 10))
+                bar.position = CGPoint(x: 350 + first + pitch*CGFloat(piece), y: y)
+                display.addChild(bar)
+            }
+            for origin in scene.endlessIILaserOrigins {
+                let shot = SKSpriteNode(color: .systemPink, size: CGSize(width: 6, height: 22))
+                shot.position = CGPoint(x: 350 + origin, y: y + 18)
+                display.addChild(shot)
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("round-285.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Round 285, drawn: \(file.path)")
+        print("  a split paddle at 120, 240 and 360 wide, with a shot over each turret\n")
+    }
+
 }
