@@ -1362,6 +1362,16 @@ a shallower dish than the one it can see - which is the thing round 213 set out 
 the geometry deepens to match the art, and the shape starts reading as two bricks with a gap, or
 the art is redrawn shallower. That is James's call, not a sweep's.
 
+**`SKPhysicsBody.area` is in square metres, and SpriteKit is 150 points to the metre.** A
+75 x 18 point paddle reports `0.06`, not `1350`. Round 277 read it as points, saw `0.000` for
+every shape, concluded a traced body reports no area at all, and wrote that down as the reason
+it could not settle what resolution the tracer samples at. The number was there the whole time -
+multiplied out it is 1274 square points, 94% of the paddle's box, which is exactly a rounded
+rectangle. It is a good check that a polygon body was *accepted*: a piece wound the wrong way
+still returns an object, and area is what tells the difference. Round 280 uses it to say the
+five computed outlines come to 94, 82, 76, 63 and 58 per cent of their cells, which are the
+right fractions for a rounded rectangle, a dome, a wave, a wedge and a dish.
+
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is
 cleared away at the wrong moment, or sits in the last row blocking generation for ever. Big

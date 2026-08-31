@@ -3367,6 +3367,44 @@ final class PaddleOutlineTests: XCTestCase {
         }
     }
 
+    /// The body the engine gets is a real solid of about the right size.
+    ///
+    /// The one thing the drawings cannot show: whether `SKPhysicsBody` *accepted* what it was
+    /// handed. A polygon wound the wrong way is a body the ball passes through - the trap
+    /// `EndlessIIFaceGeometry` has a whole comment about - and it fails silently, because a
+    /// rejected or inverted piece still returns an object. Area is the tell: a compound of
+    /// twenty strips covering most of a 75 x 18 paddle has to come to most of 1350 square
+    /// points, and an inverted or empty one does not.
+    ///
+    /// **`area` is in square metres**, and SpriteKit is 150 points to the metre. Round 277 read
+    /// it as points, got 0.000 for every shape and concluded a traced body reports no area at
+    /// all - it reports 0.06, which is 1350 square points, which is the paddle. That mistake is
+    /// why round 277 could not settle what resolution the tracer samples at and said so; the
+    /// number was there the whole time.
+    func testTheBodyIsASolidOfAboutTheRightSize() throws {
+        let size = CGSize(width: 75, height: 18)
+        let pointsPerMetre: CGFloat = 150
+        let box = size.width*size.height
+
+        for name in ["regularPaddle", "regularPaddleConvex", "regularPaddleConcave",
+                     "regularPaddleWave", "regularPaddleWedgeLeft"] {
+            PaddleOutline.empty()
+            let body = try XCTUnwrap(PaddleOutline.body(for: SKTexture(imageNamed: name),
+                                                        size: size), name)
+            let points = body.area*pointsPerMetre*pointsPerMetre
+
+            XCTAssertGreaterThan(points, box*0.4,
+                                 "\(name): \(points) square points against a \(box)-point "
+                                 + "box - too little to be the paddle, which is what an "
+                                 + "inverted or dropped piece looks like from out here")
+            XCTAssertLessThan(points, box*1.02,
+                              "\(name): more area than the cell it is cut from")
+            print(String(format: "    %-24@ %6.0f of %4.0f square points  (%2.0f%%)",
+                         name as NSString, points, box, points/box*100))
+        }
+        print("")
+    }
+
     /// The body is built once per picture and size, and copied after.
     func testTheOutlineIsKeptRatherThanRecomputed() {
         let texture = SKTexture(imageNamed: "regularPaddleConvex")
