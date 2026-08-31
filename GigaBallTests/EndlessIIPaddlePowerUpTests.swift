@@ -3183,23 +3183,29 @@ final class PaddleSurfaceTests: XCTestCase {
 /// This is the second one, in the place a green suite is read.
 final class ShapedPaddleWeightTests: XCTestCase {
 
-    /// What it ships at. Named here as well as in the scene so the two have to be changed
-    /// together, and so this test says what "put it back" means.
+    /// What it ships at, and what it was raised to for the play test.
     private let shipping = 3
+    private let playTest = 30
 
-    func testTheShapedPaddleWeightIsStillThePlayTestOne() {
+    /// It is back at the shipping weight, and the reminder is here if it is ever raised again.
+    ///
+    /// James, round 282: "set the shaped paddle weight back to normal." Round 279 put this test
+    /// in because the only record of the raised weight was a comment on the number itself, and a
+    /// release blocker recorded in the code it blocks is one nobody is tracking. It reads the
+    /// other way round now: silent while the weight is right, and loud the moment it is not.
+    func testTheShapedPaddleWeightIsTheShippingOne() {
         let weight = GameScene.shapedPaddlePlayTestWeight
         guard weight != shipping else { return }
         print("""
 
           NOTE: shaped paddles are dropping at weight \(weight), not \(shipping).
-          That is round 214's play-test setting. Put it back before release -
+          That is a play-test setting. Put it back before release -
           GameScene.shapedPaddlePlayTestWeight.
 
         """)
-        XCTAssertEqual(weight, 30,
-                       "the play-test weight has been changed to something that is neither the "
-                       + "play-test value nor the shipping one, which is worth a second look")
+        XCTAssertEqual(weight, playTest,
+                       "the weight is neither the shipping value nor the play-test one, which "
+                       + "is worth a second look")
     }
 
     /// Every shape drops at the same weight, whatever it is.

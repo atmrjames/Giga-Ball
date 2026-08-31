@@ -6127,14 +6127,18 @@ laserTimer?.invalidate()
 	static let playRatio = GameSceneLayout.playRatio
 	static let hudUnits = GameSceneLayout.hudUnits
 
-	/// **Temporary, for round 214's play test.** The three shaped paddles are rare - weight 3
-	/// against a whole table of weights - so meeting one takes a long run, and James asked for them
-	/// raised while he judges how the new shape-driven bounce feels.
+	/// How often a shaped paddle drops. Weight 3 against a whole table of weights, so meeting
+	/// one takes a long run - which is what a rare power-up is.
 	///
-	/// **Put this back to 3 before release.** It is one number in one place for exactly that
-	/// reason: a play-test weight left in is a rare power-up that quietly became common, which
-	/// is the sort of thing nobody notices until the balance is wrong for everybody.
-	static let shapedPaddlePlayTestWeight = 30
+	/// It was **30** from round 214 to round 282, ten times that, so James could meet the shapes
+	/// often enough to judge how the shape-driven bounce feels. James, round 282: "set the shaped
+	/// paddle weight back to normal." It was one number in one place for exactly that reason: a
+	/// play-test weight left in is a rare power-up that has quietly become common, which nobody
+	/// notices until the balance is wrong for everybody.
+	///
+	/// The name keeps `PlayTestWeight` because five power-ups read it and it is what makes
+	/// raising them again a single edit.
+	static let shapedPaddlePlayTestWeight = 3
 
 	/// **Where the frame around the play area sits, and the HUD on top of it.**
 	///

@@ -76,12 +76,29 @@ enum EndlessIIFaceGeometry {
     /// bounce it produces reads as a bug.
     static let convexShoulder: CGFloat = -0.10
 
-    /// How deep the notch cuts, as a fraction of height above the mid-line.
+    /// How deep the notch cuts, as a fraction of height from the mid-line. Negative is below it.
     ///
-    /// Deliberately shallow, and above the middle. A notch cut past the centre would leave
-    /// the sprite nowhere to hide (see the file comment), and a deeper notch on a brick this
-    /// size stops reading as a dish and starts reading as two bricks with a gap.
-    static let concaveNotch: CGFloat = 0.10
+    /// **Measured off James's artwork, not chosen.** It was `0.10` - shallow and above the
+    /// middle - on the reasoning that a notch cut past the centre would leave the sprite nowhere
+    /// to hide, and that a deeper one stops reading as a dish and starts reading as two bricks
+    /// with a gap. James drew a V four times deeper, and round 280's render showed what that
+    /// disagreement looked like: a ball aimed into the dish met a shallower dish than the player
+    /// could see, which is the thing round 213 set out to end.
+    ///
+    /// James, round 282: "match the concave body to the graphic of the concave brick I supplied,
+    /// not the body you created prior. The geometry needs to deepen to match the art."
+    ///
+    /// So this is a *measurement*. `PaddleOutline.edges` - the sub-pixel edge finder built for
+    /// the paddle in round 280 - reads the top edge of `BrickNormalConcave` and
+    /// `BrickMultiHit1Concave` bottoming out at 0.260 of the picture's height, which is 0.240
+    /// below its middle. Two types agree; the ones that read differently are the ones whose art
+    /// carries a border around its own canvas, which makes every column opaque at the very top.
+    ///
+    /// Both of the old objections are answered rather than overruled. The sprite hides on the
+    /// brick's *floor* since round 280, where the silhouette is full width below the notch and
+    /// James's picture is solid too. And whether a deep notch reads as two bricks with a gap was
+    /// a judgement about a drawing, which is now his drawing.
+    static let concaveNotch: CGFloat = -0.24
 
     /// The outline the player sees. May be concave; is never used for physics.
     static func silhouette(_ face: EndlessIIFace, size: CGSize,

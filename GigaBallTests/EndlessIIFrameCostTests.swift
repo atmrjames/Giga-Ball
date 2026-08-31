@@ -1243,4 +1243,33 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  Concave pulled apart: \(file.path)")
         print("  rows: concave, convex   columns: silhouette, picture, what the scene builds\n")
     }
+
+    /// How deep the concave brick's notch actually is, measured off James's artwork.
+    ///
+    /// James, round 282: "match the concave body to the graphic of the concave brick I
+    /// supplied... the geometry needs to deepen to match the art." So the number has to come
+    /// from the pictures rather than from a judgement about how a dish should look - which is
+    /// where the old tenth came from, and it is the reason the two drifted apart.
+    ///
+    /// Read with `PaddleOutline.edges`, which finds an edge to sub-pixel precision - built for
+    /// the paddle in round 280 and exactly the tool for this.
+    func testHowDeepTheConcaveArtCutsItsNotch() throws {
+        let names = ["BrickNormalConcave", "BrickIndestructible1Concave0",
+                     "BrickMultiHit1Concave", "retroBrickNormalConcave0"]
+        print("\n  The notch, as a fraction of the picture's height above its middle:")
+        for name in names {
+            guard let art = UIImage(named: name), let image = art.cgImage else {
+                print("    \(name): not in the catalogue")
+                continue
+            }
+            let edges = PaddleOutline.edges(of: image, samples: 120)
+            let tops = edges.compactMap { $0?.top }
+            guard let lowest = tops.min(), let highest = tops.max() else { continue }
+            // `top` runs 0 at the picture's bottom to 1 at its top, so the notch is the lowest
+            // the top edge gets - at the middle, where the V bottoms out
+            print(String(format: "    %-30@ notch %.3f, shoulders %.3f  ->  %+.3f of height "
+                         + "above the middle", name as NSString, lowest, highest, lowest - 0.5))
+        }
+        print("")
+    }
 }
