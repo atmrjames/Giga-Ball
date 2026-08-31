@@ -136,19 +136,25 @@ enum EndlessIIPaddleEffects {
     /// the ball, which meant a stationary paddle steered nothing and the ball kept whatever
     /// sideways trajectory it already had - "horrid", and rightly: the power-up said the
     /// paddle steers the ball and the ball was still mostly steering itself. Now the paddle
-    /// owns the ball's column outright. The ball is drawn toward wherever the paddle is,
-    /// closing a fixed fraction of the gap each frame, which is what gives the movement
-    /// weight rather than making the ball a cursor.
+    /// owns the ball's column outright. The ball is drawn toward wherever the paddle is, on
+    /// the spring below rather than as a cursor - so it takes a moment to answer, and carries
+    /// on a little past the paddle before it settles.
     static func steeredTowards(paddleX: CGFloat, from x: CGFloat,
+                               velocity: CGFloat = 0,
                                leftWall: CGFloat, rightWall: CGFloat,
                                radius: CGFloat,
                                paddleSpeed: CGFloat = 0,
                                fieldWidth: CGFloat = 0,
-                               delta: TimeInterval = 1.0/60) -> CGFloat {
-        let gap = paddleX + steeringLead(paddleSpeed: paddleSpeed,
-                                         fieldWidth: fieldWidth) - x
-        let wanted = x + gap*steeringFollow(delta: delta)
-        return max(leftWall + radius, min(rightWall - radius, wanted))
+                               delta: TimeInterval = 1.0/60)
+    -> (x: CGFloat, velocity: CGFloat) {
+        let target = paddleX + steeringLead(paddleSpeed: paddleSpeed, fieldWidth: fieldWidth)
+        let stepped = steeringStep(x: x, velocity: velocity, towards: target, delta: delta)
+        let held = max(leftWall + radius, min(rightWall - radius, stepped.x))
+        return (held, held == stepped.x ? stepped.velocity : 0)
+        // **A wall stops the swing as well as the ball.** Clamping the position and keeping the
+        // velocity would leave the ball pressed against the wall with the spring still winding
+        // up behind it, and it would spring off the moment the paddle moved back - which is a
+        // catapult rather than steering. A wall is a stop: what reaches it is at rest
     }
 
     /// How far ahead of the paddle a steered ball is drawn while the paddle is moving.
@@ -181,27 +187,98 @@ enum EndlessIIPaddleEffects {
     /// The furthest the lead may reach, as a share of the field's width.
     static let steeringLeadCap: CGFloat = 0.3
 
-    /// How much of the gap to the paddle a steered ball closes in one sixtieth of a second.
-    ///
-    /// The inertia, in one number. High enough that the ball answers the paddle at once,
-    /// low enough that it arrives rather than teleports - and low enough that a bounce off
-    /// a brick visibly throws it off course before it is gathered back in.
-    static let steeringFollowPerSixtieth: CGFloat = 0.16
+    // MARK: The spring, and why it is not a lag any more
+    //
+    // James, round 284: "Ball control is too controlling over the ball. When moving the
+    // paddle, the ball shouldn't follow immediately. There should be some lag and some
+    // inertia. The ball also shouldn't snap into place, its momentum should take it slightly
+    // beyond the paddle and then swing back. The ball should have more inertia."
+    //
+    // **The last two sentences are why this had to change shape rather than change a number.**
+    // What was here closed a fixed share of the gap every frame - an exponential lag, and the
+    // defining property of an exponential lag is that it *cannot* overshoot. It approaches the
+    // target from one side and slows down for ever. However the share was tuned, "its momentum
+    // should take it slightly beyond the paddle and then swing back" was not a thing it could
+    // be asked to do; the ball would only ever have arrived faster or slower.
+    //
+    // So the ball is on a spring now. It carries a sideways velocity of its own, the paddle's
+    // column pulls on it, and a damping term takes energy out. Two numbers describe the whole
+    // of it, and both are the ones a person can actually reason about:
+    //
+    // - `steeringNaturalFrequency` - how stiff the spring is, in radians per second. Bigger is
+    //   a ball that hurries.
+    // - `steeringDampingRatio` - below 1 it overshoots and swings back, at 1 it arrives and
+    //   stops dead, above 1 it crawls in. This is the "swing back", and it is a ratio rather
+    //   than a rate so the two numbers can be tuned independently.
+    //
+    // Round 209's lesson is kept and made stronger. It found that a share taken once per frame
+    // gave a different feel at 120fps than at 60 ("the ball seems to have no moments of its
+    // own"), and answered it by compounding the share over the frame's length. A spring
+    // integrated once per frame has the same fault in a worse form - the *stability* of the
+    // integration depends on the frame length, so a long frame does not merely feel different,
+    // it can throw the ball across the field. `steeringStep` is the answer: the frame is
+    // consumed in fixed slices, so the trajectory is the frame rate's business no longer.
 
-    /// The share of the gap closed by a frame of this length.
+    /// How stiff the spring pulling a steered ball to the paddle's column is, in radians per
+    /// second.
     ///
-    /// **Measured in time, not in frames** (James, round 209: "the ball steering power up now
-    /// feels way too sensitive, the ball seems to have no moments of its own").
+    /// Set against what it replaced rather than from nothing, and the comparison is worth
+    /// writing down because the obvious one is misleading. The old lag closed 16% of the gap
+    /// every sixtieth of a second: two thirds of the way to the paddle in a tenth of a second,
+    /// and then a long asymptotic crawl it never quite finished. So "how long until it gets
+    /// there" is the wrong question to tune against - the old pull never got there at all, it
+    /// merely stopped being distinguishable from having got there.
     ///
-    /// It was a flat share taken once per frame, and the scene asks for 120 frames a second.
-    /// So on a ProMotion phone the pull was applied twice as often as the number was tuned
-    /// for: the ball closed about 30% of the gap in the time it was meant to close 16%, which
-    /// is a ball glued to the paddle rather than drawn to it. Compounding it over the frame's
-    /// own length gives the same journey at any frame rate - 0.16 at 60, about 0.084 at 120,
-    /// and the same feel on both.
-    static func steeringFollow(delta: TimeInterval) -> CGFloat {
-        guard delta > 0 else { return 0 }
-        return 1 - pow(1 - steeringFollowPerSixtieth, CGFloat(delta)*60)
+    /// What the player feels is the *start*, and that is what this is set by. At 11 rad/s the
+    /// first frame of a chase moves the ball about 2% of the gap where the old pull moved it
+    /// 16%, and a tenth of a second in it is 39% of the way across where the old one was 65%.
+    /// It then arrives carrying speed, passes the paddle, and is gathered back - about a third
+    /// of a second to the far side of the swing and settled by three quarters of one.
+    ///
+    /// **The first value tried was 14 and it was the test that argued it down.** At 14 the ball
+    /// crossed the paddle's column at the tenth-of-a-second mark, which is no more lag than
+    /// there had ever been; the overshoot was there and the inertia was not. Both halves of
+    /// James's note have to be true at once.
+    static let steeringNaturalFrequency: CGFloat = 11
+
+    /// How heavily that spring is damped, as a fraction of critical.
+    ///
+    /// **Half, so it overshoots by about a sixth of the distance and comes back.** The
+    /// overshoot of a step response is `exp(-pi*z/sqrt(1-z*z))`, which at 0.5 is 0.16 - the
+    /// ball runs about a sixth of the way past the paddle before the spring gathers it, which
+    /// is "slightly beyond the paddle and then swing back" and not a wobble that outstays its
+    /// welcome. One swing back and it is settled.
+    static let steeringDampingRatio: CGFloat = 0.5
+
+    /// The longest slice of time the spring is integrated over in one go.
+    ///
+    /// A quarter of a 60fps frame. Not a tuning value: a spring integrated in steps larger
+    /// than a fraction of its own period gains energy instead of losing it, and the fix is to
+    /// take smaller steps rather than to soften the spring.
+    static let steeringStepSeconds: CGFloat = 1.0/240
+
+    /// One frame of the spring: where the ball goes and how fast it is going sideways.
+    ///
+    /// Semi-implicit rather than plain Euler - the velocity is advanced first and the position
+    /// uses the new one - because it is the integrator that conserves energy on an oscillator
+    /// rather than quietly adding it. A ball that gained a little every swing would take
+    /// longer to settle each time it was pushed, which is not a thing anybody would think to
+    /// look for and would read as the power-up being erratic.
+    static func steeringStep(x: CGFloat, velocity: CGFloat, towards target: CGFloat,
+                             delta: TimeInterval) -> (x: CGFloat, velocity: CGFloat) {
+        guard delta > 0 else { return (x, velocity) }
+        let frequency = steeringNaturalFrequency
+        let damping = 2*steeringDampingRatio*frequency
+        var position = x
+        var speed = velocity
+        var remaining = CGFloat(delta)
+        while remaining > 0 {
+            let slice = min(steeringStepSeconds, remaining)
+            remaining -= slice
+            speed += (frequency*frequency*(target - position) - damping*speed)*slice
+            position += speed*slice
+        }
+        return (position, speed)
     }
 
     /// How much of a steered ball's sideways speed survives each frame.

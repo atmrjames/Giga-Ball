@@ -367,30 +367,104 @@ extension PaddleOutline {
         return run
     }
 
-    /// The convex pieces a body is built from.
+    /// The convex pieces a body is built from - **as few as the shape allows**.
     ///
-    /// One quadrilateral per strip, wound counterclockwise, and any strip too thin to be a
-    /// polygon left out - the rounded ends taper to nothing, and a degenerate piece is not a
-    /// small body but an undefined one.
+    /// Round 280 emitted one quadrilateral per strip: twenty pieces, and therefore *nineteen
+    /// internal seams* running from the paddle's floor to the surface the ball rolls along.
+    /// Two convex boxes that share a face still meet as two bodies, and a ball crossing the
+    /// join can catch on the vertical edge of the next one - the ghost-collision problem every
+    /// physics engine has with decomposed geometry, and a very good way to make a ball stutter
+    /// along a paddle (James, three play tests running).
+    ///
+    /// The outline does not change. What changes is how much of it each piece covers: the run
+    /// is walked once, extending the current piece while the polygon it makes is still convex,
+    /// and cut only where it stops being. A dome and both wedges are convex outright and come
+    /// out as **one** piece with no seam anywhere; a dish and a wave genuinely need more than
+    /// one, and get the fewest their own curvature allows rather than a fixed twenty.
     static func pieces(of image: CGImage, size: CGSize) -> [CGPath] {
-        let run = boundaries(of: image, size: size)
-        guard run.count > 1 else { return [] }
+        let measured = boundaries(of: image, size: size)
+        guard measured.count > 1 else { return [] }
+
+        let run = simplified(measured)
+        // **Noise reads as concavity, and concavity forces a cut.** A stretch of paddle that is
+        // straight to within a tenth of a point still turns very slightly one way and then the
+        // other, and a strict convexity test counts every one of those as a corner - which is
+        // why the first version of this cut a *wedge*, whose top is one straight slope, into
+        // nine pieces. Flattening what is already flat leaves the real corners and nothing else.
 
         var pieces: [CGPath] = []
-        for (left, right) in zip(run, run.dropFirst()) {
-            guard right.x - left.x > 0.01 else { continue }
-            guard left.top - left.bottom > 0.5 || right.top - right.bottom > 0.5 else { continue }
+        var start = 0
+        while start < run.count - 1 {
+            var end = start + 1
+            while end + 1 < run.count,
+                  EndlessIIFaceGeometry.isConvex(corners(run, from: start, to: end + 1)) {
+                end += 1
+            }
+            // Greedy: take as much as stays convex, then cut. `isConvex` ignores collinear
+            // triples, so a flat stretch of floor or surface costs nothing
 
-            let corners = [CGPoint(x: left.x, y: left.bottom),
-                           CGPoint(x: right.x, y: right.bottom),
-                           CGPoint(x: right.x, y: right.top),
-                           CGPoint(x: left.x, y: left.top)]
-            let path = CGMutablePath()
-            path.addLines(between: corners)
-            path.closeSubpath()
-            pieces.append(path)
+            if let path = polygon(run, from: start, to: end) { pieces.append(path) }
+            start = end
         }
         return pieces
+    }
+
+    /// How far a boundary may sit off the line between its neighbours and still be dropped.
+    ///
+    /// A sixth of a point. Small enough that no corner of any of the five shapes is lost -
+    /// their gentlest is the dome's crown, which turns far more than this across one strip -
+    /// and large enough to absorb the wobble left by reading an edge off pixels.
+    static let flatEnough: CGFloat = 1/6
+
+    /// Drops boundaries that say nothing: the ones lying on the line between their neighbours.
+    static func simplified(_ run: [(x: CGFloat, top: CGFloat, bottom: CGFloat)])
+        -> [(x: CGFloat, top: CGFloat, bottom: CGFloat)] {
+        guard run.count > 2 else { return run }
+
+        var kept = [run[0]]
+        for index in 1..<(run.count - 1) {
+            let previous = kept[kept.count - 1], next = run[index + 1]
+            let span = next.x - previous.x
+            guard span > 0.01 else { continue }
+
+            let along = (run[index].x - previous.x)/span
+            let onTop = previous.top + (next.top - previous.top)*along
+            let onFloor = previous.bottom + (next.bottom - previous.bottom)*along
+            if abs(run[index].top - onTop) > flatEnough
+                || abs(run[index].bottom - onFloor) > flatEnough {
+                kept.append(run[index])
+            }
+            // Measured from the last *kept* boundary rather than from the neighbour, so a long
+            // straight stretch collapses to its two ends rather than to every other point
+        }
+        kept.append(run[run.count - 1])
+        return kept
+    }
+
+    /// A run of boundaries as a closed outline, wound counterclockwise: along the floor
+    /// left to right, then back along the surface.
+    private static func corners(_ run: [(x: CGFloat, top: CGFloat, bottom: CGFloat)],
+                                from: Int, to: Int) -> [CGPoint] {
+        var points: [CGPoint] = []
+        for index in from...to { points.append(CGPoint(x: run[index].x, y: run[index].bottom)) }
+        for index in stride(from: to, through: from, by: -1) {
+            points.append(CGPoint(x: run[index].x, y: run[index].top))
+        }
+        return points
+    }
+
+    private static func polygon(_ run: [(x: CGFloat, top: CGFloat, bottom: CGFloat)],
+                                from: Int, to: Int) -> CGPath? {
+        guard run[to].x - run[from].x > 0.01 else { return nil }
+        let tall = (from...to).contains { run[$0].top - run[$0].bottom > 0.5 }
+        guard tall else { return nil }
+        // The rounded ends taper to nothing, and a degenerate piece is not a small body but an
+        // undefined one
+
+        let path = CGMutablePath()
+        path.addLines(between: corners(run, from: from, to: to))
+        path.closeSubpath()
+        return path
     }
 
     /// The body itself, or nil where the picture says nothing useful.

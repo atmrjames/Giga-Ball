@@ -1016,7 +1016,19 @@ extension GameScene {
     }
 
     private func applyEndlessIIBallSteering() {
-        guard endlessIIBallSteeringClock.isRunning else { return }
+        guard endlessIIBallSteeringClock.isRunning else {
+            if endlessIISteeringVelocities.isEmpty == false {
+                endlessIISteeringVelocities.removeAll()
+            }
+            return
+            // A spring that kept its wind-up between two runs of the power-up would hand the
+            // second one a shove nobody gave it
+        }
+
+        var carried: [ObjectIdentifier: CGFloat] = [:]
+        defer { endlessIISteeringVelocities = carried }
+        // Rebuilt rather than edited, so a ball that has left the field takes its entry with
+        // it and the dictionary cannot grow for the length of a run
 
         for subject in endlessIIBallsInPlay {
             guard subject.parent != nil else { continue }
@@ -1024,12 +1036,20 @@ extension GameScene {
             guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { continue }
             // A held ball already rides the paddle; steering it twice doubles the ride
 
-            subject.position.x = EndlessIIPaddleEffects.steeredTowards(
+            let identifier = ObjectIdentifier(subject)
+            let steered = EndlessIIPaddleEffects.steeredTowards(
                 paddleX: paddle.position.x, from: subject.position.x,
+                velocity: endlessIISteeringVelocities[identifier] ?? 0,
                 leftWall: -gameWidth/2, rightWall: gameWidth/2,
                 radius: subject.size.width/2,
                 paddleSpeed: endlessIIPaddleSpeed, fieldWidth: gameWidth,
                 delta: endlessIIPaddleFrameDelta)
+            subject.position.x = steered.x
+            carried[identifier] = steered.velocity
+            // **The sideways velocity is the ball's, not the physics body's** (round 284). It
+            // is what the spring winds up and unwinds, and it is deliberately kept apart from
+            // `physicsBody.velocity`, which the engine rewrites on every bounce - a spring
+            // whose state the engine could overwrite mid-swing would lose the swing
             // The paddle's speed leads the target, which is what lets a swept paddle carry the
             // ball out to the columns beside the walls - see `steeringLead` (round 184). The
             // speed is the same per-frame sample Ball Spin takes, for the same reason

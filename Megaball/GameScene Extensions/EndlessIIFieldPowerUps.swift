@@ -330,14 +330,33 @@ extension GameScene {
     /// How much of the artwork's half-width still reads as glow.
     ///
     /// `BallAura` fades from the middle outward and reaches nothing at its own edge, so "how
-    /// big is it" has no single answer. Measured off the file: alpha is a half at 45% of the
-    /// half-width, a quarter at 62%, and a tenth at 76%. The tenth is taken as the edge - past
-    /// that it is not doing anything a player can see - and the sprite is drawn large enough
-    /// to put that contour on the reach.
+    /// big is it" has no single answer. Measured off the file: alpha is a half at 47% of the
+    /// half-width, a quarter at 63%, a tenth at 77% and nothing at all by 92%. The sprite is
+    /// drawn `reach*2/this` across, so whichever contour is chosen here is the one that ends
+    /// up sitting on the circle the aura actually eats.
     ///
     /// It replaced a stroked circle whose rim sat exactly on the reach, so the reach was
     /// unmistakable and the effect was flat. This keeps the honesty and loses the rim.
-    static let endlessIIAuraVisibleShare: CGFloat = 0.76
+    ///
+    /// **The tenth contour was the first choice and the quarter is the second** (round 284,
+    /// James: "Aura should be bigger"). Both are measured; the disagreement is about what a
+    /// player reads as the edge of a glow, and a tenth of a faint alpha is not something
+    /// anybody sees. Putting the *quarter* contour on the reach draws the ring 23% wider,
+    /// which is the note answered, and costs a faint halo hanging a little outside what the
+    /// aura eats - the smaller of the two lies, now that one of them has been played.
+    ///
+    /// Nothing about the power-up changes with it. The reach, the strikes and the clock are
+    /// all untouched: this number only decides how big the picture of them is.
+    static let endlessIIAuraVisibleShare: CGFloat = 0.63
+
+    /// Behind the ball rather than over it (James, round 284: "should be behind the ball not
+    /// on top of it").
+    ///
+    /// Negative because the glow is the ball's **child** now, and a child with a negative
+    /// `zPosition` is drawn before its parent's own picture. It used to be a sibling at the
+    /// ball's own `zPosition` of 3, which leaves the order to whichever was added last - and
+    /// the glow is always added last, so it was always the one on top.
+    static let endlessIIAuraZPosition: CGFloat = -1
 
     /// Loaded once. Nil leaves a sprite with no texture, which draws nothing - so a build
     /// without the artwork has an aura that works and cannot be seen.
@@ -368,15 +387,16 @@ extension GameScene {
             return
         }
 
-        let reach = ballSize/2*GameScene.endlessIIAuraReach[
+        let multiplier = GameScene.endlessIIAuraReach[
             min(endlessIIAuraClock.level, GameScene.endlessIIAuraReach.count - 1)]
         let balls = endlessIIBallsInPlay.filter { $0.parent != nil }
 
         while endlessIIAuraNodes.count < balls.count {
             let glow = SKSpriteNode(texture: GameScene.endlessIIAuraTexture)
-            glow.zPosition = 3
-            addChild(glow)
+            glow.zPosition = GameScene.endlessIIAuraZPosition
             endlessIIAuraNodes.append(glow)
+            // Not added to anything here. Each glow is parented to its own ball below, and a
+            // glow that spent one frame on the scene first would spend it at the origin
         }
         while endlessIIAuraNodes.count > balls.count {
             endlessIIAuraNodes.removeLast().removeFromParent()
@@ -387,23 +407,54 @@ extension GameScene {
 
         for (index, subject) in balls.enumerated() {
             let glow = endlessIIAuraNodes[index]
-            glow.position = subject.position
-            glow.size = CGSize(width: reach*2/GameScene.endlessIIAuraVisibleShare,
-                               height: reach*2/GameScene.endlessIIAuraVisibleShare)
-            glow.alpha = subject.alpha
+            if glow.parent !== subject {
+                glow.removeFromParent()
+                subject.addChild(glow)
+            }
+            glow.position = .zero
+            // **A child of the ball, which is three of James's round 284 notes at once.** It
+            // was a sibling on the scene, told the ball's position once a frame from `update` -
+            // which is *before* the physics step, so the glow was drawn where the ball had been
+            // one frame ago. At the speed a ball travels that is most of its own width behind
+            // it, and "it lags behind the ball too far" is exactly what that looks like. A
+            // child has no position of its own to be stale.
+            //
+            // It also settles the other two. `zPosition` below zero puts it behind the ball's
+            // picture instead of over it, where a sibling at the same height was drawn on top
+            // for no better reason than being added second; and a child inherits its parent's
+            // scale, so a ball that grows takes its glow with it.
+            //
+            // **And ghosting now costs no line at all.** Round 182 - "with ghost ball and aura
+            // power-ups together, I can still see the aura effect around the ball... it should
+            // also be invisible when the ball is invisible" - was answered by copying the
+            // ball's alpha on to the glow each frame, which was only ever needed because the
+            // glow was not the ball's child. It is now, and SpriteKit multiplies a child's
+            // alpha by its parent's, so a ghosted ball fades its own ring the way it has always
+            // faded the Wrecking Ball's spikes. Do not put the copy back: at alpha 1 it is
+            // harmless and at anything else it fades the glow twice.
+
+            let reach = subject.size.width/2*multiplier
+            let scale = max(subject.xScale, 0.01)
+            glow.size = CGSize(width: reach*2/GameScene.endlessIIAuraVisibleShare/scale,
+                               height: reach*2/GameScene.endlessIIAuraVisibleShare/scale)
+            // **The reach is read off the ball rather than off `ballSize`**, which is what
+            // makes the glow grow and shrink with it (James, round 284). `ballSize` is the
+            // ordinary ball's width and never moves; the Increase and Decrease Ball Size
+            // power-ups work by animating the ball's *scale*, and a sprite's `size` carries
+            // its scale - so a ball at 1.5x reports a width half again as big and the ring
+            // round it widens to match. At scale 1 this is the number the old line gave.
+            //
+            // **And the picture is divided by that scale**, because a child is drawn in its
+            // parent's coordinates: whatever size is set here is multiplied by the ball's own
+            // scale on the way to the screen, so setting the screen size directly would apply
+            // the growth twice. What is left after the division is a constant, which is the
+            // giveaway that it is right - the glow is a fixed multiple of the ball it belongs
+            // to, and the ball is the thing that changes size.
+            //
             // **Sized so the glow's edge sits on the reach**, not so the *picture* does. A
             // radial fade has no edge, and drawn to the reach exactly it would show a soft
             // blob well inside the circle it actually eats - which is a power-up lying about
             // how far it goes. `endlessIIAuraVisibleShare` is where that is worked out
-            // **An effect worn by the ball is as visible as the ball is** (James, round 182:
-            // "with ghost ball and aura power-ups together, I can still see the aura effect
-            // around the ball... it should also be invisible when the ball is invisible. The
-            // aura power should still be functional, just not visible"). Ghost Ball works by
-            // fading the *ball*, and the Wrecking Ball's spikes follow it for free by being
-            // its children - the Aura is the one decoration hung on the scene instead, so it
-            // is the one that has to be told. Only the drawing follows the ball: the reach,
-            // the strikes and the clock below are untouched, so a ghosted Aura still eats
-            // every brick it passes
 
             enumerateChildNodes(withName: BrickCategoryName) { node, _ in
                 guard let brick = node as? SKSpriteNode, brick.parent != nil else { return }

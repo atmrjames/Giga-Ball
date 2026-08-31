@@ -18,6 +18,11 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         let scene = GameScene()
         scene.gameMode = .endlessII
         scene.ballSize = 10
+        scene.ball.size = CGSize(width: 10, height: 10)
+        // Both, as the game itself does - `setUpGame` writes `ballSize` and then sizes the
+        // sprite from it. Since round 284 the Aura reads its reach off the *sprite*, so that it
+        // grows when Increase Ball Size scales the ball, and a scene that set only the number
+        // gave the glow a reach of nothing
         scene.brickHeight = 20
         scene.brickWidth = 40
         scene.totalStatsArray = [TotalStats()]
@@ -1860,6 +1865,7 @@ final class GhostBallTests: XCTestCase {
         let scene = GameScene()
         scene.gameMode = .endlessII
         scene.finalBrickRowHeight = 100
+        scene.ball.size = CGSize(width: 10, height: 10)
         scene.addChild(scene.ball)
         return scene
     }
@@ -1880,8 +1886,12 @@ final class GhostBallTests: XCTestCase {
         scene.tickEndlessIIAura()
 
         XCTAssertEqual(scene.ball.alpha, 0, accuracy: 0.001, "the ball is ghosted")
-        XCTAssertEqual(scene.endlessIIAuraNodes.first?.alpha, 0,
+        XCTAssertEqual(scene.endlessIIAuraNodes.first?.effectiveAlpha, 0,
                        "and its ring goes with it")
+        // **Effective rather than its own** (round 284). The glow is the ball's child now, so
+        // it keeps an alpha of 1 and SpriteKit multiplies it by the ball's on the way to the
+        // screen - which is the same answer arrived at by inheritance rather than by a line
+        // that copies it. Asking the glow for its own alpha would pass whatever the ball did
     }
 
     func testGhostingChangesNothingButTheDrawing() {
@@ -1928,7 +1938,7 @@ final class GhostBallTests: XCTestCase {
         scene.tickEndlessIIAura()
 
         XCTAssertEqual(scene.ball.alpha, 1, accuracy: 0.001)
-        XCTAssertEqual(scene.endlessIIAuraNodes.first?.alpha, 1)
+        XCTAssertEqual(scene.endlessIIAuraNodes.first?.effectiveAlpha, 1)
     }
 
     func testTheBallIsHiddenAmongTheBricksAndSeenBelowThem() {
@@ -2578,5 +2588,123 @@ final class SafetyPaddleParityTests: XCTestCase {
         // decision (it is 1.8, deliberately more than a mirror), and the claim here is only
         // that the bar answers to it. Ending the Inert Paddle above is the exclusion doing
         // its job, so what is being read is the flip alone
+    }
+}
+
+/// The Aura, after James's round 284 note about it.
+///
+/// "Aura should be bigger and should be behind the ball not on top of it. Also, it lags behind
+/// the ball too far. And it should grow and shrink with the ball if those power ups are
+/// active." Four complaints, and three of them have the same cause: the glow was a sibling on
+/// the scene being told the ball's position from `update`, which runs *before* the physics
+/// step. It is the ball's child now.
+final class TheAuraRidesOnTheBallTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.finalBrickRowHeight = 100
+        scene.ballSize = 10
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.ball)
+        scene.ball.position = CGPoint(x: 0, y: 50)
+        return scene
+    }
+
+    /// It cannot lag, because it has no position of its own to be stale.
+    func testTheGlowIsCarriedByTheBallRatherThanChasingIt() {
+        let scene = mayhem()
+        scene.endlessIICollectAura()
+        scene.tickEndlessIIAura()
+
+        let glow = scene.endlessIIAuraNodes.first
+        XCTAssertNotNil(glow)
+        XCTAssertTrue(glow?.parent === scene.ball,
+                      "the glow rides on the ball; a sibling told the ball's position once a "
+                      + "frame is a frame behind it wherever the telling happens")
+        XCTAssertEqual(glow?.position, .zero)
+
+        // And it keeps riding when the ball moves, without being told
+        scene.ball.position = CGPoint(x: 120, y: 200)
+        XCTAssertEqual(glow?.parent?.position, CGPoint(x: 120, y: 200))
+    }
+
+    func testTheGlowIsDrawnBehindTheBall() {
+        let scene = mayhem()
+        scene.endlessIICollectAura()
+        scene.tickEndlessIIAura()
+        XCTAssertLessThan(scene.endlessIIAuraNodes.first?.zPosition ?? 0, 0,
+                          "a child below zero is drawn before its parent's own picture")
+    }
+
+    /// "It should grow and shrink with the ball if those power ups are active."
+    ///
+    /// Increase Ball Size animates `ball.setScale`, and a sprite's `size` carries its scale, so
+    /// both halves of this follow from reading the reach off the ball instead of off `ballSize`.
+    func testTheRingGrowsWithTheBall() {
+        func ringWidth(ballScale: CGFloat) -> CGFloat {
+            let scene = mayhem()
+            scene.ball.setScale(ballScale)
+            scene.endlessIICollectAura()
+            scene.tickEndlessIIAura()
+            guard let glow = scene.endlessIIAuraNodes.first else { return 0 }
+            return glow.size.width*ballScale
+            // On screen rather than in the ball's coordinates: a child is drawn through its
+            // parent's scale, so its own `size` is deliberately the same at both
+        }
+        let plain = ringWidth(ballScale: 1)
+        XCTAssertGreaterThan(plain, 0)
+        XCTAssertEqual(ringWidth(ballScale: 1.5), plain*1.5, accuracy: 0.01,
+                       "half again as big a ball wears half again as big a ring")
+        XCTAssertEqual(ringWidth(ballScale: 0.5), plain*0.5, accuracy: 0.01,
+                       "and a shrunk one wears a smaller one")
+    }
+
+    /// What it eats grows with it too, or the picture would be lying.
+    func testTheReachGrowsWithTheBallAsWellAsTheRing() {
+        func reaches(ballScale: CGFloat) -> Bool {
+            let scene = mayhem()
+            scene.brickWidth = 40
+            scene.brickHeight = 20
+            scene.ball.setScale(ballScale)
+            scene.ball.position = CGPoint(x: 0, y: 300)
+            let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: 0, y: 322)
+            // The brick's underside is 12 points above the ball's centre. A plain ball's reach
+            // is its radius of 5 doubled, so 10 - just short; at 1.5x the radius is 7.5 and the
+            // reach is 15, which takes it
+            scene.addChild(brick)
+            scene.endlessIICollectAura()
+            scene.tickEndlessIIAura()
+            return scene.endlessIIAuraHitBricks.isEmpty == false
+        }
+        XCTAssertFalse(reaches(ballScale: 1), "out of reach of an ordinary ball")
+        XCTAssertTrue(reaches(ballScale: 1.5), "and inside a grown one's")
+    }
+
+    /// The measured contour, said as a ratio rather than as a number to copy.
+    func testTheRingIsDrawnWiderThanWhatItEats() {
+        let scene = mayhem()
+        scene.endlessIICollectAura()
+        scene.tickEndlessIIAura()
+        let reach = scene.ball.size.width/2*GameScene.endlessIIAuraReach[0]
+        let drawn = (scene.endlessIIAuraNodes.first?.size.width ?? 0)/2
+        XCTAssertGreaterThan(drawn, reach,
+                             "a radial fade has no edge, so the picture has to overhang the "
+                             + "circle it eats for the visible part to land on it")
+        XCTAssertLessThan(drawn, reach*2, "and not by so much that it is a different circle")
+    }
+}
+
+/// What a node is actually drawn at, parents included.
+///
+/// SpriteKit multiplies a child's alpha by its parent's and offers no property for the
+/// product, so a test that wants to know whether something can be *seen* has to do the
+/// multiplication itself.
+extension SKNode {
+    var effectiveAlpha: CGFloat {
+        sequence(first: self, next: \.parent).map(\.alpha).reduce(1, *)
     }
 }

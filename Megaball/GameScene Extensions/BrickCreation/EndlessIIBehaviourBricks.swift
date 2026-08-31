@@ -363,8 +363,25 @@ extension GameScene {
         // restore path, which applies the role to whatever the save says was directional
         brick.endlessIIRole = .directional
         brick.endlessIIVulnerableSide = side
-        tint(brick, GameScene.directionalBrickColour)
+        if endlessIIDirectionalArt(side, size: endlessIISizeOf(brick)) == nil {
+            tint(brick, GameScene.directionalBrickColour)
+        }
         endlessIIDrawVulnerableEdge(on: brick, side: side)
+        // **No tint where there is a panel** (James, round 284: "for the directional brick, the
+        // open side should show the brick underneath. Right now, that side looks grey. The
+        // brick underneath can be any brick type, so it should be possible to tell what brick
+        // is underneath").
+        //
+        // The grey was how a directional brick said what it was before round 271, when the mark
+        // was a thin bright bar on an otherwise ordinary brick and the body had to carry the
+        // identity. `tint` writes `colorBlendFactor = 1`, which does not shade the texture - it
+        // *replaces* it - so a directional Multi-hit and a directional Indestructible were the
+        // same grey oblong, and the one clear side showed grey too.
+        //
+        // The panel says it now, and says it better: three sides darkened, one left alone. What
+        // shows through the open side is the brick's own picture, which is the whole point of
+        // leaving it open. The tint stays only where no panel is drawn, because there the bar
+        // is a small mark on a brick that would otherwise look ordinary.
     }
 
     /// The picture that says which face is soft, replacing whatever is there already.

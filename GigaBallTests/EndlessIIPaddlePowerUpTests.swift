@@ -201,14 +201,15 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
         // gap each frame rather than arriving at once.
         let first = EndlessIIPaddleEffects.steeredTowards(
             paddleX: 100, from: 0, leftWall: -200, rightWall: 200, radius: 5)
-        XCTAssertGreaterThan(first, 0, "it sets off towards the paddle")
-        XCTAssertLessThan(first, 100, "and does not teleport there")
+        XCTAssertGreaterThan(first.x, 0, "it sets off towards the paddle")
+        XCTAssertLessThan(first.x, 100, "and does not teleport there")
 
         var x: CGFloat = 0
+        var v: CGFloat = 0
         for _ in 0..<60 {
-            x = EndlessIIPaddleEffects.steeredTowards(paddleX: 100, from: x,
-                                                      leftWall: -200, rightWall: 200,
-                                                      radius: 5)
+            (x, v) = EndlessIIPaddleEffects.steeredTowards(paddleX: 100, from: x, velocity: v,
+                                                           leftWall: -200, rightWall: 200,
+                                                           radius: 5)
         }
         XCTAssertEqual(x, 100, accuracy: 1, "a second of holding still gathers it in")
     }
@@ -218,14 +219,17 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
         // still steered nothing and the ball wandered off on its own trajectory - which
         // is what made it feel like the power-up was not working
         let x = EndlessIIPaddleEffects.steeredTowards(
-            paddleX: 0, from: 60, leftWall: -200, rightWall: 200, radius: 5)
+            paddleX: 0, from: 60, leftWall: -200, rightWall: 200, radius: 5).x
         XCTAssertLessThan(x, 60, "a still paddle is still pulling")
     }
 
     func testSteeringCannotPullABallThroughAWall() {
-        let x = EndlessIIPaddleEffects.steeredTowards(
+        let steered = EndlessIIPaddleEffects.steeredTowards(
             paddleX: 1000, from: 198, leftWall: -200, rightWall: 200, radius: 5)
-        XCTAssertEqual(x, 195, "clamped a radius inside the wall")
+        XCTAssertEqual(steered.x, 195, "clamped a radius inside the wall")
+        XCTAssertEqual(steered.velocity, 0,
+                       "and the spring's wind-up stops at the wall with it, or the ball "
+                       + "would be catapulted off it when the paddle came back")
     }
 
     func testASteeredBallLosesItsSidewaysSpeedWithoutLosingPace() {
@@ -251,13 +255,36 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
     /// These pin the property that makes the two the same power-up: the same journey over the
     /// same *time*, whatever the frame rate delivering it.
     func testSteeringPullsTheSameAmountAtSixtyAndOneHundredAndTwenty() {
-        let atSixty = EndlessIIPaddleEffects.steeringFollow(delta: 1.0/60)
-        let atOneTwenty = EndlessIIPaddleEffects.steeringFollow(delta: 1.0/120)
+        // Round 284 turned the pull into a spring, and a spring makes this property easier to
+        // hold rather than harder: the frame is spent in fixed slices, so two short frames and
+        // one long one are the same list of slices in the same order
+        let slow = EndlessIIPaddleEffects.steeringStep(x: 0, velocity: 0, towards: 100,
+                                                       delta: 1.0/60)
+        var fast = EndlessIIPaddleEffects.steeringStep(x: 0, velocity: 0, towards: 100,
+                                                       delta: 1.0/120)
+        fast = EndlessIIPaddleEffects.steeringStep(x: fast.x, velocity: fast.velocity,
+                                                   towards: 100, delta: 1.0/120)
+        XCTAssertEqual(fast.x, slow.x, accuracy: 0.0001)
+        XCTAssertEqual(fast.velocity, slow.velocity, accuracy: 0.0001)
 
-        // Two 120fps frames must land where one 60fps frame does
-        let twoFast = 1 - (1 - atOneTwenty)*(1 - atOneTwenty)
-        XCTAssertEqual(twoFast, atSixty, accuracy: 0.0001)
-        XCTAssertLessThan(atOneTwenty, atSixty, "a shorter frame moves the ball less")
+        let oneShortFrame = EndlessIIPaddleEffects.steeringStep(x: 0, velocity: 0, towards: 100,
+                                                                delta: 1.0/120)
+        XCTAssertLessThan(oneShortFrame.x, slow.x, "a shorter frame moves the ball less")
+    }
+
+    /// A frame long enough to break a naive integrator does not throw the ball anywhere.
+    ///
+    /// The reason the slices are fixed rather than the whole frame being taken in one go: a
+    /// spring stepped over a slice comparable to its own period gains energy instead of
+    /// losing it, and the failure is not subtle - the ball leaves the field.
+    func testALongFrameDoesNotThrowTheBallAcrossTheField() {
+        var state = (x: CGFloat(0), velocity: CGFloat(0))
+        for _ in 0..<40 {
+            state = EndlessIIPaddleEffects.steeringStep(x: state.x, velocity: state.velocity,
+                                                        towards: 100, delta: 0.5)
+        }
+        XCTAssertEqual(state.x, 100, accuracy: 1,
+                       "half-second frames still settle on the paddle rather than diverging")
     }
 
     func testTheSidewaysBleedIsTheSameOverTheSameTime() {
@@ -271,8 +298,8 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
     /// The sixtieth-of-a-second numbers are the ones round 15 tuned by hand, so a frame of
     /// exactly that length must still behave exactly as it did.
     func testAFrameOfASixtiethIsUnchangedFromTheTunedNumbers() {
-        XCTAssertEqual(EndlessIIPaddleEffects.steeringFollow(delta: 1.0/60),
-                       EndlessIIPaddleEffects.steeringFollowPerSixtieth, accuracy: 0.0001)
+        // The pull's half of this went with the spring in round 284 - there is no "share of the
+        // gap" left to compare a number against. The bleed is untouched and still is one
         XCTAssertEqual(EndlessIIPaddleEffects.steeringVelocityDamping(delta: 1.0/60),
                        EndlessIIPaddleEffects.steeringVelocityDampingPerSixtieth,
                        accuracy: 0.0001)
@@ -280,9 +307,11 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
 
     /// A frame with no time in it moves nothing, rather than snapping the ball to the paddle.
     func testAFrameWithNoTimeInItSteersNothing() {
-        XCTAssertEqual(EndlessIIPaddleEffects.steeringFollow(delta: 0), 0)
         XCTAssertEqual(EndlessIIPaddleEffects.steeredTowards(
-            paddleX: 100, from: 0, leftWall: -200, rightWall: 200, radius: 5, delta: 0), 0)
+            paddleX: 100, from: 0, leftWall: -200, rightWall: 200, radius: 5, delta: 0).x, 0)
+        XCTAssertEqual(EndlessIIPaddleEffects.steeringStep(
+            x: 0, velocity: 40, towards: 100, delta: 0).velocity, 40,
+                       "and it does not wind the spring either")
     }
 
     func testSteeringKeepsTheBallGoingTheWayItWasVertically() {
@@ -2082,10 +2111,10 @@ final class EndlessIIRound184Tests: XCTestCase {
         // The whole point, stated as the thing the player was asking for
         let paddleAtItsLimit: CGFloat = 150      // a 100-wide paddle against a 400-wide field
         let parked = EndlessIIPaddleEffects.steeredTowards(
-            paddleX: paddleAtItsLimit, from: 0, leftWall: -200, rightWall: 200, radius: 5)
+            paddleX: paddleAtItsLimit, from: 0, leftWall: -200, rightWall: 200, radius: 5).x
         let swept = EndlessIIPaddleEffects.steeredTowards(
             paddleX: paddleAtItsLimit, from: 0, leftWall: -200, rightWall: 200, radius: 5,
-            paddleSpeed: 900, fieldWidth: 400)
+            paddleSpeed: 900, fieldWidth: 400).x
 
         XCTAssertGreaterThan(swept, parked,
                              "sweeping toward the wall reaches columns a parked paddle cannot")
@@ -2094,7 +2123,7 @@ final class EndlessIIRound184Tests: XCTestCase {
     func testTheBallIsStillNeverPushedThroughAWall() {
         let steered = EndlessIIPaddleEffects.steeredTowards(
             paddleX: 190, from: 190, leftWall: -200, rightWall: 200, radius: 5,
-            paddleSpeed: 5000, fieldWidth: 400)
+            paddleSpeed: 5000, fieldWidth: 400).x
         XCTAssertLessThanOrEqual(steered, 195.001)
     }
 
@@ -3350,12 +3379,43 @@ final class PaddleOutlineTests: XCTestCase {
     /// A strip is a quadrilateral and so convex by construction - this is the test that says the
     /// construction is what it claims, and it is the reason the shapes are cut into strips at
     /// all rather than handed over whole: a dish and a wave are not convex.
+    /// As few pieces as the shape allows, because every join is a seam the ball can catch on.
+    ///
+    /// Round 280 cut every paddle into twenty strips and so gave each one nineteen internal
+    /// edges. A dome and the two wedges are convex outright and need no seam at all.
+    func testTheBodyIsCutIntoAsFewPiecesAsTheShapeAllows() throws {
+        let size = CGSize(width: 75, height: 18)
+        var counted: [String: Int] = [:]
+        for name in ["regularPaddle", "regularPaddleConvex", "regularPaddleConcave",
+                     "regularPaddleWave", "regularPaddleWedgeLeft"] {
+            let pieces = PaddleOutline.pieces(of: try image(name), size: size)
+            counted[name] = pieces.count
+            print(String(format: "    %-24@ %2d piece(s), %2d seam(s)",
+                         name as NSString, pieces.count, max(0, pieces.count - 1)))
+        }
+        print("")
+
+        for name in ["regularPaddle", "regularPaddleConvex", "regularPaddleWedgeLeft"] {
+            XCTAssertEqual(counted[name], 1, "\(name) is convex, so it is one piece with no "
+                           + "seam anywhere for a ball to catch on")
+        }
+        for (name, count) in counted {
+            XCTAssertLessThanOrEqual(count, PaddleOutline.strips/2,
+                                     "\(name) is still being cut like strips")
+        }
+        // A dish and a wave are genuinely not convex and cannot be one piece - their own
+        // curvature decides how many they need, and the greedy walk gives them no more than
+        // that. What they must not be is twenty, which is what round 280 gave every shape.
+        // Half of `strips` is the bar rather than a number picked to fit: it says the merging
+        // is doing real work without pretending a wave can be as simple as a dome
+    }
+
     func testEveryPieceIsConvex() throws {
         for name in ["regularPaddle", "regularPaddleConvex", "regularPaddleConcave",
                      "regularPaddleWave", "regularPaddleWedgeLeft"] {
             let pieces = PaddleOutline.pieces(of: try image(name),
                                               size: CGSize(width: 75, height: 18))
-            XCTAssertGreaterThan(pieces.count, 5, name)
+            XCTAssertGreaterThan(pieces.count, 0, name)
 
             for piece in pieces {
                 var corners: [CGPoint] = []
@@ -3366,9 +3426,12 @@ final class PaddleOutlineTests: XCTestCase {
                     default: break
                     }
                 }
-                XCTAssertEqual(corners.count, 4, "\(name): a strip is a quadrilateral")
+                XCTAssertGreaterThanOrEqual(corners.count, 4, "\(name): a piece is a polygon")
                 XCTAssertTrue(EndlessIIFaceGeometry.isConvex(corners),
                               "\(name): a piece SKPhysicsBody would refuse")
+                // Four corners while every piece was one strip; any number since round 284
+                // merged them, and a dome now arrives as a single 42-sided polygon. What has
+                // to stay true is the convexity, which is the only thing SKPhysicsBody asks
             }
         }
     }
@@ -3430,5 +3493,302 @@ final class PaddleOutlineTests: XCTestCase {
         XCTAssertLessThan(warm, 1.0/60/10,
                           "reading a picture and cutting it into twenty polygons is a "
                           + "build-time cost, not a per-frame one")
+    }
+}
+
+
+/// Aimed Sticky catches a ball and offers an arrow to aim it with.
+///
+/// James, round 284: "aimed sticky isn't showing arrow or allowing aim." It was working in round
+/// 275 - "the swiping to move the paddle and aim the arrow is working well" - so this is a
+/// regression, and the rounds between touched the aim's state machine (277) and replaced the
+/// paddle's physics body with a twenty-piece compound (280).
+///
+/// The pieces each have their own tests and each passes. What had none is the *chain*: land a
+/// ball on the paddle with the clock running and ask whether there is anything to aim.
+final class AimedStickyStillOffersAnArrowTests: XCTestCase {
+
+    /// The same scene `PlayTestRound259Tests` lands a ball on, which is the one shape of
+    /// `GameScene` that survives `paddleHit` - it indexes into the stats and the HUD arrays, so
+    /// a scene built from scratch crashes before it reaches anything worth asserting.
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSize = 24
+        scene.paddleHeight = 24
+        scene.minAngleDeg = 10
+        scene.ballSpeedLimit = 400
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 150, height: 24)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+        scene.addChild(scene.paddleLaser)
+        scene.addChild(scene.paddleSticky)
+        scene.paddleLaser.anchorPoint = CGPoint(x: 0.5, y: 0)
+        scene.paddleSticky.anchorPoint = CGPoint(x: 0.5, y: 0)
+
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 12)
+        scene.ball.position = CGPoint(x: 0, y: -260)
+        scene.ballIsOnPaddle = false
+        scene.ballStartingPositionY = scene.paddleTopY + scene.ball.size.height/2 + 1
+        return scene
+    }
+
+    func testALandedBallIsSomethingToAim() {
+        let scene = scene()
+        scene.endlessIIAimedStickyClock.collect(turns: 5)
+        XCTAssertTrue(scene.endlessIIAimedStickyClock.isRunning)
+
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 60, dy: -300))
+        scene.paddleHit(scene.ball)
+
+        XCTAssertTrue(scene.ballIsOnPaddle, "the catch happened")
+        XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === scene.ball },
+                      "and the ball took its place in the queue, which is where the aim looks")
+        XCTAssertNotNil(scene.endlessIIAimTarget, "so there is something to aim")
+        XCTAssertTrue(scene.endlessIIAimHold, "and the hold has begun")
+
+        scene.tickEndlessIIAim()
+        XCTAssertNotNil(scene.endlessIIAimArrow, "and an arrow is drawn for it")
+    }
+
+    /// A tap that begins *during* an aim launches it.
+    ///
+    /// The regression, stated the way it failed. Round 275 taught the release to refuse a
+    /// finger that was already down when the ball was caught - correctly, because such a finger
+    /// can be lifted but cannot tap. It then marked *every* touch that began while an aim was
+    /// running as one of those, which is the opposite: a touch beginning during an aim is
+    /// precisely the tap meant to fire it. Nothing could launch, the hold never ended, and
+    /// `endlessIIFieldIsHeld` reads the hold - so the field stopped descending as well.
+    func testATapDuringAnAimCanStillLaunchIt() {
+        let scene = scene()
+        scene.endlessIIAimedStickyClock.collect(turns: 5)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 60, dy: -300))
+        scene.paddleHit(scene.ball)
+        XCTAssertTrue(scene.endlessIIAimHold)
+
+        XCTAssertFalse(scene.endlessIIAimTouchPredatesHold,
+                       "no finger was down when the ball landed, so this tap is a tap")
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true, intent: .paddle,
+                                              touchPredatesAim: scene.endlessIIAimTouchPredatesHold),
+                       .aimedLaunch,
+                       "and it fires - without this the ball can never leave the paddle, and "
+                       + "because endlessIIFieldIsHeld reads the hold, the field never "
+                       + "descends again either")
+    }
+
+    /// And a finger that was already down still cannot tap, which is round 275's rule intact.
+    func testAFingerAlreadyDownWhenTheBallLandsStillCannotTap() {
+        let scene = scene()
+        scene.endlessIIAimedStickyClock.collect(turns: 5)
+        scene.touchBeganWhilstPlaying = true
+        // Carrying the paddle when the ball arrives, which is the case round 275 was for
+
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 60, dy: -300))
+        scene.paddleHit(scene.ball)
+
+        XCTAssertTrue(scene.endlessIIAimTouchPredatesHold,
+                      "the finger was there first, so lifting it is a paddle move ending")
+        XCTAssertEqual(AimHoldControl.release(travelled: 0, aiming: true, intent: .paddle,
+                                              touchPredatesAim: scene.endlessIIAimTouchPredatesHold),
+                       .keepAiming, "the ball stays on the paddle")
+    }
+}
+
+
+/// A directional brick still says what kind of brick it is.
+///
+/// James, round 284: "for the directional brick, the open side should show the brick underneath.
+/// Right now, that side looks grey. The brick underneath can be any brick type, so it should be
+/// possible to tell what brick is underneath."
+///
+/// `tint` writes `colorBlendFactor = 1`, which does not shade a texture - it replaces it. So a
+/// directional Multi-hit and a directional Indestructible were the same grey oblong, and the
+/// side deliberately left clear showed grey along with everything else.
+final class DirectionalBricksKeepTheirOwnFaceTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 56
+        scene.brickHeight = 28
+        return scene
+    }
+
+    private func brick(_ scene: GameScene, _ texture: SKTexture) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: texture,
+                                 size: CGSize(width: scene.brickWidth, height: scene.brickHeight))
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testTheBrickUnderThePanelKeepsItsOwnColour() {
+        let scene = scene()
+        let subject = brick(scene, scene.brickMultiHit1Texture)
+        subject.endlessIIVulnerableSide = .top
+        scene.makeDirectional(subject)
+
+        XCTAssertLessThan(subject.colorBlendFactor, 0.5,
+                          "a brick painted over at full blend is not a Multi-hit brick any "
+                          + "more, it is a grey oblong")
+        XCTAssertEqual(subject.texture, scene.brickMultiHit1Texture,
+                       "and it is still the texture that says what it is")
+        XCTAssertNotNil(subject.childNode(withName: GameScene.directionalEdgeName),
+                        "with the panel over it doing the saying")
+    }
+
+    /// Two directional bricks of different types look different.
+    ///
+    /// The property James was actually asking for, and the one a colour-blend check on its own
+    /// would not catch.
+    func testTwoDirectionalBricksOfDifferentTypesAreTellableApart() {
+        let scene = scene()
+        let first = brick(scene, scene.brickMultiHit1Texture)
+        let second = brick(scene, scene.brickIndestructible1Texture)
+        for subject in [first, second] {
+            subject.endlessIIVulnerableSide = .bottom
+            scene.makeDirectional(subject)
+        }
+        XCTAssertNotEqual(first.texture, second.texture)
+        XCTAssertEqual(first.colorBlendFactor, second.colorBlendFactor, accuracy: 0.001)
+        XCTAssertLessThan(first.colorBlendFactor, 0.5,
+                          "neither is painted over, so the pictures still differ on screen")
+    }
+
+    /// The grey is not gone, it is conditional - and the condition is the rule.
+    ///
+    /// Where a panel is drawn, the panel says which side is open and painting the brick as well
+    /// only hides what it is. Where one is not, the grey is the only mark there is and taking
+    /// it away would leave a directional brick indistinguishable from an ordinary one. Written
+    /// as "these two go together" rather than as a claim about which sizes have art today,
+    /// because the art list is still being added to (§8.5).
+    func testTheGreyAndThePanelAreTheTwoWaysOfSayingIt() {
+        let scene = scene()
+        for size in BrickSize.allCases {
+            let subject = brick(scene, scene.brickNormalTexture)
+            subject.size = CGSize(width: scene.brickWidth*size.scaleWide,
+                                  height: scene.brickHeight*size.scaleTall)
+            subject.endlessIIVulnerableSide = .top
+            scene.makeDirectional(subject)
+
+            let panelled = scene.endlessIIDirectionalArt(.top, size: size) != nil
+            if panelled {
+                XCTAssertLessThan(subject.colorBlendFactor, 0.5,
+                                  "\(size) has a panel, so the brick keeps its own face")
+            } else {
+                XCTAssertGreaterThan(subject.colorBlendFactor, 0.5,
+                                     "\(size) has no panel, so the grey is the only thing "
+                                     + "saying this brick is directional at all")
+            }
+        }
+    }
+}
+
+/// Ball Control carries the ball rather than dragging it.
+///
+/// James, round 284: "Ball control is too controlling over the ball. When moving the paddle,
+/// the ball shouldn't follow immediately. There should be some lag and some inertia. The ball
+/// also shouldn't snap into place, its momentum should take it slightly beyond the paddle and
+/// then swing back. The ball should have more inertia."
+///
+/// The second sentence is the one that decided the shape of the fix. What was there closed a
+/// fixed share of the gap each frame, and an exponential approach *cannot* overshoot - so
+/// "slightly beyond the paddle and then swing back" was unreachable by tuning, at any value.
+final class BallControlHasInertiaTests: XCTestCase {
+
+    /// What the pull used to close every sixtieth of a second, kept here and nowhere else.
+    ///
+    /// It is a fact about a version of the game that no longer exists, so it does not belong
+    /// beside the numbers the game actually runs on - but the whole of "more inertia" is a
+    /// comparison with it, and a test that asserted a frame count instead would be asserting
+    /// whatever number happened to pass on the day it was written.
+    private let oldPullPerSixtieth: CGFloat = 0.16
+
+    /// One second of the paddle standing at 100 with the ball starting at 0.
+    private func flight(frames: Int = 120, target: CGFloat = 100) -> [CGFloat] {
+        var state = (x: CGFloat(0), velocity: CGFloat(0))
+        var path: [CGFloat] = []
+        for _ in 0..<frames {
+            state = EndlessIIPaddleEffects.steeringStep(x: state.x, velocity: state.velocity,
+                                                        towards: target, delta: 1.0/60)
+            path.append(state.x)
+        }
+        return path
+    }
+
+    /// "When moving the paddle, the ball shouldn't follow immediately."
+    func testTheBallDoesNotSetOffAtTheSpeedThePaddleDid() {
+        let path = flight()
+        XCTAssertGreaterThan(path[0], 0, "it does answer")
+        XCTAssertLessThan(path[0], 100*oldPullPerSixtieth/4,
+                          "but a ball a quarter of the way into the old pull's first frame is "
+                          + "still being dragged")
+    }
+
+    /// "Its momentum should take it slightly beyond the paddle and then swing back."
+    func testTheBallOvershootsThePaddleAndComesBack() {
+        let path = flight()
+        let furthest = path.max() ?? 0
+        XCTAssertGreaterThan(furthest, 100,
+                             "it runs past the paddle - the thing an exponential lag could "
+                             + "never be tuned into doing")
+        XCTAssertLessThan(furthest, 125, "slightly past, not a wobble")
+
+        guard let peak = path.firstIndex(of: furthest) else { return XCTFail("no peak") }
+        XCTAssertLessThan(path[peak + 6], furthest, "and swings back")
+        XCTAssertEqual(path.last ?? 0, 100, accuracy: 0.5, "and settles there")
+    }
+
+    /// The overshoot is a consequence of the damping ratio rather than a number of its own.
+    func testTheOvershootIsTheOneTheDampingRatioAsksFor() {
+        let zeta = EndlessIIPaddleEffects.steeringDampingRatio
+        XCTAssertLessThan(zeta, 1, "at or above critical it would never overshoot at all")
+        let predicted = exp(-CGFloat.pi*zeta/(1 - zeta*zeta).squareRoot())
+        let furthest = (flight().max() ?? 0) - 100
+        XCTAssertEqual(furthest/100, predicted, accuracy: 0.02,
+                       "the flight matches the textbook step response, which is how we know "
+                       + "the integrator is not adding anything of its own")
+    }
+
+    /// "There should be some lag and some inertia" - measured against what it replaced.
+    ///
+    /// Against the *old pull itself* rather than against a frame count somebody picked. The
+    /// thing that was there closed 16% of the gap every sixtieth of a second, so what it would
+    /// have done over any stretch of time is arithmetic, and "more inertia than before" is a
+    /// comparison rather than an opinion.
+    ///
+    /// **Not "it arrives later"**, which was the first version of this test and was wrong. An
+    /// exponential approach never arrives at all - it gets within a point and keeps halving -
+    /// so a spring that overshoots reaches the paddle's column *sooner* however slowly it sets
+    /// off, and comparing arrival times says nothing about how the two feel. What the player
+    /// feels is the opening tenth of a second.
+    func testItSetsOffMoreSlowlyThanTheOldPullDid() {
+        let oldShare = oldPullPerSixtieth
+        let path = flight()
+
+        for frame in [0, 1, 5] {
+            let oldPull = 100*(1 - pow(1 - oldShare, CGFloat(frame + 1)))
+            XCTAssertLessThan(path[frame], oldPull,
+                              "frame \(frame): the ball is behind where the old pull would "
+                              + "have dragged it, which is the inertia James asked for")
+        }
+        XCTAssertLessThan(path[0], 100*oldShare/4,
+                          "and the very first frame is the one that read as the ball "
+                          + "following immediately - it moves a quarter as far at most")
+    }
+
+    /// A ball already on the paddle's column and moving is not stopped dead by it.
+    func testAMovingBallKeepsItsOwnMomentumThroughThePaddlesColumn() {
+        let stepped = EndlessIIPaddleEffects.steeringStep(x: 0, velocity: 200, towards: 0,
+                                                          delta: 1.0/60)
+        XCTAssertGreaterThan(stepped.x, 0, "it carries on past")
+        XCTAssertGreaterThan(stepped.velocity, 0, "still going")
+        XCTAssertLessThan(stepped.velocity, 200, "and being slowed")
     }
 }

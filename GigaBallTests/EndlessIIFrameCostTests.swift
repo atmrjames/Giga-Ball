@@ -21,6 +21,7 @@
 
 import XCTest
 import SpriteKit
+import CoreImage
 @testable import Giga_Ball
 
 final class EndlessIIFrameCostTests: XCTestCase {
@@ -597,16 +598,13 @@ final class EndlessIIFrameCostTests: XCTestCase {
                     brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
                     scene.addChild(brick)
                 }
-                brick.endlessIIRole = .directional
                 brick.endlessIIVulnerableSide = side
-                brick.color = GameScene.directionalBrickColour
-                brick.colorBlendFactor = 1
+                scene.makeDirectional(brick)
                 scene.refreshEndlessIIBrickArt(brick)
-                scene.endlessIIDrawVulnerableEdge(on: brick, side: side)
-                // Refreshed *after* the tint, which is the order the game gets for free from
-                // the per-frame sweep - the first version of this tinted a picture it had
-                // already drawn, so the open side showed white where the game shows the
-                // brick's own colour
+                // Through `makeDirectional` rather than by setting the role and the tint by
+                // hand: since round 284 the tint is *conditional* on there being no panel, and
+                // a harness that painted it anyway would be drawing the one thing the change
+                // was about
                 // Tinted as `makeDirectional` tints it, because what shows through the open
                 // side is the brick underneath and the whole question is whether that reads
                 place(brick, index, line)
@@ -628,12 +626,9 @@ final class EndlessIIFrameCostTests: XCTestCase {
         for (index, side) in EndlessIISide.allCases.enumerated() {
             let scene = game()
             let brick = scene.endlessIIMakeBig(leftColumn: 0, rowY: 0)
-            brick.endlessIIRole = .directional
             brick.endlessIIVulnerableSide = side
-            brick.color = GameScene.directionalBrickColour
-            brick.colorBlendFactor = 1
+            scene.makeDirectional(brick)
             scene.refreshEndlessIIBrickArt(brick)
-            scene.endlessIIDrawVulnerableEdge(on: brick, side: side)
             place(brick, index, 3)
         }
 
@@ -1345,4 +1340,187 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("\n  Reference icons, drawn: \(file.path)")
         print("  power-up, directional, fixed, exploding, spawner\n")
     }
+    /// What a scaled sprite says about its own size, and how far the Aura's picture reaches.
+    ///
+    /// Two numbers the Aura's rewrite turns on, and neither was worth guessing (§8.6, "an
+    /// unmeasured number drifts"). James, round 284: "Aura should be bigger and should be
+    /// behind the ball not on top of it. Also, it lags behind the ball too far. And it should
+    /// grow and shrink with the ball if those power ups are active."
+    ///
+    /// The Increase Ball Size power-up works by `ball.run(SKAction.scale(to: 1.5))`, so
+    /// whether `size` already carries that scale decides whether the aura has to multiply by
+    /// it or would be doubling it. And `endlessIIAuraVisibleShare` - the fraction of the
+    /// picture that reads as glow - was set to 0.76 by eye, which is exactly the kind of
+    /// number a play-test note about size is evidence against.
+    func testWhatAScaledSpriteSaysAndHowFarTheAuraArtReaches() {
+        let sprite = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        sprite.setScale(2)
+        print("AURA scale 2: size=\(sprite.size) frame=\(sprite.frame.size) xScale=\(sprite.xScale)")
+
+        let child = SKSpriteNode(color: .white, size: CGSize(width: 4, height: 4))
+        sprite.addChild(child)
+        print("AURA child of a x2 parent: frame=\(child.frame.size) (scene units)")
+
+        guard let image = UIImage(named: "BallAura"), let cg = image.cgImage else {
+            print("AURA no artwork in this bundle")
+            return
+        }
+        let width = cg.width, height = cg.height
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        let context = CGContext(data: &pixels, width: width, height: height,
+                                bitsPerComponent: 8, bytesPerRow: width*4,
+                                space: CGColorSpaceCreateDeviceRGB(),
+                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        context?.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        let midY = height/2
+        var profile: [(CGFloat, CGFloat)] = []
+        for x in (width/2)..<width {
+            let alpha = CGFloat(pixels[(midY*width + x)*4 + 3])/255
+            let radius = CGFloat(x - width/2)/CGFloat(width/2)
+            profile.append((radius, alpha))
+        }
+        let peak = profile.map(\.1).max() ?? 0
+        print("AURA art \(width)x\(height), peak alpha \(peak)")
+        for threshold in [CGFloat(0.02), 0.05, 0.10, 0.25, 0.5] {
+            let last = profile.last { $0.1 >= peak*threshold }?.0 ?? 0
+            print("AURA alpha >= \(threshold) of peak out to \(last) of the half-width")
+        }
+        for step in stride(from: 0, through: 10, by: 1) {
+            let want = CGFloat(step)/10
+            let sample = profile.min { abs($0.0 - want) < abs($1.0 - want) }
+            print("AURA at r=\(want): alpha \(sample?.1 ?? 0)")
+        }
+    }
+
+    /// The Aura and a directional brick, drawn so somebody can look at them.
+    ///
+    /// Round 284's two visual answers, and both are the kind that only a picture settles: a
+    /// glow that is behind the ball rather than over it, and a directional brick that still
+    /// looks like the brick it is.
+    func testTheAuraAndTheDirectionalBricksCanBeLookedAt() throws {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 100
+        scene.brickHeight = 50
+        scene.ballSize = 30
+        scene.ball.size = CGSize(width: 30, height: 30)
+        scene.totalStatsArray = [TotalStats()]
+
+        let display = SKScene(size: CGSize(width: 700, height: 420))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        // Top row: a directional brick over four different brick types
+        let faces: [(String, SKTexture)] = [("normal", scene.brickNormalTexture),
+                                            ("multi-hit", scene.brickMultiHit1Texture),
+                                            ("multi-hit 3", scene.brickMultiHit3Texture),
+                                            ("indestructible", scene.brickIndestructible2Texture)]
+        for (index, face) in faces.enumerated() {
+            let brick = SKSpriteNode(texture: face.1, size: CGSize(width: 100, height: 50))
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            brick.endlessIIVulnerableSide = .bottom
+            scene.makeDirectional(brick)
+            brick.removeFromParent()
+            brick.position = CGPoint(x: 110 + 150*CGFloat(index), y: 330)
+            display.addChild(brick)
+        }
+
+        // Bottom row: the ball at three scales, each wearing its aura
+        for (index, ballScale) in [CGFloat(0.5), 1, 1.5].enumerated() {
+            let sample = GameScene()
+            sample.gameMode = .endlessII
+            sample.ballSize = 30
+            sample.ball.size = CGSize(width: 30, height: 30)
+            sample.ball.texture = scene.ball.texture
+            sample.ball.color = .white
+            sample.totalStatsArray = [TotalStats()]
+            sample.addChild(sample.ball)
+            sample.ball.setScale(ballScale)
+            sample.endlessIICollectAura()
+            sample.tickEndlessIIAura()
+
+            sample.ball.removeFromParent()
+            sample.ball.position = CGPoint(x: 150 + 200*CGFloat(index), y: 130)
+            display.addChild(sample.ball)
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("round-284.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Round 284, drawn: \(file.path)")
+        print("  top: directional over normal, multi-hit, multi-hit 3, indestructible")
+        print("  bottom: the aura at ball scale 0.5, 1 and 1.5\n")
+    }
+
+    /// What Blackout would cost to draw, since James asked for it measured before deciding.
+    ///
+    /// The daily's Monochrome twist is specified as a grayscale `CIFilter` on an `SKEffectNode`
+    /// wrapping the scene, with a performance gate on it: if it cannot hold frame rate it ships
+    /// as a desaturated palette swap instead. Nobody had ever put a number to the gate. James,
+    /// round 284: "Blackout, measure first. For the HUD, leave it, it doesn't need the filter."
+    ///
+    /// **What this can and cannot say.** It times `SKView.texture(from:)`, which is a real
+    /// render of a real layer through the real filter, so the *ratio* between a filtered field
+    /// and the same field unfiltered is meaningful. It is not a device frame: this runs on a
+    /// Mac's GPU through the simulator, and the oldest supported iPhone is a different machine.
+    /// A ratio near one is evidence the gate can be passed; a ratio of several would settle it
+    /// the other way without needing a device at all.
+    ///
+    /// The HUD is deliberately outside the filtered node, which is James's call in the same
+    /// note and also the cheaper arrangement - a filter's cost goes with the *area* it covers.
+    func testWhatBlackoutWouldCostToDraw() throws {
+        func field(filtered: Bool) -> SKScene {
+            let scene = SKScene(size: CGSize(width: 402, height: 874))
+            scene.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+            let host: SKNode
+            if filtered {
+                let effect = SKEffectNode()
+                effect.filter = CIFilter(name: "CIPhotoEffectMono")
+                effect.shouldEnableEffects = true
+                scene.addChild(effect)
+                host = effect
+            } else {
+                host = scene
+            }
+
+            for row in 0..<11 {
+                for column in 0..<11 {
+                    let brick = SKSpriteNode(color: .systemPink,
+                                             size: CGSize(width: 34, height: 16))
+                    brick.position = CGPoint(x: 21 + 36*CGFloat(column),
+                                             y: 600 + 18*CGFloat(row))
+                    host.addChild(brick)
+                }
+            }
+            for index in 0..<4 {
+                let ball = SKSpriteNode(color: .white, size: CGSize(width: 14, height: 14))
+                ball.position = CGPoint(x: 60 + 90*CGFloat(index), y: 300)
+                host.addChild(ball)
+            }
+            let paddle = SKSpriteNode(color: .cyan, size: CGSize(width: 105, height: 14))
+            paddle.position = CGPoint(x: 201, y: 120)
+            host.addChild(paddle)
+            return scene
+        }
+
+        let plainScene = field(filtered: false)
+        let blackoutScene = field(filtered: true)
+        let view = SKView(frame: CGRect(origin: .zero, size: plainScene.size))
+
+        let plain = cost("field, as it is") { _ = view.texture(from: plainScene) }
+        let blackout = cost("field, through the filter") { _ = view.texture(from: blackoutScene) }
+
+        print(String(format: "\n  Blackout costs %.2fx an ordinary field to draw\n",
+                     blackout/plain))
+
+        XCTAssertGreaterThan(plain, 0)
+        XCTAssertGreaterThan(blackout, 0)
+        // No threshold. This is a number for a decision James is making, not a tripwire - and
+        // a bar invented here would be a bar invented here
+    }
+
 }

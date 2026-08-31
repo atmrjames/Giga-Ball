@@ -186,6 +186,107 @@ struct EndlessIISetRow {
                                                 "II..I.I..II"], minimumHeight: 280),
         // The heaviest, and the deepest gated. Two ways in at the bottom, two bricks worth
         // having, and a lid with a pair of slots that a ball has to be aimed at
+
+        // MARK: The drafted nine (round 284)
+        //
+        // James, round 284: "please start to draft sequences and I can play test them" - the
+        // heading §12.0 has been holding open since round 190. These are a first pass and are
+        // meant to be argued with.
+        //
+        // The one rule behind the choice of nine: **each is made of something the catalogue
+        // had never been made of.** The twenty-two above draw on four brick kinds, four shapes,
+        // one size and three actions, and the field around them has five behaviours, four
+        // shapes, four sizes and fifteen styles. So there was no designed row anywhere that was
+        // Multi-hit, that breathed, that turned, that exploded, that could not be seen, that
+        // refilled itself or that went anywhere - and a landmark is worth having precisely
+        // because it is the one row in a run that is unmistakably *about* something.
+        //
+        // Gated shallow to deep in roughly the order a player can be expected to cope: the
+        // ones that only need looking at come first, the ones that need a plan come last.
+
+        EndlessIISetRow(name: "Seam", rows: ["MMM.MMM.MMM"], minimumHeight: 60),
+        // Three blocks of Multi-hit with two gaps, and the shallowest of the nine because it
+        // asks for nothing but persistence. Multi-hit is in the shared alphabet and no set row
+        // has ever used it: twenty-two designed rows and not one of them was made of the brick
+        // that takes four hits. The gaps are the point - a wall of these with no way through
+        // would be a wait rather than a shape
+
+        EndlessIISetRow(name: "Bellows", rows: ["bbbbbbbbbbb"], minimumHeight: 120,
+                        legend: ["b": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.breathing])]),
+        // A solid row with no gap in it at all, which every other wall here would call unfair.
+        // It is passable because it breathes: each brick shrinks to half a cell and swells back
+        // (§4.12), so the row opens gaps all along itself and closes them again, out of step
+        // with its neighbours. The shot is timed rather than aimed, which nothing else in the
+        // pool asks for
+
+        EndlessIISetRow(name: "Chevron", rows: ["WWWWW.EEEEE"], minimumHeight: 140,
+                        legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: true),
+                                 "E": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: false)]),
+        // The Palisade's answer to the obvious question about it. That row sends everything one
+        // way; this one has the two halves facing each other, so both sides feed the gap in the
+        // middle. A ball anywhere along it is being returned towards the one column that is
+        // open, which makes it the first shape in the pool that helps
+
+        EndlessIISetRow(name: "Lattice", rows: ["dNdNdNdNdNd"], minimumHeight: 140,
+                        legend: ["d": EndlessIIBrickSpec(behaviour: .standard,
+                                                         shape: .diamond)]),
+        // Rhombi alternating with ordinary bricks. A diamond has no flat face, so every hit
+        // leaves at a diagonal - a ball that gets into this row is passed along it from one
+        // rhombus to the next rather than being sent back out, and the ordinary bricks between
+        // them are what it collects on the way. The one shaped face with no designed row of its
+        // own
+
+        EndlessIISetRow(name: "Orrery", rows: ["...........",
+                                               ".s...s...s."], minimumHeight: 160,
+                        legend: ["s": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.spinning])]),
+        // Three turning bricks, spaced four columns apart, under a row left deliberately empty.
+        // **The empty row is not decoration**: a spinner sweeps a circle wider than its own
+        // cell, and the generator books it clearance above for that reason - a formation cannot
+        // ask the row above it for anything, because that row was built before this one was
+        // drawn, so the shape has to carry its own room. Mostly gap and still hard to cross,
+        // because the gaps are turning
+
+        EndlessIISetRow(name: "Magazine", rows: ["???X???X???"], minimumHeight: 170,
+                        legend: ["X": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.exploding])]),
+        // Two charges buried in a row of whatever the field was making anyway. It is the only
+        // shape here that is worth *more* than the bricks in it: find either charge and the row
+        // opens around it. Undesigned contents on purpose - a charge is interesting because of
+        // what is packed round it, and what is packed round it should differ every time
+
+        EndlessIISetRow(name: "Mirage", rows: ["vNv.vNv.vNv"], minimumHeight: 190,
+                        legend: ["v": EndlessIIBrickSpec(behaviour: .invisible)]),
+        // The mazes' dotting rule applied to a row that cannot be seen rather than one that
+        // cannot be broken. Six invisible bricks with three ordinary ones standing among them:
+        // the visible bricks say where the row *is*, and everything either side of one is a
+        // brick you have found rather than a brick you can see. Nothing but invisibles would be
+        // a row that is only discovered by being bounced off, which is the same complaint
+        // James made about the Comb
+
+        EndlessIISetRow(name: "Wellspring", rows: [".....p....."], minimumHeight: 210,
+                        legend: ["p": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.spawner])]),
+        // One brick, alone in an empty row. It is the emptiest formation in the catalogue and
+        // the only one that fills itself in: a spawner refills the cells around it, so what
+        // arrives as a single brick becomes a patch of field unless it is dealt with while it
+        // is still one brick. Gated deep because a player who ignores it is worse off than
+        // one who never met it, which is not a thing to hand somebody in their first minutes
+
+        EndlessIISetRow(name: "Conduit", rows: ["p?.?.?.?.?p"], minimumHeight: 240,
+                        legend: ["p": EndlessIIBrickSpec(behaviour: .indestructibleAlways,
+                                                         actions: [.portal])]),
+        // A portal at each end of the field with a scattering of ordinary bricks between them.
+        // Indestructible because a portal has to be (`suits`): it is struck rather than
+        // damaged, so the behaviour that means "a hit does nothing" is the only one it can
+        // wear. What it does to the row is turn the two walls into each other - a ball
+        // travelling out of the field on one side arrives travelling out of it on the other,
+        // which is either a rally that never ends or a way of getting behind the row, depending
+        // entirely on how it is set up. The deepest gated of the nine, and the one most likely
+        // to come back from a play test wanting a different pair of columns
     ]
 
     /// The ones allowed at this height.

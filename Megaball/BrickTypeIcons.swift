@@ -249,8 +249,11 @@ enum BrickTypeIcons {
             return
 
         case .directional:
-            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            artwork("BrickNormal")?.tinted(standardColour).draw(in: frame)
             artwork("BrickDirectionalBottomOpen")?.draw(in: frame)
+            // The *ordinary* brick under the panel, not a grey one. The grey was the old
+            // identity and round 284 took it off the brick in the field for the reason the
+            // page has to follow: what shows through the open side is what kind of brick it is
             // **James's panel, the same one the field wears** (round 283: "update the
             // directional graphic"). The page drew its own white bar across the bottom, which
             // was a fair picture of the old mark and no picture at all of the one round 271

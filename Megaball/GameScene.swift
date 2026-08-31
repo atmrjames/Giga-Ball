@@ -447,9 +447,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	/// The ball's size before any power-up has had a say.
 	///
-	/// `ballSize` is the *current* one and the size power-ups write to it, so anything that
-	/// should not grow and shrink with the ball has to ask this instead - the laser beam's core
-	/// is drawn to it (James, round 243: "it shouldn't change size with the ball").
+	/// **`ballSize` is the same number, and the note that used to be here was wrong** (found in
+	/// round 284). It said the size power-ups write to `ballSize`; nothing does, in the whole
+	/// project, except `setUpGame`. Increase and Decrease Ball Size animate the ball's *scale*,
+	/// so `ball.size` grows and `ballSize` sits where it was set - which means anything asking
+	/// `ballSize` how big the ball is gets the answer "as big as it started". That is right for
+	/// the laser beam's core, which is what round 243 asked for ("it shouldn't change size with
+	/// the ball"), and it was wrong for the Aura, whose reach is meant to follow the ball and
+	/// silently did not.
+	///
+	/// So: ask `ball.size` for how big the ball **is**, and either of these for how big it
+	/// **started**.
 	var normalBallSize: CGFloat { layoutUnit*0.67 }
     var paddleWidth: CGFloat = 0
 	var paddleHeight: CGFloat = 0
@@ -979,6 +987,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// once per *fixture pair*, so one bounce can arrive two or three times, and Randomised
 	/// Bounce drew a fresh angle for each. See `endlessIIRandomisesBounces`.
 	var randomisedBounceFrame: [ObjectIdentifier: Int] = [:]
+
+	/// How fast each steered ball is travelling sideways under Ball Control's spring.
+	///
+	/// Its own, rather than the physics body's: the engine rewrites `velocity` on every
+	/// bounce, and a spring that lost its wind-up to a brick would never swing back.
+	var endlessIISteeringVelocities: [ObjectIdentifier: CGFloat] = [:]
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
@@ -2116,11 +2130,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         switch gameState.currentState {
         case is Playing:
             touchBeganWhilstPlaying = true
-            endlessIIAimTouchPredatesHold = endlessIIAimHold
-            // Recorded on the way in, because that is the only moment the answer is knowable:
-            // a touch that begins while an aim is already running is one the player started
-            // *for* the aim, and one that was down before it began is a paddle move that
-            // happened to be under way when the ball arrived
+            endlessIIAimTouchPredatesHold = false
+            // **A touch beginning now cannot predate anything**, whatever else is running.
+            //
+            // Round 275 wrote `= endlessIIAimHold` here, which is the exact inverse of the
+            // sentence that followed it, and the consequence was not subtle: once an aim was
+            // running *every* later touch was marked as having predated it, so
+            // `AimHoldControl.release` answered `.keepAiming` to all of them and the ball could
+            // never be launched. The hold never ended, and `endlessIIFieldIsHeld` reads it - so
+            // the field stopped descending too and the run was wedged (James, round 284: "aimed
+            // sticky isn't showing arrow or allowing aim").
+            //
+            // The `true` case is set where it can actually be known: `endlessIIBeginAimHold`,
+            // on the frame the catch happens, from whether a finger was already down
             paddleMoved = false
             endlessIIAimTravel = 0
         default:
