@@ -74,15 +74,25 @@ final class EndlessIIFaceTests: XCTestCase {
         }
     }
 
-    func testTheWedgeIsTheOnlyFaceWhoseSpriteSitsOffCentre() {
+    func testOnlyTheDiamondHidesItsSpriteInTheMiddle() {
         // Which is the whole reason hiding rectangles are rectangles rather than a scale
-        // factor. If a dome or a notch ever needs an offset too, this is the reminder to
-        // check that nothing else assumed the sprite was centred.
+        // factor. This was "the wedge is the only one" until round 280, and its comment said
+        // that if a dome or a notch ever needed an offset too, that was the reminder to check
+        // nothing else assumed the sprite was centred. It fired, and the check was made:
+        // `redrawEndlessIIFace` works the anchor out from whatever rectangle it is given,
+        // `endlessIIBrickCentre` reads the face node's own position rather than assuming, and
+        // `endlessIICanTake` exempts every shaped brick from the centred test already. The
+        // reflection in `hidingRect` now actually moves these two when a face is flipped, which
+        // is what it was written for.
         for face in EndlessIIFace.allCases {
             let hide = EndlessIIFaceGeometry.hidingRect(face, size: cell)
             let centred = abs(hide.midX) < 0.001 && abs(hide.midY) < 0.001
-            XCTAssertEqual(centred, face != .wedge, "\(face)")
+            XCTAssertEqual(centred, face == .diamond, "\(face)")
         }
+        // A rhombus is the one face solid through its own middle, so it is the one that can
+        // hide a sprite there. The wedge tucks into the fat corner opposite its point; the tent
+        // and the notch sit on the brick's floor, because that is the only part of *both* the
+        // silhouette and James's drawn art that is solid all the way across (round 280)
     }
 
     func testMirroringAWedgeReflectsItRatherThanMovingIt() {

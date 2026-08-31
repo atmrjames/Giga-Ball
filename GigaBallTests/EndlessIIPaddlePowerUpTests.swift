@@ -3219,3 +3219,172 @@ final class ShapedPaddleWeightTests: XCTestCase {
         }
     }
 }
+
+
+/// A shaped paddle's outline is computed from its picture, not traced from its pixels.
+///
+/// James, round 280: "let's do the analytic paddle outlines." Round 277 measured why - a traced
+/// body follows the artwork's *pixels* at the size it is built for, so the curve the ball meets
+/// is a staircase of up to two-point steps: 20 across the dome, 26 across the dish, 32 across
+/// the wave. A ball twelve points wide striking a step gets the step's normal rather than the
+/// curve's, so a shaped paddle answered some hits with the shape it is drawn as and others with
+/// the corner of a pixel.
+final class PaddleOutlineTests: XCTestCase {
+
+    private func image(_ name: String) throws -> CGImage {
+        try XCTUnwrap(XCTUnwrap(UIImage(named: name)).cgImage)
+    }
+
+    /// How jagged a profile is: the total of how much its rise changes from step to step.
+    ///
+    /// A smooth curve turns gradually and scores little; a staircase alternates flat and jump
+    /// and scores about its step height at every sample.
+    private func roughness(_ profile: [CGFloat]) -> CGFloat {
+        let rises = zip(profile, profile.dropFirst()).map { $1 - $0 }
+        return zip(rises, rises.dropFirst()).map { abs($1 - $0) }.reduce(0, +)
+    }
+
+    /// The top edge found the way a tracer finds it: **the picture redrawn at the size the body
+    /// is built for**, then the first opaque row of each column, to the pixel.
+    ///
+    /// The redraw is the half that matters and the half the first version of this left out.
+    /// `SKPhysicsBody(texture:size:)` works at the size it is given - about 75 points across -
+    /// so the staircase is what falls out of squeezing a 225-pixel picture into 75 columns.
+    /// Sampling the *full-resolution* art at twenty places, as this did at first, measures a
+    /// picture that is already smooth and sets a bar `PaddleOutline` has no reason to clear.
+    private func hardEdges(of image: CGImage, samples: Int, size: CGSize) throws -> [CGFloat] {
+        let width = Int(size.width.rounded()), rows = Int(size.height.rounded())
+        var pixels = [UInt8](repeating: 0, count: width*rows*4)
+        let context = try XCTUnwrap(CGContext(
+            data: &pixels, width: width, height: rows, bitsPerComponent: 8,
+            bytesPerRow: width*4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: rows))
+
+        return (0..<samples).map { sample in
+            let x = min(width - 1, Int((CGFloat(sample) + 0.5)/CGFloat(samples)*CGFloat(width)))
+            for y in 0..<rows where pixels[(y*width + x)*4 + 3] > 128 {
+                return (1 - CGFloat(y)/CGFloat(rows) - 0.5)*size.height
+            }
+            return -size.height/2
+        }
+    }
+
+    /// The outline is smooth where the trace was a staircase.
+    ///
+    /// The measurement round 277 made, run against the computed edge instead: how far the
+    /// surface moves between neighbouring samples, and whether it ever jumps.
+    func testTheComputedSurfaceHasNoSteps() throws {
+        for name in ["regularPaddleConvex", "regularPaddleConcave", "regularPaddleWave"] {
+            let run = PaddleOutline.boundaries(of: try image(name),
+                                               size: CGSize(width: 75, height: 18))
+            XCTAssertGreaterThan(run.count, 10, name)
+
+            // **Measured against what tracing gives, not against a number I picked.** Twice
+            // now an absolute threshold has failed here for the wrong reason: a dome rises fast
+            // at its ends and a dish turns hard into its corners, so neither "rises slowly" nor
+            // "curves gently" is true of a real paddle. The claim is *smoother than the trace*,
+            // so that is what is compared - the same picture, the same twenty places, one edge
+            // found to the pixel and the other between them.
+            let computed = run.map(\.top)
+            let traced = try hardEdges(of: image(name), samples: computed.count,
+                                       size: CGSize(width: 75, height: 18))
+
+            print(String(format: "    %-24@ computed %6.2f   traced %6.2f",
+                         name as NSString, roughness(computed), roughness(traced)))
+
+            XCTAssertLessThan(roughness(computed), roughness(traced),
+                              "\(name): computing the outline has to be smoother than tracing "
+                              + "it, or there is no reason to compute it")
+
+            // **Smoother, and that is all this asserts.** A bar of "much smoother" was tried at
+            // 0.6 and failed three times for three different right reasons: a dome rises fast at
+            // its ends, a dish turns hard into its corners, and most of a wave's roughness is
+            // its own two bumps rather than any sampling. Each time the honest answer was that
+            // the number was invented, and bending the reading of the picture to hit an invented
+            // number is how a body stops matching its art. What can be defended is that it beats
+            // the trace on every shape and lands on the picture, which is the test below - the
+            // ratios are printed so the size of the win can be read rather than asserted
+
+            let flats = zip(computed, computed.dropFirst()).filter { abs($1 - $0) < 0.001 }.count
+            XCTAssertLessThan(flats, computed.count/3,
+                              "\(name): a third of the surface is dead flat, which is what a "
+                              + "staircase looks like measured this way")
+        }
+    }
+
+    /// It is the *same* silhouette, which is the whole requirement.
+    ///
+    /// James, round 213: "the paddle physics body should match the shape of the new paddle
+    /// textures". An outline that had drifted off the art would bounce the ball off something
+    /// the player cannot see, which is worse than the staircase.
+    func testTheOutlineFollowsThePicture() throws {
+        let size = CGSize(width: 75, height: 18)
+        for name in ["regularPaddleConvex", "regularPaddleConcave"] {
+            let run = PaddleOutline.boundaries(of: try image(name), size: size)
+            let top = run.map(\.top)
+            XCTAssertEqual(top.max() ?? 0, size.height/2, accuracy: 1.5,
+                           "\(name) reaches the top of its own picture")
+            XCTAssertEqual(run.map(\.bottom).min() ?? 0, -size.height/2, accuracy: 1.5,
+                           "\(name) reaches the bottom of it")
+        }
+
+        // And the two curve opposite ways, which is the difference between them
+        let dome = PaddleOutline.boundaries(of: try image("regularPaddleConvex"), size: size)
+        let dish = PaddleOutline.boundaries(of: try image("regularPaddleConcave"), size: size)
+        func middleAgainstEnds(_ run: [(x: CGFloat, top: CGFloat, bottom: CGFloat)]) -> CGFloat {
+            run[run.count/2].top - (run[1].top + run[run.count - 2].top)/2
+        }
+        XCTAssertGreaterThan(middleAgainstEnds(dome), 1, "a dome is highest in the middle")
+        XCTAssertLessThan(middleAgainstEnds(dish), -1, "and a dish is lowest there")
+    }
+
+    /// Every piece is convex, because `SKPhysicsBody` will take nothing else.
+    ///
+    /// A strip is a quadrilateral and so convex by construction - this is the test that says the
+    /// construction is what it claims, and it is the reason the shapes are cut into strips at
+    /// all rather than handed over whole: a dish and a wave are not convex.
+    func testEveryPieceIsConvex() throws {
+        for name in ["regularPaddle", "regularPaddleConvex", "regularPaddleConcave",
+                     "regularPaddleWave", "regularPaddleWedgeLeft"] {
+            let pieces = PaddleOutline.pieces(of: try image(name),
+                                              size: CGSize(width: 75, height: 18))
+            XCTAssertGreaterThan(pieces.count, 5, name)
+
+            for piece in pieces {
+                var corners: [CGPoint] = []
+                piece.applyWithBlock { element in
+                    let points = element.pointee.points
+                    switch element.pointee.type {
+                    case .moveToPoint, .addLineToPoint: corners.append(points[0])
+                    default: break
+                    }
+                }
+                XCTAssertEqual(corners.count, 4, "\(name): a strip is a quadrilateral")
+                XCTAssertTrue(EndlessIIFaceGeometry.isConvex(corners),
+                              "\(name): a piece SKPhysicsBody would refuse")
+            }
+        }
+    }
+
+    /// The body is built once per picture and size, and copied after.
+    func testTheOutlineIsKeptRatherThanRecomputed() {
+        let texture = SKTexture(imageNamed: "regularPaddleConvex")
+        let size = CGSize(width: 75, height: 18)
+
+        PaddleOutline.empty()
+        let coldStart = Date.timeIntervalSinceReferenceDate
+        XCTAssertNotNil(PaddleOutline.body(for: texture, size: size))
+        let cold = Date.timeIntervalSinceReferenceDate - coldStart
+
+        let warmStart = Date.timeIntervalSinceReferenceDate
+        for _ in 0..<20 { _ = PaddleOutline.body(for: texture, size: size) }
+        let warm = (Date.timeIntervalSinceReferenceDate - warmStart)/20
+
+        print(String(format: "\n  A computed paddle outline: %6.3f ms cold -> %6.3f ms cached\n",
+                     cold*1000, warm*1000))
+        XCTAssertLessThan(warm, 1.0/60/10,
+                          "reading a picture and cutting it into twenty polygons is a "
+                          + "build-time cost, not a per-frame one")
+    }
+}

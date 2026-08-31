@@ -833,11 +833,12 @@ final class EndlessIIFrameCostTests: XCTestCase {
         // 2. Candidate widths, to pick between. The far end is what is being chosen: an
         // `SKShapeNode`'s glow reads much narrower than its nominal `glowWidth`, so carrying the
         // old numbers across arithmetically made a wedge where the old line was nearly parallel
-        // The candidates this was used to choose between are gone; what they settled is
-        // written down where the choice lives, in `tickEndlessIIAim`. Four widths and three
-        // alpha floors were drawn beside the line on the left, and the pair that matched it
-        // won - which is the only way that could have been decided, because the arithmetic
-        // answer and the one that looks the same are different answers
+        // The candidates each round drew here are gone once they have been chosen between,
+        // and what they settled is written where the choice lives, in `tickEndlessIIAim`.
+        // Round 276 picked a width and an alpha floor against the line on the left; round 280
+        // picked the soft picture and a lower floor against three of its own. Both times the
+        // arithmetic answer and the one that looked right were different answers, which is the
+        // whole reason this draws them side by side rather than asserting a number
 
         // 3. What the scene draws now, through its own code
         let scene = GameScene(size: CGSize(width: 402, height: 874))
@@ -1083,5 +1084,163 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("")
         // Two nodes per running power-up, so the frames saved are twice this in
         // re-tessellations and the same again in offscreen passes avoided
+    }
+
+    /// Draws each shaped paddle's computed outline over the picture it was computed from.
+    ///
+    /// The check that matters and the only one there is. `PaddleOutline` claims to find the
+    /// same silhouette `SKPhysicsBody(texture:)` traces, without the staircase - and a
+    /// silhouette that has drifted off the art is a paddle that bounces the ball off something
+    /// the player cannot see, which is the exact failure round 213 set out to fix. Numbers
+    /// cannot say whether it sits on the picture; this can.
+    func testTheComputedPaddleOutlinesCanBeLookedAt() throws {
+        let drawn = CGSize(width: 300, height: 72)
+        let shapes = ["regularPaddle", "regularPaddleConvex", "regularPaddleConcave",
+                      "regularPaddleWave", "regularPaddleWedgeLeft"]
+        let row: CGFloat = 110
+
+        let display = SKScene(size: CGSize(width: drawn.width + 40,
+                                           height: row*CGFloat(shapes.count) + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (index, name) in shapes.enumerated() {
+            guard let art = UIImage(named: name), let image = art.cgImage else { continue }
+            let centre = CGPoint(x: display.size.width/2,
+                                 y: display.size.height - row*(CGFloat(index) + 0.5))
+
+            let picture = SKSpriteNode(texture: SKTexture(imageNamed: name), size: drawn)
+            picture.position = centre
+            picture.alpha = 0.55
+            display.addChild(picture)
+            // Faded, so the outline drawn over it is the thing being read
+
+            for piece in PaddleOutline.pieces(of: image, size: drawn) {
+                let shape = SKShapeNode(path: piece)
+                shape.position = centre
+                shape.strokeColor = UIColor.cyan.withAlphaComponent(0.9)
+                shape.lineWidth = 1
+                shape.fillColor = UIColor.cyan.withAlphaComponent(0.12)
+                shape.zPosition = 1
+                display.addChild(shape)
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("paddle-outlines.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Paddle outlines, drawn: \(file.path)")
+        print("  \(shapes.joined(separator: ", ")) - picture faded, computed strips over it\n")
+    }
+
+    /// A spinning shaped brick through its turn, and a still one beside it.
+    ///
+    /// James, round 280, with a screenshot: "concave brick had a weird graphic issue". What the
+    /// picture shows is a peak standing above the brick's top edge with diagonals running down
+    /// to both corners - two silhouettes crossing, which is exactly what round 266's
+    /// cross-fading partner looked like before it was turned the right way round. That was
+    /// found by rendering it and it is being looked for the same way.
+    ///
+    /// The still brick in the left column is the control: if it is wrong too, the partner is
+    /// innocent and the art is the wrong way up.
+    func testASpinningShapedBrickCanBeLookedAt() throws {
+        let cell = CGSize(width: 56, height: 28)
+        let column: CGFloat = 90, row: CGFloat = 90
+        let turns: [CGFloat] = [0, .pi/4, .pi/2, .pi*0.75, .pi]
+
+        let faces: [EndlessIIFace] = [.concave, .convex, .wedge, .diamond]
+        let display = SKScene(size: CGSize(width: column*CGFloat(turns.count) + 20,
+                                           height: row*CGFloat(faces.count) + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (line, face) in faces.enumerated() {
+            for (index, turn) in turns.enumerated() {
+                let scene = GameScene(size: CGSize(width: 402, height: 874))
+                scene.gameMode = .endlessII
+                scene.brickWidth = cell.width
+                scene.brickHeight = cell.height
+
+                let brick = SKSpriteNode(texture: scene.brickIndestructible1Texture, size: cell)
+                scene.addChild(brick)
+                brick.endlessIIFaceMirrored = false
+                brick.endlessIIFaceFlipped = false
+                scene.makeFace(face, on: brick)
+                brick.zRotation = turn
+                scene.refreshEndlessIIShapedFaces()
+                // Through the per-frame sweep, which is what puts the partner on and decides
+                // how much of it shows
+
+                brick.removeFromParent()
+                brick.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                         y: display.size.height - row*(CGFloat(line) + 0.5))
+                display.addChild(brick)
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("spinning-faces.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Spinning faces, drawn: \(file.path)")
+        print("  rows: concave, convex, wedge, diamond")
+        print("  columns: 0, 45, 90, 135 and 180 degrees of turn\n")
+    }
+
+    /// A concave brick pulled apart: the silhouette, the picture, and what the scene builds.
+    ///
+    /// The still brick in `testASpinningShapedBrickCanBeLookedAt` shows the crossing at *zero*
+    /// rotation, where round 266's partner is provably absent, so the partner is innocent. This
+    /// draws the three things that could be doing it, one per column, large enough to read.
+    func testAConcaveBrickPulledApartCanBeLookedAt() throws {
+        let cell = CGSize(width: 168, height: 84)
+        let column: CGFloat = 200, row: CGFloat = 120
+
+        let display = SKScene(size: CGSize(width: column*3 + 20, height: row*2 + 20))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (line, face) in [EndlessIIFace.concave, .convex].enumerated() {
+            let y = display.size.height - row*(CGFloat(line) + 0.5)
+
+            // 1. The silhouette the geometry says
+            let outline = SKShapeNode(path: EndlessIIFaceGeometry.silhouette(face, size: cell))
+            outline.position = CGPoint(x: 10 + column*0.5, y: y)
+            outline.fillColor = UIColor.cyan.withAlphaComponent(0.35)
+            outline.strokeColor = .cyan
+            display.addChild(outline)
+
+            // 2. The picture on its own
+            let art = GameScene.shapedArt(for: face).map {
+                "BrickIndestructible1" + $0.rawValue + "0"
+            } ?? ""
+            if UIImage(named: art) != nil {
+                let picture = SKSpriteNode(texture: SKTexture(imageNamed: art), size: cell)
+                picture.position = CGPoint(x: 10 + column*1.5, y: y)
+                display.addChild(picture)
+            }
+
+            // 3. What the scene builds
+            let scene = GameScene(size: CGSize(width: 402, height: 874))
+            scene.gameMode = .endlessII
+            scene.brickWidth = cell.width
+            scene.brickHeight = cell.height
+            let brick = SKSpriteNode(texture: scene.brickIndestructible1Texture, size: cell)
+            scene.addChild(brick)
+            brick.endlessIIFaceMirrored = false
+            brick.endlessIIFaceFlipped = false
+            scene.makeFace(face, on: brick)
+            brick.removeFromParent()
+            brick.position = CGPoint(x: 10 + column*2.5, y: y)
+            display.addChild(brick)
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("concave-apart.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Concave pulled apart: \(file.path)")
+        print("  rows: concave, convex   columns: silhouette, picture, what the scene builds\n")
     }
 }

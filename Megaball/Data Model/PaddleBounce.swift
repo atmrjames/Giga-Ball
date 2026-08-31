@@ -17,6 +17,8 @@
 
 import CoreGraphics
 import Foundation
+import SpriteKit
+import UIKit
 
 enum PaddleBounce {
 
@@ -209,5 +211,228 @@ enum PaddleBounce {
             // art has not been drawn for a theme yet, and it is what the reference page's
             // profile drawing samples, so it still has to describe the same face.
         }
+    }
+}
+
+
+/// A shaped paddle's outline, computed from its picture rather than traced from it.
+///
+/// **Why not just trace it.** `SKPhysicsBody(texture:size:)` walks the artwork's alpha at the
+/// size the body is built for - about 75 points across - and returns a polygon that follows the
+/// *pixels*. Round 277 measured what that leaves the ball: 20 steps across the dome, 26 across
+/// the dish, 32 across the wave, each up to two points high, where the plain paddle's flat top
+/// has none. A ball 12 points wide meeting a two-point step gets the step's normal rather than
+/// the curve's, so a shaped paddle answers some hits with the shape it is drawn as and others
+/// with the corner of a pixel.
+///
+/// The staircase is a sampling artefact, not the shape. This finds the same edge to *sub-pixel*
+/// precision - where the alpha crosses half, interpolated between two rows - smooths what is
+/// left, and hands back a curve. The picture still decides the shape, which is James's round-213
+/// requirement ("the paddle physics body should match the shape of the new paddle textures"):
+/// this is the same silhouette, read properly.
+///
+/// **Vertical strips, because two of the five are not convex.** A dome and the two wedges are
+/// convex and could each be one polygon; a dish and a wave are not, and `SKPhysicsBody` will
+/// only take convex ones. Every shape is cut into strips instead, each a quadrilateral and so
+/// convex by construction, and handed over as a compound body - the same answer
+/// `EndlessIIFaceGeometry` gives the concave brick, at a finer grain because the paddle is the
+/// surface the game is played on.
+enum PaddleOutline {
+
+    /// How many strips a paddle is cut into.
+    ///
+    /// Twenty across seventy-five points is under four points a strip, which is a third of a
+    /// ball - fine enough that the ball meets the curve rather than the cut, and coarse enough
+    /// that the body is twenty fixtures rather than seventy-five.
+    static let strips = 20
+
+    /// How finely the picture is read, per strip.
+    ///
+    /// The edge is found in the artwork's own pixels and then averaged down, so the number that
+    /// matters is how many samples each strip is the average of. Four is enough to place the
+    /// edge well inside a pixel and cheap enough to do at build time.
+    static let samplesPerStrip = 4
+
+    /// How far either side of a boundary the average reaches, in strips.
+    ///
+    /// One, so each boundary is the average of two strips' worth of samples and shares half of
+    /// them with each neighbour. Less than that and neighbouring boundaries see disjoint sets
+    /// of pixels, which is sampling rather than smoothing - and measurably worse than not
+    /// bothering, which is how this number came to be chosen rather than assumed.
+    static let reach: CGFloat = 1
+
+    /// Where the top and bottom edges are, per sample, in fractions of the picture's height
+    /// measured from its bottom. Nil where the column is empty.
+    ///
+    /// **Sub-pixel by interpolation.** A column's edge is not the first opaque row, it is where
+    /// the alpha crosses a half *between* two rows - so a curve that rises by a third of a pixel
+    /// per column is read as rising by a third of a pixel rather than as flat, flat, flat, jump.
+    /// That single change is the whole difference between a staircase and a curve.
+    static func edges(of image: CGImage, samples: Int) -> [(top: CGFloat, bottom: CGFloat)?] {
+        let width = image.width, height = image.height
+        guard width > 0, height > 0, samples > 0 else { return [] }
+
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        guard let context = CGContext(data: &pixels, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: width*4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return [] }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        func alpha(_ x: Int, _ y: Int) -> CGFloat {
+            CGFloat(pixels[(y*width + x)*4 + 3])/255
+        }
+
+        return (0..<samples).map { sample in
+            let x = min(width - 1, Int((CGFloat(sample) + 0.5)/CGFloat(samples)*CGFloat(width)))
+
+            var first: Int?, last: Int?
+            for y in 0..<height where alpha(x, y) >= 0.5 {
+                if first == nil { first = y }
+                last = y
+            }
+            guard let first, let last else { return nil }
+
+            // Row indices run down the image and the answer runs up it, so the *first* opaque
+            // row is the top edge and the flip happens at the end
+            let top = crossing(from: first, towards: -1, x: x, height: height, alpha: alpha)
+            let bottom = crossing(from: last, towards: 1, x: x, height: height, alpha: alpha)
+            return (top: 1 - top/CGFloat(height), bottom: 1 - bottom/CGFloat(height))
+        }
+    }
+
+    /// Where the alpha crosses a half, walking one row out from a known opaque one.
+    private static func crossing(from row: Int, towards step: Int, x: Int, height: Int,
+                                 alpha: (Int, Int) -> CGFloat) -> CGFloat {
+        let inside = alpha(x, row)
+        let neighbour = row + step
+        guard neighbour >= 0, neighbour < height else { return CGFloat(row) }
+        let outside = alpha(x, neighbour)
+        guard inside > outside else { return CGFloat(row) }
+        let share = (inside - 0.5)/(inside - outside)
+        return CGFloat(row) + CGFloat(step)*share
+        // The edge sits `share` of the way from the last opaque row towards the first clear
+        // one. A hard-edged picture answers 0.5 and a soft-edged one answers wherever the ramp
+        // actually reaches half, which is the point
+    }
+}
+
+extension PaddleOutline {
+
+    /// The silhouette as a run of strip boundaries: top and bottom, in points, about the
+    /// paddle's centre.
+    ///
+    /// Averaged down from the fine samples rather than sampled again coarsely, so every pixel
+    /// of the picture has a say in where the curve goes - which is what makes the result smooth
+    /// rather than merely finer-grained.
+    static func boundaries(of image: CGImage, size: CGSize)
+        -> [(x: CGFloat, top: CGFloat, bottom: CGFloat)] {
+        let fine = edges(of: image, samples: strips*samplesPerStrip)
+        guard fine.isEmpty == false else { return [] }
+
+        var run: [(x: CGFloat, top: CGFloat, bottom: CGFloat)] = []
+        for boundary in 0...strips {
+            let centre = CGFloat(boundary)/CGFloat(strips)
+            let window = (0..<fine.count).filter { sample in
+                abs((CGFloat(sample) + 0.5)/CGFloat(fine.count) - centre) <= reach/CGFloat(strips)
+            }
+            // **A moving average, overlapping its neighbours.** The first version took a window
+            // exactly one strip wide, so neighbouring boundaries shared no samples at all -
+            // which is not smoothing, it is just sampling in blocks, and it measured *rougher*
+            // than the plain trace it was meant to beat. Overlapping windows are what make one
+            // boundary's answer constrain the next one's.
+
+            let weighted: [(weight: CGFloat, edge: (top: CGFloat, bottom: CGFloat))] =
+                window.compactMap { sample in
+                    guard let edge = fine[sample] else { return nil }
+                    let offset = abs((CGFloat(sample) + 0.5)/CGFloat(fine.count) - centre)
+                    return (weight: max(0.05, 1 - offset*CGFloat(strips)/reach), edge: edge)
+                }
+            guard weighted.isEmpty == false else { continue }
+            let total = weighted.map(\.weight).reduce(0, +)
+
+            let top = weighted.map { $0.weight*$0.edge.top }.reduce(0, +)/total
+            let bottom = weighted.map { $0.weight*$0.edge.bottom }.reduce(0, +)/total
+            // **Weighted towards the middle of the window, not a flat average of it.** A box
+            // filter smooths by flattening, and what it flattens hardest is the extremes: the
+            // dish's shoulders came out nearly two points below the picture, which is the body
+            // sitting inside the art - the very thing round 213 fixed. A triangular kernel
+            // removes the same sampling noise and keeps the peaks, because the sample at the
+            // boundary itself carries most of the answer
+            run.append((x: (centre - 0.5)*size.width,
+                        top: (top - 0.5)*size.height,
+                        bottom: (bottom - 0.5)*size.height))
+        }
+        return run
+    }
+
+    /// The convex pieces a body is built from.
+    ///
+    /// One quadrilateral per strip, wound counterclockwise, and any strip too thin to be a
+    /// polygon left out - the rounded ends taper to nothing, and a degenerate piece is not a
+    /// small body but an undefined one.
+    static func pieces(of image: CGImage, size: CGSize) -> [CGPath] {
+        let run = boundaries(of: image, size: size)
+        guard run.count > 1 else { return [] }
+
+        var pieces: [CGPath] = []
+        for (left, right) in zip(run, run.dropFirst()) {
+            guard right.x - left.x > 0.01 else { continue }
+            guard left.top - left.bottom > 0.5 || right.top - right.bottom > 0.5 else { continue }
+
+            let corners = [CGPoint(x: left.x, y: left.bottom),
+                           CGPoint(x: right.x, y: right.bottom),
+                           CGPoint(x: right.x, y: right.top),
+                           CGPoint(x: left.x, y: left.top)]
+            let path = CGMutablePath()
+            path.addLines(between: corners)
+            path.closeSubpath()
+            pieces.append(path)
+        }
+        return pieces
+    }
+
+    /// The body itself, or nil where the picture says nothing useful.
+    static func body(for texture: SKTexture, size: CGSize) -> SKPhysicsBody? {
+        guard size.width > 1, size.height > 1 else { return nil }
+        let key = Key(texture: ObjectIdentifier(texture),
+                      width: Int((size.width*10).rounded()),
+                      height: Int((size.height*10).rounded()))
+        if let kept = cache[key] { return kept.copy() as? SKPhysicsBody }
+
+        guard let image = UIImage(named: texture.description.name)?.cgImage
+                ?? texture.cgImage() as CGImage? else { return nil }
+        let pieces = pieces(of: image, size: size)
+        guard pieces.isEmpty == false else { return nil }
+
+        let bodies = pieces.map { SKPhysicsBody(polygonFrom: $0) }
+        let body = bodies.count == 1 ? bodies[0] : SKPhysicsBody(bodies: bodies)
+        cache[key] = body
+        return body.copy() as? SKPhysicsBody
+        // Kept and copied, the way `TracedBodyCache` keeps a traced one: reading the picture and
+        // cutting it into twenty polygons is a build-time cost, and a run collects the same five
+        // shapes over and over
+    }
+
+    private struct Key: Hashable {
+        let texture: ObjectIdentifier
+        let width: Int
+        let height: Int
+    }
+
+    private static var cache: [Key: SKPhysicsBody] = [:]
+
+    /// For the tests, which must be able to measure a cold build.
+    static func empty() { cache.removeAll() }
+}
+
+private extension String {
+    /// The asset name inside an `SKTexture`'s description, which reads
+    /// `<SKTexture> 'regularPaddleConvex' (225 x 45)`.
+    var name: String {
+        guard let start = firstIndex(of: "'"),
+              let end = self[index(after: start)...].firstIndex(of: "'") else { return self }
+        return String(self[index(after: start)..<end])
     }
 }

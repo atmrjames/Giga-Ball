@@ -71,7 +71,23 @@ enum FadingLine {
 
     /// The picture: a horizontal bar, solid down the middle, fading to nothing on all four
     /// sides - top and bottom for the blur, left and right for the crossfade.
-    static let texture: SKTexture = {
+    static let texture: SKTexture = picture(coreShare: coreShare)
+
+    /// The same picture with almost no solid middle: a line that is nearly all falloff.
+    ///
+    /// James, round 280: "I'd like it to be a bit more blurred... this width is good though" -
+    /// and those two are in tension inside one texture, because how much of a segment is solid
+    /// and how much is glow is decided by the *picture*, not by anything `lay` is told. Asking
+    /// for more blur at the same width means asking for a smaller core, which means a second
+    /// picture rather than a second argument.
+    static let softTexture: SKTexture = picture(coreShare: softCoreShare)
+
+    /// How much of the soft picture is solid. A seventh, against the ordinary one's third - so
+    /// at the same drawn width it is a bright thread inside a wide haze rather than a bar with
+    /// soft edges.
+    private static let softCoreShare: CGFloat = 0.14
+
+    private static func picture(coreShare: CGFloat) -> SKTexture {
         let size = CGSize(width: drawnWidth, height: 96)
         let renderer = UIGraphicsImageRenderer(size: size)
         let image = renderer.image { context in
@@ -111,7 +127,7 @@ enum FadingLine {
             }
         }
         return SKTexture(image: image)
-    }()
+    }
 
     /// Dresses one segment: a sprite stretched between two points, overlapping its neighbours
     /// by one ramp at each end.
@@ -132,13 +148,15 @@ enum FadingLine {
     /// picture is about three times the core tall already, and the outer two thirds of it are
     /// the falloff. That is a glowing line without asking for any blur at all.
     static func lay(_ segment: SKSpriteNode, from head: CGPoint, to tail: CGPoint,
-                    thickness: CGFloat, blur: CGFloat, alpha: CGFloat) {
+                    thickness: CGFloat, blur: CGFloat, alpha: CGFloat,
+                    soft: Bool = false) {
         let length = hypot(tail.x - head.x, tail.y - head.y)
 
         guard length > 0 else { return }
 
         segment.centerRect = CGRect(x: rampShare, y: 0, width: 1 - rampShare*2, height: 1)
-        segment.size = CGSize(width: length + overlap, height: (thickness + blur*2)/coreShare)
+        segment.size = CGSize(width: length + overlap,
+                              height: (thickness + blur*2)/(soft ? softCoreShare : coreShare))
         // Divided by the core's share, because that is the fraction of the picture the solid
         // part occupies - asking for a two-point core means a picture six points tall.
         //
@@ -153,11 +171,25 @@ enum FadingLine {
         segment.alpha = alpha
     }
 
+    /// Lays a segment by its **overall drawn width**, which is what the two pictures make the
+    /// useful parameter.
+    ///
+    /// `thickness` is the solid middle and the falloff around it is whatever share of the
+    /// picture is left - a third for the ordinary texture, a seventh for the soft one - so the
+    /// same `thickness` draws two very different widths. A caller that wants "a line this wide,
+    /// this blurred" is saying width and picture, not core and blur.
+    static func lay(_ segment: SKSpriteNode, from head: CGPoint, to tail: CGPoint,
+                    width: CGFloat, alpha: CGFloat, soft: Bool = false) {
+        lay(segment, from: head, to: tail,
+            thickness: width*(soft ? softCoreShare : coreShare), blur: 0,
+            alpha: alpha, soft: soft)
+    }
+
     /// A segment node, made the same way wherever one is needed.
     ///
     /// - Parameter glow: true for the wide coloured one that sits under the white core.
-    static func segment(glow: Bool = false) -> SKSpriteNode {
-        let node = SKSpriteNode(texture: texture)
+    static func segment(glow: Bool = false, soft: Bool = false) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: soft ? softTexture : texture)
         node.color = glow ? GameScene.endlessIIHaloColour : .white
         node.colorBlendFactor = 1
         node.blendMode = .add

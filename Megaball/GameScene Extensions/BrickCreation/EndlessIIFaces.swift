@@ -124,11 +124,30 @@ enum EndlessIIFaceGeometry {
         let rect: CGRect
         switch face {
         case .convex:
-            rect = CGRect(x: -w*0.275, y: -h*0.14, width: w*0.55, height: h*0.28)
+            rect = CGRect(x: -w*0.30, y: -h*0.46, width: w*0.60, height: h*0.16)
         case .concave:
-            rect = CGRect(x: -w*0.40, y: -h*0.08, width: w*0.80, height: h*0.16)
-            // Wide and shallow: it has to stay under the notch at x = 0, which is the
-            // lowest point of the face
+            rect = CGRect(x: -w*0.35, y: -h*0.46, width: w*0.70, height: h*0.16)
+            // **Both sit on the brick's floor**, since round 280, and both used to sit about
+            // its middle.
+            //
+            // James, with a screenshot: "concave brick had a weird graphic issue" - a bar
+            // floating in the notch. It was the brick's own sprite, showing *through* the
+            // picture. These rectangles are where the sprite can hide, and they were worked out
+            // against the **geometry**, whose notch is a deliberately shallow tenth of the
+            // height ("a deeper notch stops reading as a dish and starts reading as two bricks
+            // with a gap"). The picture James drew cuts a V nearly to the floor, so the sprite
+            // was tucked under the silhouette's notch and standing in the open under the
+            // painted one.
+            //
+            // The floor is the one place every one of these faces is solid in both: the notch
+            // and the tent are drawn on a full-width base, and the geometry's bottom edge is
+            // flat across the whole cell. A rectangle there is inside whichever of the two is
+            // the shallower - which is what makes this a fix rather than a new guess about
+            // how deep the art goes.
+            //
+            // **The disagreement itself is still there and is James's to settle:** the body
+            // answers a tenth-height notch and the picture shows one four times that, so a ball
+            // aimed into the dish meets a shallower dish than the one it can see. See §8.5.
         case .wedge:
             rect = CGRect(x: w*0.05, y: -h*0.45, width: w*0.40, height: h*0.40)
             // Tucked into the corner beneath the slope

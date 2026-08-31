@@ -1317,15 +1317,50 @@ against 0.35ms, identical 99th percentiles, and the worst single frame belonging
 one). The trace cache from round 258 holds: zero retraces in 120 frames of a moving shaped
 paddle.
 
-**One thing measured and not acted on:** a shaped paddle's body is traced from the picture's
-alpha at the size it is drawn, so the surface the ball meets is a staircase - 20 steps for the
-dome, 26 for the dish, 32 for the wave, each up to two points high, against a plain paddle's
-flat top. `testHowRaggedATracedPaddleSurfaceIs` prints them. Whether that is enough to be felt
-depends on what resolution SpriteKit samples at, which it does not document and which
-`SKPhysicsBody.area` will not answer - it reports zero for a traced body. Giving the shapes
-analytic outlines the way `EndlessIIFaceGeometry` gives the bricks theirs would remove the
-question, and it would change how every shaped paddle bounces, so it wants James rather than a
-guess.
+~~**One thing measured and not acted on**~~ - **built in round 280**, on James's word. The
+report that settled it was "ball is still stuttering with shaped paddles active, **even if it's
+the only active power-up**", which rules out everything that scales with how many are running.
+
+A shaped paddle's body was traced from the picture's alpha at the size it is drawn, so the
+surface the ball met was a staircase: 20 steps for the dome, 26 for the dish, 32 for the wave,
+each up to two points high, against a plain paddle's flat top. `PaddleOutline` reads the same
+silhouette from the *full-resolution* artwork to sub-pixel precision - where the alpha crosses a
+half between two rows - smooths it, and cuts it into twenty convex strips. Measured against the
+trace on the same picture at the same twenty places, the computed surface scores 4.2 against
+12.0 for the dome, 11.4 against 16.0 for the dish and 24.5 against 25.0 for the wave, whose
+roughness is mostly its own two bumps.
+
+**The plain paddle keeps its traced body.** A flat top has no staircase to remove, and it has
+bounced Classic and Endless for years; changing it to prove a point about a Mayhem power-up
+would be the wrong trade.
+
+Three things this cost, all worth writing down. The first attempt sampled a window exactly one
+strip wide, so neighbouring boundaries shared no pixels - not smoothing but sampling in blocks,
+and it measured *rougher* than the trace it was meant to beat. The second used a flat average,
+which smooths by flattening, and what it flattened hardest were the extremes: the dish's
+shoulders came out nearly two points below the picture, which is the body sitting inside the
+art. A triangular kernel does both jobs. And the bar itself was wrong three times - "much
+smoother" was tried at 0.6 and failed for a dome that rises fast at its ends, a dish that turns
+hard into its corners, and a wave whose bumps are the shape rather than the sampling. What is
+asserted now is that it beats the trace on every shape and lands on the picture; the ratios are
+printed rather than fixed, because bending the reading of a picture to hit an invented number is
+how a body stops matching its art.
+
+**A face's hiding rectangle has to be inside the *picture*, not just inside the geometry.** The
+sprite behind a shaped face is shrunk into a rectangle chosen to sit within the silhouette, and
+those rectangles were worked out against `EndlessIIFaceGeometry` - whose notch is a deliberately
+shallow tenth of the height, because "a deeper notch stops reading as a dish and starts reading
+as two bricks with a gap". James's drawn concave cuts a V nearly to the floor. So the sprite was
+tucked under the silhouette's notch and standing in the open under the painted one, and it read
+as a bar floating in the middle of the brick (play-test, round 280, with a screenshot). Both the
+notch's and the tent's rectangles sit on the brick's floor now, which is the one place every one
+of these faces is solid in both.
+
+**The disagreement underneath it is still open.** The concave body answers a notch a tenth of the
+height deep and the picture shows one about four times that, so a ball aimed into the dish meets
+a shallower dish than the one it can see - which is the thing round 213 set out to end. Either
+the geometry deepens to match the art, and the shape starts reading as two bricks with a gap, or
+the art is redrawn shallower. That is James's call, not a sweep's.
 
 **A brick's `position.y` is its row.** The descent moves by it and the bottom-row check that
 gates new-row generation reads it. A brick whose position is anywhere but its row centre is

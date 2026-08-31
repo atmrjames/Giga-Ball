@@ -471,10 +471,26 @@ extension GameScene {
     /// Traces the paddle's current picture, and keeps everything the old body was carrying.
     func rebuildEndlessIIPaddleBody() {
         guard let texture = paddle.texture, let old = paddle.physicsBody else { return }
-        let body = TracedBodyCache.body(texture: texture, size: paddle.size)
+
+        let shaped = endlessIIPaddleShapeArtName != nil
+        let body = (shaped ? PaddleOutline.body(for: texture, size: paddle.size) : nil)
+            ?? TracedBodyCache.body(texture: texture, size: paddle.size)
             ?? SKPhysicsBody(rectangleOf: paddle.size)
-        // Traced once per picture and size and copied after (round 258). One trace is 8.8ms,
-        // which is over half a frame, and a run collects the same five shapes over and over
+        // **A shaped paddle's outline is computed; a plain one's is traced.**
+        //
+        // `SKPhysicsBody(texture:)` follows the picture's *pixels*, and round 277 measured what
+        // that leaves the ball on a curve: 20 steps across the dome, 26 across the dish, 32
+        // across the wave, each up to two points high. A flat top has none, which is why this
+        // has never mattered for the plain paddle and why the plain paddle keeps it - it has
+        // bounced Classic and Endless for years, and changing it to prove a point about a
+        // Mayhem power-up would be the wrong trade.
+        //
+        // `PaddleOutline` reads the same silhouette to sub-pixel precision and hands back a
+        // curve cut into convex strips. It falls back to the trace, so a shape whose picture
+        // cannot be read is a shape that bounces the way it did yesterday.
+        //
+        // Traced or computed, it is kept and copied (round 258). One trace is 8.8ms, over half
+        // a frame, and a run collects the same five shapes over and over
         body.allowsRotation = false
         body.friction = 0
         body.affectedByGravity = false

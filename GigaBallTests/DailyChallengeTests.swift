@@ -604,8 +604,23 @@ final class DailyChallengeTests: XCTestCase {
         session.testDayOffset = 1
         let tomorrow = session.todayKey
         XCTAssertNotEqual(today, tomorrow)
-        XCTAssertEqual(DailyDay.seed(forKey: tomorrow),
-                       DailyDay.seed(forKey: today) + 1)
+
+        // **A day apart on the calendar, not one apart as a number.**
+        //
+        // This asserted `seed(forKey: tomorrow) == seed(forKey: today) + 1`, and a seed is the
+        // key's digits read as an integer - so 2026-08-31 seeds 20260831 and the day after it
+        // seeds 20260901, which is not that plus one. The assertion held on the 364 days a year
+        // that are not the last of a month and failed on 31 August 2026, which is the day it
+        // happened to be run. Nothing in the game wants seeds to be consecutive: they seed a
+        // generator, where all that matters is that two days differ.
+        //
+        // What the test is *for* is that the offset moves the day, so it says that.
+        guard let first = DailyDay.date(forKey: today),
+              let second = DailyDay.date(forKey: tomorrow) else {
+            return XCTFail("a key this made is a key it can read back")
+        }
+        XCTAssertEqual(second.timeIntervalSince(first), 24*60*60, accuracy: 1,
+                       "one day, across a month end or a year end like any other")
     }
 
     // MARK: - The twists reaching the scene

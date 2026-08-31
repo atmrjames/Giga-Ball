@@ -331,32 +331,36 @@ extension GameScene {
                 let along = (a + b)/2/length
                 let certainty = pow(1 - along, 1.8)
 
-                let segment = FadingLine.segment(glow: true)
+                let segment = FadingLine.segment(glow: true, soft: true)
                 FadingLine.lay(segment,
                                from: CGPoint(x: a, y: 0), to: CGPoint(x: b, y: 0),
-                               thickness: 2 + (1 - certainty)*2,
-                               blur: (1 - certainty)*(1 - certainty),
-                               alpha: max(0.6, 0.95*certainty))
+                               width: 5.9*(1 + (1 - certainty)
+                                           + (1 - certainty)*(1 - certainty)),
+                               alpha: max(0.2, certainty),
+                               soft: true)
                 node.addChild(segment)
-                // **The core is the old `lineWidth`**, unchanged. The old `glowWidth` is not
-                // carried across as `blur`, because blur adds into the core before the picture
-                // is sized and six points of it made the core fourteen - the first attempt did
-                // exactly that and drew a wedge. The picture is three times its core tall with
-                // the outer two thirds falling off, so the core alone is already a glowing
-                // line; the small blur term is all the far end needs on top of that.
+                // **The same widths, on the soft picture, fading further** (James, round 280:
+                // "I like this style, I'd just like it to be a bit more blurred, and to fade
+                // out the further from the ball it gets. This width is good though").
                 //
-                // **The alpha floor is 0.6 rather than the old 0.3**, and that is a change made
-                // to keep the *appearance* the same rather than the number. An `SKShapeNode`'s
-                // glow adds brightness on top of its stroke, so the old line read as green all
-                // the way up at a third opacity; these sprites have no such bonus and washed
-                // out to olive at the same figure. Chosen by drawing the old line beside four
-                // candidates and looking at them, which is the only way this could have been
-                // chosen - the arithmetic says 0.3 and the arithmetic is answering a different
-                // question.
+                // Those two asks are in tension inside one texture. How much of a segment is
+                // solid and how much is falloff is decided by the *picture*, not by anything
+                // `lay` is told - so more blur at the same width means a smaller core, which
+                // means a second picture. `FadingLine.softTexture` is a seventh solid against
+                // the ordinary one's third, and at the same drawn width that is a bright thread
+                // inside a wide haze rather than a bar with soft edges.
                 //
-                // A floor at all is the one difference from the trajectory, and always was: a
-                // blurred tip is honest, a vanished one is an aiming aid that has stopped
-                // aiming
+                // The width is therefore said as a width. Round 276 chose these numbers against
+                // the line James liked, in core-and-blur; here they are the same drawn sizes -
+                // 5.9 points at the ball, three times that at the far end - said in the units
+                // that survive a change of picture.
+                //
+                // The floor drops from 0.6 to 0.2, which is the fade. Round 276 raised it to
+                // 0.6 to stop the line washing to olive, and the soft picture does not need
+                // that: it is dimmer everywhere, so the near end carries the brightness and the
+                // far end is free to go. A floor at all is the one difference from the
+                // trajectory, and always was - a blurred tip is honest, a vanished one is an
+                // aiming aid that has stopped aiming
             }
 
             addChild(node)

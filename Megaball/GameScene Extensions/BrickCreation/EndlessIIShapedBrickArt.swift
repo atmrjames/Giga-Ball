@@ -528,11 +528,19 @@ extension GameScene {
     /// it.
     func endlessIIOwnArt(for brick: SKSpriteNode) -> SKTexture? {
         guard let name = endlessIIArtName(for: brick) else { return nil }
-        if name == GameScene.powerUpBrickArtName {
-            return UIImage(named: name) == nil ? nil : SKTexture(imageNamed: name)
-            // The badge has no shape or size after it. There is one of these and it never
-            // varies: "Power-up bricks only come in this shape and style"
-        }
+        if name == GameScene.powerUpBrickArtName { return nil }
+        // **Nothing under the icon at all** (James, round 280: "the edge of the power-up brick
+        // doesn't quite cover the edges of the placeholder graphics below, I can see a few
+        // pixels of yellow at the corners. Can you make the placeholder graphic below
+        // transparent?").
+        //
+        // Round 274 put the icon over the whole brick and left the yellow badge behind it, so
+        // the two rounded squares had to agree on their corner radius to the pixel - and they
+        // do not, so the badge showed as a yellow fringe at each corner. There is nothing for
+        // the badge to do: the icon *is* the brick at that size, and the Indestructible sprite
+        // it is all built on was already shrunk out of sight behind it by
+        // `hidePowerUpBrickSprite`. `PowerUpBrick` stays in the catalogue as the shape the
+        // icons are cut to.
 
         let suffix = GameScene.artSuffix(for: endlessIISizeOf(brick))
         guard suffix.isEmpty == false
