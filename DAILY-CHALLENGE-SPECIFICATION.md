@@ -636,6 +636,13 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   node - James, round 284: "for the HUD, leave it, it doesn't need the filter" - which is
   also the cheaper arrangement, since a filter's cost goes with the area it covers.
 
+- ~~**Twist badges.**~~ **Delivered, round 290.** Eighteen of the live twists wear James's
+  artwork; the two that do not are **Full Deck** and **Level Pegging**, the `disclosure` pair,
+  which have no row in his twist matrix and so were not in the set. Retired twists (Loaded,
+  Sudden Death) need none. Vanilla has its own badge now and no longer borrows the app icon -
+  round 11's answer stays as the fallback. `ArtStillToDrawTests` asks `DailyTwist.allCases`
+  which are missing rather than keeping a list.
+
 - **The twist compatibility matrix is defined, and the generator does not enforce all of
   it.** James, round 284: "this matrix has already been defined and shared." It is the
   *Twist Matrix* sheet of `File Sharing/Giga-Ball 2026 - Twist Details.xlsx`, twenty twists

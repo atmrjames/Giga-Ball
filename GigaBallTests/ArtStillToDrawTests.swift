@@ -196,6 +196,73 @@ final class ArtStillToDrawTests: XCTestCase {
                        + "building wrongly")
     }
 
+    // MARK: - Twist badges
+
+    /// The file each twist's badge would be, by the naming James delivered them under.
+    ///
+    /// **Asked of `DailyTwist.allCases`**, so a twist added later appears here on its own and
+    /// the answer to "is anything missing" is never a list somebody maintained. The names are
+    /// his rather than derived from the case names - `GoodNewsTwistIcon` for No Good News,
+    /// `NoPauseTwistIcon` for No Breaks - so this is also where a rename would be noticed.
+    private let twistArt: [DailyTwist: String] = [
+        .oneLife: "OneLifeTwistIcon",
+        .spareBalls: "ExtraBallsTwistIcon",
+        .noPowerUps: "NoPowerUpsNewsTwistIcon",
+        .noGoodNews: "GoodNewsTwistIcon",
+        .noBadNews: "NoBadNewsTwistIcon",
+        .powerShower: "PowerShowerTwistIcon",
+        .drought: "DroughtTwistIcon",
+        .fogOfWar: "FogTwistIcon",
+        .mirrored: "MirroredTwistIcon",
+        .upsideDown: "UpsideDownTwistIcon",
+        .brickSwap: "BrickSwapTwistIcon",
+        .noPausing: "NoPauseTwistIcon",
+        .timeTrial: "TimeTrialTwistIcon",
+        .mayhemBricks: "ExtraMayhemTwistIcon",
+        .monochromatic: "MonochromeTwistIcon",
+        .dailyTheme: "ThemeTwistIcon",
+        .alwaysOn: "AlwaysOnTwistIcon",
+        .landslide: "LandslideTwistIcon",
+    ]
+
+    /// The two that are furniture rather than twists: retired, kept only so a case name that
+    /// is a key in the save and in `retirementKey` never changes meaning.
+    private var retiredTwists: [DailyTwist] {
+        DailyTwist.allCases.filter { $0.retirementKey < "9999" }
+    }
+
+    func testEveryTwistWithArtworkIsActuallyUsingIt() {
+        for (twist, name) in twistArt {
+            XCTAssertNotNil(UIImage(named: name),
+                            "\(twist.displayName) is wired to \(name), which is not in the "
+                            + "catalogue")
+            XCTAssertEqual(twist.icon.pngData(), UIImage(named: name)?.pngData(),
+                           "\(twist.displayName) still draws its placeholder - the badge and "
+                           + "the file are two different pictures")
+        }
+    }
+
+    /// Which live twists have no badge, asked rather than remembered.
+    ///
+    /// James, round 290: "are there any I am missing from the set?" This is the answer, and it
+    /// keeps answering: a twist added tomorrow with no art fails here on the day it is added
+    /// rather than on the day somebody notices a violet placeholder on the briefing screen.
+    func testTheOnlyTwistsWithoutArtworkAreTheTwoDisclosureOnes() {
+        let missing = DailyTwist.allCases.filter {
+            twistArt[$0] == nil && retiredTwists.contains($0) == false
+        }
+        XCTAssertEqual(Set(missing), Set([.fullDeck, .levelPegging]),
+                       "Full Deck and Level Pegging are the two live twists still wearing a "
+                       + "drawing; anything else in this list is a twist that arrived without "
+                       + "a badge, and anything missing from it is one James has since drawn")
+    }
+
+    func testTheRetiredTwistsAreTheTwoNobodyCanBeGiven() {
+        XCTAssertEqual(Set(retiredTwists), Set([.loaded, .suddenDeath]),
+                       "they need no artwork because no day can draw them - they are kept so "
+                       + "that a case name which is a key in the save keeps its meaning")
+    }
+
     /// The list, printed, so a round that adds a type or a shape can read what it owes.
     func testWhatIsStillToDraw() {
         let bricks = missingBrickArt()
@@ -203,10 +270,14 @@ final class ArtStillToDrawTests: XCTestCase {
         print("\n  Art still to draw:")
         let squares = missingSquareArt()
         let marks = missingMarkArt()
+        let twists = DailyTwist.allCases
+            .filter { twistArt[$0] == nil && retiredTwists.contains($0) == false }
+            .map(\.displayName)
         print("    bricks:  \(bricks.isEmpty ? "none" : bricks.joined(separator: ", "))")
         print("    squares: \(squares.isEmpty ? "none" : squares.joined(separator: ", "))")
         print("    marks:   \(marks.isEmpty ? "none" : marks.joined(separator: ", "))")
         print("    paddles: \(paddles.isEmpty ? "none" : paddles.joined(separator: ", "))")
+        print("    twists:  \(twists.isEmpty ? "none" : twists.joined(separator: ", "))")
         print("")
     }
 }

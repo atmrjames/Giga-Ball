@@ -720,12 +720,17 @@ enum PowerUpIcon {
     /// pickup, it is the day's rule, and it should read as its own kind of thing beside
     /// the twist's name on the briefing screen, the pause summary and the level intro.
     /// Lighter than the app's deep purple, which vanished against the dark menu blur.
-    /// Placeholders in the same sense as the power-up icons above - James's real twist
-    /// artwork replaces these here, and nowhere else.
+    ///
+    /// **Eighteen of the twenty-three are James's artwork as of round 290**, and this colour is
+    /// what the remaining drawings match. The ones still drawn: Loaded and Sudden Death, which
+    /// are retired and are furniture in the save rather than twists anybody can be given; and
+    /// Full Deck and Level Pegging, the two `disclosure` twists, which are the only live ones
+    /// with no picture yet. Each icon asks `artwork` for its file and falls back to its
+    /// drawing, so a badge arriving later needs no code at all.
     static let twist = #colorLiteral(red: 0.4235294118, green: 0.1843137255, blue: 0.6196078431, alpha: 1)
 
     /// One Life: a single ball, nothing behind it.
-    static let twistOneLife: UIImage = badge(twist) { context, rect in
+    static let twistOneLife: UIImage = artwork("OneLifeTwistIcon", twist) { context, rect in
         dot(context, at: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width*0.14)
     }
 
@@ -749,7 +754,7 @@ enum PowerUpIcon {
     }
 
     /// Extra Balls: the ball in play, and the two racked behind it.
-    static let twistSpareBalls: UIImage = badge(twist) { context, rect in
+    static let twistSpareBalls: UIImage = artwork("ExtraBallsTwistIcon", twist) { context, rect in
         dot(context, at: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.34),
             radius: rect.width*0.13)
         let r = rect.width*0.085
@@ -758,7 +763,7 @@ enum PowerUpIcon {
     }
 
     /// No Power-Ups: the pickup, barred.
-    static let twistNoPowerUps: UIImage = badge(twist) { context, rect in
+    static let twistNoPowerUps: UIImage = artwork("NoPowerUpsNewsTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.07)
         let radius = rect.width*0.24
         context.strokeEllipse(in: CGRect(x: rect.midX - radius, y: rect.midY - radius,
@@ -769,7 +774,7 @@ enum PowerUpIcon {
     }
 
     /// No Good News: only the bad ones fall.
-    static let twistNoGoodNews: UIImage = badge(twist) { context, rect in
+    static let twistNoGoodNews: UIImage = artwork("GoodNewsTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.08)
         let x = rect.midX
         context.move(to: CGPoint(x: x, y: rect.minY + rect.height*0.26))
@@ -782,7 +787,7 @@ enum PowerUpIcon {
     }
 
     /// No Bad News: only the good ones fall.
-    static let twistNoBadNews: UIImage = badge(twist) { context, rect in
+    static let twistNoBadNews: UIImage = artwork("NoBadNewsTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.08)
         let x = rect.midX
         context.move(to: CGPoint(x: x, y: rect.maxY - rect.height*0.26))
@@ -794,7 +799,7 @@ enum PowerUpIcon {
     }
 
     /// Power Shower: the drops, everywhere.
-    static let twistPowerShower: UIImage = badge(twist) { context, rect in
+    static let twistPowerShower: UIImage = artwork("PowerShowerTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.07)
         for (x, top) in [(0.3, 0.24), (0.5, 0.34), (0.7, 0.24)] {
             let lineX = rect.minX + rect.width*x
@@ -808,7 +813,7 @@ enum PowerUpIcon {
     }
 
     /// Drought: one drop, a long way apart from the next.
-    static let twistDrought: UIImage = badge(twist) { context, rect in
+    static let twistDrought: UIImage = artwork("DroughtTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         for x in [0.3, 0.5, 0.7] {
             let dashX = rect.minX + rect.width*x
@@ -822,7 +827,7 @@ enum PowerUpIcon {
     }
 
     /// Fog of War: a brick you cannot see yet.
-    static let twistFogOfWar: UIImage = badge(twist) { context, rect in
+    static let twistFogOfWar: UIImage = artwork("FogTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         context.setLineDash(phase: 0, lengths: [rect.width*0.1, rect.width*0.08])
         context.stroke(CGRect(x: rect.minX + rect.width*0.24, y: rect.midY - rect.height*0.13,
@@ -833,7 +838,7 @@ enum PowerUpIcon {
 
     /// Mirrored: an arrow doubling back on itself across a centre line - the level going
     /// the other way, said without needing to name a direction.
-    static let twistMirrored: UIImage = badge(twist) { context, rect in
+    static let twistMirrored: UIImage = artwork("MirroredTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         context.setLineDash(phase: 0, lengths: [rect.height*0.09, rect.height*0.07])
         context.move(to: CGPoint(x: rect.midX, y: rect.minY + rect.height*0.18))
@@ -859,7 +864,7 @@ enum PowerUpIcon {
     }
 
     /// Upside Down: the same fold laid flat, with the arrows pointing up and down.
-    static let twistUpsideDown: UIImage = badge(twist) { context, rect in
+    static let twistUpsideDown: UIImage = artwork("UpsideDownTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         context.setLineDash(phase: 0, lengths: [rect.width*0.09, rect.width*0.07])
         context.move(to: CGPoint(x: rect.minX + rect.width*0.18, y: rect.midY))
@@ -886,7 +891,7 @@ enum PowerUpIcon {
 
     /// Extra Mayhem: a brick with motion marks - the ordinary rectangle, busier than it
     /// should be.
-    static let twistMayhemBricks: UIImage = badge(twist) { context, rect in
+    static let twistMayhemBricks: UIImage = artwork("ExtraMayhemTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         context.stroke(CGRect(x: rect.midX - rect.width*0.19, y: rect.midY - rect.height*0.10,
                               width: rect.width*0.38, height: rect.height*0.20))
@@ -903,7 +908,7 @@ enum PowerUpIcon {
     /// Monochromatic: the same square twice, one filled and one empty, with no colour to
     /// tell them apart by. The drawn badges have no colour anyway, which is the joke and also
     /// the reason this one has to say it with shape.
-    static let twistMonochromatic: UIImage = badge(twist) { context, rect in
+    static let twistMonochromatic: UIImage = artwork("MonochromeTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         let size = rect.width*0.30
         context.fill(CGRect(x: rect.midX - size, y: rect.midY - size/2,
@@ -914,7 +919,7 @@ enum PowerUpIcon {
 
     /// Theme: a paintbrush, near enough - a handle at an angle with a wider head, which is
     /// the smallest shape that reads as "somebody chose how this looks".
-    static let twistTheme: UIImage = badge(twist) { context, rect in
+    static let twistTheme: UIImage = artwork("ThemeTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.07)
         context.move(to: CGPoint(x: rect.midX - rect.width*0.20,
                                  y: rect.maxY - rect.height*0.24))
@@ -927,7 +932,7 @@ enum PowerUpIcon {
 
     /// Always On: a switch held down - a rounded track with the pip at one end, which is the
     /// shape every interface in the world uses for "this stays on".
-    static let twistAlwaysOn: UIImage = badge(twist) { context, rect in
+    static let twistAlwaysOn: UIImage = artwork("AlwaysOnTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         let height = rect.height*0.30
         let track = CGRect(x: rect.midX - rect.width*0.28, y: rect.midY - height/2,
@@ -939,7 +944,7 @@ enum PowerUpIcon {
     }
 
     /// Landslide: three chevrons pointing down, which is a field on its way to you.
-    static let twistLandslide: UIImage = badge(twist) { context, rect in
+    static let twistLandslide: UIImage = artwork("LandslideTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.07)
         for step in 0..<3 {
             let y = rect.minY + rect.height*(0.26 + 0.20*CGFloat(step))
@@ -987,7 +992,7 @@ enum PowerUpIcon {
 
     /// Time Trial: a stopwatch - a circle, a stem, and a hand pointing near the top because
     /// the time on this clock is nearly up from the moment it starts.
-    static let twistTimeTrial: UIImage = badge(twist) { context, rect in
+    static let twistTimeTrial: UIImage = artwork("TimeTrialTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         let radius = rect.width*0.26
         let centre = CGPoint(x: rect.midX, y: rect.midY + rect.height*0.05)
@@ -1005,7 +1010,7 @@ enum PowerUpIcon {
 
     /// Brick Swap: two bricks trading places - a pair of small rectangles with arrows
     /// crossing between them.
-    static let twistBrickSwap: UIImage = badge(twist) { context, rect in
+    static let twistBrickSwap: UIImage = artwork("BrickSwapTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         let brick = CGSize(width: rect.width*0.30, height: rect.height*0.16)
         context.stroke(CGRect(x: rect.minX + rect.width*0.16,
@@ -1023,7 +1028,7 @@ enum PowerUpIcon {
 
     /// No Breaks: the pause glyph with a stroke through it. The one twist whose badge can
     /// simply be the control it takes away.
-    static let twistNoPausing: UIImage = badge(twist) { context, rect in
+    static let twistNoPausing: UIImage = artwork("NoPauseTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.06)
         let barWidth = rect.width*0.10
         let barHeight = rect.height*0.34
@@ -1045,6 +1050,12 @@ enum PowerUpIcon {
     /// icon") - the plain game is the game. The drawn brick-and-ball stays as the
     /// fallback for the unlikely build where the icon files cannot be read.
     static let twistVanilla: UIImage = {
+        if let art = UIImage(named: "VanillaTwistIcon") { return art }
+        // James's own Vanilla badge (round 290), which supersedes round 11's answer rather
+        // than contradicting it: "for vanilla icon, just use app icon" was asked when there
+        // was no drawn Vanilla badge to use, and a day with no twists is still a *kind* of
+        // day - it belongs to the twist set and now looks like it does. The app icon stays
+        // below as the fallback it always was
         if let icon = GameMode.appIconArtwork { return icon }
         // The app's own icon, read from the one copy of it the app can load - see
         // GameMode.appIconArtwork. It used to go through CFBundleIcons, which returns

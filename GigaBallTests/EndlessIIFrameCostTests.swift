@@ -1676,4 +1676,48 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  the halo over a field, with a white circle on the reach it eats\n")
     }
 
+    /// Every twist's badge beside the twist it is on, drawn so the wiring can be checked.
+    ///
+    /// The mapping from James's filenames to the cases was **inferred** - `GoodNewsTwistIcon`
+    /// for No Good News, `NoPauseTwistIcon` for No Breaks, `ExtraMayhemTwistIcon` for Extra
+    /// Mayhem - and two of them were only settled by looking at the picture: the two news
+    /// twists are a down arrow and an up arrow, and which is which is not in either filename.
+    /// A test can say the file is loaded; only a picture can say it is on the right twist.
+    func testTheTwistBadgesCanBeLookedAt() throws {
+        let twists = DailyTwist.allCases
+        let columns = 5
+        let rows = (twists.count + columns - 1)/columns
+        let cell = CGSize(width: 150, height: 130)
+
+        let display = SKScene(size: CGSize(width: cell.width*CGFloat(columns),
+                                           height: cell.height*CGFloat(rows)))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (index, twist) in twists.enumerated() {
+            let column = index % columns, row = index/columns
+            let x = cell.width*(CGFloat(column) + 0.5)
+            let y = display.size.height - cell.height*(CGFloat(row) + 0.5)
+
+            let badge = SKSpriteNode(texture: SKTexture(image: twist.icon))
+            badge.size = CGSize(width: 74, height: 74)
+            badge.position = CGPoint(x: x, y: y + 16)
+            display.addChild(badge)
+
+            let label = SKLabelNode(text: twist.displayName)
+            label.fontSize = 15
+            label.fontName = "HelveticaNeue"
+            label.fontColor = .white
+            label.position = CGPoint(x: x, y: y - 42)
+            display.addChild(label)
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("twist-badges.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Twist badges, drawn: \(file.path)")
+        print("  every case of DailyTwist with the badge it actually resolves to\n")
+    }
+
 }
