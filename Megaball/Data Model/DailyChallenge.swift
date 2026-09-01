@@ -340,6 +340,56 @@ enum DailyTwist: String, CaseIterable, Codable {
         applies(to: mode) && activationKey <= key && key < retirementKey
     }
 
+    // MARK: - Which twists may share a day
+
+    /// The pairs the design refuses, exactly as James's twist matrix draws them.
+    ///
+    /// The matrix is the *Twist Matrix* sheet of `Giga-Ball 2026 - Twist Details.xlsx`, twenty
+    /// twists square, and this is every "No" cell in it between two twists that exist here. It
+    /// is transcribed rather than derived because there is nothing to derive it from: whether
+    /// Extra Mayhem sits well with Mirrored is a judgement about how a day reads, not a
+    /// consequence of anything either of them does.
+    ///
+    /// **Seven of the eleven were already impossible** and are written down anyway. A day draws
+    /// at most one twist per category, so every refusal within a family - the five among the
+    /// economy twists, and One Life against Extra Balls - could never have happened. Keeping
+    /// them here makes this a copy of the matrix rather than a copy of the leftovers, and
+    /// `testTheCategoryRuleAlreadyCoversWhatItCovers` proves the overlap rather than assuming
+    /// it, so the day a category is re-cut the test says which refusals stopped being free.
+    ///
+    /// The four that were live: **Extra Mayhem** against each of Upside Down, Mirrored and
+    /// Brick Swap, and **Extra Balls** against Time Trial. Those four days were being generated
+    /// before round 286.
+    ///
+    /// Vanilla is in the sheet as incompatible with everything and is not here: it is the
+    /// no-twists day, which this already produces by drawing nothing. Classic Mayhem is in the
+    /// sheet and is not built (§12's Mayhem Rules) - its row is recorded in the daily spec
+    /// against the day it is.
+    static let refusedPairs: [(DailyTwist, DailyTwist)] = [
+        (.brickSwap, .mayhemBricks),
+        (.drought, .noPowerUps),
+        (.drought, .powerShower),
+        (.mayhemBricks, .mirrored),
+        (.mayhemBricks, .upsideDown),
+        (.noBadNews, .noGoodNews),
+        (.noBadNews, .noPowerUps),
+        (.noGoodNews, .noPowerUps),
+        (.noPowerUps, .powerShower),
+        (.oneLife, .spareBalls),
+        (.spareBalls, .timeTrial),
+    ]
+
+    /// Whether these two twists may share a day.
+    ///
+    /// Symmetric, because the matrix is: it is written out as one triangle and asked from both
+    /// sides. A twist pairs with itself for the sake of the answer being total - nothing ever
+    /// asks, since a day cannot draw the same twist twice.
+    func pairsWith(_ other: DailyTwist) -> Bool {
+        DailyTwist.refusedPairs.contains {
+            ($0 == self && $1 == other) || ($0 == other && $1 == self)
+        } == false
+    }
+
     /// The draw weight within its category.
     var weight: Int {
         switch self {
@@ -583,10 +633,21 @@ enum DailyChallengeGenerator {
         for _ in 0..<twistCount {
             guard categories.isEmpty == false else { break }
             let category = categories.remove(at: stream.roll(categories.count))
-            let pool = DailyTwist.allCases.filter {
-                $0.category == category && $0.inPool(on: key, for: mode)
+            let pool = DailyTwist.allCases.filter { candidate in
+                candidate.category == category && candidate.inPool(on: key, for: mode)
+                    && twists.allSatisfy { $0.pairsWith(candidate) }
             }
             guard pool.isEmpty == false else { continue }
+            // **And nothing already drawn refuses it** (round 286). At most one twist per
+            // category was "legal by construction" for every pair the matrix rules out *within*
+            // a family, and it says nothing at all about the four that cross families - a day
+            // could be Extra Mayhem and Mirrored, or Extra Balls and Time Trial, both of which
+            // the matrix marks as no. Filtered here rather than checked afterwards, for the
+            // same reason the categories are filtered before their roll: the draw takes an
+            // index against the pool's length, so a twist the day may not have must not be in
+            // the pool to begin with. A category whose whole pool is refused simply yields no
+            // second twist, which is a day with one - the outcome the count roll already
+            // produces half the time
 
             let total = pool.reduce(0) { $0 + $1.weight }
             var drawn = stream.roll(total)

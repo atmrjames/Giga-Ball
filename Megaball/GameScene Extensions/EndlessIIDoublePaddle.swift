@@ -220,55 +220,43 @@ extension GameScene {
     }
     // MARK: - Lasers on a split paddle
 
-    /// Where the lasers come from, in scene coordinates.
+    /// Where the two turrets sit, in scene coordinates: the outer edge of the outermost piece
+    /// on each side.
     ///
-    /// James, round 284, answering the parity matrix's second open cell: "each split has one
-    /// laser turret on its far end." A segment's *far* end is the one away from the paddle's
-    /// middle - the outer edge of the pieces on the left, and of those on the right - so the
-    /// shots come from the outside of the formation inwards, which is the picture the answer
-    /// draws.
+    /// James, round 285: "only the outermost section of paddle should have a laser turret on
+    /// its outer edge. There should only ever be 2 turrets with a split paddle." So a split
+    /// paddle is armed exactly as much as a whole one is, and the shots come from the two ends
+    /// of the formation.
     ///
-    /// **The whole paddle already agreed with this by accident, and only for two.** The classic
-    /// generator fires alternately from `paddle.position.x` plus and minus half the span, and
-    /// the outermost segments' outer edges *are* those two points - so an unexpanded split has
-    /// been firing from the right places since the day it was built. What it never did was fire
-    /// from anything in between: an expanded split is three, four or five pieces, and three of
-    /// them were unarmed while wearing the laser dress.
+    /// **Which means the generator needed no change at all.** It has always alternated between
+    /// `paddle.position.x` plus and minus half the span, and the span's two ends *are* the
+    /// outermost pieces' outer edges - the paddle node keeps its full width when it splits, and
+    /// the first and last segments are flush with it. Round 285's first attempt gave every
+    /// piece a turret and had to be taken out again; what was actually wrong was only the
+    /// dress, which is below.
     ///
-    /// A middle segment is exactly as far from the centre on both sides, and takes the outer
-    /// edge of whichever half of the paddle it is on - `<` rather than `<=`, so the count being
-    /// odd cannot leave a piece with no answer.
-    var endlessIILaserOrigins: [CGFloat] {
-        let inset = layoutUnit/4
-        // The laser's own width, which is what the classic generator insets its two shots by so
-        // the beam leaves the paddle rather than half over the edge of it
-
-        guard endlessIIPaddleIsSplit else {
-            return [paddle.position.x - paddle.size.width/2 + inset,
-                    paddle.position.x + paddle.size.width/2 - inset]
-        }
-
+    /// Returned as positions rather than read off the generator because the generator writes
+    /// them inline in the middle of building a sprite, and one of the two is behind a `retro`
+    /// branch. This is the same two points said where the dress can ask for them.
+    var endlessIISplitLaserTurrets: [CGFloat] {
         let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
                                                            standardWidth: paddleWidth,
                                                            ballSize: ballSize)
-        let pitch = layout.segment + layout.gap
         let first = -paddle.size.width/2 + layout.segment/2
-        return (0..<layout.count).map { index -> CGFloat in
-            let centre = first + pitch*CGFloat(index)
-            let outward: CGFloat = centre < 0 ? -1 : 1
-            return paddle.position.x + centre + outward*(layout.segment/2 - inset)
-        }
+        let last = first + (layout.segment + layout.gap)*CGFloat(layout.count - 1)
+        return [paddle.position.x + first, paddle.position.x + last]
+        // The two outermost pieces' centres. The turret is drawn across the piece and the shot
+        // leaves from its outer edge, which is where the generator has always put it
     }
 
-    /// One laser dress per segment while the paddle is split, and the paddle's own otherwise.
+    /// The laser dress, on the two outermost pieces of a split paddle and nowhere else.
     ///
     /// The dress is what says a surface is armed, and a single strip drawn across the whole
-    /// span said it about the gaps as well - which is the one place a laser certainly does not
-    /// come from. Each piece wears its own now, cut to its own width, so what is drawn and what
-    /// fires are the same set of places.
+    /// span said it about the gaps and about the unarmed middle pieces as well. Two pieces
+    /// wear it now, which is the same count as the turrets and the same count as the shots.
     ///
-    /// **A picture of a turret would be better than a strip cut short**, and is on §8.5's list.
-    /// This is the honest version of what can be said with the art that exists.
+    /// **A picture of a turret would be better than a strip cut short**, and is on §8.5's
+    /// list. This is the honest version of what can be said with the art that exists.
     func refreshEndlessIISplitLaserDress() {
         let wanted = endlessIIPaddleIsSplit && paddleLaser.isHidden == false
         guard wanted else {
@@ -283,13 +271,13 @@ extension GameScene {
         let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
                                                            standardWidth: paddleWidth,
                                                            ballSize: ballSize)
-        while endlessIISplitLaserDress.count < layout.count {
+        while endlessIISplitLaserDress.count < 2 {
             let piece = SKSpriteNode(texture: paddleLaser.texture)
             piece.zPosition = paddleLaser.zPosition
             addChild(piece)
             endlessIISplitLaserDress.append(piece)
         }
-        while endlessIISplitLaserDress.count > layout.count {
+        while endlessIISplitLaserDress.count > 2 {
             endlessIISplitLaserDress.removeLast().removeFromParent()
         }
 
@@ -298,14 +286,11 @@ extension GameScene {
         // that node to say whether the lasers are running at all, and a second opinion written
         // into the same property would fight it
 
-        let pitch = layout.segment + layout.gap
-        let first = -paddle.size.width/2 + layout.segment/2
-        for (index, piece) in endlessIISplitLaserDress.enumerated() {
+        for (piece, centre) in zip(endlessIISplitLaserDress, endlessIISplitLaserTurrets) {
             piece.texture = paddleLaser.texture
             piece.size = CGSize(width: layout.segment, height: paddleLaser.size.height)
             piece.centerRect = paddleCapRect(for: paddleLaser.texture)
-            piece.position = CGPoint(x: paddle.position.x + first + pitch*CGFloat(index),
-                                     y: paddleLaser.position.y)
+            piece.position = CGPoint(x: centre, y: paddleLaser.position.y)
             piece.alpha = 1
         }
         // Nine-sliced like the halves themselves, for round 182's reason: a strip cut to a

@@ -3899,61 +3899,81 @@ final class PaddleFamilyParityTests: XCTestCase {
         XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "it went back up")
     }
 
-    // MARK: - "Each split has one laser turret on its far end"
+    // MARK: - "There should only ever be 2 turrets with a split paddle"
 
-    func testAnUnsplitPaddleFiresFromItsTwoEndsAsItAlwaysHas() {
-        let scene = mayhem()
-        let origins = scene.endlessIILaserOrigins
-        XCTAssertEqual(origins.count, 2)
-        XCTAssertEqual(origins[0], scene.paddle.position.x - 60 + scene.layoutUnit/4,
-                       accuracy: 0.01)
-        XCTAssertEqual(origins[1], scene.paddle.position.x + 60 - scene.layoutUnit/4,
-                       accuracy: 0.01)
+    /// James, round 285: "only the outermost section of paddle should have a laser turret on
+    /// its outer edge. There should only ever be 2 turrets with a split paddle."
+    ///
+    /// Which the *generator* has always got right by accident, and the dress never did. The
+    /// paddle node keeps its full width when it splits, so the span's two ends are the outer
+    /// pieces' outer edges - and the shots have come from those two points since long before
+    /// any of this. What was wrong was the strip drawn across the whole span, which said
+    /// "armed" about the gaps and about the middle pieces too.
+    private func firingPoints(_ scene: GameScene) -> [CGFloat] {
+        let inset = scene.layoutUnit/4
+        return [scene.paddle.position.x - scene.paddle.size.width/2 + inset,
+                scene.paddle.position.x + scene.paddle.size.width/2 - inset]
+        // The two the generator builds inline, written here rather than reached into: it makes
+        // them in the middle of assembling a sprite and one of the pair is behind a retro branch
     }
 
-    func testASplitPaddleFiresOnceFromEachPiecesFarEnd() {
-        let scene = mayhem()
-        scene.endlessIICollectDoublePaddle()
-        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
-                                                           standardWidth: scene.paddleWidth,
-                                                           ballSize: scene.ballSize)
-        let origins = scene.endlessIILaserOrigins
-
-        XCTAssertEqual(origins.count, layout.count,
-                       "one turret per piece - the old two-sided alternation armed the outer "
-                       + "pieces and left the rest wearing the dress and firing nothing")
-
-        let pitch = layout.segment + layout.gap
-        let first = -scene.paddle.size.width/2 + layout.segment/2
-        for (index, origin) in origins.enumerated() {
-            let centre = scene.paddle.position.x + first + pitch*CGFloat(index)
-            let outward: CGFloat = (centre - scene.paddle.position.x) < 0 ? -1 : 1
-            XCTAssertEqual(origin, centre + outward*(layout.segment/2 - scene.layoutUnit/4),
-                           accuracy: 0.01,
-                           "piece \(index) fires from the end away from the middle")
-        }
-    }
-
-    /// An expanded split is more than two pieces, which is the case the old code could not say.
-    func testAWiderSplitArmsEveryPieceItGrew() {
+    func testASplitPaddleWearsExactlyTwoTurrets() {
         let scene = mayhem()
         scene.paddle.size.width = 360
         scene.endlessIICollectDoublePaddle()
-        let layout = GameScene.endlessIIDoublePaddleLayout(span: 360,
-                                                           standardWidth: scene.paddleWidth,
+        scene.paddleLaser.isHidden = false
+        scene.paddleLaser.size = CGSize(width: 360, height: 20)
+        scene.refreshEndlessIISplitLaserDress()
+
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 360, standardWidth: 120,
                                                            ballSize: scene.ballSize)
-        XCTAssertGreaterThan(layout.count, 2, "a wide paddle really does make more pieces")
-        XCTAssertEqual(scene.endlessIILaserOrigins.count, layout.count)
+        XCTAssertGreaterThan(layout.count, 2, "a wide split really is more than two pieces")
+        XCTAssertEqual(scene.endlessIISplitLaserDress.count, 2,
+                       "and still two turrets - the first attempt at this armed every piece, "
+                       + "which is not what was asked for")
+        XCTAssertEqual(scene.endlessIISplitLaserTurrets.count, 2)
     }
 
-    func testNoTurretFiresFromOutsideThePaddle() {
+    func testTheTurretsSitOnTheOutermostPieces() {
         let scene = mayhem()
-        scene.paddle.size.width = 300
+        scene.paddle.size.width = 360
         scene.endlessIICollectDoublePaddle()
-        for origin in scene.endlessIILaserOrigins {
-            XCTAssertGreaterThanOrEqual(origin, scene.paddle.position.x - 150)
-            XCTAssertLessThanOrEqual(origin, scene.paddle.position.x + 150)
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 360, standardWidth: 120,
+                                                           ballSize: scene.ballSize)
+        let pitch = layout.segment + layout.gap
+        let first = scene.paddle.position.x - 180 + layout.segment/2
+        let last = first + pitch*CGFloat(layout.count - 1)
+
+        XCTAssertEqual(scene.endlessIISplitLaserTurrets[0], first, accuracy: 0.01)
+        XCTAssertEqual(scene.endlessIISplitLaserTurrets[1], last, accuracy: 0.01)
+    }
+
+    /// The turret and the shot are the same place, which is the whole point of moving the dress.
+    func testEachShotLeavesFromInsideItsOwnTurret() {
+        let scene = mayhem()
+        scene.paddle.size.width = 360
+        scene.endlessIICollectDoublePaddle()
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 360, standardWidth: 120,
+                                                           ballSize: scene.ballSize)
+        for (turret, shot) in zip(scene.endlessIISplitLaserTurrets, firingPoints(scene)) {
+            XCTAssertLessThanOrEqual(abs(shot - turret), layout.segment/2,
+                                     "the shot comes out of the piece wearing the turret")
         }
+    }
+
+    func testTakingTheSplitAwayGivesThePaddleItsOwnLaserDressBack() {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        scene.paddleLaser.isHidden = false
+        scene.paddleLaser.size = CGSize(width: 120, height: 20)
+        scene.refreshEndlessIISplitLaserDress()
+        XCTAssertEqual(scene.paddleLaser.alpha, 0, "the whole-span strip stands down")
+
+        scene.endlessIIDoublePaddleClock = EndlessIIClock()
+        scene.refreshEndlessIISplitLaserDress()
+        XCTAssertTrue(scene.endlessIISplitLaserDress.isEmpty)
+        XCTAssertEqual(scene.paddleLaser.alpha, 1,
+                       "a power-up that left the paddle undressed would be one that never ended")
     }
 
     // MARK: - "Ball goes up, like it would from the paddle"

@@ -1432,8 +1432,15 @@ final class EndlessIIFrameCostTests: XCTestCase {
             sample.gameMode = .endlessII
             sample.ballSize = 30
             sample.ball.size = CGSize(width: 30, height: 30)
-            sample.ball.texture = scene.ball.texture
+            sample.ball.texture = SKTexture(imageNamed: "ballNormal")
             sample.ball.color = .white
+            sample.ball.colorBlendFactor = 0
+            // **The ball's own picture.** The first version of this took the texture from
+            // another bare `GameScene`, which has none - the sprite is loaded from
+            // `GameScene.sks` at run time and a scene built with `GameScene()` never loads it -
+            // so SpriteKit drew a plain white rectangle and the render showed a square ball.
+            // James asked whether the square theme was on; it was not, the harness simply had
+            // no ball to draw
             sample.totalStatsArray = [TotalStats()]
             sample.addChild(sample.ball)
             sample.ball.setScale(ballScale)
@@ -1533,6 +1540,7 @@ final class EndlessIIFrameCostTests: XCTestCase {
         display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
 
         for (index, span) in [CGFloat(120), 240, 360].enumerated() {
+            // Two turrets at every width, however many pieces the span makes (round 286)
             let scene = GameScene()
             scene.gameMode = .endlessII
             scene.totalStatsArray = [TotalStats()]
@@ -1558,11 +1566,21 @@ final class EndlessIIFrameCostTests: XCTestCase {
                 bar.position = CGPoint(x: 350 + first + pitch*CGFloat(piece), y: y)
                 display.addChild(bar)
             }
-            for origin in scene.endlessIILaserOrigins {
+            for centre in scene.endlessIISplitLaserTurrets {
+                let turret = SKSpriteNode(color: UIColor(white: 1, alpha: 0.35),
+                                          size: CGSize(width: layout.segment, height: 6))
+                turret.position = CGPoint(x: 350 + centre, y: y + 9)
+                display.addChild(turret)
+            }
+            let inset = scene.layoutUnit/4
+            for origin in [-span/2 + inset, span/2 - inset] {
                 let shot = SKSpriteNode(color: .systemPink, size: CGSize(width: 6, height: 22))
-                shot.position = CGPoint(x: 350 + origin, y: y + 18)
+                shot.position = CGPoint(x: 350 + origin, y: y + 24)
                 display.addChild(shot)
             }
+            // The turret across the outermost piece and the shot where it actually leaves,
+            // drawn separately: the first version of this marked the piece's *centre* and so
+            // showed the turret in the middle of a piece the answer puts on its outer edge
         }
 
         let view = SKView(frame: CGRect(origin: .zero, size: display.size))

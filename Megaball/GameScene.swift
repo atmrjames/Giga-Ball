@@ -809,13 +809,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
 
-    /// Which of `endlessIILaserOrigins` the next shot comes from, while the paddle is split.
-    ///
-    /// A split paddle has more than two places to fire from, so the two-sided flag above
-    /// cannot describe it. That flag stays exactly as it was for every other paddle in every
-    /// mode.
-    var endlessIILaserOriginIndex: Int = 0
-
     /// One laser dress per segment of a split paddle - see `refreshEndlessIISplitLaserDress`.
     var endlessIISplitLaserDress: [SKSpriteNode] = []
 
@@ -7228,19 +7221,7 @@ laserTimer?.invalidate()
 			laser.size.width = layoutUnit/4
 			laser.size.height = laser.size.width*4
 			
-			if endlessIIPaddleIsSplit {
-				let origins = endlessIILaserOrigins
-				let index = endlessIILaserOriginIndex % max(origins.count, 1)
-				laser.position = CGPoint(x: origins[index],
-				                         y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
-				laser.texture = laserNormalTexture
-				endlessIILaserOriginIndex = (index + 1) % max(origins.count, 1)
-				// **One turret per segment, taken in turn** (James, round 284: "each split has
-				// one laser turret on its far end"). The two-sided alternation below cannot say
-				// this: an expanded split is up to five pieces, and it would arm the outermost
-				// two and leave the rest wearing the dress and firing nothing. Every other
-				// paddle in every mode goes through the branches below, untouched
-			} else if laserSideLeft {
+			if laserSideLeft {
 				laser.position = CGPoint(x: paddle.position.x - paddle.size.width/2 + laser.size.width, y: paddle.position.y + paddleLaser.size.height/2 + laser.size.height/2)
 				
 				if paddleTexture == retroPaddle {

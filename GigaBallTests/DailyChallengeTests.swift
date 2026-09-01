@@ -2196,3 +2196,78 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
                       "a player has to be told, or they will play it as if lives mattered")
     }
 }
+
+/// The twist matrix, enforced.
+///
+/// James, round 284: "this matrix has already been defined and shared" - the *Twist Matrix*
+/// sheet of `Giga-Ball 2026 - Twist Details.xlsx`. Most of it the generator kept for free by
+/// drawing one twist per category; four pairs cross categories and were being drawn together.
+///
+/// Round 285 recorded them and left them, because refusing a pair changes what past days drew.
+/// Round 286 built the refusal, on James's answer: "don't worry about the past daily
+/// challenges so far. We only need to worry about them once the app is released."
+final class DailyTwistMatrixTests: XCTestCase {
+
+    /// The four the category rule never covered, each named in the terms the sheet names them.
+    private let liveRefusals: [(DailyTwist, DailyTwist, String)] = [
+        (.mayhemBricks, .upsideDown, "Extra Mayhem with Upside Down"),
+        (.mayhemBricks, .mirrored, "Extra Mayhem with Mirrored"),
+        (.mayhemBricks, .brickSwap, "Extra Mayhem with Brick Swap"),
+        (.spareBalls, .timeTrial, "Extra Balls with Time Trial"),
+    ]
+
+    func testTheMatrixRefusesBothWaysRound() {
+        for (a, b, name) in liveRefusals {
+            XCTAssertFalse(a.pairsWith(b), name)
+            XCTAssertFalse(b.pairsWith(a), "\(name), asked the other way round")
+        }
+    }
+
+    func testTwistsTheMatrixAllowsAreStillAllowed() {
+        XCTAssertTrue(DailyTwist.fogOfWar.pairsWith(.oneLife))
+        XCTAssertTrue(DailyTwist.mayhemBricks.pairsWith(.oneLife),
+                      "Extra Mayhem is refused three layout twists, not everything")
+        XCTAssertTrue(DailyTwist.spareBalls.pairsWith(.fogOfWar))
+    }
+
+    /// A year of days, and none of them draws a refused pair.
+    ///
+    /// The property that matters, said about the generator rather than about the table: a rule
+    /// the pool filter did not actually apply would pass every test above and change nothing.
+    func testNoDayInAYearDrawsARefusedPair() {
+        var days = 0
+        var twoTwistDays = 0
+        var date = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!
+        for _ in 0..<365 {
+            let challenge = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: date))
+            days += 1
+            if challenge.twists.count > 1 { twoTwistDays += 1 }
+            for a in challenge.twists {
+                for b in challenge.twists where a != b {
+                    XCTAssertTrue(a.pairsWith(b),
+                                  "\(challenge.dateKey) draws \(a.displayName) with \(b.displayName)")
+                }
+            }
+            date = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: date)!
+        }
+        XCTAssertEqual(days, 365)
+        XCTAssertGreaterThan(twoTwistDays, 20,
+                             "and the year still has plenty of two-twist days in it - a filter "
+                             + "that quietly emptied every pool would pass the assertion above")
+    }
+
+    /// Which refusals the category rule was already making, proved rather than assumed.
+    ///
+    /// Seven of the eleven pairs in the table share a category and so could never have been
+    /// drawn together. They are kept in the table anyway, so that it is a copy of the matrix
+    /// rather than a copy of the leftovers - and this is the test that says which ones stop
+    /// being free the day a category is re-cut.
+    func testTheCategoryRuleAlreadyCoversWhatItCovers() {
+        let free = DailyTwist.refusedPairs.filter { $0.category == $1.category }
+        let live = DailyTwist.refusedPairs.filter { $0.category != $1.category }
+        XCTAssertEqual(free.count + live.count, DailyTwist.refusedPairs.count)
+        XCTAssertEqual(live.count, liveRefusals.count,
+                       "four pairs need this rule; if that number moves, a category changed "
+                       + "and somebody should know which refusals it took over or gave up")
+    }
+}

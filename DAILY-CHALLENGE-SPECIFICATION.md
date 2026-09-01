@@ -649,16 +649,29 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   can and does draw together:** Extra Balls (`lives`) with Time Trial (`tempo`), and Extra
   Mayhem (`dress`) with each of Upside Down, Mirrored and Brick Swap (`layout`).
 
-  **This is not a quick fix, and the reason is §2.1.** A day is computed from its date and
-  nothing else, so a rule that refuses a pair changes what *past* days drew - the same trap
-  the disclosure category had to be dated around. Refusing these four has to arrive dated,
-  like a new twist does, and the days before that date keep the pairs they were always
-  going to have. Which of the two - honouring the matrix from a date, or accepting that four
-  pairs shipped - is James's call, and the leaderboards are the reason it is his.
+  **Built in round 286, undated.** The usual answer to this would be §2.1's: a day is
+  computed from its date and nothing else, so a rule that refuses a pair changes what past
+  days drew, and it would have to arrive dated the way a new twist or a new category does.
+  James, round 286: "don't worry about the past daily challenges so far. We only need to
+  worry about them once the app is released." Nobody's score is on a pre-release day, so
+  the refusal is a plain filter on the pool with no activation key at all - and the four
+  pairs above simply stop happening, including on days already generated.
 
-  The sheet also lists **Classic Mayhem** and **Landslide**, neither of which is a
-  `DailyTwist` case yet; Classic Mayhem is §12's Mayhem Rules and Landslide is already
-  built. Their rows are recorded here for when Mayhem Rules is scheduled.
+  `DailyTwist.refusedPairs` is **every "No" cell in the sheet between two twists that
+  exist**, eleven of them, not only the four that were live. Seven could never have
+  happened anyway; they are kept so that the table is a copy of the matrix rather than a
+  copy of the leftovers, and `testTheCategoryRuleAlreadyCoversWhatItCovers` proves the
+  overlap instead of assuming it. If a category is ever re-cut, that test is what says which
+  refusals stopped being free.
+
+  **This wants a date again the moment the app ships.** After release, adding a twelfth pair
+  to that table changes days people have played, and it will need an activation key like
+  everything else §4.2 covers.
+
+  The sheet also lists **Classic Mayhem** and **Landslide**. Landslide is built and has no
+  "No" cells beyond Vanilla; Classic Mayhem is §12's Mayhem Rules and is not a `DailyTwist`
+  case yet. Its row says it refuses only No Power-Ups, which is the one to carry over when
+  it is built.
 
 - **An early launch snaps the fog shut** (round 177, James: "if fog of war twist is in
   play, at the start if the player launches the ball before the fade out animation has
