@@ -4227,7 +4227,11 @@ final class PlayTestRound291Tests: XCTestCase {
         let scene = mayhem()
         scene.stickyPaddleCatches = 1
         scene.stickyPaddleCatchesTotal = 4
-        scene.ballIsOnPaddle = false
+        scene.ballIsOnPaddle = true
+        // **As the game actually leaves it.** The classic sticky catch sets this flag and then
+        // puts the ball in the queue, so a *caught* first ball has it set exactly as a waiting
+        // serve does. The first version of this test set it false, which is a state the game
+        // never produces - and it passed a fix that skipped the very case it was written for
 
         let extra = extraBall(scene, x: 25)
         scene.ball.position = CGPoint(x: -25, y: scene.paddle.position.y + 12)
@@ -4243,6 +4247,9 @@ final class PlayTestRound291Tests: XCTestCase {
         XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
                              "and the first ball went up with the rest")
         XCTAssertGreaterThan(extra.physicsBody?.velocity.dy ?? 0, 0)
+        XCTAssertFalse(scene.ballIsOnPaddle,
+                       "and the flag came off with it, or the code that has kept the first "
+                       + "ball on the paddle since 2020 would carry it straight back down")
     }
 
     /// The ball resting on the paddle at the start of a life is not in the queue and stays put.
@@ -4250,9 +4257,11 @@ final class PlayTestRound291Tests: XCTestCase {
         let scene = mayhem()
         scene.stickyPaddleCatches = 1
         scene.ballIsOnPaddle = true
+        XCTAssertTrue(scene.endlessIIHeldBalls.isEmpty, "a serve is not in the queue")
         scene.endlessIIReleaseRemainingHeldBalls()
         XCTAssertEqual(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
                        "a serve is launched by the player, not by a power-up ending")
+        XCTAssertTrue(scene.ballIsOnPaddle, "and it is still waiting on the paddle")
     }
 
     // MARK: - The aim

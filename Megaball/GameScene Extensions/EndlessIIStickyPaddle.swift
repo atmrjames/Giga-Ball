@@ -266,18 +266,23 @@ extension GameScene {
         // Aimed Sticky holds its own licence to keep them
 
         while let held = endlessIINextHeldBall {
-            guard held !== ball || ballIsOnPaddle == false else { break }
             // **The first ball leaves with the rest** (James, round 291: "if multiple balls are
             // in play and the paddle is sticky and there are 2 balls on the paddle and it's the
             // last turn for the sticky power up, launch both balls at the same time"). This
             // used to stop at the primary ball, so the last catch launched one ball and left
             // the other stuck to a paddle that was no longer sticky - it could only be freed by
-            // losing it. The queue holds the first ball on exactly the same terms as any other
-            // once it has been *caught*, which is what `endlessIIFirstBallWasCaught` is for.
+            // losing it.
             //
-            // The one first ball that must not be launched here is the one resting on the
-            // paddle at the start of a life: that one is not in the queue at all, and
-            // `ballIsOnPaddle` is the flag that says so - a belt to that brace.
+            // **Being in the queue is the whole test**, and the first version of this fix asked
+            // `ballIsOnPaddle` as well, which was wrong in the one way that mattered: the
+            // classic sticky catch sets that flag *and then* calls
+            // `endlessIIFirstBallWasCaught`, so a caught first ball has it set exactly as a
+            // waiting serve does. The guard skipped the case it was written for. What tells the
+            // two apart is the queue - a serve is never in it, because only a catch puts it
+            // there - and the loop already walks nothing else.
+            if held === ball { ballIsOnPaddle = false }
+            // And the flag has to come off, or the code that has kept the first ball on the
+            // paddle since 2020 would carry it straight back down
 
             let offset = endlessIIIsHeldOnSafetyBar(held)
                 ? (endlessIISafetyBarOffset(of: held)
