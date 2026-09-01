@@ -1626,4 +1626,54 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  the beam, the burn it leaves, and the burn half faded\n")
     }
 
+    /// The Paddle Halo's glow, drawn over a field so the reach can be seen against bricks.
+    ///
+    /// It was a filled semicircle with a stroke on it, which stated the reach exactly and
+    /// looked like a geometry diagram. The white line marks where the reach actually is, so
+    /// what the picture is claiming can be checked against what it eats.
+    func testThePaddleHaloCanBeLookedAt() throws {
+        let scene = GameScene(size: CGSize(width: 402, height: 500))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddleWidth = 90
+        scene.paddle.position = CGPoint(x: 0, y: 0)
+        scene.addChild(scene.paddle)
+        scene.endlessIICollectPaddleHalo()
+        scene.tickEndlessIIPaddleHalo()
+
+        let display = SKScene(size: CGSize(width: 402, height: 320))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for row in 0..<6 {
+            for column in 0..<11 {
+                let brick = SKSpriteNode(color: UIColor(white: 1, alpha: 0.28),
+                                         size: CGSize(width: 32, height: 15))
+                brick.position = CGPoint(x: 22 + 36*CGFloat(column), y: 70 + 18*CGFloat(row))
+                display.addChild(brick)
+            }
+        }
+
+        let glow = try XCTUnwrap(scene.endlessIIPaddleHaloNode)
+        glow.removeFromParent()
+        glow.position = CGPoint(x: 201, y: 60)
+        display.addChild(glow)
+
+        let reach = scene.paddleWidth*EndlessIIPaddleEffects.haloReach[0]
+        let mark = SKShapeNode(circleOfRadius: reach)
+        mark.strokeColor = UIColor.white.withAlphaComponent(0.55)
+        mark.lineWidth = 1
+        mark.fillColor = .clear
+        mark.position = CGPoint(x: 201, y: 60)
+        mark.zPosition = 5
+        display.addChild(mark)
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("round-289.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Round 289, drawn: \(file.path)")
+        print("  the halo over a field, with a white circle on the reach it eats\n")
+    }
+
 }

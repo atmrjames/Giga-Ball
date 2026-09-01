@@ -54,20 +54,32 @@ enum BrickTypeIcons {
         }
     }
 
-    /// The power-up brick: the badge every power-up icon is cut to, at the brick's own
-    /// proportions.
+    /// The picture the bricks page uses to mean "a power-up".
     ///
-    /// **The badge rather than any particular power-up.** James, round 283: "use a generic power
-    /// up graphic." A brick holding Multi-Ball and one holding Shrink Paddle are the same brick
-    /// - what varies is the icon it happens to be carrying, and picking one of the sixty-six for
-    /// the reference page would be describing an example instead of the type.
+    /// **One particular power-up's icon, standing for all of them**, which is a deliberate
+    /// choice and not an oversight. James, round 283, asked for "a generic power up graphic",
+    /// and round 284 read that as the brick's own badge - `PowerUpBrick`, the yellow block a
+    /// power-up brick wears before an icon is cut into it. Round 289: "rather than showing the
+    /// power-up brick as a yellow block, use the PowerUpClearAndRetreat graphic as a generic
+    /// power-up graphic."
     ///
-    /// Square, because the brick is: one cell across and two down (`BrickSize.square`), which is
-    /// the shape `PowerUpBrick` is drawn at.
+    /// The block was the more literal answer and the worse one. A yellow rectangle beside eight
+    /// other brick pictures reads as *another kind of brick* rather than as the thing a brick
+    /// gives you, and it is the one entry on the page whose picture a player never actually
+    /// meets - in the field the block always has an icon on it.
+    ///
+    /// Named here rather than written into the drawing, so the day a purpose-drawn generic
+    /// badge exists (§8.5) this is the one line that changes.
+    static let genericPowerUpArtName = "PowerUpClearAndRetreat"
+
+    /// The power-up brick, drawn as the thing it hands over.
+    ///
+    /// Square, because the brick is: one cell across and two down (`BrickSize.square`), and the
+    /// power-up icons are square too - so one side serves both and nothing is stretched.
     private static func drawPowerUpBrick() {
         let side = min(canvas.height, canvas.width)*0.82
         let frame = centred(CGSize(width: side, height: side))
-        artwork(GameScene.powerUpBrickArtName)?.draw(in: frame)
+        artwork(genericPowerUpArtName)?.draw(in: frame)
     }
 
     // MARK: - Behaviours

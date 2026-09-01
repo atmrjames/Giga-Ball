@@ -280,3 +280,90 @@ final class ShapedBrickArtHasNoCanvasBorderTests: XCTestCase {
                              + "that had drifted would pass this by matching nothing")
     }
 }
+
+/// The Paddle Halo wears James's artwork, drawn to the reach it actually eats.
+///
+/// It was a filled `SKShapeNode` semicircle with a stroke on it, which said where the reach was
+/// exactly and looked like a geometry diagram. The picture is a soft disc; the arithmetic that
+/// puts its edge on the reach is the Aura's, for the same reason.
+final class PaddleHaloArtworkTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddleWidth = 120
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    private func halo(_ scene: GameScene) -> SKSpriteNode? {
+        scene.endlessIICollectPaddleHalo()
+        scene.tickEndlessIIPaddleHalo()
+        return scene.endlessIIPaddleHaloNode as? SKSpriteNode
+    }
+
+    func testTheHaloHasItsArtwork() {
+        XCTAssertNotNil(GameScene.endlessIIHaloTexture, "Halo")
+    }
+
+    /// The half a semicircle needs, and no more.
+    ///
+    /// `haloTouches` refuses any brick whose top is below the centre, so the lower half of the
+    /// disc would be drawing a reach that does not exist.
+    func testTheGlowIsHalfADiscStandingOnItsFlatEdge() throws {
+        let scene = mayhem()
+        let node = try XCTUnwrap(halo(scene))
+        XCTAssertEqual(node.anchorPoint, CGPoint(x: 0.5, y: 0),
+                       "anchored on the diameter, which is where the halo's centre is")
+        XCTAssertEqual(node.size.height, node.size.width/2, accuracy: 0.01,
+                       "half as tall as it is wide - the top half of a square canvas")
+        XCTAssertEqual(node.position, scene.endlessIIPaddleHaloCentre)
+    }
+
+    /// The visible edge of the glow lands on the circle it eats.
+    func testTheGlowIsDrawnToTheReachItEats() throws {
+        let scene = mayhem()
+        let node = try XCTUnwrap(halo(scene))
+        let reach = scene.paddleWidth*EndlessIIPaddleEffects.haloReach[0]
+
+        let drawnRadius = node.size.width*GameScene.endlessIIHaloVisibleShare/2
+        XCTAssertEqual(drawnRadius, reach, accuracy: 0.5,
+                       "the picture overhangs, and the contour that reads as its edge is the "
+                       + "one put on the reach - the same bargain the Aura makes")
+        XCTAssertGreaterThan(node.size.width/2, reach,
+                             "so the sprite itself is wider than the reach, as a soft-edged "
+                             + "picture has to be")
+    }
+
+    /// A deeper collection reaches further, and the picture follows.
+    func testTheGlowGrowsWithTheStack() throws {
+        let scene = mayhem()
+        let first = try XCTUnwrap(halo(scene)).size.width
+        scene.endlessIICollectPaddleHalo()
+        scene.tickEndlessIIPaddleHalo()
+        let second = try XCTUnwrap(scene.endlessIIPaddleHaloNode as? SKSpriteNode).size.width
+        XCTAssertGreaterThan(second, first)
+    }
+}
+
+/// The bricks page shows a power-up as a power-up.
+final class BricksPagePowerUpIconTests: XCTestCase {
+
+    /// James, round 289: "rather than showing the power-up brick as a yellow block, use the
+    /// PowerUpClearAndRetreat graphic as a generic power-up graphic."
+    func testThePowerUpEntryIsNotTheYellowBlock() {
+        XCTAssertNotEqual(BrickTypeIcons.genericPowerUpArtName, GameScene.powerUpBrickArtName,
+                          "the block is the brick's badge before an icon is cut into it, which "
+                          + "is a picture a player never actually meets in the field")
+        XCTAssertNotNil(UIImage(named: BrickTypeIcons.genericPowerUpArtName))
+    }
+
+    /// The field is untouched: a power-up brick still wears its block.
+    func testTheFieldStillDrawsThePowerUpBrickAsItAlwaysHas() {
+        XCTAssertEqual(GameScene.powerUpBrickArtName, "PowerUpBrick",
+                       "only the reference page changed - a page picture and a field picture "
+                       + "are different questions and this round answered one of them")
+    }
+}

@@ -1121,7 +1121,9 @@ extension GameScene {
     // is a semicircle drawn upward from its centre, so it still covers the field above it -
     // it is the same two rows of bricks either way, which is the point
 
-    private func tickEndlessIIPaddleHalo() {
+    /// Not private since round 289: the glow is artwork now, and a picture drawn to a
+    /// measured reach is something a test has to be able to ask for on its own.
+    func tickEndlessIIPaddleHalo() {
         guard endlessIIPaddleHaloClock.isRunning else { return }
         let reach = paddleWidth*EndlessIIPaddleEffects.haloReach[
             min(endlessIIPaddleHaloClock.level, EndlessIIPaddleEffects.haloReach.count - 1)]
@@ -1131,26 +1133,14 @@ extension GameScene {
         // good one off. The halo is a field the paddle projects rather than part of the
         // paddle, and how far it reaches is not the paddle's business
 
-        let halo = endlessIIPaddleHaloNode ?? {
-            let node = SKShapeNode()
-            node.fillColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.14)
-            node.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.45)
-            node.lineWidth = 1.5
-            node.zPosition = 2
-            addChild(node)
-            endlessIIPaddleHaloNode = node
-            return node
-        }()
+        let halo = endlessIIPaddleHaloNode ?? makeEndlessIIPaddleHaloNode()
 
         if abs(endlessIIPaddleHaloDrawnReach - reach) > 0.5 {
-            let path = CGMutablePath()
-            path.addArc(center: .zero, radius: reach, startAngle: 0, endAngle: .pi,
-                        clockwise: false)
-            path.closeSubpath()
-            halo.path = path
+            resizeEndlessIIPaddleHalo(halo, reach: reach)
             endlessIIPaddleHaloDrawnReach = reach
-            // Rebuilt only when the reach changes - a fresh CGPath per frame for a shape
-            // that is almost always the same size is the kind of habit update loops die of
+            // Rebuilt only when the reach changes - a fresh CGPath or a fresh size per frame
+            // for a shape that is almost always the same size is the kind of habit update
+            // loops die of
         }
         halo.position = endlessIIPaddleHaloCentre
 
@@ -1180,6 +1170,83 @@ extension GameScene {
             countBricks()
             if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
         }
+    }
+
+    /// The glow, built once.
+    ///
+    /// **A sprite where the artwork exists and the drawn semicircle where it does not.** Every
+    /// other effect in this file answers a missing file by drawing nothing, which is right for
+    /// a decoration - and wrong here. Round 102's complaint about the Laser Beam was "doesn't
+    /// appear to do anything", and a Paddle Halo with no glow at all is a power-up that eats
+    /// bricks in silence from a part of the field the player is not looking at. So the shape it
+    /// replaced stays as the fallback rather than as a second opinion: it is only ever reached
+    /// when there is no picture to draw.
+    private func makeEndlessIIPaddleHaloNode() -> SKNode {
+        let node: SKNode
+        if let texture = GameScene.endlessIIHaloTexture {
+            let sprite = SKSpriteNode(texture: texture)
+            sprite.anchorPoint = CGPoint(x: 0.5, y: 0)
+            node = sprite
+            // **Anchored on its flat edge**, because that edge is the halo's centre. The
+            // texture is the top half of James's square picture and the disc in it is centred
+            // on the canvas to within half a per cent, so the sub-texture's bottom edge *is*
+            // the diameter - and anchoring there means the position the rest of this function
+            // already computes needs no adjusting
+        } else {
+            let shape = SKShapeNode()
+            shape.fillColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.14)
+            shape.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.45)
+            shape.lineWidth = 1.5
+            node = shape
+        }
+        node.zPosition = 2
+        addChild(node)
+        endlessIIPaddleHaloNode = node
+        return node
+    }
+
+    /// Draws the glow to this reach, whichever of the two it is.
+    private func resizeEndlessIIPaddleHalo(_ halo: SKNode, reach: CGFloat) {
+        if let sprite = halo as? SKSpriteNode {
+            let width = reach*2/GameScene.endlessIIHaloVisibleShare
+            sprite.size = CGSize(width: width, height: width/2)
+            // Half as tall as it is wide because the texture is the top half of a square
+            // canvas. The disc inside it is `endlessIIHaloVisibleShare` of that width across,
+            // so dividing by the share is what puts its edge on the reach rather than
+            // somewhere inside it - the same arithmetic, and the same reasoning, as the Aura's
+            return
+        }
+        guard let shape = halo as? SKShapeNode else { return }
+        let path = CGMutablePath()
+        path.addArc(center: .zero, radius: reach, startAngle: 0, endAngle: .pi, clockwise: false)
+        path.closeSubpath()
+        shape.path = path
+    }
+
+    /// How much of `Halo`'s canvas reads as glow, across its width.
+    ///
+    /// Measured off the file, and by the same rule the Aura settled on. The picture is a soft
+    /// disc rather than a ring: alpha is flat at 148 across the middle and falls away to
+    /// nothing at the rim, with the half-of-peak contour at 0.612 of the canvas, the quarter at
+    /// 0.674, the tenth at 0.738 and the last trace at 0.817.
+    ///
+    /// **The quarter is taken as the edge**, which is what round 284 settled on for the Aura
+    /// after the tenth read too small in play ("Aura should be bigger"). Two glows in the same
+    /// field measured the same way is worth more than either of them being individually
+    /// perfect - and the same argument applies: a tenth of a faint alpha is not something
+    /// anybody sees, so drawing it on the reach puts the *readable* glow well inside what the
+    /// halo actually eats.
+    static let endlessIIHaloVisibleShare: CGFloat = 0.674
+
+    /// The top half of James's square picture, which is the half a semicircle needs.
+    ///
+    /// `haloTouches` refuses any brick whose top is below the centre, so the glow is the upper
+    /// semicircle and always has been - the lower half of the disc would be drawing a reach
+    /// that does not exist. Taken as a sub-texture rather than by clipping a sprite, because a
+    /// sprite is not clipped to anything and the alternative is a crop node per frame.
+    static let endlessIIHaloTexture: SKTexture? = UIImage(named: "Halo").map {
+        SKTexture(rect: CGRect(x: 0, y: 0.5, width: 1, height: 0.5),
+                  in: SKTexture(image: $0))
     }
 
     static let endlessIIHaloColour = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)

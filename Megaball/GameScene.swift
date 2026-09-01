@@ -121,7 +121,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleFrameDelta: TimeInterval = 0
 	var endlessIIPendingPaddlePortals: [SKSpriteNode] = []
 	var endlessIIPendingPortalCollisions: [ObjectIdentifier: Double] = [:]
-	var endlessIIPaddleHaloNode: SKShapeNode?
+	/// The glow the Paddle Halo draws: James's `Halo` artwork where the build has it, and the
+	/// drawn semicircle it replaced where it does not - so the type is the common one.
+	var endlessIIPaddleHaloNode: SKNode?
 	var endlessIIPaddleHaloDrawnReach: CGFloat = 0
 	var endlessIISteeringLastPaddleX: CGFloat = 0
 	var endlessIISteeringPending: CGFloat = 0
