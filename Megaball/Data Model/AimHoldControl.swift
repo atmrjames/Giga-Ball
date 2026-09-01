@@ -24,7 +24,7 @@ import CoreGraphics
 enum AimHoldControl {
 
     /// What a drag is doing.
-    enum Intent {
+    enum Intent: Equatable {
         /// Above the paddle: the finger is pointing the shot.
         case aim
         /// On or below the paddle: the finger is carrying the paddle, ball and all.

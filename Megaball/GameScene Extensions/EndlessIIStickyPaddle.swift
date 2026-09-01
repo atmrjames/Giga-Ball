@@ -51,6 +51,7 @@ extension GameScene {
         guard endlessIIHeldBalls.isEmpty == false else { return }
         for index in endlessIIHeldBalls.indices.reversed()
         where endlessIIHeldBalls[index].parent == nil {
+            setEndlessIIHeldBallRestsOnPaddle(false, for: endlessIIHeldBalls[index])
             endlessIISafetyHeldBalls.remove(ObjectIdentifier(endlessIIHeldBalls[index]))
             endlessIIHeldBalls.remove(at: index)
             if endlessIIHeldOffsets.indices.contains(index) {
@@ -86,6 +87,7 @@ extension GameScene {
         extra.position.y = ballStartingPositionY
         endlessIIHeldBalls.append(extra)
         endlessIIHeldOffsets.append(extra.position.x - paddle.position.x)
+        setEndlessIIHeldBallRestsOnPaddle(true, for: extra)
         // Where on the paddle it landed, kept as an offset so it rides the paddle rather than
         // sitting still while the paddle moves out from under it - and so it launches at the
         // angle its own landing spot earns, exactly as the first ball does
@@ -105,6 +107,38 @@ extension GameScene {
         guard endlessIIHeldBalls.contains(where: { $0 === ball }) == false else { return }
         endlessIIHeldBalls.append(ball)
         endlessIIHeldOffsets.append(ball.position.x - paddle.position.x)
+        setEndlessIIHeldBallRestsOnPaddle(true, for: ball)
+    }
+
+    /// Takes the paddle out of a held ball's collisions, and puts it back on launch.
+    ///
+    /// **James, round 291: "with a sticky shaped paddle, the ball moves on the paddle after it
+    /// has landed. Like it slides down the paddle's shape. The ball should remain fixed in
+    /// position relative to the paddle once it's been caught."**
+    ///
+    /// A held ball is *placed* every frame - on the paddle's x plus the offset it landed at,
+    /// at `ballStartingPositionY` - and that placement happens in `update`, before the physics
+    /// step. On a plain paddle the two never disagree: the ball sits on a flat top and the
+    /// engine finds nothing to resolve. On a **shaped** one, `ballStartingPositionY` is a
+    /// single height for a surface that is a dome or a dish, so a ball placed anywhere but the
+    /// middle is placed slightly *inside* the traced body - and the engine's job is to push
+    /// overlapping bodies apart, which on a slope means sideways. Every frame: written to the
+    /// right place, pushed down the slope, written back. That is the slide.
+    ///
+    /// Clearing the paddle's bit is the same move the safety bar makes for a climbing ball
+    /// (`setEndlessIISafetyPaddleReachable`) and for the same reason - it is written on *the
+    /// ball's* body rather than the paddle's, so four balls can each be told something
+    /// different about the same surface, and a caught ball is the only one being told anything.
+    ///
+    /// The contact bit goes with it. A ball resting on the paddle should not be reporting fresh
+    /// landings, which is what `paddleLandingFrame` has been guarding against since round 259.
+    func setEndlessIIHeldBallRestsOnPaddle(_ held: Bool, for subject: SKSpriteNode) {
+        guard let body = subject.physicsBody else { return }
+        let bit = CollisionTypes.paddleCategory.rawValue
+        let collision = held ? body.collisionBitMask & ~bit : body.collisionBitMask | bit
+        let contact = held ? body.contactTestBitMask & ~bit : body.contactTestBitMask | bit
+        if body.collisionBitMask != collision { body.collisionBitMask = collision }
+        if body.contactTestBitMask != contact { body.contactTestBitMask = contact }
     }
 
     /// Takes a ball out of the queue as it launches.
@@ -113,6 +147,7 @@ extension GameScene {
         endlessIIHeldBalls.remove(at: index)
         endlessIIHeldOffsets.remove(at: index)
         endlessIISafetyHeldBalls.remove(ObjectIdentifier(launched))
+        setEndlessIIHeldBallRestsOnPaddle(false, for: launched)
         endlessIIRefreshStickyPaddleLook()
     }
 
@@ -230,8 +265,25 @@ extension GameScene {
         guard gameMode == .endlessII, endlessIIAimedStickyClock.isRunning == false else { return }
         // Aimed Sticky holds its own licence to keep them
 
-        while let held = endlessIINextHeldBall, held !== ball {
-            let offset = Double((held.position.x - paddle.position.x)/(paddle.size.width/2))
+        while let held = endlessIINextHeldBall {
+            guard held !== ball || ballIsOnPaddle == false else { break }
+            // **The first ball leaves with the rest** (James, round 291: "if multiple balls are
+            // in play and the paddle is sticky and there are 2 balls on the paddle and it's the
+            // last turn for the sticky power up, launch both balls at the same time"). This
+            // used to stop at the primary ball, so the last catch launched one ball and left
+            // the other stuck to a paddle that was no longer sticky - it could only be freed by
+            // losing it. The queue holds the first ball on exactly the same terms as any other
+            // once it has been *caught*, which is what `endlessIIFirstBallWasCaught` is for.
+            //
+            // The one first ball that must not be launched here is the one resting on the
+            // paddle at the start of a life: that one is not in the queue at all, and
+            // `ballIsOnPaddle` is the flag that says so - a belt to that brace.
+
+            let offset = endlessIIIsHeldOnSafetyBar(held)
+                ? (endlessIISafetyBarOffset(of: held)
+                    ?? Double((held.position.x - paddle.position.x)/(paddle.size.width/2)))
+                : Double((held.position.x - paddle.position.x)/(paddle.size.width/2))
+            // Whichever surface is holding it, the same way `endlessIILaunchHeldBall` asks
             let angle = endlessIILaunchAngle(atPaddleOffset: offset)
             held.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
                                                   dy: sin(angle)*Double(ballSpeedLimit))
@@ -245,8 +297,11 @@ extension GameScene {
 
     /// Empties the paddle. For losing the life, resetting, and starting again.
     func endlessIIClearHeldBalls() {
+        endlessIIHeldBalls.forEach { setEndlessIIHeldBallRestsOnPaddle(false, for: $0) }
         endlessIIHeldBalls.removeAll()
         endlessIIHeldOffsets.removeAll()
         endlessIISafetyHeldBalls.removeAll()
+        // Every ball gets the paddle back, or a queue emptied by a Wipe would leave balls
+        // falling through the paddle for the rest of the run
     }
 }

@@ -16,6 +16,7 @@
 //
 
 import UIKit
+import SpriteKit
 
 enum PowerUpIcon {
 
@@ -493,6 +494,17 @@ enum PowerUpIcon {
     /// Drawn from `PaddleBounce.shaped` itself rather than by hand, so a picture cannot
     /// promise a face the bounce does not give - the same rule the brick faces follow.
     static func paddleSurface(_ surface: PaddleBounce.Surface) -> UIImage {
+        if let cached = paddleSurfaceBadges[surface] { return cached }
+        let drawn = drawPaddleSurface(surface)
+        paddleSurfaceBadges[surface] = drawn
+        return drawn
+        // Cached because it is *drawn* rather than loaded, and round 291 found the ring HUD
+        // asking for it sixty times a second. Five surfaces, five renders, once each
+    }
+
+    private static var paddleSurfaceBadges: [PaddleBounce.Surface: UIImage] = [:]
+
+    private static func drawPaddleSurface(_ surface: PaddleBounce.Surface) -> UIImage {
         badge(harmful) { context, rect in
             stroke(context, width: rect.width*0.08)
             let width = rect.width*0.64
@@ -1114,6 +1126,41 @@ enum PowerUpIcon {
         UIImage(named: named) ?? badge
     }
 
+    /// The `SKTexture` a ring HUD entry wears, built once for the life of the process.
+    ///
+    /// **This is round 291's stutter, and it was never the shaped paddle.** James reported the
+    /// ball "constantly speeding up and slowing down rather than a frame rate issue" for the
+    /// third round running, and that description is the diagnosis: a uniformly low frame rate
+    /// looks slow, where *uneven* frame times look like acceleration and braking, because the
+    /// ball covers a different distance each frame while `holdBallSpeeds` keeps its speed
+    /// exactly constant.
+    ///
+    /// The ring HUD is rebuilt from scratch every frame, and measured
+    /// (`testWhatTheRingHudCostsEveryFrame`) it cost **30.8ms - 185% of a 60fps frame**. Almost
+    /// all of it was one line repeated: `SKTexture(image:)` is **9.8ms**, it was called once
+    /// per running entry per frame, and a texture built from a `UIImage` is a GPU upload rather
+    /// than a wrapper. Beside it, the paddle-shape entry was calling `paddleSurface(_:)`, which
+    /// *renders* a badge through `UIGraphicsImageRenderer` - the only entry of the twenty whose
+    /// icon was a function call rather than a cached `static let`, and 0.32ms every frame for a
+    /// picture that changes five times in a run.
+    ///
+    /// **The image is an autoclosure**, which is the whole point rather than a nicety: on every
+    /// frame after the first, neither the render nor the `UIImage(named:)` lookup behind it
+    /// happens at all. A cache that took the image as a parameter would have removed the upload
+    /// and kept everything that produced the image.
+    ///
+    /// Keyed by a string rather than by the image's identity, because `UIImage(named:)` makes
+    /// no promise about returning the same object, and the one icon that genuinely varies - the
+    /// paddle's shape - says so in its key.
+    static func ringTexture(_ key: String, _ image: @autoclosure () -> UIImage) -> SKTexture {
+        if let texture = ringTextures[key] { return texture }
+        let texture = SKTexture(image: image())
+        ringTextures[key] = texture
+        return texture
+    }
+
+    private static var ringTextures: [String: SKTexture] = [:]
+
     private static func badge(_ colour: UIColor = beneficial,
                               _ glyph: (CGContext, CGRect) -> Void) -> UIImage {
         UIGraphicsImageRenderer(size: canvas).image { context in
@@ -1193,11 +1240,24 @@ extension DailyTwist {
     /// One builder for every screen that names a twist, so they cannot drift apart in how
     /// a twist reads. The icon rides slightly below the baseline, which is where a glyph
     /// the height of a capital sits without looking like it is floating.
+    /// How much taller than a capital letter a twist's badge is drawn.
+    ///
+    /// **Raised from 1.5 in round 291** (James: "we should make them slightly larger throughout
+    /// the app so they're easier to see and differentiate"). The badges stopped being flat
+    /// glyphs the round before - they are James's drawn icons now, with more in each of them to
+    /// tell apart - and a picture that was legible as a stroked arrow is not necessarily
+    /// legible as a drawing at the same size.
+    ///
+    /// One number, because `badgedLine` is the one builder every screen that lists a twist goes
+    /// through: the briefing card, the pause summary, the pause body and the level intro all
+    /// change together or the set stops looking like a set.
+    static let twistBadgeHeight: CGFloat = 1.9
+
     static func badgedLine(icon: UIImage, name: String, font: UIFont,
                            colour: UIColor) -> NSAttributedString {
         let attachment = NSTextAttachment()
         attachment.image = icon
-        let side = font.capHeight*1.5
+        let side = font.capHeight*twistBadgeHeight
         attachment.bounds = CGRect(x: 0, y: (font.capHeight - side)/2,
                                    width: side, height: side)
 

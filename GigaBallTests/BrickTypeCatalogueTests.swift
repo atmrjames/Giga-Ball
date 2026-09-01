@@ -272,16 +272,36 @@ final class BrickTypeCatalogueTests: XCTestCase {
 
     /// A one-line description is centred under the icon and the name; a paragraph is not.
     ///
-    /// The brick types are where this matters, because they are the entries that write more
-    /// than a phrase - and centring every line of a six-line block was legible but wrong.
+    /// **No brick entry writes a paragraph any more** (round 291): every description on this
+    /// page is now the line from James's brick workbook, and the longest of them is a dozen
+    /// words. The rule this test guards is a property of the *page* rather than of the
+    /// catalogue, and the page still has to hold it - the power-ups page shares the layout, a
+    /// description can grow again, and the rule was written because centring every line of a
+    /// six-line block was legible and wrong.
+    ///
+    /// So it is asked of a paragraph rather than of the catalogue. The line that used to fail
+    /// here - "no entry writes a paragraph any more, check the rule still earns its keep" - was
+    /// the test saying in advance what it should become when this day came.
     func testLongDescriptionsAreNotCentred() {
-        let long = BrickTypeCatalogue.allEntries.filter {
-            $0.description.count > 120
-        }
-        XCTAssertFalse(long.isEmpty, "no entry writes a paragraph any more - check the rule still earns its keep")
-        for entry in long {
+        let paragraph = "Turns on the spot, and the bounce turns with it. The generator "
+            + "leaves the cells around it clear, because a brick twice as wide as it is tall "
+            + "needs the room to get round."
+        XCTAssertFalse(ItemsStatsViewController.descriptionIsCentred(
+            paragraph, font: descriptionFont, width: descriptionWidth),
+                       "a description long enough to wrap is left-aligned")
+
+        for entry in BrickTypeCatalogue.allEntries where entry.description.count > 120 {
             XCTAssertFalse(ItemsStatsViewController.descriptionIsCentred(
                 entry.description, font: descriptionFont, width: descriptionWidth), entry.name)
+        }
+    }
+
+    /// And every one of them is short enough to sit centred, which is what the workbook bought.
+    func testTheWorkbooksDescriptionsAllFitOnALine() {
+        for entry in BrickTypeCatalogue.allEntries {
+            XCTAssertLessThan(entry.description.count, 120,
+                              "\(entry.name) is longer than James's workbook line - either the "
+                              + "sheet says more than this, or a paragraph has grown back")
         }
     }
 

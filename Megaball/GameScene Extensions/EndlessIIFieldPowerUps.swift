@@ -256,7 +256,8 @@ extension GameScene {
             afterGlow.position = CGPoint(x: beamX, y: 0)
             addChild(afterGlow)
             afterGlow.run(.sequence([
-                .wait(forDuration: GameScene.endlessIILaserBeamFlashSeconds),
+                .wait(forDuration: GameScene.endlessIILaserBeamFlashSeconds
+                        + GameScene.endlessIILaserBeamFadeSeconds),
                 .fadeOut(withDuration: GameScene.endlessIILaserAfterGlowSeconds),
                 .removeFromParent()]))
 
@@ -265,6 +266,7 @@ extension GameScene {
             addChild(beam)
             beam.run(.sequence([
                 .wait(forDuration: GameScene.endlessIILaserBeamFlashSeconds),
+                .fadeOut(withDuration: GameScene.endlessIILaserBeamFadeSeconds),
                 .removeFromParent()]))
             // **A flash, and then a burn** (James, round 288: "the LaserBeam graphic flashes
             // for a fraction of a second, then it's replaced by LaserBeamAfterGlow which then
@@ -341,17 +343,30 @@ extension GameScene {
         return node
     }
 
-    /// How long the beam itself is on screen.
+    /// How long the beam is held at full before it starts to go.
     ///
-    /// "A fraction of a second", which is a flash rather than a fade. It was 1.2 seconds of
-    /// fading out, and a beam that dims slowly is a beam that is still firing - the burn below
-    /// is what is meant to last.
+    /// "A fraction of a second", which is the flash. Round 288 had the beam vanish at the end
+    /// of it; James, round 291: "the initial flash of the laser beam is great, but it should
+    /// fade out over 1s rather than immediate."
     static let endlessIILaserBeamFlashSeconds: TimeInterval = 0.12
 
-    /// How long the burn takes to go.
+    /// How long the beam then takes to go.
     ///
-    /// The middle of the "1-2s" asked for. Long enough to read as an afterimage and short
-    /// enough that a second beam down the same column does not land on the first one's mark.
+    /// **The flash and the fade are two numbers because they are two things.** Round 288
+    /// replaced a single 1.2-second fade with an instant cut, on the reasoning that a beam
+    /// which dims slowly is a beam still firing - and the burn is what should last. Half of
+    /// that was right: what the cut lost is that the beam *arriving* and the beam *leaving* are
+    /// both worth seeing, and a shot that disappears between two frames never looks like it was
+    /// switched off, it looks like it was never there. Held, then faded, then the burn.
+    static let endlessIILaserBeamFadeSeconds: TimeInterval = 1.0
+
+    /// How long the burn takes to go, once the beam has finished going.
+    ///
+    /// The middle of the "1-2s" asked for, and it starts where the beam's fade ends rather than
+    /// where its flash does - "the after glow underneath should then take *another* 1-2s"
+    /// (round 291). So the whole thing is a tenth of a second of flash, a second of the beam
+    /// fading, and a second and a half of the mark it left: about two and a half seconds from a
+    /// shot that used to be over in one.
     static let endlessIILaserAfterGlowSeconds: TimeInterval = 1.5
 
     /// Loaded once. Nil in a build without the artwork, which draws a white rectangle - the
@@ -1034,37 +1049,42 @@ extension GameScene {
     /// the freeze list, the wipe list and the tick, and to neither of these - so both ran
     /// with nothing in the ring to say so, and both were quietly lost by a save and resume.
     /// Now a clock that is in the table is in all three, and a clock that is not is in none.
-    var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: UIImage)] {
+    var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: SKTexture)] {
         [("endlessIIWreckingBall", endlessIIWreckingBallClock,
-          PowerUpIcon.hud("WreckingBallIcon", PowerUpIcon.wreckingBall)),
+          PowerUpIcon.ringTexture("WreckingBallIcon", PowerUpIcon.hud("WreckingBallIcon", PowerUpIcon.wreckingBall))),
          ("endlessIIAura", endlessIIAuraClock,
-          PowerUpIcon.hud("AuraIcon", PowerUpIcon.aura)),
+          PowerUpIcon.ringTexture("AuraIcon", PowerUpIcon.hud("AuraIcon", PowerUpIcon.aura))),
          ("endlessIIDescent", endlessIIDescentClock,
-          PowerUpIcon.hud("DescentIcon", PowerUpIcon.descent)),
+          PowerUpIcon.ringTexture("DescentIcon", PowerUpIcon.hud("DescentIcon", PowerUpIcon.descent))),
          ("endlessIIWrapAround", endlessIIWrapAroundClock,
-          PowerUpIcon.hud("WrapIcon", PowerUpIcon.wrapAround)),
+          PowerUpIcon.ringTexture("WrapIcon", PowerUpIcon.hud("WrapIcon", PowerUpIcon.wrapAround))),
          ("endlessIIRandomisedBounce", endlessIIRandomisedBounceClock,
-          PowerUpIcon.hud("RandomBounceIcon", PowerUpIcon.randomisedBounce)),
+          PowerUpIcon.ringTexture("RandomBounceIcon", PowerUpIcon.hud("RandomBounceIcon", PowerUpIcon.randomisedBounce))),
          ("endlessIIGhostBall", endlessIIGhostBallClock,
-          PowerUpIcon.hud("GhostBallIcon", PowerUpIcon.ghostBall)),
+          PowerUpIcon.ringTexture("GhostBallIcon", PowerUpIcon.hud("GhostBallIcon", PowerUpIcon.ghostBall))),
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
-          PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat)),
+          PowerUpIcon.ringTexture("ClearAndRetreatIcon", PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat))),
          ("endlessIIQuicksand", endlessIIQuicksandClock,
-          PowerUpIcon.hud("QuicksandIcon",
-                          UIImage(named: "PowerUpBricksDown") ?? PowerUpIcon.clearAndRetreat)),
+          PowerUpIcon.ringTexture("QuicksandIcon",
+                                  PowerUpIcon.hud("QuicksandIcon",
+                                                  UIImage(named: "PowerUpBricksDown")
+                                                    ?? PowerUpIcon.clearAndRetreat))),
          // **Its own round icon now** (round 241's delivery). It wore Classic's Quicksand
          // badge, because it is Classic's Quicksand - the same power-up doing a temporary
          // version of the same thing (round 218) - and a square badge in a round ring is a
          // square in a circle. The badge is still the fallback, so the two are the same
          // picture anywhere the drawn one is missing
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
-          PowerUpIcon.hud("SafetyPaddleIcon", PowerUpIcon.safetyPaddle)),
+          PowerUpIcon.ringTexture("SafetyPaddleIcon", PowerUpIcon.hud("SafetyPaddleIcon", PowerUpIcon.safetyPaddle))),
          ("endlessIIDrift", endlessIIDriftClock,
           endlessIIDriftDirection < 0
-              ? PowerUpIcon.hud("DriftLeftIcon",
-                                PowerUpIcon.mirrored(PowerUpIcon.hud("DriftIcon",
-                                                                     PowerUpIcon.drift)))
-              : PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift))]
+              ? PowerUpIcon.ringTexture(
+                    "DriftLeftIcon",
+                    PowerUpIcon.hud("DriftLeftIcon",
+                                    PowerUpIcon.mirrored(PowerUpIcon.hud("DriftIcon",
+                                                                         PowerUpIcon.drift))))
+              : PowerUpIcon.ringTexture("DriftIcon",
+                                        PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift)))]
         // The ring shows which way the field is sliding. **Drawn art for the leftward one
         // now** (James, round 210's delivery): it was the rightward icon flipped, which is
         // the right answer while there is only one picture and the wrong one as soon as
@@ -1074,9 +1094,9 @@ extension GameScene {
     }
 
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
-        endlessIIFieldClocks.compactMap { id, clock, icon in
+        endlessIIFieldClocks.compactMap { id, clock, texture in
             guard clock.isRunning else { return nil }
-            return PowerUpRingHUD.Entry(id: id, texture: SKTexture(image: icon),
+            return PowerUpRingHUD.Entry(id: id, texture: texture,
                                         remaining: clock.fraction,
                                         segments: clock.countsTurns ? Int(clock.total) : nil)
             // Descent's ring is segmented like the sticky paddle's: six marks say "six rows",

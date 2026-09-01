@@ -1009,6 +1009,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Its own, rather than the physics body's: the engine rewrites `velocity` on every
 	/// bounce, and a spring that lost its wind-up to a brick would never swing back.
 	var endlessIISteeringVelocities: [ObjectIdentifier: CGFloat] = [:]
+
+	/// What the finger currently on the screen is doing: pointing the aim, or carrying the
+	/// paddle. Nil when no touch is down.
+	///
+	/// Decided once, where the finger landed, rather than re-asked from its current height on
+	/// every move event - see `touchesMoved`. A drag that crossed the paddle's top edge used to
+	/// change job halfway through, which is James's "it's inconsistent when dragging if it moves
+	/// the paddle or the arrow" (round 291).
+	var endlessIIAimDragIntent: AimHoldControl.Intent?
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
@@ -2025,13 +2034,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// comes back has still moved, and calling that a tap is how a shot goes off
 				// in the middle of an adjustment
 
-				if AimHoldControl.intent(touchY: touchLocation.y,
-				                         paddleTopY: paddle.position.y + paddle.size.height/2,
-				                         paddleMayMove: stickyPaddleCatches != 0)
-					== .aim,
+				if (endlessIIAimDragIntent ?? AimHoldControl.intent(
+						touchY: touchLocation.y,
+						paddleTopY: paddle.position.y + paddle.size.height/2,
+						paddleMayMove: stickyPaddleCatches != 0)) == .aim,
 				   endlessIIAimMoved(to: touchLocation) {
 					return
 				}
+				// **The drag decides what it is once, when the finger goes down** (James, round
+				// 291: "it's inconsistent when dragging if it moves the paddle or the arrow").
+				// The intent was recomputed from the finger's *current* height on every move
+				// event, so a drag that crossed the paddle's top edge changed job halfway
+				// through - carrying the paddle, then pointing the arrow, then carrying it
+				// again, on one continuous gesture. A finger does one thing at a time; which
+				// thing is settled where it lands.
 				// **Only swallowed if the aim actually took it** (James, round 185: "aimed
 				// sticky still has the same issue as before"). The return value was thrown
 				// away, so the drag was eaten whenever the *hold* flag was up - whether or
@@ -2166,6 +2182,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // on the frame the catch happens, from whether a finger was already down
             paddleMoved = false
             endlessIIAimTravel = 0
+            endlessIIAimDragIntent = touches.first.map {
+                AimHoldControl.intent(touchY: $0.location(in: self).y,
+                                      paddleTopY: paddle.position.y + paddle.size.height/2,
+                                      paddleMayMove: stickyPaddleCatches != 0)
+            }
+            // What this drag is for, settled where the finger landed and kept for as long as it
+            // is down - see the note in `touchesMoved`
         default:
             break
         }
@@ -2212,6 +2235,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // it. The pause after losing a ball is there to be felt, but a player who does not
         // want it should not have to spend the skip and the launch on the same tap
 
+        defer { endlessIIAimDragIntent = nil }
         let lift = touches.first?.location(in: self)
         let aimedRelease = AimHoldControl.release(
             travelled: endlessIIAimTravel,
@@ -2220,9 +2244,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                                           paddleTopY: paddle.position.y + paddle.size.height/2,
                                           paddleMayMove: stickyPaddleCatches != 0),
             touchPredatesAim: endlessIIAimTouchPredatesHold)
-        if aimedRelease == .keepAiming, endlessIIAimTarget != nil, let lift {
+        if aimedRelease == .keepAiming, endlessIIAimTarget != nil, let lift,
+           AimHoldControl.intent(touchY: lift.y,
+                                 paddleTopY: paddle.position.y + paddle.size.height/2) == .aim,
+           endlessIIAimDragIntent != .paddle {
             _ = endlessIIAimMoved(to: lift)
         }
+        // **Only a lift that was aiming may point the arrow** (James, round 291: "it jumps
+        // down to a low angle when dragging the paddle"). `.keepAiming` is returned for three
+        // different gestures - a tap above the paddle, a finger that travelled, and a finger
+        // that was already down before the catch - and this line applied the lift position to
+        // the aim for all three. So carrying the paddle and letting go pointed the shot at
+        // wherever the thumb happened to be, which is *below* the ball, and
+        // `aimedAngle(at:from:)` floors that at the minimum launch angle: the arrow snapped
+        // flat at the end of every paddle move. Round 232 asked for "a tap above the paddle
+        // moves the arrow to the tap position", and above is the half that was missing.
+        //
+        // Both the lift's own height and the drag's intent are asked, because they can differ:
+        // a drag that begins on the paddle and ends up above it is still a paddle move.
         // A missing touch is read as being on the paddle, which is the launching half: a
         // release the system could not place should behave the way every release did before
         // round 232 rather than silently doing nothing
@@ -2888,6 +2927,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		brickRemovalCounter = 0
 		// Reset brick removal counter
+
+		endlessIIClearClusterBalls()
+		// **The burst goes with the ball** (James, round 291: "cluster balls should disappear
+		// immediately if the ball is lost"). They are the ball's own shot - twelve pellets it
+		// released - and a life that has ended should not go on being played by the pellets
+		// from it: they would clear bricks, score, and land power-ups for a ball that is gone,
+		// through the whole of the lost-ball animation and into the next serve
 		
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			node.removeAllActions()

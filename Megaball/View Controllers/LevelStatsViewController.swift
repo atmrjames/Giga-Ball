@@ -400,7 +400,19 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         } else {
             packNameAndLevelNumberLabel.text = LevelPackSetup().levelPackNameArray[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
         }
-        levelImageView.image = LevelPackSetup().levelImageArray[levelNumber!]
+        if levelNumber == 0, let icon = GameMode.menuIcon(for: GameMode.current(in: defaults)) {
+            levelImageView.image = icon
+            // **The mode's own logo** (James, round 291: "the endless mayhem main menu screen
+            // has the incorrect logo. It has the endless mode logo, not the endless mayhem
+            // one"). Both endless modes share level 0, and level 0's picture is
+            // `Level999Image` - the infinity symbol, which is Endless's mark. So Mayhem has
+            // been wearing Endless's logo on this screen since the mode existed, and got its
+            // own everywhere else the day James drew one (round 130), because everywhere else
+            // asks `GameMode.menuIcon`. This asks it too, which is the point: one decision
+            // about what a mode looks like, in one place
+        } else {
+            levelImageView.image = LevelPackSetup().levelImageArray[levelNumber!]
+        }
         levelImageView.layer.masksToBounds = false
         
         levelImageView.layer.shadowOffset = CGSize(width: 0, height: 0)

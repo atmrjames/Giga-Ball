@@ -125,6 +125,11 @@ extension GameScene {
 
         endlessIIAimHold = true
         endlessIIAimTouchPredatesHold = touchBeganWhilstPlaying
+        if touchBeganWhilstPlaying { endlessIIAimDragIntent = .paddle }
+        // A finger already down when the catch happens was carrying the paddle, so it goes on
+        // carrying it until it is lifted. Without this the drag would become an aim mid-gesture
+        // the moment the ball landed, which is the same fault as a drag that crosses the
+        // paddle's edge and is the more surprising half of it: nothing the player did changed
         // A finger already on the screen when the catch happens was not put there to aim, so
         // its release is a paddle move ending rather than a tap (play-test round 275)
         // Nothing is paused and no velocity is recorded: with the world still running there is

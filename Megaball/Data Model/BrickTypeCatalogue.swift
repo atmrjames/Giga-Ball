@@ -115,7 +115,7 @@ enum BrickTypeCatalogue {
     private static var behaviours: [Entry] {
         [
             Entry(name: name(of: .standard),
-                  description: "Destroyed by a single hit. It carries a colour, and the colour is what decides its score.",
+                  description: "Destroyed by a single hit",
                   art: .behaviour(.standard),
                   isNew: false,
                   facts: [Fact(label: "States", value: states(of: .standard)),
@@ -123,7 +123,7 @@ enum BrickTypeCatalogue {
                           Fact(label: "Found in", value: "Every mode")]),
 
             Entry(name: name(of: .multiHit),
-                  description: "Four stages deep, shown here in the order they arrive. Each hit steps it down to the next, and the fourth destroys it. Clear Multi-Hit drops every one of them to a single hit; Reset Multi-Hit puts them all back.",
+                  description: "Takes multiple hits to destroy",
                   art: .behaviour(.multiHit),
                   isNew: false,
                   facts: [Fact(label: "States", value: states(of: .multiHit)),
@@ -131,7 +131,7 @@ enum BrickTypeCatalogue {
                           Fact(label: "Found in", value: "Every mode")]),
 
             Entry(name: "Indestructible",
-                  description: "Two states, and neither can be broken by the ball. The first hit does not destroy it - it turns it into the second, so the first hit makes the wall rather than breaking it. After that a hit does nothing at all. Cleared only by Zap Indestructible, a Wrecking Ball or an explosion. Giga-Ball passes straight through one and leaves it standing.",
+                  description: "Cannot be destroyed",
                   art: .behaviour(.indestructibleOnce),
                   isNew: false,
                   facts: [Fact(label: "States", value: states(of: .indestructibleOnce)),
@@ -140,7 +140,7 @@ enum BrickTypeCatalogue {
                           Fact(label: "Found in", value: "Every mode")]),
 
             Entry(name: name(of: .invisible),
-                  description: "Solid, but not drawn until something strikes it. From the moment it appears it is an ordinary Standard brick. Show Bricks reveals them; Hide Bricks puts them back.",
+                  description: "Cannot be seen until hit",
                   art: .behaviour(.invisible),
                   isNew: false,
                   facts: [Fact(label: "States", value: states(of: .invisible)),
@@ -210,38 +210,51 @@ enum BrickTypeCatalogue {
     /// its overlay only ever has to be drawn at those proportions.
     static let onHitOrder: [EndlessIIStyle] = [.fixed, .directional, .exploding, .spawner]
 
+    /// **The workbook's own words** (James, round 291: "for the brick and power up info /
+    /// details, use the information that's written in the document I shared previously. The
+    /// descriptions should match the ones I wrote").
+    ///
+    /// These were paragraphs written over a dozen rounds, and every one of them is now the line
+    /// from `Giga-Ball 2026 - Brick Details.xlsx`. It is the same call round 229 made for the
+    /// sixty-six power-ups - "shorter is better", in his words - and the same one made twice:
+    /// the elaboration read as documentation on a screen a player opens mid-run to find out
+    /// what a brick does.
+    ///
+    /// Two of the sheet's lines carry slips and keep the game's grammar instead, exactly as
+    /// round 229 did with its three: Fixed reads "until its destroyed" and "any other brick the
+    /// hits it" there.
     private static func description(of style: EndlessIIStyle) -> String {
         switch style {
         case .rounded:
-            return "The same oblong brick with its corners rounded away. A hit along the flat of an edge behaves exactly as it always has; a glancing hit near a corner leaves at an angle a square brick could never produce."
+            return "Smooth, corner-less brick"
         case .spinning:
-            return "Turns on the spot, and the bounce turns with it. The generator leaves the cells around it clear, because a brick twice as wide as it is tall needs the room to get round."
+            return "Spins around its centre"
         case .flashing:
-            return "Comes and goes. Solid and visible for a few seconds, then faded and passable for a few more. It will not turn solid while the ball is inside it, so it can never trap one."
+            return "Flashes on and off"
         case .breathing:
-            return "Shrinks to half a cell and swells back to fill it, over and over. The gap around it opens and closes with it, so a shot that was blocked a moment ago goes through now - it is a brick you time rather than one you aim at."
+            return "Shrinks and expands"
         case .fixed:
-            return "An ordinary brick until it is struck once. From then on it stops descending, holds its position, and hardens - a plain brick becomes a fresh multi-hit, so digging out an anchor costs the full ladder. Anything descending onto it is destroyed by it, so leaving one alive carves a channel up through everything arriving above."
+            return "When hit it is fixed in place until it is destroyed, destroying any other brick that hits it"
         case .gravity:
-            return "Falls into any empty cell below it and keeps falling until something stops it. Destroy what it is resting on and it starts falling again."
+            return "Falls down into empty space below it"
         case .moving:
-            return "Wanders from side to side within the room it has been given, turning back when something is in the way."
+            return "Moves side to side into the empty spaces next to it"
         case .directional:
-            return "Takes damage from one side only. Every other side bounces the ball off without a mark. The side that works is drawn on the brick, so it is read from the artwork rather than guessed."
+            return "Can only be destroyed from one side"
         case .exploding:
-            return "Takes all eight of its neighbours with it when it is destroyed, whatever they are, Indestructible included. Explosions set off other explosions, and a long chain is a good moment rather than a problem."
+            return "Destroys surrounding bricks when hit"
         case .spawner:
-            return "The opposite of Exploding: when it is destroyed it fills the empty cells around it with ordinary bricks. Never with another Spawner, and only where a cell is already empty, so it cannot run away with itself."
+            return "Creates new bricks nearby when hit"
         case .portal:
-            return "Struck rather than damaged. The ball entering one leaves from the other, keeping its speed. Alone it is a lift to the top of the field; in a pair it is a doorway, and it works both ways - the two colours say which end pairs with which, not which end is the way in."
+            return "Sends the ball to the top or to another portal brick. Cannot be destroyed"
         case .convex:
-            return "A dome. A ball arriving anywhere but the middle leaves wider than it came in, so one of these in a tight field scatters a shot across it. Straight up the centre still comes straight back."
+            return "Pointy brick"
         case .concave:
-            return "A dish. The notch in its face turns hits near either edge back toward the middle rather than away, which makes it the one brick that gathers a shot instead of spreading it - and a pair of them facing each other is a corridor."
+            return "Notched brick"
         case .wedge:
-            return "A right triangle: three sides, one of them a slope. Everything that reaches the slope leaves the same way, whatever angle it arrived at, so a Wedge is the closest the field comes to a brick you can aim with. Which way it points is decided when it is built."
+            return "Triangular brick"
         case .diamond:
-            return "Turned on its corner, so there is no flat face anywhere on it. Every other brick in the field gives something back the way it came if you hit it square; a Diamond never does, whichever side the ball arrives from. The one to leave alone when the ball is where you want it."
+            return "Each face is angled"
         }
     }
 
@@ -340,13 +353,18 @@ enum BrickTypeCatalogue {
     private static func description(of size: BrickSize) -> String {
         switch size {
         case .tiny:
-            return "A quarter of a cell - half the width and half the height. Four of them fit where one ordinary brick would, and a cell holding one of them is not a wall."
+            return "A quarter brick"
         case .normal:
-            return "One cell, which is what every brick in Classic and Endless is."
+            return "A regular brick size"
         case .big:
-            return "Two cells by two. It takes four times the room and needs four times the clearing."
+            return "Four times the size of a normal brick"
         case .square:
-            return "One cell across and two down - which is a square on screen, because a cell is twice as wide as it is tall. It is the only brick that is taller than it is wide, so it blocks a column rather than a row, and a shot that would have gone over an ordinary brick meets this one."
+            return "Twice the height of a normal brick"
+            // **Written here rather than taken from the workbook, because the workbook has no
+            // row for it.** Square arrived in round 247, after the sheet was drawn, and it is
+            // the one entry on this page whose description is not James's own words - kept in
+            // the register of the three above it so the section still reads as one voice, and
+            // flagged to him as the gap it is
         }
     }
 
@@ -380,7 +398,7 @@ enum BrickTypeCatalogue {
     /// - so it has its own heading now, which is where it always belonged.
     static var powerUpBrick: Entry {
         Entry(name: "Power-Up",
-              description: "A power-up built into the field rather than falling out of it. Breaking it sets it off at once - good or bad. It is never cleared by reaching the bottom: it carries on down and out, so a bad one is something to play around rather than something to move the paddle away from. Two cells tall and one wide, which makes it square, and it wears the icon of whatever it is holding.",
+              description: "Contains a power-up that activates when hit",
               art: .powerUpBrick,
               isNew: true,
               facts: [Fact(label: "Behaviours", value: "Its own"),

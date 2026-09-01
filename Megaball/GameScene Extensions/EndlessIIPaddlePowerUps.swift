@@ -1254,37 +1254,41 @@ extension GameScene {
     // MARK: - The ring HUD
 
     func endlessIIPaddleRingEntries() -> [PowerUpRingHUD.Entry] {
-        let clocks: [(String, EndlessIIClock, UIImage)] = [
-            ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.hud("AimedStickyIcon", PowerUpIcon.aimedSticky)),
+        let clocks: [(String, EndlessIIClock, SKTexture)] = [
+            ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.ringTexture("AimedStickyIcon", PowerUpIcon.hud("AimedStickyIcon", PowerUpIcon.aimedSticky))),
             ("endlessIIMagnetism", endlessIIMagnetismClock,
-             PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism)),
+             PowerUpIcon.ringTexture("MagnetismIcon", PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism))),
             ("endlessIIPortalPaddle", endlessIIPortalPaddleClock,
-             PowerUpIcon.hud("PortalIcon", PowerUpIcon.portalPaddle)),
-            ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.hud("PaddleHaloIcon", PowerUpIcon.paddleHalo)),
+             PowerUpIcon.ringTexture("PortalIcon", PowerUpIcon.hud("PortalIcon", PowerUpIcon.portalPaddle))),
+            ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.ringTexture("PaddleHaloIcon", PowerUpIcon.hud("PaddleHaloIcon", PowerUpIcon.paddleHalo))),
             ("endlessIIBallSteering", endlessIIBallSteeringClock,
-             PowerUpIcon.hud("BallSteeringIcon", PowerUpIcon.ballSteering)),
-            ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.hud("InertPaddleIcon", PowerUpIcon.inertPaddle)),
-            ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.hud("FlippedAngleIcon", PowerUpIcon.flippedAngle)),
-            ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.hud("ReversedControlsIcon", PowerUpIcon.reversedControls)),
+             PowerUpIcon.ringTexture("BallSteeringIcon", PowerUpIcon.hud("BallSteeringIcon", PowerUpIcon.ballSteering))),
+            ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.ringTexture("InertPaddleIcon", PowerUpIcon.hud("InertPaddleIcon", PowerUpIcon.inertPaddle))),
+            ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.ringTexture("FlippedAngleIcon", PowerUpIcon.hud("FlippedAngleIcon", PowerUpIcon.flippedAngle))),
+            ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.ringTexture("ReversedControlsIcon", PowerUpIcon.hud("ReversedControlsIcon", PowerUpIcon.reversedControls))),
             ("endlessIIAutoAim", endlessIIAutoAimClock,
-             PowerUpIcon.hud("AutoAimIcon", PowerUpIcon.autoAim)),
+             PowerUpIcon.ringTexture("AutoAimIcon", PowerUpIcon.hud("AutoAimIcon", PowerUpIcon.autoAim))),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
-             PowerUpIcon.hud(endlessIIPaddleShapeIconName,
-                             PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex))),
+             PowerUpIcon.ringTexture(
+                "shape-\(endlessIIPaddleSurface ?? .convex)",
+                PowerUpIcon.hud(endlessIIPaddleShapeIconName,
+                                PowerUpIcon.paddleSurface(endlessIIPaddleSurface ?? .convex)))),
+             // The one entry whose picture genuinely changes during a run, so its key carries
+             // the surface - five textures rather than one, built as each shape is first met
             ("endlessIIDoublePaddle", endlessIIDoublePaddleClock,
-             PowerUpIcon.hud("DoublePaddleIcon", PowerUpIcon.doublePaddle)),
+             PowerUpIcon.ringTexture("DoublePaddleIcon", PowerUpIcon.hud("DoublePaddleIcon", PowerUpIcon.doublePaddle))),
             ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock,
-             PowerUpIcon.hud("MirrorPaddleIcon", PowerUpIcon.mirrorPaddle)),
+             PowerUpIcon.ringTexture("MirrorPaddleIcon", PowerUpIcon.hud("MirrorPaddleIcon", PowerUpIcon.mirrorPaddle))),
             // Round art for the ring, drawn rather than derived (round 210's delivery). The
             // badge stays as the fallback everywhere, so a build without a picture looks
             // exactly as it did - which is what `hud` is for, and why Magnetism, Ball Steering
             // and Auto-Aim could be given theirs in round 241 by naming a file
             ("endlessIIBallSpin", endlessIIBallSpinClock,
-             PowerUpIcon.hud("BallSpinIcon", PowerUpIcon.ballSpin)),
+             PowerUpIcon.ringTexture("BallSpinIcon", PowerUpIcon.hud("BallSpinIcon", PowerUpIcon.ballSpin))),
         ]
-        return clocks.compactMap { id, clock, icon in
+        return clocks.compactMap { id, clock, texture in
             guard clock.isRunning else { return nil }
-            return PowerUpRingHUD.Entry(id: id, texture: SKTexture(image: icon),
+            return PowerUpRingHUD.Entry(id: id, texture: texture,
                                         remaining: clock.fraction,
                                         segments: clock.countsTurns ? Int(clock.total) : nil)
             // Segmented like the sticky paddle's ring: five marks say "five turns" where a

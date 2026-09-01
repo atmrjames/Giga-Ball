@@ -96,4 +96,23 @@ extension GameScene {
     func endlessIIClusterSurvivesWall(_ projectile: SKNode, block: SKSpriteNode) -> Bool {
         projectile.name == ClusterCategoryName && block.size.width < block.size.height
     }
+    /// Takes every cluster ball off the field at once.
+    ///
+    /// James, round 291: "cluster balls should disappear immediately if the ball is lost." They
+    /// are the ball's own shot, so they end with it - otherwise a burst released a moment
+    /// before the ball went down carries on breaking bricks, scoring and dropping power-ups
+    /// through the lost-ball animation and into the next serve, with nothing on screen to
+    /// explain what is doing it.
+    ///
+    /// Removed rather than faded. A pellet is a two-tenths-of-a-cell dot at ball speed, and a
+    /// fade would be a dot that is still solid while it disappears - it would go on clearing
+    /// bricks for as long as it took to become invisible, which is the same bug wearing a
+    /// nicer coat.
+    func endlessIIClearClusterBalls() {
+        guard gameMode == .endlessII else { return }
+        enumerateChildNodes(withName: ClusterCategoryName) { node, _ in
+            node.removeFromParent()
+        }
+    }
+
 }

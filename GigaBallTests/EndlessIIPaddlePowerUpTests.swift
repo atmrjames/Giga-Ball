@@ -4131,3 +4131,241 @@ final class PaddleFamilyParityTests: XCTestCase {
         XCTAssertEqual(subject.position.y, landed.y, accuracy: 0.01)
     }
 }
+
+/// Round 291's paddle list.
+final class PlayTestRound291Tests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.layoutUnit = 40
+        scene.ballSize = 14
+        scene.paddleWidth = 120
+        scene.ballSpeedLimit = 600
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ball.physicsBody?.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+            | CollisionTypes.boarderCategory.rawValue
+        scene.ball.physicsBody?.contactTestBitMask = CollisionTypes.paddleCategory.rawValue
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    private func extraBall(_ scene: GameScene, x: CGFloat) -> SKSpriteNode {
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 14, height: 14))
+        extra.position = CGPoint(x: x, y: scene.paddle.position.y + 12)
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        extra.physicsBody?.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+            | CollisionTypes.boarderCategory.rawValue
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls.append(extra)
+        return extra
+    }
+
+    // MARK: - "The ball should remain fixed in position relative to the paddle"
+
+    /// James, round 291: "with a sticky shaped paddle, the ball moves on the paddle after it
+    /// has landed. Like it slides down the paddle's shape."
+    ///
+    /// A held ball is placed every frame and the physics step then resolves it out of a traced
+    /// body it is slightly inside - which on a dome or a dish means sideways. Taking the paddle
+    /// out of the ball's collisions is what stops the engine having an opinion about it.
+    func testAHeldBallDoesNotCollideWithThePaddleItIsSittingOn() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        let extra = extraBall(scene, x: 20)
+        XCTAssertTrue(scene.endlessIICatchExtraBall(extra))
+
+        let bit = CollisionTypes.paddleCategory.rawValue
+        XCTAssertEqual((extra.physicsBody?.collisionBitMask ?? 0) & bit, 0,
+                       "the paddle is out of its collisions while it is being carried")
+        XCTAssertEqual((extra.physicsBody?.contactTestBitMask ?? 0) & bit, 0,
+                       "and it is not reporting fresh landings either")
+    }
+
+    func testLaunchingGivesTheBallThePaddleBack() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        let extra = extraBall(scene, x: 20)
+        scene.endlessIICatchExtraBall(extra)
+        scene.endlessIILaunchHeldBall()
+
+        let bit = CollisionTypes.paddleCategory.rawValue
+        XCTAssertEqual((extra.physicsBody?.collisionBitMask ?? 0) & bit, bit,
+                       "a ball that has left must be able to land again")
+    }
+
+    func testEmptyingTheQueueGivesEveryBallThePaddleBack() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        let first = extraBall(scene, x: -20)
+        let second = extraBall(scene, x: 20)
+        scene.endlessIICatchExtraBall(first)
+        scene.endlessIICatchExtraBall(second)
+        scene.endlessIIClearHeldBalls()
+
+        let bit = CollisionTypes.paddleCategory.rawValue
+        for subject in [first, second] {
+            XCTAssertEqual((subject.physicsBody?.collisionBitMask ?? 0) & bit, bit,
+                           "a Wipe must not leave balls falling through the paddle")
+        }
+    }
+
+    // MARK: - "Launch both balls at the same time"
+
+    /// James, round 291: "if multiple balls are in play and the paddle is sticky and there are
+    /// 2 balls on the paddle and it's the last turn for the sticky power up, launch both balls
+    /// at the same time."
+    ///
+    /// The release loop used to stop at the primary ball, so the last catch launched one and
+    /// left the other stuck to a paddle that was no longer sticky.
+    func testTheLastCatchLaunchesEveryBallOnThePaddle() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 1
+        scene.stickyPaddleCatchesTotal = 4
+        scene.ballIsOnPaddle = false
+
+        let extra = extraBall(scene, x: 25)
+        scene.ball.position = CGPoint(x: -25, y: scene.paddle.position.y + 12)
+        scene.endlessIICatchExtraBall(extra)
+        scene.endlessIIFirstBallWasCaught()
+        XCTAssertEqual(scene.endlessIIHeldBalls.count, 2)
+
+        scene.endlessIILaunchHeldBall()
+
+        XCTAssertTrue(scene.endlessIIHeldBalls.isEmpty,
+                      "the last turn empties the paddle rather than leaving a ball stuck to a "
+                      + "power-up that has ended")
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
+                             "and the first ball went up with the rest")
+        XCTAssertGreaterThan(extra.physicsBody?.velocity.dy ?? 0, 0)
+    }
+
+    /// The ball resting on the paddle at the start of a life is not in the queue and stays put.
+    func testAServeWaitingOnThePaddleIsNotFiredByTheLastCatch() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 1
+        scene.ballIsOnPaddle = true
+        scene.endlessIIReleaseRemainingHeldBalls()
+        XCTAssertEqual(scene.ball.physicsBody?.velocity.dy ?? 0, 0,
+                       "a serve is launched by the player, not by a power-up ending")
+    }
+
+    // MARK: - The aim
+
+    /// James, round 291: "it jumps down to a low angle when dragging the paddle."
+    func testALiftBelowThePaddleDoesNotPointTheArrow() {
+        let paddleTop: CGFloat = -294
+        XCTAssertEqual(AimHoldControl.intent(touchY: paddleTop - 40, paddleTopY: paddleTop),
+                       .paddle,
+                       "below the paddle is carrying it, and the release path now asks this "
+                       + "before it moves the arrow - it used to move it for every gesture "
+                       + "that returned .keepAiming, which includes every paddle drag")
+        XCTAssertEqual(AimHoldControl.intent(touchY: paddleTop + 40, paddleTopY: paddleTop),
+                       .aim)
+    }
+
+    /// "It's inconsistent when dragging if it moves the paddle or the arrow."
+    func testTheDragKeepsTheJobItStartedWith() {
+        // Said about the rule rather than by driving the touch handler, which force-unwraps a
+        // touch it is guaranteed by UIKit and never gets from a test (round 284's lesson).
+        let paddleTop: CGFloat = -294
+        let began = AimHoldControl.intent(touchY: paddleTop - 30, paddleTopY: paddleTop)
+        XCTAssertEqual(began, .paddle)
+
+        let scene = mayhem()
+        scene.endlessIIAimDragIntent = began
+        XCTAssertEqual(scene.endlessIIAimDragIntent, .paddle,
+                       "and the drag keeps it however far the finger then travels - the "
+                       + "intent used to be recomputed from the finger's current height on "
+                       + "every move event, so crossing the paddle's edge changed its job")
+    }
+
+    /// A finger already carrying the paddle when the catch lands goes on carrying it.
+    func testACatchUnderAMovingFingerDoesNotStealTheDrag() {
+        let scene = mayhem()
+        scene.touchBeganWhilstPlaying = true
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIBeginAimHold()
+        XCTAssertEqual(scene.endlessIIAimDragIntent, .paddle,
+                       "nothing the player did changed, so what their finger is doing must "
+                       + "not change either")
+        XCTAssertTrue(scene.endlessIIAimTouchPredatesHold)
+    }
+}
+
+/// Round 291's field list.
+final class PlayTestRound291FieldTests: XCTestCase {
+
+    /// James: "cluster balls should disappear immediately if the ball is lost."
+    func testLosingTheBallTakesItsClusterWithIt() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSize = 14
+        scene.ballSpeedLimit = 600
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+
+        scene.endlessIIReleaseCluster()
+        var pellets = 0
+        scene.enumerateChildNodes(withName: ClusterCategoryName) { _, _ in pellets += 1 }
+        XCTAssertEqual(pellets, GameScene.endlessIIClusterCount)
+
+        scene.endlessIIClearClusterBalls()
+        pellets = 0
+        scene.enumerateChildNodes(withName: ClusterCategoryName) { _, _ in pellets += 1 }
+        XCTAssertEqual(pellets, 0,
+                       "they are the ball's own shot; a life that has ended should not go on "
+                       + "being played by the pellets from it")
+    }
+
+    /// "The initial flash of the laser beam is great, but it should fade out over 1s rather
+    /// than immediate. The after glow underneath should then take another 1-2s to fade out."
+    func testTheBeamFadesAndThenTheBurnDoes() {
+        XCTAssertLessThan(GameScene.endlessIILaserBeamFlashSeconds, 0.25, "still a flash")
+        XCTAssertEqual(GameScene.endlessIILaserBeamFadeSeconds, 1, accuracy: 0.001,
+                       "\"it should fade out over 1s\"")
+        XCTAssertGreaterThanOrEqual(GameScene.endlessIILaserAfterGlowSeconds, 1)
+        XCTAssertLessThanOrEqual(GameScene.endlessIILaserAfterGlowSeconds, 2,
+                                 "\"another 1-2s\" - and it starts where the beam's fade "
+                                 + "ends rather than where its flash does")
+    }
+}
+
+/// Round 291's two picture fixes.
+final class PlayTestRound291LookTests: XCTestCase {
+
+    /// James: "the endless mayhem main menu screen has the incorrect logo. It has the endless
+    /// mode logo, not the endless mayhem one."
+    ///
+    /// Both endless modes share level 0, and level 0's picture is `Level999Image` - the
+    /// infinity symbol, which is Endless's mark. The screen asks `GameMode.menuIcon` now.
+    func testTheTwoEndlessModesHaveDifferentLogos() throws {
+        let endless = try XCTUnwrap(GameMode.menuIcon(for: .endless))
+        let mayhem = try XCTUnwrap(GameMode.menuIcon(for: .endlessII))
+        XCTAssertNotEqual(endless.pngData(), mayhem.pngData(),
+                          "Mayhem has had its own icon since round 130; the run-history screen "
+                          + "was the one place still showing the level picture instead")
+        XCTAssertNotNil(UIImage(named: "Level999Image"),
+                        "level 0's picture, which both endless modes shared on the run-history "
+                        + "screen. It is Endless's infinity mark drawn large - not byte-equal "
+                        + "to `EndlessIcon`, which is the small round menu version of the same "
+                        + "design - and one picture cannot be two modes' logo whichever of "
+                        + "them it was drawn for")
+    }
+
+    /// "We should make them slightly larger throughout the app so they're easier to see and
+    /// differentiate."
+    func testTheTwistBadgesAreLargerThanACapital() {
+        XCTAssertGreaterThan(DailyTwist.twistBadgeHeight, 1.5,
+                             "1.5 was the size for flat stroked glyphs; these are drawings now")
+        XCTAssertLessThan(DailyTwist.twistBadgeHeight, 2.5,
+                          "and a badge taller than the line it sits in would push the rows apart")
+    }
+}

@@ -1720,4 +1720,41 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  every case of DailyTwist with the badge it actually resolves to\n")
     }
 
+    /// What the power-up ring HUD costs to rebuild, which it does every frame.
+    ///
+    /// James, round 291, on the shaped-paddle stutter for the third time: "it's almost as if
+    /// the ball is constantly speeding up and slowing down rather than a frame rate issue."
+    /// That description is the clue. A uniformly low frame rate looks slow; *uneven* frame
+    /// times look like something accelerating and braking, because the ball moves a different
+    /// distance each frame while its speed is held constant (`holdBallSpeeds`).
+    ///
+    /// So the question is not "what is slow" but "what is lumpy", and the ring HUD is rebuilt
+    /// from scratch every frame: three builders, each constructing an array of `UIImage` and
+    /// then an `SKTexture` per running entry. Both allocate.
+    func testWhatTheRingHudCostsEveryFrame() {
+        let scene = loadedField()
+        scene.endlessIICollectPaddleSurface(.convex)
+        scene.endlessIICollectMagnetism()
+        scene.endlessIICollectAura()
+
+        let whole = cost("the whole ring HUD") { _ = scene.activePowerUpEntries() }
+        _ = cost("  the paddle's entries") { _ = scene.endlessIIPaddleRingEntries() }
+        _ = cost("  the field's entries") { _ = scene.endlessIIFieldRingEntries() }
+        _ = cost("  the shape badge alone") { _ = PowerUpIcon.paddleSurface(.convex) }
+        _ = cost("  one cached badge") { _ = PowerUpIcon.magnetism }
+        let upload = cost("  one SKTexture(image:)") { _ = SKTexture(image: PowerUpIcon.magnetism) }
+        // The last three are the comparison that matters: a cached badge is a property read,
+        // and the two beside it are what the HUD *used* to do with it sixty times a second
+
+        XCTAssertGreaterThan(upload, frame/10,
+                             "an SKTexture built from a UIImage is a GPU upload and is "
+                             + "genuinely expensive - if this ever becomes cheap, the cache "
+                             + "below is no longer earning its place")
+        XCTAssertLessThan(whole, frame/20,
+                          "the ring HUD is rebuilt every frame, so it has to cost almost "
+                          + "nothing. Measured at 30.8ms before round 291 - 185% of a frame, "
+                          + "every frame - which is the uneven frame times James was seeing as "
+                          + "a ball that speeds up and slows down")
+    }
+
 }
