@@ -30,6 +30,7 @@ final class EndlessIIDrawnEffectsTests: XCTestCase {
     func testAllThreeEffectsHaveTheirArtwork() {
         XCTAssertNotNil(GameScene.endlessIIAuraTexture, "BallAura")
         XCTAssertNotNil(GameScene.endlessIILaserBeamTexture, "LaserBeamLength")
+        XCTAssertNotNil(GameScene.endlessIILaserAfterGlowTexture, "LaserBeamAfterGlow")
         XCTAssertNotNil(GameScene.endlessIILandingMarkerTexture, "LandingMarker")
         // Each of the three draws nothing at all without its file rather than falling back to
         // the shape it replaced, so a missing one is an effect that silently stops appearing
@@ -64,6 +65,59 @@ final class EndlessIIDrawnEffectsTests: XCTestCase {
         let scene = fieldScene()
         XCTAssertEqual(scene.endlessIILaserBeamNode().size.height, scene.frame.height,
                        accuracy: 0.5)
+    }
+
+    // MARK: - The burn the beam leaves
+
+    /// James, round 288: "the LaserBeam graphic flashes for a fraction of a second, then it's
+    /// replaced by LaserBeamAfterGlow which then slowly fades out with its opacity dropping to
+    /// 0 over the next 1-2s. This will give the impression of a burn in effect after the
+    /// powerful laser beam."
+    ///
+    /// The beam used to fade over 1.2 seconds on its own, which is a beam still firing faintly
+    /// for over a second. A burn is the opposite shape: everything at once, gone at once, and
+    /// something left behind that is no longer the shot.
+    func testTheBurnIsTheSameColumnAsTheShotThatMadeIt() {
+        let scene = fieldScene()
+        let beam = scene.endlessIILaserBeamNode()
+        let burn = scene.endlessIILaserAfterGlowNode()
+
+        XCTAssertEqual(burn.size, beam.size,
+                       "the two pictures share their opaque core to the pixel, so the same "
+                       + "arithmetic puts the burn exactly where the beam was")
+        XCTAssertLessThan(burn.zPosition, beam.zPosition,
+                          "the burn is laid down first and spends the flash underneath")
+    }
+
+    func testTheFlashIsAFractionOfASecondAndTheBurnIsSeconds() {
+        XCTAssertLessThan(GameScene.endlessIILaserBeamFlashSeconds, 0.25,
+                          "\"flashes for a fraction of a second\"")
+        XCTAssertGreaterThanOrEqual(GameScene.endlessIILaserAfterGlowSeconds, 1)
+        XCTAssertLessThanOrEqual(GameScene.endlessIILaserAfterGlowSeconds, 2,
+                                 "\"over the next 1-2s\"")
+        XCTAssertGreaterThan(GameScene.endlessIILaserAfterGlowSeconds,
+                             GameScene.endlessIILaserBeamFlashSeconds*4,
+                             "and the burn is the part that lasts, or it is just a shorter beam")
+    }
+
+    /// Firing leaves both, and the burn is the one that is still there afterwards.
+    func testFiringLeavesABurnBehindTheBeam() {
+        let scene = fieldScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.ball.size = CGSize(width: scene.ballSize, height: scene.ballSize)
+        scene.ball.position = CGPoint(x: 40, y: 100)
+        scene.addChild(scene.ball)
+
+        scene.endlessIIFireLaserBeams()
+
+        let columns = scene.children.filter {
+            ($0 as? SKSpriteNode)?.size.height == scene.frame.height
+        }
+        XCTAssertEqual(columns.count, 2, "a beam and the burn under it")
+        for column in columns {
+            XCTAssertEqual(column.position.x, 40, accuracy: 0.01,
+                           "both in the ball's own column")
+        }
     }
 
     // MARK: - The landing marker
@@ -145,5 +199,84 @@ final class EndlessIIDrawnEffectsTests: XCTestCase {
         let share = GameScene.endlessIIAuraVisibleShare
         XCTAssertGreaterThan(scene.ballSize/2*deep*2/share,
                              scene.ballSize/2*shallow*2/share)
+    }
+}
+
+/// No shaped brick face carries a border around its own canvas.
+///
+/// §8.5 recorded this and it stood for a long time: "the Diamond art carries a thin dark border
+/// around its own square canvas, in the oblong pictures as well as the square ones. A face's
+/// art is a sprite inside the shape node and a sprite is not clipped to a path, so that border
+/// draws - a faint square around every diamond brick in the game."
+///
+/// James redrew the affected files in round 288. This is what stops them coming back: a
+/// re-export is one checkbox away from putting the canvas edge back, and the fault is a
+/// hairline that nobody notices in a screenshot of one brick and that everybody notices in a
+/// field of them.
+///
+/// **The rule is "not a complete ring", not "no edge pixels at all."** A wedge is a right
+/// triangle and genuinely fills two whole sides of its canvas; a dome fills the bottom. What no
+/// shaped face does is reach *every* pixel of its own border, because a shape that did would be
+/// a rectangle. Before the fix the Diamond's ring was 504 of 504 pixels of pure black; after it,
+/// twelve, and those are the diamond's own points touching the edge.
+final class ShapedBrickArtHasNoCanvasBorderTests: XCTestCase {
+
+    /// Composed the way `endlessIIShapedArt` composes them, rather than listed: behaviour, then
+    /// face, then orientation, then size suffix. A name with no picture behind it is skipped,
+    /// so this covers whatever exists today and picks up whatever is drawn next.
+    private var candidates: [String] {
+        let behaviours = ["BrickNormal", "BrickInvisible",
+                          "BrickMultiHit1", "BrickMultiHit2", "BrickMultiHit3", "BrickMultiHit4",
+                          "BrickIndestructible1", "BrickIndestructible2", "BrickPortal",
+                          "retroBrickNormal", "retroBrickInvisible",
+                          "RetroBrickMultiHit1", "RetroBrickMultiHit2",
+                          "RetroBrickMultiHit3", "RetroBrickMultiHit4"]
+        let faces = ["Convex0", "Convex180", "Concave0", "Concave180",
+                     "Wedge0", "Wedge90", "Wedge180", "Wedge270", "Diamond"]
+        let sizes = ["", "Square", "Big"]
+        return behaviours.flatMap { behaviour in
+            faces.flatMap { face in sizes.map { behaviour + face + $0 } }
+        }
+    }
+
+    /// What share of the outermost ring of pixels is drawn at all.
+    private func borderCoverage(_ image: UIImage) -> Double? {
+        guard let cg = image.cgImage else { return nil }
+        let w = cg.width, h = cg.height
+        guard w > 2, h > 2 else { return nil }
+        var pixels = [UInt8](repeating: 0, count: w*h*4)
+        guard let context = CGContext(data: &pixels, width: w, height: h,
+                                      bitsPerComponent: 8, bytesPerRow: w*4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+
+        func alpha(_ x: Int, _ y: Int) -> UInt8 { pixels[(y*w + x)*4 + 3] }
+        var drawn = 0, total = 0
+        for x in 0..<w {
+            for y in [0, h - 1] { total += 1; if alpha(x, y) > 20 { drawn += 1 } }
+        }
+        for y in 0..<h {
+            for x in [0, w - 1] { total += 1; if alpha(x, y) > 20 { drawn += 1 } }
+        }
+        return Double(drawn)/Double(total)
+    }
+
+    func testNoShapedFaceIsRingedByItsOwnCanvasEdge() {
+        var looked = 0
+        for name in candidates {
+            guard let image = UIImage(named: name) else { continue }
+            guard let coverage = borderCoverage(image) else { continue }
+            looked += 1
+            XCTAssertLessThan(coverage, 0.9,
+                              "\(name) draws \(Int(coverage*100))% of its own canvas edge - a "
+                              + "shaped face that reaches every pixel of its border is a "
+                              + "rectangle, and the border is what draws as a square around "
+                              + "the brick (§8.5)")
+        }
+        XCTAssertGreaterThan(looked, 40,
+                             "and it actually found the artwork to look at - a name scheme "
+                             + "that had drifted would pass this by matching nothing")
     }
 }

@@ -1592,4 +1592,38 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  a split paddle at 120, 240 and 360 wide, with a shot over each turret\n")
     }
 
+    /// The beam and the burn it leaves, drawn so somebody can look at them.
+    func testTheLaserBurnCanBeLookedAt() throws {
+        let scene = GameScene(size: CGSize(width: 402, height: 500))
+        scene.gameMode = .endlessII
+        scene.layoutUnit = 18
+        scene.ballSize = scene.normalBallSize
+
+        let display = SKScene(size: CGSize(width: 402, height: 500))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (index, stage) in ["beam", "burn", "burn, half gone"].enumerated() {
+            let node: SKSpriteNode
+            switch index {
+            case 0: node = scene.endlessIILaserBeamNode()
+            default:
+                node = scene.endlessIILaserAfterGlowNode()
+                if index == 2 { node.alpha *= 0.5 }
+            }
+            node.size.height = 400
+            node.position = CGPoint(x: 90 + 110*CGFloat(index), y: 250)
+            node.zPosition = 0
+            display.addChild(node)
+            _ = stage
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("round-288.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Round 288, drawn: \(file.path)")
+        print("  the beam, the burn it leaves, and the burn half faded\n")
+    }
+
 }

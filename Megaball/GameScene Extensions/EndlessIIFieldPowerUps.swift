@@ -252,10 +252,37 @@ extension GameScene {
                 self.endlessIIDestroy(brick)
             }
 
+            let afterGlow = endlessIILaserAfterGlowNode()
+            afterGlow.position = CGPoint(x: beamX, y: 0)
+            addChild(afterGlow)
+            afterGlow.run(.sequence([
+                .wait(forDuration: GameScene.endlessIILaserBeamFlashSeconds),
+                .fadeOut(withDuration: GameScene.endlessIILaserAfterGlowSeconds),
+                .removeFromParent()]))
+
             let beam = endlessIILaserBeamNode()
             beam.position = CGPoint(x: beamX, y: 0)
             addChild(beam)
-            beam.run(.sequence([.fadeOut(withDuration: 1.2), .removeFromParent()]))
+            beam.run(.sequence([
+                .wait(forDuration: GameScene.endlessIILaserBeamFlashSeconds),
+                .removeFromParent()]))
+            // **A flash, and then a burn** (James, round 288: "the LaserBeam graphic flashes
+            // for a fraction of a second, then it's replaced by LaserBeamAfterGlow which then
+            // slowly fades out with its opacity dropping to 0 over the next 1-2s. This will
+            // give the impression of a burn in effect after the powerful laser beam").
+            //
+            // The beam used to fade out over 1.2 seconds on its own, bloom and all, which is a
+            // beam that is *still firing* faintly for over a second. What a burn wants is the
+            // opposite shape: the whole thing at once, gone almost immediately, and something
+            // left behind on the retina that has nothing to do with the shot any more.
+            //
+            // **The afterglow is added first and simply outlives the beam.** "Replaced by"
+            // read literally would be remove one node and add another on the same frame, and
+            // that is a frame where the column is empty if either action slips - so the burn is
+            // laid down underneath from the start and revealed when the beam goes. It is
+            // invisible until then: the two pictures share their opaque core exactly, so during
+            // the flash the beam is drawn over every pixel of it.
+            //
             // **Made unmissable** (play-test round 102: "doesn't appear to do anything").
             // The mechanics were right all along - a beam through each ball's column, as
             // the description says - but it fired the instant the paddle caught the icon,
@@ -283,18 +310,59 @@ extension GameScene {
     /// fires a beam wider than the column it clears. That is the right way round: the beam is
     /// light and the column is what the light did.
     func endlessIILaserBeamNode() -> SKSpriteNode {
-        let core: CGFloat = 22, whole: CGFloat = 124
-        let beam = SKSpriteNode(texture: GameScene.endlessIILaserBeamTexture)
-        beam.size = CGSize(width: normalBallSize*(whole/core), height: frame.height)
-        beam.zPosition = 4
-        beam.alpha = 0.9
-        return beam
+        endlessIIBeamNode(GameScene.endlessIILaserBeamTexture, zPosition: 4)
     }
+
+    /// What the beam leaves behind: the same column, without the bloom.
+    ///
+    /// `LaserBeamAfterGlow` is not a second effect that has to be lined up with the first. The
+    /// two pictures are the same size and share their opaque core to the pixel - measured off
+    /// the files, both 372 across at 3x with the core running 153 to 218 - so the afterglow is
+    /// the beam with the glow either side of it taken away, and it is sized by the same
+    /// arithmetic. That is what makes the burn land exactly where the beam was rather than
+    /// approximately.
+    ///
+    /// A step behind the beam in `zPosition`, because it is added first and has to spend the
+    /// flash underneath it.
+    func endlessIILaserAfterGlowNode() -> SKSpriteNode {
+        endlessIIBeamNode(GameScene.endlessIILaserAfterGlowTexture, zPosition: 3.9)
+    }
+
+    /// The geometry both of them share.
+    ///
+    /// **The core is a normal ball wide, whatever size the ball currently is** - see the beam's
+    /// own note. Written once so the burn cannot drift from the shot that made it.
+    private func endlessIIBeamNode(_ texture: SKTexture?, zPosition: CGFloat) -> SKSpriteNode {
+        let core: CGFloat = 22, whole: CGFloat = 124
+        let node = SKSpriteNode(texture: texture)
+        node.size = CGSize(width: normalBallSize*(whole/core), height: frame.height)
+        node.zPosition = zPosition
+        node.alpha = 0.9
+        return node
+    }
+
+    /// How long the beam itself is on screen.
+    ///
+    /// "A fraction of a second", which is a flash rather than a fade. It was 1.2 seconds of
+    /// fading out, and a beam that dims slowly is a beam that is still firing - the burn below
+    /// is what is meant to last.
+    static let endlessIILaserBeamFlashSeconds: TimeInterval = 0.12
+
+    /// How long the burn takes to go.
+    ///
+    /// The middle of the "1-2s" asked for. Long enough to read as an afterimage and short
+    /// enough that a second beam down the same column does not land on the first one's mark.
+    static let endlessIILaserAfterGlowSeconds: TimeInterval = 1.5
 
     /// Loaded once. Nil in a build without the artwork, which draws a white rectangle - the
     /// beam that was there before it, near enough, rather than nothing at all.
     static let endlessIILaserBeamTexture: SKTexture? =
         UIImage(named: "LaserBeamLength").map { SKTexture(image: $0) }
+
+    /// Loaded once, like the beam's. Nil draws a white rectangle that fades, which is a
+    /// coarser burn rather than none at all.
+    static let endlessIILaserAfterGlowTexture: SKTexture? =
+        UIImage(named: "LaserBeamAfterGlow").map { SKTexture(image: $0) }
 
     // MARK: - Wrecking Ball
 
