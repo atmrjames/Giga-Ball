@@ -221,7 +221,9 @@ final class BrickTypeCatalogueTests: XCTestCase {
         let portal = BrickTypeCatalogue.styles(stackingWith: .portal)
         XCTAssertNotEqual(portal, "Any other style")
         XCTAssertFalse(portal.hasPrefix("Any but"))
-        XCTAssertTrue(portal.contains("Rounded"))
+        XCTAssertTrue(portal.contains(BrickTypeCatalogue.name(of: .rounded)),
+                      "asked of the catalogue rather than spelled out - the display name "
+                      + "became Round in round 293 and this line said Rounded")
         XCTAssertFalse(portal.contains("Exploding"))
     }
 

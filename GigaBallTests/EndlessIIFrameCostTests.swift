@@ -759,14 +759,26 @@ final class EndlessIIFrameCostTests: XCTestCase {
                        "nobody is aiming, so nothing is holding the field")
     }
 
-    /// And the hold that *should* stop it still does.
-    func testAimingStillHoldsTheField() {
+    /// And the hold that *should* stop it still does - which is the owed turn, not the aim.
+    ///
+    /// **Round 293 reversed the aim's half of this** (James: "aimed sticky is still causing the
+    /// game to pause whilst the ball is on the paddle. This is no longer necessary"). The
+    /// reasoning that used to be here - that a descending field moves the target out from under
+    /// the shot - is true and is not worth a pause: an ordinary Sticky Paddle has always let
+    /// the field descend under a held ball, and aiming is meant to feel like sticky, not like
+    /// the pause menu. The player re-aims, as they do with everything else.
+    func testTheOwedTurnHoldsTheFieldAndTheAimDoesNot() {
         let scene = GameScene(size: CGSize(width: 402, height: 874))
         scene.gameMode = .endlessII
+
         scene.endlessIIAimHold = true
+        XCTAssertFalse(scene.endlessIIFieldIsHeld, "the game does not pause to be aimed")
+
+        scene.endlessIIAimHold = false
+        scene.endlessIIAimedStickyOwedTurn = true
         XCTAssertTrue(scene.endlessIIFieldIsHeld,
-                      "a field that descended while the player was aiming would move the "
-                      + "target out from under the shot")
+                      "a turn already paid for and not yet delivered is a moment the field "
+                      + "waits out, so a row cannot arrive between the catch and the shot")
     }
 
     /// Draws the aim line three ways, so "more similar to what was there previously" can be
@@ -1755,6 +1767,20 @@ final class EndlessIIFrameCostTests: XCTestCase {
                           + "nothing. Measured at 30.8ms before round 291 - 185% of a frame, "
                           + "every frame - which is the uneven frame times James was seeing as "
                           + "a ball that speeds up and slows down")
+    }
+
+    /// Does `SKSpriteNode.size` carry the node's scale? Two file comments disagree about it.
+    ///
+    /// One says "Expand and Shrink write `paddle.size.width` directly"; another two hundred
+    /// lines away says they "animate `xScale` instead - they never touch the size". Both are
+    /// half right, and which half decides whether the paddle's wall clamp is correct.
+    func testWhetherASpritesSizeCarriesItsScale() {
+        let sprite = SKSpriteNode(color: .white, size: CGSize(width: 100, height: 10))
+        print("PADDLE built: size=\(sprite.size) xScale=\(sprite.xScale)")
+        sprite.xScale = 1.5
+        print("PADDLE xScale 1.5: size=\(sprite.size) frame=\(sprite.frame.size)")
+        sprite.xScale = 0.5
+        print("PADDLE xScale 0.5: size=\(sprite.size) frame=\(sprite.frame.size)")
     }
 
 }

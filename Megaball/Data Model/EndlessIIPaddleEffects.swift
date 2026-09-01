@@ -235,20 +235,35 @@ enum EndlessIIPaddleEffects {
     /// It then arrives carrying speed, passes the paddle, and is gathered back - about a third
     /// of a second to the far side of the swing and settled by three quarters of one.
     ///
+    /// **Loosened again in round 293** (James: "ball steering could still do with some more
+    /// inertia on the ball, the tether between the ball and paddle should feel more like a
+    /// piece of string"). A string is the picture to design to: it goes slack when the paddle
+    /// moves toward the ball, it pulls when the paddle moves away, and what is on the end of it
+    /// arrives late and keeps going. Eleven answered the first half of that and not the second
+    /// - the ball was already most of the way to the paddle before its own momentum mattered.
+    ///
+    /// At 8 the first frame of a chase moves the ball about 1% of the gap where the old
+    /// exponential pull moved it 16%, it is a third of the way across at a tenth of a second,
+    /// and it reaches the paddle's column at about a fifth of a second carrying enough speed to
+    /// go a fifth of the way past.
+    ///
     /// **The first value tried was 14 and it was the test that argued it down.** At 14 the ball
     /// crossed the paddle's column at the tenth-of-a-second mark, which is no more lag than
     /// there had ever been; the overshoot was there and the inertia was not. Both halves of
-    /// James's note have to be true at once.
-    static let steeringNaturalFrequency: CGFloat = 11
+    /// James's note have to be true at once, and this is the same trade taken one step further.
+    static let steeringNaturalFrequency: CGFloat = 8
 
     /// How heavily that spring is damped, as a fraction of critical.
     ///
-    /// **Half, so it overshoots by about a sixth of the distance and comes back.** The
-    /// overshoot of a step response is `exp(-pi*z/sqrt(1-z*z))`, which at 0.5 is 0.16 - the
-    /// ball runs about a sixth of the way past the paddle before the spring gathers it, which
-    /// is "slightly beyond the paddle and then swing back" and not a wobble that outstays its
-    /// welcome. One swing back and it is settled.
-    static let steeringDampingRatio: CGFloat = 0.5
+    /// **A little under half, so it overshoots by about a fifth of the distance and comes
+    /// back.** The overshoot of a step response is `exp(-pi*z/sqrt(1-z*z))`: 0.16 at a damping
+    /// ratio of 0.5, and 0.20 at 0.45. Round 284 asked for "slightly beyond the paddle and then
+    /// swing back" and round 293 for a tether that feels "more like a piece of string", which
+    /// is the same request one notch further - a string's load swings wider than a stiff arm's.
+    ///
+    /// Still one swing. Below about 0.3 a second swing becomes visible, and a ball that
+    /// oscillates around the paddle is a ball the player has stopped being able to place.
+    static let steeringDampingRatio: CGFloat = 0.45
 
     /// The longest slice of time the spring is integrated over in one go.
     ///

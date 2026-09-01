@@ -153,7 +153,7 @@ enum BrickTypeCatalogue {
 
     static func name(of style: EndlessIIStyle) -> String {
         switch style {
-        case .rounded: return "Rounded"
+        case .rounded: return "Round"
         case .spinning: return "Spinning"
         case .flashing: return "Flashing"
         case .gravity: return "Gravity"
@@ -359,12 +359,11 @@ enum BrickTypeCatalogue {
         case .big:
             return "Four times the size of a normal brick"
         case .square:
-            return "Twice the height of a normal brick"
-            // **Written here rather than taken from the workbook, because the workbook has no
-            // row for it.** Square arrived in round 247, after the sheet was drawn, and it is
-            // the one entry on this page whose description is not James's own words - kept in
-            // the register of the three above it so the section still reads as one voice, and
-            // flagged to him as the gap it is
+            return "Each side is the same"
+            // James's own words, round 293, filling the one gap the workbook had - Square
+            // arrived in round 247, after the sheet was drawn. The line before this was mine
+            // ("twice the height of a normal brick"), which was true and was describing the
+            // cells rather than the brick: what a player sees is a square
         }
     }
 

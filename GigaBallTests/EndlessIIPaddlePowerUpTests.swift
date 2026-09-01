@@ -211,7 +211,11 @@ final class EndlessIIPaddleEffectsTests: XCTestCase {
                                                            leftWall: -200, rightWall: 200,
                                                            radius: 5)
         }
-        XCTAssertEqual(x, 100, accuracy: 1, "a second of holding still gathers it in")
+        XCTAssertEqual(x, 100, accuracy: 4,
+                       "a second of holding still gathers it in - within four points of a "
+                       + "hundred, where round 291's stiffer spring was within one. A slacker "
+                       + "tether takes longer to settle, which is the whole of what round 293 "
+                       + "asked for: 'more like a piece of string'")
     }
 
     func testAStationaryPaddleStillHoldsASteeredBall() {
@@ -4376,5 +4380,183 @@ final class PlayTestRound291LookTests: XCTestCase {
                              "1.5 was the size for flat stroked glyphs; these are drawings now")
         XCTAssertLessThan(DailyTwist.twistBadgeHeight, 2.5,
                           "and a badge taller than the line it sits in would push the rows apart")
+    }
+}
+
+/// Round 293's play-test list.
+final class PlayTestRound293Tests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.layoutUnit = 40
+        scene.ballSize = 14
+        scene.paddleWidth = 120
+        scene.gameWidth = 400
+        scene.ballSpeedLimit = 600
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    private func extraBall(_ scene: GameScene, x: CGFloat) -> SKSpriteNode {
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 14, height: 14))
+        extra.position = CGPoint(x: x, y: scene.paddle.position.y + 12)
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls.append(extra)
+        return extra
+    }
+
+    // MARK: - "The ball should move to maintain its relative position"
+
+    /// James: "when the paddle resizes with sticky paddle power-ups active and a ball on the
+    /// paddle, the ball should move to maintain its relative position on the paddle."
+    func testAHeldBallRidesTheEdgeOfAPaddleThatExpands() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        let extra = extraBall(scene, x: 54)         // near the right tip of a 120-wide paddle
+        scene.endlessIICatchExtraBall(extra)
+        let shareAtCatch = (extra.position.x - scene.paddle.position.x)/scene.endlessIIPaddleHalfWidth
+
+        scene.paddle.xScale = 1.5                   // Expand, which animates the scale
+        scene.tickEndlessIIHeldBalls()
+
+        let shareNow = (extra.position.x - scene.paddle.position.x)/scene.endlessIIPaddleHalfWidth
+        XCTAssertEqual(shareNow, shareAtCatch, accuracy: 0.001,
+                       "it is still the same distance along the paddle it landed on")
+        XCTAssertEqual(extra.position.x, 81, accuracy: 0.5,
+                       "which on a paddle half again as wide is half again as far out")
+    }
+
+    func testAHeldBallComesInWithAPaddleThatShrinks() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        let extra = extraBall(scene, x: 54)
+        scene.endlessIICatchExtraBall(extra)
+
+        scene.paddle.xScale = 0.5
+        scene.tickEndlessIIHeldBalls()
+
+        XCTAssertEqual(extra.position.x, 27, accuracy: 0.5,
+                       "or it would be left hanging in the air off the end of the paddle")
+    }
+
+    // MARK: - "Aimed sticky is still causing the game to pause"
+
+    /// James: "aimed sticky is still causing the game to pause whilst the ball is on the
+    /// paddle. This is no longer necessary."
+    ///
+    /// Round 215 took the freeze out of the power-up and left this behind: the field's own
+    /// hold read the aim flag, so the descent stopped for as long as a ball sat on the paddle.
+    func testAnAimDoesNotHoldTheField() {
+        let scene = mayhem()
+        scene.endlessIIAimHold = true
+        XCTAssertFalse(scene.endlessIIFieldIsHeld,
+                       "an ordinary Sticky Paddle never stopped the field and this must not "
+                       + "either - the game does not pause to be aimed")
+    }
+
+    /// The turn already paid for still holds it, which is a moment rather than a state.
+    func testAnOwedAimedTurnStillHoldsTheField() {
+        let scene = mayhem()
+        scene.endlessIIAimedStickyOwedTurn = true
+        XCTAssertTrue(scene.endlessIIFieldIsHeld,
+                      "a row must not arrive between the catch and the shot it bought")
+    }
+
+    // MARK: - "The laser turrets keep moving without the paddle"
+
+    /// James: "when the paddle hits the edge of the screen, if lasers are active, the laser
+    /// turrets keep moving a couple of pixels without the paddle."
+    ///
+    /// **The clamp was never wrong; *when* it ran was.** Expand nudges the paddle inside the
+    /// walls the instant it is collected and then animates the scale over a fifth of a second,
+    /// so a paddle standing at the wall is judged to fit at its old width and then grows past
+    /// the edge - centre still, ends walking outward, which is where the turrets are drawn. It
+    /// is re-asked every frame now.
+    ///
+    /// These two say the clamp itself is right, which round 293 spent a build disbelieving.
+    func testAnExpandedPaddleStopsWhereItsOwnEdgeReachesTheWall() {
+        let scene = mayhem()
+        scene.paddle.xScale = 1.5
+
+        let stopped = scene.endlessIIWrapPaddleX(1000)
+        XCTAssertEqual(stopped, 200 - 90, accuracy: 0.01,
+                       "half of a 180-wide paddle inside a 400-wide field - `size` carries the "
+                       + "scale, so this has always been right and round 293 briefly broke it "
+                       + "by multiplying the scale in a second time")
+    }
+
+    func testAShrunkenPaddleMayGoFurtherThanAFullSizedOne() {
+        let scene = mayhem()
+        scene.paddle.xScale = 0.5
+        XCTAssertEqual(scene.endlessIIWrapPaddleX(1000), 200 - 30, accuracy: 0.01,
+                       "a shrunken paddle may go further, because it is narrower")
+    }
+
+    /// And the overlays go with the paddle when a resize pushes it back inside the walls.
+    ///
+    /// This is the frame-by-frame nudge doing its job: the paddle has already grown, so it now
+    /// overhangs, and the push inward has to take the lasers and the sticky face with it.
+    func testAResizeAtTheWallTakesTheDressWithIt() {
+        let scene = mayhem()
+        scene.paddle.position.x = 140            // at the wall for its built width
+        scene.paddle.xScale = 1.5                // now overhanging
+        scene.endlessIIKeepThePaddleInsideTheWalls()
+
+        XCTAssertEqual(scene.paddle.position.x, 110, accuracy: 0.01)
+        XCTAssertEqual(scene.paddleLaser.position.x, scene.paddle.position.x, accuracy: 0.01,
+                       "the two copies of this nudge that it replaced left the lasers behind")
+        XCTAssertEqual(scene.paddleSticky.position.x, scene.paddle.position.x, accuracy: 0.01)
+    }
+
+    // MARK: - "More inertia... more like a piece of string"
+
+    func testBallControlSetsOffMoreSlowlyThanItDidBefore() {
+        var state = (x: CGFloat(0), velocity: CGFloat(0))
+        state = EndlessIIPaddleEffects.steeringStep(x: state.x, velocity: state.velocity,
+                                                    towards: 100, delta: 1.0/60)
+        XCTAssertLessThan(state.x, 1.8,
+                          "round 291 moved about 2% of the gap in the first frame at 11 rad/s; "
+                          + "a string is slacker than that")
+        XCTAssertGreaterThan(state.x, 0, "it does still answer")
+    }
+
+    func testBallControlStillSettlesRatherThanOscillating() {
+        var state = (x: CGFloat(0), velocity: CGFloat(0))
+        var path: [CGFloat] = []
+        for _ in 0..<180 {
+            state = EndlessIIPaddleEffects.steeringStep(x: state.x, velocity: state.velocity,
+                                                        towards: 100, delta: 1.0/60)
+            path.append(state.x)
+        }
+        XCTAssertEqual(path.last ?? 0, 100, accuracy: 1, "it arrives")
+        XCTAssertGreaterThan(path.max() ?? 0, 100, "having gone past")
+        XCTAssertLessThan(path.max() ?? 0, 130,
+                          "a string's load swings wider than a stiff arm's, and not so wide "
+                          + "that the player has stopped being able to place the ball")
+    }
+}
+
+/// Round 293's two brick-page corrections.
+final class BrickPageRound293Tests: XCTestCase {
+
+    func testTheSquareBrickSaysWhatJamesWrote() {
+        let square = BrickTypeCatalogue.allEntries.first { $0.name == "Square" }
+        XCTAssertEqual(square?.description, "Each side is the same",
+                       "the workbook has no row for Square, so this is his line for it")
+    }
+
+    func testTheRoundedBrickIsCalledRound() {
+        XCTAssertTrue(BrickTypeCatalogue.allEntries.contains { $0.name == "Round" })
+        XCTAssertFalse(BrickTypeCatalogue.allEntries.contains { $0.name == "Rounded" },
+                       "the display name changed in round 293; the enum case and every asset "
+                       + "name stay as they are, because those are save keys and files")
     }
 }

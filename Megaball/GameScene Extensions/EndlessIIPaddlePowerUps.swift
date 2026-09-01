@@ -391,14 +391,14 @@ extension GameScene {
         guard wanted != endlessIIPaddleShapeArtName
                 || (wanted != nil && abs(width - endlessIIPaddleShapeBodyWidth) > 0.5)
         else { return }
-        // **`paddle.size.width`, and Expand does not change it.** Expand and Shrink animate
-        // `paddle.xScale` instead - they never touch the size - so this watches a number that
-        // only Split Paddle and the setup move. That is deliberate but *unverified*: whether a
-        // traced body follows its node's scale in the simulation is not something a unit test
-        // here can answer (`SKPhysicsBody.area` is a construction-time value and does not
-        // change with scale, which proves nothing either way), and the whole game has always
-        // depended on the answer being yes - the plain paddle's body is traced once at setup
-        // and Expand has scaled it ever since.
+        // **`paddle.size.width` moves when Expand does.** Expand and Shrink animate
+        // `paddle.xScale` and never assign a size, and for a long time this note said that
+        // meant the width never moved - but `SKSpriteNode.size` carries the node's scale, so it
+        // does (round 293, measured). Whether the *traced body* follows the node's scale in the
+        // simulation is still unverified - `SKPhysicsBody.area` is a construction-time value
+        // and does not change with scale, which proves nothing either way - and the whole game
+        // has always depended on the answer being yes, since the plain paddle's body is traced
+        // once at setup and Expand has scaled it ever since.
         //
         // So this is left watching the size, on the same assumption the rest of the paddle
         // makes. If an expanded paddle turns out not to bounce the ball at its extreme ends,
@@ -406,10 +406,16 @@ extension GameScene {
         // shaped ones, and the fix is to retrace on scale here and at setup both.
         // Every frame, and does nothing on almost all of them - but a *resize* counts as a
         // change too (James, round 214: "how do the paddle shapes deal with the expand and
-        // shrink power-ups?"). Expand and Shrink write `paddle.size.width` directly, and the
-        // body is traced from the picture at a given size: without this the sprite grew and
-        // the body it bounces off did not, so a wider domed paddle had a narrower dome inside
-        // it that the ball passed straight through at the ends
+        // shrink power-ups?"). The body is traced from the picture at a given size: without
+        // this the sprite grew and the body it bounces off did not, so a wider domed paddle had
+        // a narrower dome inside it that the ball passed straight through at the ends.
+        //
+        // **Expand and Shrink reach this guard, and the note above about them is wrong.**
+        // They animate `xScale` rather than assigning a size - but `SKSpriteNode.size` carries
+        // the node's scale (measured in round 293:  a sprite built 100 wide at `xScale` 1.5
+        // reports 150), so `paddle.size.width` moves when they run and the guard fires. That
+        // is what round 214 wanted and what has been happening ever since; only the
+        // explanation was wrong.
 
         endlessIIPaddleShapeArtName = wanted
         paddle.position.y -= endlessIIPaddleShapeLift

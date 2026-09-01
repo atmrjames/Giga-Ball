@@ -90,7 +90,7 @@ extension GameScene {
     /// an edge comes back in from the other one. Written as a pure position rule so the
     /// touch handler stays one line either way.
     func endlessIIWrapPaddleX(_ x: CGFloat) -> CGFloat {
-        let limit = gameWidth/2 - paddle.size.width/2
+        let limit = gameWidth/2 - endlessIIPaddleHalfWidth
         guard endlessIIWrapIsRunning else {
             return max(-limit, min(limit, x))
         }
@@ -242,7 +242,7 @@ extension GameScene {
             paddle.physicsBody?.collisionBitMask |= CollisionTypes.boarderCategory.rawValue
             endlessIIWrapDressed = false
 
-            let limit = gameWidth/2 - paddle.size.width/2
+            let limit = gameWidth/2 - endlessIIPaddleHalfWidth
             if abs(paddle.position.x) > limit {
                 paddle.position.x = max(-limit, min(limit, paddle.position.x))
             }

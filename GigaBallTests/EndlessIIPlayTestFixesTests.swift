@@ -770,22 +770,36 @@ final class EndlessIIAuraTests: XCTestCase {
 
     /// Play-test round 87, and the most expensive bug of that round: "with aimed sticky at
     /// one point the new bricks continued to descend whilst the old bricks stay paused", and
-    /// after resuming "bricks continued to descend below the paddle". The aim hold stops the
-    /// ticking world, and the descent is not ticked - it is triggered by the bottom row
-    /// emptying - so it went on stepping while everything else stood still.
-    func testTheFieldDoesNotDescendWhileTheAimIsHeld() {
+    /// after resuming "bricks continued to descend below the paddle".
+    ///
+    /// **Round 293 reversed the answer, and the report it was written from cannot recur.**
+    /// James: "aimed sticky is still causing the game to pause whilst the ball is on the paddle.
+    /// This is no longer necessary." So the field descends during an aim now.
+    ///
+    /// That does not put round 87's bug back, and the reason is the whole of why this test is
+    /// rewritten rather than deleted. What was wrong in round 87 was not that the field moved -
+    /// it was that *half* of it did: the aim froze the ticking world, the descent is triggered
+    /// by the bottom row emptying rather than ticked, so new rows kept stepping while
+    /// everything already on screen stood still. Round 215 took the freeze out altogether.
+    /// There is nothing held for the descent to be inconsistent with any more, which is a
+    /// stronger guarantee than the one this test used to make.
+    func testAnAimNoLongerFreezesHalfTheFieldOrAnyOfIt() {
         let scene = GameScene()
         scene.gameMode = .endlessII
 
         XCTAssertFalse(scene.endlessIIFieldIsHeld, "nothing held, nothing frozen")
 
         scene.endlessIIAimHold = true
-        XCTAssertTrue(scene.endlessIIFieldIsHeld)
+        XCTAssertFalse(scene.endlessIIFieldIsHeld,
+                       "an ordinary Sticky Paddle never stopped the field and an aimed one "
+                       + "must not either - the game does not pause to be aimed")
 
         scene.endlessIIAimHold = false
         scene.endlessIIAimedStickyOwedTurn = true
         XCTAssertTrue(scene.endlessIIFieldIsHeld,
-                      "the turn owed is still an aim, and the field must wait for it too")
+                      "a turn already paid for and not yet delivered still holds it: that is a "
+                      + "moment rather than a state, and it is what stops a row arriving "
+                      + "between the catch and the shot it bought")
     }
 
     /// Play-test round 100: "if it was today or yesterday, write that instead of the

@@ -1018,6 +1018,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// change job halfway through, which is James's "it's inconsistent when dragging if it moves
 	/// the paddle or the arrow" (round 291).
 	var endlessIIAimDragIntent: AimHoldControl.Intent?
+
+	/// Half the paddle as it is drawn, which is exactly half of `paddle.size.width`.
+	///
+	/// **`SKSpriteNode.size` carries the node's scale**, measured rather than argued about
+	/// (`testWhetherASpritesSizeCarriesItsScale`): a sprite built 100 wide and set to `xScale`
+	/// 1.5 reports a size of 150. So Expand and Shrink, which animate the scale and never
+	/// assign the size, change what `paddle.size.width` reports anyway - and every clamp that
+	/// has ever read it has been right.
+	///
+	/// **Round 293 believed the opposite and broke the wall clamp with it**, letting an
+	/// expanded paddle stop a quarter of its width early and a shrunken one run past. Two file
+	/// comments disagreed about this - one saying Expand writes the size directly, one saying
+	/// it never touches it - and the answer was taken from the comments instead of from a
+	/// sprite. Five tests failed in the same direction, which is what sent it back to the
+	/// measurement; the same measurement had been made in round 284 for the Aura and written
+	/// down there.
+	///
+	/// It stays as a named property because the held-ball queue and three clamps all want the
+	/// same number, and because a name is a place to keep the answer to a question that has now
+	/// been got wrong twice.
+	var endlessIIPaddleHalfWidth: CGFloat { paddle.size.width/2 }
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
@@ -2151,6 +2172,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     ///
     /// `paddle.size.height` is the shape's height when one is on and the plain height when it
     /// is not, so this is one expression rather than a branch.
+    /// Pushes the paddle back inside the walls after a resize, and takes its dress with it.
+    ///
+    /// Called by Expand and Shrink, which can grow a paddle standing at the wall into one that
+    /// overhangs it. It measures the *drawn* half-width like everything else does since round
+    /// 293, and it re-places the overlays - which the two copies of this it replaced did not,
+    /// so a paddle nudged inward by an Expand left its lasers and its sticky face behind until
+    /// the player next moved.
+    func endlessIIKeepThePaddleInsideTheWalls() {
+        let limit = gameWidth/2 - endlessIIPaddleHalfWidth
+        guard abs(paddle.position.x) > limit else { return }
+        paddle.position.x = max(-limit, min(limit, paddle.position.x))
+        positionPaddleOverlays()
+        positionRetroPaddleLayers()
+    }
+
     func positionPaddleOverlays() {
         let underside = paddle.position.y - paddle.size.height/2
         paddleLaser.position = CGPoint(x: paddle.position.x, y: underside)
@@ -2792,6 +2828,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// frame with the last one
 		tickDailyTimeTrial(frameDelta)
 		tickDeferredBallPowerUpEnds()
+		endlessIIKeepThePaddleInsideTheWalls()
+		// **Every frame, because a paddle grows over a fifth of a second and the clamp used to
+		// run once at the start of it** (James, round 293: "when the paddle hits the edge of
+		// the screen, if lasers are active, the laser turrets keep moving a couple of pixels
+		// without the paddle"). Expand animates `xScale` to its new value over 0.2s and nudges
+		// the paddle inside the walls *immediately* - measured against the width it still has
+		// at that instant, which is the old one. So a paddle standing at the wall is judged to
+		// fit, and then grows: its centre stays put and its two ends walk outward past the
+		// edge of the play area for the rest of the animation. The end is where the turret is
+		// drawn, and a bar's ends are the only part of it whose movement the eye can see.
+		//
+		// Guarded by its own early return, so on the frames where nothing overhangs - which is
+		// nearly all of them - this is one comparison
 		// Measured once, for everything that needs to know what a frame is worth - the sticky
 		// catch's lookahead first of all, which was a fixed sixtieth and looked two frames
 		// ahead on a 120Hz screen
@@ -3949,11 +3998,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// row (§8.6). A third of a second of nothing reading the field is the price of the
 	/// movement being visible at all.
 	var endlessIIFieldIsHeld: Bool {
-		endlessIIAimHold || endlessIIAimedStickyOwedTurn
+		endlessIIAimedStickyOwedTurn
 			|| endlessIIClearAndRetreatClock.isRunning
 			|| endlessIIQuicksandClock.isRunning
 			|| (gameMode == .endlessII && endlessIIFieldShiftHasSettled == false)
 	}
+	// **An aim no longer holds the field** (James, round 293: "aimed sticky is still causing
+	// the game to pause whilst the ball is on the paddle. This is no longer necessary").
+	//
+	// Round 215 took the freeze out of Aimed Sticky - "the game doesn't pause, it acts more
+	// like the existing sticky power up" - and what it left behind was this line, which is the
+	// last of the freeze still standing: `endlessIIAimHold` stopped the descent, so the field
+	// held its breath for as long as a ball sat on the paddle. That is the pause, and it is the
+	// one part of the old design nobody removed because it was not in the file the round was
+	// working in. An ordinary Sticky Paddle never stopped the field and this must not either.
+	//
+	// `endlessIIAimedStickyOwedTurn` stays: that is a *turn* already paid for and not yet
+	// delivered, which is a moment rather than a state, and it is what stops a row arriving
+	// between the catch and the shot it bought.
 
 	func moveEndlessModeRowDown() {
 				
@@ -4903,13 +4965,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				// Maximum paddle size achievement
 			}
 			// Resize paddle based on its current size
-			if paddle.position.x + paddle.size.width/2 > gameWidth/2 {
-				paddle.position.x = gameWidth/2 - paddle.size.width/2
-			}
-			if paddle.position.x - paddle.size.width/2 < -gameWidth/2 {
-				paddle.position.x = -gameWidth/2 + paddle.size.width/2
-			}
-			// Ensure the paddle stays within the game's bounds
+			endlessIIKeepThePaddleInsideTheWalls()
+			// Ensure the paddle stays within the game's bounds - and by the width the paddle is
+			// actually drawn at, which is what these two copies got wrong (round 293)
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[4]+=1
             // Power up set
@@ -5006,13 +5064,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Resize paddle based on its current size
 
-			if paddle.position.x + paddle.size.width/2 > gameWidth/2 {
-				paddle.position.x = gameWidth/2 - paddle.size.width/2
-			}
-			if paddle.position.x - paddle.size.width/2 < -gameWidth/2 {
-				paddle.position.x = -gameWidth/2 + paddle.size.width/2
-			}
-			// Ensure the paddle stays within the game's bounds
+			endlessIIKeepThePaddleInsideTheWalls()
+			// Ensure the paddle stays within the game's bounds - and by the width the paddle is
+			// actually drawn at, which is what these two copies got wrong (round 293)
 			powerUpMultiplierScore = -0.1
 			totalStatsArray[0].powerupsCollected[5]+=1
             // Power up set

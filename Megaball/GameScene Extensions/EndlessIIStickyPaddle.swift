@@ -86,7 +86,7 @@ extension GameScene {
         extra.physicsBody?.velocity = .zero
         extra.position.y = ballStartingPositionY
         endlessIIHeldBalls.append(extra)
-        endlessIIHeldOffsets.append(extra.position.x - paddle.position.x)
+        endlessIIHeldOffsets.append(endlessIIHeldShare(of: extra))
         setEndlessIIHeldBallRestsOnPaddle(true, for: extra)
         // Where on the paddle it landed, kept as an offset so it rides the paddle rather than
         // sitting still while the paddle moves out from under it - and so it launches at the
@@ -106,8 +106,30 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
         guard endlessIIHeldBalls.contains(where: { $0 === ball }) == false else { return }
         endlessIIHeldBalls.append(ball)
-        endlessIIHeldOffsets.append(ball.position.x - paddle.position.x)
+        endlessIIHeldOffsets.append(endlessIIHeldShare(of: ball))
         setEndlessIIHeldBallRestsOnPaddle(true, for: ball)
+    }
+
+    /// Where a ball is sitting across the paddle, as a fraction of its half-width.
+    ///
+    /// **A share rather than a distance** (James, round 293: "when the paddle resizes with
+    /// sticky paddle power-ups active and a ball on the paddle, the ball should move to
+    /// maintain its relative position on the paddle").
+    ///
+    /// The queue used to keep the offset in points, taken at the catch and written back every
+    /// frame. That holds a ball still relative to the *field* while the paddle grows or shrinks
+    /// underneath it - so a ball caught at the very tip of a paddle that then expands ends up
+    /// somewhere in its middle, and one on a paddle that shrinks slides off the end and hangs
+    /// in the air beside it. A share is the same number the launch angle has always been
+    /// measured in, so the ball also leaves at the angle its *current* spot earns rather than
+    /// the one its old spot did.
+    ///
+    /// Measured against the drawn half-width, because Expand and Shrink animate `xScale` and
+    /// never touch `paddle.size.width` - see `endlessIIPaddleHalfWidth`.
+    func endlessIIHeldShare(of subject: SKSpriteNode) -> CGFloat {
+        let half = endlessIIPaddleHalfWidth
+        guard half > 0 else { return 0 }
+        return (subject.position.x - paddle.position.x)/half
     }
 
     /// Takes the paddle out of a held ball's collisions, and puts it back on launch.
@@ -163,10 +185,13 @@ extension GameScene {
         let offset: Double
         if endlessIIIsHeldOnSafetyBar(extra) {
             offset = endlessIISafetyBarOffset(of: extra)
-                ?? Double((extra.position.x - paddle.position.x)/(paddle.size.width/2))
+                ?? Double(endlessIIHeldShare(of: extra))
         } else {
-            offset = Double((extra.position.x - paddle.position.x)/(paddle.size.width/2))
+            offset = Double(endlessIIHeldShare(of: extra))
         }
+        // Read off the ball's live position rather than out of the queue, because the two agree
+        // now and the live one is also right for a ball the player has watched move: a ball
+        // carried by a resize leaves at the angle where it *is*
         let angle = endlessIILaunchAngle(atPaddleOffset: offset)
         // **The same arithmetic off a different surface** (James, round 284: a sticky safety
         // paddle's ball "goes up, like it would from the paddle"). All that changes is whose
@@ -222,10 +247,12 @@ extension GameScene {
                 // Held still all the same - a body left with its own velocity would drift off
                 // a surface nothing is writing a position for
             }
-            let offset = endlessIIHeldOffsets.indices.contains(index) ? endlessIIHeldOffsets[index] : 0
-            held.position.x = paddle.position.x + offset
+            let share = endlessIIHeldOffsets.indices.contains(index) ? endlessIIHeldOffsets[index] : 0
+            held.position.x = paddle.position.x + share*endlessIIPaddleHalfWidth
             held.position.y = ballStartingPositionY
             held.physicsBody?.velocity = .zero
+            // The share is reconstituted against the paddle's *current* half-width, which is
+            // what carries the ball with a resize instead of leaving it behind
         }
 
         endlessIIDropHeldBallsThatLeft()
@@ -285,9 +312,8 @@ extension GameScene {
             // paddle since 2020 would carry it straight back down
 
             let offset = endlessIIIsHeldOnSafetyBar(held)
-                ? (endlessIISafetyBarOffset(of: held)
-                    ?? Double((held.position.x - paddle.position.x)/(paddle.size.width/2)))
-                : Double((held.position.x - paddle.position.x)/(paddle.size.width/2))
+                ? (endlessIISafetyBarOffset(of: held) ?? Double(endlessIIHeldShare(of: held)))
+                : Double(endlessIIHeldShare(of: held))
             // Whichever surface is holding it, the same way `endlessIILaunchHeldBall` asks
             let angle = endlessIILaunchAngle(atPaddleOffset: offset)
             held.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
