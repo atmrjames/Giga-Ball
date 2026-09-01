@@ -809,8 +809,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var laserTimer: Timer?
     var laserSideLeft: Bool = true
 
-    /// One laser dress per segment of a split paddle - see `refreshEndlessIISplitLaserDress`.
-    var endlessIISplitLaserDress: [SKSpriteNode] = []
+    /// The pieces each of the paddle's overlays is cut into while the paddle is split, keyed
+    /// by the overlay they were cut from - see `refreshEndlessIISplitOverlay`.
+    ///
+    /// A dictionary rather than four properties because there are four strips and there is one
+    /// rule for all of them; a fifth would want no new storage.
+    var endlessIISplitOverlays: [ObjectIdentifier: [SKSpriteNode]] = [:]
 
     /// Which held balls are waiting on the safety bar rather than on the paddle.
     ///
@@ -2133,11 +2137,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let underside = paddle.position.y - paddle.size.height/2
         paddleLaser.position = CGPoint(x: paddle.position.x, y: underside)
         paddleSticky.position = CGPoint(x: paddle.position.x, y: underside)
-        refreshEndlessIISplitLaserDress()
-        // After the strip has been placed, because the pieces take their height and their line
-        // from it - and from here rather than from the split's own refresh, which returns early
-        // on every frame the paddle's width has not moved, where the dress has to follow the
-        // paddle on every frame it moves
+        refreshEndlessIISplitDress()
+        // After the strips have been placed, because the pieces take their height and their
+        // line from them - and from here rather than from the split's own refresh, which
+        // returns early on every frame the paddle's width has not moved, where the dress has to
+        // follow the paddle on every frame it does
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

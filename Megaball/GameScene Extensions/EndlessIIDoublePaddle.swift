@@ -239,62 +239,102 @@ extension GameScene {
     /// them inline in the middle of building a sprite, and one of the two is behind a `retro`
     /// branch. This is the same two points said where the dress can ask for them.
     var endlessIISplitLaserTurrets: [CGFloat] {
-        let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
-                                                           standardWidth: paddleWidth,
-                                                           ballSize: ballSize)
-        let first = -paddle.size.width/2 + layout.segment/2
-        let last = first + (layout.segment + layout.gap)*CGFloat(layout.count - 1)
-        return [paddle.position.x + first, paddle.position.x + last]
+        let centres = endlessIISplitSegmentCentres
+        guard let first = centres.first, let last = centres.last else { return [] }
+        return [first, last]
         // The two outermost pieces' centres. The turret is drawn across the piece and the shot
         // leaves from its outer edge, which is where the generator has always put it
     }
 
-    /// The laser dress, on the two outermost pieces of a split paddle and nowhere else.
-    ///
-    /// The dress is what says a surface is armed, and a single strip drawn across the whole
-    /// span said it about the gaps and about the unarmed middle pieces as well. Two pieces
-    /// wear it now, which is the same count as the turrets and the same count as the shots.
-    ///
-    /// **A picture of a turret would be better than a strip cut short**, and is on §8.5's
-    /// list. This is the honest version of what can be said with the art that exists.
-    func refreshEndlessIISplitLaserDress() {
-        let wanted = endlessIIPaddleIsSplit && paddleLaser.isHidden == false
-        guard wanted else {
-            if endlessIISplitLaserDress.isEmpty == false {
-                endlessIISplitLaserDress.forEach { $0.removeFromParent() }
-                endlessIISplitLaserDress.removeAll()
-                paddleLaser.alpha = 1
-            }
-            return
-        }
-
+    /// Every segment's centre, in scene coordinates.
+    var endlessIISplitSegmentCentres: [CGFloat] {
         let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
                                                            standardWidth: paddleWidth,
                                                            ballSize: ballSize)
-        while endlessIISplitLaserDress.count < 2 {
-            let piece = SKSpriteNode(texture: paddleLaser.texture)
-            piece.zPosition = paddleLaser.zPosition
+        let pitch = layout.segment + layout.gap
+        let first = -paddle.size.width/2 + layout.segment/2
+        return (0..<layout.count).map { paddle.position.x + first + pitch*CGFloat($0) }
+    }
+
+    /// Cuts one of the paddle's overlays into pieces that sit on the split, or puts it back.
+    ///
+    /// **The bug this exists for, said once for all four of them.** The paddle wears four
+    /// strips - the laser dress, the sticky band, and the Retro theme's own two - each sized to
+    /// the whole paddle and drawn over it. A split paddle keeps its node's full width, so every
+    /// one of those strips goes on being drawn across the gaps: a picture of a solid armed
+    /// paddle over a paddle with holes in it. Round 233 found and fixed exactly this for the
+    /// Retro *paddle* art, where a ball falling through a paddle that looked solid read as a
+    /// bug rather than as the power-up; the spec has carried a note ever since that the other
+    /// strips would do the same thing, and this is that note answered.
+    ///
+    /// The source strip is hidden by **alpha** rather than by `isHidden`, because `isHidden` on
+    /// these is how the power-ups themselves say whether they are running at all, and a second
+    /// opinion written into the same property would fight them.
+    ///
+    /// - Parameter centres: which segments wear it. Not always all of them: the lasers fire
+    ///   from two turrets however many pieces there are (round 286), and a strip on a piece
+    ///   with no turret would be back to claiming something untrue.
+    func refreshEndlessIISplitOverlay(_ source: SKSpriteNode, centres: [CGFloat]) {
+        let key = ObjectIdentifier(source)
+        var pieces = endlessIISplitOverlays[key] ?? []
+
+        let wanted = endlessIIPaddleIsSplit && source.isHidden == false && centres.isEmpty == false
+        guard wanted else {
+            if pieces.isEmpty == false {
+                pieces.forEach { $0.removeFromParent() }
+                endlessIISplitOverlays[key] = nil
+                source.alpha = 1
+            }
+            return
+            // Put back exactly, the same bargain the split itself makes: a power-up that left
+            // the paddle undressed after its clock stopped would be one that never ended
+        }
+
+        let segment = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
+                                                            standardWidth: paddleWidth,
+                                                            ballSize: ballSize).segment
+        while pieces.count < centres.count {
+            let piece = SKSpriteNode(texture: source.texture)
+            piece.zPosition = source.zPosition
             addChild(piece)
-            endlessIISplitLaserDress.append(piece)
+            pieces.append(piece)
         }
-        while endlessIISplitLaserDress.count > 2 {
-            endlessIISplitLaserDress.removeLast().removeFromParent()
+        while pieces.count > centres.count {
+            pieces.removeLast().removeFromParent()
         }
 
-        paddleLaser.alpha = 0
-        // Hidden by alpha rather than by `isHidden`: the power-up's own code shows and hides
-        // that node to say whether the lasers are running at all, and a second opinion written
-        // into the same property would fight it
-
-        for (piece, centre) in zip(endlessIISplitLaserDress, endlessIISplitLaserTurrets) {
-            piece.texture = paddleLaser.texture
-            piece.size = CGSize(width: layout.segment, height: paddleLaser.size.height)
-            piece.centerRect = paddleCapRect(for: paddleLaser.texture)
-            piece.position = CGPoint(x: centre, y: paddleLaser.position.y)
+        source.alpha = 0
+        for (piece, centre) in zip(pieces, centres) {
+            piece.texture = source.texture
+            piece.size = CGSize(width: segment, height: source.size.height)
+            piece.centerRect = paddleCapRect(for: source.texture)
+            piece.position = CGPoint(x: centre, y: source.position.y)
             piece.alpha = 1
         }
-        // Nine-sliced like the halves themselves, for round 182's reason: a strip cut to a
-        // fraction of its width squashes its own end caps in proportion to how short it is
+        // Nine-sliced, for round 182's reason: a strip cut to a fraction of its width squashes
+        // its own end caps in proportion to how short it is
+        endlessIISplitOverlays[key] = pieces
+    }
+
+    /// Every overlay the split has to cut up, each with the segments it belongs on.
+    ///
+    /// **Two turrets for the lasers and all of them for the rest**, and the difference is the
+    /// design rather than an inconsistency: a laser comes from two places (James, round 285:
+    /// "there should only ever be 2 turrets with a split paddle") and a sticky paddle catches
+    /// anywhere the paddle is, so every piece of it is sticky.
+    ///
+    /// The Retro theme keeps its own laser flash and sticky band on separate nodes at their own
+    /// proportions, so they are here as well - they were the half of this the spec had written
+    /// down and nobody had done.
+    func refreshEndlessIISplitDress() {
+        guard gameMode == .endlessII else { return }
+        let all = endlessIISplitSegmentCentres
+        let outer = all.isEmpty ? [] : [all[0], all[all.count - 1]]
+
+        refreshEndlessIISplitOverlay(paddleLaser, centres: outer)
+        refreshEndlessIISplitOverlay(paddleRetroLaserTexture, centres: outer)
+        refreshEndlessIISplitOverlay(paddleSticky, centres: all)
+        refreshEndlessIISplitOverlay(paddleRetroStickyTexture, centres: all)
     }
 
 }

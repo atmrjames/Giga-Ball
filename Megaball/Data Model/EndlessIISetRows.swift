@@ -187,13 +187,13 @@ struct EndlessIISetRow {
         // The heaviest, and the deepest gated. Two ways in at the bottom, two bricks worth
         // having, and a lid with a pair of slots that a ball has to be aimed at
 
-        // MARK: The drafted nine (round 284)
+        // MARK: The drafted eleven (rounds 284 and 286)
         //
         // James, round 284: "please start to draft sequences and I can play test them" - the
         // heading §12.0 has been holding open since round 190. These are a first pass and are
         // meant to be argued with.
         //
-        // The one rule behind the choice of nine: **each is made of something the catalogue
+        // The one rule behind the choice of them: **each is made of something the catalogue
         // had never been made of.** The twenty-two above draw on four brick kinds, four shapes,
         // one size and three actions, and the field around them has five behaviours, four
         // shapes, four sizes and fifteen styles. So there was no designed row anywhere that was
@@ -203,6 +203,14 @@ struct EndlessIISetRow {
         //
         // Gated shallow to deep in roughly the order a player can be expected to cope: the
         // ones that only need looking at come first, the ones that need a plan come last.
+        //
+        // **Nine of them at first, and two more once a caution turned out to be unfounded.**
+        // Round 284 left Big and Square out on the grounds that no formation used either and
+        // so no convention existed for what the cells a two-row brick hangs into should say.
+        // The convention was there the whole time and four clusters obey it - Millstone and
+        // Keepsake among them - and it is the obvious one: the character goes in the top-left
+        // cell the brick occupies and every other cell it fills is written empty. Colonnade and
+        // Rampart are the two that were owed.
 
         EndlessIISetRow(name: "Seam", rows: ["MMM.MMM.MMM"], minimumHeight: 60),
         // Three blocks of Multi-hit with two gaps, and the shallowest of the nine because it
@@ -275,6 +283,24 @@ struct EndlessIISetRow {
         // arrives as a single brick becomes a patch of field unless it is dealt with while it
         // is still one brick. Gated deep because a player who ignores it is worse off than
         // one who never met it, which is not a thing to hand somebody in their first minutes
+
+        EndlessIISetRow(name: "Colonnade", rows: ["Q.Q.Q.Q.Q.Q",
+                                                  "..........."], minimumHeight: 130,
+                        legend: ["Q": EndlessIIBrickSpec(behaviour: .standard, size: .square)]),
+        // Six bricks one cell wide and two rows deep, with a full-height gap between each.
+        // **It is the Comb turned ninety degrees**: every other row here blocks a row, and a
+        // Square brick blocks a *column*, so what this leaves open is six corridors rather than
+        // six gaps. The row below is written empty because that is where each brick hangs down
+        // to - the rule every formation with a two-row shape in it obeys
+
+        EndlessIISetRow(name: "Rampart", rows: ["B...B...B..",
+                                                "..........."], minimumHeight: 200,
+                        legend: ["B": EndlessIIBrickSpec(behaviour: .standard, size: .big)]),
+        // Three blocks two cells across and two rows deep, with two clear cells between them.
+        // The heaviest thing in the pool by area and still ordinary bricks: a wall of Big
+        // Indestructibles would be the maze problem again, where this is simply a lot of brick
+        // to get through and worth the points for doing it. The six cells each block hangs into
+        // are drawn empty, as above
 
         EndlessIISetRow(name: "Conduit", rows: ["p?.?.?.?.?p"], minimumHeight: 240,
                         legend: ["p": EndlessIIBrickSpec(behaviour: .indestructibleAlways,

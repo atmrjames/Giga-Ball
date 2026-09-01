@@ -591,3 +591,83 @@ final class EndlessIIBrickSpecTests: XCTestCase {
         }
     }
 }
+
+/// A two-row brick is drawn in one cell and hangs into the others, which have to be empty.
+///
+/// The rule is written beside the Millstone cluster and four formations obey it: the character
+/// goes in the **top-left** cell the brick occupies, and every other cell it fills is written
+/// `.`. It is not a style preference. A Big brick booked at a column reserves that column and
+/// the next, and a cell holding a character the booking has reserved is a brick the formation
+/// asked for and will not get - silently, at some depth in some run.
+///
+/// Round 286, and it exists because round 284 declined to draft a Big or a Square set row on
+/// the grounds that no convention was written down. It was; there was simply nothing checking
+/// it, which is a good part of why it was easy to believe there was none.
+final class TwoRowShapesInFormationsTests: XCTestCase {
+
+    /// Every cell a spec of this size occupies, given where its character sits.
+    private func covered(_ size: BrickSize, row: Int, column: Int) -> [(row: Int, column: Int)] {
+        let wide = size.halfCellsWide/BrickSize.normal.rawValue
+        let tall = size.halfCellsTall/BrickSize.normal.rawValue
+        var cells: [(Int, Int)] = []
+        for r in 0..<max(tall, 1) {
+            for c in 0..<max(wide, 1) where !(r == 0 && c == 0) {
+                cells.append((row + r, column + c))
+            }
+        }
+        return cells
+        // Derived from the size rather than listed: `BrickSize` grew a second axis in round
+        // 247 precisely because Square is not the same on both, and a test that wrote "two
+        // across and two down" would be a third copy of that decision
+    }
+
+    private func check(_ name: String, rows: [String],
+                       legend: [Character: EndlessIIBrickSpec]) {
+        for (index, row) in rows.enumerated() {
+            for (column, character) in row.enumerated() {
+                let spec = EndlessIIBrickSpec.spec(for: character, legend: legend)
+                guard let size = spec.size, size == .big || size == .square else { continue }
+
+                for cell in covered(size, row: index, column: column) {
+                    guard cell.row < rows.count else {
+                        return XCTFail("\(name): a \(size) at row \(index) hangs off the "
+                                       + "bottom of the formation, so the row it needs is not "
+                                       + "written down at all")
+                    }
+                    let line = Array(rows[cell.row])
+                    guard cell.column < line.count else { continue }
+                    XCTAssertEqual(line[cell.column], ".",
+                                   "\(name): the \(size) at row \(index) column \(column) "
+                                   + "fills row \(cell.row) column \(cell.column), which is "
+                                   + "written '\(line[cell.column])' - the booking reserves "
+                                   + "that cell, so whatever is written there is a brick the "
+                                   + "formation asks for and never gets")
+                }
+            }
+        }
+    }
+
+    func testEverySetRowLeavesRoomForItsOwnTwoRowBricks() {
+        for row in EndlessIISetRow.all {
+            check(row.name, rows: row.rows, legend: row.legend)
+        }
+    }
+
+    func testEveryClusterLeavesRoomForItsOwnTwoRowBricks() {
+        for cluster in EndlessIICluster.all {
+            check(cluster.name, rows: cluster.rows, legend: cluster.legend)
+        }
+    }
+
+    /// The two set rows round 284 owed and round 286 wrote.
+    func testTheCatalogueHasASetRowOfEachTwoRowSize() {
+        func sizes(_ row: EndlessIISetRow) -> Set<BrickSize> {
+            Set(row.legend.values.compactMap(\.size))
+        }
+        XCTAssertTrue(EndlessIISetRow.all.contains { sizes($0).contains(.square) },
+                      "Colonnade - a Square brick blocks a column where every other brick "
+                      + "blocks a row, and no designed row had ever used one")
+        XCTAssertTrue(EndlessIISetRow.all.contains { sizes($0).contains(.big) },
+                      "Rampart")
+    }
+}

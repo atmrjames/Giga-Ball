@@ -3923,15 +3923,70 @@ final class PaddleFamilyParityTests: XCTestCase {
         scene.endlessIICollectDoublePaddle()
         scene.paddleLaser.isHidden = false
         scene.paddleLaser.size = CGSize(width: 360, height: 20)
-        scene.refreshEndlessIISplitLaserDress()
+        scene.refreshEndlessIISplitDress()
 
         let layout = GameScene.endlessIIDoublePaddleLayout(span: 360, standardWidth: 120,
                                                            ballSize: scene.ballSize)
         XCTAssertGreaterThan(layout.count, 2, "a wide split really is more than two pieces")
-        XCTAssertEqual(scene.endlessIISplitLaserDress.count, 2,
+        XCTAssertEqual(scene.endlessIISplitOverlays[ObjectIdentifier(scene.paddleLaser)]?.count,
+                       2,
                        "and still two turrets - the first attempt at this armed every piece, "
                        + "which is not what was asked for")
         XCTAssertEqual(scene.endlessIISplitLaserTurrets.count, 2)
+    }
+
+    /// The sticky band is the other half of the same fault, and gets the opposite answer.
+    ///
+    /// A laser comes from two turrets; a sticky paddle catches anywhere the paddle is. So every
+    /// piece wears the band, and the difference between the two is the design rather than an
+    /// inconsistency.
+    func testEverySplitPieceWearsTheStickyBand() {
+        let scene = mayhem()
+        scene.paddle.size.width = 360
+        scene.endlessIICollectDoublePaddle()
+        scene.paddleSticky.isHidden = false
+        scene.paddleSticky.size = CGSize(width: 360, height: 16)
+        scene.refreshEndlessIISplitDress()
+
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 360, standardWidth: 120,
+                                                           ballSize: scene.ballSize)
+        XCTAssertEqual(scene.endlessIISplitOverlays[ObjectIdentifier(scene.paddleSticky)]?.count,
+                       layout.count)
+        XCTAssertEqual(scene.paddleSticky.alpha, 0,
+                       "and the whole-span band stands down, or it would go on being drawn "
+                       + "across the gaps - a sticky-looking paddle with holes in it")
+    }
+
+    /// Every strip the paddle wears, not only the two the first pass thought of.
+    func testAllFourPaddleOverlaysAreCutUpByASplit() {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        let strips = [scene.paddleLaser, scene.paddleSticky,
+                      scene.paddleRetroLaserTexture, scene.paddleRetroStickyTexture]
+        for strip in strips {
+            strip.isHidden = false
+            strip.size = CGSize(width: 120, height: 16)
+        }
+        scene.refreshEndlessIISplitDress()
+
+        for strip in strips {
+            XCTAssertNotNil(scene.endlessIISplitOverlays[ObjectIdentifier(strip)],
+                            "the Retro theme keeps its own laser flash and sticky band on "
+                            + "separate nodes, and they paint over a split the same way")
+            XCTAssertEqual(strip.alpha, 0)
+        }
+    }
+
+    /// A strip its own power-up has hidden is left alone.
+    func testAStripThatIsNotRunningIsNotDressed() {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        scene.paddleSticky.isHidden = true
+        scene.refreshEndlessIISplitDress()
+        XCTAssertNil(scene.endlessIISplitOverlays[ObjectIdentifier(scene.paddleSticky)])
+        XCTAssertEqual(scene.paddleSticky.alpha, 1,
+                       "hidden by alpha is this function's word; `isHidden` is the power-up's, "
+                       + "and the two must not argue")
     }
 
     func testTheTurretsSitOnTheOutermostPieces() {
@@ -3966,12 +4021,12 @@ final class PaddleFamilyParityTests: XCTestCase {
         scene.endlessIICollectDoublePaddle()
         scene.paddleLaser.isHidden = false
         scene.paddleLaser.size = CGSize(width: 120, height: 20)
-        scene.refreshEndlessIISplitLaserDress()
+        scene.refreshEndlessIISplitDress()
         XCTAssertEqual(scene.paddleLaser.alpha, 0, "the whole-span strip stands down")
 
         scene.endlessIIDoublePaddleClock = EndlessIIClock()
-        scene.refreshEndlessIISplitLaserDress()
-        XCTAssertTrue(scene.endlessIISplitLaserDress.isEmpty)
+        scene.refreshEndlessIISplitDress()
+        XCTAssertTrue(scene.endlessIISplitOverlays.isEmpty)
         XCTAssertEqual(scene.paddleLaser.alpha, 1,
                        "a power-up that left the paddle undressed would be one that never ended")
     }
