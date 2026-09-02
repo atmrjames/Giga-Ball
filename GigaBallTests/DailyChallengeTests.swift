@@ -2287,22 +2287,23 @@ final class DailyLayoutFlipTests: XCTestCase {
 
     /// Every placed brick of a level, as position, texture and colour.
     ///
+    /// **One scene, reused** (round 296). A `GameScene` holds something like two hundred
+    /// `SKTexture` properties, and building a fresh one per level made two hundred and twenty
+    /// of them in a single test process - which is where `CUINamedRenditionInfo bufferId:
+    /// unrecognized selector` comes from. That is the asset catalogue giving up, not a bug in
+    /// the levels, and the fix is to stop asking it for twenty thousand textures: the scene is
+    /// made once and its bricks are cleared between levels.
+    ///
     /// **Colour is in the fingerprint on purpose.** The question is whether a player could
     /// tell, and a level whose shape is symmetrical but whose colours run left to right does
-    /// look different mirrored. Level 94 is exactly that, and it is the one level the colour
-    /// keeps in the pool.
-    private func field(_ level: Int) -> [(x: CGFloat, y: CGFloat, mark: String)] {
-        let scene = GameScene(size: CGSize(width: 402, height: 874))
-        scene.gameMode = .classic
-        scene.totalStatsArray = [TotalStats()]
+    /// look different mirrored.
+    private func field(_ scene: GameScene, _ level: Int)
+    -> [(x: CGFloat, y: CGFloat, mark: String)] {
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            node.removeFromParent()
+        }
+        scene.bricksLeft = 0
         scene.levelNumber = level
-        let layout = GameSceneLayout(screen: CGSize(width: 402, height: 874))
-        scene.numberOfBrickRows = GameSceneLayout.brickRows
-        scene.numberOfBrickColumns = GameSceneLayout.brickColumns
-        scene.brickWidth = layout.brickWidth
-        scene.brickHeight = layout.brickHeight
-        scene.gameWidth = layout.gameWidth
-        scene.yBrickOffset = 300
         scene.loadLevel(level)
 
         var cells: [(CGFloat, CGFloat, String)] = []
@@ -2316,35 +2317,88 @@ final class DailyLayoutFlipTests: XCTestCase {
         return cells
     }
 
-    private func measured() -> (mirrored: Set<Int>, upsideDown: Set<Int>) {
-        var mirrored: Set<Int> = [], upsideDown: Set<Int> = []
-        for level in 1...DailyChallengeGenerator.classicLevelCount {
-            let cells = field(level)
-            guard cells.isEmpty == false else { continue }
-
-            let plain = Set(cells.map { "\($0.x)|\($0.y)|\($0.mark)" })
-            if plain == Set(cells.map { "\((-$0.x).rounded())|\($0.y)|\($0.mark)" }) {
-                mirrored.insert(level)
-            }
-            let lowest = cells.map { $0.y }.min()!
-            let highest = cells.map { $0.y }.max()!
-            if plain == Set(cells.map {
-                let y = DailyLayout.flippedY($0.y, lowest: lowest, highest: highest).rounded()
-                return "\($0.x)|\(y)|\($0.mark)"
-            }) { upsideDown.insert(level) }
-        }
-        return (mirrored, upsideDown)
+    private func levelScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        let layout = GameSceneLayout(screen: CGSize(width: 402, height: 874))
+        scene.numberOfBrickRows = GameSceneLayout.brickRows
+        scene.numberOfBrickColumns = GameSceneLayout.brickColumns
+        scene.brickWidth = layout.brickWidth
+        scene.brickHeight = layout.brickHeight
+        scene.gameWidth = layout.gameWidth
+        scene.yBrickOffset = 300
+        return scene
     }
 
-    func testTheTableMatchesTheLevels() {
-        let found = measured()
-        XCTAssertEqual(found.mirrored, DailyTwist.levelsUnchangedBy[.mirrored],
-                       "a level has been edited into or out of mirror symmetry - the table in "
-                       + "DailyTwist has to follow it, or a day will promise Mirrored and hand "
-                       + "over a level that looks the same")
-        XCTAssertEqual(found.upsideDown, DailyTwist.levelsUnchangedBy[.upsideDown],
-                       "no level is unchanged by a vertical flip, and if one ever is this is "
-                       + "where it shows up")
+    /// How alike a level and its own reflection are, per flip: the share of bricks that land
+    /// on another brick of the same kind.
+    private func likeness(_ cells: [(x: CGFloat, y: CGFloat, mark: String)])
+    -> (mirrored: Int, upsideDown: Int) {
+        func overlap(_ flipped: [(x: CGFloat, y: CGFloat, mark: String)]) -> Int {
+            var have: [String: Int] = [:]
+            for c in cells { have["\(c.x)|\(c.y)|\(c.mark)", default: 0] += 1 }
+            var matched = 0
+            for f in flipped {
+                let key = "\(f.x)|\(f.y)|\(f.mark)"
+                if let n = have[key], n > 0 { have[key] = n - 1; matched += 1 }
+            }
+            return matched*100/max(cells.count, 1)
+        }
+        let lowest = cells.map { $0.y }.min() ?? 0
+        let highest = cells.map { $0.y }.max() ?? 0
+        return (overlap(cells.map { (x: (-$0.x).rounded(), y: $0.y, mark: $0.mark) }),
+                overlap(cells.map {
+                    (x: $0.x,
+                     y: DailyLayout.flippedY($0.y, lowest: lowest, highest: highest).rounded(),
+                     mark: $0.mark)
+                }))
+    }
+
+    func testEveryExactlySymmetricLevelIsExcluded() {
+        let scene = levelScene()
+        var exactMirror: Set<Int> = [], exactUpside: Set<Int> = []
+        var rows: [(level: Int, mirrored: Int, upsideDown: Int)] = []
+
+        for level in 1...DailyChallengeGenerator.classicLevelCount {
+            let cells = field(scene, level)
+            guard cells.isEmpty == false else { continue }
+            let alike = likeness(cells)
+            rows.append((level, alike.mirrored, alike.upsideDown))
+            if alike.mirrored == 100 { exactMirror.insert(level) }
+            if alike.upsideDown == 100 { exactUpside.insert(level) }
+        }
+
+        for (twist, exact) in [(DailyTwist.mirrored, exactMirror),
+                               (DailyTwist.upsideDown, exactUpside)] {
+            let excluded = DailyTwist.levelsUnchangedBy[twist] ?? []
+            XCTAssertTrue(exact.isSubset(of: excluded),
+                          "\(twist.displayName): levels \(exact.subtracting(excluded).sorted()) "
+                          + "are identical when flipped and are still in the pool. Exact "
+                          + "symmetry is not a matter of taste - a level added or edited into "
+                          + "it has to join the table")
+        }
+
+        // And the near misses, printed for the next review. James, round 296: "there are also
+        // lots of other levels not mentioned here that are quite similar when either mirrored
+        // or upside down." Whether a given one clears the bar is his call, so nothing here
+        // asserts it - this is the data that call would be made from
+        let offered = rows.filter {
+            DailyTwist.levelsUnchangedBy[.mirrored]?.contains($0.level) != true
+        }.sorted { $0.mirrored > $1.mirrored }
+        print("\n  Still offered Mirrored, most alike first:")
+        for row in offered.prefix(12) {
+            print(String(format: "    level %3d  %3d%% of its bricks land on themselves",
+                         row.level, row.mirrored))
+        }
+        let upside = rows.filter {
+            DailyTwist.levelsUnchangedBy[.upsideDown]?.contains($0.level) != true
+        }.sorted { $0.upsideDown > $1.upsideDown }
+        print("\n  Still offered Upside Down, most alike first:")
+        for row in upside.prefix(12) {
+            print(String(format: "    level %3d  %3d%%", row.level, row.upsideDown))
+        }
+        print("")
     }
 
     /// And the generator acts on it.
@@ -2354,12 +2408,16 @@ final class DailyLayoutFlipTests: XCTestCase {
                            "level \(level)")
         }
         XCTAssertTrue(DailyTwist.mirrored.changesSomething(onClassicLevel: 94),
-                      "94 is symmetric in shape and not in colour, so mirroring it does change "
-                      + "what a player sees")
+                      "94 is not on James's list, so it is a level worth mirroring")
         XCTAssertTrue(DailyTwist.mirrored.changesSomething(onClassicLevel: nil),
                       "an endless day has no fixed level to be symmetric about")
         XCTAssertTrue(DailyTwist.oneLife.changesSomething(onClassicLevel: 62),
                       "the rule is about layout flips and nothing else")
+        XCTAssertFalse(DailyTwist.upsideDown.changesSomething(onClassicLevel: 55),
+                       "Computer 5 is on the upside-down list and not the mirrored one - the "
+                       + "two are separate judgements and the table keeps them separate")
+        XCTAssertTrue(DailyTwist.upsideDown.changesSomething(onClassicLevel: 62),
+                      "and Body 2 is mirrored-only, so a vertical flip is still worth having")
     }
 
     /// No day gives a level a flip that would leave it alone.

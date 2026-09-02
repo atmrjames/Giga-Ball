@@ -340,31 +340,63 @@ enum DailyTwist: String, CaseIterable, Codable {
         applies(to: mode) && activationKey <= key && key < retirementKey
     }
 
-    /// The Classic levels each twist would leave looking exactly as it found them.
+    /// The Classic levels a layout flip is not worth offering on.
     ///
     /// James, round 294: "for the daily challenge twists mirrored and upside down, don't have
     /// these set for levels that are symmetrical and won't look different when flipped." A
     /// twist that changes nothing is a wasted day - the briefing promises a rule change and the
-    /// level arrives identical to how it has always been.
+    /// level arrives looking as it always does.
     ///
-    /// **Measured rather than judged** (`DailyLayoutFlipTests`). The levels are a hundred and
-    /// ten Swift functions placing bricks with `if` statements, so there is no table to read a
-    /// symmetry off; the test builds every one of them, applies the game's own transform, and
-    /// compares position, texture *and colour*. This is what it found, and it fails if a level
-    /// is ever edited into or out of the list.
+    /// **This is James's own review, level by level, and it is the authority** (round 296). It
+    /// replaced a measurement, and the reason is the sentence he added with the list: "there
+    /// are also lots of other levels not mentioned here that are quite similar when either
+    /// mirrored or upside down. The levels available for these twists should be *significantly
+    /// different* when mirrored or upside down to make it interesting."
     ///
-    /// **Colour is part of the comparison and it earns its place.** Level 94 is mirror-symmetric
-    /// in shape and not in colour, so mirroring it does change what a player sees and it stays
-    /// in the pool. Three levels are symmetric in both.
+    /// Significantly different is a judgement, and the measurement could only answer
+    /// *identical*: build the level, flip it, compare every brick. That found three levels
+    /// where the two fields match to the pixel, and he found fifty-two worth excluding. All
+    /// three of the measured ones are in his list, which is the shape you would expect - exact
+    /// symmetry is the strictest case of the thing he is describing, and a strict subset is a
+    /// measurement agreeing with a judgement rather than contradicting it.
     ///
-    /// **Upside Down has no entries**, and that is the measurement's answer rather than an
-    /// omission: not one of the hundred and ten is unchanged by a vertical flip. The key is
-    /// here so the rule is stated for both twists James named, and so that the day a level
-    /// arrives which *is* symmetric, the test says so rather than nobody noticing.
+    /// So the numbers are his and `DailyLayoutFlipTests` holds the floor underneath them: any
+    /// level that is *exactly* unchanged by a flip must appear here, because that one is not a
+    /// matter of taste. A level added later that happens to be symmetric fails that test on the
+    /// day it arrives.
+    ///
+    /// Given per pack and recorded as global level numbers, which is what the generator draws:
+    /// Classic starts at 1, Space at 11, Nature 21, City 31, Food 41, Computer 51, Body 61,
+    /// World 71, Emoji 81, Numbers 91 and Challenge 101.
     static let levelsUnchangedBy: [DailyTwist: Set<Int>] = [
-        .mirrored: [62, 92, 104],
-        .upsideDown: [],
+        .mirrored: [1, 2, 5, 6, 7, 8, 9, 10,          // Classic 1, 2, 5-10
+                    11, 14, 15,                        // Space 1, 4, 5
+                    21, 24, 25, 27, 29, 30,            // Nature 1, 4, 5, 7, 9, 10
+                    32, 33, 39,                        // City 2, 3, 9
+                    41, 43, 45, 48,                    // Food 1, 3, 5, 8
+                    51, 54, 56, 57, 60,                // Computer 1, 4, 6, 7, 10
+                    62, 63, 65, 69,                    // Body 2, 3, 5, 9
+                    73, 79, 80,                        // World 3, 9, 10
+                    81, 83, 84, 89,                    // Emoji 1, 3, 4, 9
+                    92, 93, 98,                        // Numbers 2, 3, 8
+                    101, 103, 104, 105, 106, 107, 108, 109, 110],
+                                                       // Challenge 1, 3-10 except 2
+        .upsideDown: [1, 8, 9, 10,                     // Classic 1, 8, 9, 10
+                      14,                              // Space 4
+                      27, 29,                          // Nature 7, 9
+                      33,                              // City 3
+                      51, 55,                          // Computer 1, 5
+                      73,                              // World 3
+                      81, 82, 84,                      // Emoji 1, 2, 4
+                      98,                              // Numbers 8
+                      101, 106, 108, 109, 110],        // Challenge 1, 6, 8, 9, 10
     ]
+    // **The last pack is Challenge, and James's note said Space twice.** His list runs in pack
+    // order - Classic, Space, Nature, City, Food, Computer, Body, World, Emoji, Numbers - and
+    // the only pack it never names is Challenge, which is exactly where the second "Space Pack"
+    // heading sits. Read as Challenge, and worth confirming: it is nine of that pack's ten
+    // levels, which is a lot to exclude, and if it really was meant for Space then Space's
+    // levels are wrongly in the pool and Challenge's wrongly out.
 
     /// Whether this twist would visibly do something on this day's level.
     ///
